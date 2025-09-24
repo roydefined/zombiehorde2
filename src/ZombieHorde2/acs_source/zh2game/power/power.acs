@@ -1,0 +1,93 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LogSource "Power"
+
+#include "events.acs"
+
+strict namespace Power
+{
+    internal int GetPowerSize() { return ZH2Game::PersistingGameContext.PowerCollection.Size; }
+
+    internal void GivePower(int powerIndex) { GivePlayerPower(PlayerNumber(), powerIndex); }
+    internal void GivePlayerPower(int id, int powerIndex) { SetPlayerPowerTics(id, powerIndex, BCSUtils::INT_MAX); }
+
+    internal void TakePower(int powerIndex) { TakePlayerPower(PlayerNumber(), powerIndex); }
+    internal void TakePlayerPower(int id, int powerIndex)
+    {
+        BCSUtils::SetActorInventory(Identity::GetTid(id), GetItemName(powerIndex), 0);
+        RecalculatePlayerPowers(id);
+    }
+
+    internal void AddPowerTics(int powerIndex, int tics) { AddPlayerPowerTics(PlayerNumber(), powerIndex, tics); }
+    internal void AddPlayerPowerTics(int id, int powerIndex, int tics)
+	{
+        int ticsLeft = GetPlayerPowerTicsLeft(id, powerIndex);
+        SetPlayerPowerTics(id, powerIndex, ticsLeft + tics);
+	}
+
+    internal void SetPowerTics(int powerIndex, int tics) { SetPlayerPowerTics(PlayerNumber(), powerIndex, tics); }
+    internal void SetPlayerPowerTics(int id, int powerIndex, int tics)
+	{
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+
+        // Min / Max tics
+        tics = BCSUtils::Clamp(tics, 0, context.MaxTics);
+
+        // Ensure we don't underflow or overflow the timestamp in the clamp.
+        int timer = Utils::GetSynchronizedTimer();
+        tics = BCSUtils::Min(tics, BCSUtils::INT_MAX - timer);
+
+        int timeStamp = timer + tics;
+        BCSUtils::SetActorInventory(Identity::GetTid(id), GetItemName(powerIndex), timeStamp);
+        RecalculatePlayerPowers(id);
+
+        Logger::LogDebug(LogSource, "Power updated for player " + BCSUtils::PlayerName(id) + ". Power \cd" + GetPowerIndexAsString(powerIndex) + "\cj now has \cd" + str(tics) + " \cjtics left.");
+	}
+    
+    internal int GetPowerTicsLeft(int powerIndex) { return GetPlayerPowerTicsLeft(PlayerNumber(), powerIndex); }
+    internal int GetPlayerPowerTicsLeft(int id, int powerIndex)
+	{
+        int timeStamp = CheckActorInventory(Identity::GetTid(id), GetItemName(powerIndex));
+        int tics = BCSUtils::Max(timeStamp - Utils::GetSynchronizedTimer(), 0);
+        return tics;
+	}
+    
+    internal bool GetHasPower(int powerIndex) { return GetPowerTicsLeft(powerIndex) > 0; }
+    internal bool GetPlayerHasPower(int id, int powerIndex)
+	{
+        // Note we don't use `GetPlayerPowerTicsLeft` here as this truly indicates if we have the power set
+        // (and also makes it useful for checking for expired powers).
+        return CheckActorInventory(Identity::GetTid(id), GetItemName(powerIndex)) > 0;
+	}
+
+    internal str GetPowerHudGraphic(int powerIndex) { return GetPlayerPowerHudGraphic(PlayerNumber(), powerIndex); }
+    internal str GetPlayerPowerHudGraphic(int id, int powerIndex)
+	{
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        return context.HudGraphic;
+	}
+
+    internal str GetItemName(int index)
+    {
+        return BCSUtils::StrReplace(POWER_ACTOR_BASE, "{0}", str(index));
+    }
+
+    internal str GetPowerIndexAsString(int powerIndex)
+    {
+        static str collection[] = {
+            "fire burning", "acid burning", "sprinting",
+            "panicking", "caffeine", "zombie protection",
+            "human immunity", "human speed reward", "human weapon upgrade reward",
+            "zombie speed reward", "zombie jump reward", "zombie vulnerability reward" };
+
+        // No known type, return custom and the index.
+        if (powerIndex < 0 || powerIndex >= lengthof(collection))
+            return "Custom (" + str(powerIndex) + ")";
+
+        return collection[powerIndex];
+    }
+}
+
+#undef LogSource

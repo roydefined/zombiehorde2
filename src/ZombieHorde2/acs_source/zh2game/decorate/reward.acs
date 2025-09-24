@@ -1,0 +1,29 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Decorate
+{
+	script "zh2_dec_triggerreward"(raw indexRaw)
+	{
+        int index = (int)indexRaw;
+
+        // Verify the user has the item.
+        // If the user gave a bogus type or doesn't have the item, it is caught here.
+        Reward::RewardItemTypeFlagsT type = Reward::GetRewardItemTypeByIndex(index);
+        str itemName = Reward::ContainerTypeToItemName(type);
+        if ((raw)itemName == 0 || itemName == "")
+        {
+            Logger::LogWarning(LogSource, "Player " + BCSUtils::PlayerName(PlayerNumber()) + " attempted to trigger reward with bad index: " + str(index) + ".");
+            terminate;
+        }
+
+        if (CheckInventory(itemName) == 0)
+        {
+            Logger::LogWarning(LogSource, "Player " + BCSUtils::PlayerName(PlayerNumber()) + " attempted to trigger reward but doesn't have container " + itemName + " in their inventory.");
+            terminate;
+        }
+
+        Reward::GiveReward(type);
+	}
+}

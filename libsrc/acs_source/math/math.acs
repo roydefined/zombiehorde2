@@ -1,0 +1,34 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+#define LogSource "Math"
+
+strict namespace Math
+{
+	fixed FRandom(fixed min, fixed max)
+	{
+		return (fixed)Random((raw)min, (raw)max);
+	}
+
+    void RotateVector3D(fixed x, fixed y, fixed z, fixed angle, fixed pitch)
+	{
+		fixed len = BCSUtils::VectorLength3D(x, y, z);
+
+		BCSUtils::VectorToAngles(x, y, z);
+
+		fixed resultAngle = BCSUtils::r1 + angle,
+			  resultPitch = BCSUtils::r2 + pitch;
+
+		BCSUtils::AnglesToVector(resultAngle, resultPitch);
+		fixed resultDirX = BCSUtils::r1,
+			  resultDirY = BCSUtils::r2,
+			  resultDirZ = BCSUtils::r3;
+
+		BCSUtils::r1 = resultDirX * len;
+		BCSUtils::r2 = resultDirY * len;
+		BCSUtils::r3 = resultDirZ * len;
+	}
+}
+
+#undef LogSource

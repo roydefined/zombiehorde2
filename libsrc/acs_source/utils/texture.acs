@@ -1,0 +1,22 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+strict namespace Utils
+{
+	// Returns the index of where the texture name meets its frame.
+	// Primary use is for the footstep behaviour, and to determine the range of textures.
+	internal int GetFrameCutoffPoint(str texture)
+	{
+		// From right to left, we continue checking digits until a non-digit was encountered.
+		int i;
+		for (i = StrLen(texture) - 1; i >= 0; --i)
+		{
+			if (!BCSUtils::IsDigit(texture[i]))
+				break;
+		}
+
+		// Note, by design if no frame was found `i` will be -1.
+		return i;
+	}
+}

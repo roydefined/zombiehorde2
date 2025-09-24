@@ -1,0 +1,76 @@
+actor ZH2WeaponHandgunSpawn : ZH2WeaponSpawn 11009
+{
+	scale 0.8
+	inventory.pickupmessage "Handgun"
+	tag "Handgun"
+	
+	states
+	{
+		Spawn:
+			PS1D A -1
+			
+		Pickup:
+			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, "PickupSuccess")
+			stop
+		PickupSuccess:
+			TNT1 A 0 A_GiveInventory("ZH2WeaponHandgun", 1)
+			stop
+	}
+}
+
+Actor ZH2WeaponHandgun : ZH2Weapon
+{
+	tag "Handgun"
+	weapon.PreferredSkin "Handgun"
+	
+	weapon.SlotNumber 2
+	weapon.Kickback 120
+	
+	weapon.AmmoUse 0
+	weapon.AmmoGive 0
+	//weapon.AmmoType "Clip"
+
+	+WEAPON.NOAUTOFIRE
+
+	states
+	{
+		Ready:
+			PS1S G 1 A_WeaponReady
+			loop
+		
+		Deselect:
+			PS1S HIJKLM 1
+			TNT1 A 0 A_Lower
+			wait
+		
+		Select:
+			TNT1 A 0 A_Raise
+			TNT1 A 0 A_WeaponReady
+			PS1S ABCDEF 1
+			goto Ready
+
+		Fire:
+			TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
+			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
+			
+			TNT1 A 0 Radius_Quake(1, 6, 0, 1, 0)
+			TNT1 A 0 A_AlertMonsters
+			TNT1 A 0 A_FireCustomMissile("ZH2PistolCase", 5, 0, 2, -1)
+			TNT1 A 0 A_PlaySound("weapons/pistol/FIRE", CHAN_WEAPON)
+			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
+			TNT1 A 0 A_FireCustomMissile("ZH2WeaponHandgunSmoke", 0, false, 0)
+			TNT1 A 0 A_FireBullets (5.0, 3.0, -1, 5, "ZH2WeaponBulletPuff")
+			PS1F A 1 bright A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+			TNT1 A 0 A_SetPitch(pitch-1.0)
+			PS1F B 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+			TNT1 A 0 A_SetPitch(pitch+0.5)
+			PS1F C 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+			TNT1 A 0 A_SetPitch(pitch+0.5)
+			PS1F DEF 2 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+			TNT1 A 0 A_ReFire("Fire.Rest")
+			
+			TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
+			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
+			goto Ready
+	}
+}

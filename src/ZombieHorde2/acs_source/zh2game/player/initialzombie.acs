@@ -1,0 +1,93 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal void SetInitialZombie(bool set) { SetPlayerInitialZombie(PlayerNumber(), set); }
+    internal void SetPlayerInitialZombie(int id, bool set)
+    {
+        if (!Identity::IsValidID(id))
+        {
+            Logger::LogError(LogSource, "Unable to set player as initial zombie. Id " + str(id) + " is not valid.");
+            return;
+        }
+
+        if (GetPlayerInitialZombie(id) == set) return;
+        ZH2Game::GameContext.Players[id].IsInitialZombie = set;
+        Logger::LogDebug(LogSource, (set ? "Added" : "Removed") + " (\cd" + str(id) + "\cj) \cd" + BCSUTILS::PlayerName(id) + "\cj as an initial zombie.");
+    }
+
+    internal bool GetInitialZombie() { return GetPlayerInitialZombie(PlayerNumber()); }
+    internal bool GetPlayerInitialZombie(int id)
+    {
+        if (!Identity::IsValidID(id))
+        {
+            Logger::LogError(LogSource, "Unable to get player as initial zombie. Id " + str(id) + " is not valid.");
+            return false;
+        }
+
+        return ZH2Game::GameContext.Players[id].IsInitialZombie;
+    }
+
+    internal void SetPreviouslyInitialZombie(bool set) { SetPlayerPreviouslyInitialZombie(PlayerNumber(), set); }
+    internal void SetPlayerPreviouslyInitialZombie(int id, bool set)
+    {
+        if (!Identity::IsValidID(id))
+        {
+            Logger::LogError(LogSource, "Unable to set player as previously initial zombie. Id " + str(id) + " is not valid.");
+            return;
+        }
+
+        if (GetPlayerPreviouslyInitialZombie(id) == set) return;
+        ZH2Game::PersistingGameContext.Players[id].PreviouslyInitialZombie = set;
+        Logger::LogDebug(LogSource, (set ? "Added" : "Removed") + " (\cd" + str(id) + "\cj) \cd" + BCSUTILS::PlayerName(id) + "\cj as a previously initial zombie.");
+    }
+
+    internal bool GetPreviouslyInitialZombie() { return GetPlayerPreviouslyInitialZombie(PlayerNumber()); }
+    internal bool GetPlayerPreviouslyInitialZombie(int id)
+    {
+        if (!Identity::IsValidID(id))
+        {
+            Logger::LogError(LogSource, "Unable to get player as previously initial zombie. Id " + str(id) + " is not valid.");
+            return false;
+        }
+        
+        return ZH2Game::PersistingGameContext.Players[id].PreviouslyInitialZombie;
+    }
+
+    // Internal because I don't want to expose this when it has `bool` previous.
+    // Use the two methods below instead.
+    internal int InitialsCountInternal(bool previous, bool includeDead = false)
+    {
+        int count;
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // Count optionally allows for including dead players.
+            if (!includeDead
+                && (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(Identity::GetTID(i))))
+            {
+                continue;
+            }
+
+            bool check = previous
+                ? GetPlayerPreviouslyInitialZombie(i)
+                : GetPlayerInitialZombie(i);
+            if (!check) continue;
+
+            count++;
+        }
+        
+        return count;
+    }
+
+    internal int InitialZombieCount(bool includeDead = false)
+    {
+        return InitialsCountInternal(false, includeDead);
+    }
+
+    internal int PreviouslyInitialZombieCount(bool includeDead = false)
+    {
+        return InitialsCountInternal(true, includeDead);
+    }
+}

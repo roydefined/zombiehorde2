@@ -1,0 +1,45 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Resist
+{
+    // Hardcoded limit on resists to avoid too many of them.
+    // Also, the actor based sync approach requires preset cvars which must be extended to match this count.
+    // In the future I will support the ability to allocate these to allow for more, but this requires an extra library.
+    #define MAX_RESISTS 20
+
+    internal struct ResistInitialStateT
+    {
+        str TopReasonLabel, TimeReasonLabel;
+        int Length;
+
+        // Everything below is intialized clientside and helps with setting up the resist logic.
+        bool TopReasonHasColoredTimeToken;
+        bool TimeReasonHasColoredTimeToken;
+        int TopReasonTimeTokenIndex;
+        int TimeReasonTimeTokenIndex;
+    };
+
+    internal struct ResistT
+    {
+        ResistInitialStateT InitialState;
+        int EndingTic;
+        ResistRunStateT RunState;
+
+        // Set to `true` if we defined the resist index.
+        // Clientside this is also checked to ensure we have a valid resist.
+        bool Defined;
+    };
+
+    enum ResistRunStateT : int
+    {
+        STATENONE,
+        STATERUNNING,
+        STATEENDED,
+    };
+    
+    extern int CreateResist(int length, str topReasonLabel = "", str timeReasonLabel = "");
+    extern void CreateResistByIndex(int index, int length, str topReasonLabel = "", str timeReasonLabel = "");
+    extern int StartResistByIndex(int index);
+}

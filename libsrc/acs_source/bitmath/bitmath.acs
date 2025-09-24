@@ -1,0 +1,54 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+#define LogSource "BitMath"
+
+strict namespace BitMath
+{
+	internal int _bitPack1, _bitPack2, _bitPack3, _bitPack4;
+
+	int GetBitPack1() { return _bitPack1; }
+	int GetBitPack2() { return _bitPack2; }
+	int GetBitPack3() { return _bitPack3; }
+	int GetBitPack4() { return _bitPack4; }
+
+    int SetBit(int val, int index, bool value)
+    {
+        return value ? BCSUTILS::SetBit(val, index) : BCSUTILS::ClrBit(val, index);
+    }
+
+	int GetBit64(int val1, int val2, int index)
+	{
+		return index < 32
+			? BCSUTILS::GetBit(val1, index)
+			: BCSUTILS::GetBit(val2, index % 32);
+	}
+
+	int GetBit128(int val1, int val2, int val3, int val4, int index)
+	{
+		return index < 32
+			? BCSUTILS::GetBit(val1, index)
+			:  index < 64
+				? BCSUTILS::GetBit(val2, index - 32)
+				:  index < 96
+					? BCSUTILS::GetBit(val3, index - 64)
+					: BCSUTILS::GetBit(val4, index - 96);
+	}
+
+	void SetBit64(int val1, int val2, int index, bool value)
+	{
+		if (index < 32) _bitPack1 = SetBit(val1, index, value);
+		else 			_bitPack2 = SetBit(val2, index - 32, value);
+	}
+
+	void SetBit128(int val1, int val2, int val3, int val4, int index, bool value)
+	{
+		if (index < 32)		 _bitPack1 = SetBit(val1, index, value);
+		else if (index < 64) _bitPack2 = SetBit(val2, index - 32, value);
+		else if (index < 96) _bitPack3 = SetBit(val3, index - 64, value);
+		else				 _bitPack4 = SetBit(val4, index - 96, value);
+	}
+}
+
+#undef LogSource

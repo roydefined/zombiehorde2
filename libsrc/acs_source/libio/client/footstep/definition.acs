@@ -1,0 +1,251 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace LibIO
+{
+    internal bool ParseStepDefinitions(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "stepdefinitions")) return false;
+        
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+        
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseStepDefinition(handle, symbol))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing footstep sound definition: '" + symbol + "'.");
+            return false;
+        }
+        
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+        return true;
+    }
+
+    internal bool ParseStepDefinition(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "surface"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for footstep surface definition: '" + Tokenizer::GetSymbol(handle) + "'. Symbol should be of type symbol or string.");
+            return false;
+        }
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        str surface = Tokenizer::GetSymbol(handle);
+        str surfaceRange = "";
+
+        Tokenizer::Next(handle);
+
+        // We can get either left brace or the `to` symbol here.
+        // Parse `to` and then the range, proceeding with the rest.
+        if (BCSUTILS::StrIEquals(Tokenizer::GetSymbol(handle), "to"))
+        {
+            Tokenizer::Next(handle);
+            surfaceRange = Tokenizer::GetSymbol(handle);
+            Tokenizer::Next(handle);
+        }
+
+        if (!Tokenizer::ExpectChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // We check for capacity here now that we got to the body.
+        // No more room for more definitions. Log a warning and skip the remaining body.
+        int count = ZH2Lib::PersistingLibContext.StepContext.Count;
+        if (count >= MAX_STEP_DEFINITIONS)
+        {
+            Logger::LogWarning(LogSource, "The maximum number of configurable footstep definitions was reached (" + str(count) + ").");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseStepLiquid(handle, symbol)
+                || ParseStepSound(handle, symbol)
+                || ParseStepVolume(handle, symbol)
+                || ParseStepTerrainActor(handle, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing footstep surface definition " + surface + ": '" + symbol + "'.");
+            return false;
+        }
+            
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Footstep::StepContextT global:PERSISTINGLIBCONTEXTINDEX& context = ZH2Lib::PersistingLibContext.StepContext.Collection[count];
+
+        // Check if we have the sound, which is required.
+        // If not, we don't finish this parse.
+        if ((raw)context.Sound == 0 || context.Sound == "")
+        {
+            Logger::LogWarning(LogSource, "Failed to parse surface " + surface + ". The sound is not defined.");
+            return true;
+        }
+
+        // Eithere the volumne was not defined of it was set to 0.
+        // Default to 1.0
+        if (context.Volume == 0.0)
+            context.Volume = 1.0;
+
+        // Parse the possible range if we defined it.
+        // In case of failure we ignore the rest and just quit attempting to parse this one.
+        if (surfaceRange != "")
+        {
+            int surfaceSplitIndex = Utils::GetFrameCutoffPoint(surface);
+            if (surfaceSplitIndex == -1)
+            {
+                Logger::LogWarning(LogSource, "Surface range " + surfaceRange + " was defined but surface " + surface + " has no defined range.");
+                return true;
+            }
+            
+            int surfaceRangeSplitIndex = Utils::GetFrameCutoffPoint(surfaceRange);
+            if (surfaceRangeSplitIndex == -1)
+            {
+                Logger::LogWarning(LogSource, "Surface range " + surfaceRange + " has no defined range for surface " + surface + ".");
+                return true;
+            }
+
+            // Now split, verify the texture base names also match, then add the ranges.
+            str surfaceFrameStr = StrRight(surface, StrLen(surface) - surfaceSplitIndex - 1);
+            surface = StrLeft(surface, surfaceSplitIndex + 1);
+
+            str surfaceRangeFrameStr = StrRight(surfaceRange, StrLen(surfaceRange) - surfaceRangeSplitIndex - 1);
+            surfaceRange = StrLeft(surfaceRange, surfaceRangeSplitIndex + 1);
+
+            if (surface != surfaceRange)
+            {
+                Logger::LogWarning(LogSource, "Surface range base " + surfaceRange + " does not match surface base " + surface + ". Frameless surface names must match.");
+                return true;
+            }
+
+            int surfaceFrame = BCSUtils::Atoi(surfaceFrameStr);
+            if (BCSUTILS::r1 != BCSUTILS::PARSENUMBER_SUCCESS)
+            {
+                Logger::LogWarning(LogSource, "Surface frame " + surfaceFrameStr + " of surface base " + surface + " is not a valid integer.");
+                return true;
+            }
+
+            int surfaceRangeFrame = BCSUtils::Atoi(surfaceRangeFrameStr);
+            if (BCSUTILS::r1 != BCSUTILS::PARSENUMBER_SUCCESS)
+            {
+                Logger::LogWarning(LogSource, "Surface range frame " + surfaceRangeFrameStr + " of surface range base " + surfaceRange + " is not a valid integer.");
+                return true;
+            }
+
+            context.SurfaceFrameStart = surfaceFrame;
+            context.SurfaceFrameEnd = surfaceRangeFrame;
+            context.HasRange = true;
+        }
+
+        // Finish up this definition.
+        context.Surface = surface;
+        ZH2Lib::PersistingLibContext.StepContext.Count++;
+
+        // TODO: Log more
+        Logger::LogDebug(LogSource, "Parsed new surface: \cd" + surface + "\cj.");
+        return true;
+    }
+
+    internal bool ParseStepLiquid(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "liquid"))
+            return false;
+
+        Footstep::StepContextT global:PERSISTINGLIBCONTEXTINDEX& context = ZH2Lib::PersistingLibContext.StepContext.Collection[ZH2Lib::PersistingLibContext.StepContext.Count];
+        context.Liquid = true;
+
+        Logger::LogDebug(LogSource, "Parsed step is liquid.");
+        return true;
+    }
+
+    internal bool ParseStepSound(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "sound"))
+            return false;
+        
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for sound of footstep surface definition. Symbol should be of type symbol or string.");
+            return false;
+        }
+
+        Footstep::StepContextT global:PERSISTINGLIBCONTEXTINDEX& context = ZH2Lib::PersistingLibContext.StepContext.Collection[ZH2Lib::PersistingLibContext.StepContext.Count];
+        context.Sound = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LogSource, "Parsed step sound: \cd" + context.Sound + "\cj.");
+        return true;
+    }
+
+    internal bool ParseStepVolume(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "volume"))
+            return false;
+        
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseFixedValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "Failed to parse sound volume of footstep surface definition: the given value for the volume is not a correct value. Expected a valid fixed value within bounds.");
+            return false;
+        }
+
+        fixed value = (fixed)Tokenizer::GetParsedValue();
+
+        Footstep::StepContextT global:PERSISTINGLIBCONTEXTINDEX& context = ZH2Lib::PersistingLibContext.StepContext.Collection[ZH2Lib::PersistingLibContext.StepContext.Count];
+        context.Volume = value;
+
+        Logger::LogDebug(LogSource, "Parsed step volume: \cd" + str(context.Volume) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseStepTerrainActor(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "terrainactor"))
+            return false;
+        
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for terrain actor of footstep surface definition. Symbol should be of type symbol or string.");
+            return false;
+        }
+
+        Footstep::StepContextT global:PERSISTINGLIBCONTEXTINDEX& context = ZH2Lib::PersistingLibContext.StepContext.Collection[ZH2Lib::PersistingLibContext.StepContext.Count];
+        context.TerrainActor = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LogSource, "Parsed step terrain actor: \cd" + context.TerrainActor + "\cj.");
+        return true;
+    }
+}

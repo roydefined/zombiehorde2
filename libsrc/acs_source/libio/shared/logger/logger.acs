@@ -1,0 +1,78 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "loglevel.acs"
+
+strict namespace LibIO
+{
+    void ParseLoggerDefClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        if (!ACS_NamedExecute(SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_CLIENTSIDE, 0))
+        {
+            Logger::LogError(LogSource, "Parser for logger def could not be started on the client. Script failed to execute.");
+            return;
+        }
+    }
+
+    void ParseLoggerDefServerside()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+        if (!ACS_NamedExecute(SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_SERVERSIDE, 0))
+        {
+            Logger::LogError(LogSource, "Parser for logger def could not be started on the server. Script failed to execute.");
+            return;
+        }
+    }
+
+    script SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_CLIENTSIDE clientside
+    {
+        if (ZH2Lib::PersistingLibContext.LogContext.IsParsedClientside) terminate;
+        ParseLogDefCore();
+        ZH2Lib::PersistingLibContext.LogContext.IsParsedClientside = true;
+    }
+
+    script SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_SERVERSIDE
+    {
+        if (ZH2Lib::PersistingLibContext.LogContext.IsParsedServerside) terminate;
+        ParseLogDefCore();
+        ZH2Lib::PersistingLibContext.LogContext.IsParsedServerside = true;
+    }
+
+    internal void ParseLogDefCore()
+    {
+        // Recursively load lumps and then parse them.
+        // Should this ever get heavy then it's save to add delays given that the mod has the awaiter implemented.
+        int startIndex = -1;
+        while(true)
+        {
+            startIndex = LumpOpen("logdef", startIndex);
+            if (startIndex == -1) break;
+            if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) == 0) continue;
+            ParseLogDefLump(LumpReadString(startIndex, 0));
+            LumpClose(startIndex);
+        }
+    }
+
+    internal void ParseLogDefLump(str buffer)
+    {
+        int handle = Tokenizer::RentTokenizer(buffer);
+        if (handle == -1) return;
+
+        Tokenizer::Next(handle, false);
+
+        while(Tokenizer::CanRead(handle))
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+             if (ParseLogLevels(handle, symbol))
+                continue;
+            
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing log definitions: '" + symbol + "'.");
+            Tokenizer::ReturnTokenizer(handle);
+            return;
+        }
+        
+        Tokenizer::ReturnTokenizer(handle);
+    }
+}

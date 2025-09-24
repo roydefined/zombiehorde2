@@ -1,0 +1,48 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Map
+{
+    internal int GetCurrentParsedMapRotationPosition()
+    {
+        return GetParsedMapRotationPosition(GetCurrentMapHandle());
+    }
+
+    internal int GetParsedMapRotationPosition(int handle)
+    {
+        int size = GetMapRotationSize();
+        str lumpName = GetMapLump(handle);
+
+        // Note: the list starts at 1; position 0 is the current map.
+        for (int i = 1; i <= size; i++)
+        {
+            if (GetMapRotationInfo(i, MAPROTATION_LUMPNAME) == lumpName)
+                return i;
+        }
+
+        return -1;
+    }
+
+    internal int GetCurrentParsedMapPosition()
+    {
+        return GetParsedMapPosition(GetMapPosition(MAPPOSITION_CURRENT));
+    }
+
+    internal int GetNextParsedMapPosition()
+    {
+        return GetParsedMapPosition(GetMapPosition(MAPPOSITION_NEXT));
+    }
+
+    internal int GetParsedMapPosition(int positionHandle)
+    {
+        int length = ZH2Game::PersistingGameContext.MapBaseCollection.Count;
+        for (int i = 0; i < length; ++i)
+        {
+            if (ZH2Game::PersistingGameContext.MapBaseCollection.Collection[i].MapLump == GetMapRotationInfo(positionHandle, MAPROTATION_LUMPNAME))
+                return i;
+        }
+
+        return -1;
+    }
+}

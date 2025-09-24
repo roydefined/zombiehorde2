@@ -1,0 +1,122 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LogSource "Item"
+
+#include "inventory.acs"
+
+strict namespace Item
+{
+    internal void Tic()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        
+        // Refresh general owned items.
+        ZH2Game::GameContext.OwnedItemCount = 0;
+        for (int i = 0; i < GetItemCollectionSize(); ++i)
+        {
+            str name = GetItemName(i);
+            if (CheckInventory(name) == 0)
+                continue;
+
+            ZH2Game::GameContext.OwnedItems[ZH2Game::GameContext.OwnedItemCount++] = i;
+        }
+
+        // Refresh the owned inventory items.
+        ZH2Game::GameContext.OwnedInventoryCount = 0;
+        for (int i = 0; i < GetInventoryCollectionSize(); ++i)
+        {
+            str name = GetItemName(GetInventoryIndex(i));
+            if (CheckInventory(name) == 0)
+                continue;
+
+            ZH2Game::GameContext.OwnedInventoryItems[ZH2Game::GameContext.OwnedInventoryCount++] = i;
+        }
+
+        // Refresh owned keys.
+        ZH2Game::GameContext.OwnedKeyCount = 0;
+        for (int i = 0; i < GetKeyCollectionSize(); ++i)
+        {
+            str name = GetItemName(GetKeyIndex(i));
+            if (CheckInventory(name) == 0)
+                continue;
+
+            ZH2Game::GameContext.OwnedKeyItems[ZH2Game::GameContext.OwnedKeyCount++] = i;
+        }
+
+        // Refresh owned weapons.
+        ZH2Game::GameContext.OwnedWeaponCount = 0;
+        for (int i = 0; i < GetWeaponCollectionSize(); ++i)
+        {
+            str name = GetItemName(GetWeaponIndex(i));
+            if (CheckInventory(name) == 0)
+                continue;
+
+            ZH2Game::GameContext.OwnedWeaponItems[ZH2Game::GameContext.OwnedWeaponCount++] = i;
+        }
+
+        // Forget clamping if we have no items in general.
+        // This doesn't change anything but it does get rid of constant flipping of `_currentInventoryIndex`.
+        // I noticed it keeps switching between -1 and 0 otherwise.
+        if (GetClientOwnedInventorySize() == 0)
+        {
+            _currentInventoryIndex = 0;
+            return;
+        }
+
+        // Ensure the current inventory index is within bounds.
+        _currentInventoryIndex = BCSUtils::Clamp(_currentInventoryIndex, 0, GetClientOwnedInventorySize() - 1);
+    }
+
+    internal int GetItemIndexByName(str name)
+    {
+        for (int i = 0; i < GetItemCollectionSize(); ++i)
+        {
+            if (BCSUtils::StrIEquals(GetItemName(i), name))
+                return i;
+        }
+
+        return -1;
+    }
+
+    internal int GetItemCollectionSize() { return ZH2Game::PersistingGameContext.ItemCollection.Size; }
+    internal str GetItemName(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].Name; }
+    internal ItemTypeT GetItemType(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].Type; }
+    internal bool GetItemHumanOwned(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].HumanOwned; }
+    internal bool GetItemZombieOwned(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].ZombieOwned; }
+    internal int GetItemGiveOnSpawnCount(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].GiveOnSpawnCount; }
+    internal int GetItemGiveOnHumanCount(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].GiveOnHumanCount; }
+    internal int GetItemGiveOnZombieCount(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].GiveOnZombieCount; }
+    internal str GetItemGraphic(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].Graphic; }
+    internal str GetItemLabel(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].Label; }
+    internal str GetItemDescription(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].Description; }
+    internal int GetItemBloodSeverity(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].BloodSeverity; }
+    internal int GetItemBloodTics(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].BloodTics; }
+    internal bool GetItemTakeOnPanic(int index) { return ZH2Game::PersistingGameContext.ItemCollection.Collection[index].TakeOnPanic; }
+
+    internal int GetWeaponCollectionSize() { return ZH2Game::PersistingGameContext.ItemCollection.WeaponCollectionSize; }
+    internal int GetWeaponIndex(int subIndex) { return ZH2Game::PersistingGameContext.ItemCollection.WeaponCollection[subIndex]; }
+    
+    internal int GetInventoryCollectionSize() { return ZH2Game::PersistingGameContext.ItemCollection.InventoryCollectionSize; }
+    internal int GetInventoryIndex(int subIndex) { return ZH2Game::PersistingGameContext.ItemCollection.InventoryCollection[subIndex]; }
+    
+    internal int GetKeyCollectionSize() { return ZH2Game::PersistingGameContext.ItemCollection.KeyCollectionSize; }
+    internal int GetKeyIndex(int subIndex) { return ZH2Game::PersistingGameContext.ItemCollection.KeyCollection[subIndex]; }
+
+    // Owned items, clientside.
+    // Also split based on type.
+    internal int GetClientOwnedItemsSize() { return ZH2Game::GameContext.OwnedItemCount; }
+    internal int GetClientOwnedItemsIndex(int subIndex) { return ZH2Game::GameContext.OwnedItems[subIndex]; }
+
+    internal int GetClientOwnedInventorySize() { return ZH2Game::GameContext.OwnedInventoryCount; }
+    internal int GetClientOwnedInventoryIndex(int subIndex) { return ZH2Game::GameContext.OwnedInventoryItems[subIndex]; }
+
+    internal int GetClientOwnedKeySize() { return ZH2Game::GameContext.OwnedKeyCount; }
+    internal int GetClientOwnedKeyIndex(int subIndex) { return ZH2Game::GameContext.OwnedKeyItems[subIndex]; }
+
+    internal int GetClientOwnedWeaponSize() { return ZH2Game::GameContext.OwnedWeaponCount; }
+    internal int GetClientOwnedWeaponIndex(int subIndex) { return ZH2Game::GameContext.OwnedWeaponItems[subIndex]; }
+}
+
+#undef LogSource

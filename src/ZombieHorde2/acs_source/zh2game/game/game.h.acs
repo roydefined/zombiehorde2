@@ -1,0 +1,79 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define CUSTOMDATA_ZOMBIEKILLS "ZombieKills"
+#define CUSTOMDATA_HUMANKILLS "HumanKills"
+#define CUSTOMDATA_INFECTS "Infects"
+
+// Note, if we were to increase this value past 3 we do need to support the extra bit in the sync.
+// Currently just 2 bits fit this data, so if we extend to up to 7 we need 3 bits.
+#define MAX_VOTABLEMAPS 3
+
+// The zombie teleports could be unlimited but we need some limit here.
+// By default the initial spawn spots should really only be 5 since 5 initials can be chosen.
+// However, we have a cvar to change this limit, and we can have like 32 initials now.
+// Better to adjust code to support this than force people to add 32 spawns.
+#define MAX_INITIALSPAWNSPOTS 50
+#define MAX_ZOMBIETELEPORTSPOTS 100
+
+// Tips, maximum count and how long we want to show tips for.
+#define MAX_TIPS 100
+#define TIP_LENGTH 35 * 10
+
+#define ABILITY_COUNT 2
+
+strict namespace Game
+{
+    internal enum WinningSpecieT : int
+    {
+        SPECIENONE,
+        SPECIETIE,
+        SPECIEHUMAN,
+        SPECIEZOMBIE
+    };
+
+    internal enum EndReasonT : int
+    {
+        REASONNONE,
+        REASONSPECIEWON,
+        REASONHUMANLEFT,
+        REASONZOMBIELEFT,
+        REASONADMINENDED,
+    };
+
+    // Represents the way an infection was triggered, which changes the behaviour.
+    internal enum InfectTypeT : int
+    {
+        INFECT_INITIAL,
+        INFECT_REGULAR,
+        INFECT_ADMIN,
+    };
+
+	enum ZombieAbilityTypeFlagsT : int
+    {
+		ABILITY_NONE,
+        ABILITY_PUSH = 1 << 0,
+        ABILITY_SPIT = 1 << 1,
+    };
+
+    internal struct EndingTypeT
+    {
+        str WinMessagesTop[2],
+            WinMessagesBottom[2];
+        str Track;
+    };
+
+    struct TipCollectionContextT
+    {
+        str Collection[MAX_TIPS];
+        int Count;
+    };
+    
+    extern void KillUnsafePlayers();
+
+    extern void SetIsSafe(bool safe);
+    extern void SetPlayerIsSafe(int id, bool safe, bool broadcast = true);
+    extern bool GetIsSafe();
+    extern bool GetPlayerIsSafe(int id);
+}

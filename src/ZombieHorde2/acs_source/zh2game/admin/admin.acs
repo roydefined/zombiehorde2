@@ -1,0 +1,52 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+// General logic for setting somebody as an admin and persisting their state.
+
+#define LogSource "Admin"
+
+#include "rcon.acs"
+#include "hudactions.acs"
+
+strict namespace Admin
+{
+    internal bool GetAdmin() { return GetPlayerAdmin(PlayerNumber()); }
+    internal bool GetPlayerAdmin(int id)
+    {
+        VALIDATE_ID_VALID_FUNCTION_RETURN(id, false);
+        return ZH2Game::PersistingGameContext.Players[id].IsAdmin;
+    }
+
+    internal void SetAdmin(bool set) { SetPlayerAdmin(PlayerNumber(), set); }
+    internal void SetPlayerAdmin(int id, bool set)
+    {
+        VALIDATE_ID_VALID_FUNCTION(id);
+
+        if (!BCSUTILS::PlayerIsConnected(id))
+        {
+            Logger::LogError(LogSource, "Failed to set admin on player. Player id " + str(id) + " is not connected.");
+            return;
+        }
+
+        ZH2Game::PersistingGameContext.Players[id].IsAdmin = set;
+        Logger::LogDebug(LogSource, "Player (\cd" + str(id) + "\cj) " + BCSUTILS::PlayerName(id) + " has been \cd" + (set ? "added" : "removed") + "\cj as an admin.");
+    }
+
+    // General broadcast function to inform everybody somebody was set/unset as an admin.
+    internal void BroadcastAdmin(int id, bool set)
+    {
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            Append(s:"Player (\cd" + str(id) + "\cj) has been \cd" + (set ? "added" : "removed") + "\cj as an admin");
+            if (PlayerNumber() == -1) Append(s:".");
+            else Append(s:" by (\cd" + str(id) + "\cj) " + BCSUTILS::PlayerName(id) + ".");
+        }
+
+        Logger::LogTo("\cfYou have been " + (set ? "added" : "removed") + " as an admin player!", id);
+        Logger::LogExcept(logMessage, id);
+    }
+}
+
+#undef LogSource

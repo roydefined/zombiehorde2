@@ -1,0 +1,123 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Sync
+{
+    #define SYNC_CATEGORY "TIMER"
+
+    internal void SyncTimersActor()
+    {
+        int syncId = SYNC_ROUNDTIMERS;
+        RoundTimer::RoundTimerContextT[]& timers = ZH2Game::GameContext.MapDetails.Timers;
+
+        Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Start writing round timer packs through actors. Sync id: " + str(syncId) + ". Length: " + str(lengthof(timers)) + "."));
+
+        // The second value represents the length of the collection, so the client can also allocate accordingly.
+        BCSUtils::SyncVariable(syncId++, lengthof(timers));
+
+        // Active round timer.
+        BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex);
+
+        // For logging
+        int time = Timer();
+
+        for (int i = 0; i < lengthof(timers); ++i)
+        {
+            // Skip if undefined.
+            BCSUtils::SyncVariable(syncId++, int(timers[i].Defined));
+            if (!timers[i].Defined)
+            {
+                syncId += 6;
+                continue;
+            }
+
+            BCSUtils::SyncVariable(syncId++, timers[i].InitialState.Length);
+            BCSUtils::SyncVariable(syncId++, timers[i].InitialState.MaximumTime);
+            BCSUtils::SyncVariable(syncId++, timers[i].InitialState.Flags);
+
+            BCSUtils::SyncVariable(syncId++, timers[i].EndingTic);
+            BCSUtils::SyncVariable(syncId++, timers[i].PauseTic);
+            BCSUtils::SyncVariable(syncId++, timers[i].Flags);
+
+            // TODO: Use some sort of string formatting function.
+            SetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_TIMER_LABEL_TEMPLATE, "%n", str(i)), timers[i].InitialState.Label);
+
+            str timerName = RoundTimer::GetTimerIndexAsString(i);
+            int lengthLeft = timers[i].EndingTic != - 1 ? timers[i].EndingTic - time : 0;
+            Logger::LogDebug(LogSource,
+                FormatLog(SYNC_CATEGORY,
+                    "Timer \cd" + timerName + "\cj. Length: \cd" + str(timers[i].InitialState.Length) + "\cj. End tic: \cd" + str(timers[i].EndingTic) + "\cj (\cd" + str(lengthLeft) + "\cj tics left)."));
+        }
+
+        Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Finished writing round timer packs through actors."));
+    }
+
+    internal void CallSyncTimersActorOnClients()
+    {
+        if (!ACS_NamedExecuteAlways("zh2_internal_sync_timers_actor_clientside", 0))
+            Logger::LogError(LogSource, FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for timers."));
+    }
+
+    script "zh2_internal_sync_timers_actor_clientside" clientside
+    {
+        SyncTimersActorClientside();
+    }
+
+    internal void SyncTimersActorClientside()
+    {
+        int syncId = SYNC_ROUNDTIMERS;
+        Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Start reading round timer packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        RoundTimer::RoundTimerContextT[]& timers = ZH2Game::GameContext.MapDetails.Timers;
+        int collectionLength = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        
+        int index = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex = index;
+
+        // Note we don't check the target index here since the server should supply a valid value.
+
+        // Reallocate if needed.
+        // NOTE: Commented and unused until we get to allocating these again.
+        // if (collectionLength > lengthof(timers))
+        // {
+        //     static RoundTimer::RoundTimerContextT lengthdef;
+        //     Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Reallocating to size of \cd" + str(collectionLength) + "\cj from sync packet."));
+        //     ZH2Game::GameContext.MapDetails.Timers = BCS::ArrResize(timers, collectionLength, lengthof(lengthdef));
+        // }
+        
+        // For logging
+        int time = Utils::GetSynchronizedTimer();
+
+        for (int i = 0; i < collectionLength; ++i)
+        {
+            timers[i].Defined = BCSUtils::GetSyncVarDefault(syncId++, -1);
+            if (!timers[i].Defined)
+            {
+                syncId += 6;
+                continue;
+            }
+
+            timers[i].InitialState.Length = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            timers[i].InitialState.MaximumTime = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            timers[i].InitialState.Flags = BCSUtils::GetSyncVarDefault(syncId++, 0);
+
+            timers[i].EndingTic = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            timers[i].PauseTic = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            timers[i].Flags = BCSUtils::GetSyncVarDefault(syncId++, 0);
+
+            // TODO: Use some sort of string formatting function.
+            timers[i].InitialState.Label = GetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_TIMER_LABEL_TEMPLATE, "%n", str(i)));
+
+            str timerName = RoundTimer::GetTimerIndexAsString(i);
+            int lengthLeft = timers[i].EndingTic != - 1 ? timers[i].EndingTic - time : 0;
+            Logger::LogDebug(LogSource,
+                FormatLog(SYNC_CATEGORY,
+                    "Timer \cd" + timerName + "\cj. Length: \cd" + str(timers[i].InitialState.Length) + "\cj. End tic: \cd" + str(timers[i].EndingTic) + "\cj (\cd" + str(lengthLeft) + "\cj tics left)."));
+        }
+        
+        Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Synced timers to client."));
+    }
+
+    #undef SYNC_CATEGORY
+}

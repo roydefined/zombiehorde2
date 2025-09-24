@@ -1,0 +1,163 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    /* SELECTED ABILITY */
+
+    internal int GetSelectedAbilityIndex()
+    {
+        return ZH2Game::GameContext.SelectedZombieAbilityIndex;
+    }
+
+    internal void SetSelectedAbilityIndex(int index)
+    {
+        ZH2Game::GameContext.SelectedZombieAbilityIndex = index;
+    }
+
+    internal void GiveDoZombieAbilityItemByIndex(int index)
+    {
+        GivePlayerDoZombieAbilityItemByIndex(PlayerNumber(), index);
+    }
+
+    internal void GivePlayerDoZombieAbilityItemByIndex(int id, int index)
+    {
+        // The item is one-indexed, where 0 means we are not queueing an ability,
+        GiveActorInventory(Identity::GetTid(id), ZOMBIEABILITY_DO_ABILITY_ITEM, index + 1);
+    }
+
+    internal bool HasDoZombieAbilityItem()
+    {
+        return HasPlayerDoZombieAbilityItem(PlayerNumber());
+    }
+
+    internal bool HasPlayerDoZombieAbilityItem(int id)
+    {
+        return CheckActorInventory(Identity::GetTid(id), ZOMBIEABILITY_DO_ABILITY_ITEM) > 0;
+    }
+
+    /* DEFAULT ABILITY FLAGS */
+    internal int GetDefaultZombieAbilityFlags()
+    {
+        return ZH2Game::GameContext.DefaultZombieAbilityFlags;
+    }
+
+    internal void SetDefaultZombieAbilityFlags(int flags)
+    {
+        ZH2Game::GameContext.DefaultZombieAbilityFlags = flags;
+    }
+
+    internal void AddDefaultZombieAbility(ZombieAbilityTypeFlagsT type)
+    {
+        ZH2Game::GameContext.DefaultZombieAbilityFlags |= type;
+    }
+
+    internal void RemoveDefaultZombieAbility(ZombieAbilityTypeFlagsT type)
+    {
+        ZH2Game::GameContext.DefaultZombieAbilityFlags &= ~type;
+    }
+
+    internal bool GetDefaultHasZombieAbility(ZombieAbilityTypeFlagsT type)
+    {
+        return (ZH2Game::GameContext.DefaultZombieAbilityFlags & type) != 0;
+    }
+
+    /* ABILITY FLAGS */
+
+    internal int GetZombieAbilityFlags() { return GetPlayerZombieAbilityFlags(PlayerNumber()); }
+    internal int GetPlayerZombieAbilityFlags(int id)
+    {
+        return ZH2Game::GameContext.Players[id].ZombieAbilityFlags;
+    }
+
+    internal void SetZombieAbilityFlags(int flags) { SetPlayerZombieAbilityFlags(PlayerNumber(), flags); }
+    internal void SetPlayerZombieAbilityFlags(int id, int flags)
+    {
+        ZH2Game::GameContext.Players[id].ZombieAbilityFlags = flags;
+    }
+
+    internal void AddZombieAbility(ZombieAbilityTypeFlagsT type) { AddPlayerZombieAbility(PlayerNumber(), type); }
+    internal void AddPlayerZombieAbility(int id, ZombieAbilityTypeFlagsT type)
+    {
+        ZH2Game::GameContext.Players[id].ZombieAbilityFlags |= type;
+    }
+
+    internal void RemoveZombieAbility(ZombieAbilityTypeFlagsT type) { RemovePlayerZombieAbility(PlayerNumber(), type); }
+    internal void RemovePlayerZombieAbility(int id, ZombieAbilityTypeFlagsT type)
+    {
+        ZH2Game::GameContext.Players[id].ZombieAbilityFlags &= ~type;
+    }
+
+    internal bool HasZombieAbility(ZombieAbilityTypeFlagsT type) { return GetPlayerHasZombieAbility(PlayerNumber(), type); }
+    internal bool GetPlayerHasZombieAbility(int id, ZombieAbilityTypeFlagsT type)
+    {
+        return (ZH2Game::GameContext.Players[id].ZombieAbilityFlags & type) != 0;
+    }
+
+    /* COOLDOWNS */
+
+    internal void GiveZombieAbilityCooldownByIndex(int index) { GivePlayerZombieAbilityCooldownByIndex(PlayerNumber(), index); }
+    internal void GivePlayerZombieAbilityCooldownByIndex(int id, int index) { SetPlayerZombieAbilityCooldownTicsByIndex(id, index, BCSUtils::INT_MAX); }
+
+    internal void TakeZombieAbilityCooldownByIndex(int index) { TakePlayerZombieAbilityCooldownByIndex(PlayerNumber(), index); }
+    internal void TakePlayerZombieAbilityCooldownByIndex(int id, int index)
+    {
+        BCSUtils::SetActorInventory(Identity::GetTid(id), GetZombieAbilityCooldownTimestampNameByIndex(index), 0);
+    }
+
+    internal void AddZombieAbilityCooldownTicsByIndex(int index, int tics) { AddPlayerZombieAbilityCooldownTicsByIndex(PlayerNumber(), index, tics); }
+    internal void AddPlayerZombieAbilityCooldownTicsByIndex(int id, int index, int tics)
+	{
+        int ticsLeft = GetPlayerZombieAbilityCooldownTicsLeftByIndex(id, index);
+        SetPlayerZombieAbilityCooldownTicsByIndex(id, index, ticsLeft + tics);
+	}
+
+    internal void SetZombieAbilityCooldownTicsByIndex(int id, int index, int tics) { SetPlayerZombieAbilityCooldownTicsByIndex(PlayerNumber(), index, tics); }
+    internal void SetPlayerZombieAbilityCooldownTicsByIndex(int id, int index, int tics)
+	{
+        // Min / Max tics
+        tics = BCSUtils::Clamp(tics, 0, GetZombieAbilityCooldownMaxTicsByIndex(index));
+
+        // Ensure we don't underflow or overflow the timestamp in the clamp.
+        int timer = Utils::GetSynchronizedTimer();
+        tics = BCSUtils::Min(tics, BCSUtils::INT_MAX - timer);
+
+        int timeStamp = timer + tics;
+        BCSUtils::SetActorInventory(Identity::GetTid(id), GetZombieAbilityCooldownTimestampNameByIndex(index), timeStamp);
+        Logger::LogDebug(LogSource, "Zombie ability cooldown for player " + BCSUtils::PlayerName(id) + ". Power \cd" + str(index) + "\cj now has \cd" + str(tics) + " \cjtics until it can be used.");
+	}
+    
+    internal int GetZombieAbilityCooldownTicsLeftByIndex(int index) { return GetPlayerZombieAbilityCooldownTicsLeftByIndex(PlayerNumber(), index); }
+    internal int GetPlayerZombieAbilityCooldownTicsLeftByIndex(int id, int index)
+	{
+        int timeStamp = CheckActorInventory(Identity::GetTid(id), GetZombieAbilityCooldownTimestampNameByIndex(index));
+        int tics = BCSUtils::Max(timeStamp - Utils::GetSynchronizedTimer(), 0);
+        return tics;
+	}
+    
+    internal str GetZombieAbilityCooldownTimestampNameByIndex(int index)
+    {
+        return BCSUtils::StrReplace(ZOMBIEABILITY_TIMESTAMP_BASE, "{0}", str(index));
+    }
+
+	internal ZombieAbilityTypeFlagsT GetZombieAbilityItemTypeByIndex(int index)
+    {
+		if (index <= ABILITY_NONE || index > BCSUtils::Flag2Index(ABILITY_SPIT) + 1)
+			return ABILITY_NONE;
+
+        static ZombieAbilityTypeFlagsT collection[] = { ABILITY_PUSH, ABILITY_SPIT };
+        return collection[index - 1];
+    }
+    
+    // TODO: Configurable through a lump
+    internal int GetZombieAbilityCooldownMaxTicsByIndex(int index)
+    {
+        // Fallback should not happen. If it does, a second indicates something is wrong.
+		if (index < 0 || index > BCSUtils::Flag2Index(ABILITY_SPIT))
+			return 35 * 1;
+
+        static int collection[] = { 35 * 10, 35 * 60 };
+        return collection[index];
+    }
+}

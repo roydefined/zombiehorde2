@@ -1,0 +1,133 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "properties.acs"
+
+strict namespace IO
+{
+    internal void ParseMapDefLumps()
+    {
+        if (!ACS_NamedExecute(SCRIPT_PARSE_PERSISTING_MAP_POSITION_DEFS, 0))
+        {
+            Logger::LogError(LogSource, "Parser for map position defs could not be started. Script failed to execute.");
+            return;
+        }
+    }
+
+    script SCRIPT_PARSE_PERSISTING_MAP_POSITION_DEFS
+    {
+        if (ZH2Game::PersistingGameContext.MapBaseCollection.Initialized) terminate;
+
+        Logger::LogDebug(LogSource, "Attempting to find and parse map base data.");
+
+        // Recursively load lumps and then parse them.
+        // Should this ever get heavy then it's save to add delays given that the mod has the awaiter implemented.
+        int startIndex = 0;
+        while(true)
+        {
+            startIndex = LumpOpen(MAPDEFLUMPNAME, startIndex);
+            //Logger::LogDebug(LogSource, "\cd" + MAPDEFLUMPNAME + "\cj index: \cd" + str(startIndex) + "\cj.");
+
+            if (startIndex == -1) break;
+            if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) > 0)
+            {
+                ParseMapLumpPositions(LumpReadString(startIndex, 0), startIndex);
+            }
+            LumpClose(startIndex);
+        }
+
+        Logger::LogDebug(LogSource, "Finished parsing map base data.");
+        ZH2Game::PersistingGameContext.MapBaseCollection.Initialized = true;
+    }
+
+    internal void ParseMapLumpPositions(str buffer, int mapLumpIndex)
+    {
+        // Logger::LogDebug(LogSource, "\cd" + MAPDEFLUMPNAME + "\cj Buffer: \cd" + buffer + "\cj.");
+        
+        int handle = Tokenizer::RentTokenizer(buffer);
+        if (handle == -1) return;
+
+        Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LogSource, "\cd" + MAPDEFLUMPNAME + "\cj start parsing map positions of lump index: \cd" + str(mapLumpIndex) + "\cj.");
+        while(Tokenizer::CanRead(handle))
+        {
+            // Logger::LogDebug(LogSource, "\cd" + MAPDEFLUMPNAME + "\cj symbol: \cd" + Tokenizer::GetSymbol(handle) + "\cj.");
+            if (ParseMapPosition(handle, mapLumpIndex))
+                continue;
+            
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAPDEFLUMPNAME + ": '" + Tokenizer::GetSymbol(handle) + "'.");
+            Tokenizer::ReturnTokenizer(handle);
+            return;
+        }
+
+        Tokenizer::ReturnTokenizer(handle);
+    }
+    
+    internal bool ParseMapPosition(int handle, int lumpIndex)
+    {
+        if (BCSUTILS::StrToLower(Tokenizer::GetSymbol(handle)) != "map") return false;
+        Tokenizer::Next(handle);
+
+        int startOffset = Tokenizer::GetPosition(handle);
+
+        if (!Tokenizer::ExpectToken(handle, Tokenizer::TSYMBOL)) return false;
+        str mapLump = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LogSource, "Start parsing next map: \cd" + mapLump + "\cj.");
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+        
+        Tokenizer::Next(handle);
+        str symbol = Tokenizer::GetSymbol(handle);
+
+        MapBaseCollectionT global:PERSISTINGGAMECONTEXTINDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
+
+        // Fail safe prevents overflowing past the maximum the array can handle.
+        // Depending on how many maps we would still parse this could print multiple messages since we keep coming in here.
+        // We do keep the parse going since this didn't fail.
+        if (mapBaseCollection.Count == lengthof(mapBaseCollection.Collection))
+        {
+            Logger::LogWarning(LogSource, "Maximum parse supported map count of \cd" + str(mapBaseCollection.Count) +" \cjreached. Additional maps won't be included.");
+            
+            while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+                Tokenizer::Next(handle);
+            return true;
+        }
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            symbol = Tokenizer::GetSymbol(handle);
+            if (ParseProperties(handle, symbol))
+                continue;
+
+            if (Tokenizer::ParseBodyAsEmpty(handle, symbol, "events")
+                || Tokenizer::ParseBodyAsEmpty(handle, symbol, "resists"))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAPDEFLUMPNAME + " base data of map " + mapLump + ": '" + symbol + "'.");
+            return false;
+        }
+            
+        int endOffset = Tokenizer::GetPosition(handle);
+
+        mapBaseCollection.Collection[mapBaseCollection.Count].MapLump = mapLump;
+        mapBaseCollection.Collection[mapBaseCollection.Count].LumpIndex = lumpIndex;
+        mapBaseCollection.Collection[mapBaseCollection.Count].LumpStartOffset = startOffset;
+        mapBaseCollection.Collection[mapBaseCollection.Count].LumpEndOffset = endOffset;
+        mapBaseCollection.Count++;
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LogSource, "Parsed map position \cd" + mapLump + "\cj in map lump index \cd" + str(lumpIndex) + "\cj. Next symbol: \cd" + Tokenizer::GetSymbol(handle) + "\cj.");
+        return true;
+    }
+}

@@ -1,0 +1,131 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "clientside/clientsettings.acs"
+#include "clientside/radio.acs"
+#include "clientside/tip.acs"
+#include "shared/reward.acs"
+#include "shared/powers.acs"
+#include "shared/items.acs"
+
+strict namespace IO
+{
+    internal void ParseModDefLumpsServerside()
+    {
+        if (!ACS_NamedExecute(SCRIPT_PARSE_PERSISTING_MOD_DEFS_SERVERSIDE, 0))
+        {
+            Logger::LogError(LogSource, "Parser for mod def serverside could not be started. Script failed to execute.");
+            return;
+        }
+    }
+
+    internal void ParseModDefLumpsClientside()
+    {
+        if (!ACS_NamedExecute(SCRIPT_PARSE_PERSISTING_MOD_DEFS_CLIENTSIDE, 0))
+        {
+            Logger::LogError(LogSource, "Parser for mod def serverside could not be started. Script failed to execute.");
+            return;
+        }
+    }
+
+    script SCRIPT_PARSE_PERSISTING_MOD_DEFS_SERVERSIDE
+    {
+        if (ZH2Game::PersistingGameContext.ParsedModDefServerside) terminate;
+        DoParseModDefLumps(true);
+        ZH2Game::PersistingGameContext.ParsedModDefServerside = true;
+    }
+
+    script SCRIPT_PARSE_PERSISTING_MOD_DEFS_CLIENTSIDE
+    {
+        if (ZH2Game::PersistingGameContext.ParsedModDefclientside) terminate;
+        DoParseModDefLumps(false);
+        ZH2Game::PersistingGameContext.ParsedModDefclientside = true;
+    }
+
+    internal void DoParseModDefLumps(bool isServerSide)
+    {
+        Logger::LogDebug(LogSource, "Begin parsing mod def lumps. Is serverside: \cd" + (isServerSide ? "true" : "false") + "\cj.");
+
+        // Recursively load lumps and then parse them.
+        // Should this ever get heavy then it's save to add delays given that the mod has the awaiter implemented.
+        int startIndex = 0;
+        while(true)
+        {
+            startIndex = LumpOpen(MODDEFLUMPNAME, startIndex);
+            if (startIndex == -1)
+            {
+                Logger::LogDebug(LogSource, "No more mod def lumps found.");
+                break;
+            }
+            
+            Logger::LogDebug(LogSource, "Found mod def lump: \cd" + (str)LumpGetInfo(startIndex, LUMP_INFO_NAME) + "\cj.");
+            if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) == 0)
+            {
+                Logger::LogDebug(LogSource, "Mod def file is empty.");
+                continue;
+            }
+            
+            ParseModDefLump(LumpReadString(startIndex, 0), isServerSide);
+            LumpClose(startIndex);
+        }
+        
+        Logger::LogDebug(LogSource, "Finished parsing mod def lumps. Is serverside: \cd" + (isServerSide ? "true" : "false") + "\cj.");
+    }
+
+    internal void ParseModDefLump(str buffer, bool isServerside)
+    {
+        int handle = Tokenizer::RentTokenizer(buffer);
+        if (handle == -1) return;
+
+        Tokenizer::Next(handle, false);
+
+        while(Tokenizer::CanRead(handle))
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+
+            //Logger::LogDebug(LogSource, "\cd" + MODDEFLUMPNAME + "\cj symbol: \cd" + symbol + "\cj.");
+
+            if (isServerside)
+            {
+                if (Tokenizer::ParseBodyAsEmpty(handle, symbol, "requestedclientsettings")
+                    || Tokenizer::ParseBodyAsEmpty(handle, symbol, "radio")
+                    || Tokenizer::ParseBodyAsEmpty(handle, symbol, "tips"))
+                    continue;
+
+                // Note, blood severity is a serverside thing on weapons, so items must be parsed here.
+                if (ParsePowers(handle, symbol)
+                    || ParseItems(handle, symbol)
+                    || ParseRewards(handle, symbol))
+                    continue;
+            }
+            else
+            {
+                if (ParseRequestedClientSettings(handle, symbol)
+                    || ParseRadio(handle, symbol)
+                    || ParseTips(handle, symbol))
+                    continue;
+                
+                // As powers consists of shared data, parsing them in an offline game only has to be done serverside.
+                // The items are also parsed clientside online since the whole system for the inventory and such rely on it.
+                if (IsNetworkGame()
+                    && (ParsePowers(handle, symbol)
+                    || ParseItems(handle, symbol)
+                    || ParseRewards(handle, symbol)))
+                    continue;
+                
+                if (!IsNetworkGame()
+                    && (Tokenizer::ParseBodyAsEmpty(handle, symbol, "powers")
+                    || Tokenizer::ParseBodyAsEmpty(handle, symbol, "items")
+                    || Tokenizer::ParseBodyAsEmpty(handle, symbol, "rewards")))
+                    continue;
+            }
+            
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MODDEFLUMPNAME + " (serverside: " + (isServerside ? "true" : "false") + "): '" + symbol + "'.");
+            Tokenizer::ReturnTokenizer(handle);
+            return;
+        }
+
+        Tokenizer::ReturnTokenizer(handle);
+    }
+}

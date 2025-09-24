@@ -1,0 +1,86 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Decorate
+{
+    script "zh2_dec_dozombieability_client" net clientside
+    {
+        // Claws call this on all clients; make sure we are the correct one.
+        if (PlayerNumber() != ConsolePlayerNumber())
+            terminate;
+            
+        int index = Game::GetSelectedAbilityIndex();
+		if (!NamedRequestScriptPuke("zh2_internal_net_dozombieability", index))
+			Logger::LogError(LogSource,"Failed to execute net_dozombieability for player " + BCSUtils::PlayerName(PlayerNumber()) + ".");
+    }
+
+    script "zh2_internal_net_dozombieability"(int indexRaw) net
+	{
+		int index = (raw)indexRaw;
+
+		if (!Player::GetIsZombie())
+        {
+			Logger::LogActivator("You need to be a zombie to use abilities.");
+			terminate;
+		}
+
+        if (!ZH2Game::GetUseZombieAbilities())
+        {
+			Logger::LogActivator("The server has disabled the use of zombie abilities.");
+			terminate;
+		}
+		
+		if (Game::GetZombieAbilityFlags() == 0)
+        {
+			Logger::LogActivator("You don't have any abilities currently.");
+			terminate;
+		}
+
+        // We want to increment the index by 1. 0 means none when it comes to the actual enum.
+        // We don't keep it incremented, because the remainder should assume the index is zero-based.
+		Game::ZombieAbilityTypeFlagsT flag = Game::GetZombieAbilityItemTypeByIndex(index + 1);
+
+		if (flag == Game::ABILITY_NONE)
+		{
+			Logger::LogWarning(LogSource, "Player " + BCSUtils::PlayerName(PlayerNumber()) + " attempted to invoke unknown zombie ability with index " + str(index) + ".");
+			terminate;
+		}
+		
+        if (!Game::HasZombieAbility(flag))
+        {
+			Logger::LogActivator("You can not use this ability.");
+			terminate;
+		}
+
+		if ((ZH2Game::GetDisabledZombieAbilityFlags() & flag) != 0)
+        {
+			Logger::LogActivator("The server has disabled the use of this ability.");
+			terminate;
+		}
+		
+		if (Game::GetZombieAbilityCooldownTicsLeftByIndex(index) > 0)
+        {
+			Logger::LogActivator("This ability is not yet ready.");
+			terminate;
+		}
+		
+		if (BCSUtils::GetActorWaterlevel(ActivatorTID()) > 0)
+        {
+			Logger::LogActivator("You can not swim when you use this ability.");
+			terminate;
+		}
+		
+		if (Game::HasDoZombieAbilityItem())
+        {
+			Logger::LogActivator("You are already doing an ability.");
+			terminate;
+		}
+
+		Logger::LogDebug(LogSource, "Player (\cd" + str(PlayerNumber()) + "\cj) " + BCSUtils::PlayerName(PlayerNumber()) + " is using zombie ability \cd" + str(index) + "\cj.");
+		Game::GiveDoZombieAbilityItemByIndex(index);
+
+        if (ZH2Game::GetUseZombieAbilityCooldowns())
+		    Game::GiveZombieAbilityCooldownByIndex(index);
+	}
+}

@@ -1,0 +1,23 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Decorate
+{
+    script "zh2_dec_isliquid"
+    {
+        str texture = GetActorFloorTexture(0);
+
+		// Find a valid definition.
+		// If -1, we fall back to a default sound as nothing is defined.
+		int definition = Footstep::GetStepDefinition(texture);
+		if (definition == -1)
+        {
+            SetResultValue((int)false);
+            terminate;
+        }
+
+        bool isLiquid = ZH2Lib::PersistingLibContext.StepContext.Collection[definition].Liquid;
+        SetResultValue((int)isLiquid);
+    }
+}

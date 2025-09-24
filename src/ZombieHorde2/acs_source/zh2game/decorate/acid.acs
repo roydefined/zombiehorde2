@@ -1,0 +1,81 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Decorate
+{
+    script "zh2_dec_setacid_area" (raw area, raw initialDamageTics, raw subsequentDamageTics)
+    {
+		AreaSetOnAcidAtTid(
+            -1, (int)area, (int)initialDamageTics, (int)subsequentDamageTics);
+    }
+
+    script "zh2_dec_setacid_area_targetsource" (raw area, raw initialDamageTics, raw subsequentDamageTics)
+    {
+		AreaSetOnAcidAtTid(
+            GetActorProperty(0, APROP_TARGETTID), (int)area, (int)initialDamageTics, (int)subsequentDamageTics);
+    }
+
+    // Sets the area as acidic at the given tid.
+    internal void AreaSetOnAcidAtTid(int sourceTid, int area, int initialDamageTics, int subsequentDamageTics)
+	{
+        // Will just be -1 if we passed nobody.
+        int sourceId = Identity::GetId(sourceTid);
+
+        bool hasHit = false;
+        str logMessage;
+        BuildMsg(logMessage = StrParam())
+        {
+            Append(s:"Acid has hit ");
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            {
+                if (!PlayerIngame(i))
+                    continue;
+
+                fixed distance = BCSUtils::ActorDistance(Identity::GetTid(i), 0);
+                if (distance > fixed(area))
+                    continue;
+                
+                if (hasHit)
+                    Append(s:", ");
+
+                hasHit = true;
+                Append(s:BCSUtils::PlayerName(i));
+                SetOnAcid(sourceId, i, initialDamageTics, subsequentDamageTics);
+            }
+			
+            if (sourceId != -1) Append(s:". Source player: " + BCSUtils::PlayerName(sourceId) + ".");
+            else Append(s:".");
+        }
+
+        if (hasHit)
+            Logger::LogDebug(LogSource, logMessage);
+	}
+
+    internal void SetOnAcid(int sourceId, int targetId, int initialBurningDamageTics, int subsequentBurningDamageTics)
+	{
+        // Human-only.
+		if (!Player::GetPlayerIsHuman(targetId))
+			return;
+		
+		// Determine tics. If the player is already burning then add the subsequent tics.
+        // Other wise add the initial tics.
+		int tics = Power::GetPlayerHasPower(targetId, Power::POWERACIDBURNING) ?
+			subsequentBurningDamageTics :
+			initialBurningDamageTics;
+
+        // TODO: Set source as igniter. We don't have the source feature yet so this info is lost.
+		
+		Power::AddPlayerPowerTics(targetId, Power::POWERACIDBURNING, tics);
+	}
+
+    internal bool IsOnAcid()
+    {
+        return PlayerIsOnAcid(PlayerNumber());
+    }
+
+    internal bool PlayerIsOnAcid(int id)
+    {
+        return Power::GetPlayerHasPower(id, Power::POWERACIDBURNING);
+    }
+}

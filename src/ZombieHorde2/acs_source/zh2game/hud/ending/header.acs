@@ -1,0 +1,59 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawEndingHeader(fixed x, fixed y)
+    {
+        int id = HUD_ENDINGHEADER;
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
+        BCSUtils::HudSetCenterText(true);
+
+        // Top
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawText(id--, ZH2Game::GameContext.WinMessageTop);
+        DebugDraw();
+
+        // Bottom
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetPoint(x, y + 15.0);
+        BCSUtils::HudDrawText(id--, ZH2Game::GameContext.WinMessageBottom);
+        DebugDraw();
+
+        // End reason, if not just a specie winning.
+        Game::EndReasonT reason = Game::GetEndReason();
+        if (reason != Game::REASONNONE && reason != Game::REASONSPECIEWON)
+        {
+            BCSUtils::HudSetFont("SmallFont");
+            BCSUtils::HudSetPoint(x, y + 25.0);
+            
+            if (reason == Game::REASONHUMANLEFT)
+            {
+                BCSUtils::HudSetTextColor(CR_BLUE);
+                BCSUtils::HudDrawText(id--, "The last human got scared and left the game.");
+            }
+            else if (reason == Game::REASONZOMBIELEFT)
+            {
+                BCSUtils::HudSetTextColor(CR_RED);
+                BCSUtils::HudDrawText(id--, "The last zombie ragequits.");
+            }
+            else if (reason == Game::REASONADMINENDED)
+            {
+                BCSUtils::HudSetTextColor(CR_YELLOW);
+                BCSUtils::HudDrawText(id--, "Admin ended game.");
+            }
+
+            BCSUtils::HudSetTextColor(CR_WHITE);
+            DebugDraw();
+        }
+
+        // Elapsed time
+        str timerFormatted = Utils::FormatTics(Game::GetPlayTime(), true);
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetPoint(x, y + 35.0);
+        BCSUtils::HudDrawText(id--, "Play time: " + timerFormatted);
+        DebugDraw();
+    }
+}

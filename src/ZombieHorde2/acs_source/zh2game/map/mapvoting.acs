@@ -1,0 +1,206 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Map
+{
+    // Updates the list of votable maps that a player can choose from.
+    internal void UpdateVotableMaps()
+    {
+        Shuffle::ShuffleVotableMaps();
+
+        // Get how many maps to show, making sure to show less if we don't have more.
+        int length = BCSUtils::Min(Shuffle::GetRelevantSize(), ZH2Game::GetMaxVotableMapsShown());
+        ZH2Game::GameContext.VotableMapCount = length;
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            Append(s:"Updated votable maps. Count: ");
+            Append(d:length);
+            Append(s:". Maps: ");
+
+            for (int i = 0; i < length; ++i)
+            {
+                int mapIndex = Shuffle::GetIndexValue(i);
+                ZH2Game::GameContext.VotableMaps[i] = mapIndex;
+
+                Append(s:GetMapRotationInfo(mapIndex, MAPROTATION_LUMPNAME));
+
+                if (i != length - 1)
+                    Append(s:", ");
+            }
+        }
+        Logger::LogDebug(LogSource, logMessage);
+    }
+
+    // NOTE: As per the behaviour of map rotation functions, this returns 0 when no map was found.
+    internal int GetRandomMap()
+    {
+        Shuffle::ShuffleVotableMaps(Shuffle::FLAGIGNORECURRENTMAP);
+
+        // No map found
+        if (Shuffle::GetRelevantSize() == 0)
+            return 0;
+        
+        return Shuffle::GetIndexValue(0);
+    }
+
+    internal void VotePickMapClientside(int index)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_voting_pick_map", index))
+            Logger::LogError(LogSource, "Failed to pick map.");
+    }
+
+    script "zh2_internal_voting_pick_map" (int index) net
+    {
+        if (Round::GetActiveKnownRoundState() != Round::STATEVOTING) terminate;
+        if (index < 0 || index >= (ZH2Game::GameContext.VotableMapCount + 3)) terminate;
+        if (GetPickCooldownTics() > 0) terminate;
+        if (GetVotedMapIndex() == index) terminate;
+
+        // A map was already picked when this timer is running.
+        if (RoundTimer::GetActiveTimerKnownType() == RoundTimer::TIMERVOTED)
+        {
+            Logger::LogActivator("You may not pick a map anymore as the voting has ended.");
+            terminate;
+        }
+
+        // Special case for index 1 (next map) where it may only be picked if we have any maps in rotation.
+        if (index == 2 && GetMapRotationSize() == 0)
+        {
+            Logger::LogActivator("You may not pick this option as there are no known maps to rotate to.");
+            terminate;
+        }
+
+        // Special case for index 2 (random map) where it may only be picked if we had votable maps.
+        // If not, then next map does the same.
+        if (index == 2 && ZH2Game::GameContext.VotableMapCount == 0)
+        {
+            Logger::LogActivator("You may not pick this option as no votable maps are left.");
+            terminate;
+        }
+
+        str message;
+        switch(index)
+        {
+            case 0:
+            {
+                message = " has chosen to \cdreplay the current map\cj.";
+                break;
+            }
+            case 1:
+            {
+                message = " has chosen to \cdplay the next rotation map\cj.";
+                break;
+            }
+            case 2:
+            {
+                message = " has chosen to \cdplay a random map\cj.";
+                break;
+            }
+            default:
+            {
+                int mapIndex = ZH2Game::GameContext.VotableMaps[index - 3];
+                str mapName = GetMapRotationInfo(mapIndex, MAPROTATION_NAME);
+                str mapLumpName = GetMapRotationInfo(mapIndex, MAPROTATION_LUMPNAME);
+                int parsePosition = Map::GetParsedMapPosition(mapIndex);
+                if (parsePosition != -1)
+                {
+                    str replacementMapName = Map::GetMapLabel(parsePosition);
+                    if (replacementMapName != (raw)0)
+                        mapName = replacementMapName;
+                }
+
+                message = " has picked map \cd" + str(mapLumpName) + "\cj: \cd" + mapName + "\cj.";
+                break;
+            }
+        }
+
+        Logger::LogBold(Player::GetPlayerName(PlayerNumber()) + message);
+
+        SetPickCooldown();
+        SetVotedMapIndex(index);
+        CheckMapVoteFinished();
+        Sync::SyncMapVoting();
+    }
+
+    // Çhecks if the voting should finish as everybody has voted.
+    internal void CheckMapVoteFinished()
+    {
+        // We check if map voting finished by taking the number of voted players and comparing them to those who still have to vote.
+        int votedPlayers = 0;
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!BCSUtils::PlayerIsConnected(i)) continue;
+
+            if (HasPlayerVoted(i))
+                votedPlayers++;
+        }
+
+        // Avoid division by zero in case everyone left.
+        int votePercentage = 0;
+        if (BCSUtils::ClientCount() - BCSUtils::BotCount() > 0)
+            votePercentage = (votedPlayers * 100) / (BCSUtils::ClientCount() - BCSUtils::BotCount());
+
+        // Vote threshold reached.
+        if (votePercentage > ZH2Game::GetPlayerVotePercentage())
+            EndVoting();
+    }
+
+    internal void EndVoting()
+    {
+        int bestIndex = UpdateMapVoteMajority();
+
+        // If still -1 nobody voted and we never switched.
+        if (bestIndex != -1)
+            ZH2Game::GameContext.FinalVotedMapIndex = bestIndex;
+
+        // Ensure the voting timer is stopped here if it's active.
+        if (RoundTimer::GetActiveTimerKnownType() == RoundTimer::TIMERVOTING)
+        {
+            int index = RoundTimer::GetActiveTimerIndex();
+            if (RoundTimer::GetTimerActive(index))
+            {
+                RoundTimer::StopTimer(index);
+            }
+        }
+
+        // This timer is required. If not set we log an error.
+        // TODO: Ideally if we started the match we inform the map developer of this.
+        int index = RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERVOTED);
+        if (RoundTimer::GetTimerDefined(index))
+        {
+            RoundTimer::SetActiveTimerByKnownType(RoundTimer::TIMERVOTED);
+            RoundTimer::StartTimer(index);
+            
+            Sync::SyncTimers();
+        }
+        else Logger::LogError(LogSource, "Missing required voted timer.");
+    }
+
+    // Updates what map index got the majority vote.
+    // We determine this by checking each index and seeing which one we have the most.
+    internal int UpdateMapVoteMajority()
+    {
+        int bestIndex = -1;
+        int bestIndexCount = 0;
+
+        for (int i = 0; i < ZH2Game::GameContext.VotableMapCount + 3; ++i)
+        {
+            int count = GetMapVoteCount(i);
+
+            // New best index.
+            // 50% chance we pick this when same amount of votes were given for this index as the other one.
+            if (count > bestIndexCount
+                || (count == bestIndexCount && Random(0, 1)))
+            {
+                bestIndex = i;
+                bestIndexCount = count;
+                continue;
+            }
+        }
+
+        return bestIndex;
+    }
+}

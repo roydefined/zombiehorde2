@@ -1,0 +1,76 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "header.acs"
+#include "statlist.acs"
+
+strict namespace Hud
+{
+    internal void DrawEndingHud()
+    {
+        fixed scale = ZH2Game::GetHudEndingScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetScale(scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        fixed x = 320.0;
+        fixed y = BCSUtils::HudTop() + 60.0;
+        
+        DrawEndingHeader(x, y);
+
+        x = 30.0;
+        y += 50.0;
+
+        // Offset is set based on what lists are shown, meaning we might compact lists.
+        int offset = 0;
+
+        // Each column 220 units wide.
+        // Each row 190 units tall.
+        fixed GetX(int offset) { return x + fixed(offset % 3) * 220.0; }
+        fixed GetY(int offset) { return y + fixed(offset / 3) * 190.0; }
+
+        if (ZH2Game::GameContext.SurvivorsShuffledCount > 0)
+        {
+            DrawList(HUD_ENDINGSURVIVORS, GetX(offset), GetY(offset), "Survivors",
+                ZH2Game::GameContext.SurvivorsShuffledCount, 8, ZH2Game::GameContext.SurvivorsShuffled, null);
+            offset++;
+        }
+
+        if (ZH2Game::GameContext.HordeShuffledCount > 0)
+        {
+            DrawList(HUD_ENDINGHORDE, GetX(offset), GetY(offset), "The horde",
+                ZH2Game::GameContext.HordeShuffledCount, 8, ZH2Game::GameContext.HordeShuffled, null);
+            offset++;
+        }
+
+        if (ZH2Game::GameContext.DeadShuffledCount > 0)
+        {
+            DrawList(HUD_ENDINGDEAD, GetX(offset), GetY(offset), "In memory of",
+                ZH2Game::GameContext.DeadShuffledCount, 8, ZH2Game::GameContext.DeadShuffled, null);
+            offset++;
+        }
+
+        if (ZH2Game::GameContext.HumanKillsOrderedCount > 0)
+        {
+            DrawList(HUD_ENDINGHUMANKILLS, GetX(offset), GetY(offset), "Top human killers",
+                ZH2Game::GameContext.HumanKillsOrderedCount, 4, ZH2Game::GameContext.HumanKillsOrdered, Player::GetPlayerHumanKills);
+            offset++;
+        }
+
+        if (ZH2Game::GameContext.ZombieKillsOrderedCount > 0)
+        {
+            DrawList(HUD_ENDINGZOMBIEKILLS, GetX(offset), GetY(offset), "Top zombie killers",
+                ZH2Game::GameContext.ZombieKillsOrderedCount, 4, ZH2Game::GameContext.ZombieKillsOrdered, Player::GetPlayerZombieKills);
+            offset++;
+        }
+            
+        if (ZH2Game::GameContext.InfectsOrderedCount > 0)
+        {
+            DrawList(HUD_ENDINGINFECTS, GetX(offset), GetY(offset), "Top infects",
+                ZH2Game::GameContext.InfectsOrderedCount, 4, ZH2Game::GameContext.InfectsOrdered, Player::GetPlayerInfects);
+            offset++;
+        }
+    }
+}

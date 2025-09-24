@@ -1,0 +1,93 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LogSource "Map"
+
+#include "maprotation.acs"
+#include "mapvoting.acs"
+
+strict namespace Map
+{
+    internal int GetCurrentMapHandle()
+    {
+        return ZH2Game::GameContext.MapIndex;
+    }
+
+    internal int GetMapCount()
+    {
+        return ZH2Game::PersistingGameContext.MapBaseCollection.Count;
+    }
+
+    /* PARSED MAP DATA */
+
+    internal str GetCurrentMapLump() { return GetMapLump(GetCurrentMapHandle()); }
+    internal str GetMapLump(int handle) { return ZH2Game::PersistingGameContext.MapBaseCollection.Collection[handle].MapLump; }
+
+    internal str GetCurrentMapGameMode() { return GetMapGameMode(GetCurrentMapHandle()); }
+    internal str GetMapGameMode(int handle) { return ZH2Game::PersistingGameContext.MapBaseCollection.Collection[handle].Properties.GameMode; }
+    
+    internal str GetCurrentMapLabel() { return GetMapLabel(GetCurrentMapHandle()); }
+    internal str GetMapLabel(int handle) { return ZH2Game::PersistingGameContext.MapBaseCollection.Collection[handle].Properties.Label; }
+
+    internal str GetCurrentMapGraphic() { return GetMapGraphic(GetCurrentMapHandle()); }
+    internal str GetMapGraphic(int handle) { return ZH2Game::PersistingGameContext.MapBaseCollection.Collection[handle].Properties.Graphic; }
+
+    internal bool GetCurrentMapIsNew() { return GetMapIsNew(GetCurrentMapHandle()); }
+    internal bool GetMapIsNew(int handle) { return ZH2Game::PersistingGameContext.MapBaseCollection.Collection[handle].Properties.IsNew; }
+
+    internal bool GetCurrentMapIsLegacyMap() { return GetMapIsLegacyMap(GetCurrentMapHandle()); }
+    internal bool GetMapIsLegacyMap(int handle) { return ZH2Game::PersistingGameContext.MapBaseCollection.Collection[handle].Properties.IsLegacyMap; }
+
+    /* PLAYER VOTES */
+
+    internal int GetVotedMapIndexSize() { return lengthof(ZH2Game::GameContext.VotedMapIndexes); }
+    
+    internal int GetVotedMapIndex() { return GetPlayerVotedMapIndex(PlayerNumber()); }
+    internal int GetPlayerVotedMapIndex(int id) { return ZH2Game::GameContext.VotedMapIndexes[id]; }
+    
+    internal void SetVotedMapIndex(int index) { SetPlayerVotedMapIndex(PlayerNumber(), index); }
+    internal void SetPlayerVotedMapIndex(int id, int index) { ZH2Game::GameContext.VotedMapIndexes[id] = index; }
+    
+    internal bool HasVoted() { return HasPlayerVoted(PlayerNumber()); }
+    internal bool HasPlayerVoted(int id) { return GetPlayerVotedMapIndex(id) != -1; }
+
+    /* MAP VOTES */
+
+    internal int GetMapVoteCount(int i)
+    {
+        int count = 0;
+        for (int j = 0; j < BCSUtils::MAX_PLAYERS; ++j)
+        {
+            if (GetPlayerVotedMapIndex(j) == i)
+                count++;
+        }
+        return count;
+    }
+
+    /* COOLDOWN */
+
+    internal int GetPickCooldownTics()
+    {
+        return GetPlayerPickCooldownTics(PlayerNumber());
+    }
+
+    internal int GetPlayerPickCooldownTics(int id)
+    {
+        return BCSUtils::Max(0, CheckActorInventory(Identity::GetTid(id), ITEM_PLAYERPICKTIMESTAMP) - Utils::GetSynchronizedTimer());
+    }
+
+    internal void SetPickCooldown()
+    {
+        SetPlayerPickCooldown(PlayerNumber());
+    }
+
+    internal void SetPlayerPickCooldown(int id)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+        int timestamp = Utils::GetSynchronizedTimer() + ZH2Game::GetPlayerCooldownTics();
+        BCSUtils::SetActorInventory(Identity::GetTid(id), ITEM_PLAYERPICKTIMESTAMP, timestamp);
+    }
+}
+
+#undef LogSource

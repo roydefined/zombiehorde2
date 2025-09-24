@@ -1,0 +1,251 @@
+Actor ZH2WeaponFireGrenadeThrowPower : Ammo
+{
+	Inventory.MaxAmount 100
+}
+
+Actor ZH2WeaponFireGrenadeAmmo : Ammo
+{
+	inventory.MaxAmount 1
+}
+
+actor ZH2WeaponFireGrenadeSpawn : ZH2WeaponSpawn 28100 //11006
+{
+	Radius 10
+	Height 14
+	
+	Scale 0.6
+	
+	Inventory.Amount 1
+	Inventory.MaxAmount 1
+	
+	Inventory.PickupMessage "Fire grenade"
+	Tag "Fire grenade"
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_Jump(256, 1, 2, 3, 4)
+			PGRN A -1
+			PGRN B -1
+			PGRN C -1
+			PGRN D -1
+			
+		Pickup:
+			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, "PickupSuccess")
+			fail
+		PickupSuccess:
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenade", 1, 2)
+			TNT1 A 0 A_GiveInventory("ZH2WeaponFireGrenade", 1)
+			TNT1 A 0 A_GiveInventory("ZH2WeaponFireGrenadeAmmo", 1)
+			stop
+	}
+}
+
+// Note, as we don't 'fire' a firegrenade, no script call to weapon firing is done.
+
+Actor ZH2WeaponFireGrenade : ZH2Weapon
+{
+	tag "Fire Grenade"
+	weapon.PreferredSkin "firegrenade"
+	
+	weapon.SlotNumber 1
+	weapon.AmmoType "ZH2WeaponFireGrenadeThrowPower"
+	
+	+WEAPON.NOAUTOAIM
+
+	States
+	{
+		Ready:
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenadeAmmo", 1, "Ready.ToAmmo")
+			HNNG E 1 A_WeaponReady(WRF_NOFIRE)
+			loop
+			
+		Ready.Ammo:
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenadeAmmo", 1, 1)
+			goto Select.DetermineAmmo
+			HNGR A 1 A_WeaponReady(WRF_NOSECONDARY)
+			loop
+		
+		Ready.ToAmmo:
+			HNNG DCBA 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 6 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			goto Select.DetermineAmmo
+			
+		Select:
+			TNT1 A 0 A_Raise
+			TNT1 A 0 A_TakeInventory("ZH2WeaponFireGrenadeThrowPower", 999)
+		Select.DetermineAmmo:
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenadeAmmo", 1, "Select.Ammo")
+		Select.Rest:
+			HNNG ABCD 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+			goto Ready
+		Select.Ammo:
+			HNGS ABCD 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			goto Ready.Ammo
+		
+		Deselect:
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenadeAmmo", 1, "Deselect.Ammo")
+			HNNG DCBA 1
+			TNT1 A 0 A_Lower
+			wait
+			
+		Deselect.Ammo:
+			HNGS DCBA 1
+			TNT1 A 0 A_Lower
+			wait
+		
+		Fire:
+			HNGR ABCDEF 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+			HNGR G 2 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+			HNGR H 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+			TNT1 A 0 A_PlaySoundEx("weapons/firegrenade/PINOUT","SoundSlot5")
+			HNGR JKLM 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+		
+		Fire.Hold:
+			//TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenadeThrowPower", 100, "Throw")
+			TNT1 A 0 A_GiveInventory("ZH2WeaponFireGrenadeThrowPower", 1)
+			TNT1 A 1 A_WeaponReady(WRF_NOPRIMARY|WRF_NOSECONDARY|WRF_NOSWITCH)
+			TNT1 A 0 A_ReFire("Fire.Hold")
+			
+			// Repins with altfire
+			TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY|WRF_NOSWITCH)
+			goto Throw
+		
+		// Repinning. This state can only happen in the Fire.Hold state above.
+		AltFire:
+			TNT1 A 0 A_TakeInventory("ZH2WeaponFireGrenadeThrowPower", 999)
+			HNGR MLJI 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+			TNT1 A 0 A_PlaySound("weapons/firegrenade/REPIN")
+			HNGP ABC 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+			HNGP DE 2 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+			HNGR DCBA 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
+			goto Ready.Ammo
+		
+		Throw:
+			HNGR NO 1
+			TNT1 A 0 A_PlaySound("weapons/firegrenade/THROW")
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenadeThrowPower", 100, 7)
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenadeThrowPower", 80,  7)
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenadeThrowPower", 60,  7)
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenadeThrowPower", 40,  7)
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenadeThrowPower", 25,  7)
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenadeThrowPower", 15,  7)
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponFireGrenadeThrowPower", 5,   7)
+			goto Throw.Speeds+7
+		Throw.Speeds:
+			TNT1 A 0 A_FireCustomMissile("ZH2WeaponFireGrenadeThrown8")
+			goto Throw.Rest
+			TNT1 A 0 A_FireCustomMissile("ZH2WeaponFireGrenadeThrown7")
+			goto Throw.Rest
+			TNT1 A 0 A_FireCustomMissile("ZH2WeaponFireGrenadeThrown6")
+			goto Throw.Rest
+			TNT1 A 0 A_FireCustomMissile("ZH2WeaponFireGrenadeThrown5")
+			goto Throw.Rest
+			TNT1 A 0 A_FireCustomMissile("ZH2WeaponFireGrenadeThrown4")
+			goto Throw.Rest
+			TNT1 A 0 A_FireCustomMissile("ZH2WeaponFireGrenadeThrown3")
+			goto Throw.Rest
+			TNT1 A 0 A_FireCustomMissile("ZH2WeaponFireGrenadeThrown2")
+			goto Throw.Rest
+			TNT1 A 0 A_FireCustomMissile("ZH2WeaponFireGrenadeThrown1")
+		Throw.Rest:
+			TNT1 A 0 A_TakeInventory("ZH2WeaponFireGrenadeThrowPower", 999)
+			TNT1 A 0 A_TakeInventory("ZH2WeaponFireGrenadeAmmo", 1)
+			HNGR PQR 1
+			TNT1 A 4
+			goto Select.DetermineAmmo
+	}
+}
+
+Actor ZH2WeaponFireGrenadeThrownPin
+{
+	Radius 4
+	Height 4
+	Projectile
+	Scale 0.2
+	Gravity 0.8
+	
+	Bouncefactor 0.5
+	WallBounceFactor 0.2
+	BounceCount 2
+	BounceType Hexen
+	
+	DeathSound "weapons/firegrenade/PINDROP"
+	BounceSound "weapons/firegrenade/PINDROP"
+	
+	-NOGRAVITY
+	+CLIENTSIDEONLY
+	+FORCEXYBILLBOARD
+	+DONTSPLASH
+	+NOTIMEFREEZE
+	+NOBLOCKMAP
+
+	States
+	{
+		Spawn:
+			GPIN A 1 NoDelay A_JumpIf(Waterlevel != 0, "Underwater")
+			Wait
+		
+		Underwater:
+			TNT1 A 0 A_ScaleVelocity(0.90)
+			GPIN A 1 A_FadeOut(0.02)
+			Loop
+
+		Death:
+			TNT1 A 0
+			Stop
+	}
+}
+
+Actor ZH2WeaponFireGrenadeThrown
+{
+	projectile
+	
+	radius 8
+	height 8
+	scale 0.2
+	gravity 0.4
+	
+	BounceFactor 0.4
+	WallBounceFactor 0.2
+	Bouncecount 2
+	BounceType Hexen
+	
+	DeathSound "weapons/firegrenade/EXPLODE"
+	BounceSound "weapons/firegrenade/BOUNCE"
+	
+	-NOGRAVITY
+	+FORCEXYBILLBOARD
+	+DONTSPLASH
+
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_SpawnItemEx("ZH2WeaponFireGrenadeThrownPin", 0, 0, 0, 6, -4, 3)
+		Spawn.Rest:
+			HGRN AABBCCDDEEFFGGHHIIJJKKLL 1 A_JumpIf(Waterlevel != 0, "Underwater")
+			loop
+
+		Underwater:
+			HGRN "###################################################" 1 A_ScaleVelocity(0.92)
+			TNT1 A 0 A_SpawnItemEx("ZH2WeaponFireGrenadeExplosionUnderwater")
+			TNT1 A 0 A_Scream
+			TNT1 A 0 A_AlertMonsters
+			stop
+			
+		Death:
+			TNT1 A 0 A_AlertMonsters
+			TNT1 A 0 A_SpawnItemEx("ZH2WeaponFireGrenadeExplosion")
+			TNT1 A 2 ACS_NamedExecuteAlways("zh2_dec_setfire_area_targetsource", 0, 200, 350, 200)
+			stop
+	}
+}
+
+Actor ZH2WeaponFireGrenadeThrown1 : ZH2WeaponFireGrenadeThrown { Speed 15 }
+Actor ZH2WeaponFireGrenadeThrown2 : ZH2WeaponFireGrenadeThrown { Speed 20 }
+Actor ZH2WeaponFireGrenadeThrown3 : ZH2WeaponFireGrenadeThrown { Speed 25 }
+Actor ZH2WeaponFireGrenadeThrown4 : ZH2WeaponFireGrenadeThrown { Speed 30 }
+Actor ZH2WeaponFireGrenadeThrown5 : ZH2WeaponFireGrenadeThrown { Speed 35 }
+Actor ZH2WeaponFireGrenadeThrown6 : ZH2WeaponFireGrenadeThrown { Speed 40 }
+Actor ZH2WeaponFireGrenadeThrown7 : ZH2WeaponFireGrenadeThrown { Speed 45 }
+Actor ZH2WeaponFireGrenadeThrown8 : ZH2WeaponFireGrenadeThrown { Speed 50 }

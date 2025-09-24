@@ -1,0 +1,74 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    // This is the main method that is called from a few places to initiate the end state.
+    internal void EndGame()
+    {
+        // Ensure the play timer is stopped here if it's active.
+        if (RoundTimer::GetActiveTimerKnownType() == RoundTimer::TIMERPLAYING)
+        {
+            int index = RoundTimer::GetActiveTimerIndex();
+            if (RoundTimer::GetTimerActive(index))
+            {
+                RoundTimer::StopTimer(index);
+            }
+        }
+
+        // Set end reason if not already set (which it would if a player left, for example).
+        if (Game::GetEndReason() == Game::REASONNONE)
+            Game::SetEndReason(Game::REASONSPECIEWON);
+
+        // Ensure the round state is defined.
+        if (!Round::GetRoundDefined(Round::GetIndexOfKnownRoundStateType(Round::STATEENDING)))
+        {
+            Logger::LogError(LogSource, "Failed to start ending round state. Round not defined, use defaults or define the round.");
+            return;
+        }
+
+        Round::SetKnownRoundState(Round::StateEnding);
+        Sync::SyncRoundState();
+        Sync::SyncGame();
+    }
+
+    /* DIFFERENT KILL METHODS TO KILL ONE OR MORE SPECIES. */
+
+    internal void KillHumans() { KillSpecies(Player::SPECIEHUMAN, false); }
+    internal void KillZombies() { KillSpecies(Player::SPECIEZOMBIE, false); }
+    internal void KillUnsafeHumans() { KillSpecies(Player::SPECIEHUMAN, true); }
+    internal void KillUnsafeZombies() { KillSpecies(Player::SPECIEZOMBIE, true); }
+
+    void KillUnsafePlayers()
+    {
+        KillUnsafeHumans();
+        KillUnsafeZombies();
+    }
+
+    internal void KillSpecies(Player::SpecieTypeT specie, bool checkIsSafe = true)
+    {
+        for (int i = 0; i < BCSUTILS::MAX_PLAYERS; i++)
+        {
+            if (!PlayerInGame(i) || Player::GetPlayerSpecie(i) != specie)
+                continue;
+            
+            KillPlayer(i, checkIsSafe);
+        }
+    }
+
+    internal void KillPlayer(int id, bool checkIsSafe)
+    {
+        int tid = Identity::GetTID(id);
+        if (!PlayerInGame(id) || !BCSUtils::ActorIsAlive(tid)) return;
+        
+        if (checkIsSafe && GetPlayerIsSafe(id))
+        {
+            Logger::LogDebug(LogSource, "Player not killed. Player id " + str(id) + " is safe.");
+            return;
+        }
+
+        // We don't use INT_MAX as it will exceed what invulnerability protects.
+        Thing_Damage2(tid, /* BCSUtils::INT_MAX */ 999999, "None");
+    }
+}

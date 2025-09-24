@@ -1,0 +1,134 @@
+Actor ZH2WeaponClawsSpawn : ZH2WeaponSpawn 11000
+{
+	inventory.pickupmessage "Zombie claws"
+	tag "Zombie claws"
+	
+	States
+	{
+		Spawn:
+			ZCAA A -1
+			
+		Pickup:
+			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getiszombie", 0, 0, 0) == true, "PickupSuccess")
+			stop
+		PickupSuccess:
+			TNT1 A 0 A_GiveInventory("ZH2WeaponClaws", 1)
+			stop
+	}
+}
+
+Actor ZH2WeaponClaws : ZH2Weapon
+{
+	tag "Zombie claws"
+	
+	weapon.SlotNumber 1
+	weapon.BobSpeed 0.3
+	
+	decal ""
+	+WEAPON.NOAUTOFIRE
+
+	States
+	{
+		Ready:
+			ZCAB A 2 A_WeaponReady
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 1, "Fire.Ability")
+			ZCAB B 2 A_WeaponReady
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 1, "Fire.Ability")
+			ZCAB C 2 A_WeaponReady
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 1, "Fire.Ability")
+			ZCAB D 2 A_WeaponReady
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 1, "Fire.Ability")
+			ZCAB E 2 A_WeaponReady
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 1, "Fire.Ability")
+			ZCAB E 2 A_WeaponReady
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 1, "Fire.Ability")
+			ZCAB D 2 A_WeaponReady
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 1, "Fire.Ability")
+			ZCAB C 2 A_WeaponReady
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 1, "Fire.Ability")
+			ZCAB B 2 A_WeaponReady
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 1, "Fire.Ability")
+			ZCAB A 2 A_WeaponReady
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 1, "Fire.Ability")
+			loop
+		
+		Deselect:
+			ZCAA BCDEFGHIJK 1
+			TNT1 A 0 A_Lower
+			wait
+		
+		Select:
+			TNT1 A 0 A_Raise
+			TNT1 A 0 A_WeaponReady
+			ZCAA KJIHGFEDCB 1
+			goto Ready
+			
+		Fire:
+			ZCAL AB 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 0 A_PlaySound ("weapons/claws/SWING", CHAN_WEAPON)
+			ZCAL C 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 0 A_CustomPunch(1, true, 0, "ZH2ClawsWallScratchPuff", 72)
+			ZCAL DE 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 0 A_CustomPunch(1, true, 0, "ZH2ClawsScratchPuff", 72)
+		Fire.Again:
+			ZCAL FG 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 0 A_CustomPunch(1, true, 0, "ZH2ClawsScratchPuff", 72)
+			ZCAL HI 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 0 A_Refire("Fire.Right")
+			ZCAL JKLM 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			goto Ready
+		Fire.Right:
+			ZCAR AB 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 0 A_PlaySound ("weapons/claws/SWING", CHAN_WEAPON)
+			ZCAR C 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 0 A_CustomPunch(1, true, 0, "ZH2ClawsWallScratchPuff", 72)
+			ZCAR DE 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 0 A_CustomPunch(1, true, 0, "ZH2ClawsScratchPuff", 72)
+			ZCAR FGH 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 0 A_Refire("Fire.Left")
+			ZCAR IJKLM 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			goto Ready
+		Fire.Left:
+			ZCAL NO 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 0 A_PlaySound ("weapons/claws/SWING", CHAN_WEAPON)
+			ZCAL P 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 0 A_CustomPunch(1, true, 0, "ZH2ClawsWallScratchPuff", 72)
+			ZCAL QR 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			TNT1 A 0 A_CustomPunch(1, true, 0, "ZH2ClawsScratchPuff", 72)
+			ZCAL S 1 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+			goto Fire.Again
+		
+		Altfire:
+			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_dozombieability_client")
+			goto Ready
+			
+		Fire.Ability:
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 3, "Fire.AbilityRest")
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 2, "Fire.AbilitySpit")
+			TNT1 A 0 A_JumpIfInventory("ZH2DoZombieAbilityIndex", 1, "Fire.AbilityPush")
+			goto Fire.AbilityRest
+		
+		Fire.AbilityPush:
+			ZCAP ABCDE 2
+			TNT1 A 0 A_PlaySound ("weapons/claws/SWING", CHAN_WEAPON)
+			ZCAP F 2
+			ZCAP GHI 1
+			TNT1 A 0 A_CustomPunch(70, 0, 0, "ZH2ClawsPushPuff", 72)
+			ZCAP JKLMNO 1
+			goto Fire.AbilityRest
+		
+		Fire.AbilitySpit:
+			TNT1 A 0 A_PlaySound("weapons/claws/SPIT", CHAN_BODY)
+			ZCAS ABC 2
+			ZCAS D 13
+			TNT1 A 0 A_FireCustomMissile("ZH2ZombieAcidSpitMissile", 0, false, 0, 0)
+			ZCAS EFGH 2
+			ZCAS I 3
+			goto Fire.AbilityRest
+		
+		Fire.AbilityRest:
+			TNT1 A 0 A_TakeInventory("ZH2DoZombieAbilityIndex", 0x7fffffff)
+			goto Ready
+	}
+}
+

@@ -1,0 +1,60 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Item
+{
+    // These are clientside.
+    // We track the current index of the inventory items we own.
+    // This makes it much simpler to implement logic for the inventory so we don't have to juggle with what we own or not.
+    internal int _currentInventoryIndex;
+
+    // Clientside, a timestamp of the last time we cycled or invoked the inventory.
+    internal int _lastInventoryInteractionTimestamp;
+
+    internal void CycleNextInventory(int direction)
+    {
+        _lastInventoryInteractionTimestamp = Utils::GetSynchronizedTimer();
+
+        // We need at least one item to cycle them.
+        if (GetClientOwnedInventorySize() < 2) return;
+
+        _currentInventoryIndex += direction;
+        if (_currentInventoryIndex < 0) _currentInventoryIndex = GetClientOwnedInventorySize() - 1;
+        if (_currentInventoryIndex >= GetClientOwnedInventorySize()) _currentInventoryIndex = 0;
+    }
+    
+    internal void InvokeCurrentInventoryItem()
+    {
+        // We don't own any inventory item.
+        if (GetClientOwnedInventorySize() == 0) return;
+
+        _lastInventoryInteractionTimestamp = Utils::GetSynchronizedTimer();
+
+        str itemName = GetItemName(GetInventoryIndex(GetClientOwnedInventoryIndex(_currentInventoryIndex)));
+        Logger::LogDebug(LogSource, "Invoking item \cd" + itemName + "\cj.");
+
+        if (CheckInventory(itemName) == 0)
+        {
+            Logger::LogError(LogSource, "Expected item " + itemName + " but it is not in the client's possession.");
+            return;
+        }
+
+        // Invokation must happen serverside.
+        if(!NamedSendNetworkString("zh2_internal_inventory_invoke", itemName))
+			Logger::LogError(LogSource, "Failed to invoke zh2_internal_inventory_invoke for item " + itemName + ".");
+    }
+
+    script "zh2_internal_inventory_invoke" (raw itemNameInt) net
+    {
+        // No additional checks here because invoking an item is straight forward.
+        str itemName = (str)itemNameInt;
+
+        if (!UseInventory(itemName))
+        {
+            // This can log for items that did trigger correctly.
+            //Logger::LogError(LogSource, "Use item " + itemName + " failed.");
+            terminate;
+        }
+    }
+}

@@ -1,0 +1,36 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal void SetPlayerHumanTeam(int id) { SetPlayerTeam(id, TEAM_HUMAN); }
+    internal void SetPlayerZombieTeam(int id) { SetPlayerTeam(id, TEAM_ZOMBIE); }
+
+    internal void SetHumanTeam() { SetPlayerHumanTeam(PlayerNumber()); }
+    internal void SetZombieTeam() { SetPlayerZombieTeam(PlayerNumber()); }
+
+    internal void SetPlayerTeam(int id, PlayerTeamT team)
+    {
+        if (!ACS_NamedExecuteAlways("zh2_internal_setteam", 0, id, team))
+            Logger::LogError(LogSource, "Failed to invoke zh2_internal_setteam for player " + str(id) + " to team " + str(team) + ".");
+    }
+
+    script "zh2_internal_setteam"(int id, int team)
+    {
+        if (!Identity::IsValidID(id))
+        {
+            Logger::LogError(LogSource, "Failed to set player " + str(id) + " to team " + str(team) + ". Invalid id.");
+            terminate;
+        }
+        
+        if(!SetActivatorToPlayer(id))
+        {
+            Logger::LogError(LogSource, "Failed to set player " + str(id) + " to team " + str(team) + ". Could not assign as activator.");
+            terminate;
+        }
+        
+        if (!Player_SetTeam(team, true)) Logger::LogError(LogSource, "Failed to set player " + str(id) + " to team " + str(team) + ". Team switch failed.");
+        else Logger::LogDebug(LogSource, "Player (\cd" + str(id) + "\cj) \cd" + BCSUTILS::PlayerName(id) + "\cj was set to team \cd" + str(team) + "\cj.");
+    }
+}

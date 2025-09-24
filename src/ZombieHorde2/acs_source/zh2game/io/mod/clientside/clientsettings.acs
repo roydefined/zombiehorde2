@@ -1,0 +1,124 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    internal bool ParseRequestedClientSettings(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "requestedclientsettings")) return false;
+        Logger::LogDebug(LogSource, "Start parsing client settings.");
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            if (ParseSetting(handle))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing client settings: '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LogSource, "Finished parsing client settings.");
+        return true;
+    }
+
+    internal bool ParseSetting(int handle)
+    {
+        if (!Tokenizer::ExpectToken(handle, Tokenizer::TLBRACE)) return false;
+        Logger::LogDebug(LogSource, "Start parsing single client settings.");
+
+        // No more room for more cvars. Log a warning and skip the remaining body.
+        int count = ZH2Game::PersistingGameContext.RequestedClientSettingCount;
+        if (count >= SETTINGS_CLIENTMAX)
+        {
+            Logger::LogWarning(LogSource, "The maximum number of configurable client settings was reached (" + str(count) + ").");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSYMBOL)) return false;
+
+        str type = BCSUtils::StrToLower(Tokenizer::GetSymbol(handle));
+        if (type != "cvar"
+            && type != "key")
+        {
+            Tokenizer::SetErrored(handle, "Expected type 'cvar' or 'key' for client setting but received '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Expected cvar or key name but received '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        str name = Tokenizer::GetSymbol(handle);
+
+        // Optional comma.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+        
+        if (!Tokenizer::TryParseBooleanOrNumbericValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for cvar or key " + name + " is not a correct value. Expected boolean or numeric value within bounds. Received '" + Tokenizer::GetSymbol(handle) + "'");
+            return false;
+        }
+
+        // For keybinds we assume any non-zero value is `true`.
+        raw parsedValue = (int)Tokenizer::GetParsedValue();
+        int value = type == "cvar" ? parsedValue : int(parsedValue > 0);
+
+        // Optional comma.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Expected setting string label but received '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        str label = Tokenizer::GetSymbol(handle);
+
+        // Optional comma.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        if (!Tokenizer::ExpectChar(handle, '}'))
+            return false;
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LogSource,
+            "Finished parsing client setting. Type: \cd" + type + "\cj. Name: \cd" + name + "\cj. Value: \cd" + str(value) + "\cj. Label: \cd" + label + "\cj.");
+
+        // Set the setting.
+        ZH2Game::PersistingGameContext.RequestedClientSettings[count].Type = type;
+        ZH2Game::PersistingGameContext.RequestedClientSettings[count].Name = name;
+        ZH2Game::PersistingGameContext.RequestedClientSettings[count].Value = value;
+        ZH2Game::PersistingGameContext.RequestedClientSettings[count].Label = label;
+        ZH2Game::PersistingGameContext.RequestedClientSettingCount++;
+        return true;
+    }
+}

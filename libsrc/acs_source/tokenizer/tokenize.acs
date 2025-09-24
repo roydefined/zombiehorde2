@@ -1,0 +1,473 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+#define LogSource "Tokenize"
+
+#include "parseutils.acs"
+
+strict namespace Tokenizer
+{
+	internal TokenizerT _tokenizers[MAX_TOKENIZERS];
+
+	TokenTypeT GetToken(int handle)
+	{
+		if (!IsActive(handle)) return TUNKNOWN;
+		return _tokenizers[handle].Token;
+	}
+
+	str GetSymbol(int handle)
+	{
+		if (!IsActive(handle)) return "";
+
+		// Special handling for strings, to remove the quotes.
+		str symbol = _tokenizers[handle].Symbol;
+		return _tokenizers[handle].Token == TSTRING
+			? StrMid(symbol, 1, StrLen(symbol) - 2)
+			: symbol;
+	}
+
+	int GetParenthesisLevel(int handle)
+	{
+		if (!IsActive(handle)) return 0;
+		return _tokenizers[handle].ParenthesisLevel;
+	}
+
+	int GetBraceLevel(int handle)
+	{
+		if (!IsActive(handle)) return 0;
+		return _tokenizers[handle].BraceLevel;
+	}
+
+	int GetBracketLevel(int handle)
+	{
+		if (!IsActive(handle)) return 0;
+		return _tokenizers[handle].BracketLevel;
+	}
+
+	int GetPosition(int handle)
+	{
+		if (!IsActive(handle)) return 0;
+		return _tokenizers[handle].Position;
+	}
+
+	bool IsActive(int handle)
+	{
+		return handle >= 0
+			&& handle < MAX_TOKENIZERS
+			&& _tokenizers[handle].State == STATEACTIVE;
+	}
+
+	bool CanRead(int handle)
+	{
+		TokenTypeT token = GetToken(handle);
+		return IsActive(handle)
+			&& token != TUNKNOWN
+			&& token != TEOF;
+	}
+
+	void SetErrored(int handle, str message = "")
+	{
+		if (!IsActive(handle)) return;
+
+		_tokenizers[handle].State = STATEERRORED;
+		
+		if (message != "")
+		{
+			Logger::LogError(LogSource, message + " Line: " + str(GetLine(handle)) + ". Position: " + str(GetLinePosition(handle)) + ".");
+		}
+	}
+
+	str HandleToString(int handle)
+	{
+		if (!IsActive(handle)) return "";
+		TokenizerT& tokenizer = _tokenizers[handle];
+		return "Parenthesis level: " + str(tokenizer.ParenthesisLevel) + ". Brace level: " + str(tokenizer.BraceLevel) + ". Bracket level: " + str(tokenizer.BracketLevel) + ". Current token: " + str(tokenizer.Token) + ". Current symbol: " + tokenizer.Symbol + ".";
+	}
+
+	int RentTokenizer(str buffer)
+	{
+		for (int i = 0; i < MAX_TOKENIZERS; ++i)
+		{
+			if (_tokenizers[i].State != STATENONE) continue;
+
+			TokenizerT& tokenizer = _tokenizers[i];
+			tokenizer.Buffer = buffer;
+
+			tokenizer.PositionStart = 0;
+			tokenizer.Position = 0;
+			tokenizer.LinePositionStart = 0;
+			tokenizer.Line = 1;
+
+			tokenizer.ParenthesisLevel = 0;
+			tokenizer.BraceLevel = 0;
+			tokenizer.BracketLevel = 0;
+
+			tokenizer.Symbol = "";
+			tokenizer.Token = TUNKNOWN;
+			tokenizer.State = STATEACTIVE;
+			return i;
+		}
+
+		Logger::LogError(LogSource, "Max number of tokenizer rent (" + str(MAX_TOKENIZERS) + ").");
+		return -1;
+	}
+
+    void ReturnTokenizer(int handle)
+    {
+        if (_tokenizers[handle].State == STATENONE)
+        {
+		    Logger::LogError(LogSource, "The tokenizer with handle " + str(handle) + " is not being used and can't be returned.");
+            return;
+        }
+
+        _tokenizers[handle].State = STATENONE;
+    }
+	
+	void Next(int handle, bool errorOnEOF = true)
+	{
+		if (!IsActive(handle)) return;
+		TokenizerT& tokenizer = _tokenizers[handle];
+
+		SkipNonTokenizableContent(handle);
+
+		tokenizer.PositionStart = tokenizer.Position;
+
+        tokenizer.Symbol = (raw)0;
+		tokenizer.Token = NextToken(handle);
+
+        // Strings are setting themselves in `NextToken`
+        if (tokenizer.Symbol == (raw)0)
+		    tokenizer.Symbol = StrMid(tokenizer.Buffer, tokenizer.PositionStart, tokenizer.Position - tokenizer.PositionStart);
+
+		tokenizer.ParenthesisLevel += tokenizer.Token == TLPAREN ? 1 : tokenizer.Token == TRPAREN ? -1 : 0;
+		tokenizer.BraceLevel += tokenizer.Token == TLBRACE ? 1 : tokenizer.Token == TRBRACE ? -1 : 0;
+		tokenizer.BracketLevel += tokenizer.Token == TLBRACKET ? 1 : tokenizer.Token == TRBRACKET ? -1 : 0;
+
+		//Logger::LogDebug(LogSource, "Token: " + str(_token) + ", Symbol: \cd" + _symbol + "\cj.");
+		
+		if (errorOnEOF && tokenizer.Token == TEOF)
+		{
+			Logger::LogError(LogSource, "Unexpected end of file.");
+			tokenizer.State = STATEERRORED;
+		}
+	}
+
+	bool ExpectNextChar(int handle, int character)
+	{
+		return ExpectNextStr(handle, StrParam(c:character));
+	}
+
+	bool ExpectNextStr(int handle, str string)
+	{
+		Next(handle);
+		return ExpectStr(handle, string);
+	}
+
+	bool ExpectNextToken(int handle, TokenTypeT tokenType)
+	{
+		Next(handle);
+		return ExpectToken(handle, tokenType);
+	}
+	
+	bool ExpectChar(int handle, int character)
+	{
+		return ExpectStr(handle, StrParam(c:character));
+	}
+
+	bool ExpectStr(int handle, str string)
+	{
+		if (!IsActive(handle)) return false;
+		str symbol = GetSymbol(handle);
+		if (symbol != string)
+		{
+			SetErrored(handle, "Expected '" + str(string) + "', received '" + symbol + "'.");
+			return false;
+		}
+
+		return true;
+	}
+
+	bool ExpectToken(int handle, TokenTypeT tokenType)
+	{
+		if (!IsActive(handle)) return false;
+		TokenTypeT currentTokenType = GetToken(handle);
+		if (currentTokenType != tokenType)
+		{
+			SetErrored(handle, "Expected token '" + str(tokenType) + "', received '" + str(currentTokenType) + "'.");
+			return false;
+		}
+
+		return true;
+	}
+	
+	internal void SkipNonTokenizableContent(int handle)
+	{
+		TokenizerT& tokenizer = _tokenizers[handle];
+		while(true)
+		{
+			int currentCharacter = GetCurrentCharacter(handle);
+		
+			// End of file
+			if (currentCharacter == '\0')
+				break;
+			
+			// New line characters.
+			if (currentCharacter == '\r' || currentCharacter == '\n')
+			{
+				//Logger::LogDebug(LogSource, "Start skipping new line.");
+
+				// Supports '\r\n' on Windows.
+				if (currentCharacter == '\r')
+					tokenizer.Position++;
+
+				IncrementLine(handle);
+				tokenizer.Position++;
+				continue;
+			}
+			
+			// General whitespace (includes newlines, but this is handled above already)
+			if (BCSUtils::IsSpace(currentCharacter))
+			{
+				tokenizer.Position++;
+				continue;
+			}
+			
+			// Single line comment
+			if (CompareCurrent(handle, "//"))
+			{
+				//Logger::LogDebug(LogSource, "Start skipping single line comment.");
+
+				tokenizer.Position += 2;
+				currentCharacter = GetCurrentCharacter(handle);
+				
+				// Read the whole line until we either get to the next line or we reach the end of the buffer.
+				while (currentCharacter != '\0'
+					&& currentCharacter != '\r'
+					&& currentCharacter != '\n')
+				{
+					tokenizer.Position++;
+					currentCharacter = GetCurrentCharacter(handle);
+					//Logger::LogDebug(LogSource, "Char: " + (str)currentCharacter + ".");
+				}
+				
+				if (currentCharacter == '\r')
+					tokenizer.Position++;
+				
+				if (GetCurrentCharacter(handle) == '\n')
+					tokenizer.Position++;
+				
+				IncrementLine(handle);
+				continue;
+			}
+			
+			// Multi line comment
+			if (CompareCurrent(handle, "/*"))
+			{
+				//Logger::LogDebug(LogSource, "Start skipping multi line comment.");
+
+				tokenizer.Position += 2;
+				currentCharacter = GetCurrentCharacter(handle);
+				
+				// Read the whole line until we either get the closing characters or we reach the end of the buffer.
+				while (currentCharacter != '\0'
+					&& !CompareCurrent(handle, "*/"))
+				{
+					// Don't think this needs anything special since we just need to increment the line?
+					if (currentCharacter == '\n')
+					{
+						IncrementLine(handle);
+					}
+				
+					tokenizer.Position++;
+					currentCharacter = GetCurrentCharacter(handle);
+				}
+				
+				// Only increment the position if we haven't reached the end of the file.
+				if (currentCharacter != '\0')
+					tokenizer.Position += 2;
+					
+				continue;
+			}
+			
+			break;
+		}
+
+		//Logger::LogDebug(LogSource, "Finished.");
+	}
+	
+	internal TokenTypeT NextToken(int handle)
+	{
+		TokenizerT& tokenizer = _tokenizers[handle];
+		int currentCharacter = GetCurrentCharacter(handle);
+	
+		// Single character cases
+		switch(currentCharacter)
+		{
+			case '\0': return TEOF;
+			case '#': tokenizer.Position++; return THASH;
+			case ',': tokenizer.Position++; return TCOMMA;
+			case ':': tokenizer.Position++; return TCOLON;
+			case ';': tokenizer.Position++; return TSEMI;
+			case '=': tokenizer.Position++; return TEQ;
+			case '(': tokenizer.Position++; return TLPAREN;
+			case ')': tokenizer.Position++; return TRPAREN;
+			case '{': tokenizer.Position++; return TLBRACE;
+			case '}': tokenizer.Position++; return TRBRACE;
+			case '[': tokenizer.Position++; return TLBRACKET;
+			case ']': tokenizer.Position++; return TRBRACKET;
+			case '.': tokenizer.Position++; return TDOT;
+			case '$': tokenizer.Position++; return TDOLLAR;
+		}
+		
+		// Strings
+        // TODO: support other variants of escape codes.
+        if (currentCharacter == '"')
+        {
+            tokenizer.Position++;
+            currentCharacter = GetCurrentCharacter(handle);
+
+            str cooked = "\"";
+            while (currentCharacter != '\0' && currentCharacter != '"')
+            {
+                if (currentCharacter == '\\')
+                {
+                    tokenizer.Position++;
+                    int nextChar = GetCurrentCharacter(handle);
+
+                    // color codes
+                    if (nextChar == 'c')
+                    {
+                        cooked += StrParam(c:28);
+                        tokenizer.Position++;
+                    }
+
+                    // literal '\'
+                    else if (nextChar == '\\')
+                    {
+                        cooked += "\\";
+                        tokenizer.Position++;
+                    }
+                    else
+                    {
+                        // Keep both if not one of our special escapes
+                        cooked += "\\";
+                        cooked += StrParam(c:nextChar);
+                        tokenizer.Position++;
+                    }
+                }
+                else
+                {
+                    cooked += StrParam(c:currentCharacter);
+                    tokenizer.Position++;
+                }
+                currentCharacter = GetCurrentCharacter(handle);
+            }
+
+            // Append the closing quote if present.
+            if (currentCharacter != '\0')
+            {
+                cooked += "\"";
+                tokenizer.Position++;
+            }
+
+            tokenizer.Symbol = cooked;
+            return TSTRING;
+        }
+		
+		// Dashes
+		// This check is explicitly before numbers so we can fall through in case the dash is of a negative number.
+		if (currentCharacter == '-')
+		{
+			tokenizer.Position++;
+			currentCharacter = GetCurrentCharacter(handle);
+				
+			// Do we get a number now?
+			if (!BCSUtils::IsDigit(currentCharacter))
+				return TDASH;
+		}
+		
+		// Numbers
+		// There's an explicit check to determine if the value is an integer or a floating point number.
+		if (BCSUtils::IsDigit(currentCharacter))
+		{
+			tokenizer.Position++;
+			currentCharacter = GetCurrentCharacter(handle);
+			
+			bool isFloatingPoint = false;
+			
+			// Iterate to the end of the number.
+			// Note this also supports underscore numbers and decimal numbers, such as `100_000_000` and `100.10`.
+			while (currentCharacter != '\0'
+				&& BCSUtils::IsDigit(currentCharacter)
+				|| currentCharacter == '_'
+				|| currentCharacter == '.')
+			{
+				// If we had a dot, assume it's a floating point.
+				if (currentCharacter == '_')
+					isFloatingPoint = true;
+			
+				tokenizer.Position++;
+				currentCharacter = GetCurrentCharacter(handle);
+			}
+			
+			// TODO: Should explicitly check if the last character we checked is a number.
+			// Otherwise the number can be something like `100_000_` or `100.`
+			
+			return isFloatingPoint ? TFLOAT : TINTEGER;
+		}
+		
+		// The next character is not a known token type.
+		// We want to continue iterating the value until it is no longer an alnum.
+		// We also accept underscores here because those are commonly used in a word.
+		int startPosition = tokenizer.Position;
+		while(BCSUtils::IsAlNum(currentCharacter)
+			|| currentCharacter == '_')
+		{
+			tokenizer.Position++;
+			currentCharacter = GetCurrentCharacter(handle);
+		}
+		
+		// If we did not increment at all we forcefully increment once so we return a single symbol character.
+		if (tokenizer.Position - startPosition == 0)
+		{
+			tokenizer.Position++;
+		}
+		
+		return TSYMBOL;
+	}
+
+	internal void IncrementLine(int handle)
+	{
+		TokenizerT& tokenizer = _tokenizers[handle];
+		tokenizer.Line++;
+		tokenizer.LinePositionStart = tokenizer.Position;
+	}
+
+	internal int GetLine(int handle)
+	{
+		TokenizerT& tokenizer = _tokenizers[handle];
+		return tokenizer.Line;
+	}
+
+	internal int GetLinePosition(int handle)
+	{
+		TokenizerT& tokenizer = _tokenizers[handle];
+		return tokenizer.Position - tokenizer.LinePositionStart;
+	}
+	
+	internal int GetCurrentCharacter(int handle)
+	{
+		TokenizerT& tokenizer = _tokenizers[handle];
+		return GetChar(tokenizer.Buffer, tokenizer.Position);
+	}
+	
+	internal bool CompareCurrent(int handle, str comparer)
+	{
+		TokenizerT& tokenizer = _tokenizers[handle];
+		str comparing = StrMid(tokenizer.Buffer, tokenizer.Position, StrLen(comparer));
+		return comparing == comparer;
+	}
+}
+
+#undef LogSource

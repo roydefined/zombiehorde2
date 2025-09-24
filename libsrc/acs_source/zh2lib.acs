@@ -1,0 +1,48 @@
+#ifdef __INCLUDED__
+	#error This file must be #imported.
+#endif
+
+#nocompact
+#pragma raw include on
+#pragma raw define on
+
+#library "zh2lib"
+
+#include "cvars.acs"
+#include "validation.acs"
+
+#import "zcommon.bcs"
+#import "bcsutils.acs"
+
+#include "zh2lib.h.acs"
+
+#include "utils/utils.acs"
+#include "tokenizer/tokenize.acs"
+#include "weather/weather.acs"
+#include "logger/logger.acs"
+#include "eventbus/eventbus.acs"
+#include "bitMath/bitmath.acs"
+#include "packet/packet.acs"
+#include "weight/weight.acs"
+#include "identity/identity.acs"
+#include "footstep/footstep.acs"
+#include "trackedproperties/trackedproperties.acs"
+#include "libdecorate/libdecorate.acs"
+#include "libio/libio.acs"
+#include "math/math.acs"
+
+#define LogSource "ZH2Lib"
+
+strict namespace ZH2Lib
+{
+	void ResetPlayerLibContext(int id)
+    {
+        Logger::LogDebug(LogSource, "Resetting player lib context for player " + str(id) + ".");
+
+        static LibPlayerT emptyPlayerDef;
+        if (!Memcpy(LibContext.Players[id], emptyPlayerDef))
+            Logger::LogError(LogSource, "Failed to empty player lib context for player " + str(id) + ".");
+    }
+}
+
+#undef LogSource

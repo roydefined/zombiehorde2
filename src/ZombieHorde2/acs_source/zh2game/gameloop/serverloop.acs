@@ -1,0 +1,26 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace GameLoop
+{
+    script "zh2_internal_serverloop"
+    {
+        Logger::LogDebug(LogSource, "Server loop started.");
+        while(true)
+        {
+            // After a short delay on the play timer, we start tracking the game state and see if it should end.
+            if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING && Game::GetPlayTime() > 35)
+            {
+                // Game should end, one side won or we tied.
+                if (Game::UpdateWinningSpecie())
+                    Game::EndGame();
+            }
+
+            RoundTimer::TicServer();
+            Resist::TicServer();
+            Game::FullServerTicServer();
+            Delay(const: 1);
+        }
+    }
+}

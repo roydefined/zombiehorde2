@@ -1,0 +1,50 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    // Note these hardcode to always return 200 in case the value is unset.
+    // Should never happen, but at least it prevents questionable deaths on infect which makes it clear it's unconfigured.
+    internal int GetInitialZombieMaxHealth() { return ZH2Game::GameContext.InitialZombieMaxHealth != 0 ? ZH2Game::GameContext.InitialZombieMaxHealth : 200; }
+    internal int GetInitialZombieMinHealth() { return ZH2Game::GameContext.InitialZombieMinHealth != 0 ? ZH2Game::GameContext.InitialZombieMinHealth : 200; }
+    internal int GetRegularZombieMaxHealth() { return ZH2Game::GameContext.RegularZombieMaxHealth != 0 ? ZH2Game::GameContext.RegularZombieMaxHealth : 200; }
+    internal int GetRegularZombieMinHealth() { return ZH2Game::GameContext.RegularZombieMaxHealth != 0 ? ZH2Game::GameContext.RegularZombieMaxHealth : 200; }
+
+    internal void SetZombieHealthValues(bool initial, int max, int min)
+    {
+        if (initial)
+        {
+            ZH2Game::GameContext.InitialZombieMaxHealth = max;
+            ZH2Game::GameContext.InitialZombieMinHealth = min;
+        }
+        else
+        {
+            ZH2Game::GameContext.RegularZombieMaxHealth = max;
+            ZH2Game::GameContext.RegularZombieMinHealth = min;
+        }
+    }
+
+    // Determines what health to provide to the given player if they were to become a initial zombie.
+    internal int DetermineHealthToGivePlayerInitialZombie(int id)
+    {
+        int max = GetInitialZombieMaxHealth();
+        int min = GetInitialZombieMinHealth();
+        return min + GetPlayerHPFactor(id) * (max - min);
+    }
+
+    // Determines what health to provide to the given player if they were to become a regular zombie.
+    internal int DetermineHealthToGivePlayerRegularZombie(int id)
+    {
+        int max = GetRegularZombieMaxHealth();
+        int min = GetRegularZombieMinHealth();
+        return min + GetPlayerHPFactor(id) * (max - min);
+    }
+
+    internal int GetPlayerHPFactor(int id)
+    {
+        int tid = Identity::GetTid(id);
+        return BCSUtils::Clamp(
+            fixed(BCSUtils::GetActorHealth(tid) / BCSUtils::GetActorSpawnHealth(tid)), 0.0, 1.0);
+    }
+}

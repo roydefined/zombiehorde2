@@ -1,0 +1,100 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+// The purpose of this script is allowing developers to properly wait for the mod to initialize and prevent issues with race conditions.
+// On top of that it's certain that waiting for this script means that the state of the mod is valid and ready.
+
+// These definitions can be used in scripts to wait for delayed scripts to end.
+// The reason why they are definitions is because we combined them with a check to ensure we must wait
+// and because NamedScriptWait mus tbe directly in a script.
+#define WAIT_FOR_SCRIPT_PARSE_PERSISTING_MOD_DEFS_SERVERSIDE() \
+    if (!ZH2Game::PersistingGameContext.ParsedModDefServerside) \
+        NamedScriptWait(SCRIPT_PARSE_PERSISTING_MOD_DEFS_SERVERSIDE);
+
+#define WAIT_FOR_SCRIPT_PARSE_PERSISTING_MOD_DEFS_CLIENTSIDE() \
+    if (!ZH2Game::PersistingGameContext.ParsedModDefClientside) \
+        NamedScriptWait(SCRIPT_PARSE_PERSISTING_MOD_DEFS_CLIENTSIDE);
+
+#define WAIT_FOR_SCRIPT_PARSE_PERSISTING_MAP_POSITION_DEFS() \
+    if (!ZH2Game::PersistingGameContext.MapBaseCollection.Initialized) \
+        NamedScriptWait(SCRIPT_PARSE_PERSISTING_MAP_POSITION_DEFS);
+
+#define WAIT_FOR_SCRIPT_PARSE_CURRENT_MAP_DEFS() \
+    if (!ZH2Game::GameContext.ParsedMapDetails) \
+        NamedScriptWait(SCRIPT_PARSE_CURRENT_MAP_DEFS);
+
+#define WAIT_FOR_SCRIPT_PARSE_PERSISTING_FOOTSTEP_DEFS() \
+    if (!ZH2Lib::PersistingLibContext.StepContext.IsParsed) \
+        NamedScriptWait(SCRIPT_PARSE_PERSISTING_FOOTSTEP_DEFS);
+
+#define WAIT_FOR_SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_CLIENTSIDE() \
+    if (!ZH2Lib::PersistingLibContext.LogContext.IsParsedClientside) \
+        NamedScriptWait(SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_CLIENTSIDE);
+
+#define WAIT_FOR_SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_SERVERSIDE() \
+    if (!ZH2Lib::PersistingLibContext.LogContext.IsParsedServerside) \
+        NamedScriptWait(SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_SERVERSIDE);
+
+// Used in the enter/respawn function to ensure data was initialized.
+// This must specify the last waited script, currently being current map defs in both cases.
+// To ensure the open script also finishes the remaining logic we add a delay.
+// (We could just wait for the script to end but this might not be relevant, and it requires extra variables).
+#define WAIT_FOR_SCRIPT_OPEN_SERVER() \
+    WAIT_FOR_SCRIPT_PARSE_CURRENT_MAP_DEFS(); \
+    Delay(const: 1);
+
+#define WAIT_FOR_SCRIPT_OPEN_CLIENT() \
+    WAIT_FOR_SCRIPT_PARSE_CURRENT_MAP_DEFS(); \
+    Delay(const: 1);
+
+strict namespace ZH2Game
+{
+    // This ensures that depending code doesn't wait for a script to finish which already finished.
+    internal bool _serversideAwaiterRanToCompletion = false;
+    internal bool _clientsideAwaiterRanToCompletion = false;
+
+    str GetServersideAwaiter() { return "zh2_internal_initialize_awaiter_server"; }
+    str GetClientsideAwaiter() { return "zh2_internal_initialize_awaiter_client"; }
+
+    bool GetServersideAwaiterCompleted() { return _serversideAwaiterRanToCompletion; }
+    bool GetClientsideAwaiterCompleted() { return _clientsideAwaiterRanToCompletion; }
+
+    // The server awaiter ensures the persisting IO data was parsed.
+    // Then, the map data is being awaited.
+
+    script "zh2_internal_initialize_awaiter_server"
+    {
+        if (_serversideAwaiterRanToCompletion)
+            terminate;
+
+        WAIT_FOR_SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_SERVERSIDE();
+        WAIT_FOR_SCRIPT_PARSE_CURRENT_MAP_DEFS();
+
+        _serversideAwaiterRanToCompletion = true;
+        
+        Delay(const: 1);
+        Logger::LogDebug(LogSource, "Awaiter finished (server).");
+    }
+
+    script "zh2_internal_initialize_awaiter_client"
+    {
+        if (_clientsideAwaiterRanToCompletion)
+            terminate;
+
+        // Wait until we know the target sync method.
+        while (BCSUtils::GetSyncVarDefault(SYNC_BASE, 0) == 0) Delay(const: 1);
+        
+        WAIT_FOR_SCRIPT_PARSE_PERSISTING_FOOTSTEP_DEFS();
+        if (IsNetworkGame())
+        {
+            WAIT_FOR_SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_CLIENTSIDE();
+            WAIT_FOR_SCRIPT_PARSE_CURRENT_MAP_DEFS();
+        }
+
+        _clientsideAwaiterRanToCompletion = true;
+        
+        Delay(const: 1);
+        Logger::LogDebug(LogSource, "Awaiter finished (client).");
+    }
+}

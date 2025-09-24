@@ -1,0 +1,135 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+#define LogSource "Footstep"
+
+strict namespace Footstep
+{
+	// Called from the client's loop for each ingame player index.
+	void FootstepTicPlayerClient(int id)
+	{
+		VALIDATE_IS_CLIENTSIDE_FUNCTION();
+		VALIDATE_ID_VALID_FUNCTION(id);
+
+		// Should we tic this player?
+		int type = ZH2Lib::GetClientStepType();
+
+		// Never.
+		if (type == 0)
+			return;
+
+		// Only self.
+		if (type == 1 && id != ConsolePlayerNumber())
+			return;
+
+		// Type == 2 not checked, because it's for everyone.
+
+		int tid = Identity::GetTid(id);
+		int consolePlayerTid = Identity::GetTid(ConsolePlayerNumber());
+
+		if (!BCSUtils::ActorIsAlive(tid))
+			return;
+		
+		// Check distance between the source and the client.
+		if (BCSUtils::ActorDistance(tid, consolePlayerTid) > fixed(ZH2Lib::GetClientMaxStepDistance()))
+			return;
+
+		// Ignore actors in the air.
+		if (GetActorZ(tid) - GetActorFloorZ(tid) > 0.0)
+			return;
+
+		// Check if we should play the next step of this client.
+		if (ZH2Lib::LibContext.StepTimestamps[id] > Timer())
+			return;
+		
+		ZH2Lib::LibContext.StepTimestamps[id] = Timer() + TriggerFootstep(tid);
+	}
+
+	// Main method to trigger the step.
+	// Returns the number of tics to wait until we trigger a new footstep.
+	internal int TriggerFootstep(int tid)
+	{
+		// Scaled volume and delay based on what the actor's velocity is.
+        // We also take into account if the player is currently crouched.
+        fixed viewHeight = GetActorProperty(tid, APROP_ViewHeight);
+        fixed actualViewHeight = GetActorViewHeight(tid);
+        fixed crouchedModifier = actualViewHeight / viewHeight;
+
+		fixed actorSpeed = BCSUtils::GetActorXYVelocity(tid);
+		int stepVolume = BCSUtils::Ifloor(12.0 * actorSpeed * crouchedModifier),
+			stepDelay  = BCSUtils::Ifloor(18.0 - actorSpeed / 2.0);
+
+		str texture = GetActorFloorTexture(tid);
+
+		// Find a valid definition.
+		// If -1, we fall back to a default sound as nothing is defined.
+		int definition = GetStepDefinition(texture);
+		if (definition == -1)
+		{
+			ThingSound(tid, "terrainstep/DEFAULT", stepVolume);
+		}
+		else
+		{
+			str sound = ZH2Lib::PersistingLibContext.StepContext.Collection[definition].Sound;
+			fixed volume = ZH2Lib::PersistingLibContext.StepContext.Collection[definition].Volume;
+			str terrainActor = ZH2Lib::PersistingLibContext.StepContext.Collection[definition].TerrainActor;
+			
+			ThingSound(tid, sound, int(fixed(stepVolume) * volume));
+
+			// Spawn an actor if defined, on the actor's position.
+			if ((raw)terrainActor != 0 && terrainActor != "")
+				SpawnForced(terrainActor, GetActorX(tid), GetActorY(tid), GetActorZ(tid));
+		}
+
+		return stepDelay;
+	}
+
+	int GetStepDefinition(str textureFull)
+	{
+		// NOTE, we also preserve the original name if the frame must not be split!
+		// Example, the definition can just define WATER01-WATER09, but can also define WATER01 alone.
+		// To support this, we check on definitions if they have a range.
+		// If they do, just take the split entry. If not, use the main name!
+
+		str textureBase = "";
+		int frame = -1;
+
+		int textureSplitIndex = Utils::GetFrameCutoffPoint(textureFull);
+		if (textureSplitIndex != -1)
+		{
+			str textureFrameStr = StrRight(textureFull, StrLen(textureFull) - textureSplitIndex - 1);
+			textureBase = StrLeft(textureFull, textureSplitIndex + 1);
+
+			frame = BCSUtils::Atoi(textureFrameStr);
+			if (BCSUTILS::r1 != BCSUTILS::PARSENUMBER_SUCCESS)
+			{
+				Logger::LogWarning(LogSource, "Texture frame " + textureFrameStr + " of texture " + textureBase + " is not a valid integer. Ignoring frame.");
+
+				textureBase = "";
+				frame = -1;
+			}
+		}
+
+		int count = ZH2Lib::PersistingLibContext.StepContext.Count;
+		for (int i = 0; i < count; ++i)
+		{
+			str surface = ZH2Lib::PersistingLibContext.StepContext.Collection[i].Surface;
+			int surfaceFrameStart = ZH2Lib::PersistingLibContext.StepContext.Collection[i].SurfaceFrameStart;
+			int surfaceFrameEnd = ZH2Lib::PersistingLibContext.StepContext.Collection[i].SurfaceFrameEnd;
+			bool hasRange = ZH2Lib::PersistingLibContext.StepContext.Collection[i].HasRange;
+
+			// Name match. Definition has no range so we don't check it.
+			if (!hasRange && BCSUtils::StrIEquals(surface, textureFull))
+				return i;
+			
+			// Name match + frame in the given range.
+			if (hasRange && BCSUtils::StrIEquals(surface, textureBase) && frame >= surfaceFrameStart && frame <= surfaceFrameEnd)
+				return i;
+		}
+
+		return -1;
+	}
+}
+
+#undef LogSource

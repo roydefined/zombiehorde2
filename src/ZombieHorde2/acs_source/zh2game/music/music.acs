@@ -1,0 +1,42 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LogSource "Music"
+
+strict namespace Music
+{
+    internal void SetMusic(str track, int order = 0)
+    {
+        upmost::SetMusic(track, order);
+    }
+
+    internal void SetDefaultMusic(str track, int order = 0)
+    {
+        SetMusic(track, order);
+        SetCVarString(CVAR_SYNC_RADIO_NAME, track);
+        SetCVar(CVAR_SYNC_RADIO_ORDER, order);
+    }
+
+    internal void PlayDefaultMusic()
+    {
+        SetMusic(GetDefaultMusicTrack(), GetDefaultMusicOrder());
+    }
+
+    internal str GetDefaultMusicTrack()
+    {
+        str track = GetCVarString(CVAR_SYNC_RADIO_NAME);
+        if (track == "")
+            return "*";
+        
+        return track;
+    }
+
+    internal int GetDefaultMusicOrder()
+    {
+        int order = GetCvar(CVAR_SYNC_RADIO_ORDER);
+        return order;
+    }
+}
+
+#undef LogSource

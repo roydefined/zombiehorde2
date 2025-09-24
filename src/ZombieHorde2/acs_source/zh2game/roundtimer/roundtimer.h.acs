@@ -1,0 +1,51 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace RoundTimer
+{
+    // Hardcoded limit on timers to avoid too many of them.
+    // Also, the actor based sync approach requires preset cvars which must be extended to match this count.
+    // In the future I will support the ability to allocate these to allow for more, but this requires an extra library.
+    #define MAX_TIMERS 20
+
+    internal struct RoundTimerInitialStateT
+    {
+        int Length;
+        int MaximumTime;
+        int Flags;
+        str Label;
+    };
+
+    internal struct RoundTimerContextT
+    {
+        RoundTimerInitialStateT InitialState;
+
+        // Set to `true` if we defined the timer index.
+        bool defined;
+
+        int EndingTic;
+        int PauseTic;
+        int Flags;
+    };
+    
+    internal enum RoundTimerFlags : int
+    {
+        TIMERHIDDEN = 1 << 0,
+        TIMERDRAWDECIMALS = 1 << 1,
+        TIMERDOCOUNTDOWN = 1 << 2,
+    };
+
+    // A known timer is a timer that the mod has build in, which is different from a custom timer which does not.
+    // The support is all the same, but this is easier for the mod because we can use this enum for clarity.
+    internal enum KnownRoundTimerT : int
+    {
+        TIMERNONE,
+        TIMERPREGAMECOUNTDOWN,
+        TIMERCOUNTDOWN,
+        TIMERPLAYING,
+        TIMERENDING,
+        TIMERVOTING,
+        TIMERVOTED,
+    };
+}
