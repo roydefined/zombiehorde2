@@ -10,4 +10,4 @@
 </div>
 
 > [!WARNING]  
-> **Zombie Horde 2 is currently in an alpha state**. Content is subject to change, and you may encounter bugs.
+> **Zombie Horde 2 is currently in a beta state**. Content is subject to change, and you may encounter bugs.
