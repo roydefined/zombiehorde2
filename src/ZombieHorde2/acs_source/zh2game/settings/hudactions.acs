@@ -1,0 +1,62 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Settings
+{
+    internal void CloseMenuAndOpenCustomizeMenu()
+    {
+        if (!ACS_NamedExecute("zh2_internal_client_settings_close_menu_and_open_customize_menu", 0, 0))
+            Logger::LogError(LOGSOURCE , "Failed to call menu close and open customize controls menu.");
+    }
+
+    internal void CloseMenuAndOpenZh2Menu()
+    {
+        if (!ACS_NamedExecute("zh2_internal_client_settings_close_menu_and_open_customize_menu", 0, 1))
+            Logger::LogError(LOGSOURCE , "Failed to call menu close and open customize controls menu.");
+    }
+
+    script "zh2_internal_client_settings_close_menu_and_open_customize_menu" (int index) clientside
+    {
+        CloseClientSettingsMenu();
+
+        // Artificial delay so we can make sure the menu is closed and we are unfrozen.
+        Delay(const: 1);
+
+        // Determine the menu to open.
+        str menuName = index == 0 ? "CustomizeControls"
+            : index == 1 ? "ZH2OptionsMenu"
+            : "UnknownMenu";
+            
+        if (!OpenMenu(menuName))
+            Logger::LogWarning(LOGSOURCE , "Could not open menu " + menuName + ".");
+    }
+
+    internal void OpenClientSettingsMenu()
+    {
+        ZH2Game::GameContext.HasClientSettingsHudOpen = true;
+        ZH2Game::GameContext.HasAdminHudOpen = false; // Also make sure the admin hud is disabled.
+        Hud::SetCursorEnabled(true);
+
+        if (!NamedRequestScriptPuke("zh2_internal_menu_clientsettings_request_set_frozen", int(true)))
+            Logger::LogError(LOGSOURCE , "Failed to set frozen state on player for settings hud.");
+    }
+
+    internal void CloseClientSettingsMenu()
+    {
+        ZH2Game::GameContext.HasClientSettingsHudOpen = false;
+        Hud::SetCursorEnabled(false);
+
+        if (!NamedRequestScriptPuke("zh2_internal_menu_clientsettings_request_set_frozen", int(false)))
+            Logger::LogError(LOGSOURCE , "Failed to unset frozen state on player for settings hud.");
+    }
+
+    
+    // Called from the client to set/unset freeze.
+    script "zh2_internal_menu_clientsettings_request_set_frozen" (int set) net
+    {
+        if (set && TrackedProperties::AddProperty((int)TrackedProperties::TRACKED_TOTALLYFROZEN)
+            || !set && TrackedProperties::RemoveProperty((int)TrackedProperties::TRACKED_TOTALLYFROZEN))
+            SetPlayerProperty(0, set, PROP_TOTALLYFROZEN);
+    }
+}

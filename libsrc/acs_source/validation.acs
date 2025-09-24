@@ -1,0 +1,86 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+// Below is a collection of definitions that implement various forms of validation that code can use to properly validate the state.
+// We use definitions to inline the code, as functions can remove certain important states.
+
+
+/* PLAYER ID VALIDATION */
+#define VALIDATE_ID_VALID_SCRIPT(id) \
+    if (!Identity::IsValidID(id)) \
+    { \
+        Logger::LogWarning(LOGSOURCE , "Script \cd" + __SCRIPT__ + "\cj - Invalid player ID: " + str(id)); \
+        terminate; \
+    }
+
+#define VALIDATE_ID_VALID_FUNCTION(id) \
+    if (!Identity::IsValidID(id)) \
+    { \
+        Logger::LogWarning(LOGSOURCE , "Function \cd" + __FUNCTION__ + "\cj - Invalid player ID: " + str(id)); \
+        return; \
+    }
+
+#define VALIDATE_ID_VALID_FUNCTION_RETURN(id, returnValue) \
+    if (!Identity::IsValidID(id)) \
+    { \
+        Logger::LogWarning(LOGSOURCE , "Function \cd" + __FUNCTION__ + "\cj - Invalid player ID: " + str(id)); \
+        return returnValue; \
+    }
+
+
+/* PLAYER TID VALIDATION */
+
+#define VALIDATE_TID_VALID_SCRIPT(tid) \
+    if (!Identity::IsValidTID(tid)) \
+    { \
+        Logger::LogWarning(LOGSOURCE , "Script \cd" + __SCRIPT__ + "\cj - Invalid player TID: " + str(tid)); \
+        terminate; \
+    }
+
+#define VALIDATE_TID_VALID_FUNCTION(id) \
+    if (!Identity::IsValidTID(tid)) \
+    { \
+        Logger::LogWarning(LOGSOURCE , "Function \cd" + __FUNCTION__ + "\cj - Invalid player TID: " + str(tid)); \
+        return; \
+    }
+
+#define VALIDATE_TID_VALID_FUNCTION_RETURN(id, returnValue) \
+    if (!Identity::IsValidTID(tid)) \
+    { \
+        Logger::LogWarning(LOGSOURCE , "Function \cd" + __FUNCTION__ + "\cj - Invalid player TID: " + str(tid)); \
+        return; \
+    }
+
+
+/* SERVERSIDE CONTEXT VALIDATION */
+
+#define VALIDATE_IS_SERVERSIDE_FUNCTION() \
+    if (BCSUtils::IsClientOnly()) \
+    { \
+        Logger::LogError(LOGSOURCE , "Function \cd" + __FUNCTION__ + "\cj attempted to start clientside. Call must be serverside!"); \
+        return; \
+    }
+
+#define VALIDATE_IS_SERVERSIDE_FUNCTION_RETURN(returnValue) \
+    if (BCSUtils::IsClientOnly()) \
+    { \
+        Logger::LogError(LOGSOURCE , "Function \cd" + __FUNCTION__ + "\cj attempted to start clientside. Call must be serverside!"); \
+        return returnValue; \
+    }
+    
+/* CLIENTSIDE CONTEXT VALIDATION */
+
+#define VALIDATE_IS_CLIENTSIDE_FUNCTION() \
+    if (BCSUtils::IsServerOnly()) \
+    { \
+        Logger::LogError(LOGSOURCE , "Function \cd" + __FUNCTION__ + "\cj attempted to start serverside. Call must be clientside!"); \
+        return; \
+    }
+
+#define VALIDATE_IS_CLIENTSIDE_FUNCTION_RETURN(returnValue) \
+    if (BCSUtils::IsServerOnly()) \
+    { \
+        Logger::LogError(LOGSOURCE , "Function \cd" + __FUNCTION__ + "\cj attempted to start serverside. Call must be clientside!"); \
+        return returnValue; \
+    }

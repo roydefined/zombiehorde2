@@ -1,0 +1,145 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Decorate
+{
+    script "zh2_dec_checkautousekevlar"
+    {
+        if (ZH2Game::GetAutoUseConsumableItems(PlayerNumber()))
+            UseKevlar();
+    }
+
+    script "zh2_dec_wearkevlar"
+    {
+        if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
+        if (CheckInventory(KEVLAR_ITEM) == 0) terminate;
+        UseKevlar();
+    }
+
+    internal void UseKevlar()
+    {
+        if (CheckInventory(KEVLAR_ARMOR_ITEM) != 0)
+            return;
+
+        // Note, I would set zombie protection power here, but it doesn't persist.
+        TakeInventory(KEVLAR_ITEM, 1);
+        GiveInventory(KEVLAR_ARMOR_ITEM, 1);
+
+        Logger::LogActivator("You are now able to withstand one more hit from zombies.");
+    }
+
+    script "zh2_dec_checkautouseenergy"
+    {
+        if (ZH2Game::GetAutoUseConsumableItems(PlayerNumber()))
+            UseEnergy();
+    }
+
+    script "zh2_dec_useenergy"
+    {
+        if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
+        if (CheckInventory(ENERGY_ITEM) == 0) terminate;
+
+        Player::PanicStateT state = Player::GetPanicState();
+        if (state == Player::PANICSTATEPANICKING)
+        {
+            Logger::LogActivator("You can't use this whilst panicking!");
+            terminate;
+        }
+        if (state == Player::PANICSTATECALMINGDOWN)
+        {
+            Logger::LogActivator("Calm down first.");
+            terminate;
+        }
+
+        UseEnergy();
+    }
+
+    internal void UseEnergy()
+    {
+        TakeInventory(ENERGY_ITEM, 1);
+        BCSUtils::SetInventory(SPRINT_ITEM, SPRINT_ITEM_MAX);
+        Power::SetPowerTics(Power::POWERCAFFEINE, 35 * 30);
+
+        LocalAmbientSound("items/ENERGY", 150);
+        Logger::LogActivator("Caffeine is running through your veins...");
+    }
+
+    script "zh2_dec_checkautousemedikit"
+    {
+        if (ZH2Game::GetAutoUseConsumableItems(PlayerNumber()))
+            UseMedikit();
+    }
+
+    script "zh2_dec_usemedikit"
+    {
+        if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
+        if (CheckInventory(MEDIKIT_ITEM) == 0) terminate;
+
+        Player::PanicStateT state = Player::GetPanicState();
+        if (state == Player::PANICSTATEPANICKING)
+        {
+            Logger::LogActivator("You can't use this whilst panicking!");
+            terminate;
+        }
+        if (state == Player::PANICSTATECALMINGDOWN)
+        {
+            Logger::LogActivator("Calm down first.");
+            terminate;
+        }
+
+        UseMedikit();
+    }
+
+    internal void UseMedikit()
+    {
+        if (BCSUtils::GetActorHealth(0) == 100)
+            return;
+            
+        TakeInventory(MEDIKIT_ITEM, 1);
+        HealThing(40);
+    }
+    
+    script "zh2_dec_useflarebox"
+    {
+        if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
+        if (CheckInventory(FLARE_ITEM) == 2) terminate;
+        if (CheckInventory(FLAREBOX_ITEM) != 1) terminate;
+
+        TakeInventory(FLAREBOX_ITEM, 1);
+        BCSUtils::SetInventory(FLARE_ITEM, 2);
+
+        Logger::LogActivator("You open the box and grab what's inside.");
+    }
+
+    script "zh2_dec_usecure"
+    {
+        if (CheckInventory(CURE_ITEM) == 0) terminate;
+        if (Player::GetInitialZombie())
+        {
+            Logger::LogActivator("You can't cure yourself as an initial zombie.");
+            terminate;
+        }
+
+        TakeInventory(CURE_ITEM, 1);
+
+        // A zombie also gets cured.
+        str messagePart = "";
+        if (!Player::GetPlayerIsHuman(PlayerNumber()))
+        {
+            int genderInt = GetPlayerInfo(PlayerNumber(), PLAYERINFO_GENDER);
+            str gender = genderInt == 0 ? "himself"
+                : genderInt == 1 ? "herself"
+                : genderInt == 2 ? "themself"
+                : "itself";
+
+            messagePart = "has cured " + gender + " and ";
+            Game::CurePlayer(PlayerNumber());
+        }
+
+        Power::GivePower(Power::POWERHUMANIMMUNITY);
+        Logger::LogBold("\cf" + BCSUTILS::PlayerName(PlayerNumber()) + "\cj " + messagePart + "is now immune against the virus!");
+
+        Sync::SyncPlayers();
+    }
+}

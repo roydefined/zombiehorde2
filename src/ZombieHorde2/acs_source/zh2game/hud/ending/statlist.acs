@@ -1,0 +1,58 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    #define HUD_ENGINE_TRUNCATE_LENGTH 14
+
+    internal void DrawList(int id, fixed x, fixed y, str header, int size, int maxShown, int[]& collection, int function(int)? counter)
+    {
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_TOP);
+
+        // Header
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawText(id--, header);
+        DebugDraw();
+
+        y += 25.0;
+
+        // Limit number of shown players based on how many we can show + how many actually infected.
+        int count = BCSUtils::Min(maxShown, size);
+
+        // Names
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        for (int i = 0; i < count; ++i)
+        {
+            str truncatedName = Utils::TruncateString(Player::GetPlayerName(collection[i]), HUD_ENGINE_TRUNCATE_LENGTH);
+            
+            BCSUtils::HudSetTextColor(CR_WHITE);
+            BCSUtils::HudSetPoint(x, y + fixed(15 * i));
+            BCSUtils::HudDrawText(id--, truncatedName);
+
+            if (counter != null)
+            {
+                BCSUtils::HudSetTextColor(CR_YELLOW);
+                BCSUtils::HudSetPoint(x + 110.0, y + fixed(15 * i));
+                BCSUtils::HudDrawText(id--, str(counter(collection[i])));
+            }
+
+            DebugDraw();
+        }
+
+        // `... And x more!`
+        // But only if we don't have 1 more entry, because `... And 1 more!` looks dumb.
+        // Also, not drawn if we have counters. This is more because the list have either one, I should make this a separate option.
+        if (counter != null) return;
+
+        int left = size - count;
+        if (left <= 1) return;
+
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetPoint(x, y + fixed(15 * count));
+        BCSUtils::HudDrawText(id--, "... And " + str(left) + " more!");
+    }
+}

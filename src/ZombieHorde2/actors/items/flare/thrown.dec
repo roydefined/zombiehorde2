@@ -1,0 +1,146 @@
+
+// The flare item will select a random color serverside, before passing the argument to a clientside actor.
+// This clientside actor will do all the visual coloring, which is synchronised to all clients.
+// `A_AttachLightDef` is not a thing yet, otherwise this would be easier.
+
+Actor ZH2ThrownFlare
+{
+	Radius 8
+	Height 8
+	MaxStepHeight 8
+	Speed 15
+	Scale .8
+	
+	+SLIDESONWALLS
+	+FORCEXYBILLBOARD
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay ACS_NamedExecuteAlways("zh2_dec_initflare", 0)
+		
+		Spawn.Start:
+			TNT1 A 0 A_PlaySound("items/FLARE")
+			FLAR D 5 A_Jump(128, 1)
+			Goto Spawn.DoThrow
+			FLAR E 5
+		
+		// Pass the TID over to the clientside which can be used for placeable flares so they can be turned off.
+		// The clientsided part is actually disabled here.
+		Spawn.DoThrow:
+			TNT1 "#" 0 A_SpawnItemEx("ZH2ThrownFlareClient", 0, 0, 0, 0, 0, 0, 0, SXF_CLEARCALLERTID | SXF_TRANSFERSPECIAL, 0, tid)
+		
+		Spawn.Rest:
+			FLAR "#" 1
+			wait
+	}
+}
+
+Actor ZH2ThrownFlareClient : SwitchableDecoration
+{
+	// Can't use `+NOINTERACTION` here or it won't properly check the waterlevel
+	//+NOINTERACTION
+	
+	+CLIENTSIDEONLY
+	+NOTIMEFREEZE
+	-SOLID
+	
+	States
+	{
+		Spawn:
+		Active:
+			TNT1 A 0 NoDelay A_PlaySoundEx("items/FLARELOOP", "Body", 1, -1)
+			
+			// For disco
+			TNT1 A 0 A_SetArg(3, args[0] == 9)
+			TNT1 A 0 A_JumpIf(args[3] == false, "Spawn.StartLoop")
+			TNT1 A 0 A_SetArg(0, Random(0, 7))
+		
+		Spawn.StartLoop:
+			TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_flareloopclient", 0, args[3], args[2])
+		
+		Spawn.Select:
+			TNT1 AA 0 A_SpawnItemEx("ZH2FlareFlame", random(-1,1)*0.5, random(-1,1)*0.5, random(-1,3), random(-0.5,0.5), random(-0.5,0.5), random(1,3), 0, SXF_TRANSFERSPECIAL)
+			TNT1 A 0 A_Warp(AAPTR_TARGET)
+			
+			TNT1 A 0 A_JumpIf(args[1] == 1, "Spawn.Depleted")
+			TNT1 A 0 A_JumpIf(args[0] == 0, "Spawn.SelectBlue")
+			TNT1 A 0 A_JumpIf(args[0] == 1, "Spawn.SelectCyan")
+			TNT1 A 0 A_JumpIf(args[0] == 2, "Spawn.SelectGreen")
+			TNT1 A 0 A_JumpIf(args[0] == 3, "Spawn.SelectMagenta")
+			TNT1 A 0 A_JumpIf(args[0] == 4, "Spawn.SelectOrange")
+			TNT1 A 0 A_JumpIf(args[0] == 5, "Spawn.SelectRed")
+			TNT1 A 0 A_JumpIf(args[0] == 6, "Spawn.SelectWhite")
+			TNT1 A 0 A_JumpIf(args[0] == 7, "Spawn.SelectYellow")
+			TNT1 A 0 A_JumpIf(args[0] == 8, "Spawn.SelectBlack")
+			stop
+		
+		Spawn.SelectBlue:
+			TNT1 A 0 A_JumpIf(waterlevel != 0, 2)
+			TNT1 A 1 Light("BlueFlare")
+			goto Spawn.Select
+			TNT1 A 1 Light("BlueFlareSmall")
+			goto Spawn.Select
+		
+		Spawn.SelectCyan:
+			TNT1 A 0 A_JumpIf(waterlevel != 0, 2)
+			TNT1 A 1 Light("CyanFlare")
+			goto Spawn.Select
+			TNT1 A 1 Light("CyanFlareSmall")
+			goto Spawn.Select
+		
+		Spawn.SelectGreen:
+			TNT1 A 0 A_JumpIf(waterlevel != 0, 2)
+			TNT1 A 1 Light("GreenFlare")
+			goto Spawn.Select
+			TNT1 A 1 Light("GreenFlareSmall")
+			goto Spawn.Select
+		
+		Spawn.SelectMagenta:
+			TNT1 A 0 A_JumpIf(waterlevel != 0, 2)
+			TNT1 A 1 Light("MagentaFlare")
+			goto Spawn.Select
+			TNT1 A 1 Light("MagentaFlareSmall")
+			goto Spawn.Select
+		
+		Spawn.SelectOrange:
+			TNT1 A 0 A_JumpIf(waterlevel != 0, 2)
+			TNT1 A 1 Light("OrangeFlare")
+			goto Spawn.Select
+			TNT1 A 1 Light("OrangeFlareSmall")
+			goto Spawn.Select
+		
+		Spawn.SelectRed:
+			TNT1 A 0 A_JumpIf(waterlevel != 0, 2)
+			TNT1 A 1 Light("RedFlare")
+			goto Spawn.Select
+			TNT1 A 1 Light("RedFlareSmall")
+			goto Spawn.Select
+		
+		Spawn.SelectWhite:
+			TNT1 A 0 A_JumpIf(waterlevel != 0, 2)
+			TNT1 A 1 Light("WhiteFlare")
+			goto Spawn.Select
+			TNT1 A 1 Light("WhiteFlareSmall")
+			goto Spawn.Select
+		
+		Spawn.SelectYellow:
+			TNT1 A 0 A_JumpIf(waterlevel != 0, 2)
+			TNT1 A 1 Light("YellowFlare")
+			goto Spawn.Select
+			TNT1 A 1 Light("YellowFlareSmall")
+			goto Spawn.Select
+		
+		Spawn.SelectBlack:
+			TNT1 A 0 A_JumpIf(waterlevel != 0, 2)
+			TNT1 A 1 Light("BlackFlare")
+			goto Spawn.Select
+			TNT1 A 1 Light("BlackFlareSmall")
+			goto Spawn.Select
+		
+		Inactive:
+		Spawn.Depleted:
+			TNT1 A 0
+			stop
+	}
+}

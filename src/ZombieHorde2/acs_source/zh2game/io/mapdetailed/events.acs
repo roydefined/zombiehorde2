@@ -1,0 +1,90 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+// TODO: not done for mod def lump. Should be done.
+
+strict namespace IO
+{
+    internal raw _tokenizerEventParsedValue;
+    
+    internal bool ParseEventCollection(int handle, str mapLump, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, EVENTSPREFIXKEY)) return false;
+
+        Logger::LogDebug(LOGSOURCE , "Start parse map event collection for \cd" + mapLump + ".");
+
+        int bracketLevel = Tokenizer::GetBracketLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '[')) return false;
+        Tokenizer::Next(handle);
+
+        // While the bracket level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBracketLevel(handle) != bracketLevel)
+        {
+            if (ParseEventDefinition(handle, mapLump))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing event collection for " + mapLump + ": '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        Logger::LogDebug(LOGSOURCE , "Parsed map event collection \cd" + mapLump + ".");
+        return true;
+    }
+
+    // Parses a single eveny definition.
+    // The format is `{ key, value }`.
+    // Since the format is static, this function doesn't call additional functions.
+    internal bool ParseEventDefinition(int handle, str mapLump)
+    {
+        if (Tokenizer::GetSymbol(handle) != "{") return false;
+        Tokenizer::Next(handle);
+
+        str eventKey = Tokenizer::GetSymbol(handle);
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        // We need to check if the value passed is a string or an integer.
+        raw scriptIdentifier = Tokenizer::GetSymbol(handle);
+        bool isNumericScript = Tokenizer::GetToken(handle) == Tokenizer::TINTEGER;
+        switch(Tokenizer::GetToken(handle))
+        {
+            case Tokenizer::TSYMBOL:
+            case Tokenizer::TSTRING:
+                break;
+            
+            case Tokenizer::TINTEGER:
+                scriptIdentifier = BCSUTILS::Atoi(scriptIdentifier);
+                if (BCSUTILS::r1 == BCSUTILS::PARSENUMBER_BADFORMAT)
+                {
+                    Tokenizer::SetErrored(handle, "The given event script number is not an integer: '" + Tokenizer::GetSymbol(handle) + "'.");
+                    return false;
+                }
+
+                if (BCSUTILS::r1 != BCSUTILS::PARSENUMBER_SUCCESS)
+                {
+                    Tokenizer::SetErrored(handle, "The given event script number is not a valid integer, possibly overflowed: '" + Tokenizer::GetSymbol(handle) + "'.");
+                    return false;
+                }
+                break;
+        }
+
+        if (!Tokenizer::ExpectNextChar(handle, '}')) return false;
+
+        Logger::LogDebug(LOGSOURCE , "Parsed resist definition for \cd" + mapLump + ".");
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        if (!isNumericScript) EventBus::AddEventBusCallbackByScriptName(eventKey, scriptIdentifier);
+        else EventBus::AddEventBusCallbackByScriptNumber(eventKey, scriptIdentifier);
+        return true;
+    }
+}

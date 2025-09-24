@@ -1,0 +1,79 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define POWER_HUD_SPACING 64.0
+
+strict namespace Hud
+{
+    // A buffer that stores what powers are active and to be drawn.
+    // We must loop twice to properly draw buffers because we use a specific offset based on total count.
+    // So to avoid doing things twice we use this.
+    internal int _pendingPowerBuffer[MAX_POWERS];
+
+    internal void DrawPlayerPowersHud()
+    {
+        fixed scale = ZH2Game::GetHudPlayerPowersScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetScale(scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        fixed x = 320.0 + ZH2Game::GetHudPlayerPowersOffsetX();
+        fixed y = 300.0 - ZH2Game::GetHudPlayerPowersOffsetY();
+
+        x += _xShakeOffset;
+        y += _yShakeOffset;
+
+        int id = HUD_PLAYERPOWERS;
+        id = DrawPowerList(id, x, y);
+    }
+
+    internal int DrawPowerList(int id, fixed x, fixed y)
+    {
+        int total = 0;
+
+        // Build buffer of active powers
+        for (int i = 0; i < ZH2Game::PersistingGameContext.PowerCollection.Size; ++i)
+        {
+            if (!Power::GetHasPower(i)) continue;
+
+            int tics = Power::GetPowerTicsLeft(i);
+            if (tics <= 0) continue;
+
+            // Hardcode and assume anything longer than 35 * 60 * 60 tics is something that is infinite and not worth drawing.
+            if (tics > 35 * 60 * 60) continue;
+
+            // Also skip if we have no graphic to display.
+            str graphic = Power::GetPowerHudGraphic(i);
+            if ((raw)graphic == 0 || graphic == "") continue;
+
+            _pendingPowerBuffer[total++] = i;
+        }
+
+        // Now draw the active powers using specific offsetting.
+        fixed totalWidth = fixed(total - 1) * POWER_HUD_SPACING;
+        fixed startX = x - totalWidth / 2.0;
+
+        for (int i = 0; i < total; ++i)
+        {
+            int powerIndex = _pendingPowerBuffer[i];
+            fixed drawX = startX + fixed(i) * POWER_HUD_SPACING;
+
+            str graphic = Power::GetPowerHudGraphic(powerIndex);
+            int tics = Power::GetPowerTicsLeft(powerIndex);
+            str formattedTics = Utils::FormatTics(tics, true);
+
+            BCSUtils::HudSetAlpha(0.6);
+            BCSUtils::HudSetPoint(drawX, y);
+            BCSUtils::HudDrawImage(id--, graphic);
+
+            BCSUtils::HudSetAlpha(1.0);
+            BCSUtils::HudSetPoint(drawX, y + 5.0);
+            BCSUtils::HudDrawText(id--, formattedTics);
+            DebugDraw();
+        }
+
+        return id;
+    }
+}

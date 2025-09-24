@@ -1,0 +1,34 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawSummaryHeader(fixed x, fixed y)
+    {
+        int id = HUD_SUMMARYHEADER;
+
+        // Different header if the timer is TIMERVOTED
+        if (RoundTimer::GetActiveTimerKnownType() == RoundTimer::TIMERVOTED)
+        {
+            // Top
+            BCSUtils::HudSetFont("BigFont");
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawText(id--, "The map has been picked");
+            DebugDraw();
+            return;
+        }
+
+        // Top
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawText(id--, "Pick the next map");
+        DebugDraw();
+
+        // Bottom
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetPoint(x, y + 15.0);
+        BCSUtils::HudDrawText(id--, "or have the game decide");
+        DebugDraw();
+    }
+}

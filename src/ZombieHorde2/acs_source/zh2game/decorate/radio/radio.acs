@@ -1,0 +1,35 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "behaviour.acs"
+
+strict namespace Decorate
+{
+    internal bool HasRadioTrackPlaying() { return GetClientCurrentRadioTrackIndex() > 0; }
+
+    // Note, the behaviour controls setting the value.
+    internal int GetClientRadioCurrentlySelectedIndex() { return ZH2Game::GameContext.RadioCurrentlySelectedIndex; }
+    
+    internal int GetClientCurrentRadioTrackIndex() { return ZH2Game::GameContext.CurrentRadioTrackIndex; }
+    internal void SetClientCurrentRadioTrackIndex(int index) { ZH2Game::GameContext.CurrentRadioTrackIndex = index; }
+
+    internal int GetRadioCollectionSize() { return ZH2Game::PersistingGameContext.RadioTrackCollection.Size; }
+    internal str GetRadioTrackLumpName(int index) { return ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[index].LumpName; }
+    internal str GetRadioTrackName(int index) { return ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[index].Name; }
+    internal str GetRadioTrackAuthor(int index) { return ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[index].Author; }
+    internal str GetRadioTrackRemark(int index) { return ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[index].Remark; }
+
+    // Cooldown
+    internal void UpdateRadioTrackCooldown()
+    {
+        // TODO: configurable?
+        ZH2Game::GameContext.RadioTrackCooldownTimestamp = Utils::GetSynchronizedTimer() + RADIO_COOLDOWN_SECONDS * 35;
+    }
+    internal int GetRadioTrackCooldownTicsLeft()
+    {
+        if (ZH2Game::GameContext.RadioTrackCooldownTimestamp == 0)
+            return 0;
+        return BCSUtils::Max(0, ZH2Game::GameContext.RadioTrackCooldownTimestamp - Utils::GetSynchronizedTimer());
+    }
+}

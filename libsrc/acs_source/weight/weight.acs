@@ -1,0 +1,84 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+#define LOGSOURCE  "Weight"
+
+// Simple weight system for randomly determined indexes based on their weight.
+// The system does not maintain a state and instead handles everything based on index.
+// This is specifically used to randomize rewards for players, where the reward collection indexes represent the indexes here.
+
+strict namespace Weight
+{
+	internal int _threshold;
+
+	void PrepareWeights()
+	{
+		ZH2Lib::LibContext.WeightContext.Count = 0;
+	}
+
+	void AddWeight(int index, int weight)
+	{
+		int count = ZH2Lib::LibContext.WeightContext.Count;
+		if (count >= MAX_WEIGHT_SIZE)
+        {
+            Logger::LogWarning(LOGSOURCE , "The maximum number of configurable weight instances was reached (" + str(count) + ").");
+            return;
+        }
+
+		ZH2Lib::LibContext.WeightContext.Weights[ZH2Lib::LibContext.WeightContext.Count].Index = index;
+		ZH2Lib::LibContext.WeightContext.Weights[ZH2Lib::LibContext.WeightContext.Count++].Weight = weight;
+	}
+
+	void FinalizeWeights()
+	{
+		// No weights
+		int count = ZH2Lib::LibContext.WeightContext.Count;
+		if (count == 0)
+			return;
+
+		// Get total weight.
+		int total = 0;
+		for (int i = 0; i < count; ++i)
+			total += ZH2Lib::LibContext.WeightContext.Weights[i].Weight;
+		
+		_threshold = Random(1, total);
+		
+		Logger::LogDebug(LOGSOURCE , "Finalized weights. Total: \cd" + str(total) + "\cj. Threshold: \cd" + str(_threshold) + "\cj.");
+	}
+
+	// Note, returns the actual index as it was passed in.
+	int Next(int i = -1)
+	{
+		// No weights. We just ignore this.
+		int count = ZH2Lib::LibContext.WeightContext.Count;
+		if (count == 0)
+            return -1;
+
+		// Designing this to start at -1 is easier to manage as there's no need to constantly increment the index from the mod's side.
+		++i;
+		
+        // Finally, determine what index we pick based on the threshold.
+		// Gradually decrement the threshold until we match what we need.
+		for (; i < count; ++i)
+		{
+			int weight = ZH2Lib::LibContext.WeightContext.Weights[i].Weight;
+			if (_threshold > weight)
+			{
+                Logger::LogDebug(LOGSOURCE , "No match (\cd" + str(_threshold) + "\cj > \cd" + str(weight) + "\cj). New threshold: \cd" + str(_threshold - weight) + "\cj.");
+
+				_threshold -= weight;
+				continue;
+			}
+
+            Logger::LogDebug(LOGSOURCE , "Weight match on \cd" + str(i) + "\cj (\cd" + str(_threshold) + "\cj <= \cd" + str(weight) + "\cj).");
+			return ZH2Lib::LibContext.WeightContext.Weights[i].Index;
+		}
+		
+		// This can happen when no reward matched, for example. Don't log this.
+		//Logger::LogWarning(LOGSOURCE , "Expected to get a valid weight result.");
+		return -1;
+	}
+}
+
+#undef LOGSOURCE 

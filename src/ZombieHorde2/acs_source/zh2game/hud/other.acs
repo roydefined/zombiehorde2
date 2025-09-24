@@ -1,0 +1,46 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    // General script for scratching a human in various ways.
+    script "zh2_internal_zombie_scratch" clientside
+    {
+        if (!SetActivatorToPlayer(ConsolePlayerNumber())) terminate;
+        
+        fixed x = 400.0 + Math::FRandom(-300.0, 300.0);
+        fixed y = 225.0 + Math::FRandom(-150.0, 150.0);
+
+        int scratchType = Random(1, 2);
+        
+        void PrepFrame()
+        {
+            BCSUtils::HudResetState();
+            BCSUtils::HudSetVirtualSize(800.0, 450.0);
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+            BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+            BCSUtils::HudSetPoint(x, y);
+        }
+
+        str GetFrame(int index)
+        {
+            // Had an issue with the string not displaying, so I used StrParam here.
+            return StrParam(s:"ZSLASH", d:scratchType, d:index);
+        }
+
+        int i;
+        for (i = 1; i < 4; ++i)
+        {
+            PrepFrame();
+            BCSUtils::HudDrawImage(0, GetFrame(i));
+            Delay(const: 1);
+        }
+
+        // Last frame will stay a bit.
+        PrepFrame();
+        BCSUtils::HudSetStayTime(1.0);
+        BCSUtils::HudSetDisappearTime(0.5);
+        BCSUtils::HudDrawImage(0, GetFrame(i));
+    }
+}

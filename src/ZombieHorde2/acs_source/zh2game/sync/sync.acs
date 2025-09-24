@@ -1,0 +1,251 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE  "Sync"
+
+#include "actor/player.acs"
+#include "actor/timer.acs"
+#include "actor/resist.acs"
+#include "actor/round.acs"
+#include "actor/admin.acs"
+#include "actor/game.acs"
+#include "actor/mapvoting.acs"
+
+strict namespace Sync
+{
+    // Basic log formatter to include an additional sync category.
+    internal str FormatLog(str category, str message)
+    {
+        return "[" + category + "] " + message;
+    }
+
+    internal bool VerifyCallSyncServerside(str functionName)
+    {
+        if (!BCSUtils::IsServer())
+        {
+            Logger::LogError(LOGSOURCE , functionName + " must be called serverside.");
+            return false;
+        }
+        
+        return IsNetworkGame();
+    }
+
+    internal bool VerifyCallSyncClientside(str functionName)
+    {
+        if (!BCSUtils::IsClient())
+        {
+            Logger::LogError(LOGSOURCE , functionName + " must be called clientside.");
+            return false;
+        }
+        
+        return IsNetworkGame();
+    }
+
+    /* COMBINED */
+
+    internal void SyncAll(bool callSyncOnClients = true)
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__))
+            return;
+
+        Sync::SyncPlayers(callSyncOnClients);
+        Sync::SyncTimers(callSyncOnClients);
+        Sync::SyncResists(callSyncOnClients);
+        Sync::SyncRoundState(callSyncOnClients);
+        Sync::SyncAdmins(callSyncOnClients);
+        Sync::SyncGame(callSyncOnClients);
+        Sync::SyncMapVoting(callSyncOnClients);
+    }
+
+    internal void CallClientSyncAll()
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__))
+            return;
+
+        Sync::CallSyncPlayersOnClients();
+        Sync::CallSyncTimersOnClients();
+        Sync::CallSyncResistsOnClients();
+        Sync::CallSyncRoundStateOnClients();
+        Sync::CallSyncAdminsOnClients();
+        Sync::CallSyncGameOnClients();
+        Sync::CallSyncMapVotingOnClients();
+    }
+
+    internal void SynAllClientside()
+    {
+        if (!VerifyCallSyncClientside(__FUNCTION__))
+            return;
+
+        Sync::SyncPlayersClientside();
+        Sync::SyncTimersClientside();
+        Sync::SyncResistsClientside();
+        Sync::SyncRoundStateClientside();
+        Sync::SyncAdminsClientside();
+        Sync::SyncGameClientside();
+        Sync::SyncMapVotingClientside();
+    }
+
+    /* PLAYERS */
+
+    internal void SyncPlayers(bool callSyncOnClients = true)
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        SyncPlayersActor();
+
+        if (callSyncOnClients)
+            CallSyncPlayersOnClients();
+    }
+
+    internal void CallSyncPlayersOnClients()
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        CallSyncPlayersActorOnClients();
+    }
+
+    internal void SyncPlayersClientside()
+    {
+        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        SyncPlayersActorClientSide();
+    }
+
+    /* TIMERS */
+
+    internal void SyncTimers(bool callSyncOnClients = true)
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        SyncTimersActor();
+
+        if (callSyncOnClients)
+            CallSyncTimersOnClients();
+    }
+
+    internal void CallSyncTimersOnClients()
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        CallSyncTimersActorOnClients();
+    }
+
+    internal void SyncTimersClientside()
+    {
+        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        SyncTimersActorClientside();
+    }
+
+    /* RESISTS */
+
+    internal void SyncResists(bool callSyncOnClients = true)
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        SyncResistsActor();
+
+        if (callSyncOnClients)
+            CallSyncResistsOnClients();
+    }
+
+    internal void CallSyncResistsOnClients()
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        CallSyncResistsActorOnClients();
+    }
+
+    internal void SyncResistsClientside()
+    {
+        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        SyncResistsActorClientside();
+    }
+
+    /* ROUND */
+
+    internal void SyncRoundState(bool callSyncOnClients = true)
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        SyncRoundStateActor();
+
+        if (callSyncOnClients)
+            CallSyncRoundStateOnClients();
+    }
+
+    internal void CallSyncRoundStateOnClients()
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        CallSyncRoundStateActorOnClients();
+    }
+
+    internal void SyncRoundStateClientside()
+    {
+        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        SyncRoundStateActorClientside();
+    }
+
+    /* ADMIN */
+
+    internal void SyncAdmins(bool callSyncOnClients = true)
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        SyncAdminsActor();
+
+        if (callSyncOnClients)
+            CallSyncAdminsOnClients();
+    }
+
+    internal void CallSyncAdminsOnClients()
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        CallSyncAdminsActorOnClients();
+    }
+
+    internal void SyncAdminsClientside()
+    {
+        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        SyncAdminsActorClientside();
+    }
+
+    /* GAME */
+
+    internal void SyncGame(bool callSyncOnClients = true)
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        SyncGameActor();
+
+        if (callSyncOnClients)
+            CallSyncGameOnClients();
+    }
+
+    internal void CallSyncGameOnClients()
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        CallSyncGameActorOnClients();
+    }
+
+    internal void SyncGameClientside()
+    {
+        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        SyncGameActorClientside();
+    }
+
+    /* MAP VOTING */
+
+    internal void SyncMapVoting(bool callSyncOnClients = true)
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        SyncMapVotingActor();
+
+        if (callSyncOnClients)
+            CallSyncMapVotingOnClients();
+    }
+
+    internal void CallSyncMapVotingOnClients()
+    {
+        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        CallSyncMapVotingActorOnClients();
+    }
+
+    internal void SyncMapVotingClientside()
+    {
+        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        SyncMapVotingActorClientside();
+    }
+}
+
+#undef LOGSOURCE 

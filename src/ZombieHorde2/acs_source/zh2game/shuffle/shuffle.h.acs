@@ -1,0 +1,39 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Shuffle
+{
+    // Note, the number of maps is the biggest size we must support.
+    // We must keep track of this and adjust if something else ends up bigger.
+    #define MAX_BUFFER_SIZE MAXMAPCOUNT
+
+    internal struct BufferContextT
+    {
+        // The main buffer holds the relevant values to sort.
+        // The buffer holds either all player ids or all map indexes.
+        int Buffer[MAX_BUFFER_SIZE];
+
+        // The iterator sizes indicate the iterable size of the buffer, including potentially irrelevant or relevant ids.
+        // An id is irrelevant when it does not relate to the sorted target.
+        // For example, sorting by infections means relevant ids are those with at least 1 infection.
+        // Otherwise the iterator size is used, meaning all ids that have played. This is determined when preparing the buffer.
+        // The relevant size will always equal or be less than the iterator size.
+        int BufferIteratorSize;
+        int BufferRelevantSize;
+    };
+    
+    internal enum ShufflePrepareTypeT : int
+    {
+        SHUFFLEPLAYING,
+        SHUFFLEASSIGNED,
+        SHUFFLEDEAD,
+    };
+    
+    internal enum ShuffleVotableMapsFlagsT : int
+    {
+        FLAGIGNORECURRENTMAP = 1 << 0,
+        FLAGIGNORENEXTMAP = 1 << 1,
+        FLAGIGNOREPLAYEDMAP = 1 << 2,
+    };
+}

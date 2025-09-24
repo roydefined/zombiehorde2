@@ -1,0 +1,280 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    internal bool ParsePowers(int handle, str identifyingSymbol)
+    {
+        // Also supporting plurals
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "powers"))
+            return false;
+
+        Logger::LogDebug(LOGSOURCE , "Start parsing powers.");
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            if (ParsePower(handle))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing powers: '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LOGSOURCE , "Finished parsing powers.");
+        return true;
+    }
+
+    internal bool ParsePower(int handle)
+    {
+        if (!Tokenizer::ExpectToken(handle, Tokenizer::TLBRACE)) return false;
+        
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        Tokenizer::Next(handle);
+
+        // No more room for more powers. Log a warning and skip the remaining body.
+        int count = ZH2Game::PersistingGameContext.PowerCollection.Size;
+        if (count >= MAX_POWERS)
+        {
+            Logger::LogWarning(LOGSOURCE , "The maximum number of configurable powers was reached (" + str(count) + ").");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        bool hasParsedMaxTics = false,
+             hasParsedSpeedModifier = false,
+             hasParsedJumpModifier = false,
+             hasParsedDamageFactor = false,
+             hasParsedDamageMultiplier = false;
+
+        // As long as we are inside this body, parse properties and insert them into the new power.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) == braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParsePowerHudGraphicAttribute(handle, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+
+                continue;
+            }
+            
+            if (ParsePowerMaxTicsAttribute(handle, symbol))
+            {
+                hasParsedMaxTics = true;
+
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+
+                continue;
+            }
+            
+            if (ParsePowerSpeedAttribute(handle, symbol))
+            {
+                hasParsedSpeedModifier = true;
+
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+
+                continue;
+            }
+
+            if (ParsePowerJumpAttribute(handle, symbol))
+            {
+                hasParsedJumpModifier = true;
+
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+
+                continue;
+            }
+
+            if (ParsePowerDamageFactorAttribute(handle, symbol))
+            {
+                hasParsedDamageFactor = true;
+
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+
+                continue;
+            }
+
+            if (ParsePowerDamageMultiplierAttribute(handle, symbol))
+            {
+                hasParsedDamageMultiplier = true;
+
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing a power: '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
+
+        // We don't verify the power. The index has now been used and code could merely check for the index to exist.
+        // We do set some default values in the event values were not parsed.
+        if (!hasParsedMaxTics)
+            context.MaxTics = BCSUtils::INT_MAX;
+        if (!hasParsedSpeedModifier)
+            context.SpeedModifier = 1.0;
+        if (!hasParsedJumpModifier)
+            context.JumpModifier = 1.0;
+        if (!hasParsedDamageFactor)
+            context.DamageFactor = 1.0;
+        if (!hasParsedDamageMultiplier)
+            context.DamageMultiplier = 1.0;
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        str graphicOrNone = (raw)context.HudGraphic == 0 ? "N/A" : context.HudGraphic;
+        Logger::LogDebug(LOGSOURCE , "Parsed power. Hud graphic: \cd" + graphicOrNone + "\cj, max tics: \cd" + str(context.MaxTics) + "\cj, speed modifier: \cd" + str(context.SpeedModifier) + "\cj, jump modifier: \cd" + str(context.JumpModifier) + "\cj.");
+        ZH2Game::PersistingGameContext.PowerCollection.Size++;
+        return true;
+    }
+
+    internal bool ParsePowerHudGraphicAttribute(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "hudgraphic")) return false;
+        Tokenizer::Next(handle);
+        
+        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
+
+        str graphic = Tokenizer::GetSymbol(handle);
+        context.HudGraphic = graphic;
+
+        Logger::LogDebug(LOGSOURCE , "Parsed power graphic: \cd" + graphic + "\cj.");
+        return true;
+    }
+
+    internal bool ParsePowerMaxTicsAttribute(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "maxtics")) return false;
+        Tokenizer::Next(handle);
+        
+        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
+
+        if (!Tokenizer::TryParseBooleanOrNumbericValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "Failed to parse power attribute: the given value for MaxTics is not a correct value. Expected numeric value within bounds.");
+            return false;
+        }
+
+        int value = (int)Tokenizer::GetParsedValue();
+        context.MaxTics = value;
+
+        Logger::LogDebug(LOGSOURCE , "Parsed power maxtics: \cd" + str(value) + "\cj.");
+        return true;
+    }
+
+    internal bool ParsePowerSpeedAttribute(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "speedmodifier")) return false;
+        Tokenizer::Next(handle);
+        
+        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
+
+        if (!Tokenizer::TryParseFixedValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "Failed to parse power attribute: the given value for SpeedModifier is not a correct value. Expected a valid fixed value within bounds.");
+            return false;
+        }
+
+        fixed value = (fixed)Tokenizer::GetParsedValue();
+        context.SpeedModifier = value;
+
+        Logger::LogDebug(LOGSOURCE , "Parsed power speed modifier: \cd" + str(value) + "\cj.");
+        return true;
+    }
+
+    internal bool ParsePowerJumpAttribute(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "jumpmodifier")) return false;
+        Tokenizer::Next(handle);
+        
+        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
+
+        if (!Tokenizer::TryParseFixedValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "Failed to parse jump attribute: the given value for JumpModifier is not a correct value. Expected a valid fixed value within bounds.");
+            return false;
+        }
+
+        fixed value = (fixed)Tokenizer::GetParsedValue();
+        context.JumpModifier = value;
+
+        Logger::LogDebug(LOGSOURCE , "Parsed power jump modifier: \cd" + str(value) + "\cj.");
+        return true;
+    }
+
+    internal bool ParsePowerDamageMultiplierAttribute(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "damagemultiplier")) return false;
+        Tokenizer::Next(handle);
+        
+        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
+
+        if (!Tokenizer::TryParseFixedValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "Failed to parse damage multiplier attribute: the given value for DamageMultiplier is not a correct value. Expected a valid fixed value within bounds.");
+            return false;
+        }
+
+        fixed value = (fixed)Tokenizer::GetParsedValue();
+        context.DamageMultiplier = value;
+
+        Logger::LogDebug(LOGSOURCE , "Parsed power damage multiplier: \cd" + str(value) + "\cj.");
+        return true;
+    }
+
+    internal bool ParsePowerDamageFactorAttribute(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "damagefactor")) return false;
+        Tokenizer::Next(handle);
+        
+        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
+
+        if (!Tokenizer::TryParseFixedValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "Failed to parse damage factor attribute: the given value for DamageFactor is not a correct value. Expected a valid fixed value within bounds.");
+            return false;
+        }
+
+        fixed value = (fixed)Tokenizer::GetParsedValue();
+        context.DamageFactor = value;
+
+        Logger::LogDebug(LOGSOURCE , "Parsed power damage factor: \cd" + str(value) + "\cj.");
+        return true;
+    }
+}

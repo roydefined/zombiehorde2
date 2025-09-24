@@ -1,0 +1,84 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE  "Decorate"
+
+#include "fire.acs"
+#include "acid.acs"
+#include "weaponfiring.acs"
+#include "items.acs"
+#include "blood.acs"
+#include "flare.acs"
+#include "reward.acs"
+#include "liquid.acs"
+#include "secondary.acs"
+#include "radio/radio.acs"
+
+strict namespace Decorate
+{
+    internal void TicServer()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (Timer() % 2 == 0)
+            TakeChaingunHeat();
+          
+        TakeJacksGunSmoke();
+
+        // The player is on fire.
+        if (IsOnFire())
+        {
+            // Player is underwater which gets rid of the power.
+            if (BCSUtils::GetActorWaterlevel(0) == 3)
+            {
+                Power::TakePower(Power::POWERFIREBURNING);
+                return;
+            }
+
+            if (!SpawnForced("ZH2PlayerOnFireEffect", GetActorX(ActivatorTid()), GetActorY(ActivatorTid()), GetActorZ(ActivatorTid())))
+                Logger::LogWarning(LOGSOURCE , "Failed to spawn fire effect for player " + str(PlayerNumber()) + ".");
+
+            if (Timer() % 10 == 0)
+                DamageThing(10);
+        }
+
+        // The player is covered in acid.
+        if (IsOnAcid())
+        {
+            // Player is underwater which gets rid of the power.
+            if (BCSUtils::GetActorWaterlevel(0) == 3)
+            {
+                Power::TakePower(Power::POWERACIDBURNING);
+                return;
+            }
+
+            if (Timer() % 35 == 0)
+                DamageThing(4);
+        }
+    }
+
+    internal void TicClient()
+    {
+        // Chaingun warning sound when nearly overheating.
+        if (GetWeapon() == WEAPON_CHAINGUN_NAME && CheckInventory(WEAPON_CHAINGUN_HEAT_NAME) > 30 && Timer() % 8 == 0)
+            AmbientSound("weapons/chaingun/WARNING", 127);
+    }
+
+    
+    internal void TakeChaingunHeat()
+    {
+        if (GetWeapon() == WEAPON_CHAINGUN_NAME && IsFiringWeapon())
+            return;
+
+        TakeInventory(WEAPON_CHAINGUN_HEAT_NAME, 1);
+    }
+
+    
+    internal void TakeJacksGunSmoke()
+    {
+        TakeInventory(WEAPON_JACKSGUN_SMOKE_COUNT_NAME, 1);
+    }
+}
+
+#undef LOGSOURCE 

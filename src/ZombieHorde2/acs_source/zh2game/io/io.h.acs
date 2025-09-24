@@ -1,0 +1,69 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+
+    // RELEVANT SCRIPT NAMES
+    // These are called by the awaiter too, so we defined them here.
+    #define SCRIPT_PARSE_PERSISTING_MAP_POSITION_DEFS "zh2_internal_parse_map_position_defs"
+    #define SCRIPT_PARSE_CURRENT_MAP_DEFS "zh2_internal_parse_current_map_defs"
+    #define SCRIPT_PARSE_PERSISTING_MOD_DEFS_SERVERSIDE "zh2_internal_parse_mod_defs_serverside"
+    #define SCRIPT_PARSE_PERSISTING_MOD_DEFS_CLIENTSIDE "zh2_internal_parse_mod_defs_clientside"
+
+    // TODO: Some things don't need to be here as it's only referenced once.
+    #define MODDEFLUMPNAME "zhmoddef"
+    #define MAPDEFLUMPNAME "zhmapdef"
+    
+    #define HUMANSTARTITEMSKEY "humanstartitems"
+    #define ZOMBIESTARTITEMSKEY "zombiestartitems"
+
+    #define RESISTSPREFIXKEY "resists"
+    #define RESISTLENGTHKEY "length"
+    #define RESISTTOPREASONLABELKEY "topreasonlabel"
+    #define RESISTTIMEREASONLABELKEY "timereasonlabel"
+
+    #define EVENTSPREFIXKEY "events"
+
+    // NOTE: most of these structs are public as they are in a persisting struct.
+    // AFAIK this can't be internal or the compiler complains.
+
+    /* MAP BASE DEFINITIONS */
+
+    struct MapBaseCollectionT
+    {
+        // Indicates if the lumps have been parsed already.
+        bool Initialized;
+
+        IO::MapBaseDefT Collection[MAXMAPCOUNT];
+        int Count;
+    };
+
+    struct MapBaseDefT
+    {
+        str MapLump;
+        int LumpIndex;
+        int LumpStartOffset;
+        int LumpEndOffset;
+
+        Map::MapPropertiesT Properties;
+    };
+
+    /* MAP DETAILED DEFINITION */
+
+    internal struct MapDetailedT
+    {
+        RoundTimer::RoundTimerContextT Timers[MAX_TIMERS];
+        int ActiveRoundTimerIndex;
+
+        Round::RoundStateContextT Rounds[MAX_ROUNDSTATES];
+        int ActiveRoundStateIndex;
+
+        Resist::ResistT Resists[MAX_RESISTS];
+
+        // If `true`, the map is configured to play a heartbeat ambient on the final human.
+        // TODO: This could turn into an integer indicating the final n humans play a heartbeat.
+        bool PlayFinalHumanHeartbeat;
+    };
+}

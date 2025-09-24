@@ -1,0 +1,55 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Round
+{
+    // Determines who to pick as initial zombies.
+    // Results in both the persisting and non persisting gamecontext list of initial zombies to have its list updated.
+    // Note, in the event no more players can be found to pick the function will restart the list of last picked zombies.
+    // Whatever the case, the final list will contain the players that have been picked.
+    internal int DetermineInitialZombies()
+    {
+        void DetermineInitialZombiesCore(int size, int requiredCount)
+        {
+            Logger::LogDebug(LOGSOURCE , "Picking initial zombies. Required count: \cd" + str(requiredCount) + "\cj. Relevant buffer size: \cd" + str(size) + "\cj.");
+
+            for (int i = 0; i < size && requiredCount > 0; ++i)
+            {
+                int id = Shuffle::GetIndexValue(i);
+                Player::SetPlayerInitialZombie(id, true);
+                Player::SetPlayerPreviouslyInitialZombie(id, true);
+                requiredCount--;
+            }
+
+            // If the buffer was smaller than the required count, we have picked everybody at least once.
+            // In this case we reset the list into the current state of selected initial zombies and restart the function.
+            if (requiredCount != 0)
+            {
+                for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+                    Player::SetPlayerPreviouslyInitialZombie(i, Player::GetPlayerInitialZombie(i));
+
+                Shuffle::ShuffleByNotPreviouslyInitialZombie();
+                int size = Shuffle::GetRelevantSize();
+
+                // Fail safe. This will trigger when all players have been an initial zombie in the round.
+                // This is impossible unless you actively call this function multiple times.
+                if (size == 0)
+                {
+                    Logger::LogError(LOGSOURCE , "Unable to pick additional initial zombies.");
+                    return;
+                }
+
+                DetermineInitialZombiesCore(size, requiredCount);
+            }
+        }
+
+        // Minimum of 1 zombie, and 1 added every configured number of players.
+        int totalZombies = PlayerCount() / ZH2Game::GetPlayersPerInitial() + 1;
+
+        Shuffle::ShuffleByNotPreviouslyInitialZombie();
+        int size = Shuffle::GetRelevantSize();
+        DetermineInitialZombiesCore(size, totalZombies);
+        return totalZombies;
+    }
+}

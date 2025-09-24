@@ -1,0 +1,85 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+
+strict namespace Tokenizer
+{
+    internal raw _parsedValue;
+
+    raw GetParsedValue()
+    {
+        return _parsedValue;
+    }
+
+    // This function will iterate a body and ignore anything inside.
+    // Useful for when we skip bodies that we don't need, like properties when parsing map details (because we have those already).
+    bool ParseBodyAsEmpty(int handle, str identifyingSymbol, str expectedSymbol)
+    {
+        if (BCSUTILS::StrToLower(Tokenizer::GetSymbol(handle)) != expectedSymbol) return false;
+        Logger::LogDebug(LOGSOURCE , "Parsing body as empty, symbol: \cd" + expectedSymbol + "\cj.");
+
+        Tokenizer::Next(handle);
+        ParseRemainingBodyAsEmpty(handle);
+        return true;
+    }
+
+    // Parses the remaining body as empty until we decrement the brace or bracket
+    void ParseRemainingBodyAsEmpty(int handle)
+    {
+        Logger::LogDebug(LOGSOURCE , "Parsing remaining body as empty.");
+
+        // Track both brace level and backet level.
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        int bracketLevel = Tokenizer::GetBracketLevel(handle);
+        
+        // Continue parsing until the brace or bracket level is lower than what we started with.
+        while (Tokenizer::CanRead(handle)
+            && Tokenizer::GetBraceLevel(handle) >= braceLevel
+            && Tokenizer::GetBracketLevel(handle) >= bracketLevel)
+            Tokenizer::Next(handle);
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+    }
+
+    bool TryParseBooleanOrNumbericValue(int handle)
+    {
+        if (Tokenizer::GetToken(handle) == Tokenizer::TSYMBOL)
+        {
+            str symbol = BCSUTILS::StrToLower(Tokenizer::GetSymbol(handle));
+            if (symbol == "true") _parsedValue = 1;
+            else if (symbol == "false") _parsedValue = 0;
+            else return false;
+
+            return true;
+        }
+        
+        return TryParseIntValue(handle);
+    }
+
+    bool TryParseIntValue(int handle)
+    {
+        if (Tokenizer::GetToken(handle) == Tokenizer::TINTEGER)
+        {
+            _parsedValue = BCSUTILS::Atoi(Tokenizer::GetSymbol(handle));
+            return BCSUtils::r1 != BCSUtils::PARSENUMBER_OVERFLOW;
+        }
+        
+        return false;
+    }
+
+    bool TryParseFixedValue(int handle)
+    {
+        if (Tokenizer::GetToken(handle) == Tokenizer::TINTEGER)
+        {
+            _parsedValue = BCSUTILS::Atof(Tokenizer::GetSymbol(handle));
+            return BCSUtils::r1 != BCSUtils::PARSENUMBER_OVERFLOW;
+        }
+        
+        return false;
+    }
+}

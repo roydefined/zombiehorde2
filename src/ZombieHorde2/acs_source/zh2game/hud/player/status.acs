@@ -1,0 +1,359 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    #define PLAYERID_KEYROWCOUNT 5
+
+    internal void DrawPlayerStatusHud()
+    {
+        // Hud scaling is done through `HudSetVirtualSize` as `HudSetScale` only applies scaling to the final sprite
+        // The issue here is that positioning will be wrong.
+
+        fixed scale = ZH2Game::GetHudPlayerStatusScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        int id = HUD_PLAYERSTATUS;
+        
+        // Left side
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        fixed x = BCSUtils::HudLeft() + ZH2Game::GetHudPlayerStatusOffsetX(),
+              y = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY();
+
+        x += _xShakeOffset;
+        y += _yShakeOffset;
+
+        id = DrawPlayerIdentification(id, x + 30.0, y - 20.0, scale);
+
+        // Right side
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        x = BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX(),
+        y = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY();
+
+        x += _xShakeOffset;
+        y += _yShakeOffset;
+
+        id = DrawWeaponIcon(id, x - 80.0, y - 40.0);
+        id = DrawCounters(id, x - 110.0, y - 180.0);
+        
+        if (Player::GetIsZombie())
+            id = DrawZombieAbilities(id, x - 80.0, y - 220.0);
+    }
+
+    internal int DrawPlayerIdentification(int id, fixed x, fixed y, fixed scale)
+    {
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(id--, "HUDBACK");
+        DebugDraw();
+
+        BCSUtils::HudSetPoint(x + 90.0, y - 40.0);
+        BCSUtils::HudDrawImage(id--, "HUDIBACK");
+        DebugDraw();
+
+        id = DrawPlayerSkin(id, x + 25.0, y - 18.0);
+        id = DrawArmor(id, x + 50.0, y - 30.0);
+        id = DrawHealth(id, x + 50.0, y - 20.0);
+        id = DrawCurrentOwnedItem(id, x + 100.0, y - 125.0);
+        id = DrawKeyList(id, x + 118.0, y - 70.0, scale);
+        return id;
+    }
+
+    // TODO: Should come from a parsed lump.
+    internal int DrawPlayerSkin(int id, fixed x, fixed y)
+    {
+        str skinIcon = (raw)0;
+        int indexAcs = GetPlayerSkin(ConsolePlayerNumber(), PLAYERSKIN_VISIBLE);
+        if (indexAcs == -1)
+            return id;
+
+        switch ((str)GetSkinProperty(indexAcs, "Name"))
+        {
+            case SKIN_HUMAN_GRENADE: skinIcon = PLAYER_HUD_SKIN_FIREGRENADE; break;
+            case SKIN_HUMAN_HANDGUN: skinIcon = PLAYER_HUD_SKIN_HANDGUN; break;
+            case SKIN_HUMAN_JACKSGUN: skinIcon = PLAYER_HUD_SKIN_JACKSGUN; break;
+            case SKIN_HUMAN_SHOTGUN: skinIcon = PLAYER_HUD_SKIN_SHOTGUN; break;
+            case SKIN_HUMAN_DOUBLEBARRELEDSHOTGUN: skinIcon = PLAYER_HUD_SKIN_DOUBLESHOTGUN; break;
+            case SKIN_HUMAN_CHAINGUN: skinIcon = PLAYER_HUD_SKIN_CHAINGUN; break;
+            case SKIN_HUMAN_SNIPER: skinIcon = PLAYER_HUD_SKIN_SNIPER; break;
+            case SKIN_HUMAN_RADIO: skinIcon = PLAYER_HUD_SKIN_RADIO; break;
+            case SKIN_ZOMBIEOLD: skinIcon = PLAYER_HUD_SKIN_OLDZOMBIE; break;
+            case SKIN_ZOMBIEREGULAR: skinIcon = PLAYER_HUD_SKIN_REGULARZOMBIE; break;
+            case SKIN_ZOMBIEINITIAL: skinIcon = PLAYER_HUD_SKIN_INITIALZOMBIE; break;
+
+            // No skin found, Fallback to default skin used for specie.
+            default:
+                if (Player::GetIsHuman()) skinIcon = PLAYER_HUD_SKIN_HUMAN;
+                else if (Player::GetIsZombie()) skinIcon = PLAYER_HUD_SKIN_ZOMBIE;
+                else return id;
+        }
+
+		if (skinIcon == (raw)0)
+            return id;
+        
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(id--, skinIcon);
+        return id;
+    }
+
+    internal int DrawArmor(int id, fixed x, fixed y)
+    {
+        int armount = CheckInventory("Armor");
+        if (armount == 0) return id;
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_BLUE);
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudDrawText(id--, str(armount));
+        DebugDraw();
+
+        return id;
+    }
+
+    internal int DrawHealth(int id, fixed x, fixed y)
+    {
+        // Also flicker health based on current health.
+        int health = BCSUtils::Max(0, PlayerHealth());
+        bool flicker = health <= (Player::GetIsZombie() ? HEALTH_ZOMBIECRITICAL : HEALTH_HUMANCRITICAL);
+        if (!flicker || (flicker && Timer() % 50 < 25))
+        {
+            BCSUtils::HudSetFont("SmallFont");
+            BCSUtils::HudSetTextColor(flicker ? CR_RED : CR_WHITE);
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawText(id--, str(health));
+            DebugDraw();
+        }
+
+        return id;
+    }
+
+    internal int DrawCurrentOwnedItem(int id, fixed x, fixed y)
+    {
+        if (Item::GetClientOwnedInventorySize() == 0)
+            return id;
+        
+        str graphic = Item::GetItemGraphic(Item::GetInventoryIndex(Item::GetClientOwnedInventoryIndex(Item::_currentInventoryIndex)));
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(id--, graphic);
+        DebugDraw();
+
+        return id;
+    }
+
+    internal int DrawKeyList(int id, fixed x, fixed y, fixed scale)
+    {
+        // No keys to draw.
+        int keyCount = Item::GetClientOwnedKeySize();
+        if (keyCount == 0)
+            return id;
+        
+        // Start more left as we have more keys
+        x -= 10.0 * fixed(keyCount / (PLAYERID_KEYROWCOUNT + 1));
+
+        x *= 1.5;
+        y *= 1.5;
+
+        BCSUtils::HudSetVirtualSize(960.0 / scale, 720.0 / scale);
+
+        for (int i = 0; i < keyCount; ++i)
+        {
+            fixed itemX = x + 15.0 * fixed(i / PLAYERID_KEYROWCOUNT);
+            fixed itemY = y + 10.0 * fixed(i % PLAYERID_KEYROWCOUNT);
+            int itemIndex = Item::GetKeyIndex(Item::GetClientOwnedKeyIndex(i));
+            
+            BCSUtils::HudSetPoint(itemX, itemY);
+            BCSUtils::HudDrawImage(id--, Item::GetItemGraphic(itemIndex));
+        }
+
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        return id;
+    }
+
+    internal int DrawWeaponIcon(int id, fixed x, fixed y)
+    {
+        str weaponIcon = "";
+		if		(CheckWeapon(WEAPON_SHOTGUN_NAME)) weaponIcon = WEAPON_HUD_SKIN_SHOTGUN + str(CheckInventory(WEAPON_AMMO_SHOTGUN_NAME));
+		else if (CheckWeapon(WEAPON_DOUBLESHOTGUN_NAME)) weaponIcon = WEAPON_HUD_SKIN_SUPERSHOTGUN  + str(CheckInventory(WEAPON_AMMO_DOUBLESHOTGUN_NAME));
+		else if (CheckWeapon(WEAPON_SNIPER_NAME)) weaponIcon = WEAPON_HUD_SKIN_SNIPER + str(1 - CheckInventory(WEAPON_SNIPER_SHOULDEJECTCASE_NAME));
+		else if (CheckWeapon(WEAPON_JACKSGUN_NAME)) weaponIcon = WEAPON_HUD_SKIN_JACKS + str(CheckInventory(WEAPON_AMMO_JACKSGUN_NAME));
+		else if (CheckWeapon(WEAPON_HANDGUN_NAME)) weaponIcon = WEAPON_HUD_SKIN_PISTOL;
+		
+		if (weaponIcon != "")
+		{
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawImage(id--, weaponIcon);
+            DebugDraw();
+            return id;
+		}
+
+        // Special logic for the chaingun and fire grenade, which have two graphics and some clipping.
+        if (CheckWeapon(WEAPON_CHAINGUN_NAME))
+        {
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawImage(id--, WEAPON_HUD_SKIN_CHAINGUN);
+
+            fixed percentage = fixed(CheckInventory(WEAPON_CHAINGUN_HEAT_NAME)) / fixed(WEAPON_CHAINGUN_MAX_HEAT);
+			fixed clipX = BCSUtils::Round(fixed(WEAPON_CHAINGUN_METER_WIDTH) * percentage);
+
+
+            BCSUtils::HudSetAlpha(BCSUtils::Min(1.0, percentage * 1.5));
+            BCSUtils::HudSetClipRect(fixed(-WEAPON_CHAINGUN_METER_WIDTH), fixed(-WEAPON_CHAINGUN_METER_HEIGHT), clipX, fixed(WEAPON_CHAINGUN_METER_HEIGHT));
+            BCSUtils::HudDrawImage(id--, WEAPON_HUD_SKIN_CHAINGUN_METER);
+            BCSUtils::HudRemoveClipRect();
+            BCSUtils::HudSetAlpha(1.0);
+
+            DebugDraw();
+        }
+        else if (CheckWeapon(WEAPON_FIREGRENADE_NAME))
+        {
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawImage(id--, WEAPON_HUD_SKIN_FIREGRENADE);
+
+			fixed percentage = fixed(CheckInventory(WEAPON_FIREGRENADE_THROWPOWER_NAME)) / fixed(WEAPON_FIREGRENADE_MAX_THROWPOWER);
+			fixed clipX = BCSUtils::Round(fixed(WEAPON_FIREGRENADE_METER_WIDTH) * percentage);
+
+            BCSUtils::HudSetAlpha(BCSUtils::Min(1.0, percentage * 1.5));
+            BCSUtils::HudSetClipRect(fixed(-WEAPON_FIREGRENADE_METER_WIDTH), fixed(-WEAPON_FIREGRENADE_METER_HEIGHT), clipX, fixed(WEAPON_FIREGRENADE_METER_HEIGHT));
+            BCSUtils::HudDrawImage(id--, WEAPON_HUD_SKIN_FIREGRENADE_METER);
+            BCSUtils::HudRemoveClipRect();
+            BCSUtils::HudSetAlpha(1.0);
+
+            DebugDraw();
+        }
+
+        return id;
+    }
+
+    internal int DrawCounters(int id, fixed x, fixed y)
+    {
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        
+        int humanCount = Player::HumanCount();
+        int zombieCount = Player::ZombieCount();
+        int kills = Player::GetZombieKills();
+        int infects = Player::GetInfects();
+        
+        if (humanCount > 0)
+        {
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawImage(id--, "HUD_CHUM");
+            DebugDraw();
+
+            BCSUtils::HudSetPoint(x + 15.0, y);
+            BCSUtils::HudDrawText(id--, str(humanCount));
+            DebugDraw();
+
+            y += 20.0;
+        }
+        
+        if (zombieCount > 0)
+        {
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawImage(id--, "HUD_CZOM");
+            DebugDraw();
+
+            BCSUtils::HudSetPoint(x + 15.0, y);
+            BCSUtils::HudDrawText(id--, str(zombieCount));
+            DebugDraw();
+
+            y += 20.0;
+        }
+        
+        if (kills > 0)
+        {
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawImage(id--, "HUD_CZKL");
+            DebugDraw();
+
+            BCSUtils::HudSetPoint(x + 15.0, y);
+            BCSUtils::HudDrawText(id--, str(kills));
+            DebugDraw();
+
+            y += 20.0;
+        }
+        
+        if (infects > 0)
+        {
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawImage(id--, "HUD_CINF");
+            DebugDraw();
+
+            BCSUtils::HudSetPoint(x + 15.0, y);
+            BCSUtils::HudDrawText(id--, str(infects));
+            DebugDraw();
+        }
+
+        return id;
+    }
+
+    internal int DrawZombieAbilities(int id, fixed x, fixed y)
+    {
+        // Server disabled abilities or we have none, skip drawing.
+        if (!ZH2Game::GetUseZombieAbilities()
+            || Game::GetZombieAbilityFlags() == 0)
+        {
+			return id;
+		}
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetCenterText(true);
+        
+        for (int i = ABILITY_COUNT - 1; i >= 0; --i)
+        {
+            Game::ZombieAbilityTypeFlagsT flag = Game::GetZombieAbilityItemTypeByIndex(i + 1);
+
+            // Should not happen.
+            // If it does, we gracefully ignore for now and assume the ability can be used.
+            if (flag != Game::ABILITY_NONE)
+            {
+                // Server disabled this ability or we don't have it.
+                if (!Game::HasZombieAbility(flag)
+                    || (ZH2Game::GetDisabledZombieAbilityFlags() & flag) != 0)
+                {
+                    continue;
+                }
+            }
+
+            bool selected = Game::GetSelectedAbilityIndex() == i;
+
+            int maxTics = Game::GetZombieAbilityCooldownMaxTicsByIndex(i);
+            int tics = Game::GetZombieAbilityCooldownTicsLeftByIndex(i);
+
+            // Visual indication of the ability not being ready.
+            BCSUtils::HudSetAlpha(!selected && tics > 0 ? 0.4 : 1.0);
+
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawImage(id--, "HUD_ZA" + str(i) + str(1));
+
+            // Visualize the time left before this ability can be used.
+            int graphicIndex = selected ? 3 : 2;
+            fixed percentage = BCSUtils::Clamp(fixed(tics) / fixed(maxTics), 0.0, 1.0);
+            fixed clipY = fixed(HUD_ZOMBIEABILITY_METER_HEIGHT) - BCSUtils::Round(fixed(HUD_ZOMBIEABILITY_METER_HEIGHT) * percentage);
+
+            BCSUtils::HudSetClipRect(fixed(-HUD_ZOMBIEABILITY_METER_WIDTH), -clipY, fixed(HUD_ZOMBIEABILITY_METER_WIDTH), fixed(HUD_ZOMBIEABILITY_METER_HEIGHT));
+            BCSUtils::HudDrawImage(id--, "HUD_ZA" + str(i) + str(graphicIndex));
+            BCSUtils::HudRemoveClipRect();
+
+            DebugDraw();
+
+            // Show possible cooldown if selected
+            if (selected && tics > 0)
+            {
+                BCSUtils::HudSetAlpha(1.0);
+                BCSUtils::HudSetPoint(x - 20.0, y - 10.0);
+                str label = Utils::FormatTics(tics, true);
+                BCSUtils::HudDrawText(id--, str(label));
+            }
+
+            y -= 60.0;
+        }
+
+        return id;
+    }
+}

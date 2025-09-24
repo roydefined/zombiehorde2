@@ -1,0 +1,41 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "player.acs"
+#include "round.acs"
+#include "start.acs"
+#include "timer.acs"
+#include "resist.acs"
+
+strict namespace Hud
+{
+    internal void DrawAdminHud()
+    {
+        fixed scale = ZH2Game::GetHudAdminScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetScale(scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_TOP);
+
+        fixed x = BCSUtils::HudLeft(),
+              y = BCSUtils::HudTop();
+
+        x += 100.0;
+        y += 120.0;
+
+        x += _xShakeOffset;
+        y += _yShakeOffset;
+        
+        int id = HUD_ADMIN;
+        switch(_currentAdminMenu)
+        {
+            case MENU_START: DrawStartMenuHud(id, x, y, scale); break;
+            case MENU_PLAYER: DrawPlayerMenuHud(id, x, y, scale); break;
+            case MENU_TIMER: DrawTimerMenuHud(id, x, y, scale); break;
+            case MENU_ROUND: DrawRoundMenuHud(id, x, y, scale); break;
+            case MENU_RESIST: DrawResistMenuHud(id, x, y, scale); break;
+        }
+    }
+}

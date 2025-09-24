@@ -1,0 +1,74 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    internal bool ParseTips(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "tips"))
+            return false;
+
+        Logger::LogDebug(LOGSOURCE , "Start parsing tips.");
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            if (ParseTip(handle))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing tip: '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LOGSOURCE , "Finished parsing tips.");
+        return true;
+    }
+
+    internal bool ParseTip(int handle)
+    {
+        // Expecting a string for the tip
+        Tokenizer::TokenTypeT token = Tokenizer::GetToken(handle);
+        if (token != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Expected a string for the tip, received '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        // No more room for more tips. Log a warning and skip the remaining body.
+        if (Game::GetTipCount() >= MAX_TIPS)
+        {
+            Logger::LogWarning(LOGSOURCE , "The maximum number of tips was reached (" + str(MAX_TIPS) + ").");
+
+            // Optional comma.
+            Tokenizer::Next(handle, false);
+            if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                Tokenizer::Next(handle, false);
+
+            return true;
+        }
+
+        str tip = Tokenizer::GetSymbol(handle);
+        Game::AddTip(tip);
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LOGSOURCE , "Finished parsing tip: \cd" + tip + "\cj.");
+        return true;
+    }
+}

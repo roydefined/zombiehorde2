@@ -1,0 +1,49 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawGameHud()
+    {
+        fixed scale = ZH2Game::GetHudGameScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        fixed x = 320.0,
+              y = BCSUtils::HudBottom() - 100.0;
+              
+        x += _xShakeOffset;
+        y += _yShakeOffset;
+
+        int id = HUD_GAME;
+        id = DrawZombieTeleportTime(id, x, y);
+    }
+
+    internal int DrawZombieTeleportTime(int id, fixed x, fixed y)
+    {
+        if (!Game::GetIsZombieTeleporting())
+            return id;
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetCenterText(true);
+
+        BCSUtils::HudSetDisappearTime(0.5);
+
+        int tics = Game::GetZombieTeleportTics();
+        str formattedTics = Utils::FormatTics(tics, true);
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawText(id--, "Teleporting in " + formattedTics);
+        DebugDraw();
+
+        BCSUtils::HudSetPoint(x, y + 8.0);
+        BCSUtils::HudDrawText(id--, "Do not move");
+        DebugDraw();
+
+        return id;
+    }
+}

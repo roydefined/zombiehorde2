@@ -1,0 +1,120 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal void GiveHumanInventory(bool includeSpawnItems) { GivePlayerHumanInventory(PlayerNumber(), includeSpawnItems); }
+    internal void GiveZombieInventory() { GivePlayerZombieInventory(PlayerNumber()); }
+
+    internal void TakeHumanWeapons() { TakePlayerHumanWeapons(PlayerNumber()); }
+    internal void TakeZombieWeapons() { TakePlayerZombieWeapons(PlayerNumber()); }
+
+    internal void TakePanicInventory() { TakePlayerPanicInventory(PlayerNumber()); }
+
+    // Gives all items that are marked as being something to give to humans.
+    internal void GivePlayerHumanInventory(int id, bool includeSpawnItems)
+    {
+        int tid = Identity::GetTID(id);
+        Logger::LogDebug(LOGSOURCE , "Giving default human inventory to player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");
+        for (int i = 0; i < Item::GetItemCollectionSize(); ++i)
+        {
+            int spawnItemCount = Item::GetItemGiveOnSpawnCount(i);
+            int itemCount = Item::GetItemGiveOnHumanCount(i);
+            str itemName = Item::GetItemName(i);
+
+            if (includeSpawnItems && spawnItemCount > 0)
+            {
+                Logger::LogDebug(LOGSOURCE , "Giving \cd" + str(spawnItemCount) + "\cj of \cd" + itemName + "\cj to player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj) (spawn item).");
+                BCSUTILS::SetActorInventory(tid, itemName, spawnItemCount);
+            }
+
+            // Only give this if we didn't already give it as a spawn (or it must be more)
+            if (itemCount > 0 && !includeSpawnItems || itemCount > spawnItemCount)
+            {
+                Logger::LogDebug(LOGSOURCE , "Giving \cd" + str(itemCount) + "\cj of \cd" + itemName + "\cj to player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");
+                BCSUTILS::SetActorInventory(tid, itemName, itemCount);
+            }
+        }
+    }
+
+    // Gives all items that are marked as being something to give to zombies.
+    internal void GivePlayerZombieInventory(int id)
+    {
+        int tid = Identity::GetTID(id);
+        Logger::LogDebug(LOGSOURCE , "Giving default zombie inventory to player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");
+        for (int i = 0; i < Item::GetItemCollectionSize(); ++i)
+        {
+            int itemCount = Item::GetItemGiveOnZombieCount(i);
+            str itemName = Item::GetItemName(i);
+            if (itemCount == 0) continue;
+
+            Logger::LogDebug(LOGSOURCE , "Giving \cd" + str(itemCount) + "\cj of \cd" + itemName + "\cj to player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");
+            BCSUTILS::SetActorInventory(tid, itemName, itemCount);
+        }
+    }
+
+    // Takes all weapons marked as human owned.
+    internal void TakePlayerHumanWeapons(int id)
+    {
+        int tid = Identity::GetTID(id);
+        Logger::LogDebug(LOGSOURCE , "Taking human weapons from player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");
+        for (int i = 0; i < Item::GetItemCollectionSize(); ++i)
+        {
+            Item::ItemTypeT type = Item::GetItemType(i);
+            if (type != Item::TYPE_WEAPON)
+                continue;
+
+            bool humanOwned = Item::GetItemHumanOwned(i);
+            if (!humanOwned)
+                continue;
+
+            str itemName = Item::GetItemName(i);
+            if (CheckActorInventory(tid, itemName) == 0) continue;
+
+            Logger::LogDebug(LOGSOURCE , "Taking weapon \cd" + itemName + "\cj from player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");
+            BCSUTILS::SetActorInventory(tid, itemName, 0);
+        }
+    }
+    
+    // Takes all weapons marked as zombie owned.
+    internal void TakePlayerZombieWeapons(int id)
+    {
+        int tid = Identity::GetTID(id);
+        Logger::LogDebug(LOGSOURCE , "Taking zombie weapons from player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");
+        for (int i = 0; i < Item::GetItemCollectionSize(); ++i)
+        {
+            Item::ItemTypeT type = Item::GetItemType(i);
+            if (type != Item::TYPE_WEAPON)
+                continue;
+
+            bool zombieOwned = Item::GetItemZombieOwned(i);
+            if (!zombieOwned)
+                continue;
+
+            str itemName = Item::GetItemName(i);
+            if (CheckActorInventory(tid, itemName) == 0) continue;
+
+            Logger::LogDebug(LOGSOURCE , "Taking zombie \cd" + itemName + "\cj from player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");
+            BCSUTILS::SetActorInventory(tid, itemName, 0);
+        }
+    }
+
+    // Takes all panic related items.
+    internal void TakePlayerPanicInventory(int id)
+    {
+        int tid = Identity::GetTID(id);
+        Logger::LogDebug(LOGSOURCE , "Taking items for panic inventory from player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");
+        for (int i = 0; i < Item::GetItemCollectionSize(); ++i)
+        {
+            bool takeOnPanic = Item::GetItemTakeOnPanic(i);
+            if (!takeOnPanic) continue;
+
+            str itemName = Item::GetItemName(i);
+            if (CheckActorInventory(tid, itemName) == 0) continue;
+
+            Logger::LogDebug(LOGSOURCE , "Taking all of \cd" + itemName + "\cj from player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");
+            BCSUTILS::SetActorInventory(tid, itemName, 0);
+        }
+    }
+}

@@ -1,0 +1,129 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    // The current heartbeat used.
+    // The local ticker sets this because this checks what heartbeat should be played.
+    // 0 = None, or the normal one.
+    // 1 = Dangerous health.
+    // 2 = Critical health.
+    internal int _heartbeatType = 0;
+
+    // Two timestamps, because we can have two separate heartbeats (different client, or locally)
+    internal int _nextHeartbeatFarTimestamp = 0;
+    internal int _lastHeartbeatLocalTimestamp = 0;
+    internal int _nextHeartbeatLocalTimestamp = 0;
+
+    internal void HeartbeatTicClient()
+    {
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
+            return;
+
+        if (!Player::GetIsHuman())
+            return;
+        
+        if (!ZH2Game::GetEnableHurtHeartbeat())
+            return;
+
+        _heartbeatType = DetermineHeartbeatType();
+        if (Timer() < _nextHeartbeatLocalTimestamp)
+            return;
+        
+        int tid = ActivatorTid();
+        switch(_heartbeatType)
+        {
+            case 1:
+                _nextHeartbeatLocalTimestamp = Timer() + 18;
+                _lastHeartbeatLocalTimestamp = Timer();
+		        ThingSound(tid, "human/HEARTBEATHURT1", 150);
+                break;
+
+            case 2:
+                _nextHeartbeatLocalTimestamp = Timer() + 14;
+                _lastHeartbeatLocalTimestamp = Timer();
+		        ThingSound(tid, "human/HEARTBEATHURT2", 150);
+                break;
+            
+            default:
+                break;
+        }
+    }
+
+	// Called from the client's loop for each ingame player index.
+    internal void HeartbeatTicPlayerClient(int id)
+    {
+        // The final heartbeat is not triggered locally when the console player is the final human and we are playing a hurt heartbeat.
+        if (id == ConsolePlayerNumber() && ZH2Game::GetEnableHurtHeartbeat() && _heartbeatType != 0)
+            return;
+
+        if (Timer() % (35 + 18) != 0)
+            return;
+
+        if (!ZH2Game::GetEnableFinalHeartbeat())
+            return;
+        
+        if (HumanCount() != 1)
+            return;
+
+        // Map is not configured to play a heartbeat.
+        if (!GetPlayFinalHeartbeat())
+            return;
+        
+        if (!Player::GetPlayerIsHuman(id))
+            return;
+        
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
+            return;
+        
+        int tid = Identity::GetTid(id);
+
+        // Console player has a different heartbeat and timestamp.
+        if (id == ConsolePlayerNumber())
+        {
+		    ThingSound(tid, "human/HEARTBEATLOCAL", 150);
+            _nextHeartbeatLocalTimestamp = Timer() + 35;
+            _lastHeartbeatLocalTimestamp = Timer();
+        }
+        else
+        {
+		    ThingSound(tid, "human/HEARTBEATFAR", 150);
+            _nextHeartbeatFarTimestamp = Timer() + 35 + 18;
+        }
+    }
+
+    internal int DetermineHeartbeatType()
+    {
+        int health = BCSUtils::Max(0, PlayerHealth());
+
+        if (health <= HEALTH_HUMANCRITICAL)
+            return 2;
+        else if (health <= HEALTH_HUMANDANGEROUS)
+            return 1;
+        return 0;
+    }
+
+    internal int GetHeartbeatType()
+    {
+        return _heartbeatType;
+    }
+
+    internal int GetElapsedLocalHeartbeatTics()
+    {
+        if (_lastHeartbeatLocalTimestamp == 0)
+            return 0;
+        
+        return Timer() - _lastHeartbeatLocalTimestamp;
+    }
+
+    internal bool GetPlayFinalHeartbeat()
+    {
+        return ZH2Game::GameContext.MapDetails.PlayFinalHumanHeartbeat;
+    }
+    
+    internal void SetPlayFinalHeartbeat(bool set)
+    {
+        ZH2Game::GameContext.MapDetails.PlayFinalHumanHeartbeat = set;
+    }
+}

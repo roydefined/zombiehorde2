@@ -1,0 +1,62 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal void MorphPlayerToHuman(int id) { MorphPlayerToClass(id, CLASS_HUMAN); }
+    internal void MorphPlayerToZombie(int id) { MorphPlayerToClass(id, CLASS_ZOMBIE); }
+
+    internal void MorphToHuman() { MorphPlayerToHuman(PlayerNumber()); }
+    internal void MorphToZombie() { MorphPlayerToZombie(PlayerNumber()); }
+
+    internal void MorphPlayerToClass(int id, str class)
+    {
+        int tid = Identity::GetTid(id);
+        if (tid == -1) return;
+
+        if (!BCSUtils::ActorIsAlive(tid))
+        {
+            Logger::LogWarning(LOGSOURCE , "Unable to morph player " + BCSUtils::PlayerName(id) + ": player is not alive.");
+            return;
+        }
+
+        if (CheckActorClass(tid, class))
+        {
+            Logger::LogWarning(LOGSOURCE , "Unable to morph player " + BCSUtils::PlayerName(id) + ": player is already target class (" + class + ").");
+            return;
+        }
+
+        // Morphing doesn't work when a player is invisible.
+        // This part checks if it could be a cvar that blocks it.
+        // (NOTE: This should be impossible. We completely block the cvar from being used. This is kept in case it does end up happening)
+        if (GetActorProperty(tid, APROP_Invulnerable))
+        {
+            str message;
+            buildmsg(message = StrParam())
+            {
+                Append(s:"Failed to set player " + BCSUtils::PlayerName(id) + " into target class (" + class + ").");
+                if (ZH2Game::GetNoRespawnInvul()) Append(s:" Player most likely has (re)spawn invulnerability because 'sv_norespawninvul' is false.");
+                else Append(s:" Morphing is not possible if a player is invulnerable.");
+            }
+            Logger::LogError(LOGSOURCE , message);
+            return;
+        }
+
+        // Player is not of class InvisiblePlayer, which means they must first be unmorphed (InvisiblePlayer is the base unmorphed variant).
+        if (!CheckActorClass(tid, CLASS_INVISIBLE) && !bool(UnMorphActor(tid, (int)true)))
+        {
+            Logger::LogError(LOGSOURCE , "Failed to unmorph (" + str(tid) + ")" + BCSUtils::PlayerName(id) + " (actor class = " + GetActorClass(tid) + ").");
+            return;
+        }
+
+        // Note mapspot prevents flashes during morphing.
+        if (!CheckActorClass(tid, class) && !MorphActor(tid, class, "", 0x7fffffff, MRF_NEWTIDBEHAVIOUR, "mapspot", "mapspot"))
+        {
+            Logger::LogError(LOGSOURCE , "Failed to morph (" + str(tid) + ")" + BCSUtils::PlayerName(id) + " into target class (" + class + ", actor class = " + GetActorClass(tid) + ").");
+            return;
+        }
+
+        Logger::LogDebug(LOGSOURCE , "Player (" + str(tid) + ")" + BCSUtils::PlayerName(id) + " was morphed to class \cd" + GetActorClass(tid) + "\cj.");
+    }
+}

@@ -1,0 +1,43 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    // Handles the pointer offset so we can lerp to it.
+    internal fixed _sniperHudTargetOffset,
+                   _sniperHudCurrentOffset;
+
+    internal void DrawSniperHud(fixed x, fixed y, fixed scale)
+    {
+        int id = HUD_WEAPONSNIPER;
+
+        _sniperHudTargetOffset = fixed(CheckInventory(WEAPON_SNIPER_ZOOM_LEVEL_NAME)) * 110.0;
+
+        // Update offset.
+        // We floor the value so we don't apply decimals as this sets alignment in drawing using HudMessage.
+        fixed diff = _sniperHudTargetOffset - _sniperHudCurrentOffset;
+        if (BCSUtils::Abs(diff) > 1.0)
+            _sniperHudCurrentOffset += BCSUtils::Floor(diff * 0.2);
+        
+        // Not zoomed in.
+        // Note we put this here so the offset can change.
+        if (CheckInventory(WEAPON_SNIPER_IS_ZOOMED_NAME) == 0)
+            return;
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(id--, HUD_WEAPONSNIPER_BACKGROUNDNAME);
+        DebugDraw();
+        
+        y += 180.0 * scale;
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(id--, HUD_WEAPONSNIPER_METERNAME);
+        DebugDraw();
+        
+        fixed offset = _sniperHudCurrentOffset * scale;
+        BCSUtils::HudSetPoint(x - 100.0 * scale + offset, y + 20.0 * scale);
+        BCSUtils::HudDrawImage(id--, HUD_WEAPONSNIPER_METERPOINTERNAME);
+        DebugDraw();
+    }
+}

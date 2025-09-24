@@ -1,0 +1,93 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+// The EndReason is the reason why a round would have ended.
+// It hints to clients what would have happened for a round to end. For example, an admin could have ended it.
+
+strict namespace Game
+{
+    // Preset data for the three endings.
+    // TODO: Receive from lump so it can be edited.
+    internal EndingTypeT _endingTypes[] =
+    {
+        {
+            { "\ciMission failed!", "\ciFission mailed!" },
+            { "\ckHow did you manage to do this?", "\ckWhat the...?!" },
+            (raw)0,
+        },
+        {
+            { "\chHumans \cjwin!", "\chHumans \cjVictory!" },
+            { "\cjHumanity is safe... for now!", "\cjDon't mess with humans, bro!" },
+            "D_WINHUM",
+        },
+        {
+            { "\cgZombies \cjwin!", "\cgZombies \cjVictory!" },
+            { "\cgBring bigger guns next time!", "\cgEarth is their new home now!" },
+            "D_WINZOM",
+        },
+    };
+
+    // Called clientside to build up the ending screen.
+    internal void ClientBuildEnding()
+    {
+        // Set a random top and bottom message.
+        int index = (int)Game::GetWinningSpecie() - 1;
+        EndingTypeT& ending = _endingTypes[index];
+        ZH2Game::GameContext.WinMessageTop = ending.WinMessagesTop[Random(0, lengthof(ending.WinMessagesTop) - 1)];
+        ZH2Game::GameContext.WinMessageBottom = ending.WinMessagesBottom[Random(0, lengthof(ending.WinMessagesBottom) - 1)];
+
+        // Play a track for the winning type.
+        str track = ending.track;
+        if (track != (raw)0 && track != "")
+            Music::SetMusic(track);
+
+        // Set the ordered lists indicating the final stats.
+        
+        Shuffle::SortByHumanKills();
+        ZH2Game::GameContext.HumanKillsOrderedCount = Shuffle::GetRelevantSize();
+        for (int i = 0; i < ZH2Game::GameContext.HumanKillsOrderedCount; ++i)
+            ZH2Game::GameContext.HumanKillsOrdered[i] = Shuffle::GetIndexValue(i);
+
+        Shuffle::SortByZombieKills();
+        ZH2Game::GameContext.ZombieKillsOrderedCount = Shuffle::GetRelevantSize();
+        for (int i = 0; i < ZH2Game::GameContext.ZombieKillsOrderedCount; ++i)
+            ZH2Game::GameContext.ZombieKillsOrdered[i] = Shuffle::GetIndexValue(i);
+
+        Shuffle::SortByInfects();
+        ZH2Game::GameContext.InfectsOrderedCount = Shuffle::GetRelevantSize();
+        for (int i = 0; i < ZH2Game::GameContext.InfectsOrderedCount; ++i)
+            ZH2Game::GameContext.InfectsOrdered[i] = Shuffle::GetIndexValue(i);
+
+        Shuffle::ShuffleBySurvived();
+        ZH2Game::GameContext.SurvivorsShuffledCount = Shuffle::GetRelevantSize();
+        for (int i = 0; i < ZH2Game::GameContext.SurvivorsShuffledCount; ++i)
+            ZH2Game::GameContext.SurvivorsShuffled[i] = Shuffle::GetIndexValue(i);
+
+        Shuffle::ShuffleByHorde();
+        ZH2Game::GameContext.HordeShuffledCount = Shuffle::GetRelevantSize();
+        for (int i = 0; i < ZH2Game::GameContext.HordeShuffledCount; ++i)
+            ZH2Game::GameContext.HordeShuffled[i] = Shuffle::GetIndexValue(i);
+
+        Shuffle::ShuffleByDead();
+        ZH2Game::GameContext.DeadShuffledCount = Shuffle::GetRelevantSize();
+        for (int i = 0; i < ZH2Game::GameContext.DeadShuffledCount; ++i)
+            ZH2Game::GameContext.DeadShuffled[i] = Shuffle::GetIndexValue(i);
+    }
+
+    internal void SetEndReason(EndReasonT reason)
+    {
+        ZH2Game::GameContext.EndReason = reason;
+    }
+    
+    internal EndReasonT GetEndReason()
+    {
+        return ZH2Game::GameContext.EndReason;
+    }
+
+    internal EndReasonT GetEndReasonTypeByIndex(int index)
+    {
+        static EndReasonT collection[] = { REASONNONE, REASONSPECIEWON, REASONHUMANLEFT, REASONZOMBIELEFT, REASONADMINENDED, };
+        return collection[index];
+    }
+}

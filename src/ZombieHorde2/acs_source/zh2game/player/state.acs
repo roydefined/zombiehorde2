@@ -1,0 +1,46 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+// Externally checked state of a player different from the internal state.
+// Reason is that we can't rely on the internal state due to how the game works.
+// A joining player might just die immediately as the game plays, but this WILL affect the internal state and therefore also the game.
+// So, we track it manually to ensure it's correct.
+
+strict namespace Player
+{
+    internal void SetState(PlayerStateT state)
+    {
+        SetPlayerState(PlayerNumber(), state);
+    }
+
+    internal void SetPlayerState(int id, PlayerStateT state)
+    {
+        ZH2Game::GameContext.Players[id].State = state;
+    }
+
+    internal PlayerStateT GetState()
+    {
+        return GetPlayerState(PlayerNumber());
+    }
+
+    internal PlayerStateT GetPlayerState(int id)
+    {
+        return ZH2Game::GameContext.Players[id].State;
+    }
+    
+
+    internal PlayerStateT GetPlayerStateByIndex(int index)
+    {
+        static PlayerStateT collection[] = { STATENONE, STATEGONE, STATEPLAYING, STATEDEAD };
+        return collection[index];
+    }
+
+    internal str GetPlayerStateAsString(PlayerStateT state)
+    {
+        return state == STATENONE ? "None" :
+            state == STATEGONE ? "Gone" :
+            state == STATEPLAYING ? "Playing" :
+            state == STATEDEAD ? "Dead" : "Unknown";
+    }
+}

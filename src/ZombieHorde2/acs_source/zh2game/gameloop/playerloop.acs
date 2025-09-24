@@ -1,0 +1,68 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace GameLoop
+{
+    script "zh2_internal_playerloop"(int id)
+    {
+        Logger::LogDebug(LOGSOURCE , "Player loop started for id \cd" + str(id) + "\cj.");
+        while(BCSUtils::PlayerIsConnected(id))
+        {
+            if (!SetActivatorToPlayer(id))
+            {
+                Delay(const: 1);
+                continue;
+            }
+
+            Decorate::TicServer();
+            Power::Tic();
+            Player::SprintTic();
+            Player::PanicTic();
+            Game::TicActivatorZombieTeleport();
+            Delay(const: 1);
+        }
+        Logger::LogDebug(LOGSOURCE , "Player loop ended for id \cd" + str(id) + "\cj.");
+    }
+    
+    script "zh2_internal_playerloop_client" clientside
+    {
+        Logger::LogDebug(LOGSOURCE , "Clientside player loop started for id \cd" + str(ConsolePlayerNumber()) + "\cj.");
+        
+        while(true)
+        {
+            // Note, must be in the loop, or it will fail online.
+            if (!SetActivatorToPlayer(ConsolePlayerNumber()))
+            {
+                Delay(const: 1);
+                continue;
+            }
+
+            Logger::FlushBuffer();
+            Game::TicTipsClient();
+            Hud::Tic();
+            Item::Tic();
+            Decorate::TicClient();
+            Weather::TicClient();
+            RoundTimer::TicClient();
+            Game::FullServerTicClient();
+            Player::HeartbeatTicClient();
+
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+			{
+				if (PlayerInGame(i))
+				    PlayerTicClient(i);
+			}
+
+            Delay(const: 1);
+        }
+        Logger::LogDebug(LOGSOURCE , "Clientside player loop ended for id \cd" + str(ConsolePlayerNumber()) + "\cj.");
+    }
+
+    // Specific to a playing client, called clientside.
+    internal void PlayerTicClient(int id)
+    {
+        Player::HeartbeatTicPlayerClient(id);
+        Footstep::FootstepTicPlayerClient(id);
+    }
+}

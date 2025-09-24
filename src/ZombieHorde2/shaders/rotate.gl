@@ -1,0 +1,18 @@
+// https://zandronum.com/forum/viewtopic.php?t=7904
+// Modified to not overwrite the alpha value of the sprite, since a lot of transparent sprites use this.
+
+uniform float timer;
+ 
+vec4 Process(vec4 color)
+{
+	vec2 tex_coord = gl_TexCoord[0].st;
+	
+	float angle = timer * 6.283;
+	float x = tex_coord.x;
+	float y = tex_coord.y;
+
+    float output_x = cos(angle) * (x-0.5) - sin(angle) * (y-0.5) + 0.5; 
+    float output_y = sin(angle) * (x-0.5) + cos(angle) * (y-0.5) + 0.5;
+    
+	return getTexel(vec2(output_x, output_y)) * color;
+}

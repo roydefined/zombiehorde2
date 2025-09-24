@@ -1,0 +1,60 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Settings
+{
+    // Updates the client settings we still expect from the client.
+    internal void UpdateCurrentClientSettings()
+    {
+        Shuffle::SortClientSettingsByRequired();
+
+        int count = Shuffle::GetRelevantSize();
+        ZH2Game::GameContext.RequestedClientSettingCount = count;
+
+        for (int i = 0; i < count; ++i)
+            ZH2Game::GameContext.RequestedClientSettings[i] = Shuffle::GetIndexValue(i);
+    }
+
+    // Tell the client he has some settings he should consolidate.
+    internal void BroadcastClientConsolidateSettings(bool broadcastWhenNone)
+    {
+        int count = ZH2Game::GameContext.RequestedClientSettingCount;
+        if (count == 0)
+        {
+            if (broadcastWhenNone)
+                Logger::LogActivator("Settings are up to date. No action is required.");
+
+            return;
+        }
+
+        Logger::LogActivator("\cfNotice:\cj " + str(count) + " setting" + (count > 1 ? "" : "s") + " require consolidation. Please consider opening the menu for this through the Zombie Horde 2 settings menu.");
+    }
+
+    // NOTE: Everything below takes a handle, which is what we have determined to be an invalid setting.
+    // It points to the index in the game context's list of indexes, which in turn points to the index in the persisting game context.
+    
+    internal str GetInvalidClientSettingType(int handle)
+    {
+        int index = ZH2Game::GameContext.RequestedClientSettings[handle];
+        return ZH2Game::PersistingGameContext.RequestedClientSettings[index].Type;
+    }
+    
+    internal str GetInvalidClientSettingName(int handle)
+    {
+        int index = ZH2Game::GameContext.RequestedClientSettings[handle];
+        return ZH2Game::PersistingGameContext.RequestedClientSettings[index].Name;
+    }
+
+    internal int GetInvalidClientSettingValue(int handle)
+    {
+        int index = ZH2Game::GameContext.RequestedClientSettings[handle];
+        return ZH2Game::PersistingGameContext.RequestedClientSettings[index].Value;
+    }
+    
+    internal str GetInvalidClientSettingLabel(int handle)
+    {
+        int index = ZH2Game::GameContext.RequestedClientSettings[handle];
+        return ZH2Game::PersistingGameContext.RequestedClientSettings[index].Label;
+    }
+}

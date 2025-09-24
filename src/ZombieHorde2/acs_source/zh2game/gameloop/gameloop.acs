@@ -1,0 +1,55 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE  "Game Loop"
+
+#include "playerloop.acs"
+#include "serverloop.acs"
+
+strict namespace GameLoop
+{
+    // Handles initialization of a player specific GameLoop on the serverside.
+    internal void StartServerLoop()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+        
+        if (!ACS_NamedExecuteAlways("zh2_internal_serverloop", 0))
+        {
+            Logger::LogError(LOGSOURCE , "Server loop could not be started. Script failed to execute.");
+            return;
+        }
+    }
+
+    // Handles initialization of a player specific GameLoop on the serverside.
+    internal void StartServerPlayerLoopById(int id)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+        
+        if (!BCSUtils::PlayerIsConnected(id))
+        {
+            Logger::LogError(LOGSOURCE , "Player loop could not be started for player id " + str(id) + ". Player is not connected.");
+            return;
+        }
+        
+        if (!ACS_NamedExecuteAlways("zh2_internal_playerloop", 0, id))
+        {
+            Logger::LogError(LOGSOURCE , "Player loop could not be started for player id " + str(id) + ". Script failed to execute.");
+            return;
+        }
+    }
+
+    // Handles initialization of a player specific GameLoop on the serverside.
+    internal void StartClientPlayerLoopActivator()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        
+        if (!ACS_NamedExecute("zh2_internal_playerloop_client", 0))
+        {
+            Logger::LogError(LOGSOURCE , "Player client loop could not be started. Script failed to execute.");
+            return;
+        }
+    }
+}
+
+#undef LOGSOURCE 

@@ -1,0 +1,128 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Sync
+{
+    #define SYNC_CATEGORY "RESIST"
+
+    internal void SyncResistsActor()
+    {
+        int syncId = SYNC_RESISTS;
+        Resist::ResistT[]& resists = ZH2Game::GameContext.MapDetails.Resists;
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing resist packs through actors. Sync id: " + str(syncId) + ". Length: " + str(lengthof(resists)) + "."));
+
+        // The second value represents the length of the collection, so the client can also allocate accordingly.
+        BCSUtils::SyncVariable(syncId++, lengthof(resists));
+
+        for (int i = 0; i < lengthof(resists); ++i)
+        {
+            // Skip if undefined.
+            BCSUtils::SyncVariable(syncId++, int(resists[i].Defined));
+
+            // TODO: should be 2, not 3?
+            if (!resists[i].Defined)
+            {
+                syncId += 3;
+                continue;
+            }
+
+            // For the client so they know the index of the resist on their side.
+            // We can also not do this but then it's unclear what resists to define.
+            BCSUtils::SyncVariable(syncId++, resists[i].InitialState.Length);
+            BCSUtils::SyncVariable(syncId++, resists[i].EndingTic);
+            BCSUtils::SyncVariable(syncId++, resists[i].RunState);
+
+            str topReasonLabel = resists[i].InitialState.TopReasonLabel;
+            str timeReasonLabel = resists[i].InitialState.TimeReasonLabel;
+
+            bool topReasonLabelSet = topReasonLabel != (raw)0;
+            bool timeReasonLabelSet = timeReasonLabel != (raw)0;
+
+            // On the client we can't differentiate 0 from "" using GetCVarString.
+            // We additionally pack this integer to specify if the labels are set.
+            int pack = BCSUtils::PackShorts((int)topReasonLabelSet, (int)timeReasonLabelSet);
+            BCSUtils::SyncVariable(syncId++, pack);
+
+            // TODO: Use some sort of string formatting function.
+            if (topReasonLabelSet)
+                SetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_RESIST_LABEL_TOP_TEMPLATE, "%n", str(i)), topReasonLabel);
+
+            if (timeReasonLabelSet)
+                SetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_RESIST_LABEL_BOTTOM_TEMPLATE, "%n", str(i)), timeReasonLabel);
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing resist packs through actors."));
+    }
+
+    internal void CallSyncResistsActorOnClients()
+    {
+        if (!ACS_NamedExecuteAlways("zh2_internal_sync_resists_actor_clientside", 0))
+            Logger::LogError(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for resists."));
+    }
+
+    script "zh2_internal_sync_resists_actor_clientside" clientside
+    {
+        SyncResistsActorClientside();
+    }
+
+    internal void SyncResistsActorClientside()
+    {
+        int syncId = SYNC_RESISTS;
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading resist packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        Resist::ResistT[]& resists = ZH2Game::GameContext.MapDetails.Resists;
+
+        int collectionLength = BCSUtils::GetSyncVarDefault(syncId++, 0);
+
+        // Note we don't check the target index here since the server should supply a valid value.
+
+        // Reallocate if needed.
+        // NOTE: Commented and unused until we get to allocating these again.
+        // if (collectionLength > lengthof(resists))
+        // {
+        //     static Resist::ResistT lengthdef;
+        //     Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Reallocating to size of \cd" + str(collectionLength) + "\cj from sync packet."));
+        //     ZH2Game::GameContext.Resists = BCS::ArrResize(resists, collectionLength, lengthof(lengthdef));
+        // }
+
+        for (int i = 0; i < collectionLength; ++i)
+        {
+            resists[i].Defined = BCSUtils::GetSyncVarDefault(syncId++, -1);
+            if (!resists[i].Defined)
+            {
+                syncId += 3;
+                continue;
+            }
+
+            resists[i].InitialState.Length = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            resists[i].EndingTic = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            resists[i].RunState = Resist::GetRunStateTypeByIndex(BCSUtils::GetSyncVarDefault(syncId++, 0));
+
+            // As specified above, `GetCVarString` doesn't differentiate 0 from "" so we must pass this data.
+            int pack = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            bool topReasonLabelSet = (bool)BCSUtils::UnpackShort1(pack);
+            bool timeReasonLabelSet = (bool)BCSUtils::UnpackShort2(pack);
+
+            // TODO: Use some sort of string formatting function.
+            resists[i].InitialState.TopReasonLabel = topReasonLabelSet
+                ? GetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_RESIST_LABEL_TOP_TEMPLATE, "%n", str(i)))
+                : (raw)0;
+
+            resists[i].InitialState.TimeReasonLabel = timeReasonLabelSet
+                ? GetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_RESIST_LABEL_BOTTOM_TEMPLATE, "%n", str(i)))
+                : (raw)0;
+        
+            // Initialize the remainder clientside.
+            // TODO: Move to a proper callback.
+            Resist::InitializeResistClientside(i);
+
+            Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Synced new resist under index " + str(i) + "."));
+        }
+        
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Synced resists to client."));
+    }
+
+    #undef SYNC_CATEGORY
+}

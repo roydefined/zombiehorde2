@@ -1,0 +1,170 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace LibIO
+{
+    internal bool ParseLogLevels(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "loglevels")) return false;
+        
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+        
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseLogDefault(handle, symbol)
+                || ParseLogOverrides(handle, symbol))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing loglevels of log definition: '" + symbol + "'.");
+            return false;
+        }
+        
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+        return true;
+    }
+
+    internal bool ParseLogDefault(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "default"))
+            return false;
+
+        Tokenizer::Next(handle, false);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING
+            && Tokenizer::GetToken(handle) != Tokenizer::TINTEGER)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for default log level whilst parsing loglevels of log definition: '" + Tokenizer::GetSymbol(handle) + "'. Symbol should be of type symbol, string or number.");
+            return false;
+        }
+
+        // Parse integer or string differently
+        Logger::LogLevelT parsedLevel;
+        if (Tokenizer::GetToken(handle) == Tokenizer::TINTEGER)
+        {
+            int logLevelIndex = BCSUtils::Atoi(Tokenizer::GetSymbol(handle));
+            parsedLevel = Logger::GetLogLevelByIndex(logLevelIndex);
+            ZH2Lib::PersistingLibContext.LogContext.DefaultLevel = parsedLevel;
+            if (parsedLevel == Logger::LEVELNONE)
+                Logger::LogWarning(LOGSOURCE , "The given index (" + str(logLevelIndex) + ") is not a valid log level.");
+        }
+        else
+        {
+            str logLevelString = Tokenizer::GetSymbol(handle);
+            parsedLevel = Logger::GetLogLevelByString(logLevelString);
+            ZH2Lib::PersistingLibContext.LogContext.DefaultLevel = parsedLevel;
+            if (parsedLevel == Logger::LEVELNONE)
+                Logger::LogWarning(LOGSOURCE , "The given string (" + logLevelString + ") is not a valid log level.");
+        }
+            
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LOGSOURCE , "The default log level has been set to \cd" + Logger::GetLogLevelAsString(parsedLevel) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseLogOverrides(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "override"))
+            return false;
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+        
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseLogOverride(handle, symbol))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing log level override of log definition: '" + symbol + "'.");
+            return false;
+        }
+        
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+        return true;
+    }
+
+    internal bool ParseLogOverride(int handle, str identifyingSymbol)
+    {
+        if (identifyingSymbol != "{")
+            return false;
+
+        Tokenizer::Next(handle, false);
+
+        str source = Tokenizer::GetSymbol(handle);
+        int index = ZH2Lib::PersistingLibContext.LogContext.OverrideCount;
+        ZH2Lib::PersistingLibContext.LogContext.Overrides[index].Source = source;
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING
+            && Tokenizer::GetToken(handle) != Tokenizer::TINTEGER)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for default log level whilst parsing loglevels of log definition: '" + Tokenizer::GetSymbol(handle) + "'. Symbol should be of type symbol, string or number.");
+            return false;
+        }
+
+        // Parse integer or string differently.
+        Logger::LogLevelT parsedLevel;
+        if (Tokenizer::GetToken(handle) == Tokenizer::TINTEGER)
+        {
+            int logLevelIndex = BCSUtils::Atoi(Tokenizer::GetSymbol(handle));
+            parsedLevel = Logger::GetLogLevelByIndex(logLevelIndex);
+            ZH2Lib::PersistingLibContext.LogContext.Overrides[index].Level = parsedLevel;
+            if (parsedLevel == Logger::LEVELNONE)
+                Logger::LogWarning(LOGSOURCE , "The given index (" + str(logLevelIndex) + ") is not a valid log level.");
+        }
+        else
+        {
+            str logLevelString = Tokenizer::GetSymbol(handle);
+            parsedLevel = Logger::GetLogLevelByString(logLevelString);
+            ZH2Lib::PersistingLibContext.LogContext.Overrides[index].Level = parsedLevel;
+            if (parsedLevel == Logger::LEVELNONE)
+                Logger::LogWarning(LOGSOURCE , "The given string (" + logLevelString + ") is not a valid log level.");
+        }
+
+        ZH2Lib::PersistingLibContext.LogContext.OverrideCount++;
+        Logger::LogDebug(LOGSOURCE , "Added log override. Source: \cd" + source + "\cj, level: \cd" + Logger::GetLogLevelAsString(parsedLevel) + "\cj.");
+        
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        if (!Tokenizer::ExpectChar(handle, '}'))
+            return false;
+        
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        
+        return true;
+    }
+}

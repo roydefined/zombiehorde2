@@ -1,0 +1,238 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE  "Hud"
+
+#include "other.acs"
+#include "version.acs"
+#include "statshud.acs"
+#include "roundhud.acs"
+#include "resistshud.acs"
+#include "gamehud.acs"
+#include "player/player.acs"
+#include "ending/ending.acs"
+#include "summary/summary.acs"
+#include "separate/separate.acs"
+#include "clientsettings/clientsettings.acs"
+#include "fullserver/fullserver.acs"
+#include "weapons/weapons.acs"
+#include "admin/admin.acs"
+
+strict namespace Hud
+{
+    internal AdminMenuT _currentAdminMenu;
+    internal bool _cursorEnabled;
+    internal int _debugHudId;
+
+    // For shaking of the HUD.
+    internal fixed _firingSeedAngle = 0.0;
+    internal fixed _xShakeOffset = 0.0;
+    internal fixed _yShakeOffset = 0.0;
+
+    internal void Tic()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        _debugHudId = HUD_DEBUG;
+
+        UpdateHudShakeOffset();
+
+        if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
+            DrawFullServerHud();
+
+        if (ZH2Game::GetDrawVersionHud())
+            DrawVersion();
+            
+        if (ZH2Game::GetDrawRoundHud())
+            DrawRoundHud();
+        
+        // All of this is strictly during the playing game.
+        if (Round::GetActiveKnownRoundState() < Round::STATEENDING)
+        {
+            if (ZH2Game::GetDrawResistsHud())
+                DrawResistsHud();
+
+            if (ZH2Game::GetDrawStatsHud())
+                DrawStatsHud();
+                
+            // NOTE: We do NOT allow drawing of the admin hud during the voting, because it is also clickable.
+            if (ZH2Game::GameContext.HasAdminHudOpen)
+                DrawAdminHud();
+
+            // Same as the admin hud
+            if (ZH2Game::GameContext.HasClientSettingsHudOpen)
+                DrawClientSettingsHud();
+
+            if (Decorate::IsOnFire())
+                DrawClientSeparateHudFire(FIRETYPENORMAL);
+
+            if (Decorate::IsOnFire() && Timer() % 10 == 0)
+                DrawClientSeparateHudFireBlur();
+            
+            if (Decorate::IsOnAcid() && Timer() % 10 == 0)
+                DrawClientSeparateHudAcidBlur();
+        }
+
+        // Same as above, but a state later.
+        if (Round::GetActiveKnownRoundState() < Round::STATEVOTING)
+        {
+            DrawWeaponsHud();
+            DrawPlayerHud();
+
+            if (ZH2Game::GetDrawGameHud())
+                DrawGameHud();
+        }
+
+        // Game must be ending and we must have a winning specie in order to draw the ending hud.
+        if (Round::GetActiveKnownRoundState() == Round::STATEENDING)
+            DrawEndingHud();
+
+        // Game must be ending and we must have a winning specie in order to draw the ending hud.
+        if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
+            DrawSummaryHud();
+
+        if (_cursorEnabled)
+            DrawCursor();
+    }
+
+    internal void SetCursorEnabled(bool enabled)
+    {
+        _cursorEnabled = enabled;
+    }
+
+    internal void DebugDraw(int color = CR_WHITE)
+    {
+        if (!ZH2Game::GetDrawDebugHud()) return;
+
+        BCSUtils::HudPushState();
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetTextColor(color);
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudDrawText(_debugHudId--, "*");
+        BCSUtils::HudPopState();
+    }
+
+    internal void DebugDrawXY(fixed x, fixed y, int color = CR_WHITE)
+    {
+        if (!ZH2Game::GetDrawDebugHud()) return;
+
+        BCSUtils::HudPushState();
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetTextColor(color);
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudDrawText(_debugHudId--, "*");
+        BCSUtils::HudPopState();
+    }
+
+    // This uses HudSetScale because the positioning will be better.
+    internal void DrawCursor()
+    {
+        fixed scale = ZH2Game::GetCursorScale();
+
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetScale(scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
+
+        BCSUtils::UpdateCursor();
+        BCSUtils::HudSetTextColor(CR_WHITE);
+
+        // Note the cursor pointer is on the top left, so because of this we draw it slightly offset.
+        // 17.0 is the sweet spot.
+        BCSUtils::HudSetPoint(BCSUtils::Floor(BCSUtils::CursorX()) + 17.0 * scale, BCSUtils::Floor(BCSUtils::CursorY()));
+        BCSUtils::HudDrawImage(HUD_CURSOR, "CURSOR");
+
+        // Debug points for the cursor where it actually points.
+        DebugDrawXY(BCSUtils::Floor(BCSUtils::CursorX()), BCSUtils::Floor(BCSUtils::CursorY()), CR_CYAN);
+    }
+
+    internal bool DrawClickableTextConditional(bool clickable, int id, fixed x, fixed y, fixed width, fixed height, str text)
+    {
+        if (!clickable)
+        {
+            BCSUtils::HudSetTextColor(CR_DARKGRAY);
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawText(id, text);
+            return false;
+        }
+
+        return DrawClickableText(id, x, y, width, height, text);
+    }
+
+    internal bool DrawClickableText(int id, fixed x, fixed y, fixed width, fixed height, str text)
+    {
+        fixed mouseScale = ZH2Game::GetCursorScale();
+        fixed cursorX = BCSUTILS::Floor(BCSUTILS::CursorX()),
+              cursorY = BCSUTILS::Floor(BCSUTILS::CursorY());
+
+        // Determine if this text is currently being selected.
+        bool isOver =
+               cursorX > x && cursorX < x + width
+            && cursorY > y && cursorY < y + height;
+
+        BCSUtils::HudSetTextColor(isOver ? CR_RED : CR_WHITE);
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawText(id, text);
+        
+        // Draw the bounds of the screen.
+        DebugDrawXY(x, y, CR_GRAY);
+        DebugDrawXY(x + width, y, CR_GRAY);
+        DebugDrawXY(x, y + height, CR_GRAY);
+        DebugDrawXY(x + width, y + height, CR_GRAY);
+
+        return isOver && BCSUTILS::KeyPressed(BT_ATTACK);
+    }
+
+    internal void UpdateHudShakeOffset()
+    {
+        _xShakeOffset = 0.0;
+        _yShakeOffset = 0.0;
+
+        if (!Decorate::IsFiringWeapon())
+            return;
+
+        if (!ZH2Game::GetEnableHudShaking())
+            return;
+
+        int duration = ZH2Game::GetHudShakeDuration();
+        int elapsed = Decorate::GetFiringTime();
+        if (elapsed >= duration)
+            return;
+
+        // Initialize shake on first tic
+        if (elapsed == 1)
+            _firingSeedAngle = Math::FRandom(0.0, 2.0 * BCSUtils::PI);
+
+        fixed maxIntensity = HUDSHAKE_INTENSITYBASE * ZH2Game::GetHudShakeIntensityMultiplier();
+        fixed frequency = HUDSHAKE_FREQUENCYBASE * ZH2Game::GetHudShakeFrequencyMultiplier();
+
+        fixed progress = fixed(elapsed) / fixed(duration);
+        fixed intensity = maxIntensity * (1.0 - progress);
+
+        fixed angle = fixed(elapsed) * fixed(frequency) * 0.01;
+        fixed offset = Sin(angle) * intensity;
+
+        _xShakeOffset = Cos(_firingSeedAngle) * offset;
+        _yShakeOffset = Sin(_firingSeedAngle) * offset;
+    }
+
+    internal void OpenAdminMenu(AdminMenuT menu)
+    {
+        _currentAdminMenu = menu;
+    }
+
+    internal void ResetHud()
+    {
+        OpenAdminMenu(MENU_START);
+        _menuPlayerTargetId = -1;
+        _menuPlayerSubMenu = MENU_NONE;
+        _filteredSpecie = Player::SPECIENONE;
+    }
+}
+
+#undef LOGSOURCE 

@@ -1,0 +1,257 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE  "Timer"
+
+#include "public.acs"
+
+strict namespace RoundTimer
+{
+    // NOTE: Commented and unused until we get to allocating these again.
+    // internal void Initialize()
+    // {
+    //     static RoundTimer::RoundTimerContextT lengthdef;
+    //     ZH2Game::GameContext.Timers = BCS::ArrNew(5, lengthof(lengthdef));
+    // }
+
+    internal void TicServer()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        int index = GetActiveTimerIndex();
+        int timeLeft = GetTimerTicsLeft(index);
+        if (GetTimerDefined(index) && GetTimerActive(index) && timeLeft == 0)
+        {
+            StopTimer(index);
+            EventBus::CallEvent(EVENTTIMERELAPSED, index);
+        }
+    }
+    
+    internal void TicClient()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        
+        // Countdown timer.
+        // The actual end sound is not tied to the timer, but rather plays when the play round ends from the server.
+        int index = GetActiveTimerIndex();
+        if (GetTimerDefined(index) && GetTimerActive(index) && GetTimerDoCountdown(index))
+        {
+            int timeLeft = GetTimerTicsLeft(index);
+            if (timeLeft <= 350 && timeLeft > 0 && timeLeft % 35 == 0)
+                AmbientSound("world/TIMERONE", 100);
+        }
+    }
+
+    // Called from the server to indicate the round ended.
+    // Note: This is mainly separated because online the timer might switch before reaching zero on the client. This works around the sound not calling.
+    internal void CallEndSound()
+    {
+        AmbientSound("world/TIMEREND", 100);
+    }
+
+    internal void DefineKnownTimer(KnownRoundTimerT timerType, int length, int maximumTime, int flags, str label = "")
+    {
+        DefineTimer(GetIndexOfKnownType(timerType), length, maximumTime, flags, label);
+    }
+
+    internal void DefineTimer(int index, int length, int maximumTime, int flags, str label = "")
+    {
+        if (index < 0 || index >= MAX_TIMERS)
+        {
+            Logger::LogError(LOGSOURCE , "Timer index " + str(index) + " is invalid. Timer must be between 0-" + str(MAX_TIMERS - 1) + ".");
+            return;
+        }
+
+        
+        // Reallocate the timer to support the given index.
+        // NOTE: Commented and unused until we get to allocating these again.
+        // RoundTimerContextT[]? timers = ZH2Game::GameContext.MapDetails.Timers;
+        // if (index >= lengthof(timers))
+        // {
+        //     static RoundTimer::RoundTimerContextT lengthdef;
+        //     Logger::LogDebug(LOGSOURCE , "Reallocating to size of \cd" + str(index + 1) + "\cj.");
+        //     ZH2Game::GameContext.MapDetails.Timers = BCS::ArrResize(timers, index + 1, lengthof(lengthdef));
+        // }
+
+        RoundTimerContextT& timer = GetTimerRefByindex(index);
+        timer.InitialState.Length = length;
+        timer.InitialState.MaximumTime = maximumTime;
+        timer.InitialState.Flags = flags;
+        timer.InitialState.Label = label;
+        timer.EndingTic = -1;
+        timer.PauseTic = -1;
+        timer.Flags = flags;
+        timer.Defined = true;
+    }
+
+    /* General accessors for getting the active timer and a reference */
+
+    internal int GetActiveTimerIndex() { return ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex; }
+    internal KnownRoundTimerT GetActiveTimerKnownType() { return GetKnownTypeOfIndex(GetActiveTimerIndex()); }
+
+    internal bool GetAnyTimerActive() { return GetActiveTimerIndex() != 0; }
+
+    internal void SetActiveTimerByIndex(int index, bool broadcast = true)
+    {
+        int previousIndex = GetActiveTimerIndex();
+        ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex = index;
+        Logger::LogDebug(LOGSOURCE , "Timer has switched to \cd" + GetTimerIndexAsString(index) + "\cj.");
+
+        if (broadcast)
+            EventBus::CallEvent(EVENTTIMERSWITCHED, previousIndex, index);
+    }
+    internal void SetActiveTimerByKnownType(KnownRoundTimerT timerType, bool broadcast = true) { SetActiveTimerByIndex(GetIndexOfKnownType(timerType), broadcast); }
+    internal void DisableTimer(bool broadcast = true) { SetActiveTimerByIndex(0, broadcast); }
+
+    internal RoundTimerContextT& GetTimerRefCurrent() { return GetTimerRefByindex(GetActiveTimerIndex()); }
+    internal RoundTimerContextT& GetTimerRefByKnown(KnownRoundTimerT timerType) { return GetTimerRefByindex(GetIndexOfKnownType(timerType)); }
+    internal RoundTimerContextT& GetTimerRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Timers[index]; }
+
+    /* Properties */
+
+    internal str GetTimerLabel(int index) { return GetTimerRefByindex(index).InitialState.Label; }
+
+    // Returns the actual time of the timer, also accounting for the fact it can be paused.
+    // If paused, we take the pause tic. If not, we take the world timer.
+    // If not active, we return the initial length.
+    internal int GetTimerTicsLeft(int index)
+    {
+        RoundTimerContextT& timerContext = GetTimerRefByindex(index);
+
+        if (!GetTimerActive(index))
+            return timerContext.InitialState.Length * 35;
+
+        int tic = GetTimerPaused(index) ? timerContext.PauseTic : Timer();
+        return BCSUtils::Max(timerContext.EndingTic - tic, 0);
+    }
+
+    internal void SetTimerTicsLeft(int index, int tics)
+    {
+        RoundTimerContextT& timerContext = GetTimerRefByindex(index);
+
+        // Also clamped to not go below 0 or above the maximum configured time.
+        tics = BCSUtils::Clamp(tics, 0, timerContext.InitialState.MaximumTime * 35);
+        int baseTic = GetTimerPaused(index) ? timerContext.PauseTic : Timer();
+        timerContext.EndingTic = baseTic + tics;
+    }
+
+    // Both increment and decrement return an integer, indicating how much time was added/removed.
+    internal int IncrementTimer(int index, int tics)
+    {
+        int start = GetTimerTicsLeft(index);
+        SetTimerTicsLeft(index, start + tics);
+        return tics < 0
+            ? start - GetTimerTicsLeft(index)
+            : GetTimerTicsLeft(index) - start;
+    }
+    internal int DecrementTimer(int index, int tics)
+    {
+        return IncrementTimer(index, -tics);
+    }
+
+    internal bool GetTimerDefined(int index) { return GetTimerRefByindex(index).Defined; }
+    internal bool GetTimerPaused(int index) { return GetTimerRefByindex(index).PauseTic != -1; }
+
+    internal void PauseTimer(int index, bool broadcast = true)
+    {
+        if (GetTimerPaused(index))
+            return;
+
+        GetTimerRefByindex(index).PauseTic = Timer();
+
+        if (broadcast)
+            EventBus::CallEvent(EVENTTIMERPAUSED, index);
+    }
+
+    internal void ResumeTimer(int index, bool broadcast = true)
+    {
+        if (!GetTimerPaused(index))
+            return;
+
+        // Also have to update the end tic after pausing.
+        RoundTimerContextT& timerContext = GetTimerRefByindex(index);
+        int diff = timerContext.EndingTic - timerContext.PauseTic;
+        timerContext.PauseTic = -1;
+        timerContext.EndingTic = Timer() + diff;
+
+        if (broadcast)
+            EventBus::CallEvent(EVENTTIMERRESUMED, index);
+    }
+
+    internal void ResetTimer(int index)
+    {
+        RoundTimerContextT& timerContext = GetTimerRefByindex(index);
+        timerContext.EndingTic = -1;
+        timerContext.PauseTic = -1;
+        timerContext.Flags = timerContext.InitialState.Flags;
+        timerContext.Defined = true;
+    }
+
+    internal bool GetTimerActive(int index) { return GetTimerRefByindex(index).EndingTic != -1; }
+
+    internal void StartTimer(int index, bool broadcast = true)
+    {
+        RoundTimerContextT& timerContext = GetTimerRefByindex(index);
+        timerContext.EndingTic = Timer() + timerContext.InitialState.Length * 35;
+
+        // Ensure not paused, otherwise this doesn't make much sense.
+        ResumeTimer(index);
+
+        if (broadcast)
+            EventBus::CallEvent(EVENTTIMERSTARTED, index);
+    }
+
+    internal void StopTimer(int index, bool broadcast = true)
+    {
+        GetTimerRefByindex(index).EndingTic = -1;
+
+        if (broadcast)
+            EventBus::CallEvent(EVENTTIMERSTOPPED, index);
+    }
+
+    internal void ShowTimer(int index) { GetTimerRefByindex(index).Flags &= ~TIMERHIDDEN; }
+    internal void HideTimer(int index) { GetTimerRefByindex(index).Flags |= TIMERHIDDEN; }
+
+    internal int GetTimerMaximumTics(int index) { return GetTimerRefByindex(index).InitialState.MaximumTime * 35; }
+    internal bool GetTimerVisible(int index) { return (GetTimerRefByindex(index).Flags & TIMERHIDDEN) == 0; }
+    internal bool GetTimerDrawDecimals(int index) { return (GetTimerRefByindex(index).Flags & TIMERDRAWDECIMALS) != 0; }
+    internal bool GetTimerDoCountdown(int index) { return (GetTimerRefByindex(index).Flags & TIMERDOCOUNTDOWN) != 0; }
+
+    /* Casting / Conversions */
+
+    internal int GetIndexOfKnownType(KnownRoundTimerT timerType) { return (int)timerType; }
+
+    // Returns TIMERNONE if the round timer is not known.
+    internal KnownRoundTimerT GetKnownTypeOfIndex(int index)
+    {
+        static KnownRoundTimerT collection[] = { TIMERNONE, TIMERPREGAMECOUNTDOWN, TIMERCOUNTDOWN, TIMERPLAYING, TIMERENDING, TIMERVOTING, TIMERVOTED };
+        
+        // No known timer.
+        if (index < TIMERPREGAMECOUNTDOWN && index > TIMERVOTED)
+            return TIMERNONE;
+
+        return collection[index];
+    }
+
+    internal str GetTimerIndexAsString(int index)
+    {
+        // No known timer, return custom and the index.
+        if (index < TIMERPREGAMECOUNTDOWN || index > TIMERVOTED)
+            return "Custom (" + str(index) + ")";
+
+        // No point returning TIMERNONE when it's not supposed to be used.
+        return //index == TIMERNONE ? "None" :
+            index == TIMERPREGAMECOUNTDOWN ? "Pregame Countdown" :
+            index == TIMERCOUNTDOWN ? "Countdown":
+            index == TIMERPLAYING ? "Playing" :
+            index == TIMERENDING ? "Ending" :
+            index == TIMERVOTING ? "Voting" :
+            index == TIMERVOTED ? "Voted" :
+
+            // Should not be possible.
+            "Unknown";
+    }
+}
+
+#undef LOGSOURCE 

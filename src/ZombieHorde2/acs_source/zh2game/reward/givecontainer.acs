@@ -1,0 +1,59 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+strict namespace Reward
+{
+    script "zh2_dec_givecontainer" (raw typeRaw)
+    {
+        int typeInt = (int)typeRaw;
+        int index = BCSUtils::Flag2Index(typeInt) + 1;
+
+        Reward::RewardItemTypeFlagsT type = Reward::GetRewardItemTypeByIndex(index);
+        if (type == Reward::REWARDNONE) terminate;
+
+        Reward::GiveContainer(type);
+    }
+
+	internal void GiveContainer(RewardItemTypeFlagsT type)
+	{
+		GivePlayerContainer(PlayerNumber(), type);
+	}
+	
+	internal void GivePlayerContainer(int id, RewardItemTypeFlagsT type)
+	{
+        VALIDATE_ID_VALID_FUNCTION(id);
+
+		if (PlayerIsBot(id))
+			return;
+
+		int tid = Identity::GetTid(id);
+		if (!BCSUtils::ActorIsAlive(tid))
+			return;
+
+        str itemName = Reward::ContainerTypeToItemName(type);
+        if ((raw)itemName == 0 || itemName == "")
+        {
+            Logger::LogWarning(LOGSOURCE , "Player " + BCSUtils::PlayerName(id) + " can't receive item reward type: " + str(type) + ".");
+            return;
+        }
+
+		GiveActorInventory(tid, itemName, 1);
+
+		if (!NamedExecuteClientScript("zh2_internal_reward_informcontainerreceived", id, type))
+			Logger::LogError(LOGSOURCE , "Failed to execute zh2_internal_reward_informcontainerreceived for player (" + str(id) + ") " + BCSUtils::PlayerName(id) + ".");
+	}
+
+	script "zh2_internal_reward_informcontainerreceived"(raw typeRaw) clientside
+	{
+        int typeInt = (int)typeRaw;
+        int index = BCSUtils::Flag2Index(typeInt) + 1;
+
+		RewardItemTypeFlagsT type = GetRewardItemTypeByIndex(index);
+		str name = ContainerTypeToReadableString(type);
+
+        str sound = ContainerIndexToSound(index);
+        AmbientSound(sound, 127);
+        Logger::LogActivator("You received \cd" + name + "\cj.");
+	}
+}

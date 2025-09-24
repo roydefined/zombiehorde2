@@ -1,0 +1,90 @@
+actor ZH2WeaponFireGrenadeFlameEffectInternal
+{
+	+FORCEXYBILLBOARD
+	+CLIENTSIDEONLY
+	+DONTSPLASH
+	+NOTIMEFREEZE
+	+NOBLOCKMAP
+	+BRIGHT
+	
+	Renderstyle Add
+}
+
+actor ZH2WeaponFireGrenadeFlameEffectInternalNoGravity : ZH2WeaponFireGrenadeFlameEffectInternal
+{
+	+NOGRAVITY
+}
+
+actor ZH2WeaponFireGrenadeExplosion : ZH2WeaponFireGrenadeFlameEffectInternal
+{
+	Scale 2
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay Radius_Quake(4, 30, 0, 9, 0)
+			EXP1 AB 1 Light("ZH2WeaponFireGrenadeLight1")
+			TNT1 AAAAAA 0 A_SpawnItemEx("ZH2WeaponFireGrenadeFlamePuff",0, 0, 0, Random(-8, 8), Random(-8, 8), Random(0, 4), Random(0, 359))
+			TNT1 AAAAAA 0 A_SpawnItemEx("ZH2WeaponFireGrenadeFlamePuffHuge",0, 0, 0, Random(-8, 8), Random(-8, 8), Random(0, 4), Random(0, 359))
+			EXP1 CD 1 Light("ZH2WeaponFireGrenadeLight1")
+			EXP1 EFGHI 1 Light("ZH2WeaponFireGrenadeLight2")
+			TNT1 AAAAAAAAAA 0 A_SpawnItemEx("ZH2WeaponFireGrenadeSmoke", Random(-3, 3), Random(-3, 3), Random(10, 20), FRandom(-1.2, 1.2), FRandom(-1.2, 1.2), FRandom(1.0, 4.0), Random(0, 359))
+			TNT1 AAAAAA 0 A_SpawnItemEx("ZH2WeaponFireGrenadeSmoke", Random(-3, 3), Random(-3, 3), Random(10, 20), FRandom(-0.8, 0.8), FRandom(-0.8, 0.8), FRandom(0.1, 1.0), Random(0, 359))
+			EXP1 J 1 Light("ZH2WeaponFireGrenadeLight3")
+			TNT1 A 3 Light("ZH2WeaponFireGrenadeLight3")
+			stop
+	}
+}
+
+actor ZH2WeaponFireGrenadeExplosionUnderwater : ZH2WeaponFireGrenadeFlameEffectInternal
+{
+	Scale 2
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay Radius_Quake(4, 30, 0, 9, 0)
+			EXP1 AB 2 Light("ZH2WeaponFireGrenadeLight1")
+			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 0 A_SpawnItemEx("ZH2WeaponBubble", FRandom(-5.0, 5.0), FRandom(-5.0, 5.0), FRandom(-5.0, 5.0), FRandom(-2.0, 2.0), FRandom(-2.0, 2.0), FRandom(-1.0, 1.0), Random(0, 360))
+			EXP1 CD 2 Light("ZH2WeaponFireGrenadeLight1")
+			EXP1 EFGHI 1 Light("ZH2WeaponFireGrenadeLight2")
+			EXP1 J 1 Light("ZH2WeaponFireGrenadeLight3")
+			TNT1 A 3 Light("ZH2WeaponFireGrenadeLight3")
+			stop
+	}
+}
+
+actor ZH2WeaponFireGrenadeFlamePuff : ZH2WeaponFireGrenadeFlameEffectInternalNoGravity
+{
+	States
+	{
+		Spawn:
+			FIR1 ABCDABCDABCDEFGHI 1
+			stop
+	}
+}
+
+actor ZH2WeaponFireGrenadeFlamePuffHuge : ZH2WeaponFireGrenadeFlamePuff
+{
+	Scale 2.0
+}
+
+actor ZH2WeaponFireGrenadeSmoke
+{
+	+Missile
+	+NOINTERACTION
+	+CLIENTSIDEONLY
+	+NOTIMEFREEZE
+	+FORCEXYBILLBOARD
+	
+	Alpha 0.4
+	RenderStyle Translucent
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0 A_SetScale(FRandom(0.4, 0.8), FRandom(0.4, 0.8))
+			SMKD A 1 A_FadeOut(0.01)
+			wait
+	}
+}

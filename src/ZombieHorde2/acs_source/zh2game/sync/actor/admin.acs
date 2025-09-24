@@ -1,0 +1,65 @@
+strict namespace Sync
+{
+    #define SYNC_CATEGORY "ADMIN"
+
+    internal void SyncAdminsActor()
+    {
+        int syncId = SYNC_ADMIN;
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing admin packs through actors. Sync id: " + str(syncId) + "."));
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (i >= 64)
+            {
+                Logger::LogError(LOGSOURCE , FormatLog(SYNC_CATEGORY, "SyncAdminsActor does not support players above 64."));
+                return;
+            }
+
+            bool isAdmin = Admin::GetPlayerAdmin(i);
+            BitMath::SetBit64(BitMath::GetBitPack1(), BitMath::GetBitPack2(), i, isAdmin);
+
+            if (PlayerInGame(i))
+                Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Player (\cd" + str(i) + "\cj) " + BCSUTILS::PlayerName(i) + ": Admin \cd" + str(int(isAdmin)) + "\cj."));
+        }
+
+        // Store back for syncing
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing admin packs. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, Pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj."));
+    }
+
+    internal void CallSyncAdminsActorOnClients()
+    {
+        if (!ACS_NamedExecuteAlways("zh2_internal_sync_admins_actor_clientside", 0))
+            Logger::LogError(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for admins."));
+    }
+
+    script "zh2_internal_sync_admins_actor_clientside" clientside
+    {
+        SyncAdminsActorClientside();
+    }
+
+    internal void SyncAdminsActorClientside()
+    {
+        int syncId = SYNC_ADMIN;
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading admin packs on client. Sync id: " + str(syncId) + "."));
+
+        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Admin packs received. Pack 1: \cd" + str(pack1) + "\cj. Pack 2: \cd" + str(pack2) + "\cj."));
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            bool isAdmin = (bool)BitMath::GetBit64(pack1, pack2, i);
+            ZH2Game::PersistingGameContext.Players[i].IsAdmin = isAdmin;
+
+            if (PlayerInGame(i))
+                Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Client - Player \cd" + str(i) + "\cj: Admin \cd" + str(isAdmin) + "\cj."));
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished syncing admins to client."));
+    }
+
+    #undef SYNC_CATEGORY
+}

@@ -1,0 +1,174 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+#define LOGSOURCE  "Packet"
+
+strict namespace Packet
+{
+	// Added manually so we don't log the packet logging.
+	bool _logMessages = false;
+
+	raw Packet_Rval;
+
+	int __Packet_Tmp[4];
+
+	internal int __Packet_ReadUnsignedByte (str pac, int pos)
+	{
+		int b = GetChar(pac, pos);
+
+		if(b < 0)
+			b += 256;
+
+		return b;
+	}
+
+	int Packet_GetMaxSize (void)
+	{
+		int maxPacketSize = GetCVar("sv_maxpacketsize");
+
+		if(maxPacketSize > 2048)
+			return 2048;
+
+		return maxPacketSize;
+	}
+
+	int Packet_GetSize (str pac)
+	{
+		return StrLen(pac) + PACKET_NATIVE_HEADER_SIZE;
+	}
+
+	str Packet_New()
+	{
+		return "";
+	}
+
+	str Packet_Append (str pac, raw val, int width = PACKET_WORD)
+	{
+		int zeroChar = 0x80, max, tmp;
+		
+		if( (width < PACKET_WORD) || (width >= PACKET_TOTAL) )
+			width = PACKET_WORD;
+		
+		switch(width)
+		{
+			case PACKET_WORD: max = 4; break;
+			case PACKET_SHORT: max = 2; break;
+			case PACKET_BYTE: max = 1; break;
+		}
+		
+		if (_logMessages)
+			Log(s:"==__Packet_Tmp==");
+
+		for(int i = 0; i < max; i++)
+		{
+			tmp = val & 0xFF;
+			
+			if(!tmp)
+			{
+				zeroChar |= 1 << i;
+				tmp = 0xFF;
+				
+				if (_logMessages)
+					Log(s:"zero byte");
+			}
+
+			if (_logMessages)
+				Log(x:tmp);
+
+			__Packet_Tmp[i] = tmp;
+
+			val >>= 8;
+		}
+		
+		if (_logMessages)
+			Log(a:(__Packet_Tmp, 0, max));
+
+		return StrParam(s:pac, c:zeroChar, a:(__Packet_Tmp, 0, max));
+	}
+
+	str Packet_AppendStr (str pac, str val)
+	{
+		val = StrLeft(val, 2048);
+		
+		if (_logMessages)
+			Log(s:"strlen = ", i:StrLen(val));
+
+		pac = Packet_Append(pac, StrLen(val), PACKET_WORD);
+		
+		return StrParam(s:pac, s:val);
+	}
+
+	int Packet_Send (str scrip, str pac, int client)
+	{
+		int maxPacketSize = Packet_GetMaxSize(), packetSize = Packet_GetSize(pac);
+		
+		if(packetSize > maxPacketSize)
+		{
+			Log(s:"Packet_Send ERROR: Packet is too large (", i:packetSize, s:" bytes)! Current server settings allow for only ", i:maxPacketSize, s:" bytes.");
+			return 0;
+		}
+		
+		if(packetSize == PACKET_NATIVE_HEADER_SIZE)
+		{
+			Log(s:"Packet_Send ERROR: Packet is empty. Not sending.");
+			return 0;
+		}
+		
+		return NamedSendNetworkString(scrip, pac, client);
+	}
+
+	raw Packet_Read (str pac, int width = PACKET_WORD)
+	{
+		int zeroChar = __Packet_ReadUnsignedByte(pac, 0), max, shiftAmount;
+		
+		if( (width < PACKET_WORD) || (width >= PACKET_TOTAL) )
+			width = PACKET_WORD;
+		
+		switch(width)
+		{
+			case PACKET_WORD: max = 4; break;
+			case PACKET_SHORT: max = 2; break;
+			case PACKET_BYTE: max = 1; break;
+		}
+
+		shiftAmount = (max - 1) * 8;
+		
+		Packet_Rval = 0;
+
+		if (_logMessages)
+			Log(s:"==packet_rval==");
+
+		for(int i = 0; i < max; i++)
+		{
+			Packet_Rval >>= 8;
+			
+			if(!(zeroChar & (1 << i)))
+			{
+				Packet_Rval &= 0x00FFFFFF;
+				Packet_Rval |= __Packet_ReadUnsignedByte(pac, i + 1) << shiftAmount;
+			}
+
+			if (_logMessages)
+				Log(x:Packet_Rval);
+		}
+		
+		return StrMid(pac, max + 1, 0x7FFFFFFF);
+	}
+
+	str Packet_ReadStr (str pac)
+	{
+		int len;
+		pac = Packet_Read(pac, PACKET_WORD);
+		len = Packet_Rval;
+
+		if (_logMessages)
+			Log(s:"strlen = ", i:len);
+		
+		Packet_Rval = StrLeft(pac, len);
+		
+		return StrMid(pac, len, 0x7FFFFFFF);
+	}
+}
+
+#undef LOGSOURCE 

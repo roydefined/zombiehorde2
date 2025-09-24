@@ -1,0 +1,106 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal void SprintTic()
+    {
+        // Player panicked.
+        if (GetPanicState() != PANICSTATENONE)
+            return;
+
+        // Do not tic when we used an energy drink.
+        if (Power::GetHasPower(Power::POWERCAFFEINE))
+            return;
+
+        // Gradually remove sprinting if the player is sprinting and we have actual velocity.
+        // Or, if not sprinting, gradually give it back.
+        if (GetSprinting())
+        {
+            int decrement = BCSUtils::Max(int(BCSUtils::GetActorXYVelocity(ActivatorTID()) / 4.0), 1);
+			TakeInventory(SPRINT_ITEM, decrement);
+
+            // Out of sprint, remove power.
+            if (GetSprintLeft() == 0)
+                Power::TakePower(Power::POWERSPRINTING);
+        }
+        else if (Player::GetSprintLeft() != SPRINT_ITEM_MAX
+            && Timer() % 3 == 0)
+        {
+            GiveInventory(SPRINT_ITEM, 5);
+        }
+    }
+
+    internal void SetSprinting(bool sprinting)
+    {
+        SetPlayerSprinting(PlayerNumber(), sprinting);
+    }
+
+    internal void SetPlayerSprinting(int id, bool sprinting)
+    {
+        // On enabling sprint, we do checks to ensure we can sprint at all.
+        if (!sprinting)
+        {
+            Power::TakePlayerPower(id, Power::POWERSPRINTING);
+            return;
+        }
+
+        if (!ZH2Game::GetAllowSprinting())
+        {
+            Logger::LogTo("Sprinting is disabled on this server.", id);
+            return;
+        }
+
+        if (Player::GetPlayerIsZombie(id))
+        {
+            Logger::LogTo("Zombies don't sprint!", id);
+            return;
+        }
+
+        PanicStateT state = GetPlayerPanicState(id);
+        if (state == PANICSTATEPANICKING)
+        {
+            Logger::LogTo("You are panicking!", id);
+            return;
+        }
+
+        if (state == PANICSTATECALMINGDOWN)
+        {
+            Logger::LogTo("You just panicked. Wait a moment.", id);
+            return;
+        }
+
+        if (Player::GetPlayerSprintLeft(id) < ZH2Game::GetMinimumSprintAmount())
+        {
+            Logger::LogTo("Wait a moment before sprinting.", id);
+            return;
+        }
+
+        // Note: Considering the sprint is able to decrement faster/slower, it is not reliable to set actual tics here
+        Power::GivePlayerPower(id, Power::POWERSPRINTING);
+    }
+
+
+    internal bool GetSprinting()
+    {
+        return GetPlayerSprinting(PlayerNumber());
+    }
+
+    internal bool GetPlayerSprinting(int id)
+    {
+        return Power::GetPlayerHasPower(id, Power::POWERSPRINTING);
+    }
+
+    internal int GetSprintLeft()
+    {
+        return GetPlayerSprintLeft(PlayerNumber());
+    }
+
+    // Note we must use the item here because the sprint power doesn't persist if we _don't_ sprint.
+    // Also, considering the sprint decrements at a non-deterministic rate, we must check for the item.
+    internal int GetPlayerSprintLeft(int id)
+    {
+        return CheckActorInventory(Identity::GetTid(id), SPRINT_ITEM);
+    }
+}

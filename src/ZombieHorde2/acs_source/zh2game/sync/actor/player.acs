@@ -1,0 +1,372 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Sync
+{
+    #define SYNC_CATEGORY "PLAYER"
+
+    internal void SyncPlayersActor()
+    {
+        int syncId = SYNC_PLAYERS;
+        syncId = SyncWritePlayerNames(syncId);
+        syncId = SyncWriteState(syncId);
+        syncId = SyncWriteSafe(syncId);
+        syncId = SyncWriteSpecies(syncId);
+        syncId = SyncWritePreviouslyInitialZombies(syncId);
+        syncId = SyncWriteInitialZombies(syncId);
+        syncId = SyncWriteZombieInfections(syncId);
+        syncId = SyncWriteHumanKills(syncId);
+        syncId = SyncWriteZombieKills(syncId);
+    }
+
+    internal void CallSyncPlayersActorOnClients()
+    {
+        if (!ACS_NamedExecuteAlways("zh2_internal_sync_players_actor_clientside", 0))
+            Logger::LogError(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for players."));
+    }
+
+    script "zh2_internal_sync_players_actor_clientside" clientside
+    {
+        SyncPlayersActorClientside();
+    }
+
+    internal void SyncPlayersActorClientside()
+    {
+        int syncId = SYNC_PLAYERS;
+        syncId = SyncReadPlayerNames(syncId);
+        syncId = SyncReadState(syncId);
+        syncId = SyncReadSafe(syncId);
+        syncId = SyncReadSpecies(syncId);
+        syncId = SyncReadPreviouslyInitialZombies(syncId);
+        syncId = SyncReadInitialZombies(syncId);
+        syncId = SyncReadZombieInfections(syncId);
+        syncId = SyncReadHumanKills(syncId);
+        syncId = SyncReadZombieKills(syncId);
+    }
+
+    internal int SyncWritePlayerNames(int syncId)
+    {
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // TODO: Use some sort of string formatting function.
+            SetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_PLAYER_NAME_TEMPLATE, "%n", str(i)), ZH2Game::GameContext.Players[i].Name);
+        }
+        return syncId;
+    }
+
+    internal int SyncReadPlayerNames(int syncId)
+    {
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // TODO: Use some sort of string formatting function.
+            ZH2Game::GameContext.Players[i].Name = GetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_PLAYER_NAME_TEMPLATE, "%n", str(i)));
+        }
+        return syncId;
+    }
+
+    internal int SyncWriteState(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing state packs through actors. Sync id: " + str(syncId) + "."));
+
+        // Each player takes 2 bits, 64 players = 128 bits = 4x 32-bit integers.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // We have to make sure to split the specie value over two bits.
+            int state = Player::GetPlayerState(i);
+            bool leastSignificantBit = (state & 1) != 0;
+            bool mostSignificantBit  = (state & 2) != 0;
+            BitMath::SetBit128(BitMath::GetBitPack1(), BitMath::GetBitPack2(), BitMath::GetBitPack3(), BitMath::GetBitPack4(), i * 2, leastSignificantBit);
+            BitMath::SetBit128(BitMath::GetBitPack1(), BitMath::GetBitPack2(), BitMath::GetBitPack3(), BitMath::GetBitPack4(), i * 2 + 1, mostSignificantBit);
+
+            if (PlayerInGame(i))
+                Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Player (\cd" + str(i) + "\cj) " + BCSUTILS::PlayerName(i) + " state: (\cd" + str(state) + "\cj) \cd" + Player::GetPlayerStateAsString(Player::GetPlayerState(i)) + "\cj. Bits: \cd" + str(int(mostSignificantBit)) + str(int(leastSignificantBit)) + "\cj."));
+        }
+
+        // Store back for syncing
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack3());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack4());
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing state packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj, pack3 \cd" + str(BitMath::GetBitPack3()) + "\cj, pack4 \cd" + str(BitMath::GetBitPack4())));
+        return syncId;
+    }
+
+    internal int SyncReadState(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading state packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack3 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack4 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int leastSignificantBit = BitMath::GetBit128(pack1, pack2, pack3, pack4, i * 2);
+            int mostSignificantBit = BitMath::GetBit128(pack1, pack2, pack3, pack4, i * 2 + 1);
+            int stateIndex = (mostSignificantBit << 1) | leastSignificantBit;
+
+            ZH2Game::GameContext.Players[i].State = Player::GetPlayerStateByIndex(stateIndex);
+
+            if (PlayerInGame(i))
+                Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Client - Player \cd" + str(i) + "\cj: \cd" + str(stateIndex) + "\cj. Bits: \cd" + str(int(mostSignificantBit)) + str(int(leastSignificantBit)) + "\cj."));
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished syncing state packs to client."));
+        return syncId;
+    }
+
+    internal int SyncWriteSafe(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing safe packs through actors. Sync id: " + str(syncId) + "."));
+
+        // Each player takes 1 bit to indicate true/false, 64 players = 64 bits = 2x 32-bit integers.
+        // Note value 3 is not yet used since we only use up to value 2 for the specie.
+        // Who knows, maybe I can add a fourth one?
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            bool safe = Game::GetPlayerIsSafe(i);
+            BitMath::SetBit64(BitMath::GetBitPack1(), BitMath::GetBitPack2(), i, safe);
+        }
+
+        // Store back for syncing
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing safe packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2())));
+        return syncId;
+    }
+
+    internal int SyncReadSafe(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading safe packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            bool safe = bool(BitMath::GetBit64(pack1, pack2, i));
+            ZH2Game::GameContext.Players[i].Safe = safe;
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished syncing safe packs to client."));
+        return syncId;
+    }
+
+    internal int SyncWriteSpecies(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing specie packs through actors. Sync id: " + str(syncId) + "."));
+
+        // Each player takes 2 bits, 64 players = 128 bits = 4x 32-bit integers.
+        // Note value 3 is not yet used since we only use up to value 2 for the specie.
+        // Who knows, maybe I can add a fourth one?
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // We have to make sure to split the specie value over two bits.
+            int specie = Player::GetPlayerSpecie(i);
+            bool leastSignificantBit = (specie & 1) != 0;
+            bool mostSignificantBit  = (specie & 2) != 0;
+            BitMath::SetBit128(BitMath::GetBitPack1(), BitMath::GetBitPack2(), BitMath::GetBitPack3(), BitMath::GetBitPack4(), i * 2, leastSignificantBit);
+            BitMath::SetBit128(BitMath::GetBitPack1(), BitMath::GetBitPack2(), BitMath::GetBitPack3(), BitMath::GetBitPack4(), i * 2 + 1, mostSignificantBit);
+
+            if (PlayerInGame(i))
+                Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Player (\cd" + str(i) + "\cj) " + BCSUTILS::PlayerName(i) + " specie: (\cd" + str(specie) + "\cj) \cd" + Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(i)) + "\cj. Bits: \cd" + str(int(mostSignificantBit)) + str(int(leastSignificantBit)) + "\cj."));
+        }
+
+        // Store back for syncing
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack3());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack4());
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing specie packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj, pack3 \cd" + str(BitMath::GetBitPack3()) + "\cj, pack4 \cd" + str(BitMath::GetBitPack4())));
+        return syncId;
+    }
+
+    internal int SyncReadSpecies(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading specie packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack3 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack4 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int leastSignificantBit = BitMath::GetBit128(pack1, pack2, pack3, pack4, i * 2);
+            int mostSignificantBit = BitMath::GetBit128(pack1, pack2, pack3, pack4, i * 2 + 1);
+            int specie = (mostSignificantBit << 1) | leastSignificantBit;
+
+            ZH2Game::GameContext.Players[i].SpecieType = Player::GetSpecieTypeByIndex(specie);
+
+            if (PlayerInGame(i))
+                Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Client - Player \cd" + str(i) + "\cj: \cd" + str(specie) + "\cj. Bits: \cd" + str(int(mostSignificantBit)) + str(int(leastSignificantBit)) + "\cj."));
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished syncing specie packs to client."));
+        return syncId;
+    }
+
+    internal int SyncWriteInitialZombies(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing initial zombie packs through actors. Sync id: " + str(syncId) + "."));
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            BitMath::SetBit64(BitMath::GetBitPack1(), BitMath::GetBitPack2(), i, Player::GetPlayerInitialZombie(i));
+        }
+
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing initial zombie packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj."));
+        return syncId;
+    }
+
+    internal int SyncReadInitialZombies(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading initial zombie packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            ZH2Game::GameContext.Players[i].IsInitialZombie = bool(BitMath::GetBit64(pack1, pack2, i));
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished syncing initial zombie packs to client."));
+        return syncId;
+    }
+
+    internal int SyncWriteZombieInfections(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing zombie infection packs through actors. Sync id: " + str(syncId) + "."));
+
+        // TODO: This logic can be compacted more. This currently takes 64 actors each with 64 players maximum which is kind of much.
+        // (192 total if you consider this, human kills and zombie kills)
+        // We can fit 0-63 in 6 bits, meaning a pack could technically hold 10 players.
+        // Definitely want to improve how packing works before tackling this.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int infects = Player::GetPlayerInfects(i);
+            BCSUtils::SyncVariable(syncId++, infects);
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing zombie infection packs through actors. Sync id: " + str(syncId) + "."));
+        return syncId;
+    }
+
+    internal int SyncReadZombieInfections(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading zombie infection packs through actors. Sync id: " + str(syncId) + "."));
+
+        // TODO: Same as above, could be more compact.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int infects = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            Player::SetPlayerInfects(i, infects);
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished reading zombie infection packs through actors. Sync id: " + str(syncId) + "."));
+        return syncId;
+    }
+
+    internal int SyncWriteHumanKills(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing human kills packs through actors. Sync id: " + str(syncId) + "."));
+
+        // TODO: Same as above, could be more compact.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int kills = Player::GetPlayerHumanKills(i);
+            BCSUtils::SyncVariable(syncId++, kills);
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing human kills packs through actors. Sync id: " + str(syncId) + "."));
+        return syncId;
+    }
+
+    internal int SyncReadHumanKills(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading human kill packs through actors. Sync id: " + str(syncId) + "."));
+
+        // TODO: Same as above, could be more compact.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int kills = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            Player::SetPlayerHumanKills(i, kills);
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished reading human kill packs through actors. Sync id: " + str(syncId) + "."));
+        return syncId;
+    }
+
+    internal int SyncWriteZombieKills(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing zombie kills packs through actors. Sync id: " + str(syncId) + "."));
+
+        // TODO: Same as above, could be more compact.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int kills = Player::GetPlayerZombieKills(i);
+            BCSUtils::SyncVariable(syncId++, kills);
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing zombie kills packs through actors. Sync id: " + str(syncId) + "."));
+        return syncId;
+    }
+
+    internal int SyncReadZombieKills(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading zombie kill packs through actors. Sync id: " + str(syncId) + "."));
+
+        // TODO: Same as above, could be more compact.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int kills = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            Player::SetPlayerZombieKills(i, kills);
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished reading zombie kill packs through actors. Sync id: " + str(syncId) + "."));
+        return syncId;
+    }
+
+    internal int SyncWritePreviouslyInitialZombies(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing previously initial zombie packs through actors. Sync id: " + str(syncId) + "."));
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            BitMath::SetBit64(BitMath::GetBitPack1(), BitMath::GetBitPack2(), i, Player::GetPlayerPreviouslyInitialZombie(i));
+        }
+
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing previously initial zombie packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj."));
+        return syncId;
+    }
+
+    internal int SyncReadPreviouslyInitialZombies(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading previously initial zombie packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            ZH2Game::PersistingGameContext.Players[i].PreviouslyInitialZombie = bool(BitMath::GetBit64(pack1, pack2, i));
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished syncing previously initial zombie packs to client."));
+        return syncId;
+    }
+
+    #undef SYNC_CATEGORY
+}

@@ -1,0 +1,57 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+#define LOG_BUFFER_SIZE 300
+#define MAX_LOG_OVERRIDES 100
+
+strict namespace Logger
+{
+	struct LogContextT
+	{
+		bool IsParsedClientside;
+		bool IsParsedServerside;
+		
+		int DefaultLevel;
+		
+		LogOverrideT Overrides[MAX_LOG_OVERRIDES];
+		int OverrideCount;
+	};
+
+	struct LogOverrideT
+	{
+		str Source;
+		int Level;
+	};
+
+	enum LogOwnerT : int
+	{
+		OWNERNONE,
+		OWNERCLIENT,
+		OWNERSERVER,
+	};
+
+	enum LogLevelT : int
+	{
+		LEVELNONE,
+		LEVELDEBUG,
+		LEVELINFO,
+		LEVELWARN,
+		LEVELERROR,
+		LEVELFATAL,
+	};
+	
+	extern void FlushBuffer();
+	
+	extern void LogActivator(str message);
+	extern void LogExcept(str message, int id);
+	extern void LogBold(str message);
+	extern void LogTo(str message, int clientId);
+	
+	extern void LogDebug(str source, str message);
+	extern void LogInformation(str source, str message);
+	extern void LogWarning(str source, str message);
+	extern void LogError(str source, str message);
+	extern void LogFatal(str source, str message);
+	extern void LogMessageLevel(str source, LogLevelT severity, str message);
+}
