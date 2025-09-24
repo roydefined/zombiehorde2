@@ -1,0 +1,238 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "preprocess.h.acs"
+#include "common.h.acs"
+
+#include "game/game.h.acs"
+#include "sync/sync.h.acs"
+#include "map/map.h.acs"
+#include "round/round.h.acs"
+#include "player/player.h.acs"
+#include "gameloop/gameloop.h.acs"
+#include "roundtimer/roundtimer.h.acs"
+#include "settings/settings.h.acs"
+#include "shuffle/shuffle.h.acs"
+#include "music/music.h.acs"
+#include "reward/reward.h.acs"
+#include "weight/weight.h.acs"
+#include "decorate/decorate.h.acs"
+#include "resist/resist.h.acs"
+#include "power/power.h.acs"
+#include "item/item.h.acs"
+#include "admin/admin.h.acs"
+#include "hud/hud.h.acs"
+#include "io/io.h.acs"
+
+strict namespace ZH2Game
+{
+    #define PERSISTINGGAMECONTEXTINDEX 1
+    
+    internal enum ZombieSkinBehaviourT : int
+    {
+        BEHAVIOUR_DEFAULT,
+        BEHAVIOUR_FORCEOLDSKIN,
+        BEHAVIOUR_FORCENEWSKIN,
+    };
+
+    internal enum KillTypeT : int
+    {
+        KILL_TYPE_NONE,
+        KILL_TYPE_HUMAN_TO_HUMAN,
+        KILL_TYPE_HUMAN_TO_ZOMBIE,
+        KILL_TYPE_ZOMBIE_TO_ZOMBIE,
+        KILL_TYPE_ZOMBIE_TO_HUMAN,
+    };
+
+    // General game info. Non-persisting between rounds.
+    internal struct GameContextT
+    {
+        PlayerT Players[BCSUtils::MAX_PLAYERS];
+
+        // Map details, either parsed from a lump or defined through ACS.
+        IO::MapDetailedT MapDetails;
+        bool ParsedMapDetails;
+
+        // The index of where the current map's base data can be found.
+        // (which can be found in the persisting game context)
+        int MapIndex;
+
+        // The tic when the match started and ended.
+        // Synchronized with clients. Used for rendering and generally indicating the length of things.
+        int MatchStartTic;
+        int MatchEndingTic;
+
+        // Serverside. If `true`, the join prevention depeding on round state is ignored.
+        bool AlwaysAllowJoin;
+
+        // Synced when a match ends to indicate what specie won the round.
+        Game::WinningSpecieT WinningSpecie;
+
+        // Synced when a match ends to indicate the reason of ending.
+        Game::EndReasonT EndReason;
+
+        // This is the health that initial and regular zombies will be given when infected.
+        // Not synchronized.
+        int InitialZombieMaxHealth;
+        int InitialZombieMinHealth;
+        int RegularZombieMaxHealth;
+        int RegularZombieMinHealth;
+
+        // Map specific initial spawn spots and zombie teleport spots.
+        int InitialSpawnSpots[MAX_INITIALSPAWNSPOTS];
+        int InitialSpawnSpotCount;
+        int ZombieTeleportSpots[MAX_ZOMBIETELEPORTSPOTS];
+        int ZombieTeleportSpotCount;
+
+        // The current tid of the zombie teleport spot(s) to use.
+        int CurrentZombieTeleportSpotTid;
+
+        // Not synched, a bitflag representing default zombie powers.
+        // These are given to players switching to a zombie specie.
+        // NOTE: Players can still have differentiated flags, nothing prevents them from having more/less set.
+        // These just specify what a new zombie gets.
+        int DefaultZombieAbilityFlags;
+
+        // Clientside, represents the client's currently selected ability.
+        int SelectedZombieAbilityIndex;
+
+        // Clientside, not synchronized.
+        // Used with the persisting items, indication what items the client owns.
+        int OwnedItems[MAX_ITEMS];
+        int OwnedItemCount;
+        int OwnedInventoryItems[MAX_ITEMS];
+        int OwnedInventoryCount;
+        int OwnedKeyItems[MAX_ITEMS];
+        int OwnedKeyCount;
+        int OwnedWeaponItems[MAX_ITEMS];
+        int OwnedWeaponCount;
+
+        // Clientside, not synchronized.
+        // Relevant for the radio as it will track what the client's radio index is and also what they currently play.
+        int RadioCurrentlySelectedIndex;
+        int CurrentRadioTrackIndex;
+
+        // Serverside, tracks when the next radio track can be played.
+        int RadioTrackCooldownTimestamp;
+
+        // Clientside, not synchronized.
+        bool HasAdminHudOpen; // If true, the client has the admin HUD open.
+        bool HasClientSettingsHudOpen; // If true, the client has the settings HUD open.
+
+        // Clientside, this is a list of settings that the client is missing which the mod requests to be changed.
+        // This is ordered by relevancy and will be updated on map start and when we request it to be checked.
+        // Considering we have the struct instances in persisting context, this only lists their indexes.
+        int RequestedClientSettings[SETTINGS_CLIENTMAX];
+        int RequestedClientSettingCount;
+
+        // The integer is synched and indicates the tic when the full server event was triggered.
+        // The boolean is clientside and indicates if we prepared the client for the event.
+        int FullServerStartTimestamp;
+        bool FullServerEventStarted;
+
+        // Clientside, keeps track of how long a tip is being shown on screen and also which one.
+        int TipDisplayTimestamp;
+        int CurrentDisplayedTipIndex;
+
+        // Determined when the voting starts.
+        int VotableMaps[MAX_VOTABLEMAPS];
+        int VotableMapCount;
+
+        // Reset when the voting starts, tracks what players have voted.
+        int VotedMapIndexes[BCSUtils::MAX_PLAYERS];
+
+        // The final map index we have chosen to change the map to.
+        // Also reset when the voting starts.
+        int FinalVotedMapIndex;
+
+        // Clientside, set during the ending state.
+        str WinMessageTop;
+        str WinMessageBottom;
+
+        // Clientside, set during the ending state.
+        // I could consider setting this earlier, should I need it...
+        int HumanKillsOrdered[BCSUtils::MAX_PLAYERS]; // Top human kills
+        int ZombieKillsOrdered[BCSUtils::MAX_PLAYERS]; // Top zombie kills
+        int InfectsOrdered[BCSUtils::MAX_PLAYERS]; // Top infects
+        int HumanKillsOrderedCount;
+        int ZombieKillsOrderedCount;
+        int InfectsOrderedCount;
+        
+        int SurvivorsShuffled[BCSUtils::MAX_PLAYERS]; // Shuffled collection of players that survived.
+        int HordeShuffled[BCSUtils::MAX_PLAYERS]; // Shuffled collection of players that got infected and are alive.
+        int DeadShuffled[BCSUtils::MAX_PLAYERS]; // Shuffled collection of players that died.
+        int SurvivorsShuffledCount;
+        int HordeShuffledCount;
+        int DeadShuffledCount;
+    };
+
+    // General game info. Persisting between rounds.
+    struct PersistingGameContextT
+    {
+        PersistingPlayerT Players[BCSUtils::MAX_PLAYERS];
+
+        // Persisting map info and mod info that contains relevant configuration parsed from lumps.
+        // Note that the maps do not have their data loaded to preserve on memory usage if we end up with a lot of maps.
+        // Instead we store the map name and from there we determine the lump index where we can find the relevant info.
+
+        // Indicates if the server/client has parsed the mod def files.
+        bool ParsedModDefServerside;
+        bool ParsedModDefClientside;
+
+        // Serverside, indicates the cooldown until we trigger a full server event again.
+        int FullServerCooldown;
+
+        // Clientside, lists all settings that we might want from the client.
+        Settings::RequestedClientSettingT RequestedClientSettings[SETTINGS_CLIENTMAX];
+        int RequestedClientSettingCount;
+
+        IO::MapBaseCollectionT MapBaseCollection;
+        Power::PowerCollectionContextT PowerCollection;
+        Item::ItemCollectionContextT ItemCollection;
+        Decorate::RadioTrackCollectionContextT RadioTrackCollection;
+        Reward::RewardCollectionContextT RewardCollection;
+        Game::TipCollectionContextT TipCollection;
+    };
+
+    // General player info. Non-persisting between rounds.
+    internal struct PlayerT
+    {
+        str Name;
+        Player::PlayerStateT State;
+        Player::SpecieTypeT SpecieType;
+        bool IsInitialZombie;
+        bool Safe;
+
+        // Serverside. If `true`, the join prevention depeding on round state is ignored on this player specifically.
+        bool AlwaysAllowJoin;
+
+        // TODO: Sync this state, maybe make use of it.
+        Player::PanicStateT PanicState;
+        int PanicCount;
+
+        // Not synched.
+        int ZombieTeleportsUsed;
+
+        // Synched, a bitflag representing what zombie powers are enabled on this particular player.
+        // NOTE: Not defaults! Might differentiate from the defaults.
+        int ZombieAbilityFlags;
+
+        int HumanKills;
+        int ZombieKills;
+        int Infects;
+
+        // Not synched, called on both sides from DECORATE code instead.
+        int FiringTic;
+    };
+
+    // General player info. Persisting between rounds.
+    struct PersistingPlayerT
+    {
+        bool IsAdmin;
+        bool PreviouslyInitialZombie;
+    };
+
+    extern str GetServersideAwaiter();
+    extern str GetClientsideAwaiter();
+}

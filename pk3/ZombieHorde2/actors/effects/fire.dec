@@ -1,0 +1,110 @@
+actor ZH2PlayerOnFireEffect
+{
+	+FORCEXYBILLBOARD
+	+CLIENTSIDEONLY
+	+DONTSPLASH
+	+NOTIMEFREEZE
+	+NOBLOCKMAP
+	+NOGRAVITY
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_SpawnItemEx("ZH2PlayerOnFireEffectFire", Random(-10, 10), Random(-10, 10), FRandom(1.0, 32.0), Frandom(-1.2, 1.2), Frandom(-1.2, 1.2), Frandom(0.2, 1.4), random(0, 359))
+			TNT1 A 0 A_Jump(150, 1)
+			stop
+			TNT1 A 0 A_SpawnItemEx("ZH2PlayerOnFireEffectSmoke", random(-5, 5), random(-5, 5), Frandom(12.0, 32.0), Frandom(-0.5, 0.5), Frandom(-0.5, -0.5), Frandom(0.8, 1.2), random(0, 359))
+			stop
+	}
+}
+
+actor ZH2PlayerOnFireEffectFire : ZH2PlayerOnFireEffect
+{
+	+BRIGHT
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_SetTranslucent(Frandom(0.2, 0.6))
+			TNT1 A 0 A_SetScale(Frandom(0.5, 1.0), Frandom(0.5, 1.0))
+			FIR1 AB 1 Light("ZH2PlayerOnFireLight1") A_ChangeVelocity (0, 0, Frandom(0.1, 0.3))
+			FIR1 CD 1 Light("ZH2PlayerOnFireLight2") A_ChangeVelocity (0, 0, Frandom(0.1, 0.3))
+			FIR1 EF 1 Light("ZH2PlayerOnFireLight3") A_ChangeVelocity (0, 0, Frandom(0.1, 0.3))
+			FIR1 GHI 1 Light("ZH2PlayerOnFireLight4") A_ChangeVelocity (0, 0, Frandom(0.1, 0.3))
+			stop
+	}
+}
+
+actor ZH2PlayerOnFireEffectSmoke : ZH2PlayerOnFireEffect
+{
+	RenderStyle Translucent
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_SetTranslucent(FRandom(0.2, 0.6))
+			TNT1 A 0 A_SetScale(FRandom(0.2, 0.4), FRandom(0.2, 0.4))
+			SMKD A 1 A_FadeOut(0.01)
+			wait
+	}
+}
+
+actor Internal_ZH2PlayerOnFireSingle
+{
+	+FORCEXYBILLBOARD
+	+CLIENTSIDEONLY
+	+DONTSPLASH
+	+NOTIMEFREEZE
+	+NOBLOCKMAP
+	+NOGRAVITY
+	
+	states
+	{
+		spawn:
+			TNT1 A 0 nodelay A_SetTranslucent(FRandom(0.4, 0.8))
+			TNT1 A 0 A_SetScale(FRandom(0.5, 1.0), FRandom(0.5, 1.0))
+			FIR1 AAABBBCCCDDDEEEFFFGGGHHHIII 1 A_ChangeVelocity (0, 0, FRandom(0.1, 0.2))
+			stop
+	}
+}
+
+actor ZH2InfectionFireEffect : ZH2PlayerOnFireEffect
+{
+	states
+	{
+		spawn:
+			TNT1 A 0 nodelay A_PlaySound("specie/INFECTSTART", CHAN_AUTO)
+			TNT1 AAAAAAAAAAAAAAAA 0 A_SpawnItemEx("Internal_ZH2InfectionFireSingle", Random(-10, 10), Random(-10, 10), FRandom(1.0, 32.0), Random(-2, 2), Random(-2, 2), FRandom(0.2, 2.0), Random(0, 359))
+			TNT1 AAAAAAA 0 A_SpawnItemEx("Internal_ZH2InfectionFireSingleLong", Random(-10, 10), Random(-10, 10), FRandom(1.0, 32.0), FRandom(-0.5, 0.5), FRandom(-0.5, 0.5), FRandom(-0.3, 0.3), Random(0, 359))
+			TNT1 A 5 Light("ZH2InfectionLight1")
+			TNT1 A 0 A_PlaySound("specie/INFECT", CHAN_AUTO)
+			TNT1 A 5 Light("ZH2InfectionLight2")
+			TNT1 A 5 Light("ZH2InfectionLight3")
+			TNT1 A 5 Light("ZH2InfectionLight4")
+			stop
+	}
+}
+
+actor Internal_ZH2InfectionFireSingle : Internal_ZH2PlayerOnFireSingle
+{
+	states
+	{
+		spawn:
+			TNT1 A 0 nodelay A_SetTranslucent(FRandom(0.4, 0.8))
+			TNT1 A 0 A_SetScale(FRandom(0.5, 1.0), FRandom(0.5, 1.0))
+			IFIR ABCDABCDABCDEFGHI 1 A_ChangeVelocity (0, 0, FRandom(0.1, 0.3))
+			stop
+	}
+}
+
+actor Internal_ZH2InfectionFireSingleLong : Internal_ZH2PlayerOnFireSingle
+{
+	states
+	{
+		spawn:
+			TNT1 A 0 nodelay A_SetTranslucent(FRandom(0.4, 0.8))
+			TNT1 A 0 A_SetScale(FRandom(0.5, 1.0), FRandom(0.5, 1.0))
+			IFIR AAABBBCCCDDDEEEFFFGGGHHHIII 1 A_ChangeVelocity (0, 0, FRandom(0.1, 0.2))
+			stop
+	}
+}

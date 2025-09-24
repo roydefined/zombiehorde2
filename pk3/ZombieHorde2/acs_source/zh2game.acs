@@ -1,0 +1,57 @@
+#ifdef __INCLUDED__
+    #error This file must be #imported.
+#endif
+
+#nocompact
+#pragma raw include on
+#pragma raw define on
+
+#library "zh2game"
+
+#import "zcommon.bcs"
+#import "bcsutils.acs"
+
+#include "zh2lib.h.acs"
+#include "zh2game.h.acs"
+
+#include "zh2game/main.acs"
+
+internal str GetVersion()
+{
+    return buildmsg(StrParam())
+    {
+        Append(d:VersionMajor);
+        Append(s:".");
+        Append(d:VersionMinor);
+        Append(s:".");
+        Append(d:VersionPatch);
+        Append(s:VersionSuffix);
+    }
+}
+
+internal bool IsDevelopment()
+{
+    return
+#ifdef DEV
+        true
+#else
+        false
+#endif
+    ;
+}
+
+internal bool IsProduction()
+{
+    return !IsDevelopment();
+}
+
+internal bool DevelopmentPlayerCap()
+{
+    return
+#ifdef DEV_PLAYERCAP
+        true
+#else
+        false
+#endif
+    ;
+}

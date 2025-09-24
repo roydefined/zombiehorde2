@@ -1,0 +1,23 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+strict namespace Reward
+{
+    // Cure: Can't be used by initial zombies.
+    script "zh2_internal_reward_restrictcure"(raw idRaw)
+    {
+        int id = (int)idRaw;
+        SetResultValue((int)Player::GetPlayerInitialZombie(id));
+    }
+
+    // Zombie secondary: Can't be used if the zombie has all secondary attacks that would be given.
+    script "zh2_internal_reward_restrictzombiesecondary"(raw idRaw)
+    {
+        int id = (int)idRaw;
+        int current = Game::GetPlayerZombieAbilityFlags(id);
+        int given = Game::GetDefaultZombieAbilityFlags();
+        bool hasAll = (current & given) == given;
+        SetResultValue((int)hasAll);
+    }
+}

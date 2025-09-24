@@ -1,0 +1,105 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal SpecieTypeT GetSpecie()
+    {
+        return GetPlayerSpecie(PlayerNumber());
+    }
+    internal SpecieTypeT GetPlayerSpecie(int id)
+    {
+        if (!Identity::IsValidID(id)) return SPECIENONE;
+        return ZH2Game::GameContext.Players[id].SpecieType;
+    }
+
+    internal bool SetSpecie(SpecieTypeT specie)
+    {
+        return SetPlayerSpecie(PlayerNumber(), specie);
+    }
+    internal bool SetPlayerSpecie(int id, SpecieTypeT specie)
+    {
+        if (!Identity::IsValidID(id)) return false;
+        ZH2Game::GameContext.Players[id].SpecieType = specie;
+        Logger::LogDebug(LOGSOURCE, "Setting specie of \cd" + str(id) + " \cjto " + GetSpecieIndexAsString(specie) + ".");
+        return true;
+    }
+
+    bool GetIsZombie() { return GetPlayerIsZombie(PlayerNumber()); }
+    bool GetPlayerIsZombie(int id) { return GetPlayerSpecie(id) == SPECIEZOMBIE; }
+    internal bool SetZombie() { return SetPlayerZombie(PlayerNumber()); }
+    internal bool SetPlayerZombie(int id) { return SetPlayerSpecie(id, SPECIEZOMBIE); }
+    script "zh2_dec_getiszombie" { SetResultValue(int(GetIsZombie())); }
+    script "zh2_dec_gettargetiszombie"
+    {
+		if (!SetActivatorToTarget(0))
+        {
+			SetResultValue(0);
+			terminate;
+		}
+        SetResultValue(int(GetIsZombie()));
+    }
+
+    bool GetIsHuman() { return GetPlayerIsHuman(PlayerNumber()); }
+    bool GetPlayerIsHuman(int id) { return GetPlayerSpecie(id) == SPECIEHUMAN; }
+    internal bool SetHuman() { return SetPlayerHuman(PlayerNumber()); }
+    internal bool SetPlayerHuman(int id) { return SetPlayerSpecie(id, SPECIEHUMAN); }
+    script "zh2_dec_getishuman" { SetResultValue(int(GetIsHuman())); }
+    script "zh2_dec_gettargetishuman"
+    {
+		if (!SetActivatorToTarget(0))
+        {
+			SetResultValue(0);
+			terminate;
+		}
+        SetResultValue(int(GetIsHuman()));
+    }
+
+    internal int SpecieCount(SpecieTypeT type, bool includeDead = false)
+    {
+        int count;
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // Count optionally allows for including dead players.
+            if (!includeDead
+                && (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(Identity::GetTID(i))))
+            {
+                continue;
+            }
+
+            if (GetPlayerSpecie(i) != type) continue;
+            count++;
+        }
+        
+        return count;
+    }
+
+    internal int HumanCount(bool includeDead = false)
+    {
+        return SpecieCount(SPECIEHUMAN, includeDead);
+    }
+
+    internal int ZombieCount(bool includeDead = false)
+    {
+        return SpecieCount(SPECIEZOMBIE, includeDead);
+    }
+
+    internal SpecieTypeT GetSpecieTypeByIndex(int index)
+    {
+		if (index <= SPECIENONE || index > SPECIEZOMBIE)
+			return SPECIENONE;
+
+        static SpecieTypeT collection[] = { SPECIEHUMAN, SPECIEZOMBIE };
+        return collection[index - 1];
+    }
+
+    internal str GetSpecieIndexAsString(int index)
+    {
+		if (index <= SPECIENONE || index > SPECIEZOMBIE)
+			return "none";
+
+        static str collection[] = { "human", "zombie", };
+        return collection[index - 1];
+    }
+}

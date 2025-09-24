@@ -1,0 +1,84 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+#define LOGSOURCE "Logger"
+
+#include "buffer.acs"
+#include "logtarget.acs"
+#include "loglevel.acs"
+#include "utils.acs"
+
+strict namespace Logger
+{
+	internal void PrintError(str message)
+	{
+		PrintBold(s:"\cgError\cj: " + message);
+	}
+
+	// General scripts retrieve a log message as string or integer format and log it.
+    script "LoggerLib_LogOnClientInt" (raw stringInt) clientside
+	{
+		LogToConsolePlayerOrSendToBuffer((str)stringInt);
+	}
+	
+	script "LoggerLib_LogOnClientString" (raw messagePacket) clientside
+	{
+		LogToConsolePlayerOrSendToBuffer(messagePacket);
+	}
+	
+	script "LoggerLib_LogPacketOnClientInt" (raw stringInt) clientside
+	{
+		LogPacketToConsolePlayerOrSendToBuffer((str)stringInt);
+	}
+	
+	script "LoggerLib_LogPacketOnClientString" (raw messagePacket) clientside
+	{
+		LogPacketToConsolePlayerOrSendToBuffer(messagePacket);
+	}
+
+    internal void LogToConsolePlayerOrSendToBuffer(str message)
+	{
+        if (!SetActivatorToPlayer(ConsolePlayerNumber())) return;
+
+		if (!ZH2Lib::GetUseBufferedLogging())
+		{
+			Log(s:message);
+			return;
+		}
+
+        AddLogToBuffer(message);
+	}
+
+	internal void LogPacketToConsolePlayerOrSendToBuffer(str messagePacket)
+	{
+        if (!SetActivatorToPlayer(ConsolePlayerNumber())) return;
+
+        messagePacket = Packet::Packet_ReadStr(messagePacket);
+        str source = Packet::Packet_Rval;
+
+        messagePacket = Packet::Packet_Read(messagePacket, Packet::PACKET_WORD);
+        LogLevelT level = GetLogLevelByIndex(Packet::Packet_Rval);
+
+        messagePacket = Packet::Packet_Read(messagePacket, Packet::PACKET_WORD);
+        LogOwnerT owner = GetLogOwnerByIndex(Packet::Packet_Rval);
+
+        messagePacket = Packet::Packet_ReadStr(messagePacket);
+        str message = Packet::Packet_Rval;
+
+        // Log level not enabled for the given source-level combination.
+        if (!IsEnabled(source, level))
+            return;
+
+        if (!ZH2Lib::GetUseBufferedLogging())
+		{
+			SetActivatorToPlayer(ConsolePlayerNumber());
+			Log(s:FormatMessage(source, level, owner, message));
+			return;
+		}
+
+        AddLeveledLogToBuffer(source, level, owner, message);
+	}
+}
+
+#undef LOGSOURCE 

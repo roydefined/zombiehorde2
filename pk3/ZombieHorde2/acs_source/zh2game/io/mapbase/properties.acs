@@ -1,0 +1,134 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    // Attempts to parse a block of properties.
+    // Example: `Properties {}`
+    internal bool ParseProperties(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "properties")) return false;
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+
+            if (ParseGamemode(handle, symbol)
+                || ParseLabel(handle, symbol)
+                || ParseGraphic(handle, symbol)
+                || ParseIsNew(handle, symbol)
+                || ParseIsLegacyMap(handle, symbol))
+            {
+                // Peek next character, see if we have a comma.
+                // These are optional and if so, make sure to skip it.
+                Tokenizer::Next(handle);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing properties of map: '" + symbol + "'.");
+            return false;
+        }
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed map properties.");
+        return true;
+    }
+
+    internal bool ParseGamemode(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "gamemode")) return false;
+        Tokenizer::Next(handle);
+        
+        MapBaseCollectionT global:PERSISTINGGAMECONTEXTINDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
+
+        str gameMode = Tokenizer::GetSymbol(handle);
+        mapBaseCollection.Collection[mapBaseCollection.Count].Properties.GameMode = gameMode;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed game mode: \cd" + gameMode + "\cj.");
+        return true;
+    }
+
+    internal bool ParseLabel(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "label")) return false;
+        Tokenizer::Next(handle);
+        
+        MapBaseCollectionT global:PERSISTINGGAMECONTEXTINDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
+
+        str label = Tokenizer::GetSymbol(handle);
+        mapBaseCollection.Collection[mapBaseCollection.Count].Properties.Label = label;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed label: \cd" + label + "\cj.");
+        return true;
+    }
+
+    internal bool ParseGraphic(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "graphic")) return false;
+        Tokenizer::Next(handle);
+        
+        MapBaseCollectionT global:PERSISTINGGAMECONTEXTINDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
+
+        str graphic = Tokenizer::GetSymbol(handle);
+        mapBaseCollection.Collection[mapBaseCollection.Count].Properties.Graphic = graphic;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed graphic: \cd" + graphic + "\cj.");
+        return true;
+    }
+
+    internal bool ParseIsNew(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "isnew")) return false;
+        Tokenizer::Next(handle);
+        
+        MapBaseCollectionT global:PERSISTINGGAMECONTEXTINDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
+
+        if (!Tokenizer::TryParseBooleanOrNumbericValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for IsNew is not a correct value. Expected boolean or numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        bool value = parsedValue != 0;
+        mapBaseCollection.Collection[mapBaseCollection.Count].Properties.IsNew = value;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed is new: \cd" + str(value) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseIsLegacyMap(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "islegacymap")) return false;
+        Tokenizer::Next(handle);
+        
+        MapBaseCollectionT global:PERSISTINGGAMECONTEXTINDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
+
+        if (!Tokenizer::TryParseBooleanOrNumbericValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for IsLegacyMap is not a correct value. Expected boolean or numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        bool value = parsedValue != 0;
+        mapBaseCollection.Collection[mapBaseCollection.Count].Properties.IsLegacyMap = value;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed is legacy map: \cd" + str(value) + "\cj.");
+        return true;
+    }
+}

@@ -1,0 +1,143 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+// Tracer system, to spawn directional effects based on where player shots land.
+
+strict namespace LibDec
+{
+	// Directional offset so angled weapons have their tracers adjusted (like the sniper).
+    internal int _tracerOffsetX;
+    internal int _tracerOffsetY;
+
+    script "zh2_dec_tracer_prepare" (int x, int y) clientside
+    {
+        _tracerOffsetX = x;
+        _tracerOffsetY = y;
+    }
+
+    script "zh2_dec_tracer_spawn" (int x, int y)
+    {
+        // Server has disabled tracers.
+        if (!ZH2Lib::GetServerEnabledTracers())
+            terminate;
+
+		int shooterTid = GetActorProperty(0, APROP_TARGETTID);
+        int shooterId = Identity::GetId(shooterTid);
+
+		if (shooterTid == 0) terminate;
+        VALIDATE_ID_VALID_SCRIPT(shooterId);
+
+        str packet = Packet::Packet_New();
+
+        // Puff
+	    packet = Packet::Packet_Append(packet, GetActorX(0), Packet::PACKET_WORD);
+	    packet = Packet::Packet_Append(packet, GetActorY(0), Packet::PACKET_WORD);
+	    packet = Packet::Packet_Append(packet, GetActorZ(0), Packet::PACKET_WORD);
+
+        // Shooter
+	    packet = Packet::Packet_Append(packet, shooterId, Packet::PACKET_BYTE);
+	    packet = Packet::Packet_Append(packet, GetActorX(shooterTid), Packet::PACKET_WORD);
+	    packet = Packet::Packet_Append(packet, GetActorY(shooterTid), Packet::PACKET_WORD);
+	    packet = Packet::Packet_Append(packet, GetActorZ(shooterTid), Packet::PACKET_WORD);
+	    packet = Packet::Packet_Append(packet, GetActorAngle(shooterTid), Packet::PACKET_WORD);
+	    packet = Packet::Packet_Append(packet, GetActorViewHeight(shooterTid), Packet::PACKET_SHORT);
+
+		if(!NamedSendNetworkString("zh2_internal_dec_tracer_spawn_client", packet))
+			Logger::LogError(LOGSOURCE, "Failed to invoke zh2_dec_tracer_spawn_client. Message packet: '" + packet + "'.");
+    }
+
+    script "zh2_internal_dec_tracer_spawn_client" (raw messagePack) clientside
+    {
+        if (PlayerIsBot(ConsolePlayerNumber())) terminate;
+
+        // Note, fixes the cvars which do not work otherwise.
+        if (!SetActivatorToPlayer(ConsolePlayerNumber())) terminate;
+
+        // 0 - Nobody.
+        // 1 - Only locally.
+        // 2 - Everyone.
+        int tracerType = ZH2Lib::GetClientTracerType();
+        if (tracerType == 0) terminate;
+
+        // Puff
+        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
+        fixed puffX = Packet::Packet_Rval;
+
+        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
+        fixed puffY = Packet::Packet_Rval;
+
+        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
+        fixed puffZ = Packet::Packet_Rval;
+
+        // Shooter
+        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_BYTE);
+        int sourceId = Packet::Packet_Rval;
+
+        // Now check if we were the source.
+        if (tracerType == 0 && sourceId != ConsolePlayerNumber()) terminate;
+
+        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
+        fixed shooterX = Packet::Packet_Rval;
+
+        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
+        fixed shooterY = Packet::Packet_Rval;
+
+        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
+        fixed shooterZ = Packet::Packet_Rval;
+
+        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
+        fixed shooterAngle = Packet::Packet_Rval - 0.25;
+
+        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_SHORT);
+        fixed shooterViewHeight = Packet::Packet_Rval;
+
+        // Adjust based on actor's angle and view height.
+        // If the shooting player matches the console player, then we locally apply configured tracer offsets for angled weapons.
+        if (sourceId == ConsolePlayerNumber())
+        {
+            shooterX += cos(shooterAngle) * fixed(_tracerOffsetX);
+            shooterY += sin(shooterAngle) * fixed(_tracerOffsetY);
+            shooterZ += shooterViewHeight - fixed(_tracerOffsetY);
+        }
+        else
+        {
+            shooterX += cos(shooterAngle);
+            shooterY += sin(shooterAngle);
+            shooterZ += shooterViewHeight;
+        }
+
+        // Direction vector
+        fixed directionX = puffX - shooterX;
+        fixed directionY = puffY - shooterY;
+        fixed directionZ = puffZ - shooterZ;
+        fixed distance = BCSUtils::VectorLength3D(directionX, directionY, directionZ);
+        
+		// Too close
+		if (distance < TRACER_SPAWNDISTANCE)
+            terminate;
+
+		// Normalized vector
+		fixed normalizedX = directionX / distance;
+		fixed normalizedY = directionY / distance;
+		fixed normalizedZ = directionZ / distance;
+        
+		// Tracer spawn point
+		fixed spawnX = shooterX + normalizedX * TRACER_SPAWNDISTANCE;
+		fixed spawnY = shooterY + normalizedY * TRACER_SPAWNDISTANCE;
+		fixed spawnZ = shooterZ + normalizedZ * TRACER_SPAWNDISTANCE;
+
+        // Velocity
+        fixed velocityX = normalizedX * TRACER_SPEED;
+        fixed velocityY = normalizedY * TRACER_SPEED;
+        fixed velocityZ = normalizedZ * TRACER_SPEED;
+
+        //Logger::LogDebug(LOGSOURCE, "Spawn tracer. Puff position: " + str(puffX) + " "+ str(puffY) + " "+ str(puffZ) + ". Shooter position: " + str(shooterX) + " "+ str(shooterY) + " "+ str(shooterZ) + ".");
+    
+        int tracerTid = UniqueTid();
+		SpawnForced("ZH2WeaponTracer", spawnX, spawnY, spawnZ, tracerTid, 0);
+		SetActorVelocity(tracerTid, velocityX, velocityY, velocityZ, false, false);
+		SetActorAngle(tracerTid, VectorAngle(normalizedX, normalizedY));
+		Thing_ChangeTid(tracerTid, 0);
+    }
+}

@@ -1,0 +1,123 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "resist.acs"
+#include "events.acs"
+
+strict namespace IO
+{
+    internal void ParseCurrentMapLump()
+    {
+        if (!ACS_NamedExecute(SCRIPT_PARSE_CURRENT_MAP_DEFS, 0))
+        {
+            Logger::LogError(LOGSOURCE, "Parser for current map defs could not be started. Script failed to execute.");
+            return;
+        }
+    }
+
+    // Note unlike the other scripts this is transient and will be done between maps.
+    // Therefore no explicit initialization is checked.
+    script SCRIPT_PARSE_CURRENT_MAP_DEFS
+    {
+        if (ZH2Game::GameContext.ParsedMapDetails) terminate;
+
+        // Attempt to get the current map's info lump from the cached data and parse its content as a whole.
+        str mapLump = StrParam(n:PRINTNAME_LEVEL);
+        Logger::LogDebug(LOGSOURCE, "Attempting to find map data for map \cd" + mapLump + "\cj.");
+
+        int index = GetMapBaseIndexByLumpName(mapLump);
+        ZH2Game::GameContext.MapIndex = index;
+        if (index == -1)
+        {
+            Logger::LogWarning(LOGSOURCE, "No map data was defined for the current map.");
+            terminate;
+        }
+
+        int expectedLumpIndex = ZH2Game::PersistingGameContext.MapBaseCollection.Collection[index].LumpIndex;
+        int startOffset = ZH2Game::PersistingGameContext.MapBaseCollection.Collection[index].LumpStartOffset;
+        int endOffset = ZH2Game::PersistingGameContext.MapBaseCollection.Collection[index].LumpEndOffset;
+
+        int lumpIndex = LumpOpen(MAPDEFLUMPNAME, expectedLumpIndex - 1);
+        if (lumpIndex == -1)
+        {
+            Logger::LogError(LOGSOURCE, "Expected a valid map lump for map " + mapLump + ".");
+            terminate;
+        }
+        if (lumpIndex != expectedLumpIndex)
+        {
+            LumpClose(expectedLumpIndex);
+            Logger::LogError(LOGSOURCE, "Expected " + mapLump + " to open in lump index " + str(expectedLumpIndex) + " but it instead opened " + str(lumpIndex) + ".");
+            terminate;
+        }
+
+        if (LumpGetInfo(lumpIndex, LUMP_INFO_SIZE) == 0)
+        {
+            LumpClose(lumpIndex);
+            Logger::LogError(LOGSOURCE, "Expected " + mapLump + " at lump index " + str(lumpIndex) + " to be a non-zero length lump.");
+            terminate;
+        }
+
+        // Get the specific buffer chunk that contains our map data.
+        str buffer = StrMid(LumpReadString(lumpIndex, 0), startOffset, endOffset - startOffset);
+        Logger::LogDebug(LOGSOURCE, "Found map buffer chunk for \cd" + MAPDEFLUMPNAME + "\cj map \cd" + mapLump + "\cj, start parsing.");
+        
+        ParseMapLumpDetails(mapLump, buffer);
+        LumpClose(lumpIndex);
+
+        ZH2Game::GameContext.ParsedMapDetails = true;
+    }
+
+    internal int GetMapBaseIndexByLumpName(str lumpName)
+    {
+        int length = ZH2Game::PersistingGameContext.MapBaseCollection.Count;
+        for (int i = 0; i < length; ++i)
+        {
+            str mapName = ZH2Game::PersistingGameContext.MapBaseCollection.Collection[i].MapLump;
+            if (!BCSUTILS::StrIEquals(mapName, lumpName)) continue;
+
+            return i;
+        }
+        
+        return -1;
+    }
+    
+    internal void ParseMapLumpDetails(str mapLump, str buffer)
+    {
+        int handle = Tokenizer::RentTokenizer(buffer);
+        if (handle == -1) return;
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return;
+        
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (Tokenizer::ParseBodyAsEmpty(handle, symbol, "properties"))
+                continue;
+
+            if (Tokenizer::ParseBodyAsEmpty(handle, symbol, "properties")
+                || ParseResistCollection(handle, mapLump, symbol)
+                || ParseEventCollection(handle, mapLump, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+                    
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAPDEFLUMPNAME + " of map " + mapLump + ": '" + symbol + "'.");
+            Tokenizer::ReturnTokenizer(handle);
+            return;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Parsed map details for \cd" + mapLump + ".");
+        Tokenizer::ReturnTokenizer(handle);
+    }
+}

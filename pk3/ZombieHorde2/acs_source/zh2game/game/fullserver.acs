@@ -1,0 +1,78 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    internal void FullServerTicServer()
+    {
+        // After 5 seconds of play time, possibly trigger a full server event.
+        if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING && GetPlayTime() == 35 * 5)
+        {
+            TryTriggerFullServerEvent();
+            Sync::SyncGame();
+        }
+    }
+
+    internal void FullServerTicClient()
+    {
+        // Make sure the client has the full server event triggered.
+        if (GetFullServerElapsedTics() > 0 && !ZH2Game::GameContext.FullServerEventStarted)
+        {
+            ZH2Game::GameContext.FullServerEventStarted = true;
+            Logger::LogActivator("\cgF\cku\cdl\cvl \chs\cte\cgr\ckv\cde\cvr\cg! \cjFree item for everybody!");
+            
+            if (!ZH2Game::GetIgnoreFullServerMusic())
+                SetMusic(TRACK_FULLSERVER);
+        }
+    }
+
+    internal void TryTriggerFullServerEvent()
+    {
+        ZH2Game::PersistingGameContext.FullServerCooldown--;
+		
+        int maxPlayers = ZH2Game::GetMaxPlayers();
+		if (PlayerCount() < maxPlayers)
+		{
+			Logger::LogDebug(LOGSOURCE, "Full server event skipped. Playercount cap not reached (" + str(PlayerCount()) + " < " + str(maxPlayers) + ").");
+			return;
+		}
+		
+		if (!ZH2Game::GetEnableFullServer())
+		{
+			Logger::LogDebug(LOGSOURCE, "Full server event skipped. Event disabled by cvar.");
+			return;
+		}
+		
+		if (GetFullServerCooldown() != 0)
+		{
+			Logger::LogDebug(LOGSOURCE, "Full server event skipped. Cooldown has not ended (" + str(ZH2Game::PersistingGameContext.FullServerCooldown) + " map(s) left).");
+			return;
+		}
+		
+		Logger::LogDebug(LOGSOURCE, "Triggering full server event.");
+		
+        // Explicitly passing SPECIENONE rewards everybody.
+        ITERATESPECIES(Player::SPECIENONE, {
+            Reward::GivePlayerContainer(id, Reward::REWARDORBMINOR);
+        });
+
+		ZH2Game::GameContext.FullServerStartTimestamp = Utils::GetSynchronizedTimer();
+		ZH2Game::PersistingGameContext.FullServerCooldown += ZH2Game::GetFullServerRoundInterval();
+    }
+
+    internal int GetFullServerElapsedTics()
+    {
+        int timestamp = ZH2Game::GameContext.FullServerStartTimestamp;
+        if (timestamp == 0)
+            return 0;
+
+        return Utils::GetSynchronizedTimer() - timestamp;
+    }
+
+    internal int GetFullServerCooldown()
+    {
+        // Can be -1 if unset. Assume 0 means we trigger the event.
+        return BCSUtils::Max(0, ZH2Game::PersistingGameContext.FullServerCooldown);
+    }
+}

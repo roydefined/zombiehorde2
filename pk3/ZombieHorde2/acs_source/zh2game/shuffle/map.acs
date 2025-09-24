@@ -1,0 +1,23 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Shuffle
+{
+    // Votable maps have a few additional steps to ensure a valid list.
+    // - We make sure not to include the current map.
+    // - We make sure not to include the next map.
+    // - We make sure not to include a map that was played already IF the cvar is set.
+    internal void ShuffleVotableMaps(int flags = FLAGIGNORECURRENTMAP | FLAGIGNORENEXTMAP)
+    {
+        if (!ZH2Game::GetVoteIncludePlayedMaps())
+            flags |= FLAGIGNOREPLAYEDMAP;
+
+        PrepareVotableMaps(flags);
+
+        // We don't do anything special for the relevant size.
+        _context.BufferRelevantSize = _context.BufferIteratorSize;
+
+        BCSUtils::ShuffleArray(0, _context.BufferRelevantSize, "zh2_internal_shuffle_swapbufferitems");
+    }
+}

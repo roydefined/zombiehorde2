@@ -1,0 +1,69 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+strict namespace Utils
+{
+    // Splits text into two lines if longer than maxLength.
+    // Prefers splitting near the middle, ideally at '.' or ' '.
+    
+    function str WrapString(str input, int maxLength)
+    {
+        int len = StrLen(input);
+
+        // If already short enough, return as is
+        if (len <= maxLength)
+            return input;
+
+        // Target split roughly in the middle
+        int mid = len / 2;
+
+        int breakPos = -1;
+
+        // Search outward from mid for a dot
+        for (int offset = 0; offset < mid; offset++)
+        {
+            int left = mid - offset;
+            int right = mid + offset;
+
+            if (left > 0 && StrMid(input, left, 1) == ".")
+            {
+                breakPos = left + 1; // keep the dot
+                break;
+            }
+            if (right < len && StrMid(input, right, 1) == ".")
+            {
+                breakPos = right + 1;
+                break;
+            }
+        }
+
+        // If no dot, search outward for a space
+        if (breakPos == -1)
+        {
+            for (int offset = 0; offset < mid; offset++)
+            {
+                int left = mid - offset;
+                int right = mid + offset;
+
+                if (left > 0 && StrMid(input, left, 1) == " ")
+                {
+                    breakPos = left;
+                    break;
+                }
+                if (right < len && StrMid(input, right, 1) == " ")
+                {
+                    breakPos = right;
+                    break;
+                }
+            }
+        }
+
+        // Fallback hard cut near middle
+        if (breakPos == -1)
+            breakPos = mid;
+
+        // Return with a single newline at the split
+        return StrMid(input, 0, breakPos) + "\n" + StrMid(input, breakPos, len - breakPos);
+    }
+}

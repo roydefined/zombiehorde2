@@ -1,0 +1,45 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+strict namespace Logger
+{
+    internal str _logBuffer[LOG_BUFFER_SIZE];
+    internal int _logBufferFillSize = 0;
+
+    void FlushBuffer()
+    {
+        if (!ZH2Lib::GetUseBufferedLogging()) return;
+
+        for(int i = 0; i < _logBufferFillSize; ++i)
+        {
+            str formatted = _logBuffer[_logBufferFillSize - 1 - i];
+			Log(s:formatted);
+        }
+
+        _logBufferFillSize = 0;
+    }
+
+    internal void AddLogToBuffer(str message)
+    {
+        if (_logBufferFillSize == LOG_BUFFER_SIZE)
+        {
+            PrintError("Maximum log buffer size of " + str(LOG_BUFFER_SIZE) + " reached for this frame. Log can't be added.");
+            return;
+        }
+
+        _logBuffer[_logBufferFillSize++] = message;
+    }
+
+    internal void AddLeveledLogToBuffer(str source, LogLevelT level, LogOwnerT owner, str message)
+    {
+        if (_logBufferFillSize == LOG_BUFFER_SIZE)
+        {
+            PrintError("Maximum log buffer size of " + str(LOG_BUFFER_SIZE) + " reached for this frame. Leveled log can't be added.");
+            return;
+        }
+
+        str formatted = FormatMessage(source, level, owner, message);
+        _logBuffer[_logBufferFillSize++] = formatted;
+    }
+}

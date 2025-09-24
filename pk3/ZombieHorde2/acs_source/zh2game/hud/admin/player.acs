@@ -1,0 +1,538 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    // This indicates the sub menu that we are on when in the `MENU_PLAYER` menu.
+    internal AdminPlayerSubMenuT _menuPlayerSubMenu;
+
+    // This indicates what player we should target when we are in the `MENU_PLAYER` screen and targeting a specific player.
+    // If -1 we don't target anybody and we render the initial window instead.
+    internal int _menuPlayerTargetId = -1;
+
+    // Used to pass along species when pressing buttons for specie specific players.
+    // Can be set using the buttons.
+    internal Player::SpecieTypeT _filteredSpecie;
+
+    internal void DrawPlayerMenuHud(int id, fixed x, fixed y, fixed scale)
+    {
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudDrawText(id--, "\cfPlayers");
+
+        y += 10.0 * scale;
+        if (DrawClickableText(id--, x, y, 100.0 * scale, 10.0 * scale, "Back to start"))
+            OpenAdminMenu(MENU_START);
+
+        y += 10.0 * scale;
+
+        if (_menuPlayerSubMenu != MENU_NONE)
+        {
+            if (DrawClickableText(id--, x, y, 100.0 * scale, 10.0 * scale, "Back to list"))
+            {
+                _menuPlayerTargetId = -1;
+                _menuPlayerSubMenu = MENU_NONE;
+            }
+        }
+        else
+        {
+            if (DrawClickableText(id--, x, y, 100.0 * scale, 10.0 * scale, "For all players"))
+                _menuPlayerSubMenu = MENU_ALL;
+        }
+        
+        y += 20.0 * scale;
+
+        // Draw player specific commands when we select a player, otherwise draw the player list.
+        switch(_menuPlayerSubMenu)
+        {
+            case MENU_NONE:
+                id = DrawPlayerList(id, x, y, scale);
+                break;
+            
+            case MENU_ALL:
+                id = DrawGiveAll(id, x, y, scale);
+                break;
+            
+            case MENU_PLAYERSPECIFIC:
+                id = DrawPlayerDetails(id, x, y, scale, _menuPlayerTargetId);
+                break;
+        }
+    }
+
+    internal int DrawPlayerList(int id, fixed x, fixed y, fixed scale)
+    {
+        // Add bots as human/zombie. Doesn't work if we reached max players.
+        
+        if (DrawClickableTextConditional(
+            BCSUtils::ClientCount() != BCSUtils::MAX_PLAYERS, id--, x * scale, y, 100.0 * scale, 10.0 * scale, "add bot (human)"))
+        {
+            Admin::AdminAddHumanBotClientside();
+        }
+
+        if (DrawClickableTextConditional(
+            BCSUtils::ClientCount() != BCSUtils::MAX_PLAYERS, id--, x + 150.0 * scale, y, 100.0 * scale, 10.0 * scale, "add bot (zombie)"))
+        {
+            Admin::AdminAddZombieBotClientside();
+        }
+
+        if (DrawClickableTextConditional(
+            BCSUtils::BotCount() != 0, id--, x + 300.0 * scale, y, 100.0 * scale, 10.0 * scale, "remove bot"))
+        {
+            Admin::AdminRemoveBotClientside();
+        }
+        
+        y += 10.0 * scale;
+
+        int offset = 0;
+        for (int i = 0; i < BCSUTILS::MAX_PLAYERS; ++i)
+        {
+            if (!BCSUTILS::ActorIsAlive(Identity::GetTID(i)))
+                continue;
+            
+            BCSUtils::HudSetPoint(x, y + fixed(10 * offset) * scale);
+            BCSUtils::HudSetTextColor(CR_WHITE);
+            BCSUtils::HudDrawText(id--, str(i));
+
+            if (DrawClickableText(id--, x + 20.0, y + fixed(10 * offset) * scale, 60.0 * scale, 10.0 * scale, BCSUTILS::PlayerName(i)))
+            {
+                _menuPlayerTargetId = i;
+                _menuPlayerSubMenu = MENU_PLAYERSPECIFIC;
+            }
+
+            offset++;
+        }
+
+        return id;
+    }
+
+    
+    internal int DrawGiveAll(int id, fixed x, fixed y, fixed scale)
+    {
+        // In some cases we loop over all species.
+        // Note specie "none" means we give the reward to everybody in this instance.
+        // (No point making a whole separate set of code when we can just reuse it).
+
+        fixed rowY = y;
+
+        /* LIST OF POWERS */
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudDrawText(id--, "\cfFilter specie");
+            
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetFont("SmallFont");
+
+        y += 20.0 * scale;
+    
+        for (int i = Player::SPECIENONE; i <= Player::SPECIEZOMBIE; ++i)
+        {
+            Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(i);
+            str label = specie == Player::SPECIENONE
+                ? "all"
+                : Player::GetSpecieIndexAsString(specie);
+
+            if (DrawClickableTextConditional(
+                _filteredSpecie != specie, id--, (x + fixed(50 * i)) * scale, y, 50.0 * scale, 10.0 * scale, label))
+            {
+                _filteredSpecie = specie;
+            }
+        }
+        
+        y += 20.0 * scale;
+
+        /* ALLOW JOIN */
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudDrawText(id--, "\cfAllow join");
+            
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetFont("SmallFont");
+
+        y += 20.0 * scale;
+        
+        if (DrawClickableText(id--, x, y, 30.0 * scale, 10.0 * scale, "enable"))
+            Admin::AdminSetAllowJoinClientSide(true);
+        
+        if (DrawClickableText(id--, (x + 60.0), y, 40.0 * scale, 10.0 * scale, "disable"))
+            Admin::AdminSetAllowJoinClientSide(false);
+
+        y += 20.0 * scale;
+
+        /* LIST OF POWERS */
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudDrawText(id--, "\cfPowers");
+
+        y += 20.0 * scale;
+
+        BCSUtils::HudSetFont("SmallFont");
+        id = DrawPowerSelectors(id, x, y, scale, InvokeIncrementPowerOnAll);
+
+        // Note, hardcoded 2 for the current two available items you can increase.
+        y += 10.0 * 2.0 * scale;
+        
+        y += 20.0 * scale;
+
+        /* ARMOR */
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudDrawText(id--, "\cfAdd armor");
+
+        y += 20.0 * scale;
+
+        BCSUtils::HudSetFont("SmallFont");
+        id = DrawArmorIncrementSelectors(id, x, y, scale, InvokeArmorIncrementOnAll);
+        
+        y += 20.0 * scale;
+
+        /* REWARD CONTAINERS */
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudDrawText(id--, "\cfGive containers");
+        
+        y += 20.0 * scale;
+
+        BCSUtils::HudSetFont("SmallFont");
+        id = DrawRewardContainerSelectors(id, x, y, scale, InvokeContainerOnAll);
+
+        // Resets y and moves x
+        y = rowY - 100.0;
+        x += 200.0 * scale;
+
+        /* ITEMS */
+        
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudDrawText(id--, "\cfGive items");
+        
+        y += 20.0 * scale;
+
+        BCSUtils::HudSetFont("SmallFont");
+        id = DrawItemSelectors(id, x, y, scale, InvokeIncrementItemOnAll);
+
+        // Resets y and moves x
+        y = rowY - 100.0;
+        x += 300.0 * scale;
+
+        /* REWARDS */
+        
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudDrawText(id--, "\cfGive rewards");
+        
+        y += 20.0 * scale;
+
+        BCSUtils::HudSetFont("SmallFont");
+        id = DrawRewardSelectors(id, x, y, scale, InvokeGiveRewardOnAll);
+
+        y += 20.0 * scale;
+
+        return id;
+    }
+
+    internal void InvokeIncrementItemOnAll(int index, int amount)
+    {
+        Admin::AdminIncrementSpecieItemClientside(_filteredSpecie, index, amount);
+    }
+
+    internal void InvokeGiveRewardOnAll(int index)
+    {
+        Admin::AdminGiveSpecieRewardClientside(_filteredSpecie, index);
+    }
+
+    internal void InvokeIncrementPowerOnAll(int index, int amount)
+    {
+        Admin::AdminIncrementSpeciePowerClientside(_filteredSpecie, index, amount);
+    }
+
+    internal void InvokeArmorIncrementOnAll(int amount)
+    {
+        Admin::AdminIncrementSpecieArmorClientSide(_filteredSpecie, amount);
+    }
+
+    internal void InvokeContainerOnAll(Reward::RewardItemTypeFlagsT type)
+    {
+        Admin::AdminGiveRewardContainerSpecieClientSide(_filteredSpecie, type);
+    }
+
+    internal int DrawPlayerDetails(int id, fixed x, fixed y, fixed scale, int playerId)
+    {
+        fixed rowY = y;
+        
+        if (playerId == -1)
+        {
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudSetTextColor(CR_RED);
+            BCSUtils::HudDrawText(id--, "Error: failed to determine player id.");
+            return id;
+        }
+        
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudDrawText(id--, Player::GetPlayerName(playerId));
+
+        y += 10.0 * scale;
+
+        // Failsafe, player left or died. Should return back to the initial list.
+        if (!BCSUTILS::ActorIsAlive(Identity::GetTID(playerId)))
+        {
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudSetTextColor(CR_RED);
+            BCSUtils::HudDrawText(id--, "Player is dead or left.");
+            return id;
+        }
+
+        if (DrawClickableTextConditional(
+            !Player::GetPlayerIsZombie(playerId), id--, x, y, 50.0 * scale, 10.0 * scale, "infect"))
+        {
+            Admin::AdminInfectPlayerClientside(playerId);
+        }
+
+        if (DrawClickableTextConditional(
+            !Player::GetPlayerIsHuman(playerId), id--, x + 50.0 * scale, y, 50.0 * scale, 10.0 * scale, "cure"))
+        {
+            Admin::AdminCurePlayerClientside(playerId);
+        }
+
+        if (DrawClickableText(id--, x + 90.0 * scale, y, 50.0 * scale, 10.0 * scale, "kill"))
+            Admin::AdminKillPlayerClientside(playerId);
+
+        y += 20.0 * scale;
+
+        /* ALLOW JOIN */
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudDrawText(id--, "\cfAllow join");
+            
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetFont("SmallFont");
+
+        y += 20.0 * scale;
+        
+        if (DrawClickableText(id--, x, y, 30.0 * scale, 10.0 * scale, "enable"))
+            Admin::AdminSetPlayerAllowJoinClientSide(playerId, true);
+        
+        if (DrawClickableText(id--, (x + 60.0), y, 40.0 * scale, 10.0 * scale, "disable"))
+            Admin::AdminSetPlayerAllowJoinClientSide(playerId, false);
+
+        y += 20.0 * scale;
+            
+        /* LIST OF POWERS */
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudDrawText(id--, "\cfPowers");
+
+        y += 20.0 * scale;
+
+        BCSUtils::HudSetFont("SmallFont");
+        id = DrawPowerSelectors(id, x, y, scale, InvokeIncrementPowerOnSelectedPlayer);
+        
+        y += 20.0 * scale;
+
+        /* ARMOR */
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudDrawText(id--, "\cfAdd armor");
+
+        y += 20.0 * scale;
+
+        BCSUtils::HudSetFont("SmallFont");
+        id = DrawArmorIncrementSelectors(id, x, y, scale, InvokeArmorIncrementOnSelectedPlayer);
+
+        y += 20.0 * scale;
+
+        /* REWARD CONTAINERS */
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudDrawText(id--, "\cfGive containers");
+        
+        y += 20.0 * scale;
+
+        BCSUtils::HudSetFont("SmallFont");
+        id = DrawRewardContainerSelectors(id, x, y, scale, InvokeContainerOnSelectedPlayer);
+        
+        // Resets y and moves x
+        y = rowY - 100.0;
+        x += 200.0 * scale;
+
+        /* ITEMS */
+        
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudDrawText(id--, "\cfGive items");
+        
+        y += 20.0 * scale;
+
+        BCSUtils::HudSetFont("SmallFont");
+        id = DrawItemSelectors(id, x, y, scale, InvokeIncrementItemOnSelectedPlayer);
+        
+        // Resets y and moves x
+        y = rowY - 100.0;
+        x += 300.0 * scale;
+
+        /* REWARDS */
+        
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudDrawText(id--, "\cfGive rewards");
+        
+        y += 20.0 * scale;
+
+        BCSUtils::HudSetFont("SmallFont");
+        id = DrawRewardSelectors(id, x, y, scale, InvokeGiveRewardOnSelectedPlayer);
+        
+        y += 20.0 * scale;
+
+        return id;
+    }
+
+    internal void InvokeIncrementItemOnSelectedPlayer(int index, int amount)
+    {
+        Admin::AdminIncrementPlayerItemClientside(_menuPlayerTargetId, index, amount);
+    }
+
+    internal void InvokeGiveRewardOnSelectedPlayer(int index)
+    {
+        Admin::AdminGivePlayerRewardClientside(_menuPlayerTargetId, index);
+    }
+
+    internal void InvokeIncrementPowerOnSelectedPlayer(int index, int amount)
+    {
+        Admin::AdminIncrementPlayerPowerClientside(_menuPlayerTargetId, index, amount);
+    }
+
+    internal void InvokeArmorIncrementOnSelectedPlayer(int amount)
+    {
+        Admin::AdminIncrementPlayerArmorClientSide(_menuPlayerTargetId, amount);
+    }
+
+    internal void InvokeContainerOnSelectedPlayer(Reward::RewardItemTypeFlagsT type)
+    {
+        Admin::AdminGiveRewardContainerPlayerClientSide(_menuPlayerTargetId, type);
+    }
+
+    // TODO: Should split this by category maybe.
+    internal int DrawItemSelectors(int id, fixed x, fixed y, fixed scale, void function(int, int)& invoker)
+    {
+        for (int i = 0; i < Item::GetItemCollectionSize(); ++i)
+        {
+            // This will always exist as it is required.
+            str label = Item::GetItemLabel(i);
+            if (label == (raw)0 || label == "")
+                label = Item::GetItemName(i);
+
+            BCSUtils::HudSetTextColor(CR_WHITE);
+            BCSUtils::HudSetPoint(x, y + fixed(10 * i) * scale);
+            BCSUtils::HudDrawText(id--, label);
+
+            if (DrawClickableText(id--, x + 200.0, y + fixed(10 * i) * scale, 40.0 * scale, 10.0 * scale, "give"))
+                invoker(i, 1);
+
+            if (DrawClickableText(id--, x + 240.0, y + fixed(10 * i) * scale, 40.0 * scale, 10.0 * scale, "take"))
+                invoker(i, -1);
+        }
+
+        return id;
+    }
+
+    internal int DrawRewardSelectors(int id, fixed x, fixed y, fixed scale, void function(int)& invoker)
+    {
+        for (int i = 0; i < Reward::GetRewardCollectionSize(); ++i)
+        {
+            // This will always exist as it is required.
+            str name = Reward::GetRewardName(i);
+
+            BCSUtils::HudSetTextColor(CR_WHITE);
+            BCSUtils::HudSetPoint(x, y + fixed(10 * i) * scale);
+            BCSUtils::HudDrawText(id--, name);
+
+            if (DrawClickableText(id--, x, y + fixed(10 * i) * scale, 140.0 * scale, 10.0 * scale, name))
+                invoker(i);
+        }
+
+        return id;
+    }
+
+    internal int DrawPowerSelectors(int id, fixed x, fixed y, fixed scale, void function(int, int)& invoker)
+    {
+        int offset = 0;
+        for (int i = 0; i < Power::GetPowerSize(); ++i)
+        {
+            Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[i];
+
+            // For now we are skipping powers with no max length since they are usually something special.
+            // They make no sense to provide.
+            if (context.MaxTics == BCSUtils::INT_MAX)
+                continue;
+            
+            BCSUtils::HudSetTextColor(CR_WHITE);
+            BCSUtils::HudSetPoint(x, y + fixed(10 * offset) * scale);
+            BCSUtils::HudDrawText(id--, Power::GetPowerIndexAsString(i));
+
+            // TODO: Support more increments, possibly even the ability to decrement.
+            if (DrawClickableText(id--, x + 100.0, y + fixed(10 * offset) * scale, 20.0 * scale, 10.0 * scale, "+5s"))
+                invoker(i, 35 * 5);
+
+            offset++;
+        }
+
+        return id;
+    }
+
+    internal int DrawArmorIncrementSelectors(int id, fixed x, fixed y, fixed scale, void function(int)& invoker)
+    {
+        // Increment / decrement
+        if (DrawClickableText(id--, x, y * scale, 30.0 * scale, 10.0 * scale, "-50"))
+            invoker(-50);
+
+        if (DrawClickableText(id--, x + 30.0 * scale, y * scale, 30.0 * scale, 10.0 * scale, "-10"))
+            invoker(-10);
+
+        if (DrawClickableText(id--, x + 60.0 * scale, y * scale, 30.0 * scale, 10.0 * scale, "-1"))
+            invoker(-1);
+
+        if (DrawClickableText(id--, x + 90.0 * scale, y * scale, 30.0 * scale, 10.0 * scale, "+1"))
+            invoker(1);
+
+        if (DrawClickableText(id--, x + 120.0 * scale, y * scale, 30.0 * scale, 10.0 * scale, "+10"))
+            invoker(10);
+
+        if (DrawClickableText(id--, x + 150.0 * scale, y * scale, 30.0 * scale, 10.0 * scale, "+50"))
+            invoker(50);
+
+        return id;
+    }
+
+    internal int DrawRewardContainerSelectors(int id, fixed x, fixed y, fixed scale, void function(Reward::RewardItemTypeFlagsT)& invoker)
+    {
+        for (int j = 0; j < REWARD_CONTAINER_COUNT; ++j)
+        {
+            fixed buttonX = x + fixed(100 * (j % 2)) * scale;
+            fixed buttonY = y + fixed(10 * (j / 2)) * scale;
+
+            Reward::RewardItemTypeFlagsT type = Reward::GetRewardItemTypeByIndex(j + 1);
+            str buttonName = Reward::ContainerTypeToShortReadableString(type);
+            if (DrawClickableText(id--, buttonX, buttonY, 100.0 * scale, 10.0 * scale, buttonName))
+                invoker(type);
+        }
+
+        return id;
+    }
+}

@@ -1,0 +1,157 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal void PanicTic()
+    {
+        PanicStateT state = GetPanicState();
+
+        // Player did not panic or already finished panicking.
+        if (state == PANICSTATENONE)
+            return;
+
+        // Sprint bar reached 0 whilst panicking, meaning we should go to a calm down state.
+        if (GetSprintLeft() == 0 && state == PANICSTATEPANICKING)
+        {
+            SetPanicState(PANICSTATECALMINGDOWN);
+            IncrementPanicCount();
+            
+            // TODO: Could use a better sound.
+            ThingSound(ActivatorTID(), "*pain", 127);
+            Power::TakePower(Power::POWERPANICKING);
+            Logger::LogActivator("You catch your breath...");
+            return;
+        }
+
+        // Sprint bar reached full whilst calming down, meaning we should go back to no state.
+        if (GetSprintLeft() == SPRINT_ITEM_MAX && state == PANICSTATECALMINGDOWN)
+        {
+            SetPanicState(PANICSTATENONE);
+            Logger::LogActivator("You regain conscience of your surroundings...");
+            return;
+        }
+
+        // Gradually remove sprinting if the player is panicking.
+        // Unlike sprinting this is not determined by velocity.
+        // If not panicking we slowly readd sprint.
+        if (state == PANICSTATEPANICKING)
+            TakeInventory(SPRINT_ITEM, 1);
+        else
+            GiveInventory(SPRINT_ITEM, 1);
+    }
+
+    internal void StartPanic()
+    {
+        if (!BCSUtils::IsAlive()) return;
+
+        PanicStateT state = GetPanicState();
+        if (state == PANICSTATEPANICKING)
+        {
+            Logger::LogActivator("You are already panicking!");
+            return;
+        }
+
+        if (state == PANICSTATECALMINGDOWN)
+        {
+            Logger::LogActivator("Calm down first before panicking again.");
+            return;
+        }
+
+        if (!ZH2Game::GetAllowPanicking())
+        {
+            Logger::LogActivator("You can't panic. The server has disabled panicking.");
+            return;
+        }
+
+        if (GetIsZombie())
+        {
+            Logger::LogActivator("Zombies are afraid of nothing!");
+            return;
+        }
+
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
+        {
+            Logger::LogActivator("There is nothing to be afraid of.");
+            return;
+        }
+
+        if (GetPanicCount() >= ZH2Game::GetMaxPanicCount())
+        {
+            Logger::LogActivator("You are unable to panic again.");
+            return;
+        }
+
+        if (Power::GetHasPower(Power::POWERCAFFEINE))
+        {
+            Logger::LogActivator("You are still under the influence of caffeine....");
+            return;
+        }
+
+        if (GetSprintLeft() != SPRINT_ITEM_MAX)
+        {
+            Logger::LogActivator("Panicking requires a full energy bar.");
+            return;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Panic triggered for " + BCSUtils::PlayerName(PlayerNumber()) + ".");
+		Logger::LogBold(BCSUtils::PlayerName(PlayerNumber()) + " has panicked!");
+
+        // Set up everything for a panic inventory.
+        // After this the main sprint tic handles decrementing the sprint bar.
+        // It also ensures that panicking ends when you reach 0 on sprint.
+        SetPanicState(PANICSTATEPANICKING);
+        SetSprinting(false);
+        TakePanicInventory();
+
+        // Always give a handgun.
+        if (!CheckInventory(WEAPON_HANDGUN_NAME))
+            GiveInventory(WEAPON_HANDGUN_NAME, 1);
+
+        Power::GivePower(Power::POWERPANICKING);
+
+        // TODO: Could use a better sound.
+		ThingSound(ActivatorTID(), "*death", 127);
+    }
+
+    internal PanicStateT GetPanicState()
+    {
+        return GetPlayerPanicState(PlayerNumber());
+    }
+
+    internal PanicStateT GetPlayerPanicState(int id)
+    {
+        return ZH2Game::GameContext.Players[id].PanicState;
+    }
+
+    internal void SetPanicState(PanicStateT state)
+    {
+        SetPlayerPanicState(PlayerNumber(), state);
+    }
+
+    internal void SetPlayerPanicState(int id, PanicStateT state)
+    {
+        ZH2Game::GameContext.Players[id].PanicState = state;
+    }
+
+    internal int GetPanicCount()
+    {
+        return GetPlayerPanicCount(PlayerNumber());
+    }
+
+    internal int GetPlayerPanicCount(int id)
+    {
+        return ZH2Game::GameContext.Players[id].PanicCount;
+    }
+
+    internal void IncrementPanicCount()
+    {
+        IncrementPlayerPanicCount(PlayerNumber());
+    }
+
+    internal void IncrementPlayerPanicCount(int id)
+    {
+        ZH2Game::GameContext.Players[id].PanicCount++;
+    }
+}

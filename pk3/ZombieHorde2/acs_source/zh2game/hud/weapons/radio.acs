@@ -1,0 +1,71 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal int _startDrawIndex = 0;
+
+    internal void DrawRadioHud(fixed x, fixed y)
+    {
+        // No tracks to display.
+        if (Decorate::GetRadioCollectionSize() == 0)
+            return;
+
+        // Adjust the start index to stay within bounds.
+        int currentIndex = Decorate::GetClientRadioCurrentlySelectedIndex();
+        int endDrawIndex = GetEndDrawIndex(_startDrawIndex);
+        
+        if (_startDrawIndex > currentIndex)
+        {
+            _startDrawIndex = currentIndex;
+            endDrawIndex = GetEndDrawIndex(_startDrawIndex);
+        }
+            
+        if (endDrawIndex <= currentIndex)
+        {
+            _startDrawIndex = BCSUtils::Max(0, currentIndex - WEAPON_RADIO_MAXDRAWNTRACKS + 1);
+            endDrawIndex = GetEndDrawIndex(_startDrawIndex);
+        }
+
+        if (!CheckWeapon(WEAPON_RADIO_NAME))
+            return;
+
+        int id = HUD_WEAPONRADIO;
+        for (int i = _startDrawIndex; i < endDrawIndex; ++i)
+        {
+            y += 20.0;
+            BCSUtils::HudSetPoint(x, y);
+
+            BCSUtils::HudSetTextColor(i == currentIndex ? CR_GREEN : CR_WHITE);
+            BCSUtils::HudSetFont("BigFont");
+            BCSUtils::HudDrawText(id--, str(i + 1) + ". " + Decorate::GetRadioTrackName(i));
+            DebugDraw();
+
+            str author = Decorate::GetRadioTrackAuthor(i);
+            if ((raw)author != 0 && author != "")
+            {
+                y += 15.0;
+                BCSUtils::HudSetPoint(x, y);
+                BCSUtils::HudSetTextColor(CR_GRAY);
+                BCSUtils::HudSetFont("SmallFont");
+                BCSUtils::HudDrawText(id--, "By " + author);
+            }
+
+            str remark = Decorate::GetRadioTrackRemark(i);
+            if ((raw)remark != 0 && remark != "")
+            {
+                y += 10.0;
+                BCSUtils::HudSetPoint(x, y);
+                BCSUtils::HudSetTextColor(CR_GRAY);
+                BCSUtils::HudSetFont("SmallFont");
+                BCSUtils::HudDrawText(id--, remark);
+            }
+        }
+    }
+
+    internal int GetEndDrawIndex(int startDrawIndex)
+    {
+        return BCSUtils::Min(startDrawIndex + WEAPON_RADIO_MAXDRAWNTRACKS, Decorate::GetRadioCollectionSize());
+    }
+}

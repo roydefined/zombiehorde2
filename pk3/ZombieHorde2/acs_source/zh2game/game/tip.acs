@@ -1,0 +1,69 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    internal void TicTipsClient()
+    {
+        // If we are on the vote screen, display tips.
+        if (Round::GetActiveKnownRoundState() != Round::STATEVOTING)
+            return;
+
+        // Current tip elapsed, pick a new one.
+        // (This also sets the initial tip)
+        if (GetTipTimeToDisappear() != 0)
+            return;
+
+        SetCurrentDisplayedTipIndex(GetRandomTipIndex());
+    }
+
+    /* TIP DATA */
+    internal void AddTip(str tipMessage)
+    {
+        ZH2Game::PersistingGameContext.TipCollection.Collection[ZH2Game::PersistingGameContext.TipCollection.Count++] = tipMessage;
+    }
+
+    internal int GetTipCount()
+    {
+        return ZH2Game::PersistingGameContext.TipCollection.Count;
+    }
+
+    internal int GetRandomTipIndex()
+    {
+        return Random(0, ZH2Game::PersistingGameContext.TipCollection.Count - 1);
+    }
+
+    internal str GetTip(int index)
+    {
+        return ZH2Game::PersistingGameContext.TipCollection.Collection[index];
+    }
+
+    /* HUD */
+    internal int GetElapsedTipTics()
+    {
+        int timestamp = ZH2Game::GameContext.TipDisplayTimestamp;
+        if (timestamp == 0)
+            return 0;
+        return Timer() - timestamp;
+    }
+
+    internal int GetTipTimeToDisappear()
+    {
+        int elapsed = GetElapsedTipTics();
+        if (elapsed == 0)
+            return 0;
+        return BCSUtils::Max(0, TIP_LENGTH - elapsed);
+    }
+
+    internal int GetCurrentDisplayedTipIndex()
+    {
+        return ZH2Game::GameContext.CurrentDisplayedTipIndex;
+    }
+
+    internal void SetCurrentDisplayedTipIndex(int index)
+    {
+        ZH2Game::GameContext.TipDisplayTimestamp = Timer();
+        ZH2Game::GameContext.CurrentDisplayedTipIndex = index;
+    }
+}

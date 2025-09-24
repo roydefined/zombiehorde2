@@ -1,0 +1,149 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    // Holds a parsed value that was parsed from a resist.
+    // This is placed in a local variable in the same frame, located in the main parsing method.
+    internal raw _tokenizerResistParsedValue;
+    
+    // Parse resists.
+    // The format of the collection is `resist [ { definition } ]`, where definition is a collection of key or key-value pairs.
+    internal bool ParseResistCollection(int handle, str mapLump, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTSPREFIXKEY)) return false;
+
+        Logger::LogDebug(LOGSOURCE, "Start parse resist collection for \cd" + mapLump + ".");
+
+        int bracketLevel = Tokenizer::GetBracketLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '[')) return false;
+        Tokenizer::Next(handle);
+
+        // While the bracket level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBracketLevel(handle) != bracketLevel)
+        {
+            if (ParseResistDefinition(handle, mapLump))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing resist collection for " + mapLump + ": '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Parsed resist collection for \cd" + mapLump + ".");
+        return true;
+    }
+
+    // Parses a single resist definition.
+    // The format is `{ definition }`, where definition is a collection of key or key-value pairs.
+    internal bool ParseResistDefinition(int handle, str mapLump)
+    {
+        if (Tokenizer::GetSymbol(handle) != "{") return false;
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        Tokenizer::Next(handle);
+
+        // These variables hold all values that have been parsed thus far.
+        int length = 0;
+        str topReasonLabel = (raw)0;
+        str timeReasonLabel = (raw)0;
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) == braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseResistLength(handle, symbol))
+            {
+                if (length != 0) Logger::LogWarning(LOGSOURCE, "The length already defined for the resist. Replacing.");
+                length = _tokenizerResistParsedValue;
+                continue;
+            }
+            
+            if (ParseResistTopReasonLabel(handle, symbol))
+            {
+                if (topReasonLabel != (raw)0) Logger::LogWarning(LOGSOURCE, "The top reason was already defined for the resist. Replacing.");
+                topReasonLabel = _tokenizerResistParsedValue;
+                continue;
+            }
+            
+            if (ParseResistTimeReasonLabel(handle, symbol))
+            {
+                if (timeReasonLabel != (raw)0) Logger::LogWarning(LOGSOURCE, "The time reason was already defined for the resist. Replacing.");
+                timeReasonLabel = _tokenizerResistParsedValue;
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing resist definition for " + mapLump + ": '" + symbol + "'.");
+            return false;
+        }
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        Resist::CreateResist(length, topReasonLabel, timeReasonLabel);
+        Logger::LogDebug(LOGSOURCE, "Parsed resist definition for \cd" + mapLump + ".");
+        return true;
+    }
+
+    internal bool ParseResistLength(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTLENGTHKEY)) return false;
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TINTEGER)) return false;
+
+        _tokenizerResistParsedValue = BCSUTILS::Atoi(Tokenizer::GetSymbol(handle));
+        if (BCSUTILS::r1 == BCSUTILS::PARSENUMBER_BADFORMAT)
+        {
+            Tokenizer::SetErrored(handle, "The given resist length is not an integer: '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        if (BCSUTILS::r1 != BCSUTILS::PARSENUMBER_SUCCESS)
+        {
+            Tokenizer::SetErrored(handle, "The given resist length is not a valid integer, possibly overflowed: '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        return true;
+    }
+
+    internal bool ParseResistTopReasonLabel(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTTOPREASONLABELKEY)) return false;
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
+
+        _tokenizerResistParsedValue = Tokenizer::GetSymbol(handle);
+        
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        return true;
+    }
+
+    internal bool ParseResistTimeReasonLabel(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTTIMEREASONLABELKEY)) return false;
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
+
+        _tokenizerResistParsedValue = Tokenizer::GetSymbol(handle);
+        
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+            
+        return true;
+    }
+}

@@ -1,0 +1,88 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Round"
+
+#include "initialzombie.acs"
+#include "public.acs"
+
+strict namespace Round
+{
+    internal void DefineRoundByKnown(KnownRoundStateT roundType, bool allowJoin = false)
+    {
+        DefineRoundByIndex(GetIndexOfKnownRoundStateType(roundType), allowJoin);
+    }
+
+    internal void DefineRoundByIndex(int index, bool allowJoin = false)
+    {
+        if (index < 0 || index >= MAX_ROUNDSTATES)
+        {
+            Logger::LogError(LOGSOURCE, "Round state index " + str(index) + " is invalid. Index must be between 0-" + str(MAX_ROUNDSTATES - 1) + ".");
+            return;
+        }
+
+        // TODO: If we ever support reallocation we must add it here too.
+
+        RoundStateContextT& state = GetRoundRefByindex(index);
+        state.AllowJoin = allowJoin;
+        state.Defined = true;
+    }
+
+    internal KnownRoundStateT GetActiveKnownRoundState() { return GetKnownRoundStateTypeByIndex(GetActiveRoundStateIndex()); }
+    internal int GetActiveRoundStateIndex() { return ZH2Game::GameContext.MapDetails.ActiveRoundStateIndex; }
+
+    internal void SetKnownRoundState(KnownRoundStateT stateType) { SetRoundState(GetIndexOfKnownRoundStateType(stateType)); }
+    internal void SetRoundState(int index, bool broadcast = true)
+    {
+        int previousIndex = GetActiveRoundStateIndex();
+        ZH2Game::GameContext.MapDetails.ActiveRoundStateIndex = index;
+        Logger::LogDebug(LOGSOURCE, "Game state has switched to \cd" + GetRoundStateIndexAsString(index) + "\cj.");
+
+        if (broadcast)
+            EventBus::CallEvent(EVENTROUNDSWITCHED, previousIndex, index);
+    }
+
+    internal RoundStateContextT& GetRoundRefCurrent() { return GetRoundRefByindex(GetActiveRoundStateIndex()); }
+    internal RoundStateContextT& GetRoundRefByKnownRoundStateType(KnownRoundStateT stateType) { return GetRoundRefByindex(GetIndexOfKnownRoundStateType(stateType)); }
+    internal RoundStateContextT& GetRoundRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Rounds[index]; }
+
+    internal bool GetRoundJoinable(int index) { return GetRoundRefByindex(index).AllowJoin; }
+    internal bool GetRoundDefined(int index) { return GetRoundRefByindex(index).Defined; }
+    
+    /* Casting / Conversions */
+
+    internal int GetIndexOfKnownRoundStateType(KnownRoundStateT stateType) { return (int)stateType; }
+
+    internal KnownRoundStateT GetKnownRoundStateTypeByIndex(int stateIndex)
+    {
+        static KnownRoundStateT collection[] = { StateNone, StatePregame, StateStarting, StateCountdown, StatePlaying, StateEnding, STATEVOTING };
+        
+        // No known round state.
+        if (stateIndex < StatePregame && stateIndex > STATEVOTING)
+            return StateNone;
+        
+        return collection[stateIndex];
+    }
+
+    internal str GetRoundStateIndexAsString(int stateIndex)
+    {
+        // No known round state, return custom and the index.
+        if (stateIndex < StatePregame || stateIndex > STATEVOTING)
+            return "Custom (" + str(stateIndex) + ")";
+
+        // No point returning StateNone when it's not supposed to be used.
+        return //stateIndex == StateNone ? "None" :
+            stateIndex == StatePregame ? "Pregame" :
+            stateIndex == StateStarting ? "Starting" :
+            stateIndex == StateCountdown ? "Countdown" :
+            stateIndex == StatePlaying ? "Playing" :
+            stateIndex == StateEnding ? "Ending" :
+            stateIndex == STATEVOTING ? "Voting" :
+            
+            // Should not be possible.
+            "Unknown";
+    }
+}
+
+#undef LOGSOURCE 

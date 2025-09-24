@@ -1,0 +1,52 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Decorate
+{
+	// The serverside part of the flare that selects the color to use.
+	script "zh2_dec_initflare"
+	{
+		// Small chance of a black/disco flare.
+		if (Random(0, 256) > 240)
+		{
+			SetThingSpecial(0, 0, Random(8, 9));
+			terminate;
+		}
+		
+		int playerTid = GetActorProperty(0, APROP_TARGETTID);
+		int playerId = Identity::GetId(playerTid);
+
+        // Accounts for possibly no owner if no player threw it.
+		if (playerId == -1)
+        {
+			SetThingSpecial(0, 0, Random(0, 7));
+			terminate;
+		}
+		
+		// Check the user's preferred flare type and pick that one.
+        // We decrement once to keep a valid 0-7 range for actual colors.
+		int cvarFlare = ZH2Game::GetFlareType(playerId) - 1;
+		int argument = cvarFlare != -1 ? cvarFlare : Random(0, 7);
+		SetThingSpecial(0, 0, argument);
+	}
+	
+	// The clientside lifecycle of the flare, which will deplete it after a while and handle disco flares.
+	// It will not deplete if `infinite` is `true`
+	script "zh2_dec_flareloopclient"(raw isDisco, raw infinite) clientside
+	{
+		int lifeTics = infinite ? BCSUtils::INT_MAX : 10 * Random(30, 50);
+		while (lifeTics--)
+		{
+			if (lifeTics % 10 == 0 && (bool)isDisco)
+			{
+				int nextArg = Random(0, 7);
+				SetThingSpecial(0, 0, nextArg);
+			}
+			
+			Delay(const: 1);
+		}
+		
+		SetThingSpecial(0, 0, 0, 1);
+	}
+}

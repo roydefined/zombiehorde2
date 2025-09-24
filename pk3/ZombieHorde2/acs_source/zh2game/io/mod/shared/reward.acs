@@ -1,0 +1,336 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    internal bool ParseRewards(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "rewards")) return false;
+        Logger::LogDebug(LOGSOURCE, "Start parsing rewards.");
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseRewardContainer(handle, symbol))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing rewards: '" + symbol + "'.");
+            return false;
+        }
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LOGSOURCE, "Finished parsing rewards.");
+        return true;
+    }
+
+    internal bool ParseRewardContainer(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "container"))
+            return false;
+
+        Tokenizer::Next(handle);
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+
+        // Parse one or more containers which the item will fall under.
+        int containerFlags = 0;
+        while (Tokenizer::CanRead(handle))
+        {
+            if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+                && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+            {
+                Tokenizer::SetErrored(handle, "Invalid symbol for reward definition: '" + Tokenizer::GetSymbol(handle) + "'. Symbol should be of type symbol or string.");
+                return false;
+            }
+
+            str symbol = Tokenizer::GetSymbol(handle);
+            Tokenizer::Next(handle);
+
+            int flag = 0;
+            if      (BCSUtils::StrIEquals(symbol, "OrbMinor"))   flag = Reward::REWARDORBMINOR;
+            else if (BCSUtils::StrIEquals(symbol, "OrbMajor"))   flag = Reward::REWARDORBMAJOR;
+            else
+            {
+                Tokenizer::SetErrored(handle, "Invalid container type: '" + symbol + "'.");
+                return false;
+            }
+
+            containerFlags |= flag;
+            Logger::LogDebug(LOGSOURCE, "Added new container for reward: \cd" + symbol + "\cj.");
+
+            if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            {
+                Tokenizer::Next(handle);
+                continue;
+            }
+            
+            break;
+        }
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseReward(handle, symbol, containerFlags))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing rewards for container: '" + symbol + "'.");
+            return false;
+        }
+            
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed new reward container.");
+        return true;
+    }
+
+    internal bool ParseReward(int handle, str identifyingSymbol, int containerFlags)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "reward"))
+            return false;
+
+        Tokenizer::Next(handle);
+        
+        str name = Tokenizer::GetSymbol(handle);
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // We check for capacity here now that we got to the body.
+        // No more room for more definitions. Log a warning and skip the remaining body.
+        int count = ZH2Game::PersistingGameContext.RewardCollection.Count;
+        if (count >= MAX_REWARD_DEFINITIONS)
+        {
+            Logger::LogWarning(LOGSOURCE, "The maximum number of configurable rewards was reached (" + str(count) + ").");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseRewardWeight(handle, symbol)
+                || ParseRewardSpecieSpecific(handle, symbol)
+                || ParseRewardCallRestrict(handle, symbol)
+                || ParseRewardCallGive(handle, symbol)
+                || ParseRewardGive(handle, symbol)
+                || ParseRewardSound(handle, symbol)
+                || ParseRewardLocalMessage(handle, symbol)
+                || ParseRewardMessage(handle, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing reward " + name + ": '" + symbol + "'.");
+            return false;
+        }
+            
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Reward::RewardContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RewardCollection.Collection[count];
+
+        // Check if we have the weight.
+        // The weight is the only required property of a reward.
+        // If not, we don't finish this parse.
+        if (context.Weight == 0)
+        {
+            Logger::LogWarning(LOGSOURCE, "Failed to parse reward " + name + ". The weight is not defined.");
+            return true;
+        }
+
+        // Finish up this definition.
+        context.Name = name;
+        context.ContainerFlags = containerFlags;
+        ZH2Game::PersistingGameContext.RewardCollection.Count++;
+
+        // TODO: Log more
+        Logger::LogDebug(LOGSOURCE, "Parsed new reward: \cd" + name + "\cj.");
+        return true;
+    }
+
+    internal bool ParseRewardWeight(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "weight"))
+            return false;
+        
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "Failed to parse weight for reward: the given value for the weight is not a correct value. Expected a valid integer value within bounds.");
+            return false;
+        }
+
+        int value = (int)Tokenizer::GetParsedValue();
+
+        Reward::RewardContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RewardCollection.Collection[ZH2Game::PersistingGameContext.RewardCollection.Count];
+        context.Weight = value;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed reward weight: \cd" + str(context.Weight) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseRewardSpecieSpecific(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "humanonly")
+            && !BCSUTILS::StrIEquals(identifyingSymbol, "zombieonly"))
+            return false;
+
+        Reward::RewardContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RewardCollection.Collection[ZH2Game::PersistingGameContext.RewardCollection.Count];
+        context.SpecieSpecific = BCSUTILS::StrIEquals(identifyingSymbol, "humanonly")
+            ? Player::SPECIEHUMAN
+            : Player::SPECIEZOMBIE;
+
+        // TODO: stringify specie instead of logging the integer
+        Logger::LogDebug(LOGSOURCE, "Parsed reward is specie specific: \cd" + str(context.SpecieSpecific) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseRewardCallRestrict(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "callrestrict"))
+            return false;
+        
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for call restrict on reward definition. Symbol should be of type symbol or string.");
+            return false;
+        }
+
+        Reward::RewardContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RewardCollection.Collection[ZH2Game::PersistingGameContext.RewardCollection.Count];
+        context.CallRestrict = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed reward call restrict: \cd" + context.CallRestrict + "\cj.");
+        return true;
+    }
+
+    internal bool ParseRewardCallGive(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "callgive"))
+            return false;
+        
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for call give on reward definition. Symbol should be of type symbol or string.");
+            return false;
+        }
+
+        Reward::RewardContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RewardCollection.Collection[ZH2Game::PersistingGameContext.RewardCollection.Count];
+        context.CallGive = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed reward call give: \cd" + context.CallGive + "\cj.");
+        return true;
+    }
+
+    internal bool ParseRewardGive(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "give"))
+            return false;
+        
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for give on reward definition. Symbol should be of type symbol or string.");
+            return false;
+        }
+
+        Reward::RewardContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RewardCollection.Collection[ZH2Game::PersistingGameContext.RewardCollection.Count];
+        context.Give = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed reward give: \cd" + context.Give + "\cj.");
+        return true;
+    }
+
+    internal bool ParseRewardSound(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "sound"))
+            return false;
+        
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for sound on reward definition. Symbol should be of type symbol or string.");
+            return false;
+        }
+
+        Reward::RewardContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RewardCollection.Collection[ZH2Game::PersistingGameContext.RewardCollection.Count];
+        context.Sound = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed reward sound: \cd" + context.Sound + "\cj.");
+        return true;
+    }
+
+    internal bool ParseRewardLocalMessage(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "localmessage"))
+            return false;
+        
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for local message on reward definition. Symbol should be of type symbol or string.");
+            return false;
+        }
+
+        Reward::RewardContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RewardCollection.Collection[ZH2Game::PersistingGameContext.RewardCollection.Count];
+        context.LocalMessage = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed reward local message: \cd" + context.LocalMessage + "\cj.");
+        return true;
+    }
+
+    internal bool ParseRewardMessage(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "message"))
+            return false;
+        
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for message on reward definition. Symbol should be of type symbol or string.");
+            return false;
+        }
+
+        Reward::RewardContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RewardCollection.Collection[ZH2Game::PersistingGameContext.RewardCollection.Count];
+        context.Message = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed reward message: \cd" + context.Message + "\cj.");
+        return true;
+    }
+}

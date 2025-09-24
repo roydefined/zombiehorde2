@@ -1,0 +1,99 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+strict namespace Reward
+{
+	internal void GiveReward(RewardItemTypeFlagsT type)
+	{
+		GivePlayerReward(PlayerNumber(), type);
+	}
+	
+	internal void GivePlayerReward(int id, RewardItemTypeFlagsT type)
+	{
+		VALIDATE_ID_VALID_FUNCTION(id);
+		int tid = Identity::GetTid(id);
+
+		Player::SpecieTypeT specie = Player::GetPlayerSpecie(id);
+		Weight::PrepareWeightsByReward(type, specie);
+
+		int index = -1;
+		while(true)
+		{
+			index = Weight::Next(index);
+
+			// No reward to give.
+			// It is possible we can't give a reward when none were defined.
+			// Also because we can loop when an item was being restricted (like the cure).
+			if (index == -1)
+			{
+				Logger::LogTo("No reward could be given at this time. Try again later.", id);
+				return;
+			}
+
+			// Check for restriction.
+			// If so, call with the player's id and check against restriction.
+			str callRestrict = GetRewardCallRestrict(index);
+			if (callRestrict != (raw)0 && callRestrict != ""
+				&& ACS_NamedExecuteWithResult(callRestrict, id))
+			{
+                Logger::LogDebug(LOGSOURCE, "Skipping call. Restricted by script \"" + callRestrict + "\".");
+                continue;
+            }
+			
+			break;
+		}
+		
+		// Determine and take the user's item.
+		// This is done loosely in case this function is called internally and the player won't have the item.
+		str itemName = ContainerTypeToItemName(type);
+		if ((raw)itemName != 0 && itemName != "" && CheckActorInventory(tid, itemName) > 0)
+			TakeActorInventory(tid, itemName, 1);
+
+		GivePlayerRewardByIndex(id, index, true);
+	}
+
+	internal void GiveRewardByIndex(int index, bool broadcast)
+	{
+		GivePlayerRewardByIndex(PlayerNumber(), index, broadcast);
+	}
+
+	internal void GivePlayerRewardByIndex(int id, int index, bool broadcast)
+	{
+		VALIDATE_ID_VALID_FUNCTION(id);
+		int tid = Identity::GetTid(id);
+
+		str name = GetRewardName(index),
+            callGive = GetRewardCallGive(index),
+			give = GetRewardGive(index),
+			sound = GetRewardSound(index),
+			localMessage = GetRewardLocalMessage(index),
+			message = GetRewardMessage(index);
+
+		if ((raw)callGive != 0 && callGive != "")
+		{
+            if (!ACS_NamedExecuteAlways(callGive, 0))
+                Logger::logError(LOGSOURCE, "Failed to call script \"" + callGive + "\" for reward index " + str(index) + ".");
+        }
+
+		if ((raw)give != 0 && give != "")
+			GiveActorInventory(tid, give, 1);
+			
+		if ((raw)sound != 0 && sound != "")
+			PlaySound(tid, sound, CHAN_ITEM, 1.0);
+
+		if (!broadcast)
+			return;
+
+		if ((raw)localMessage != 0 && localMessage != "")
+			Logger::LogTo(localMessage, id);
+
+		if ((raw)message != 0 && message != "")
+		{
+			if (BCSUtils::StrContains(message, REWARD_PLAYER_TOKEN))
+				message = BCSUtils::StrReplace(message, REWARD_PLAYER_TOKEN, BCSUtils::PlayerName(id));
+
+			Logger::LogExcept(message, id);
+		}
+	}
+}

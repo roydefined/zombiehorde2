@@ -1,0 +1,24 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    void SetIsSafe(bool safe) { SetPlayerIsSafe(PlayerNumber(), safe); }
+    script "zh2_script_setissafe" { SetPlayerIsSafe(PlayerNumber(), LineSide() == LINE_FRONT); }
+
+    void SetPlayerIsSafe(int id, bool safe, bool broadcast = true)
+    {
+        ZH2Game::GameContext.Players[id].Safe = safe;
+        Logger::LogDebug(LOGSOURCE, BCSUTILS::PlayerName(id) + " (\cd" + str(id) + "\cj) \cd" + (safe ? "entered" : "left") + "\cj the safe zone.");
+
+        if (broadcast)
+            Sync::SyncPlayers();
+    }
+
+    bool GetIsSafe() { return GetPlayerIsSafe(PlayerNumber()); }
+    bool GetPlayerIsSafe(int id)
+    {
+        return ZH2Game::GameContext.Players[id].Safe;
+    }
+}

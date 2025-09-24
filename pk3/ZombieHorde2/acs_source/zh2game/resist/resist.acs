@@ -1,0 +1,169 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Resist"
+
+#include "public.acs"
+
+// Note:
+// - Resist ending tic will be -1 for inactive resists. If not, the resist is active.
+
+strict namespace Resist
+{
+    // Tic checks for any expired resists and stops them.
+    // Additionally, an event will be called.
+    internal void TicServer()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+        
+        ResistT[]& resists = ZH2Game::GameContext.MapDetails.Resists;
+        for (int index = 0; index < lengthof(resists); ++index)
+        {
+            if (!IsDefined(index))
+                continue;
+
+            if (!IsActive(index))
+                continue;
+
+            if (GetTicsDifference(index) <= 0)
+            {
+                SetRunState(index, STATEENDED);
+                EventBus::CallEvent(EVENTRESISTELAPSED, index);
+                Sync::SyncResists();
+            }
+        }
+    }
+
+    internal void DefineNewByIndex(int index, int length, str topReasonLabel = (raw)0, str timeReasonLabel = (raw)0)
+    {
+        if (index < 0 || index >= MAX_RESISTS)
+        {
+            Logger::LogError(LOGSOURCE, "Resist index " + str(index) + " is invalid. Index must be between 0-" + str(MAX_RESISTS - 1) + ".");
+            return;
+        }
+
+        ResistT& resist = GetRefByindex(index);
+        resist.InitialState.Length = length;
+        resist.InitialState.TopReasonLabel = topReasonLabel;
+        resist.InitialState.TimeReasonLabel = timeReasonLabel;
+        resist.EndingTic = -1;
+        resist.Defined = true;
+
+        // Offline we want to initialize this resist clientside immediately.
+        if (!IsNetworkGame())
+            InitializeResistClientside(index);
+
+        Logger::LogDebug(LOGSOURCE, "Created new resist at index \cd" + str(index) + "\cj. Length: \cd" + str(length) + "\cj. Top reason: \cd" + topReasonLabel + "\cj. Time reason: \cd" + timeReasonLabel + ".");
+    }
+
+    internal ResistT& GetRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Resists[index]; }
+
+    // Called by the client, which is used to determine some things about the resist that do not change after it was made.
+    internal void InitializeResistClientside(int index)
+    {
+        ResistT& resist = GetRefByindex(index);
+
+        // Explicit check for `(raw)0` as timereason meaning nothing was set at all.
+        // Default to "resist for %t seconds" then.
+        // TODO: Use a flag to explicitly indicate NOT to do this?
+        if (resist.InitialState.TimeReasonLabel == (raw)0)
+            resist.InitialState.TimeReasonLabel = "Resist for " + RESIST_TIME_TOKEN + " second" + RESIST_PLURAL_TOKEN;
+        
+        // Determine if the top reason / time reason has a time token.
+        // If yes, also check if it's colored (if not, then the hud will add it).
+        str topReason = resist.InitialState.TopReasonLabel;
+        if (topReason != (raw)0 && topReason != "")
+        {
+            resist.InitialState.TopReasonTimeTokenIndex = BCSUtils::StrFind(topReason, RESIST_TIME_TOKEN);
+            if (resist.InitialState.TopReasonTimeTokenIndex > 3)
+            {
+                str before = StrMid(topReason, resist.InitialState.TopReasonTimeTokenIndex - 2, 2);
+                if (before == "\c" && BCSUtils::IsAlpha(topReason[resist.InitialState.TopReasonTimeTokenIndex - 1]))
+                    resist.InitialState.TopReasonHasColoredTimeToken = true;
+            }
+        }
+        
+        str timeReason = resist.InitialState.TimeReasonLabel;
+        if (timeReason != (raw)0 && timeReason != "")
+        {
+            resist.InitialState.TimeReasonTimeTokenIndex = BCSUtils::StrFind(timeReason, RESIST_TIME_TOKEN);
+            if (resist.InitialState.TimeReasonTimeTokenIndex > 3)
+            {
+                str before = StrMid(timeReason, resist.InitialState.TimeReasonTimeTokenIndex - 2, 2);
+                if (before == "\c" && BCSUtils::IsAlpha(timeReason[resist.InitialState.TimeReasonTimeTokenIndex - 1]))
+                    resist.InitialState.TimeReasonHasColoredTimeToken = true;
+            }
+        }
+
+        str topReasonLog = topReason != (raw)0 && topReason != "" ? topReason : "N/A";
+        str timeReasonLog = timeReason != (raw)0 && timeReason != "" ? timeReason : "N/A";
+        Logger::LogDebug(LOGSOURCE, "Initialized new resist clientside at index \cd" + str(index) + "\cj. Time reason: " + timeReasonLog + ". Top reason: " + topReasonLog + ". Top reason has time token: \cd" + (resist.InitialState.TopReasonTimeTokenIndex != -1 ? "yes" : "no") + "\cj. Top reason time token has color: \cd" + (resist.InitialState.TopReasonHasColoredTimeToken ? "yes" : "no") + "\cj. Time reason has time token: \cd" + (resist.InitialState.TimeReasonTimeTokenIndex != -1 ? "yes" : "no") + "\cj. Time reason time token has color: \cd" + (resist.InitialState.TimeReasonHasColoredTimeToken ? "yes" : "no") + "\cj.");
+    }
+
+    internal int GetMaximumTics(int index) { return GetRefByindex(index).InitialState.Length * 35; }
+    internal bool IsDefined(int index) { return GetRefByindex(index).Defined; }
+    internal bool IsActive(int index) { return GetRunState(index) == STATERUNNING; }
+
+    internal int GetTicsLeft(int index)
+    {
+        int timeLeft = BCSUtils::Max(GetTicsDifference(index), 0);
+        return timeLeft;
+    }
+    
+    internal int GetTicsDifference(int index)
+    {
+        return GetRefByindex(index).EndingTic - Utils::GetSynchronizedTimer();
+    }
+
+    internal void StartResist(int index, bool broadcast = true)
+    {
+        // Already running or finished.
+        if (GetRunState(index) != STATENONE)
+            return;
+
+        ResistT& resist = GetRefByindex(index);
+
+        // The ending tic of a resist is set to an interval of 35 to keep in sync with other resists.
+        // This is mostly so the visualization of them remains equal between other resists.
+        int endingTic = Utils::GetSynchronizedTimer() + resist.InitialState.Length * 35;
+        resist.EndingTic = endingTic + (35 - (endingTic % 35));
+        SetRunState(index, STATERUNNING);
+
+        Logger::LogDebug(LOGSOURCE, "Starting resist. True length: \cd" + str(resist.EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
+    
+        if (broadcast)
+            EventBus::CallEvent(EVENTRESISTSTARTED, index);
+    }
+
+    internal void StopResist(int index, bool broadcast = true)
+    {
+        GetRefByindex(index).EndingTic = -1;
+        
+        if (broadcast)
+            EventBus::CallEvent(EVENTRESISTSTOPPED, index);
+    }
+
+    internal void SetRunState(int index, ResistRunStateT state)
+    {
+        GetRefByindex(index).RunState = state;
+    }
+
+    internal ResistRunStateT GetRunState(int index)
+    {
+        return GetRefByindex(index).RunState;
+    }
+
+    internal ResistRunStateT GetRunStateTypeByIndex(int stateIndex)
+    {
+        static ResistRunStateT collection[] = { STATENONE, STATERUNNING, STATEENDED };
+        
+        // No known round state.
+        if (stateIndex < STATENONE && stateIndex > STATEENDED)
+            return STATENONE;
+        
+        return collection[stateIndex];
+    }
+}
+
+#undef LOGSOURCE 

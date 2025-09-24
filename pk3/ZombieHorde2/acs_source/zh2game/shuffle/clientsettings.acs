@@ -1,0 +1,50 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Shuffle
+{
+    internal void PrepareRequestedClientSettings()
+    {
+        _context.BufferIteratorSize = 0;
+        for (int i = 0; i < ZH2Game::PersistingGameContext.RequestedClientSettingCount; i++)
+        {
+            _context.Buffer[_context.BufferIteratorSize++] = i;
+        }
+    }
+
+    script "zh2_internal_shuffle_compareincludeclientsetting" (int left, int _)
+    {
+        SetResultValue(int(
+            CheckClientSettingValid(left)));
+    }
+
+    internal void SortClientSettingsByRequired()
+    {
+        PrepareRequestedClientSettings();
+
+        BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_compareincludeclientsetting", "zh2_internal_shuffle_swapbufferitems");
+
+        _context.BufferRelevantSize = 0;
+        while (_context.BufferRelevantSize < _context.BufferIteratorSize)
+        {
+            int index = _context.Buffer[_context.BufferRelevantSize];
+            if(CheckClientSettingValid(index))
+                break;
+
+            _context.BufferRelevantSize++;
+        }
+    }
+
+    // Check if we either have the cvar set to the requested value, or we have the key bound.
+    internal bool CheckClientSettingValid(int index)
+    {
+        Settings::RequestedClientSettingT global:PERSISTINGGAMECONTEXTINDEX& setting = ZH2Game::PersistingGameContext.RequestedClientSettings[index];
+        str type = BCSUtils::StrToLower(setting.Type);
+        str name = setting.Name;
+        int value = setting.Value;
+        return type == "cvar"
+            ? GetCvar(name) == value
+            : int(BCSUtils::KeyBound(name)) == value;
+    }
+}

@@ -1,0 +1,90 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+#define LOGSOURCE "Weather"
+
+// NOTE: this current iteration lacks features because it was only set up to support ZM03. Later more will be added.
+
+strict namespace Weather
+{
+	void TicClient()
+	{
+		VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+		if (!ZH2Lib::GetEnableWeather())
+			return;
+
+		// Determine the client's current camera position.
+		// This makes it possible to also spawn weather when spectating.
+		int cameraTid = CheckPlayerCamera(PlayerNumber());
+		if (cameraTid == -1)
+			return;
+		
+		// These can be enabled whenever to test the behaviour.
+		//for (int i = 0; i < 10; ++i) SpawnParticle(cameraTid, "DebugDrop", Weather::WEATHER_CEILINGBEHAVIOUR_NONE, 200, 1200, -400, 400);
+		//for (int i = 0; i < 10; ++i) SpawnParticle(cameraTid, "DebugDropSky", Weather::WEATHER_CEILINGBEHAVIOUR_REQUIRESKY, 200, 1200, -400, 400);
+		//for (int i = 0; i < 10; ++i) SpawnParticle(cameraTid, "DebugDropNoSky", Weather::WEATHER_CEILINGBEHAVIOUR_REQUIRENOSKY, 200, 1200, -400, 400);
+
+        if (ZH2Lib::LibContext.Snowing)
+            for (int i = 0; i < 30; ++i)
+                SpawnParticle(cameraTid, "ZH2WeatherSnowDrop", Weather::WEATHER_CEILINGBEHAVIOUR_REQUIRESKY, 100, 1200, 50, 600);
+        
+        if (ZH2Lib::LibContext.Raining)
+            for (int i = 0; i < 30; ++i)
+                SpawnParticle(cameraTid, "ZH2WeatherRainDrop", Weather::WEATHER_CEILINGBEHAVIOUR_REQUIRESKY, 100, 600, 50, 600);
+    }
+
+    // TEMPORARY
+    void EnableSnow()
+    {
+		VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        ZH2Lib::LibContext.Snowing = true;
+    }
+    void EnableRain()
+    {
+		VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        ZH2Lib::LibContext.Raining = true;
+    }
+
+	internal void SpawnParticle(int sourceTid, str class, WeatherCeilingBehaviourT ceilingBehaviour, int minRadius, int maxRadius, int minZpos, int maxZpos)
+	{
+		fixed angle = fixed(random(0, 1000)) / 1000.0,
+			  radius = fixed(random(minRadius, maxRadius));
+
+		fixed sourceZ = GetActorZ(sourceTid) + GetActorViewHeight(sourceTid);
+
+		// Determine the position to spawn the weather particle at
+		fixed spotX = GetActorX(sourceTid) + cos(angle) * radius,
+			  spotY	= GetActorY(sourceTid) + sin(angle) * radius,
+			  spotZ	= sourceZ + fixed(random(minZpos, maxZpos));
+
+		// Determine the z-height of the ceiling.
+		fixed ceilingZ = GetSectorCeilingZ(0, int(spotX), int(spotY)) - 2.0;
+
+		// If the ceiling is closer use the ceiling's z positioning instead to prevent it from not spawning.
+		if (spotZ > ceilingZ)
+			spotZ = ceilingZ;
+
+		int spotId = UniqueTID();
+
+		// The weather has specific behaviour when it comes to spawning with a ceiling.
+		if (ceilingBehaviour != Weather::WEATHER_CEILINGBEHAVIOUR_NONE)
+		{
+			if (!Spawn("MapSpot", spotX, spotY, sourceZ, spotId, 0))
+				return;
+
+			bool hasSkyCeiling = CheckActorCeilingTexture(spotId, "F_SKY1");
+			Thing_Remove(spotId);
+
+			// Further depending on the enum, check if we need a sky ceiling or not.
+			if (ceilingBehaviour == Weather::WEATHER_CEILINGBEHAVIOUR_REQUIRESKY && !hasSkyCeiling
+				|| ceilingBehaviour == Weather::WEATHER_CEILINGBEHAVIOUR_REQUIRENOSKY && hasSkyCeiling)
+				return;
+		}
+
+		SpawnForced(class, spotX, spotY, spotZ, 0, 0);
+	}
+}
+
+#undef LOGSOURCE 

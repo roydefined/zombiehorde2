@@ -1,0 +1,82 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    // This method handles increasing the play timer when an infection occurs.
+    // Added time starts at 90, and with each subsequent infect is 15 seconds less.
+    // When 10 or below, it will remain at 10 for the remaining subsequent infects.
+    internal void IncreaseTimerOnInfect()
+    {
+        if (RoundTimer::GetActiveTimerKnownType() != RoundTimer::TIMERPLAYING)
+            return;
+
+        // Game will end, so the visual is skipped.
+        if (Player::HumanCount() == 0)
+            return;
+
+        if (!ZH2Game::GetInfectTimeIncrease())
+            return;
+
+        // Get the total number of zombies that have been infected thus far.
+        int count = Player::ZombieCount(true) - Player::InitialZombieCount(true);
+        int tics = BCSUtils::Max(0, 90 - 15 * count) + 10 * BCSUtils::Clamp(count / 6, 0, 1);
+
+        int ticDiff = RoundTimer::IncrementTimer(RoundTimer::GetActiveTimerIndex(), tics * 35);
+
+        // No difference, then no need for an update.
+        if (ticDiff != 0)
+        {
+            Logger::LogDebug(LOGSOURCE, "Increased timer by \cd" + str(ticDiff) + "\cj seconds.");
+            Sync::SyncTimers();
+            CallVisualAddTime(ticDiff);
+        }
+    }
+
+    internal void CallVisualAddTime(int ticDiff)
+    {
+        if (!ACS_NamedExecuteAlways("zh2_internal_game_visualaddtime", 0, ticDiff))
+            Logger::LogError(LOGSOURCE, "Failed to call zh2_internal_game_visualaddtime");
+    }
+
+    script "zh2_internal_game_visualaddtime"(int ticDiff) clientside
+    {
+        if (!ZH2Game::GetDrawRoundHud())
+            terminate;
+
+        // TODO: This logic should be shared with the round timer logic so it's the same.
+        fixed scale = ZH2Game::GetHudRoundScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        fixed x = 0.0 + ZH2Game::GetHudRoundOffsetX(),
+              y = BCSUtils::HudBottom() - ZH2Game::GetHudRoundOffsetY();
+
+        DrawTimeDiff(x + 320.0 / scale, y - 20.0, ticDiff);
+    }
+
+    internal void DrawTimeDiff(fixed x, fixed y, int ticDiff)
+    {
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudSetAlpha(0.8);
+        BCSUtils::HudSetStayTime(1.0);
+        BCSUtils::HudSetDisappearTime(1.0);
+        
+        BCSUtils::HudSetTextColor(ticDiff < 0 ? CR_RED : CR_GREEN);
+
+        // Add a '+' tot he label for positive. '-' is added automatically.
+        str formattedTime = Utils::FormatTics(ticDiff, RoundTimer::GetTimerDrawDecimals(RoundTimer::GetActiveTimerIndex()));
+        str label = ticDiff < 0 ? formattedTime : "+" + formattedTime;
+
+        x += 5.0 * fixed(Random(-10, 10));
+        y += 5.0 * fixed(Random(-10, 0));
+
+        // Label
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawText(0, label);
+    }
+}

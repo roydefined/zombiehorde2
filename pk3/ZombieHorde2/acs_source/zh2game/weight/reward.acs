@@ -1,0 +1,39 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Weight
+{
+    internal void PrepareWeightsByReward(Reward::RewardItemTypeFlagsT type, Player::SpecieTypeT specie = Player::SPECIENONE)
+    {
+        PrepareWeights();
+
+        int count = Reward::GetRewardCollectionSize();
+        if (count == 0)
+		{
+            Logger::LogWarning(LOGSOURCE, "Failed to set up reward weights. No rewards are defined.");
+            return;
+		}
+
+        for (int i = 0; i < count; ++i)
+        {
+            // Reward does not match the type we need.
+            if (!Reward::RewardMatchesContainerType(i, type))
+                continue;
+            
+            // Conditionally check for specie.
+            // Both instances must be specie specific.
+            // If one doesn't provide it we assume the reward can be for any specie.
+            if (specie != Player::SPECIENONE)
+            {
+                Player::SpecieTypeT rewardSpecie = Reward::GetRewardSpecieSpecific(i);
+                if (rewardSpecie != Player::SPECIENONE && specie != rewardSpecie)
+                    continue;
+            }
+
+            AddWeight(i, Reward::GetRewardWeight(i));
+        }
+
+        FinalizeWeights();
+    }
+}

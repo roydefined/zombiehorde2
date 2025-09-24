@@ -1,0 +1,59 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+#linklibrary "ZH2Lib"
+
+#include "utils/utils.h.acs"
+#include "tokenizer/tokenize.h.acs"
+#include "weather/weather.h.acs"
+#include "logger/logger.h.acs"
+#include "eventbus/eventbus.h.acs"
+#include "bitMath/bitmath.h.acs"
+#include "packet/packet.h.acs"
+#include "weight/weight.h.acs"
+#include "identity/identity.h.acs"
+#include "footstep/footstep.h.acs"
+#include "trackedproperties/trackedproperties.h.acs"
+#include "libdecorate/libdecorate.h.acs"
+#include "libio/libio.h.acs"
+#include "math/math.h.acs"
+
+strict namespace ZH2Lib
+{
+    #define PERSISTINGLIBCONTEXTINDEX 2
+
+    LibContextT LibContext;
+    global PersistingLibContextT PERSISTINGLIBCONTEXTINDEX: PersistingLibContext;
+
+	struct LibContextT
+	{
+		LibPlayerT Players[BCSUtils::MAX_PLAYERS];
+
+		Weight::WeightContextT WeightContext;
+
+		// Clientside
+		// When should the given client id next play a footstep sound?
+		int StepTimestamps[BCSUtils::MAX_PLAYERS];
+
+        // TEMPORARY
+        // Indicates if we should spawn snow.
+        // This will be replaced with proper tracking once more types are added and we don't just need this for ZM03 and ZE09
+        bool Snowing;
+        bool Raining;
+	};
+
+	struct LibPlayerT
+	{
+		// Not synced, tracks properties on a player, allowing subsequent setting and unsetting of the property.
+		int TrackedPropertyCounters[MAX_TRACKEDPROPERTIES];
+	};
+	
+	struct PersistingLibContextT
+	{
+		Logger::LogContextT LogContext;
+		Footstep::StepCollectionContextT StepContext;
+	};
+
+	extern void ResetPlayerLibContext(int id);
+}

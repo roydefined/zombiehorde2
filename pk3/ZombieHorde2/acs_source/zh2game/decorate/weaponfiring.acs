@@ -1,0 +1,44 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Decorate
+{
+    internal int GetFiringTime()
+    {
+        return GetPlayerFiringTime(PlayerNumber());
+    }
+
+    internal int GetPlayerFiringTime(int id)
+    {
+        return Utils::GetSynchronizedTimer() - ZH2Game::GameContext.Players[id].FiringTic;
+    }
+
+    internal bool IsFiringWeapon()
+    {
+        return IsPlayerFiringWeapon(PlayerNumber());
+    }
+
+    internal bool IsPlayerFiringWeapon(int id)
+    {
+        return ZH2Game::GameContext.Players[id].FiringTic > 0;
+    }
+    
+    script "zh2_dec_setfiring_server" (int set) { SetPlayerFiring(PlayerNumber(), bool(set)); }
+    script "zh2_dec_setfiring_client" (int set) clientside
+    {
+        if (!IsNetworkGame()) terminate;
+        SetPlayerFiring(PlayerNumber(), bool(set));
+    }
+
+    internal void SetPlayerFiring(int id, bool set)
+    {
+        // To avoid calling it both serverside and clientside.
+        //if (BCSUtils::IsServer())
+        //    Logger::LogDebug(LOGSOURCE, BCSUtils::PlayerName(id) + " \cd" + (set ? "is" : "has stopped") + "\cj firing.");
+        
+        ZH2Game::GameContext.Players[id].FiringTic = set
+            ? Utils::GetSynchronizedTimer()
+            : 0;
+    }
+}

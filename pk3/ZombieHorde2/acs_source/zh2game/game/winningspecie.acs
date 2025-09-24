@@ -1,0 +1,40 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    // Returns `true` if a specie won.
+    internal bool UpdateWinningSpecie()
+    {
+        int humanCount = Player::HumanCount();
+        int zombieCount = Player::ZombieCount();
+
+        WinningSpecieT specie = SPECIENONE;
+        if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
+        {
+            if (humanCount == 0 && zombieCount == 0) specie = SPECIETIE;
+            else if (zombieCount == 0) specie = SPECIEHUMAN;
+            else if (humanCount == 0) specie = SPECIEZOMBIE;
+        }
+
+        SetWinningSpecie(specie);
+        return specie != SPECIENONE;
+    }
+
+    internal void SetWinningSpecie(WinningSpecieT specie)
+    {
+        ZH2Game::GameContext.WinningSpecie = specie;
+    }
+
+    internal WinningSpecieT GetWinningSpecie()
+    {
+        return ZH2Game::GameContext.WinningSpecie;
+    }
+
+    internal WinningSpecieT GetWinningSpecieTypeByIndex(int index)
+    {
+        static WinningSpecieT collection[] = { SPECIENONE, SPECIETIE, SPECIEHUMAN, SPECIEZOMBIE, };
+        return collection[index];
+    }
+}

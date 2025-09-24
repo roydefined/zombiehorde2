@@ -1,0 +1,622 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+// Scripts that are callable from the hud.
+
+// TODO: Sync timers on change?
+
+strict namespace Admin
+{
+    // Called from the client to set/unset freeze.
+    script "zh2_internal_menu_admin_request_set_frozen" (int set) net
+    {
+        if (!GetAdmin()) terminate;
+
+        if (set && TrackedProperties::AddProperty((int)TrackedProperties::TRACKED_TOTALLYFROZEN)
+            || !set && TrackedProperties::RemoveProperty((int)TrackedProperties::TRACKED_TOTALLYFROZEN))
+            SetPlayerProperty(0, set, PROP_TOTALLYFROZEN);
+    }
+
+    internal void AdminInfectPlayerClientside(int id)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_action_infect", id))
+            Logger::LogError(LOGSOURCE, "Failed to call admin infect on player.");
+    }
+    
+    script "zh2_internal_menu_action_infect" (int id) net
+    {
+        if (!GetAdmin()) terminate;
+        VALIDATE_ID_VALID_SCRIPT(id);
+        if (Player::GetPlayerIsZombie(id)) terminate;
+
+        int tid = Identity::GetTid(id);
+
+        Game::InfectPlayer(id, Game::INFECT_ADMIN);
+
+        Sync::SyncPlayers(); // Specie change
+        Sync::SyncGame(); // Abilities (which should not matter here)
+
+        Logger::LogBold("\cf" + BCSUTILS::PlayerName(id) + "\cj has been infected by an \cfadmin\cj!");
+    }
+
+    internal void AdminCurePlayerClientside(int id)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_action_cure", id))
+            Logger::LogError(LOGSOURCE, "Failed to call admin cure on player.");
+    }
+    
+    script "zh2_internal_menu_action_cure" (int id) net
+    {
+        if (!GetAdmin()) terminate;
+        VALIDATE_ID_VALID_SCRIPT(id);
+        if (Player::GetPlayerIsHuman(id)) terminate;
+
+        Game::CurePlayer(id);
+        Sync::SyncPlayers(); // Specie change
+        Sync::SyncGame(); // Abilities (which should not matter here)
+
+        Logger::LogBold("\cf" + BCSUTILS::PlayerName(id) + "\cj has been cured by an \cfadmin\cj!");
+    }
+
+    internal void AdminIncrementCurrentTimerClientSide(int addTics)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_action_increment_timer", addTics))
+            Logger::LogError(LOGSOURCE, "Failed to call admin increment timer.");
+    }
+
+    script "zh2_internal_menu_action_increment_timer" (int addTics) net
+    {
+        int index = RoundTimer::GetActiveTimerIndex();
+
+        if (!GetAdmin()) terminate;
+        if (!RoundTimer::GetTimerDefined(index)) terminate;
+
+        int ticDiff = RoundTimer::IncrementTimer(index, addTics);
+        if (ticDiff > 0)
+        {
+            Game::CallVisualAddTime(addTics < 0 ? -ticDiff : ticDiff);
+            int displayedSeconds = BCSUtils::Abs(addTics / 35);
+            Logger::LogBold("\cjAn \cfadmin \cjhas " + (addTics < 0 ? "\cgdecremented" : "\cdincremented") + "\cj the current timer by " + (addTics < 0 ? "\cg" + str(displayedSeconds) : "\cd" + str(displayedSeconds)) + "s" + "\cj!");
+        
+            Sync::SyncTimers();
+        }
+    }
+
+    internal void AdminPauseCurrentTimerClientSide()
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_action_pause_timer"))
+            Logger::LogError(LOGSOURCE, "Failed to call admin pause timer.");
+    }
+
+    script "zh2_internal_menu_action_pause_timer" (int addTics) net
+    {
+        int index = RoundTimer::GetActiveTimerIndex();
+
+        if (!GetAdmin()) terminate;
+        if (!RoundTimer::GetTimerDefined(index)) terminate;
+        if (RoundTimer::GetTimerPaused(index)) terminate;
+
+        RoundTimer::PauseTimer(index);
+        Sync::SyncTimers();
+
+        Logger::LogBold("\cjAn \cfadmin \cjhas paused the timer!");
+    }
+
+    internal void AdminResumeCurrentTimerClientSide()
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_action_resume_timer"))
+            Logger::LogError(LOGSOURCE, "Failed to call admin resume timer.");
+    }
+
+    script "zh2_internal_menu_action_resume_timer" (int addTics) net
+    {
+        int index = RoundTimer::GetActiveTimerIndex();
+
+        if (!GetAdmin()) terminate;
+        if (!RoundTimer::GetTimerDefined(index)) terminate;
+        if (!RoundTimer::GetTimerPaused(index)) terminate;
+
+        RoundTimer::ResumeTimer(index);
+        Sync::SyncTimers();
+
+        Logger::LogBold("\cjAn \cfadmin \cjhas resumed the timer!");
+    }
+
+    internal void AdminKillUnsafePlayersClientSide()
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_action_kill_unsafe_players"))
+            Logger::LogError(LOGSOURCE, "Failed to call admin kill unsafe players.");
+    }
+
+    script "zh2_internal_menu_action_kill_unsafe_players" (int addTics) net
+    {
+        if (!GetAdmin()) terminate;
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING) terminate;
+
+        Game::KillUnsafePlayers();
+        Logger::LogBold("\cjAn \cfadmin \cjhas killed all unsafe players!");
+    }
+
+    internal void AdminKillPlayerClientside(int id)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_action_kill", id))
+            Logger::LogError(LOGSOURCE, "Failed to call admin kill on player.");
+    }
+
+    script "zh2_internal_menu_action_kill" (int id) net
+    {
+        if (!GetAdmin()) terminate;
+        VALIDATE_ID_VALID_SCRIPT(id);
+        if (!BCSUtils::ActorIsAlive(Identity::GetTID(id))) terminate;
+
+        Game::KillPlayer(id, false);
+        Logger::LogBold("\cf" + BCSUTILS::PlayerName(id) + "\cj has been killed by an \cfadmin\cj!");
+    }
+    
+    internal void AdminSetRoundStateClientside(int index)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_set_round_state", index))
+            Logger::LogError(LOGSOURCE, "Failed to call admin set round state.");
+    }
+
+    script "zh2_internal_menu_set_round_state" (int index) net
+    {
+        if (!GetAdmin()) terminate;
+
+        // Explicit check against index 0, which means the round state is disabled.
+        if (index == 0)
+        {
+            Round::SetRoundState(index);
+            Logger::LogBold("\cjAn \cfadmin \cjhas disabled the round state!");
+            terminate;
+        }
+
+        if (!Round::GetRoundDefined(index)) terminate;
+
+        Round::SetRoundState(index);
+        Logger::LogBold("\cjAn \cfadmin \cjhas set the round state to \cf" + Round::GetRoundStateIndexAsString(index) + "\cj!");
+    }
+    
+    internal void AdminSetRoundTimerClientside(int timerIndex)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_set_round_timer", timerIndex))
+            Logger::LogError(LOGSOURCE, "Failed to call admin set round timer.");
+    }
+
+    script "zh2_internal_menu_set_round_timer" (int index) net
+    {
+        if (!GetAdmin()) terminate;
+
+        // Explicit check against index 0, which means the round timer is disabled.
+        if (index == 0)
+        {
+            RoundTimer::SetActiveTimerByIndex(index);
+            Logger::LogBold("\cjAn \cfadmin \cjhas disabled the round timer!");
+            terminate;
+        }
+
+        if (!RoundTimer::GetTimerDefined(index)) terminate;
+
+        RoundTimer::SetActiveTimerByIndex(index);
+        Logger::LogBold("\cjAn \cfadmin \cjhas set the round timer to \cf" + RoundTimer::GetTimerIndexAsString(index) + "\cj!");
+    }
+    
+    internal void AdminAddHumanBotClientside()
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_add_human_bot"))
+            Logger::LogError(LOGSOURCE, "Failed to call admin add human bot.");
+    }
+
+    script "zh2_internal_menu_add_human_bot" net
+    {
+        if (!GetAdmin()) terminate;
+        if (BCSUtils::ClientCount() == BCSUtils::MAX_PLAYERS) terminate;
+
+        // Force next joining player (so the bot) to be a zombie.
+        ZH2Game::_forceSpecie = Player::SPECIEHUMAN;
+
+        // Can fail for reasons, but also if the map has bot nodes disabled.
+        // For now let's not explicitly log an error.
+        if (AddBot("", 0))
+            Logger::LogBold("\cjAn \cfadmin \cjhas added a human.");
+    }
+    
+    internal void AdminAddZombieBotClientside()
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_add_zombie_bot"))
+            Logger::LogError(LOGSOURCE, "Failed to call admin add zombie bot.");
+    }
+
+    script "zh2_internal_menu_add_zombie_bot" net
+    {
+        if (!GetAdmin()) terminate;
+        if (BCSUtils::ClientCount() == BCSUtils::MAX_PLAYERS) terminate;
+
+        // Force next joining player (so the bot) to be a zombie.
+        ZH2Game::_forceSpecie = Player::SPECIEZOMBIE;
+
+        // Can fail for reasons, but also if the map has bot nodes disabled.
+        // For now let's not explicitly log an error.
+        if (AddBot("", 0))
+            Logger::LogBold("\cjAn \cfadmin \cjhas added a zombie.");
+    }
+    
+    internal void AdminRemoveBotClientside()
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_remove_bot"))
+            Logger::LogError(LOGSOURCE, "Failed to call admin remove bot.");
+    }
+
+    script "zh2_internal_menu_remove_bot" net
+    {
+        if (!GetAdmin()) terminate;
+        if (BCSUtils::BotCount() == 0) terminate;
+        RemoveBot();
+    }
+    
+    internal void AdminSetStartResistClientside(int index)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_start_resist", index))
+            Logger::LogError(LOGSOURCE, "Failed to call admin start resist.");
+    }
+
+    script "zh2_internal_menu_start_resist" (int index) net
+    {
+        if (!GetAdmin()) terminate;
+        if (Resist::IsActive(index)) terminate;
+        Resist::StartResist(index);
+    }
+    
+    internal void AdminSetStopResistClientside(int index)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_stop_resist", index))
+            Logger::LogError(LOGSOURCE, "Failed to call admin stop resist.");
+    }
+
+    script "zh2_internal_menu_stop_resist" (int index) net
+    {
+        if (!GetAdmin()) terminate;
+        if (!Resist::IsActive(index)) terminate;
+        Resist::StopResist(index);
+    }
+    
+    internal void AdminEndGameClientside()
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_end_game"))
+            Logger::LogError(LOGSOURCE, "Failed to call admin end game.");
+    }
+
+    script "zh2_internal_menu_end_game" net
+    {
+        if (!GetAdmin()) terminate;
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING) terminate;
+        Game::SetWinningSpecie(Game::SPECIETIE);
+        Game::SetEndReason(Game::REASONADMINENDED);
+        Game::EndGame();
+    }
+
+    internal void AdminIncrementPlayerItemClientside(int playerId, int itemIndex, int amount)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_increment_item", playerId, itemIndex, amount))
+            Logger::LogError(LOGSOURCE, "Failed to call admin increment player item.");
+    }
+    
+    script "zh2_internal_menu_increment_item" (raw playerIdRaw, raw itemIndexRaw, int amountRaw) net
+    {
+        if (!GetAdmin()) terminate;
+
+        int playerId = (int)playerIdRaw;
+        int itemIndex = (int)itemIndexRaw;
+        int amount = (int)amountRaw;
+
+        VALIDATE_ID_VALID_SCRIPT(playerId);
+
+        if (itemIndex < 0 || itemIndex >= Item::GetItemCollectionSize())
+            terminate;
+
+        // For now only allow giving or taking one item.
+        amount = BCSUtils::Sgn(amount);
+
+        str name = Item::GetItemName(itemIndex);
+        str label = Item::GetItemLabel(itemIndex);
+        if (label == (raw)0 || label == "")
+            label = name;
+
+        int tid = Identity::GetTid(playerId);
+        if (amount == 1)
+        {
+            GiveActorInventory(tid, name, amount);
+            Logger::LogBold("An \cfadmin\cj has given \cd" + label + "\cj to \cf" + BCSUtils::PlayerName(playerId) + "\cj!");
+        }
+        else
+        {
+            TakeActorInventory(tid, name, BCSUtils::Abs(amount));
+            Logger::LogBold("An \cfadmin\cj has taken \cd" + label + "\cj to \cf" + BCSUtils::PlayerName(playerId) + "\cj!");
+        }
+    }
+    
+    internal void AdminIncrementSpecieItemClientside(Player::SpecieTypeT specie, int itemIndex, int amount)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_increment_item_specie", specie, itemIndex, amount))
+            Logger::LogError(LOGSOURCE, "Failed to call admin increment specie item.");
+    }
+    
+    script "zh2_internal_menu_increment_item_specie" (raw specieIndexRaw, raw itemIndexRaw, raw amountRaw) net
+    {
+        if (!GetAdmin()) terminate;
+
+        int specieIndex = (int)specieIndexRaw;
+        int itemIndex = (int)itemIndexRaw;
+        int amount = (int)amountRaw;
+
+        if (itemIndex < 0 || itemIndex >= Item::GetItemCollectionSize())
+            terminate;
+
+        // For now only allow giving or taking one item.
+        amount = BCSUtils::Sgn(amount);
+
+        Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
+
+        str name = Item::GetItemName(itemIndex);
+        str label = Item::GetItemLabel(itemIndex);
+        if (label == (raw)0 || label == "")
+            label = name;
+
+        str target = specieIndex == 0
+            ? "everybody"
+            : "all " + Player::GetSpecieIndexAsString(specieIndex) + "s";
+
+        if (amount == 1)
+        {
+            ITERATESPECIES(specie, {
+                GiveActorInventory(tid, name, amount);
+            });
+            Logger::LogBold("An \cfadmin\cj has given \cd" + label + "\cj to \cf" + target + "\cj!");
+        }
+        else
+        {
+            ITERATESPECIES(specie, {
+                TakeActorInventory(tid, name, BCSUtils::Abs(amount));
+            });
+            Logger::LogBold("An \cfadmin\cj has taken \cd" + label + "\cj to \cf" + target + "\cj!");
+        }
+    }
+
+    internal void AdminGivePlayerRewardClientside(int playerId, int rewardIndex)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_give_reward_player", playerId, rewardIndex))
+            Logger::LogError(LOGSOURCE, "Failed to call admin give player reward.");
+    }
+    
+    script "zh2_internal_menu_give_reward_player" (raw playerIdRaw, raw rewardIndexRaw) net
+    {
+        if (!GetAdmin()) terminate;
+
+        int playerId = (int)playerIdRaw;
+        int rewardIndex = (int)rewardIndexRaw;
+
+        VALIDATE_ID_VALID_SCRIPT(playerId);
+
+        if (rewardIndex < 0 || rewardIndex >= Reward::GetRewardCollectionSize())
+            terminate;
+
+
+        Reward::GivePlayerRewardByIndex(playerId, rewardIndex, false);
+
+        // The name will always be available as it is required.
+        str name = Reward::GetRewardName(rewardIndex);
+        Logger::LogBold("An \cfadmin\cj has given reward \cd" + name + "\cj to \cf" + BCSUtils::PlayerName(playerId) + "\cj!");
+    }
+    
+    internal void AdminGiveSpecieRewardClientside(Player::SpecieTypeT specie, int rewardIndex)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_give_reward_specie", specie, rewardIndex))
+            Logger::LogError(LOGSOURCE, "Failed to call admin give specie reward.");
+    }
+    
+    script "zh2_internal_menu_give_reward_specie" (raw specieIndexRaw, raw rewardIndexRaw) net
+    {
+        if (!GetAdmin()) terminate;
+
+        int specieIndex = (int)specieIndexRaw;
+        int rewardIndex = (int)rewardIndexRaw;
+
+        if (rewardIndex < 0 || rewardIndex >= Reward::GetRewardCollectionSize())
+            terminate;
+
+        Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
+        ITERATESPECIES(specie, {
+            Reward::GivePlayerRewardByIndex(id, rewardIndex, false);
+        });
+
+        // The name will always be available as it is required.
+        str name = Reward::GetRewardName(rewardIndex);
+
+        str target = specieIndex == 0
+            ? "everybody"
+            : "all " + Player::GetSpecieIndexAsString(specieIndex) + "s";
+
+        Logger::LogBold("An \cfadmin\cj has given reward \cd" + name + "\cj to \cf" + target + "\cj!");
+    }
+
+    internal void AdminIncrementPlayerPowerClientside(int playerId, int powerIndex, int tics)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_increment_power", playerId, powerIndex, tics))
+            Logger::LogError(LOGSOURCE, "Failed to call admin increment player power.");
+    }
+    
+    script "zh2_internal_menu_increment_power" (int playerId, int powerIndex, int tics) net
+    {
+        if (!GetAdmin()) terminate;
+        VALIDATE_ID_VALID_SCRIPT(playerId);
+
+        Power::AddPlayerPowerTics(playerId, powerIndex, tics);
+        Logger::LogBold("An \cfadmin\cj has added power \cd" + Power::GetPowerIndexAsString(powerIndex) + "\cj to " + BCSUtils::PlayerName(playerId) + "\cj!");
+    }
+
+    internal void AdminIncrementSpeciePowerClientside(Player::SpecieTypeT specie, int powerIndex, int tics)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_increment_power_specie", specie, powerIndex, tics))
+            Logger::LogError(LOGSOURCE, "Failed to call admin increment specie power.");
+    }
+    
+    script "zh2_internal_menu_increment_power_specie" (raw specieIndexRaw, raw powerIndexRaw, raw ticsRaw) net
+    {
+        if (!GetAdmin()) terminate;
+
+        int specieIndex = (int)specieIndexRaw;
+        int powerIndex = (int)powerIndexRaw;
+        int tics = (int)ticsRaw;
+
+        // For now only allow incrementing
+        if (tics <= 0) terminate;
+
+        Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
+        ITERATESPECIES(specie, {
+            Power::AddPlayerPowerTics(id, powerIndex, tics);
+        });
+
+        str target = specieIndex == 0
+            ? "everybody"
+            : "all " + Player::GetSpecieIndexAsString(specieIndex) + "s";
+
+        Logger::LogBold("An \cfadmin\cj has added power \cd" + Power::GetPowerIndexAsString(powerIndex) + "\cj to \cf" + target + "\cj!");
+    }
+
+    internal void AdminIncrementPlayerArmorClientSide(int playerId, int amount)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_increment_armor", playerId, amount))
+            Logger::LogError(LOGSOURCE, "Failed to call admin increment player armor.");
+    }
+    
+    script "zh2_internal_menu_increment_armor" (int playerId, int amount) net
+    {
+        if (!GetAdmin()) terminate;
+        if (amount == 0) terminate;
+        VALIDATE_ID_VALID_SCRIPT(playerId);
+
+        int tid = Identity::GetTid(playerId);
+        int amountNormalized = BCSUtils::Abs(amount);
+        if (amount > 0) GiveActorInventory(tid, "ArmorBonus", amountNormalized);
+	    else            TakeActorInventory(tid, "Armor", amountNormalized);
+
+        if (amount > 0) Logger::LogBold("An \cfadmin\cj has given \cd" + str(amountNormalized) + "\cj points of armor to " + BCSUtils::PlayerName(playerId) + "\cj!");
+        else            Logger::LogBold("An \cfadmin\cj has taken \cd" + str(amountNormalized) + "\cj points of armor from " + BCSUtils::PlayerName(playerId) + "\cj!");
+    }
+
+    internal void AdminIncrementSpecieArmorClientSide(Player::SpecieTypeT specie, int amount)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_increment_armor_specie", specie, amount))
+            Logger::LogError(LOGSOURCE, "Failed to call admin increment player armor on specie.");
+    }
+    
+    script "zh2_internal_menu_increment_armor_specie"  (raw specieIndexRaw, raw amountRaw) net
+    {
+        if (!GetAdmin()) terminate;
+
+        int specieIndex = (int)specieIndexRaw;
+        int amount = (int)amountRaw;
+        
+        if (amount == 0) terminate;
+
+        Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
+        int amountNormalized = BCSUtils::Abs(amount);
+        if (amount > 0) Game::GiveSpecieInventory(specie, "ArmorBonus", amountNormalized);
+	    else            Game::TakeSpecieInventory(specie, "Armor", amountNormalized);
+
+        str target = specieIndex == 0
+            ? "everybody"
+            : "all " + Player::GetSpecieIndexAsString(specieIndex) + "s";
+
+        if (amount > 0) Logger::LogBold("An \cfadmin\cj has given \cd" + str(amountNormalized) + "\cj points of armor to \cf" + target + "\cj!");
+        else            Logger::LogBold("An \cfadmin\cj has taken \cd" + str(amountNormalized) + "\cj points of armor from \cf" + target + "\cj!");
+    }
+
+    // Rewards (for everybody or specie specific)
+    internal void AdminGiveRewardContainerSpecieClientSide(Player::SpecieTypeT specie, Reward::RewardItemTypeFlagsT type)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_give_container_specie", specie, type))
+            Logger::LogError(LOGSOURCE, "Failed to call admin give reward container specie.");
+    }
+    
+    script "zh2_internal_menu_give_container_specie" (raw specieIndexRaw, raw typeRaw) net
+    {
+        if (!GetAdmin()) terminate;
+
+        int specieIndex = (int)specieIndexRaw;
+        int typeInt = (int)typeRaw;
+        int index = BCSUtils::Flag2Index(typeInt) + 1;
+
+        Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
+        Reward::RewardItemTypeFlagsT type = Reward::GetRewardItemTypeByIndex(index);
+        if (type == Reward::REWARDNONE) terminate;
+
+        ITERATESPECIES(specie, {
+            Reward::GivePlayerContainer(id, type);
+        });
+        
+        str target = specie == Player::SPECIENONE
+            ? "everybody"
+            : "all " + Player::GetSpecieIndexAsString(specie) + "s";
+        Logger::LogBold("An \cfadmin\cj has given \cf" + target + " \cja reward: \cd" + Reward::ContainerTypeToReadableString(type) + "\cj!");
+    }
+
+    // Rewards (player specific)
+    internal void AdminGiveRewardContainerPlayerClientSide(int playerId, Reward::RewardItemTypeFlagsT type)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_give_container_player", playerId, type))
+            Logger::LogError(LOGSOURCE, "Failed to call admin give reward container player.");
+    }
+    
+    script "zh2_internal_menu_give_container_player" (raw playerIdRaw, raw typeRaw) net
+    {
+        if (!GetAdmin()) terminate;
+
+        int playerId = (int)playerIdRaw;
+        int typeInt = (int)typeRaw;
+        int index = BCSUtils::Flag2Index(typeInt) + 1;
+
+        // This attempt to get back the enum also validates the reward exists (flag is valid and points to an actual index)
+        Reward::RewardItemTypeFlagsT type = Reward::GetRewardItemTypeByIndex(index);
+
+        if (type == Reward::REWARDNONE) terminate;
+        VALIDATE_ID_VALID_SCRIPT(playerId);
+
+        Reward::GivePlayerContainer(playerId, type);
+        Logger::LogBold("An \cfadmin\cj has given " + BCSUtils::PlayerName(playerId) + " a reward: \cd" + Reward::ContainerTypeToReadableString(type) + "\cj!");
+    }
+
+    // Allow join
+    internal void AdminSetAllowJoinClientSide(bool allow)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_set_allow_join", (int)allow))
+            Logger::LogError(LOGSOURCE, "Failed to call admin set allow join.");
+    }
+    
+    script "zh2_internal_menu_set_allow_join" (raw allowRaw) net
+    {
+        if (!GetAdmin()) terminate;
+
+        bool allow = (bool)allowRaw;
+        ZH2Game::GameContext.AlwaysAllowJoin = allow;
+        Logger::LogBold("An \cfadmin\cj has \cd" + (allow ? "enabled" : "disabled") + " \cjalways allow joining!");
+    }
+
+    internal void AdminSetPlayerAllowJoinClientSide(int playerId, bool allow)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_set_player_allow_join", playerId, (int)allow))
+            Logger::LogError(LOGSOURCE, "Failed to call admin set player allow join.");
+    }
+    
+    script "zh2_internal_menu_set_player_allow_join" (raw playerIdRaw, raw allowRaw) net
+    {
+        if (!GetAdmin()) terminate;
+
+        int playerId = (int)playerIdRaw;
+        bool allow = (bool)allowRaw;
+
+        ZH2Game::GameContext.Players[playerId].AlwaysAllowJoin = allow;
+        Logger::LogBold("An \cfadmin\cj has \cd" + (allow ? "enabled" : "disabled") + " \cjalways allow joining on player " + BCSUtils::PlayerName(playerId) + "!");
+    }
+}

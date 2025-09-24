@@ -1,0 +1,97 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Decorate
+{
+    script "zh2_dec_radio_cyclemusic" (raw direction) net clientside
+    {
+      if (GetRadioCollectionSize() == 0) terminate;
+      
+      ZH2Game::GameContext.RadioCurrentlySelectedIndex += (int)direction;
+      if (ZH2Game::GameContext.RadioCurrentlySelectedIndex < 0) ZH2Game::GameContext.RadioCurrentlySelectedIndex = BCSUtils::Max(GetRadioCollectionSize() - 1, 0);
+      if (ZH2Game::GameContext.RadioCurrentlySelectedIndex >= GetRadioCollectionSize()) ZH2Game::GameContext.RadioCurrentlySelectedIndex = 0;
+    }
+
+    script "zh2_dec_radio_stopmusic" net clientside
+    {
+		  SetMusic("");
+    }
+
+    script "zh2_dec_radio_setcurrentmusic" net clientside
+    {
+        // We have no tracks, no point in changing.
+        if (Decorate::GetRadioCollectionSize() == 0)
+            terminate;
+
+        int trackIndex = GetClientRadioCurrentlySelectedIndex();
+        str track = GetRadioTrackLumpName(trackIndex);
+
+        SetMusic(track);
+        SetClientCurrentRadioTrackIndex(trackIndex);
+
+        if (!NamedRequestScriptPuke("zh2_internal_radio_settrack", trackIndex))
+            Logger::LogError(LOGSOURCE, "Failed to call internal set radio track.");
+    }
+
+    script "zh2_internal_radio_settrack" (int trackIndex) net
+    {
+      if (!CheckWeapon(WEAPON_RADIO_NAME)) terminate;
+
+      // Avoid spamming radio music changes.
+      int ticsLeft = GetRadioTrackCooldownTicsLeft();
+      if (ticsLeft > 0)
+      {
+        int secondsLeft = int(BCSUtils::Ceil(fixed(ticsLeft) / 35.0));
+        str secondsPlural = secondsLeft == 1 ? "" : "s";
+        Logger::LogActivator("The music recently changed, so the track change won't be shared. Try again in " + str(secondsLeft) + " second" + secondsPlural + ".");
+        terminate;
+      }
+
+      UpdateRadioTrackCooldown();
+
+      if (!ACS_NamedExecuteAlways("zh2_internal_radio_settracktoclient", 0, trackIndex, PlayerNumber()))
+            Logger::LogError(LOGSOURCE, "Failed to call zh2_internal_game_visualaddtime");
+    }
+
+    script "zh2_internal_radio_settracktoclient" (raw rawTrackIndex, raw rawSourceId) clientside
+    {
+        SetActivatorToPlayer(ConsolePlayerNumber());
+
+        int trackIndex = (int)rawTrackIndex;
+        int sourceId = (int)rawSourceId;
+
+        str author = GetRadioTrackAuthor(trackIndex);
+        str trackBroadcast = "\cd" + GetRadioTrackName(trackIndex);
+        if ((raw)author != 0 && author != "")
+            trackBroadcast += "\cj by \cd" + author + "\cj.";
+
+        // We're the source. Log a message and leave because we already changed tracks.
+        if (sourceId == ConsolePlayerNumber())
+        {
+            Logger::LogActivator("Now playing " + trackBroadcast);
+            terminate;
+        }
+
+        // Do we have this track?
+        if (trackIndex < 0 || trackIndex >= GetRadioCollectionSize())
+        {
+            Logger::LogActivator(BCSUtils::PlayerName(sourceId) + " is playing radio music, but you don't have a matching track number.");
+            terminate;
+        }
+
+        Logger::LogActivator(BCSUtils::PlayerName(sourceId) + " is now playing " + trackBroadcast);
+
+        // If not the source, possible ignore this change.
+        if (ZH2Game::GetIgnoreRadioMusic())
+        {
+            Logger::LogActivator("You've chosen to ignore this track.");
+            terminate;
+        }
+
+        str track = GetRadioTrackLumpName(trackIndex);
+        
+        SetMusic(track);
+        SetClientCurrentRadioTrackIndex(trackIndex);
+    }
+}

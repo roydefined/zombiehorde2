@@ -1,0 +1,26 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+strict namespace Utils
+{
+    // Truncate a string to 'limit' characters.
+    // If truncated, append 'suffix' (defaults to "...").
+    function str TruncateString(str input, int limit, str suffix = "...")
+    {
+        int len = StrLen(input);
+
+        // Nothing to truncate.
+        if (len <= limit)
+            return input;
+
+        int suffixLen = StrLen(suffix);
+        int newLen = limit - suffixLen;
+
+        // Avoid negative lengths.
+        if (newLen < 0)
+            newLen = 0;
+
+        return StrMid(input, 0, newLen) + suffix;
+    }
+}

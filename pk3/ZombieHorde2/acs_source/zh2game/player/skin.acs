@@ -1,0 +1,60 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal void SetZombieSkin(str skin) { SetPlayerZombieSkin(PlayerNumber(), skin); }
+    internal void SetHumanSkin() { SetPlayerHumanSkin(PlayerNumber()); }
+
+    internal void SetPlayerZombieSkin(int id, str skin)
+    {
+        int tid = Identity::GetTid(id);
+        if (tid == -1) return;
+
+        if (!BCSUtils::ActorIsAlive(tid))
+        {
+            Logger::LogWarning(LOGSOURCE, "Unable to set player skin of " + str(id) + ": player is not alive.");
+            return;
+        }
+
+        // Player is not of class InvisiblePlayer, which means they must first be unmorphed (InvisiblePlayer is the base unmorphed variant).
+        if (!CheckActorClass(tid, CLASS_ZOMBIE))
+        {
+            Logger::LogError(LOGSOURCE, "Failed to set player skin of (" + str(tid) + ")" + BCSUtils::PlayerName(id) + " to " + skin + ". Expected player to be a zombie class.");
+            return;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Setting skin of (\cd" + str(tid) + "\cj) \cd" + BCSUtils::PlayerName(id) + "\cj to \cd" + skin + "\cj.");
+
+        if (!SetPlayerSkin(id, skin, true))
+        {
+            Logger::LogError(LOGSOURCE, "Failed to set player skin of (" + str(tid) + ")" + BCSUtils::PlayerName(id) + " to " + skin + ".");
+            return;
+        }
+
+        int indexAcs = GetPlayerSkin(id, PLAYERSKIN_ACS);
+        if (indexAcs == -1)
+        {
+            Logger::LogError(LOGSOURCE, "Failed to set player skin of (" + str(tid) + ")" + BCSUtils::PlayerName(id) + " to " + skin + ". Index not found (PLAYERSKIN_ACS = " + str(indexAcs) + ").");
+            return;
+        }
+
+        str skinAcs = GetSkinProperty(indexAcs, "Name");
+        if (skinAcs != skin)
+        {
+            Logger::LogError(LOGSOURCE, "Failed to set player skin of (" + str(tid) + ")" + BCSUtils::PlayerName(id) + " to " + skin + ". Skin mismatch. (PLAYERSKIN_ACS = " + skinAcs + ")");
+            return;
+        }
+    }
+
+    internal void SetPlayerHumanSkin(int id)
+    {
+        // For a human the skin is based on the weapon, so it doesn't really matter what we set it to since it will be overridden.
+        if (!SetPlayerSkin(id, SKIN_HUMAN, false))
+        {
+            Logger::LogError(LOGSOURCE, "Failed to set player skin of (" + str(id) + ")" + BCSUtils::PlayerName(id) + " to " + SKIN_HUMAN + ".");
+            return;
+        }
+    }
+}

@@ -1,0 +1,157 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Sync
+{
+    #define SYNC_CATEGORY "GAME"
+
+    internal void SyncGameActor()
+    {
+        int syncId = SYNC_GAME;
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing general game state through actors. Sync id: " + str(syncId) + "."));
+        
+        syncId = SyncWriteZombieAbilities(syncId);
+        syncId = SyncWriteOther(syncId);
+        syncId = SyncWriteMap(syncId);
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing general game state through actors."));
+    }
+
+    internal void CallSyncGameActorOnClients()
+    {
+        if (!ACS_NamedExecuteAlways("zh2_internal_sync_game_actor_clientside", 0))
+            Logger::LogError(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for game."));
+    }
+
+    script "zh2_internal_sync_game_actor_clientside" clientside
+    {
+        SyncGameActorClientside();
+    }
+
+    internal void SyncGameActorClientside()
+    {
+        int syncId = SYNC_GAME;
+        
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading general game on client through actors. Sync id: " + str(syncId) + "."));
+
+        syncId = SyncReadZombieAbilities(syncId);
+        syncId = SyncReadOther(syncId);
+        syncId = SyncReadMap(syncId);
+
+        // Tell the client to update their ending stats.
+        // TODO: Move to a proper callback.
+        Game::ClientBuildEnding();
+        
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Synced general game to client."));
+    }
+
+    internal int SyncWriteZombieAbilities(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing zombie ability packs through actors. Sync id: " + str(syncId) + "."));
+
+        // Initial default abilities
+        BCSUtils::SyncVariable(syncId++, Game::GetDefaultZombieAbilityFlags());
+
+        // Each player takes 2 bits, 64 players = 128 bits = 4x 32-bit integers.
+        // 2 bits are to indicate the abilities (0 = none, 1 is barrel push, 2 is acid spit)
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int flag = Game::GetPlayerZombieAbilityFlags(i);
+
+            // Failsafe.
+            if (flag < 0 || flag > 3)
+            {
+                Logger::LogWarning(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Can't sync zombie ability flags of player (" + str(i) + ") " + BCSUTILS::PlayerName(i) + ". Flag " + str(flag) + " is out of bounds."));
+                continue;
+            }
+
+            bool leastSignificantBit = (flag & 1) != 0;
+            bool mostSignificantBit  = (flag & 2) != 0;
+            BitMath::SetBit128(BitMath::GetBitPack1(), BitMath::GetBitPack2(), BitMath::GetBitPack3(), BitMath::GetBitPack4(), i * 2, leastSignificantBit);
+            BitMath::SetBit128(BitMath::GetBitPack1(), BitMath::GetBitPack2(), BitMath::GetBitPack3(), BitMath::GetBitPack4(), i * 2 + 1, mostSignificantBit);
+
+            if (PlayerInGame(i))
+                Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Player (\cd" + str(i) + "\cj) " + BCSUTILS::PlayerName(i) + " flag: \cd" + str(flag) + "\cj\cj. Bits: \cd" + str(int(mostSignificantBit)) + str(int(leastSignificantBit)) + "\cj."));
+        }
+
+        // Store back for syncing
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack3());
+        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack4());
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing zombie ability packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj, pack3 \cd" + str(BitMath::GetBitPack3()) + "\cj, pack4 \cd" + str(BitMath::GetBitPack4())));
+        return syncId;
+    }
+
+    internal int SyncReadZombieAbilities(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading zombie ability packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        // Initial default abilities
+        Game::SetDefaultZombieAbilityFlags(BCSUtils::GetSyncVarDefault(syncId++, 0));
+
+        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack3 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack4 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int leastSignificantBit = BitMath::GetBit128(pack1, pack2, pack3, pack4, i * 2);
+            int mostSignificantBit = BitMath::GetBit128(pack1, pack2, pack3, pack4, i * 2 + 1);
+            int flags = (mostSignificantBit << 1) | leastSignificantBit;
+
+            Game::SetPlayerZombieAbilityFlags(i, flags);
+
+            if (PlayerInGame(i))
+                Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Client - Player \cd" + str(i) + "\cj: \cd" + str(flags) + "\cj. Bits: \cd" + str(int(mostSignificantBit)) + str(int(leastSignificantBit)) + "\cj."));
+        }
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing zombie ability packs to client."));
+        return syncId;
+    }
+
+    internal int SyncWriteOther(int syncId)
+    {
+        BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.MatchStartTic);
+        BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.MatchEndingTic);
+        BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.WinningSpecie);
+        BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.EndReason);
+        BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.FullServerStartTimestamp);
+
+        return syncId;
+    }
+
+    internal int SyncReadOther(int syncId)
+    {
+        ZH2Game::GameContext.MatchStartTic = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        ZH2Game::GameContext.MatchEndingTic = BCSUtils::GetSyncVarDefault(syncId++, 0);
+
+        int specieIndex = BCSUtils::GetSyncVarDefault(syncId++, Game::SPECIENONE);
+        ZH2Game::GameContext.WinningSpecie = Game::GetWinningSpecieTypeByIndex(specieIndex);
+
+        int endReasonIndex = BCSUtils::GetSyncVarDefault(syncId++, Game::REASONNONE);
+        ZH2Game::GameContext.EndReason = Game::GetEndReasonTypeByIndex(endReasonIndex);
+
+        ZH2Game::GameContext.FullServerStartTimestamp = BCSUtils::GetSyncVarDefault(syncId++, 0);
+
+        return syncId;
+    }
+
+    internal int SyncWriteMap(int syncId)
+    {
+        BCSUtils::SyncVariable(syncId++, Player::GetPlayFinalHeartbeat());
+        return syncId;
+    }
+
+    internal int SyncReadMap(int syncId)
+    {
+        Player::SetPlayFinalHeartbeat((bool)BCSUtils::GetSyncVarDefault(syncId++, 0));
+        return syncId;
+    }
+
+    #undef SYNC_CATEGORY
+}

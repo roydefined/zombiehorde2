@@ -1,0 +1,28 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal void SetName(str name)
+    {
+        SetPlayerName(PlayerNumber(), name);
+    }
+
+    internal void SetPlayerName(int id, str name)
+    {
+        ZH2Game::GameContext.Players[id].Name = name;
+    }
+
+    internal str GetName()
+    {
+        return GetPlayerName(PlayerNumber());
+    }
+
+    internal str GetPlayerName(int id)
+    {
+        // Fallback to use BCSUtil's PlayerName if not found.
+        raw name = ZH2Game::GameContext.Players[id].Name;
+        return name != 0 && (str)name != "" ? (str)name : BCSUtils::PlayerName(id);
+    }
+}
