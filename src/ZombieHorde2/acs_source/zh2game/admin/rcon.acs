@@ -6,50 +6,25 @@
 
 strict namespace Admin
 {
-    script "zh2_enableadmin" net
+    // Callable from the rcon.
+
+    script "zh2_enableadminplayer" (int id)
     {
-        RequestEnableAdmin(PlayerNumber(), true);
+        RconSetPlayerAdmin(id, true);
     }
 
-    script "zh2_disableadmin" net
+    script "zh2_disableadminplayer" (int id)
     {
-        RequestEnableAdmin(PlayerNumber(), false);
+        RconSetPlayerAdmin(id, false);
     }
 
-    script "zh2_enableadminplayer" (int id) net
+    internal void RconSetPlayerAdmin(int id, bool set)
     {
-        RequestEnableAdmin(id, true);
-    }
-
-    script "zh2_disableadminplayer" (int id) net
-    {
-        RequestEnableAdmin(id, false);
-    }
-
-    internal void RequestEnableAdmin(int id, bool set)
-    {
-        // The admin system can be enabled for a specific player when:
-        // - Called from the world
-        // - Called from a player, when playing offline.
-        // - Called from a player, when sv_cheats is enabled
-        // - Called from a player, when in development.
-        if (id != -1 && !IsNetworkGame() && !IsDevelopment() && !ZH2Game::GetSvCheats())
-        {
-            Logger::LogTo("Unable to enable admin mode. The request must either come from the server, the game must have sv_cheats enabled, run in development mode, or run offline.", id);
-            return;
-        }
-
         if (!Identity::IsValidID(id))
-        {
-            Logger::LogActivator("Unable to enable admin mode. Id " + str(id) + " is not a valid player id.");
             return;
-        }
 
         if (!BCSUTILS::PlayerIsConnected(id))
-        {
-            Logger::LogActivator("Unable to enable admin mode. No player connected under id " + str(id) + ".");
             return;
-        }
 
         // Just ignore if we try to enable/disable on somebody that already has admin set to the same state.
         if (GetPlayerAdmin(id) == set) return;
