@@ -27,6 +27,10 @@ strict namespace Player
             return;
         }
 
+        // If we morph away from the invisible player class, we want to take NothingWeapon.
+        if (CheckActorClass(tid, CLASS_INVISIBLE))
+            TakeActorInventory(tid, WEAPON_NOTHINGWEAPON_NAME, 1);
+
         // Morphing doesn't work when a player is invisible.
         // This part checks if it could be a cvar that blocks it.
         // (NOTE: This should be impossible. We completely block the cvar from being used. This is kept in case it does end up happening)
@@ -56,6 +60,10 @@ strict namespace Player
             Logger::LogError(LOGSOURCE , "Failed to morph (" + str(tid) + ")" + BCSUtils::PlayerName(id) + " into target class (" + class + ", actor class = " + GetActorClass(tid) + ").");
             return;
         }
+
+        // If we morphed into the invisible player class, we want to give NothingWeapon.
+        if (CheckActorClass(tid, CLASS_INVISIBLE))
+            GiveActorInventory(tid, WEAPON_NOTHINGWEAPON_NAME, 1);
 
         Logger::LogDebug(LOGSOURCE , "Player (" + str(tid) + ")" + BCSUtils::PlayerName(id) + " was morphed to class \cd" + GetActorClass(tid) + "\cj.");
     }
