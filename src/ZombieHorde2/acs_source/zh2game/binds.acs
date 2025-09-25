@@ -158,12 +158,20 @@ strict namespace ZH2Game
 
     script "zh2_action_enableadmin" net
     {
-        Admin::RequestEnableAdmin(PlayerNumber(), true);
+        // Can't be called when not offline, not in development and we do not have sv_cheats enabled.
+        if (!IsNetworkGame() && !IsDevelopment() && !ZH2Game::GetSvCheats())
+            terminate;
+        
+        Admin::RconSetPlayerAdmin(PlayerNumber(), true);
     }
 
     script "zh2_action_disableadmin" net
     {
-        Admin::RequestEnableAdmin(PlayerNumber(), false);
+        // Can't be called when not offline, not in development and we do not have sv_cheats enabled.
+        if (!IsNetworkGame() && !IsDevelopment() && !ZH2Game::GetSvCheats())
+            terminate;
+
+        Admin::RconSetPlayerAdmin(PlayerNumber(), false);
     }
 
     /* DEBUG - GENERAL */
