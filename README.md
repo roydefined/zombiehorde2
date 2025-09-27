@@ -26,17 +26,17 @@ You have two options to pack and build Zombie Horde 2:
 
 2. **Without PubDoomer (manual build)**  
    - Use the provided `.bat` scripts:  
-     - `tools\pack.bat` -> prepares ACSUtils into `dist/`  
-     - `tools\build.bat` -> compiles ACSUtils, library, and core ACS files  
+     - `pack-acsutils.bat` -> prepares ACSUtils into `dist/`  
+     - `build-project.bat` -> compiles ACSUtils, library, and core ACS files  
    - No .NET or Visual Studio required.
    - Certain steps will take longer as no support is given.
    - Manual packing is **not** supported.
 
 Additional tools you may want:
 - Git with submodules support.
-- [Zandronum 3.2.1](https://zandronum.com/download) or later (provided in `/tools`).
-- For editing maps: [Ultimate Doom Builder](https://ultimatedoombuilder.github.io/) (provided in `/tools`).
-- For editing maps and mod assets: [Slade 3](https://slade.mancubus.net/) (provided in `/tools`).
+- [Zandronum 3.2.1](https://zandronum.com/download) or later (provided in `tools/`).
+- For editing maps: [Ultimate Doom Builder](https://ultimatedoombuilder.github.io/) (provided in `tools/`).
+- For editing maps and mod assets: [Slade 3](https://slade.mancubus.net/) (provided in `tools/`).
 
 ---
 
@@ -78,7 +78,7 @@ For both options, subsequent builds do not need another call of `pack-acsutils.b
 4. Pick one of the maps and open it in Zandronum, Ultimate Doom Builder, or Slade 3.
 
 #### Option B: Manually
-- You can find a build of Zandronum, Ultimate Doom Builder, or Slade 3 inside `/tools`.
+- You can find a build of Zandronum, Ultimate Doom Builder, or Slade 3 inside `tools/`.
 
 In Ultimate Doom Builder, always use the `Zandronum_DoomUDMF` configuration as maps use UDMF format.
 
