@@ -1,8 +1,9 @@
 @echo off
 
-:: === ACSUtils build script ===
+:: === ACSUtils packing script ===
 :: This version copies files and runs preprocessing steps, but SKIPS the compiler calls.
 :: Compilation is handled by PubDoomer, which prepares the files and then compiles them.
+:: Alternatively you may use `build-project.bat` after calling this file to build the project itself.
 
 set "SCRIPT_DIR=%~dp0"
 cd /d "%SCRIPT_DIR%modules\acsutils"
