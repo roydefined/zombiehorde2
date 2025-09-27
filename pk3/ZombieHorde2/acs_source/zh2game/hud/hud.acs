@@ -38,22 +38,25 @@ strict namespace Hud
 
         UpdateHudShakeOffset();
 
+        // Alongside checking individual categories, this boolean indicates if we draw the hud as a whole.
+        bool drawHud = ZH2Game::GetDrawHud();
+
         if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
             DrawFullServerHud();
 
-        if (ZH2Game::GetDrawVersionHud())
+        if (drawHud && ZH2Game::GetDrawVersionHud())
             DrawVersion();
             
-        if (ZH2Game::GetDrawRoundHud())
+        if (drawHud && ZH2Game::GetDrawRoundHud())
             DrawRoundHud();
         
         // All of this is strictly during the playing game.
         if (Round::GetActiveKnownRoundState() < Round::STATEENDING)
         {
-            if (ZH2Game::GetDrawResistsHud())
+            if (drawHud && ZH2Game::GetDrawResistsHud())
                 DrawResistsHud();
 
-            if (ZH2Game::GetDrawStatsHud())
+            if (drawHud && ZH2Game::GetDrawStatsHud())
                 DrawStatsHud();
                 
             // NOTE: We do NOT allow drawing of the admin hud during the voting, because it is also clickable.
@@ -77,10 +80,13 @@ strict namespace Hud
         // Same as above, but a state later.
         if (Round::GetActiveKnownRoundState() < Round::STATEVOTING)
         {
-            DrawWeaponsHud();
-            DrawPlayerHud();
+            if (drawHud)
+            {
+                DrawWeaponsHud();
+                DrawPlayerHud();
+            }
 
-            if (ZH2Game::GetDrawGameHud())
+            if (drawHud && ZH2Game::GetDrawGameHud())
                 DrawGameHud();
         }
 
