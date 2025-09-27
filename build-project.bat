@@ -4,6 +4,9 @@
 :: This script copies over the previously packed ACSUtils files and puts them inside the library project.
 :: Secondly this script ensures all files are compiled.
 
+:: Note: You must call `pack-acsutils.bat` before calling this file to ensure all files exist.
+:: Alternatively make sure that they do another way.
+
 set "SCRIPT_DIR=%~dp0"
 set "ROOT=C:\Projects\zombiehorde2"
 set "BCC=%SCRIPT_DIR%tools\Zt-bcc_x86\zt-bcc.exe"
