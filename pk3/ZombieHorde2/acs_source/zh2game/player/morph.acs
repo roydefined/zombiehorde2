@@ -32,18 +32,9 @@ strict namespace Player
             TakeActorInventory(tid, WEAPON_NOTHINGWEAPON_NAME, 1);
 
         // Morphing doesn't work when a player is invisible.
-        // This part checks if it could be a cvar that blocks it.
-        // (NOTE: This should be impossible. We completely block the cvar from being used. This is kept in case it does end up happening)
         if (GetActorProperty(tid, APROP_Invulnerable))
         {
-            str message;
-            buildmsg(message = StrParam())
-            {
-                Append(s:"Failed to set player " + BCSUtils::PlayerName(id) + " into target class (" + class + ").");
-                if (ZH2Game::GetNoRespawnInvul()) Append(s:" Player most likely has (re)spawn invulnerability because 'sv_norespawninvul' is false.");
-                else Append(s:" Morphing is not possible if a player is invulnerable.");
-            }
-            Logger::LogError(LOGSOURCE, message);
+            Logger::LogError(LOGSOURCE, "Failed to set player " + BCSUtils::PlayerName(id) + " into target class (" + class + "). Player is invulnerable.");
             return;
         }
 
