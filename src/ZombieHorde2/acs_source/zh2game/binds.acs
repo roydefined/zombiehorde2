@@ -18,7 +18,6 @@ strict namespace ZH2Game
         }
 
         // Set the timer to be 1 second left if a timer is active and the user is an admin.
-        // Otherwise check for pregame and start the countdown to start the map.
         if (RoundTimer::GetAnyTimerActive() && Admin::GetAdmin())
         {
             int index = RoundTimer::GetActiveTimerIndex();
@@ -27,8 +26,15 @@ strict namespace ZH2Game
             if (RoundTimer::GetTimerTicsLeft(index) < 1 * 35) terminate;
             RoundTimer::SetTimerTicsLeft(index, 1 * 35);
             Logger::LogBold(BCSUTILS::PlayerName(PlayerNumber()) + " has sped up the timer.");
+          
+            Sync::SyncTimers();
+            terminate;
         }
-        else if (Round::GetActiveKnownRoundState() == Round::STATEPREGAME)
+
+        // Otherwise check for pregame and start the countdown to start the map.
+        // For this we should not already have the timer active.
+        if (Round::GetActiveKnownRoundState() == Round::STATEPREGAME
+            && RoundTimer::GetActiveTimerKnownType() != RoundTimer::TIMERPREGAMECOUNTDOWN)
         {
             int availableClients = BCSUtils::ClientCount();
             int minimumRequiredClients = ZH2Game::GetMinimumClientCount();
@@ -49,9 +55,10 @@ strict namespace ZH2Game
             RoundTimer::SetActiveTimerByKnownType(RoundTimer::TIMERPREGAMECOUNTDOWN);
             RoundTimer::StartTimer(index);
             Logger::LogBold(BCSUtils::PlayerName(PlayerNumber()) + " has requested to start the game.");
-        }
           
-        Sync::SyncTimers();
+            Sync::SyncTimers();
+            terminate;
+        }
     }
 
     script "zh2_action_sprint" (raw doSprint) net
