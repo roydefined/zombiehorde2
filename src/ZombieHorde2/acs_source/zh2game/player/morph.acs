@@ -12,19 +12,28 @@ strict namespace Player
 
     internal void MorphPlayerToClass(int id, str class)
     {
+        ACS_NamedExecuteWithResult("zh2_internal_morphplayer", id, class);
+    }
+
+    // As we transfer the translation of the player we must set an activator.
+    // Therefore this is handled in a separate script.
+    script "zh2_internal_morphplayer"(raw idRaw, raw classRaw)
+    {
+        int id = (int)idRaw;
+        str class = (str)classRaw;
         int tid = Identity::GetTid(id);
-        if (tid == -1) return;
+        if (tid == -1) terminate;
 
         if (!BCSUtils::ActorIsAlive(tid))
         {
             Logger::LogWarning(LogSource, "Unable to morph player " + BCSUtils::PlayerName(id) + ": player is not alive.");
-            return;
+            terminate;
         }
 
         if (CheckActorClass(tid, class))
         {
             Logger::LogWarning(LogSource, "Unable to morph player " + BCSUtils::PlayerName(id) + ": player is already target class (" + class + ").");
-            return;
+            terminate;
         }
 
         // If we morph away from the invisible player class, we want to take NothingWeapon.
@@ -35,26 +44,53 @@ strict namespace Player
         if (GetActorProperty(tid, APROP_Invulnerable))
         {
             Logger::LogError(LogSource, "Failed to set player " + BCSUtils::PlayerName(id) + " into target class (" + class + "). Player is invulnerable.");
-            return;
+            terminate;
         }
+
+        // Mapspot will hold the player's translation so we can migrate it to the new class.
+        int translationHolderTid = UniqueTid();
+        if (!SpawnForced("mapspot", 0.0, 0.0, 0.0, translationHolderTid))
+        {
+            Logger::LogError(LogSource, "Failed to spawn translation mapspot.");
+            terminate;
+        }
+
+        // Set activator to the morphing player in order to receive the translation.
+        if (!SetActivatorToPlayer(id))
+        {
+            Logger::LogError(LogSource, "Failed to set player as activator.");
+            terminate;
+        }
+
+        Thing_SetTranslation(translationHolderTid, -1);
 
         // Player is not of class InvisiblePlayer, which means they must first be unmorphed (InvisiblePlayer is the base unmorphed variant).
         if (!CheckActorClass(tid, CLASS_INVISIBLE) && !bool(UnMorphActor(tid, (int)true)))
         {
             Logger::LogError(LogSource, "Failed to unmorph (" + str(tid) + ")" + BCSUtils::PlayerName(id) + " (actor class = " + GetActorClass(tid) + ").");
-            return;
+            terminate;
         }
 
         // Note mapspot prevents flashes during morphing.
         if (!CheckActorClass(tid, class) && !MorphActor(tid, class, "", 0x7fffffff, MRF_NEWTIDBEHAVIOUR | MRF_LOSEACTUALWEAPON, "mapspot", "mapspot"))
         {
             Logger::LogError(LogSource, "Failed to morph (" + str(tid) + ")" + BCSUtils::PlayerName(id) + " into target class (" + class + ", actor class = " + GetActorClass(tid) + ").");
-            return;
+            terminate;
         }
 
         // If we morphed into the invisible player class, we want to give NothingWeapon.
         if (CheckActorClass(tid, CLASS_INVISIBLE))
             GiveActorInventory(tid, WEAPON_NOTHINGWEAPON_NAME, 1);
+
+        // Set activator to the spawned mapspot holding the translation and transfer the translation back.
+        if (!SetActivator(translationHolderTid))
+        {
+            Logger::LogError(LogSource, "Failed to set translation holder as activator.");
+            terminate;
+        }
+
+        Thing_SetTranslation(tid, -1);
+        Thing_Remove(translationHolderTid);
 
         Logger::LogDebug(LogSource, "Player (" + str(tid) + ")" + BCSUtils::PlayerName(id) + " was morphed to class \cd" + GetActorClass(tid) + "\cj.");
     }
