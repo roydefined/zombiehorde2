@@ -4,15 +4,23 @@
 
 strict namespace Reward
 {
+    // Returns `true` if the container was given.
     script "zh2_dec_givecontainer" (raw typeRaw)
     {
         int typeInt = (int)typeRaw;
         int index = BCSUtils::Flag2Index(typeInt) + 1;
 
         Reward::RewardItemTypeFlagsT type = Reward::GetRewardItemTypeByIndex(index);
-        if (type == Reward::REWARDNONE) terminate;
+        if (type == Reward::REWARDNONE)
+            terminate;
+
+        // Check if we don't have the container already.
+        str itemName = ContainerTypeToItemName(type);
+		if (CheckInventory(itemName) != 0)
+            terminate;
 
         Reward::GiveContainer(type);
+        SetResultValue((int)true);
     }
 
 	internal void GiveContainer(RewardItemTypeFlagsT type)
