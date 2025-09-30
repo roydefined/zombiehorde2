@@ -6,7 +6,8 @@ strict namespace Game
 {
     internal bool HandlePlayerChatMessage(int id, str message)
     {
-        // For now the function only prevents bots from sending a message when they are a zombie.
-        return !PlayerIsBot(id) || Player::GetPlayerIsHuman(id);
+        // The function prevents bots from sending a message when they are a zombie.
+        // They are also not allowed to chat when the round has ended.
+        return !PlayerIsBot(id) || Player::GetPlayerIsHuman(id) || Round::GetActiveKnownRoundState() < Round::STATEENDING;
     }
 }
