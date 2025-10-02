@@ -1,0 +1,142 @@
+actor ZH2LegacyZe26Barney
+{
+	Health 6000
+	Radius 20
+	Height 56
+	Speed 8
+	Monster
+	
+	//+BOSS
+	+FLOORCLIP
+	+QUICKTORETALIATE
+	
+	seesound "monster/barney/walk"
+	painsound "monster/barney/pain"
+	deathsound "monster/barney/walk"
+	activesound "monster/barney/walk"
+	
+	States
+	{
+		Spawn:
+			BARN A 10 A_Look
+			Loop
+		
+		See:
+	        BARN A 1 A_Jump (220,2)
+			BARN A 0 A_PlaySoundEx ("monster/barney/walk","body",0,1)
+			BARN AB 3 A_JumpIfTargetInLos("Strafe")
+			BARN AB 3 A_Chase
+	        BARN A 0 A_JumpIf (momz != 0,4)
+	        BARN A 1 A_Jump (200,3)
+	        BARN A 1 ThrustThingZ (0,35,0,1) 
+	        BARN A 3 A_Recoil (-5)
+			BARN AD 3 A_Chase
+			Loop
+		
+		Strafe:
+			BARN A 1 A_Jump (55,"Jump")
+			BARN A 1 A_Jump (85, "StrafeForwardAndLeft", "StrafeForwardAndRight", "StrafeBackwardAndLeft", "StrafeBackwardAndRight")
+			BARN A 1 A_Jump (256, "StrafeForward", "StrafeBackward")
+			Goto StrafeForward
+			
+		Jump:
+	        BARN A 1 ThrustThingZ (0,35,0,1) 
+			Goto Strafe
+		
+		StrafeForward:
+			BARN A 4 A_Recoil (-3.675)
+			BARN A 0 A_FaceTarget
+			BARN A 4 A_Recoil (-3.675)
+			BARN A 4 A_Recoil (-3.675)
+			BARN A 0 A_FaceTarget
+			BARN A 0 A_Chase("", "Missile", CHF_DONTMOVE)
+			BARN A 4 A_Recoil (-3.675)
+			Goto See
+		
+		StrafeForwardAndLeft:
+			BARN A 0 ThrustThing (angle*256/360-38.7, 12, 0, 0)
+			BARN A 0 A_FaceTarget
+			BARN A 4 A_Recoil (-0.504)
+			BARN A 0 ThrustThing (angle*256/360-38.7, 12, 0, 0)
+			BARN A 4 A_Recoil (-0.504)
+			BARN A 0 ThrustThing (angle*256/360-38.7, 12, 0, 0)
+			BARN A 4 A_Recoil (-0.504)
+			BARN A 0 ThrustThing (angle*256/360-38.7, 12, 0, 0)
+			BARN A 0 A_FaceTarget
+			BARN A 0 A_Chase("","Missile",CHF_DONTMOVE)
+			BARN A 4 A_Recoil (-0.504)
+			Goto See
+		StrafeForwardAndRight:
+			BARN A 0 ThrustThing (angle*256/360+38.7, 12, 0, 0)
+			BARN A 0 A_FaceTarget
+			BARN A 4 A_Recoil (-0.504)
+			BARN A 0 ThrustThing (angle*256/360+38.7, 12, 0, 0)
+			BARN A 4 A_Recoil (-0.504)
+			BARN A 0 ThrustThing (angle*256/360+38.7, 12, 0, 0)
+			BARN A 4 A_Recoil (-0.504)
+			BARN A 0 ThrustThing (angle*256/360+38.7, 12, 0, 0)
+			BARN A 0 A_FaceTarget
+			BARN A 0 A_Chase("", "Missile", CHF_DONTMOVE)
+			BARN A 4 A_Recoil (-0.504)
+			Goto See
+		
+		StrafeBackward:
+			BARN A 4 A_Recoil (3.675)
+			BARN A 0 A_FaceTarget
+			BARN A 4 A_Recoil (3.675)
+			BARN A 4 A_Recoil (3.675)
+			BARN A 0 A_FaceTarget
+			BARN A 0 A_Chase("", "Missile", CHF_DONTMOVE)
+			BARN A 4 A_Recoil (3.675)
+			Goto See
+			
+		StrafeBackwardAndLeft:
+			BARN A 0 ThrustThing (angle*256/360-38.7, 12, 0, 0)
+			BARN A 0 A_FaceTarget
+			BARN A 4 A_Recoil (0.504)
+			BARN A 0 ThrustThing (angle*256/360-38.7, 12, 0, 0)
+			BARN A 4 A_Recoil (0.504)
+			BARN A 0 ThrustThing (angle*256/360-38.7, 12, 0, 0)
+			BARN A 4 A_Recoil (0.504)
+			BARN A 0 ThrustThing (angle*256/360-38.7, 12, 0, 0)
+			BARN A 0 A_FaceTarget
+			BARN A 0 A_Chase("", "Missile", CHF_DONTMOVE)
+			BARN A 4 A_Recoil (-0.504)
+			Goto See
+			
+		StrafeBackwardAndRight:
+			BARN A 0 ThrustThing (angle*256/360+38.7, 12, 0, 0)
+			BARN A 0 A_FaceTarget
+			BARN A 4 A_Recoil (0.504)
+			BARN A 0 ThrustThing (angle*256/360+38.7, 12, 0, 0)
+			BARN A 4 A_Recoil (0.504)
+			BARN A 0 ThrustThing (angle*256/360+38.7, 12, 0, 0)
+			BARN A 4 A_Recoil (0.504)
+			BARN A 0 ThrustThing (angle*256/360+38.7, 12, 0, 0)
+			BARN A 0 A_FaceTarget
+			BARN A 0 A_Chase(""," Missile", CHF_DONTMOVE)
+			BARN A 4 A_Recoil (0.504)
+			Goto See
+			
+		Missile:
+			Goto See
+			   
+		Pain:
+			BARN A 3
+			BARN A 3 A_PlaySoundEx ("monster/barney/pain","body",0,1)
+			Goto See
+		Death:
+			BARN A 10 A_Scream
+			BARN A 10 A_NoBlocking
+			BARN A 10 A_SetTranslucent(0.90)
+			BARN A 10 A_SetTranslucent(0.80)
+			BARN A 10 A_SetTranslucent(0.70)
+			BARN A 10 A_SetTranslucent(0.60)
+			BARN A 10 A_SetTranslucent(0.50) 
+			BARN A 10 A_SetTranslucent(0.40)
+			BARN A 10 A_SetTranslucent(0.30)
+			BARN A 10 A_SetTranslucent(0.20)
+			BARN A 10 A_SetTranslucent(0.10)
+			Stop
+	}
+}
