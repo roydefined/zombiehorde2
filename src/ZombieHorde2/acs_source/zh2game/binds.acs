@@ -185,6 +185,10 @@ strict namespace ZH2Game
 
     script "zh2_action_debuggivestartweapons" net
     {
+        // Can't be called when not offline, not in development and we are not admin.
+        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
+            terminate;
+
         Player::SpecieTypeT specie = Player::GetSpecie();
         ClearInventory();
         
@@ -503,16 +507,28 @@ strict namespace ZH2Game
 
     script "zh2_action_syncall" net
     {
+        // Can't be called when not offline, not in development and we are not admin.
+        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
+            terminate;
+
         Sync::SyncAll(false);
     }
 
     script "zh2_action_callclientsyncall" net
     {
+        // Can't be called when not offline, not in development and we are not admin.
+        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
+            terminate;
+
         Sync::CallClientSyncAll();
     }
 
     script "zh2_action_clientsyncall" net clientside
     {
+        // Can't be called when not offline, not in development and we are not admin.
+        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
+            terminate;
+            
         Sync::SynAllClientside();
     }
 
