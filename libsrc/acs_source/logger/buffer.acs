@@ -4,42 +4,76 @@
 
 strict namespace Logger
 {
+    // This holds the buffered log messages so we can log them properly later.
     internal str _logBuffer[LOG_BUFFER_SIZE];
     internal int _logBufferFillSize = 0;
 
+    // Called from the main client loop to flush incoming log messages.
+    // Online we also have this called from the server.
     void FlushBuffer()
     {
-        if (!ZH2Lib::GetUseBufferedLogging()) return;
-
         for(int i = 0; i < _logBufferFillSize; ++i)
         {
-            str formatted = _logBuffer[_logBufferFillSize - 1 - i];
-			Log(s:formatted);
+            // The index must be reversed clientside as scripts are invoked in reverse order.
+            // The index serverside does not need to be reversed as we do not call
+            // a separate script to insert the log into the buffer.
+            int index = BCSUtils::IsServerOnly() ? i : _logBufferFillSize - 1 - i;
+
+            str messagePacket = _logBuffer[index];
+
+            messagePacket = Packet::Packet_ReadStr(messagePacket);
+            str source = Packet::Packet_Rval;
+
+            messagePacket = Packet::Packet_Read(messagePacket, Packet::PACKET_WORD);
+            LogLevelT level = GetLogLevelByIndex(Packet::Packet_Rval);
+
+            // This log message is not enabled on the client/server
+            if (!IsEnabled(source, level))
+                continue;
+
+            messagePacket = Packet::Packet_Read(messagePacket, Packet::PACKET_WORD);
+            LogOwnerT owner = GetLogOwnerByIndex(Packet::Packet_Rval);
+
+            messagePacket = Packet::Packet_ReadStr(messagePacket);
+            str message = Packet::Packet_Rval;
+
+            str formattedMessage = FormatMessage(source, level, owner, message);
+			Log(s:formattedMessage);
         }
 
         _logBufferFillSize = 0;
     }
 
-    internal void AddLogToBuffer(str message)
+    internal void AddPacketLogToBuffer(str messagePacket)
     {
-        if (_logBufferFillSize == LOG_BUFFER_SIZE)
-        {
-            PrintError("Maximum log buffer size of " + str(LOG_BUFFER_SIZE) + " reached for this frame. Log can't be added.");
+        // Gonna have to copy the packet so we don't lose data.
+        str messagePacketCopy = messagePacket;
+
+        messagePacketCopy = Packet::Packet_ReadStr(messagePacketCopy);
+        str source = Packet::Packet_Rval;
+
+        Packet::Packet_Read(messagePacketCopy, Packet::PACKET_WORD);
+        LogLevelT level = GetLogLevelByIndex(Packet::Packet_Rval);
+
+        // This is a premature check to block any log messages that are definitely not enabled.
+        // It is premature because the IO might not be finished here, so if a log is super early it might pass.
+        if (!IsEnabled(source, level))
             return;
-        }
 
-        _logBuffer[_logBufferFillSize++] = message;
-    }
-
-    internal void AddLeveledLogToBuffer(str source, LogLevelT level, LogOwnerT owner, str message)
-    {
         if (_logBufferFillSize == LOG_BUFFER_SIZE)
         {
             PrintError("Maximum log buffer size of " + str(LOG_BUFFER_SIZE) + " reached for this frame. Leveled log can't be added.");
             return;
         }
 
-        str formatted = FormatMessage(source, level, owner, message);
-        _logBuffer[_logBufferFillSize++] = formatted;
+        _logBuffer[_logBufferFillSize++] = messagePacket;
+    }
+
+    internal str FormatMessage(str source, LogLevelT logLevel, LogOwnerT owner, str message)
+    {
+      str ownerString = owner != OWNERNONE
+        ? " [" + GetLogOwnerAsString(owner) + "]"
+        : "";
+      return "\c" + GetLogLevelColorAsString(logLevel) + "[" + GetLogLevelShortenedAsString(logLevel) + "]" + ownerString + " " + source + "\cj: " + message;
     }
 }

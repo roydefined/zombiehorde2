@@ -35,36 +35,27 @@ strict namespace Logger
                         : BCSUtils::IsServerOnly() ? OWNERSERVER
                         : OWNERNONE;
 
-		// Log if serverside, which logs to RCON.
-        // Has its own check if the source-level combination is enabed, optionally with override.
-		if (BCSUtils::IsServerOnly() && IsEnabled(source, logLevel))
-            Log(s:FormatMessage(source, logLevel, owner, message));
-		
-		// Offline and direct logging is enabled.
-		// We can log directly offline.
-        // TODO: I don't think this works in some cases due to activators changing.
-		if (ZH2Lib::GetOfflineDirectLogging() && !IsNetworkGame())
-		{
-			Log(s:FormatMessage(source, logLevel, owner, message));
-			return;
-		}
+	    str messagePacket = Packet::Packet_New();
+	    messagePacket = Packet::Packet_AppendStr(messagePacket, source);
+	    messagePacket = Packet::Packet_Append(messagePacket, (int)logLevel, Packet::PACKET_WORD);
+	    messagePacket = Packet::Packet_Append(messagePacket, (int)owner, Packet::PACKET_WORD);
+	    messagePacket = Packet::Packet_AppendStr(messagePacket, message);
 
-	    str packet = Packet::Packet_New();
-	    packet = Packet::Packet_AppendStr(packet, source);
-	    packet = Packet::Packet_Append(packet, (int)logLevel, Packet::PACKET_WORD);
-	    packet = Packet::Packet_Append(packet, (int)owner, Packet::PACKET_WORD);
-	    packet = Packet::Packet_AppendStr(packet, message);
-		
+        // When logged serverside, we also want to perform buffering and logging through rcon.
+        if (BCSUtils::IsServerOnly())
+            AddPacketLogToBuffer(messagePacket);
+        
+        // Now send the log to clients.
 		// Already clientside, so we do not need to do networking.
 		if (BCSUtils::IsClient())
 		{
-			if (!ACS_NamedExecuteAlways("LoggerLib_LogPacketOnClientString", 0, packet))
-				PrintError("Failed to invoke LoggerLib_LogPacketOnClientString. Message packet: '" + packet + "'.");
+			if (!ACS_NamedExecuteAlways("LoggerLib_LogPacketOnClientString", 0, messagePacket))
+				PrintError("Failed to invoke LoggerLib_LogPacketOnClientString. Message packet: '" + messagePacket + "'.");
 			return;
 		}
 		
-		if(!NamedSendNetworkString("LoggerLib_LogPacketOnClientInt", packet))
-			PrintError("Failed to invoke LoggerLib_LogPacketOnClientInt. Message packet: '" + packet + "'.");
+		if(!NamedSendNetworkString("LoggerLib_LogPacketOnClientInt", messagePacket))
+			PrintError("Failed to invoke LoggerLib_LogPacketOnClientInt. Message packet: '" + messagePacket + "'.");
     }
 
     // Returns `true` if the given source-level combination is configured to be logged.
