@@ -31,6 +31,10 @@ strict namespace Logger
 	  
     void LogMessageLevel(str source, LogLevelT logLevel, str message)
     {
+        // Check if global override has disabled this log message.
+        if (!IsEnabledGlobally(source, logLevel))
+            return;
+
         LogOwnerT owner = BCSUtils::ISClientOnly() ? OWNERCLIENT
                         : BCSUtils::IsServerOnly() ? OWNERSERVER
                         : OWNERNONE;
@@ -59,6 +63,7 @@ strict namespace Logger
     }
 
     // Returns `true` if the given source-level combination is configured to be logged.
+    // This is determined based on the override cvar of the client/server.
     internal bool IsEnabled(str source, LogLevelT level)
     {
         // Switch between server/client and check their override. If set, always check that first.
@@ -82,6 +87,14 @@ strict namespace Logger
         }
 
         return ZH2Lib::PersistingLibContext.LogContext.DefaultLevel <= level;
+    }
+
+    // Returns `true` if the given source-level combination is configured to be logged.
+    // This is determined based on the global override cvar.
+    internal bool IsEnabledGlobally(str source, LogLevelT level)
+    {
+        int severity = GetLogLevelByIndex(ZH2Lib::GetGlobalOverwriteLogSeverity());
+        return severity == LEVELNONE || severity <= level;
     }
     
     internal LogOwnerT GetLogOwnerByIndex(int index)
