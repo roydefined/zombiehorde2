@@ -118,14 +118,18 @@ strict namespace Hud
         if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
             return;
 
+        // Don't draw as the user is typing as the timer is likely overlapping with the chatbox.
+        if (GetPlayerStatus(ConsolePlayerNumber()) & PLAYERSTATUS_CHATTING)
+             return;
+
         int timer = Game::GetPlayTime();
         if (timer == 0) return;
 
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetCenterText(true);
         BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudSetStayTime(0.5);
-        BCSUtils::HudSetDisappearTime(0.5);
+        BCSUtils::HudSetStayTime(0.0);
+        BCSUtils::HudSetDisappearTime(0.2);
 
         // Gradual alpha increase as play time goes on.
         // 40 tics, configurable.
