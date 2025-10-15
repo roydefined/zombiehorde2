@@ -24,7 +24,9 @@ strict namespace ZH2Game
 
             if (!RoundTimer::GetTimerDefined(index)) terminate;
             if (RoundTimer::GetTimerTicsLeft(index) < 1 * 35) terminate;
-            RoundTimer::SetTimerTicsLeft(index, 1 * 35);
+
+            // Removing 1 tic prevents the countdown ambient from playing every tic if it's the play timer.
+            RoundTimer::SetTimerTicsLeft(index, 1 * 35 - 1);
             Logger::LogBold(BCSUTILS::PlayerName(PlayerNumber()) + " has sped up the timer.");
           
             Sync::SyncTimers();
