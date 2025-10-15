@@ -328,6 +328,17 @@ strict namespace ZH2Game
         int killedId = PlayerNumber();
         VALIDATE_ID_VALID_SCRIPT(killedId);
 
+        // The round is not joinable, so the player has to be removed from their body.
+        if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
+        {
+            // Build message, but don't mention they can join next map if they are allowed to always join.
+            str message = "You are dead.";
+            if (!AllowPlayerJoin(PlayerNumber()))
+                message += " You will be able to play again next map.";
+
+            RemovePlayer(killedId, message);
+        }
+
         // Skip this script if the player is not playing (state is likely dead already).
         // This will always happen when setting a player as a dead spectator.
         if (Player::GetPlayerState(killedId) != Player::STATEPLAYING)
@@ -504,25 +515,10 @@ strict namespace ZH2Game
         WAIT_FOR_SCRIPT_OPEN_SERVER();
         Logger::LogDebug(LogSource, "Call script \"zh2_internal_enter_respawn\" after awaiter");
 
-        void RemoveActivator(str message)
-        {
-            Logger::LogActivator(message);
-            if (GetUseDeadSpectators())
-            {
-                if (!SetDeadSpectator(PlayerNumber(), true))
-                    Logger::LogWarning(LogSource, "Failed to set " + str(PlayerNumber()) + " as dead spectator. Falling back to KickFromGame.");
-                else
-                    return;
-            }
-            
-            if (!KickFromGame(PlayerNumber(), message))
-                Logger::LogError(LogSource, "Failed to set " + str(PlayerNumber()) + " as spectator. KickFromGame failed.");
-        }
-
         // Forced player cap is enabled so the player will be kicked if we reached the limit.
         if (DevelopmentPlayerCap() && !PlayerIsBot(PlayerNumber()) && PlayerCount() - BCSUtils::BotCount() > DEV_PLAYERCAP_COUNT)
         {
-            RemoveActivator("This development build enforces a maximum player cap of " + str(DEV_PLAYERCAP_COUNT) + ". Please use a compatible, non-development version of Zombie Horde 2 to lift this limit.");
+            RemovePlayer(PlayerNumber(), "This development build enforces a maximum player cap of " + str(DEV_PLAYERCAP_COUNT) + ". Please use a compatible, non-development version of Zombie Horde 2 to lift this limit.");
             terminate;
         }
 
@@ -531,9 +527,9 @@ strict namespace ZH2Game
         // The game is not in a state where players can join.
         // Depending on configuration we set the player as a dead spectator or kick them to spectate.
         // Should setting dead spectator fail then we fall back to using KickFromGame.
-        if (!CanJoin() && !Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
+        if (!AllowPlayerJoin(PlayerNumber()) && !Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
         {
-            RemoveActivator("You will join the next map.");
+            RemovePlayer(PlayerNumber(), "You will join the next map.");
             terminate;
         }
 
@@ -588,6 +584,21 @@ strict namespace ZH2Game
         // }
     }
 
+    internal void RemovePlayer(int id, str message)
+    {
+        Logger::LogTo(message, id);
+        if (GetUseDeadSpectators())
+        {
+            if (!SetDeadSpectator(id, true))
+                Logger::LogWarning(LogSource, "Failed to set " + str(id) + " as dead spectator. Falling back to KickFromGame.");
+            else
+                return;
+        }
+
+        if (!KickFromGame(id, message))
+            Logger::LogError(LogSource, "Failed to set " + str(id) + " as spectator. KickFromGame failed.");
+    }
+
     script "zh2_internal_enter_respawn_clientside" clientside
     {
         Logger::LogDebug(LogSource, "Call script \"zh2_internal_enter_respawn_clientside\"");
@@ -601,9 +612,9 @@ strict namespace ZH2Game
 
     // Returns `true` if the given player can join.
     // Checks for global, and player specific joining.
-    internal bool CanJoin()
+    internal bool AllowPlayerJoin(int id)
     {
-        return GameContext.AlwaysAllowJoin || GameContext.Players[PlayerNumber()].AlwaysAllowJoin;
+        return GameContext.AlwaysAllowJoin || GameContext.Players[id].AlwaysAllowJoin;
     }
 
     // Note this is not always emptied in the game.
