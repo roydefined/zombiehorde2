@@ -1,0 +1,39 @@
+actor ZH2DoomCandleStick : ZH2DoomLightSource replaces Candlestick
+{
+	Radius 20
+	Height 14
+	Scale .5
+	ProjectilePassHeight -16
+	
+	Tag "Candlestick"
+	
+	+SOLID
+	
+	states
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_CheckSight("Spawn.NoSight")
+			TNT1 A 0 A_SpawnItemEx("ZH2DoomCandleStickLensFlare", 0, 0, 18)
+			CAN3 A 4 bright light("ZH2DoomCandleStickLight")
+			TNT1 A 0 A_SpawnItemEx("ZH2DoomCandleStickLensFlare", 0, 0, 18)
+			CAN3 B 4 bright light("ZH2DoomCandleStickLight")
+			loop
+		
+		Spawn.NoSight:
+			CAN3 A 1 bright light("ZH2DoomCandleStickLight")
+			goto Spawn
+	}
+}
+
+actor ZH2DoomCandleStickLensFlare : ZH2DoomLightSourceLensFlare
+{
+	Scale .2
+	Alpha .3
+	
+	States
+	{
+		Spawn:
+			LFLR A 4 NoDelay Bright
+			stop
+	}
+}
