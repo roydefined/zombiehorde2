@@ -1,0 +1,35 @@
+actor ZH2DoomFloorLamp : ZH2DoomLightSource replaces Column
+{
+	Radius 16
+	Height 48
+	ProjectilePassHeight -16
+	
+	Tag "Floor lamp"
+	
+	+SOLID
+	
+	states
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_CheckSight("Spawn.NoSight")
+			TLA1 A 1 bright light("ZH2DoomFloorLampLight") A_SpawnItemEx("ZH2DoomFloorLampLensFlare", 0, 0, 40)
+			loop
+		
+		Spawn.NoSight:
+			TLA1 A 1 bright light("ZH2DoomFloorLampLight")
+			goto Spawn
+	}
+}
+
+actor ZH2DoomFloorLampLensFlare : ZH2DoomLightSourceLensFlare
+{
+	YScale .3
+	XScale 1.4
+	
+	States
+	{
+		Spawn:
+			LFLR B 1 NoDelay Bright
+			stop
+	}
+}
