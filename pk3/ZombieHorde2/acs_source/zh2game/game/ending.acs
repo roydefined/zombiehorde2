@@ -14,17 +14,23 @@ strict namespace Game
         {
             { "\ciMission failed!", "\ciFission mailed!" },
             { "\ckHow did you manage to do this?", "\ckWhat the...?!" },
-            (raw)0,
+            
+            1,
+            { "D_WINN" }
         },
         {
             { "\chHumans \cjwin!", "\chHumans \cjVictory!" },
             { "\cjHumanity is safe... for now!", "\cjDon't mess with humans, bro!" },
-            "D_WINHUM",
+            
+            4,
+            { "D_WINH1", "D_WINH2", "D_WINH3", "D_WINH4" },
         },
         {
             { "\cgZombies \cjwin!", "\cgZombies \cjVictory!" },
             { "\cgBring bigger guns next time!", "\cgEarth is their new home now!" },
-            "D_WINZOM",
+
+            6,
+            { "D_WINZ1", "D_WINZ2", "D_WINZ3", "D_WINZ4", "D_WINZ5", "D_WINZ6" },
         },
     };
 
@@ -38,9 +44,13 @@ strict namespace Game
         ZH2Game::GameContext.WinMessageBottom = ending.WinMessagesBottom[Random(0, lengthof(ending.WinMessagesBottom) - 1)];
 
         // Play a track for the winning type.
-        str track = ending.track;
-        if (track != (raw)0 && track != "")
-            Music::SetMusic(track);
+        if (ending.TrackCount != 0)
+        {
+            int index = Random(0, ending.TrackCount - 1);
+            str track = ending.Tracks[index];
+            if (track != (raw)0 && track != "")
+                Music::SetMusic(track);
+        }
 
         // Set the ordered lists indicating the final stats.
         
