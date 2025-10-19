@@ -1,0 +1,49 @@
+actor ZH2DoomExplosiveBarrel : ZH2DoomShootable replaces ExplosiveBarrel
+{
+	Health 20
+	Radius 10
+	Height 42
+	+SOLID
+	+SHOOTABLE
+	+NOBLOOD
+	+ACTIVATEMCROSS
+	+DONTGIB
+	+NOICEDEATH
+	+OLDRADIUSDMG
+	DeathSound "decorate/barrelexplode"
+	Obituary "$OB_BARREL" // "%o went boom."
+	States
+	{
+		Spawn:
+			BXP1 A -1
+			stop
+			
+		Death:
+			BXP1 B 10 Bright
+			BXP1 B 5 Bright A_Scream
+			BXP1 C 2 Bright A_Explode
+			TNT1 A 0 A_SpawnItemEx("ZH2DoomExplosiveBarrelExplosionEffect")
+			BXP1 D -1
+			stop
+	}
+}
+
+actor ZH2DoomExplosiveBarrelExplosionEffect
+{
+	+FORCEXYBILLBOARD
+	+CLIENTSIDEONLY
+	+DONTSPLASH
+	+NOTIMEFREEZE
+	+NOBLOCKMAP
+	
+	+BRIGHT
+	
+	-SOLID
+	
+	States
+	{
+		Spawn:
+			EBXP ABCDEFGHIJKLM 2 A_Fadeout(0.1)
+			stop
+	}
+}
