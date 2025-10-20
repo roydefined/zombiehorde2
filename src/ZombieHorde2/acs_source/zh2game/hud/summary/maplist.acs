@@ -10,6 +10,8 @@ strict namespace Hud
     #define MAPBLOCKWIDTH 150.0
     #define MAPBLOCKHEIGHT 90.0
 
+    #define MAPNAME_WRAPLENGTH 18
+
     internal void DrawMapList(fixed x, fixed y)
     {
         int id = HUD_SUMMARYMAPLIST;
@@ -140,10 +142,18 @@ strict namespace Hud
 
         if (label != "")
         {
+            // We want to make sure the map name does not exceed the boundaries of the box.
+            str wrappedLabel = Utils::WrapString(label, MAPNAME_WRAPLENGTH);
+
+            // We should reset the alignment for this so the label does not offset weirdly.
+            BCSUTILS::HudSetAlignment(BCSUTILS::HUD_ALIGN_CENTER, BCSUTILS::HUD_ALIGN_CENTER);
+            
             BCSUtils::HudSetPoint(x, y - 10.0);
             BCSUtils::HudSetFont("SmallFont");
-            BCSUtils::HudDrawText(--id, label);
+            BCSUtils::HudDrawText(--id, wrappedLabel);
             DebugDraw();
+
+            BCSUTILS::HudSetAlignment(BCSUTILS::HUD_ALIGN_CENTER, BCSUTILS::HUD_ALIGN_BOTTOM);
         }
 
         fixed propertiesY = y - 70.0;
