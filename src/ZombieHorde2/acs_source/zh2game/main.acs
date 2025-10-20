@@ -401,21 +401,12 @@ strict namespace ZH2Game
             fixed interpolationY = cameraY - offsetY;
             fixed interpolationZ = cameraZ;
 
-            SpawnForced("MovingCamera", cameraX, cameraY, cameraZ, TID_DEATH_CAM_MOVINGCAMERA);
-            SpawnForced("InterpolationPoint", interpolationX, interpolationY, interpolationZ, TID_DEATH_CAM_INTERPOLATIONPOINT);
-
-            // Ensure angle normalized
-            fixed camAngle = angle + 1.0;
-
-            SetActorAngle(TID_DEATH_CAM_MOVINGCAMERA, camAngle + 180.0);
-            SetActorAngle(TID_DEATH_CAM_INTERPOLATIONPOINT, camAngle + 180.0);
-
-            SetThingSpecial(TID_DEATH_CAM_MOVINGCAMERA, TID_DEATH_CAM_INTERPOLATIONPOINT, 0, 6, TID_DEATH_CAM_INTERPOLATIONPOINT, 0);
-            SetThingSpecial(TID_DEATH_CAM_INTERPOLATIONPOINT, 0, 35 * 4, 0, 0, 0);
-
+            SpawnForced("MapSpot", interpolationX, interpolationY, interpolationZ, TID_DEATH_CAM_MOVINGCAMERA, (raw)(angle) >> 8);
             ChangeCamera(TID_DEATH_CAM_MOVINGCAMERA, (int)false, (int)false);
 
-            Thing_Activate(TID_DEATH_CAM_MOVINGCAMERA);
+            delay(const: 35);
+            ChangeCamera(0, (int)false, (int)false);
+            Thing_Remove(TID_DEATH_CAM_MOVINGCAMERA);
         }
     }
     
