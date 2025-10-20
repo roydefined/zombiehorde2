@@ -8,6 +8,13 @@ strict namespace Decorate
     
     // Handles if the player can fire. You can't fire when the round ended.
 
+    internal void CanFireTic()
+    {
+        // Check if we should update the player's inventory with the item.
+        // This is then synched to the client and they will properly block the weapon from firing.
+        BCSUtils::SetInventory(WEAPON_BLOCK_FIRING_ITEM, (int)!GetCanFire());
+    }
+
     internal bool GetCanFire()
     {
         return GetPlayerCanFire(PlayerNumber());
@@ -16,11 +23,6 @@ strict namespace Decorate
     internal bool GetPlayerCanFire(int id)
     {
         return Round::GetActiveKnownRoundState() < Round::STATEENDING;
-    }
-
-    script "zh2_dec_getcanfire"
-    {
-        SetResultValue((int)GetCanFire());
     }
 
     /* FIRING */
