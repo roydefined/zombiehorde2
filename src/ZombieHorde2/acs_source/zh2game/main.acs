@@ -377,6 +377,46 @@ strict namespace ZH2Game
         // To prevent this setting through other deaths, make sure we run on the main client.
         if (ConsolePlayerNumber() == id)
             Hud::SetCursorEnabled(false);
+
+        // The round is not joinable, so the player will have been from their body.
+        // To prevent a weird visual from removal, we spawn a moving camera that faces the player.
+        if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
+        {
+            int tid = Identity::GetTid(id);
+            fixed cameraX = GetActorX(tid);
+            fixed cameraY = GetActorY(tid);
+            fixed cameraZ = GetActorZ(tid) + (fixed)GetActorProperty(tid, APROP_VIEWHEIGHT);
+
+            fixed angle = GetActorAngle(tid);
+
+            // Distance behind the player where the camera should move to
+            fixed distance = 128.0;
+
+            // Compute backward offset based on angle
+            fixed offsetX = cos(angle) * distance;
+            fixed offsetY = sin(angle) * distance;
+
+            // Interpolation point (move backwards)
+            fixed interpolationX = cameraX - offsetX;
+            fixed interpolationY = cameraY - offsetY;
+            fixed interpolationZ = cameraZ;
+
+            SpawnForced("MovingCamera", cameraX, cameraY, cameraZ, TID_DEATH_CAM_MOVINGCAMERA);
+            SpawnForced("InterpolationPoint", interpolationX, interpolationY, interpolationZ, TID_DEATH_CAM_INTERPOLATIONPOINT);
+
+            // Ensure angle normalized
+            fixed camAngle = angle + 1.0;
+
+            SetActorAngle(TID_DEATH_CAM_MOVINGCAMERA, camAngle + 180.0);
+            SetActorAngle(TID_DEATH_CAM_INTERPOLATIONPOINT, camAngle + 180.0);
+
+            SetThingSpecial(TID_DEATH_CAM_MOVINGCAMERA, TID_DEATH_CAM_INTERPOLATIONPOINT, 0, 6, TID_DEATH_CAM_INTERPOLATIONPOINT, 0);
+            SetThingSpecial(TID_DEATH_CAM_INTERPOLATIONPOINT, 0, 35 * 4, 0, 0, 0);
+
+            ChangeCamera(TID_DEATH_CAM_MOVINGCAMERA, (int)false, (int)false);
+
+            Thing_Activate(TID_DEATH_CAM_MOVINGCAMERA);
+        }
     }
     
     script "zh2_internal_event" (raw type, raw arg1, raw arg2) event
