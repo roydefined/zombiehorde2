@@ -59,7 +59,7 @@ actor ZH2WeaponSniper : ZH2Weapon
 			wait
 
 		Ready.Zoomed:
-			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getcanfire") == 0, "AltFire.ZoomOut")
+			TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "AltFire.ZoomOut")
 			
 			TNT1 A 1 A_WeaponReady(WRF_NOBOB | WRF_ALLOWRELOAD)
 			loop
@@ -89,7 +89,7 @@ actor ZH2WeaponSniper : ZH2Weapon
 		
 		// Altfire toggles zoom levels.
 		AltFire:
-			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getcanfire") == 0, "Ready")
+			TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
 			
 			TNT1 A 0 A_JumpIfInventory("ZH2WeaponSniperZoomlevel", 2, "AltFire.ZoomOut")
 			TNT1 A 0 A_JumpIfInventory("ZH2WeaponSniperZoomlevel", 1, "AltFire.Zoom2")
@@ -117,14 +117,14 @@ actor ZH2WeaponSniper : ZH2Weapon
 			goto Ready
 		
 		Reload:
-			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getcanfire") == 0, "Ready")
+			TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
 			TNT1 A 0 A_JumpIfInventory("ZH2WeaponSniperZoomlevel", 1, "AltFire.ZoomOut")
 			TNT1 A 0 A_JumpIfInventory("ZH2WeaponSniperShouldEjectCase", 1, "SniperBolt")
 			goto Ready
 			
 
 		Fire:
-			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getcanfire") == 0, "Ready")
+			TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
 			TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
 			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
 			
