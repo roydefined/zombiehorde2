@@ -137,10 +137,24 @@ strict namespace Hud
         if (Item::GetClientOwnedInventorySize() == 0)
             return id;
         
-        str graphic = Item::GetItemGraphic(Item::GetInventoryIndex(Item::GetClientOwnedInventoryIndex(Item::_currentInventoryIndex)));
+        int index = Item::GetInventoryIndex(Item::GetClientOwnedInventoryIndex(Item::_currentInventoryIndex));
+        str graphic = Item::GetItemGraphic(index);
+        str name = Item::GetItemName(index);
+        int inventoryCount = CheckInventory(name);
+
         BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudDrawImage(id--, graphic);
         DebugDraw();
+
+        // Draw the current count of the item if we have more than one.
+        if (inventoryCount > 1)
+        {
+            BCSUtils::HudSetPoint(x + 20.0, y - 10.0);
+            BCSUtils::HudSetFont("SmallFont");
+            BCSUtils::HudSetTextColor(CR_YELLOW);
+            BCSUtils::HudDrawText(id--, str(inventoryCount));
+            DebugDraw();
+        }
 
         return id;
     }
