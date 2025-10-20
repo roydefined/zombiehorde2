@@ -4,6 +4,27 @@
 
 strict namespace Decorate
 {
+    /* CAN FIRE */
+    
+    // Handles if the player can fire. You can't fire when the round ended.
+
+    internal bool GetCanFire()
+    {
+        return GetPlayerCanFire(PlayerNumber());
+    }
+
+    internal bool GetPlayerCanFire(int id)
+    {
+        return Round::GetActiveKnownRoundState() < Round::STATEENDING;
+    }
+
+    script "zh2_dec_getcanfire"
+    {
+        SetResultValue((int)GetCanFire());
+    }
+
+    /* FIRING */
+
     internal int GetFiringTime()
     {
         return GetPlayerFiringTime(PlayerNumber());
