@@ -132,6 +132,8 @@ Actor ZH2WeaponChaingun : ZH2Weapon
 		// The state determines the sprite based on the chaingun's heat.
 		// We show all four frames before we determine the state based on heat again.
 		Ready.Spinning:
+			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getcanfire") == 0, "WindDown")
+			
 			TNT1 A 0 A_PlaySound("weapons/chaingun/WINDLOOP", CHAN_WEAPON, 1.0, true)
 			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "Ready.SpinningHeat5")
 			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "Ready.SpinningHeat4")
@@ -215,6 +217,8 @@ Actor ZH2WeaponChaingun : ZH2Weapon
 			Goto Ready
 		
 		Fire:
+			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getcanfire") == 0, "Ready")
+			
 			TNT1 A 0 A_JumpIfInventory("ZH2ChaingunSpinning", 1, "Fire.Start")
 			Goto WindUp
 		Fire.Start:
@@ -272,6 +276,7 @@ Actor ZH2WeaponChaingun : ZH2Weapon
 			Goto WindDown
 
 		AltFire:
+			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getcanfire") == 0, "Ready")
 			TNT1 A 0 A_JumpIfInventory("ZH2ChaingunSpinning", 1, "WindDown")
 			Goto WindUp
    }
