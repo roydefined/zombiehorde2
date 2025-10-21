@@ -381,47 +381,7 @@ strict namespace ZH2Game
         // The round is not joinable, so the player will have been from their body.
         // To prevent a weird visual from removal, we spawn a moving camera that faces the player.
         if (Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
-        {
-            int tid = Identity::GetTid(id);
-            fixed x = GetActorX(tid),
-                  y = GetActorY(tid),
-                  z = GetActorZ(tid) + (fixed)GetActorProperty(tid, APROP_VIEWHEIGHT),
-                  angle = GetActorAngle(tid);
-
-            // Backwards offset based on angle
-            fixed offsetX = cos(angle) * DEATH_CAM_DISTANCE,
-                  offsetY = sin(angle) * DEATH_CAM_DISTANCE;
-
-            // Move the spot backwards
-            x -= offsetX;
-            y -= offsetY;
-
-            // Spawn and change the camera.
-            // Hold for 1 second, then delete it again.
-
-            SpawnForced(DEATH_CAM_ACTOR, x, y, z, DEATH_CAM_TID, (raw)(angle) >> 8);
-
-            fixed forwardX = cos(angle),
-                  forwardY = sin(angle),
-                  rightX   = cos(angle + 0.25),
-                  rightY   = sin(angle + 0.25);
-
-            // Final speed. Always backwards and left/right.
-            fixed forwardSpeed = -Math::FRandom(0.4, 0.8),
-                  strafeSpeed  =  Math::FRandom(-0.3, 0.3);
-
-            fixed velX = forwardX * forwardSpeed + rightX * strafeSpeed,
-                  velY = forwardY * forwardSpeed + rightY * strafeSpeed;
-
-            SetActorVelocity(DEATH_CAM_TID, velX, velY, DEATH_CAM_ZVEL, false, false);
-
-            ChangeCamera(DEATH_CAM_TID, (int)false, (int)false);
-            Thing_Hate(DEATH_CAM_TID, tid, 6);
-
-            delay(const: DEATH_CAM_HOLD_TICS);
-            ChangeCamera(0, (int)false, (int)false);
-            Thing_Remove(DEATH_CAM_TID);
-        }
+            Game::InitializeClientDeathCamera();
     }
     
     script "zh2_internal_event" (raw type, raw arg1, raw arg2) event
