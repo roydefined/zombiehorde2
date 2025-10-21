@@ -1,0 +1,70 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    #define DEATH_CAM_ACTOR "ZH2DeathCam"
+    #define DEATH_CAM_TID 45000
+    #define DEATH_CAM_DISTANCE 128.0
+    #define DEATH_CAM_ZVEL 0.3
+    #define DEATH_CAM_HOLD_TICS 105
+
+    internal void ClientDeathCamTic()
+    {
+        // Allow death cam cancellation.
+        if (!BCSUtils::KeyPressed(BT_USE))
+            return;
+        
+        DisposeClientDeathCamera();
+    }
+
+    internal void InitializeClientDeathCamera()
+    {
+        int tid = Identity::GetTid(ConsolePlayerNumber());
+        fixed x = GetActorX(tid),
+              y = GetActorY(tid),
+              z = GetActorZ(tid) + (fixed)GetActorProperty(tid, APROP_VIEWHEIGHT),
+              angle = GetActorAngle(tid);
+
+        // Backwards offset based on angle
+        fixed offsetX = cos(angle) * DEATH_CAM_DISTANCE,
+              offsetY = sin(angle) * DEATH_CAM_DISTANCE;
+
+        // Move the spot backwards
+        x -= offsetX;
+        y -= offsetY;
+
+        SpawnForced(DEATH_CAM_ACTOR, x, y, z, DEATH_CAM_TID, (raw)(angle) >> 8);
+
+        fixed forwardX = cos(angle),
+              forwardY = sin(angle),
+              rightX   = cos(angle + 0.25),
+              rightY   = sin(angle + 0.25);
+
+        // Final speed. Always backwards and left/right.
+        fixed forwardSpeed = -Math::FRandom(0.4, 0.8),
+              strafeSpeed  =  Math::FRandom(-0.3, 0.3);
+
+        fixed velX = forwardX * forwardSpeed + rightX * strafeSpeed,
+              velY = forwardY * forwardSpeed + rightY * strafeSpeed;
+
+        SetActorVelocity(DEATH_CAM_TID, velX, velY, DEATH_CAM_ZVEL, false, false);
+        ChangeCamera(DEATH_CAM_TID, (int)false, (int)false);
+    }
+
+    internal void DisposeClientDeathCamera()
+    {
+        if (!ClientDeathCameraEnabled())
+            return;
+
+        ChangeCamera(0, (int)false, (int)false);
+        Thing_Remove(DEATH_CAM_TID);
+    }
+
+    // Can just check if the camera is spawned.
+    internal bool ClientDeathCameraEnabled()
+    {
+        return ThingCountName(DEATH_CAM_ACTOR, DEATH_CAM_TID) > 0;
+    }
+}
