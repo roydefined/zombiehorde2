@@ -377,6 +377,15 @@ strict namespace ZH2Game
         // To prevent this setting through other deaths, make sure we run on the main client.
         if (ConsolePlayerNumber() == id)
             Hud::SetCursorEnabled(false);
+
+        // The round is not joinable, so the player will have been from their body.
+        // To prevent a weird visual from removal, we spawn a moving camera that faces the player.
+        if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
+            Game::InitializeClientDeathCamera();
+        
+        // Death cam needs a tic to initialize online, or it won't work.
+        delay(const: 1);
+        Game::StartClientDeathCamera();
     }
     
     script "zh2_internal_event" (raw type, raw arg1, raw arg2) event
