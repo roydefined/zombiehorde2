@@ -383,30 +383,28 @@ strict namespace ZH2Game
         if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
         {
             int tid = Identity::GetTid(id);
-            fixed cameraX = GetActorX(tid);
-            fixed cameraY = GetActorY(tid);
-            fixed cameraZ = GetActorZ(tid) + (fixed)GetActorProperty(tid, APROP_VIEWHEIGHT);
+            fixed x = GetActorX(tid),
+                  y = GetActorY(tid),
+                  z = GetActorZ(tid) + (fixed)GetActorProperty(tid, APROP_VIEWHEIGHT),
+                  angle = GetActorAngle(tid);
 
-            fixed angle = GetActorAngle(tid);
+            // Backwards offset based on angle
+            fixed offsetX = cos(angle) * DEATH_CAM_DISTANCE,
+                  offsetY = sin(angle) * DEATH_CAM_DISTANCE;
 
-            // Distance behind the player where the camera should move to
-            fixed distance = 128.0;
+            // Move the spot backwards
+            x -= offsetX;
+            y -= offsetY;
 
-            // Compute backward offset based on angle
-            fixed offsetX = cos(angle) * distance;
-            fixed offsetY = sin(angle) * distance;
+            // Spawn and change the camera to the mapspot.
+            // Hold for 1 second, then delete it again.
 
-            // Interpolation point (move backwards)
-            fixed interpolationX = cameraX - offsetX;
-            fixed interpolationY = cameraY - offsetY;
-            fixed interpolationZ = cameraZ;
-
-            SpawnForced("MapSpot", interpolationX, interpolationY, interpolationZ, TID_DEATH_CAM_MOVINGCAMERA, (raw)(angle) >> 8);
-            ChangeCamera(TID_DEATH_CAM_MOVINGCAMERA, (int)false, (int)false);
+            SpawnForced("MapSpot", x, y, z, DEATH_CAM_TID, (raw)(angle) >> 8);
+            ChangeCamera(DEATH_CAM_TID, (int)false, (int)false);
 
             delay(const: 35);
             ChangeCamera(0, (int)false, (int)false);
-            Thing_Remove(TID_DEATH_CAM_MOVINGCAMERA);
+            Thing_Remove(DEATH_CAM_TID);
         }
     }
     
