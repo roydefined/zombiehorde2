@@ -328,6 +328,11 @@ strict namespace ZH2Game
         int killedId = PlayerNumber();
         VALIDATE_ID_VALID_SCRIPT(killedId);
 
+        // Get the killer.
+        int killerId = -1;
+        if (SetActivatorToTarget(0))
+            killerId = PlayerNumber();
+
         // The round is not joinable, so the player has to be removed from their body.
         if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
         {
@@ -344,12 +349,7 @@ strict namespace ZH2Game
         if (Player::GetPlayerState(killedId) != Player::STATEPLAYING)
             terminate;
 
-        Logger::LogDebug(LOGSOURCE , "Call script \"zh2_internal_death\" for player " + str(killedId) + ".");
-
-        // Get the killer.
-        int killerId = -1;
-        if (SetActivatorToTarget(0))
-            killerId = PlayerNumber();
+        Logger::LogDebug(LOGSOURCE , "Call script \"zh2_internal_death\" for player " + str(killedId) + " killed by player " + str(killerId) + ".");
 
         EventBus::CallEvent(EVENTPLAYERDIED, killedId, killerId);
 
