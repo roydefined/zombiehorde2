@@ -368,18 +368,17 @@ strict namespace ZH2Game
     
     script "zh2_internal_death_client" death clientside
     {
-        Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_death_client\" for player " + str(PlayerNumber()) + ".");
+        // Only run this on the dying client.
+        if (ConsolePlayerNumber() != PlayerNumber())
+            terminate;
 
-        int id = PlayerNumber();
-        VALIDATE_ID_VALID_SCRIPT(id);
+        Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_death_client\" for player " + str(PlayerNumber()) + ".");
         
         // If we don't do this the cursor will be enabled when we respawn.
-        // To prevent this setting through other deaths, make sure we run on the main client.
-        if (ConsolePlayerNumber() == id)
-            Hud::SetCursorEnabled(false);
+        Hud::SetCursorEnabled(false);
 
         // Trigger a death cam when the round has started and the player dies.
-        if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()) && Player::GetPlayerState(id) == Player::STATEPLAYING)
+        if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()) && Player::GetPlayerState(PlayerNumber()) == Player::STATEPLAYING)
         {
             Game::InitializeClientDeathCamera();
         
