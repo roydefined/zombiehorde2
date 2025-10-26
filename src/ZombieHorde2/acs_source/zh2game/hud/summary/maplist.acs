@@ -103,6 +103,13 @@ strict namespace Hud
         // The graphic is slighly more transparent for graphics.
         fixed graphicAlpha = isOver || isVotedTimer ? 0.7 : 0.3;
 
+        // Reduce the alpha of everything if not enabled.
+        if (!enabled)
+        {
+            baseAlpha = 0.5;
+            graphicAlpha = 0.2;
+        }
+
         // Alpha for pulsating graphics
         fixed speed = 0.2;
         fixed pulsatingAlpha = baseAlpha * (0.5 + 0.5 * Sin((2.0 * BCSUtils::PI) * speed * (fixed(Utils::GetSynchronizedTimer()) / 35.0)));
@@ -156,37 +163,42 @@ strict namespace Hud
             BCSUTILS::HudSetAlignment(BCSUTILS::HUD_ALIGN_CENTER, BCSUTILS::HUD_ALIGN_BOTTOM);
         }
 
-        fixed propertiesY = y - 70.0;
-        BCSUtils::HudSetPoint(x, propertiesY);
-        BCSUtils::HudSetTextColor(clientPicked ? CR_GREEN : CR_WHITE);
-        BCSUtils::HudSetFont("SmallFont");
-        BCSUtils::HudDrawText(--id, str(pickCount) + "/" + str(BCSUtils::ClientCount() - BCSUtils::BotCount()));
-        DebugDraw();
-
-        propertiesY += 10.0;
-
-        if (isLegacyMap)
+        // Properties are strings that draw below eachother based on availability.
+        // We don't draw them if the block is not enabled.
+        if (enabled)
         {
-            BCSUtils::HudSetAlpha(pulsatingAlpha);
+            fixed propertiesY = y - 70.0;
             BCSUtils::HudSetPoint(x, propertiesY);
-            BCSUtils::HudSetTextColor(CR_GOLD);
+            BCSUtils::HudSetTextColor(clientPicked ? CR_GREEN : CR_WHITE);
             BCSUtils::HudSetFont("SmallFont");
-            BCSUtils::HudDrawText(--id, "legacy map!");
-            BCSUtils::HudSetAlpha(baseAlpha);
+            BCSUtils::HudDrawText(--id, str(pickCount) + "/" + str(BCSUtils::ClientCount() - BCSUtils::BotCount()));
             DebugDraw();
-            
+
             propertiesY += 10.0;
-        }
 
-        if (isNew)
-        {
-            BCSUtils::HudSetAlpha(pulsatingAlpha);
-            BCSUtils::HudSetPoint(x, propertiesY);
-            BCSUtils::HudSetTextColor(CR_ORANGE);
-            BCSUtils::HudSetFont("SmallFont");
-            BCSUtils::HudDrawText(--id, "new!");
-            BCSUtils::HudSetAlpha(baseAlpha);
-            DebugDraw();
+            if (isLegacyMap)
+            {
+                BCSUtils::HudSetAlpha(pulsatingAlpha);
+                BCSUtils::HudSetPoint(x, propertiesY);
+                BCSUtils::HudSetTextColor(CR_GOLD);
+                BCSUtils::HudSetFont("SmallFont");
+                BCSUtils::HudDrawText(--id, "legacy map!");
+                BCSUtils::HudSetAlpha(baseAlpha);
+                DebugDraw();
+                
+                propertiesY += 10.0;
+            }
+
+            if (isNew)
+            {
+                BCSUtils::HudSetAlpha(pulsatingAlpha);
+                BCSUtils::HudSetPoint(x, propertiesY);
+                BCSUtils::HudSetTextColor(CR_ORANGE);
+                BCSUtils::HudSetFont("SmallFont");
+                BCSUtils::HudDrawText(--id, "new!");
+                BCSUtils::HudSetAlpha(baseAlpha);
+                DebugDraw();
+            }
         }
 
         // Block is unavailable, inform the user.
@@ -195,7 +207,7 @@ strict namespace Hud
             BCSUtils::HudSetTextColor(CR_RED);
             BCSUtils::HudSetPoint(x, y - 10.0);
             BCSUtils::HudSetFont("SmallFont");
-            BCSUtils::HudDrawText(--id, "UNAVAILABLE");
+            BCSUtils::HudDrawText(--id, "Can't pick");
             DebugDraw();
         }
 
