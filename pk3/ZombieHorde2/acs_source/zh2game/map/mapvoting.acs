@@ -150,11 +150,35 @@ strict namespace Map
 
     internal void EndVoting()
     {
+        // Get best index to pick for the next map.
         int bestIndex = UpdateMapVoteMajority();
+        Logger::LogDebug(LOGSOURCE, "Picking best map vote index: \cd" + str(bestIndex) + "\cj.");
+        
+        // If -1 nobody voted.
+        // So now we want to pick a map at random.
+        // To avoid issues I do not do a full random on all indexes since next/random map might be unavailable.
+        // Instead we want to either:
+        // - Pick a randomly chosen votable map or random.
+        // - Pick the "replay map" vote option if no maps are available.
+        // It's a bit more complex, but it ensures that players are able to play more smoothly depending on the situation.
+        if (bestIndex == -1)
+        {
+            int votableMapCount = ZH2Game::GameContext.VotableMapCount;
+            if (votableMapCount > 0)
+            {
+                // Note, we add 2 because this means "random map" can also be picked.
+                bestIndex = Random(0, votableMapCount - 1) + 2;
+                Logger::LogDebug(LOGSOURCE, "Change best pick to: \cd" + str(bestIndex) + "\cj.");
+            }
+            else
+            {
+                bestIndex = 0;
+                Logger::LogDebug(LOGSOURCE, "Change best pick to: \cdreplay map\cj.");
+            }
+        }
 
-        // If still -1 nobody voted and we never switched.
-        if (bestIndex != -1)
-            ZH2Game::GameContext.FinalVotedMapIndex = bestIndex;
+        // Finally, set the index.
+        Map::SetFinalVotedMapIndex(bestIndex);
 
         // Ensure the voting timer is stopped here if it's active.
         if (RoundTimer::GetActiveTimerKnownType() == RoundTimer::TIMERVOTING)
@@ -192,8 +216,10 @@ strict namespace Map
 
             // New best index.
             // 50% chance we pick this when same amount of votes were given for this index as the other one.
-            if (count > bestIndexCount
-                || (count == bestIndexCount && Random(0, 1)))
+            // However, do not try and check if the count is 0. This avoids random chance when the map was never picked in general.
+            if (count != 0
+                && (count > bestIndexCount
+                    || (count == bestIndexCount && Random(0, 1))))
             {
                 bestIndex = i;
                 bestIndexCount = count;
