@@ -15,7 +15,7 @@ strict namespace Sync
         syncId = SyncWriteVotableMaps(syncId);
         syncId = SyncWritePlayerVotes(syncId);
 
-        BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.FinalVotedMapIndex);
+        BCSUtils::SyncVariable(syncId++, Map::GetFinalVotedMapIndex());
 
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing map voting through actors."));
     }
@@ -40,7 +40,7 @@ strict namespace Sync
         syncId = SyncReadVotableMaps(syncId);
         syncId = SyncReadPlayerVotes(syncId);
         
-        ZH2Game::GameContext.FinalVotedMapIndex = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        Map::SetFinalVotedMapIndex(BCSUtils::GetSyncVarDefault(syncId++, 0));
         
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Synced general map voting to client."));
     }
