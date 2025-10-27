@@ -152,7 +152,7 @@ strict namespace ZH2Game
             {
                 // Exit based on what we voted for.
                 // Failsafe, one final check against the index to ensure we have a valid one.
-                int index = ZH2Game::GameContext.FinalVotedMapIndex;
+                int index = Map::GetFinalVotedMapIndex();
                 if (index < 0 || index > ZH2Game::GameContext.VotableMapCount + 3)
                     index = 0;
                 
@@ -161,6 +161,7 @@ strict namespace ZH2Game
                 {
                     case 0:
                     case 1:
+                        targetMapIndex = index;
                         break;
 
                     case 2:
@@ -173,14 +174,14 @@ strict namespace ZH2Game
                 }
 
                 // Special case for 0, which resets back to the current map.
-                if (index == 0)
+                if (targetMapIndex == 0)
                 {
                     ChangeLevel(StrParam(n:PRINTNAME_LEVEL), 0, CHANGELEVEL_NOINTERMISSION, GameSkill());
                     terminate;
                 }
 
                 // Note the internal next map can't use this, and we will skip it as we will automatically switch to it then.
-                if (index != 1 && !SetNextMapPosition(targetMapIndex, true))
+                if (targetMapIndex != 1 && !SetNextMapPosition(targetMapIndex, true))
                 {
                     Logger::LogError(LOGSOURCE, "Failed to set next map position to " + str(targetMapIndex) + ".");
 
@@ -342,9 +343,6 @@ strict namespace ZH2Game
                 // (even if there's nothing to reset we set initial indexes to -1 since 0 is a map index).
                 for (int i = 0; i < Map::GetVotedMapIndexSize(); ++i)
                     Map::SetPlayerVotedMapIndex(i, -1);
-                
-                // (This will default to 0, meaning a random map. Should this ever fail or not get updated we still have a valid index).
-                ZH2Game::GameContext.FinalVotedMapIndex = 0;
                 
                 Map::UpdateVotableMaps();
                 SetPlayerProperty(1, 1, PROP_TOTALLYFROZEN);
