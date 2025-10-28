@@ -10,32 +10,56 @@ strict namespace Game
     #define DEATH_CAM_ZVEL 0.3
     #define DEATH_CAM_HOLD_TICS 105
 
+    #define DEATH_CAM_MAX_HORIZONTAL_DISTANCE 250.0
+    #define DEATH_CAM_MAX_VERTICAL_DISTANCE 50.0
+
+    // Holds the player's death location.
+    fixed playerDeathPosX = 0.0,
+          playerDeathPosY = 0.0,
+          playerDeathPosZ = 0.0;
+
     internal void ClientDeathCamTic()
     {
-        // Allow death cam cancellation.
-        if (!BCSUtils::KeyPressed(BT_USE))
+        if (!ClientDeathCameraEnabled())
             return;
+
+        // Allow death cam cancellation by pressing `USE`.
+        if (BCSUtils::KeyPressed(BT_USE))
+        {
+            DisposeClientDeathCamera();
+            return;
+        }
         
-        DisposeClientDeathCamera();
+        // Automatically dispose of the death cam when too far away.
+        fixed diffX = GetActorX(DEATH_CAM_TID) - playerDeathPosX,
+              diffY = GetActorY(DEATH_CAM_TID) - playerDeathPosY,
+              diffZ = GetActorZ(DEATH_CAM_TID) - playerDeathPosZ;
+
+        fixed horizontalDistance = VectorLength(diffX, diffY);
+        fixed verticalDistance = BCSUtils::Abs(diffZ);
+        
+        if (horizontalDistance > DEATH_CAM_MAX_HORIZONTAL_DISTANCE || verticalDistance > DEATH_CAM_MAX_VERTICAL_DISTANCE)
+            DisposeClientDeathCamera();
     }
 
     internal void InitializeClientDeathCamera()
     {
         int tid = Identity::GetTid(ConsolePlayerNumber());
-        fixed x = GetActorX(tid),
-              y = GetActorY(tid),
-              z = GetActorZ(tid) + (fixed)GetActorProperty(tid, APROP_VIEWHEIGHT),
-              angle = GetActorAngle(tid);
+        playerDeathPosX = GetActorX(tid);
+        playerDeathPosY = GetActorY(tid);
+        playerDeathPosZ = GetActorZ(tid) + (fixed)GetActorProperty(tid, APROP_VIEWHEIGHT);
+
+        fixed angle = GetActorAngle(tid);
 
         // Backwards offset based on angle
         fixed offsetX = cos(angle) * DEATH_CAM_DISTANCE,
               offsetY = sin(angle) * DEATH_CAM_DISTANCE;
 
-        // Move the spot backwards
-        x -= offsetX;
-        y -= offsetY;
+        // Now get a spot that is moved backwards for the camera.
+        fixed x = playerDeathPosX - offsetX;
+        fixed y = playerDeathPosY - offsetY;
 
-        SpawnForced(DEATH_CAM_ACTOR, x, y, z, DEATH_CAM_TID, (raw)(angle) >> 8);
+        SpawnForced(DEATH_CAM_ACTOR, x, y, playerDeathPosZ, DEATH_CAM_TID, (raw)(angle) >> 8);
 
         fixed forwardX = cos(angle),
               forwardY = sin(angle),
@@ -59,11 +83,12 @@ strict namespace Game
 
     internal void DisposeClientDeathCamera()
     {
-        if (!ClientDeathCameraEnabled())
-            return;
-
         ChangeCamera(0, (int)false, (int)false);
         Thing_Remove(DEATH_CAM_TID);
+
+        playerDeathPosX = 0.0;
+        playerDeathPosY = 0.0;
+        playerDeathPosZ = 0.0;
     }
 
     // Can just check if the camera is spawned.
