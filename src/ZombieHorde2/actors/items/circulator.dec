@@ -43,11 +43,16 @@ actor ZH2ItemCirculatorThrown
 	Height 32
 	
 	var int user_angle;
-	var int user_firecount;
+	var int user_firecyclecount;
+	var int user_firetotalcount;
 	
 	States
 	{
 		Spawn:
+			// Remain active for a period and turn it off after.
+			TNT1 A 0 NoDelay ACS_NamedExecuteAlways("zh2_dec_set_circulator_time", 0)
+			
+		Spawn.Rest:
 			CCLN ABCDABCDABCD 4
 			TNT1 A 0 A_Playsound("items/CIRCULATORFIRE", 7)
 		Spawn.CircularFire:
@@ -56,11 +61,15 @@ actor ZH2ItemCirculatorThrown
 			TNT1 A 0 A_JumpIf(user_angle == 360, 1)
 			loop
 			TNT1 A 0 A_SetUserVar("user_angle", 0)
-			TNT1 A 0 A_SetUserVar("user_firecount", user_firecount + 1)
-			TNT1 A 0 A_JumpIf(user_firecount == 3, 1)
-			goto Spawn
+			TNT1 A 0 A_SetUserVar("user_firecyclecount", user_firecyclecount + 1)
+			TNT1 A 0 A_JumpIf(user_firecyclecount == 3, 1)
+			goto Spawn.Rest
 			
-			TNT1 A 0 A_SetUserVar("user_firecount", 0)
+			
+			TNT1 A 0 A_SetUserVar("user_firetotalcount", user_firetotalcount - 1)
+			TNT1 A 0 A_JumpIf(user_firetotalcount == 0, "Spawn.Depleted")
+			
+			TNT1 A 0 A_SetUserVar("user_firecyclecount", 0)
 			CCLS ABC 2
 			CCLS D 20
 			TNT1 A 0 A_Playsound("items/CIRCULATORTIC", 6)
@@ -73,7 +82,12 @@ actor ZH2ItemCirculatorThrown
 			CCLR AB 2
 			CCLS D 20
 			CCLS CBA 2
-			goto Spawn
+			goto Spawn.Rest
+		
+		Spawn.Depleted:
+			TNT1 A 0 A_SpawnItem("ZH2ItemCirculatorDepleteExplosion")
+			stop
+			
 	}
 }
 
@@ -103,6 +117,23 @@ actor ZH2CirculatorFireBall
 	}
 }
 
+actor ZH2ItemCirculatorDepleteExplosion
+{
+	RenderStyle Translucent
+	Alpha 0.6
+	
+	+FORCEYBILLBOARD
+	+CLIENTSIDEONLY
+	+BRIGHT
+	
+	states
+	{
+		spawn:
+			TNT1 A 0 NoDelay A_PlaySound("sound/explosion1")
+			EXP2 ABCDEFGHIJKLMN 2
+			stop
+	}
+}
 
 Actor ZH2CirculatorFlare : ZH2ItemLensFlare
 {
