@@ -142,4 +142,57 @@ strict namespace Decorate
 
         Sync::SyncPlayers();
     }
+
+    script "zh2_dec_set_fire_mine_time"
+    {
+        // Value is decremented every 5 tics, so 7 is a second.
+        SetUserVariable(0, "user_firetotalcount", 7 * 60);
+    }
+
+    script "zh2_dec_set_circulator_time"
+    {
+        // The circulator fires 3 times each interval, and we allow this cycle 10 times.
+        SetUserVariable(0, "user_firetotalcount", 10);
+    }
+
+    script "zh2_dec_use_suicide_bomb"
+    {
+        if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
+        if (CheckInventory(SUICIDE_BOMB_ITEM) == 0) terminate;
+        
+        // Check for confirmation.
+        // If we want confirmation, don't use it yet.
+        // Otherwise we can.
+        if (CheckInventory(SUICIDE_BOMB_ITEM_CONFIRM_TIMESTAMP) < Timer())
+        {
+            DrawSuicideBombConfirmMessage();
+            GiveInventory(SUICIDE_BOMB_ITEM_CONFIRM_TIMESTAMP, Timer() + SUICIDE_BOMB_ITEM_CONFIRM_TIMESTAMP_MAX_TICS);
+            SetResultValue((int)false);
+            terminate;
+        }
+
+        SetResultValue((int)true);
+    }
+
+    internal void DrawSuicideBombConfirmMessage()
+    {
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        fixed x = 320.0,
+              y = BCSUtils::HudBottom() - 200.0;
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetCenterText(true);
+
+        BCSUtils::HudSetStayTime(3.0);
+        BCSUtils::HudSetDisappearTime(0.5);
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawText(0, "Warning, you're not surviving this one. Use again to confirm.");
+        Hud::DebugDraw();
+    }
 }
