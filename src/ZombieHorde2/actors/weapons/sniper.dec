@@ -60,8 +60,7 @@ actor ZH2WeaponSniper : ZH2Weapon
 
 		Ready.Zoomed:
 			TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "AltFire.ZoomOut")
-			
-			TNT1 A 1 A_WeaponReady(WRF_NOBOB | WRF_ALLOWRELOAD)
+			TNT1 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
 			loop
 
 		Deselect:
@@ -153,6 +152,7 @@ actor ZH2WeaponSniper : ZH2Weapon
 		Fire.Zoomed:
 			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
 			TNT1 A 0 A_FireCustomMissile("ZH2WeaponSniperSmoke", 0, false, 0)
+			
 			TNT1 A 0 A_FireBullets(1, 1, 1, 125, "ZH2WeaponBulletPuff", FBF_NORANDOM)
 			TNT1 A 0 A_SetPitch(pitch-2.0)
 			TNT1 A 0 A_SetAngle(angle-1.0)
@@ -166,19 +166,16 @@ actor ZH2WeaponSniper : ZH2Weapon
 			TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
 			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
 			
-			SNTR CBA 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
-			SNPB D 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
+			SNTR CBA 1
+			SNPB D 1
 		SniperBolt:
 			SNPR FGHIJ 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
 			SNPR K 2 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
 			SNPR LMN 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
-
 			SNPR O 3 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
-			TNT1 A 0 A_PlaySoundEx("weapons/sniper/UP","SoundSlot5")
-			SNPR P 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
+			SNPR P 1 A_PlaySoundEx("weapons/sniper/UP","SoundSlot5")
 			SNPR Q 2 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
-			SNPR R 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
-			SNPR ST 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
+			SNPR RST 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
 			TNT1 A 0 A_JumpIfInventory("ZH2WeaponSniperShouldEjectCase", 1, "SniperBolt.Casing")
 			goto SniperBolt.Rest
 		SniperBolt.Casing:
@@ -186,21 +183,20 @@ actor ZH2WeaponSniper : ZH2Weapon
 			TNT1 A 0 A_FireCustomMissile("ZH2SniperCase", 5, true, 4, -3)
 		SniperBolt.Rest:
 			TNT1 A 0 A_TakeInventory("ZH2WeaponSniperBolting", 1)
-			TNT1 A 0 A_PlaySoundEx("weapons/sniper/BACK","SoundSlot5")
-			SNPR U 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
-			SNPR V 2 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
-			SNPR W 5 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
+			SNPR U 1 A_PlaySoundEx("weapons/sniper/BACK","SoundSlot5")
+			SNPR V 2
+			SNPR W 5
 			TNT1 A 0 A_PlaySoundEx("weapons/sniper/FORWARD","SoundSlot5")
-			SNPS ABCDE 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
-			SNPS F 2 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
-			SNPS GHI 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
-			SNPR JIHG 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
+			TNT1 A 0
+			SNPS ABCDE 1
+			SNPS F 2
+			SNPS GHI 1
+			SNPR JIHG 1
 			TNT1 A 0 A_JumpIfInventory("ZH2WeaponSniperZoomlevel", 1, "SniperBoltEndZoomed")
 			goto Ready
 		
 		SniperBoltEndZoomed:
-			SNPB D 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
-			SNTR ABC 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
+			SNPB DABC 1
 			TNT1 A 0 A_GiveInventory("ZH2WeaponSniperIsZoomed", 1)
 			TNT1 A 0 A_JumpIfInventory("ZH2WeaponSniperZoomlevel", 2, "SniperBoltEndZoomedFullZoom")
 			TNT1 A 0 A_ZoomFactor(2.0, ZOOM_INSTANT)
