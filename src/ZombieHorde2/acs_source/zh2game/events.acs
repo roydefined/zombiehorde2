@@ -14,6 +14,7 @@ strict namespace ZH2Game
         EventBus::AddEventBusCallbackByScriptName(EVENTSCRATCHED, "zh2_internal_event_scratched");
         EventBus::AddEventBusCallbackByScriptName(EVENTPLAYERDIED, "zh2_internal_event_playerdied");
         EventBus::AddEventBusCallbackByScriptName(EVENTPLAYERLEFTROUND, "zh2_internal_event_playerleftround");
+        EventBus::AddEventBusCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_event_specie_changed");
     }
 
     internal void SetEscapeDefaults()
@@ -26,6 +27,7 @@ strict namespace ZH2Game
         EventBus::AddEventBusCallbackByScriptName(EVENTSCRATCHED, "zh2_internal_event_scratched");
         EventBus::AddEventBusCallbackByScriptName(EVENTPLAYERDIED, "zh2_internal_event_playerdied");
         EventBus::AddEventBusCallbackByScriptName(EVENTPLAYERLEFTROUND, "zh2_internal_event_playerleftround");
+        EventBus::AddEventBusCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_event_specie_changed");
     }
 
     script "zh2_internal_event_timerelapsed" (int index)
@@ -516,5 +518,15 @@ strict namespace ZH2Game
         }
 
         // No sync, the game ending does it already.
+    }
+
+    script "zh2_internal_event_specie_changed" (raw idRaw, raw specieIndexRaw)
+    {
+        int id = (int)idRaw;
+        int specieIndex = (int)specieIndexRaw;
+        Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
+
+        // Full reset of powers on specie change.
+        Power::ResetPlayerPowers(id);
     }
 }
