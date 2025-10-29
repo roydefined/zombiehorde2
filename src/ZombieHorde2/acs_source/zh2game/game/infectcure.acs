@@ -25,9 +25,6 @@ strict namespace Game
         Player::SetPlayerHumanSkin(id);
         Player::GivePlayerHumanInventory(id, false);
 
-        // Full reset of powers on specie change.
-        Power::ResetPlayerPowers(id);
-
         // This not really needed if we take powers, because the recalculate is automatically called.
         //Power::RecalculatePlayerPowers(id);
 
@@ -36,6 +33,7 @@ strict namespace Game
             Logger::LogWarning(LogSource, "Failed to spawn cure effect for player " + str(id) + ".");
 
         EventBus::CallEvent(EVENTCURED, id);
+        EventBus::CallEvent(EVENTPLAYERSPECIECHANGED, id, Player::SPECIEHUMAN);
     }
     
     internal void InfectPlayer(int infectedId, InfectTypeT type)
@@ -133,13 +131,11 @@ strict namespace Game
 
         PlaySound(tid, "zombie/WAKE", CHAN_AUTO);
 
-        // Full reset of powers on specie change.
-        Power::ResetPlayerPowers(infectedId);
-
         // Remove panic state
         Player::SetPlayerPanicState(infectedId, Player::PANICSTATENONE);
 
         EventBus::CallEvent(EVENTINFECTED, infectedId);
+        EventBus::CallEvent(EVENTPLAYERSPECIECHANGED, infectedId, Player::SPECIEZOMBIE);
     }
 
     // Drop fire grenade if the player owns one and is eligible to drop one depending on specie and configuration.
