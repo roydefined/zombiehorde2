@@ -37,10 +37,13 @@ strict namespace Game
         },
     };
 
+    // HACK
+    // I don't have a proper fix for this yet, but this will prevent the final music track restarting when `ClientBuildEnding` is called multiple times.
+    internal bool _hasStartedEndMusic;
+
     // Called clientside to build up the ending screen.
     internal void ClientBuildEnding()
     {
-        // Set a random top and bottom message.
         WinningSpecieT winningSpecie = Game::GetWinningSpecie();
         int index = (int)winningSpecie - 1;
         EndingTypeT& ending = _endingTypes[index];
@@ -56,12 +59,14 @@ strict namespace Game
         ZH2Game::GameContext.WinMessageBottom = ending.WinMessagesBottom[Random(0, lengthof(ending.WinMessagesBottom) - 1)];
 
         // Play a track for the winning type.
-        if (ending.TrackCount != 0)
+        if (ending.TrackCount != 0 && !_hasStartedEndMusic)
         {
             int index = Random(0, ending.TrackCount - 1);
             str track = ending.Tracks[index];
             if (track != (raw)0 && track != "")
                 Music::SetMusic(track);
+            
+            _hasStartedEndMusic = true;
         }
 
         // Set the ordered lists indicating the final stats.
