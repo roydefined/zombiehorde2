@@ -57,6 +57,11 @@ strict namespace Footstep
         fixed crouchedModifier = actualViewHeight / viewHeight;
 
 		fixed actorSpeed = BCSUtils::GetActorXYVelocity(tid);
+        
+        // Player is not going fast enough. Wait 5 tics then check again.
+        if (actorSpeed < MIN_STEP_SPEED)
+            return 5;
+
 		int stepVolume = BCSUtils::Ifloor(12.0 * actorSpeed * crouchedModifier),
 			stepDelay  = BCSUtils::Ifloor(18.0 - actorSpeed / 2.0);
 
