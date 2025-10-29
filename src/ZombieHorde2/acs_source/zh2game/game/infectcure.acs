@@ -42,9 +42,7 @@ strict namespace Game
     {
         int tid = Identity::GetTID(infectedId);
 
-        // Drop fire grenade if the player owns one.
-        if (CheckActorInventory(tid, WEAPON_AMMO_FIREGRENADE_NAME) > 0)
-            Spawn(WEAPON_FIREGRENADE_SPAWN_NAME, GetActorX(tid), GetActorY(tid), GetActorFloorZ(tid) + 8.0);
+        DropFireGrenade(tid, type);
 
         // Ensure all human weapons are taken.
         Player::TakePlayerHumanWeapons(infectedId);
@@ -142,6 +140,28 @@ strict namespace Game
         Player::SetPlayerPanicState(infectedId, Player::PANICSTATENONE);
 
         EventBus::CallEvent(EVENTINFECTED, infectedId);
+    }
+
+    // Drop fire grenade if the player owns one and is eligible to drop one depending on specie and configuration.
+    internal void DropFireGrenade(int tid, InfectTypeT type)
+    {
+        if (CheckActorInventory(tid, WEAPON_AMMO_FIREGRENADE_NAME) == 0)
+            return;
+
+        // Never drop when infected by an admin.
+        if (type == INFECT_ADMIN)
+            return;
+        
+        ZH2Game::DropGrenadeOnInfectT dropBehaviour = ZH2Game::GetDropGrenadeOnInfect();
+
+        if (dropBehaviour == ZH2Game::DROPBEHAVIOUR_NEVER)
+            return;
+        
+        // Only regular zombies should drop a grenade.
+        if (dropBehaviour == ZH2Game::DROPBEHAVIOUR_ONLY_REGULAR_ZOMBIES && type != INFECT_REGULAR)
+            return;
+
+        Spawn(WEAPON_FIREGRENADE_SPAWN_NAME, GetActorX(tid), GetActorY(tid), GetActorFloorZ(tid) + 8.0);
     }
 
     script "zh2_internal_player_infected_client" clientside
