@@ -4,6 +4,13 @@
 
 strict namespace Game
 {
+    // All of these items will be taken on infect.
+    internal str _takeOnInfectItems[] = {
+        WEAPON_CHAINGUN_HEAT_NAME, WEAPON_FIREGRENADE_THROWPOWER_NAME, WEAPON_JACKSGUN_SMOKE_COUNT_NAME,
+        WEAPON_SNIPER_SHOULDEJECTCASE_NAME, WEAPON_SNIPER_ZOOM_LEVEL_NAME, WEAPON_SNIPER_IS_ZOOMED_NAME,
+        WEAPON_SNIPER_BOLTING_NAME, WEAPON_SHOTGUN_MUST_PUMP_NAME, WEAPON_DOUBLESHOTGUN_EJECT_SHELLS_NAME,
+    };
+
     internal void Infect(InfectTypeT type)
     {
         InfectPlayer(PlayerNumber(), type);
@@ -119,6 +126,10 @@ strict namespace Game
                 BCSUtils::SetActorHealth(tid, 2000);
                 break;
         }
+
+        // Additional hardcoded items that must be taken, related to weaponry that otherwise causes weird behavior.
+        foreach(str item; _takeOnInfectItems)
+            BCSUtils::TakeMaxActorInventory(tid, item);
 
         if (!SpawnForced("ZH2InfectionFireEffect", GetActorX(tid), GetActorY(tid), GetActorZ(tid)))
             Logger::LogWarning(LogSource, "Failed to spawn infection effect for player " + str(infectedId) + ".");
