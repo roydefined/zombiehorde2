@@ -328,10 +328,10 @@ strict namespace ZH2Game
         int killedId = PlayerNumber();
         VALIDATE_ID_VALID_SCRIPT(killedId);
 
-        // Get the killer.
-        int killerId = -1;
-        if (SetActivatorToTarget(0))
-            killerId = PlayerNumber();
+        // Skip this script if the player is not playing (state is likely dead already).
+        // This will always happen when setting a player as a dead spectator.
+        if (Player::GetPlayerState(killedId) != Player::STATEPLAYING)
+            terminate;
 
         // The round is not joinable, so the player has to be removed from their body.
         if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
@@ -344,10 +344,10 @@ strict namespace ZH2Game
             RemovePlayer(killedId, message);
         }
 
-        // Skip this script if the player is not playing (state is likely dead already).
-        // This will always happen when setting a player as a dead spectator.
-        if (Player::GetPlayerState(killedId) != Player::STATEPLAYING)
-            terminate;
+        // Get the killer.
+        int killerId = -1;
+        if (SetActivatorToTarget(0))
+            killerId = PlayerNumber();
 
         Logger::LogDebug(LOGSOURCE , "Call script \"zh2_internal_death\" for player " + str(killedId) + " killed by player " + str(killerId) + ".");
 
