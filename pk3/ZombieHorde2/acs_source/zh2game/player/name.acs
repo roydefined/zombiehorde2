@@ -4,6 +4,22 @@
 
 strict namespace Player
 {
+    internal void NameTic()
+    {
+        // Check if the player's name changed.
+        // Update and inform other players if it's the case.
+
+        str oldName = Player::GetName();
+        str currentName = BCSUtils::PlayerName(PlayerNumber());
+        if (oldName != currentName)
+        {
+            Player::SetName(currentName);
+            Sync::SyncPlayers();
+
+            Logger::LogDebug(LOGSOURCE, "Player \cd" + str(PlayerNumber()) + "\cj changed their name from " + oldName + " to " + currentName + ".");
+        }
+    }
+
     internal void SetName(str name)
     {
         SetPlayerName(PlayerNumber(), name);
@@ -20,22 +36,20 @@ strict namespace Player
         return GetPlayerName(PlayerNumber());
     }
 
+    internal str GetPlayerName(int id)
+    {
+        raw name = ZH2Game::GameContext.Players[id].Name;
+        return name != 0 && (str)name != "" ? (str)name : "Unknown player (" + str(id) + ")";
+    }
+
     internal str GetStrippedName()
     {
         return GetStrippedPlayerName(PlayerNumber());
     }
 
-    internal str GetPlayerName(int id)
-    {
-        // Fallback to use BCSUtil's PlayerName if not found.
-        raw name = ZH2Game::GameContext.Players[id].Name;
-        return name != 0 && (str)name != "" ? (str)name : BCSUtils::PlayerName(id);
-    }
-
     internal str GetStrippedPlayerName(int id)
     {
-        // Fallback to use BCSUtil's PlayerName if not found.
         raw name = ZH2Game::GameContext.Players[id].StrippedName;
-        return name != 0 && (str)name != "" ? (str)name : BCSUtils::PlayerName(id);
+        return name != 0 && (str)name != "" ? (str)name : "Unknown player (" + str(id) + ")";
     }
 }
