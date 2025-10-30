@@ -8,6 +8,7 @@ actor ZH2ItemSuicideBombExplosionFX
 	
 	DeathSound "world/nuke1"
 	
+	+NOINTERACTION
 	+FORCEXYBILLBOARD
 	+FULLVOLDEATH
 	+BOSS
@@ -17,8 +18,10 @@ actor ZH2ItemSuicideBombExplosionFX
 		Spawn:
 			TNT1 A 0 NoDelay Radius_Quake(10,30,0,256,0)
 			TNT1 A 0 A_Scream
-			TNT1 A 0 A_RadiusThrust(100, 256, RTF_NOIMPACTDAMAGE)
-			NKE1 ABCDEFGHIJKLMNOPQRS 2 bright A_FadeOut(.05)
+			TNT1 A 0 A_RadiusThrust(5000, 256, RTF_NOIMPACTDAMAGE)
+			TNT1 A 0 A_SpawnItemEx("ZH2ItemSuicideBombFlare", 0, 0, 128)
+			TNT1 A 0 A_SpawnItemEx("ZH2ItemSuicideBombFloorFX")
+			NKE1 AAABBBCCCDDDEEEFFFGGGHHHIIIJJJKKKLLLMMMNNNOOOPPPQWWRRRSSS 1 bright A_FadeOut(.02)
 			stop
 	}
 }
@@ -31,9 +34,10 @@ actor ZH2ItemSuicideBombFloorFX
 	States
 	{
 		Spawn:
-			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 0 NoDelay A_SpawnItemEx("ZH2ItemSuicideBombFloorFire", Random(5, 200), Random(5, 200), 0, Random(10, 20), Random(10, 20), 4, Random(0, 359))
-			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 0 A_SpawnItemEx("ZH2ItemSuicideBombFloorFireSlow", Random(5, 200), Random(5, 200), 0, Random(20, 140), Random(20, 140), 4, Random(0, 359))
-			TNT1 AAAAAAAAAAAAAAAAAA 0 A_SpawnItemEx("ZH2ItemSuicideBombFloorSmoke", Random(20, 200), Random(20, 200), 0, 0, 0, 1, Random(0, 359))
+			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 0 NoDelay A_SpawnItemEx("ZH2ItemSuicideBombFloorFire", Random(5, 200), Random(5, 200), 4, Random(10, 20), Random(10, 20), 4, Random(0, 359))
+			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 0 A_SpawnItemEx("ZH2ItemSuicideBombFloorSmoke", Random(20, 200), Random(20, 200), 4, Random(20, 140), Random(20, 140), 4, Random(0, 359))
+			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 0 A_SpawnItemEx("ZH2ItemSuicideBombFloorFireSlow", Random(20, 200), Random(20, 200), 4, Random(20, 80), Random(20, 80), 1, Random(0, 359))
+			
 		Stop
 	}
 }
@@ -53,6 +57,7 @@ actor ZH2ItemSuicideBombFloorFire
 	+NOCLIP
 	
 	Alpha 0.6
+	Scale 4
 	
 	States
 	{
@@ -64,6 +69,7 @@ actor ZH2ItemSuicideBombFloorFire
 
 actor ZH2ItemSuicideBombFloorFireSlow : ZH2ItemSuicideBombFloorFire
 {
+	Scale 6
 	States
 	{
 		Spawn:
@@ -86,7 +92,7 @@ actor ZH2ItemSuicideBombFloorSmoke
 		Spawn:
 			TNT1 A 0 NoDelay A_SetTranslucent(FRandom(0.2, 0.4))
 			TNT1 A 0 A_SetScale(6.0, 4.0)
-			SMKD A 1 A_FadeOut(0.005)
+			SMKD A 1 A_FadeOut(0.003)
 			wait
 	}
 }
