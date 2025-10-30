@@ -333,6 +333,11 @@ strict namespace ZH2Game
         if (Player::GetPlayerState(killedId) != Player::STATEPLAYING)
             terminate;
 
+        // Get the killer.
+        int killerId = -1;
+        if (SetActivatorToTarget(0))
+            killerId = PlayerNumber();
+
         // The round is not joinable, so the player has to be removed from their body.
         if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
         {
@@ -344,14 +349,13 @@ strict namespace ZH2Game
             RemovePlayer(killedId, message);
         }
 
-        // Get the killer.
-        int killerId = -1;
-        if (SetActivatorToTarget(0))
-            killerId = PlayerNumber();
-
         Logger::LogDebug(LogSource, "Call script \"zh2_internal_death\" for player " + str(killedId) + " killed by player " + str(killerId) + ".");
 
         EventBus::CallEvent(EVENTPLAYERDIED, killedId, killerId);
+
+        // We must delay a tic before resetting the context to ensure events have time to process the death properly.
+        // TODO: Remove when events are made instant.
+        Delay(const: 1);
 
         // Reset transient context if still in a joinable state.
         // Otherwise set as dead.
