@@ -603,16 +603,19 @@ strict namespace ZH2Game
     internal void RemovePlayer(int id, str message)
     {
         Logger::LogTo(message, id);
+
         if (GetUseDeadSpectators())
         {
-            if (!SetDeadSpectator(id, true))
-                Logger::LogWarning(LOGSOURCE, "Failed to set " + str(id) + " as dead spectator. Falling back to KickFromGame.");
-            else
+            if (SetDeadSpectator(id, true))
                 return;
+
+            Logger::LogWarning(LOGSOURCE, "Failed to set " + str(id) + " as dead spectator. Falling back to KickFromGame.");
         }
 
-        if (!KickFromGame(id, message))
-            Logger::LogError(LOGSOURCE, "Failed to set " + str(id) + " as spectator. KickFromGame failed.");
+        if (KickFromGame(id, message))
+            return;
+        
+        Logger::LogError(LOGSOURCE, "Failed to set " + str(id) + " as spectator. KickFromGame failed.");
     }
 
     script "zh2_internal_enter_respawn_clientside" clientside
