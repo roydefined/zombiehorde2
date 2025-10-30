@@ -602,6 +602,13 @@ strict namespace ZH2Game
 
     internal void RemovePlayer(int id, str message)
     {
+        // Player is already a sort of spectator, so this function should not be called.
+        if (PlayerIsSpectator(id) != 0)
+        {
+            Logger::LogWarning(LogSource, "Attempted to set " + str(id) + " as a spectator, but this player is already spectating.");
+            return;
+        }
+
         Logger::LogTo(message, id);
 
         if (GetUseDeadSpectators())
