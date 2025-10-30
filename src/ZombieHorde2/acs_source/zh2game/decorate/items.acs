@@ -137,10 +137,14 @@ strict namespace Decorate
             Game::CurePlayer(PlayerNumber());
         }
 
-        Power::GivePower(Power::POWERHUMANIMMUNITY);
         Logger::LogBold("\cf" + BCSUTILS::PlayerName(PlayerNumber()) + "\cj " + messagePart + "is now immune against the virus!");
-
         Sync::SyncPlayers();
+
+        // As curing calls an event that removes powers, we must make sure to give this power AFTER so the reset does not affect it.
+        // TODO: Remove when we change events to call instantly.
+        Delay(const: 1);
+
+        Power::GivePower(Power::POWERHUMANIMMUNITY);
     }
 
     script "zh2_dec_set_fire_mine_time"
