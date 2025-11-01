@@ -14,17 +14,21 @@ strict namespace Power
     internal void GivePlayerPower(int id, int powerIndex) { SetPlayerPowerTics(id, powerIndex, BCSUtils::INT_MAX); }
 
     internal void TakePower(int powerIndex) { TakePlayerPower(PlayerNumber(), powerIndex); }
-    internal void TakePlayerPower(int id, int powerIndex)
+    internal void TakePlayerPower(int id, int powerIndex, bool recalculatePowers = true)
     {
         BCSUtils::SetActorInventory(Identity::GetTid(id), GetItemName(powerIndex), 0);
-        RecalculatePlayerPowers(id);
+
+        if (recalculatePowers)
+            RecalculatePlayerPowers(id);
     }
 
     internal void AddPowerTics(int powerIndex, int tics) { AddPlayerPowerTics(PlayerNumber(), powerIndex, tics); }
-    internal void AddPlayerPowerTics(int id, int powerIndex, int tics)
+    internal void AddPlayerPowerTics(int id, int powerIndex, int tics, bool recalculatePowers = true)
 	{
         int ticsLeft = GetPlayerPowerTicsLeft(id, powerIndex);
-        SetPlayerPowerTics(id, powerIndex, ticsLeft + tics);
+
+        if (recalculatePowers)
+            SetPlayerPowerTics(id, powerIndex, ticsLeft + tics);
 	}
 
     internal void SetPowerTics(int powerIndex, int tics) { SetPlayerPowerTics(PlayerNumber(), powerIndex, tics); }
