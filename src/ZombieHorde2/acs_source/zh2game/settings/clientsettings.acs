@@ -19,6 +19,11 @@ strict namespace Settings
     // Tell the client he has some settings he should consolidate.
     internal void BroadcastClientConsolidateSettings(bool broadcastWhenNone)
     {
+        // Do not broadcast when the user doesn't want it.
+        // This will also prevent the button from working.
+        if (!ZH2Game::GetInformClientOfCVars())
+            return;
+
         int count = ZH2Game::GameContext.RequestedClientSettingCount;
         if (count == 0)
         {
