@@ -21,6 +21,8 @@ strict namespace Hud
 
         fixed x = 320.0;
         fixed y = BCSUtils::HudTop() + 60.0;
+
+        SetFade();
         
         DrawSummaryHeader(x, y);
         DrawTip(x, y + 60.0);
@@ -30,5 +32,18 @@ strict namespace Hud
         y = BCSUtils::HudBottom() - 80.0;
 
         DrawMapList(x, y);
+    }
+
+    internal void SetFade()
+    {
+        int voteTic = Game::GetGameVotingTic();
+        int diff = Utils::GetSynchronizedTimer() - voteTic;
+
+        if (voteTic == 0 || diff <= 0)
+            return;
+
+        // 1 second of fadeout.
+        fixed fadeAmount = BCSUtils::Min(1.0, fixed(diff) / 35.0);
+        FadeTo(0, 0, 0, fadeAmount, BCSUtils::HUDTIC);
     }
 }
