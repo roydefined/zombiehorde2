@@ -514,6 +514,14 @@ strict namespace ZH2Game
                 Sync::SyncPlayers();
             }
 
+            // If we are currently voting, then we want to make sure this player no longer contributes to voting.
+            if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
+            {
+                Map::SetPlayerVotedMapIndex(arg1, -1);
+                Map::CheckMapVoteFinished();
+                Sync::SyncMapVoting();
+            }
+
             // The persisting context is always reset. This might still have data for the spectating player.
             // NOTE: This does not contain data required for anything specific. This should be revisited if it does.
             // We'd have to do this in unloading or something.
