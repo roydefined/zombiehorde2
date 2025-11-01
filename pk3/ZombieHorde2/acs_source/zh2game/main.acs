@@ -270,10 +270,9 @@ strict namespace ZH2Game
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_unloading\"");
 
-        // Regardless of what the game does, we always unfreeze and make sure we don't have invulnerable players.
+        // Regardless of what the game does, we always unfreeze players.
         // Specifically this could be the case with admin players and when the game ends.
         SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
-        SetPlayerProperty(1, 0, PROP_INVULNERABILITY);
 
         // Reset the default music, or the music will move to the next map.
         Music::SetDefaultMusic("");
@@ -414,6 +413,13 @@ strict namespace ZH2Game
         // Damage to player without any armor affecting it.
         if (type == GAMEEVENT_ACTOR_DAMAGED_PREMOD)
         {
+            // Disable damaging entirely if the round ended.
+            if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
+            {
+                SetResultValue(0);
+                terminate;
+            }
+            
             Logger::LogDebug(LOGSOURCE, "Call event \cdGAMEEVENT_ACTOR_DAMAGED_PREMOD\cj.");
             
             // Check for infect.
