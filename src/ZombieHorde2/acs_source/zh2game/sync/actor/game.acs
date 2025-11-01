@@ -116,8 +116,9 @@ strict namespace Sync
 
     internal int SyncWriteOther(int syncId)
     {
-        BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.MatchStartTic);
-        BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.MatchEndingTic);
+        BCSUtils::SyncVariable(syncId++, Game::GetGameStartTic());
+        BCSUtils::SyncVariable(syncId++, Game::GetGameEndingTic());
+        BCSUtils::SyncVariable(syncId++, Game::GetGameVotingTic());
         BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.WinningSpecie);
         BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.EndReason);
         BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.FullServerStartTimestamp);
@@ -127,8 +128,9 @@ strict namespace Sync
 
     internal int SyncReadOther(int syncId)
     {
-        ZH2Game::GameContext.MatchStartTic = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        ZH2Game::GameContext.MatchEndingTic = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        Game::SetGameStartTic(BCSUtils::GetSyncVarDefault(syncId++, 0));
+        Game::SetGameEndingTic(BCSUtils::GetSyncVarDefault(syncId++, 0));
+        Game::SetGameVotingTic(BCSUtils::GetSyncVarDefault(syncId++, 0));
 
         int specieIndex = BCSUtils::GetSyncVarDefault(syncId++, Game::SPECIENONE);
         ZH2Game::GameContext.WinningSpecie = Game::GetWinningSpecieTypeByIndex(specieIndex);
