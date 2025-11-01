@@ -30,6 +30,13 @@ strict namespace Power
     internal void SetPowerTics(int powerIndex, int tics) { SetPlayerPowerTics(PlayerNumber(), powerIndex, tics); }
     internal void SetPlayerPowerTics(int id, int powerIndex, int tics)
 	{
+        // Never set powers when the round ended.
+        if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
+        {
+            Logger::LogDebug(LOGSOURCE , "Ignore power \cd" + GetPowerIndexAsString(powerIndex) + "\cj change for " + BCSUtils::PlayerName(id) + ". Round is over.");
+            return;
+        }
+
         PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
 
         // Min / Max tics
