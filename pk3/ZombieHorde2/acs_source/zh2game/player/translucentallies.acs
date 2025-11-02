@@ -1,0 +1,100 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+	#define TRANSLUCENT_ALLIES_DISTANCE_MAX 256.0
+
+    internal void TranslucentAlliesTicClient()
+    {
+        bool translucentAlliesEnabled = ZH2Game::GetTranslucentAllies();
+
+        // Do we need to toggle translucency?
+        if (GetTranslucentAlliesEnabled() != translucentAlliesEnabled)
+        {
+            SetTranslucentAlliesEnabled(translucentAlliesEnabled);
+
+            if (!translucentAlliesEnabled)
+                DisableTranslucentAlliesProperties(translucentAlliesEnabled);
+        }
+
+        if (translucentAlliesEnabled)
+            UpdateTranslucentAlliesAlpha();
+    }
+
+    internal void SetTranslucentAlliesEnabled(bool enabled)
+    {
+        ZH2Game::GameContext.TranslucentAlliesEnabled = enabled;
+    }
+    
+    internal bool GetTranslucentAlliesEnabled()
+    {
+        return ZH2Game::GameContext.TranslucentAlliesEnabled;
+    }
+
+    // Handles setting actors back to being opaque.
+    internal void DisableTranslucentAlliesProperties(bool enabled)
+    {
+        int style = enabled ? STYLE_TRANSLUCENT : STYLE_NORMAL;
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            int tid = Identity::GetTID(i);
+            if (!BCSUTILS::ActorIsAlive(tid))
+                continue;
+
+            SetActorProperty(tid, APROP_ALPHA, 1.0);
+			SetActorProperty(tid, APROP_RENDERSTYLE, STYLE_NORMAL);
+        }
+    }
+
+    // Handles actually setting the alpha values on all actors.
+    internal void UpdateTranslucentAlliesAlpha()
+    {
+        Player::SpecieTypeT specie = Player::GetSpecie();
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // Ignore self.
+            if (ConsolePlayerNumber() == i)
+                continue;
+
+            if (!PlayerInGame(i))
+                continue;
+
+            int tid = Identity::GetTID(i);
+            if (!BCSUTILS::ActorIsAlive(tid))
+                continue;
+            
+            // Helper function to call if the player didn't match.
+            void RemoveTranslucent()
+            {
+                SetActorProperty(tid, APROP_ALPHA, 1.0);
+                SetActorProperty(tid, APROP_RENDERSTYLE, STYLE_NORMAL);
+            }
+                
+            // Translucency only works on the same specie.
+            // Infection/curing also adjusts properly this way.
+            if (Player::GetPlayerSpecie(i) != specie)
+            {
+                RemoveTranslucent();
+                continue;
+            }
+
+            // Distance check which also increases/decreases alpha based on distance.
+            fixed distance = BCSUtils::ActorDistance(ActivatorTID(), tid);
+			if (distance > TRANSLUCENT_ALLIES_DISTANCE_MAX)
+            {
+                RemoveTranslucent();
+                continue;
+            }
+
+			fixed alpha = BCSUtils::Min(1.0, distance / TRANSLUCENT_ALLIES_DISTANCE_MAX);
+			SetActorProperty(tid, APROP_ALPHA, alpha);
+			SetActorProperty(tid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+        }
+    }
+}
