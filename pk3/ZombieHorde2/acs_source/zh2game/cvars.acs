@@ -43,6 +43,23 @@ strict namespace ZH2Game
     internal bool GetWrapInventoryItems() { return (bool)GetCvar("cl_zh2_wrapinventoryitems"); }
     internal bool GetAutoUseConsumableItems(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_autouseconsumableitems"); }
 
+    internal bool GetSvTranslucentAllies() { return (bool)GetCvar("sv_zh2_translucentallies"); }
+    internal int GetTranslucentAlliesDistance() { return BCSUTILS::Clamp(GetCvar("cl_zh2_translucentalliesdistance"), 100, 1000); }
+    internal TranslucentAlliesT GetClTranslucentAllies()
+    {
+        // Note: defaults to "on with required cvars" when the value is out of bounds.
+        switch(BCSUTILS::Clamp(GetCvar("cl_zh2_translucentallies"), 0, 2))
+        {
+            case 0:
+                return TRANSLUCENT_ALLIES_OFF;
+            case 2:
+                return TRANSLUCENT_ALLIES_ON;
+            default:
+                return TRANSLUCENT_ALLIES_ON_WITH_REQUIRED_CVARS;
+        }
+    }
+    internal int GetBaseAllyTranslucency() { return BCSUTILS::Clamp(GetCvar("cl_zh2_baseallytranslucency"), 30, 100); }
+
     // Player - Music
     internal bool GetIgnoreRadioMusic() { return (bool)GetCvar("cl_zh2_ignoreradiomusic"); }
     internal bool GetIgnoreFullServerMusic() { return (bool)GetCvar("cl_zh2_ignorefullservermusic"); }
@@ -138,6 +155,8 @@ strict namespace ZH2Game
     // Zandronum specific
     internal bool GetNoRespawnInvul() { return (bool)GetCvar("sv_norespawninvul"); }
     internal bool GetSvCheats() { return (bool)GetCvar("sv_cheats"); }
+    internal bool GetShootThroughAllies() { return (bool)GetCvar("sv_shootthroughallies"); }
+    internal bool GetUnblockAllies() { return (bool)GetCvar("sv_unblockallies"); }
     internal bool GetProtectCVars() { return (bool)GetCvar("cl_protectcvars"); }
     internal int GetMaxPlayers() { return BCSUTILS::Clamp(GetCvar("sv_maxplayers"), 1, 64); }
 }
