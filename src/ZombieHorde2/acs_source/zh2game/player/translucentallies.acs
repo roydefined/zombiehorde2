@@ -8,7 +8,12 @@ strict namespace Player
 
     internal void TranslucentAlliesTicClient()
     {
-        bool translucentAlliesEnabled = ZH2Game::GetTranslucentAllies();
+        // Translucent allies might need some additional cvars enabled.
+        // If we have the setting set for them, one of these cvars must be enabled.
+        ZH2Game::TranslucentAlliesT translucentAlliesEnabledCVar = ZH2Game::GetTranslucentAllies();
+        bool translucentAlliesEnabled = translucentAlliesEnabledCVar == ZH2Game::TRANSLUCENT_ALLIES_ON
+            || translucentAlliesEnabledCVar == ZH2Game::TRANSLUCENT_ALLIES_ON_WITH_REQUIRED_CVARS
+                && (ZH2Game::GetShootThroughAllies() || ZH2Game::GetUnblockAllies());
 
         // Do we need to toggle translucency?
         if (GetTranslucentAlliesEnabled() != translucentAlliesEnabled)
