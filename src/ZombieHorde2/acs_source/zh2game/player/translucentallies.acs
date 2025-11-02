@@ -4,8 +4,6 @@
 
 strict namespace Player
 {
-	#define TRANSLUCENT_ALLIES_DISTANCE_MAX 256.0
-
     internal void TranslucentAlliesTicClient()
     {
         // Translucent allies might need some additional cvars enabled.
@@ -62,6 +60,7 @@ strict namespace Player
     internal void UpdateTranslucentAlliesAlpha()
     {
         Player::SpecieTypeT specie = Player::GetSpecie();
+        fixed translucentAlliesDistance = fixed(ZH2Game::GetTranslucentAlliesDistance());
 
         // Base configured translucency value on players.
         fixed baseAlpha = fixed(ZH2Game::GetBaseAllyTranslucency()) / 100.0;
@@ -90,7 +89,7 @@ strict namespace Player
 
             // Distance check which also increases/decreases alpha based on distance.
             fixed distance = BCSUtils::ActorDistance(ActivatorTID(), tid);
-			fixed alpha = baseAlpha * (fixed)BCSUtils::Min(1.0, distance / TRANSLUCENT_ALLIES_DISTANCE_MAX);
+			fixed alpha = baseAlpha * (fixed)BCSUtils::Min(1.0, distance / translucentAlliesDistance);
 			SetActorProperty(tid, APROP_ALPHA, alpha);
 			SetActorProperty(tid, APROP_RENDERSTYLE, alpha != 1.0 ? STYLE_TRANSLUCENT : STYLE_NORMAL);
         }
