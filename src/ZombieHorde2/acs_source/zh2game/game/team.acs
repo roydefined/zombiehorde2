@@ -4,24 +4,58 @@
 
 strict namespace Game
 {
-    internal void TeamIndicatorTicClient(int id)
+    #define TEAM_INDICATOR_FADE_RANGE 128.0
+
+    internal void TeamIndicatorTicClient()
     {
-        int indicatorTid = GetPlayerTeamIndicatorTid(id);
+        int consolePlayerTid = Identity::GetTid(ConsolePlayerNumber());
+        fixed translucentTeamIndicatorsDistance = fixed(512.0); // TODO: Configurable
 
-        // Team indicator does not exist.
-        if (ThingCount(T_NONE, indicatorTid) == 0)
-            return;
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // Ignore self.
+            if (ConsolePlayerNumber() == i)
+                continue;
 
-        // For this we must set the team indicator as the activator.
-        if (!SetActivator(indicatorTid))
-            return;
+            if (!PlayerInGame(i))
+                continue;
 
-        int tid = Identity::GetTid(id);
-        fixed zOffset = GetActorProperty(tid, APROP_VIEWHEIGHT) + 16.0;
+            int tid = Identity::GetTID(i);
+            if (!BCSUTILS::ActorIsAlive(tid))
+                continue;
 
-        Warp(tid, 0.0, 0.0, zOffset, 0.0, WARPF_NOCHECKPOSITION);
-        
-        if (!SetActivatorToPlayer(id))
+            int indicatorTid = GetPlayerTeamIndicatorTid(i);
+
+            // Team indicator does not exist.
+            if (ThingCount(T_NONE, indicatorTid) == 0)
+                continue;
+
+            // Distance check which also increases/decreases alpha based on distance.
+            fixed distance = BCSUtils::ActorDistance(consolePlayerTid, tid);
+            fixed end = translucentTeamIndicatorsDistance - TEAM_INDICATOR_FADE_RANGE;
+
+            fixed fadeFactor = 1.0 - (distance - end) / TEAM_INDICATOR_FADE_RANGE;
+            fixed alpha = (fixed)BCSUtils::Clamp(fadeFactor, 0.0, 1.0);
+
+			SetActorProperty(indicatorTid, APROP_ALPHA, alpha);
+			SetActorProperty(indicatorTid, APROP_RENDERSTYLE, alpha != 1.0 ? STYLE_TRANSLUCENT : STYLE_NORMAL);
+
+            // Warp when we have a team indicator drawn.
+            if (alpha == 0.0)
+                continue;
+
+            // For warping we must set the team indicator as the activator.
+            if (!SetActivator(indicatorTid))
+                continue;
+
+            fixed zOffset = GetActorProperty(tid, APROP_VIEWHEIGHT) + 16.0;
+
+            // Move the team indicator to the player.
+            Warp(tid, 0.0, 0.0, zOffset, 0.0, WARPF_NOCHECKPOSITION);
+        }
+
+        // Return activator to the console player.
+        if (!SetActivatorToPlayer(ConsolePlayerNumber()))
             return;
     }
 
