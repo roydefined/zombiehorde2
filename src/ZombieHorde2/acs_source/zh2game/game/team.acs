@@ -8,8 +8,58 @@ strict namespace Game
 
     internal void TeamIndicatorTicClient()
     {
+        bool teamIndicatorsEnabled = ZH2Game::GetSvTeamIndicators() && ZH2Game::GetClTeamIndicators();
+
+        // Do we need to toggle translucency?
+        if (GetTeamIndicatorsEnabled() != teamIndicatorsEnabled)
+        {
+            SetTeamIndicatorsEnabled(teamIndicatorsEnabled);
+
+            if (!teamIndicatorsEnabled)
+                DisableTeamIndicatorsProperties();
+        }
+
+        if (teamIndicatorsEnabled)
+            UpdateTeamIndicators();
+    }
+
+    internal void SetTeamIndicatorsEnabled(bool enabled)
+    {
+        ZH2Game::GameContext.TeamIndicatorsEnabled = enabled;
+    }
+    
+    internal bool GetTeamIndicatorsEnabled()
+    {
+        return ZH2Game::GameContext.TeamIndicatorsEnabled;
+    }
+
+    // Handles setting actors back to being opaque.
+    internal void DisableTeamIndicatorsProperties()
+    {
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // Ignore self.
+            if (ConsolePlayerNumber() == i)
+                continue;
+
+            if (!PlayerInGame(i))
+                continue;
+
+            int tid = Identity::GetTID(i);
+            if (!BCSUTILS::ActorIsAlive(tid))
+                continue;
+
+            int indicatorTid = GetPlayerTeamIndicatorTid(i);
+            SetActorProperty(indicatorTid, APROP_ALPHA, 0.0);
+			SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+        }
+    }
+
+    // Handles actually setting the alpha values on all team indicators and warping them.
+    internal void UpdateTeamIndicators()
+    {
         int consolePlayerTid = Identity::GetTid(ConsolePlayerNumber());
-        fixed translucentTeamIndicatorsDistance = fixed(512.0); // TODO: Configurable
+        fixed translucentTeamIndicatorsDistance = fixed(ZH2Game::GetTeamIndicatorDistance());
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
