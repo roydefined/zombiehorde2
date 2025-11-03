@@ -79,6 +79,15 @@ strict namespace Game
             // Team indicator does not exist.
             if (ThingCount(T_NONE, indicatorTid) == 0)
                 continue;
+            
+            // Do not show when the player has any status, except chatting because it does not overlap.
+            int status = GetPlayerStatus(i);
+            if (status != PLAYERSTATUS_CHATTING && status != 0)
+            {
+                SetActorProperty(indicatorTid, APROP_ALPHA, 0.0);
+                SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+                continue;
+            }
 
             // Distance check which also increases/decreases alpha based on distance.
             fixed distance = BCSUtils::ActorDistance(consolePlayerTid, tid);
