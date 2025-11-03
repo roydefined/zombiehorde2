@@ -1,0 +1,70 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    internal void TeamIndicatorTicClient(int id)
+    {
+        int indicatorTid = GetPlayerTeamIndicatorTid(id);
+
+        // Team indicator does not exist.
+        if (ThingCount(T_NONE, indicatorTid) == 0)
+            return;
+
+        // For this we must set the team indicator as the activator.
+        if (!SetActivator(indicatorTid))
+            return;
+
+        int tid = Identity::GetTid(id);
+        fixed zOffset = GetActorProperty(tid, APROP_VIEWHEIGHT) + 16.0;
+
+        Warp(tid, 0.0, 0.0, zOffset, 0.0, WARPF_NOCHECKPOSITION);
+        
+        if (!SetActivatorToPlayer(id))
+            return;
+    }
+
+    internal void SpawnTeamIndicator()
+    {
+        SpawnPlayerTeamIndicator(PlayerNumber());
+    }
+
+    internal void SpawnPlayerTeamIndicator(int id)
+    {
+		VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        VALIDATE_ID_VALID_FUNCTION(id);
+
+        int tid = Identity::GetTid(id);
+        fixed x = GetActorX(tid),
+              y = GetActorY(tid),
+              z = GetActorZ(tid);
+
+        SpawnForced(TEAM_INDICATOR_NAME, x, y, z, GetPlayerTeamIndicatorTid(id));
+    }
+
+    internal void DisposeTeamIndicator()
+    {
+        DisposePlayerTeamIndicator(PlayerNumber());
+    }
+
+    internal void DisposePlayerTeamIndicator(int id)
+    {
+		VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        VALIDATE_ID_VALID_FUNCTION(id);
+
+        int indicatorTid = GetPlayerTeamIndicatorTid(id);
+
+        // Team indicator does not exist.
+        if (ThingCount(T_NONE, indicatorTid) == 0)
+            return;
+
+        Thing_Remove(indicatorTid);
+    }
+
+    internal int GetPlayerTeamIndicatorTid(int id)
+    {
+        VALIDATE_ID_VALID_FUNCTION_RETURN(id, -1);
+        return TEAM_INDICATOR_TID_BASE + id;
+    }
+}
