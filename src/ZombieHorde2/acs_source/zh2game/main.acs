@@ -240,6 +240,23 @@ strict namespace ZH2Game
         // TODO: Move this when adding the sync callback system.
         if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
             Hud::SetCursorEnabled(true);
+
+        // Initialize team indicators for all existing players.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // Ignore self.
+            if (ConsolePlayerNumber() == i)
+                continue;
+
+            if (!PlayerInGame(i))
+                continue;
+
+            int tid = Identity::GetTID(i);
+            if (!BCSUTILS::ActorIsAlive(tid))
+                continue;
+                
+            Game::SpawnPlayerTeamIndicator(i);
+        }
         
         // Everything below requires the client to be the activator.
         // TODO: Improve so this is not required.
@@ -332,6 +349,13 @@ strict namespace ZH2Game
         // Always reset the lib context of the player.
         ZH2Lib::ResetPlayerLibContext(id);
     }
+
+    script "zh2_internal_disconnect_client" (int id) disconnect clientside
+    {
+        // Dispose team indicator unless we're the one that disconnected.
+        if (id != ConsolePlayerNumber())
+            Game::DisposePlayerTeamIndicator(id);
+    }
     
     script "zh2_internal_death" death
     {
@@ -382,11 +406,15 @@ strict namespace ZH2Game
     
     script "zh2_internal_death_client" death clientside
     {
-        // Only run this on the dying client.
+        Logger::LogDebug(LogSource, "Call script \"zh2_internal_death_client\" for player " + str(PlayerNumber()) + ".");
+
+        // Dispose team indicator unless we're the one that died.
+        if (PlayerNumber() != ConsolePlayerNumber())
+            Game::DisposeTeamIndicator();
+
+        // Only run the rest on the dying client.
         if (ConsolePlayerNumber() != PlayerNumber())
             terminate;
-
-        Logger::LogDebug(LogSource, "Call script \"zh2_internal_death_client\" for player " + str(PlayerNumber()) + ".");
         
         // If we don't do this the cursor will be enabled when we respawn.
         Hud::SetCursorEnabled(false);
@@ -669,6 +697,10 @@ strict namespace ZH2Game
         // The game is not in a state where players can join.
         if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
             terminate;
+
+        // Spawn a team indicator unless we're the one entering/respawning
+        if (PlayerNumber() != ConsolePlayerNumber())
+            Game::SpawnTeamIndicator();
     }
 
     // Returns `true` if the given player can join.
