@@ -59,10 +59,10 @@ strict namespace Game
     // Handles actually setting the alpha values on all team indicators and warping them.
     internal void UpdateTeamIndicators()
     {
+        Player::SpecieTypeT specie = Player::GetSpecie();
         int consolePlayerTid = Identity::GetTid(ConsolePlayerNumber());
         fixed translucentTeamIndicatorsDistance = fixed(ZH2Game::GetTeamIndicatorDistance());
         
-        int last = ZH2Game::GameContext.LastTargetActorTid;
         int targetTid = 0;
 
         // Do we want to show team indicators only for those we target?
@@ -89,6 +89,14 @@ strict namespace Game
             // Team indicator does not exist.
             if (ThingCount(T_NONE, indicatorTid) == 0)
                 continue;
+
+            // Do not show in the pregame.
+            if (Round::GetActiveKnownRoundState() < Round::STATECOUNTDOWN)
+            {
+                SetActorProperty(indicatorTid, APROP_ALPHA, 0.0);
+                SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+                continue;
+            }
             
             // If we picked an actor, then this team indicator must be from them.
             if (getShowTargetTeamIndicator && tid != targetTid)
@@ -129,6 +137,17 @@ strict namespace Game
 
             // Move the team indicator to the player.
             Warp(tid, 0.0, 0.0, zOffset, 0.0, WARPF_NOCHECKPOSITION);
+
+            // Update indicator state.
+            // If the round hasn't started, the state should be unknown.
+            if (Round::GetActiveKnownRoundState() == Round::STATECOUNTDOWN)
+            {
+                SetActorState(indicatorTid, TEAM_INDICATOR_UNKNOWN_STATE);
+                continue;
+            }
+
+            bool isAlly = Player::GetPlayerSpecie(i) == specie;
+            SetActorState(indicatorTid, isAlly ? TEAM_INDICATOR_ALLY_STATE : TEAM_INDICATOR_ENEMY_STATE);
         }
 
         // Update the last tid to the new last, or 0 if we didn't pick an actor.
