@@ -1,0 +1,208 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    #define TEAM_INDICATOR_FADE_RANGE 128.0
+    #define TEAM_INDICATOR_MAX_PICK_RANGE 20000.0
+
+    internal void TeamIndicatorTicClient()
+    {
+        bool teamIndicatorsEnabled = ZH2Game::GetSvTeamIndicators() && ZH2Game::GetClTeamIndicators();
+
+        // Do we need to toggle translucency?
+        if (GetTeamIndicatorsEnabled() != teamIndicatorsEnabled)
+        {
+            SetTeamIndicatorsEnabled(teamIndicatorsEnabled);
+
+            if (!teamIndicatorsEnabled)
+                DisableTeamIndicatorsProperties();
+        }
+
+        if (teamIndicatorsEnabled)
+            UpdateTeamIndicators();
+    }
+
+    internal void SetTeamIndicatorsEnabled(bool enabled)
+    {
+        ZH2Game::GameContext.TeamIndicatorsEnabled = enabled;
+    }
+    
+    internal bool GetTeamIndicatorsEnabled()
+    {
+        return ZH2Game::GameContext.TeamIndicatorsEnabled;
+    }
+
+    // Handles setting actors back to being opaque.
+    internal void DisableTeamIndicatorsProperties()
+    {
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // Ignore self.
+            if (ConsolePlayerNumber() == i)
+                continue;
+
+            if (!PlayerInGame(i))
+                continue;
+
+            int tid = Identity::GetTID(i);
+            if (!BCSUTILS::ActorIsAlive(tid))
+                continue;
+
+            int indicatorTid = GetPlayerTeamIndicatorTid(i);
+            SetActorProperty(indicatorTid, APROP_ALPHA, 0.0);
+			SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+        }
+    }
+
+    // Handles actually setting the alpha values on all team indicators and warping them.
+    internal void UpdateTeamIndicators()
+    {
+        Player::SpecieTypeT specie = Player::GetSpecie();
+        int consolePlayerTid = Identity::GetTid(ConsolePlayerNumber());
+        fixed translucentTeamIndicatorsDistance = fixed(ZH2Game::GetTeamIndicatorDistance());
+        
+        int targetTid = 0;
+
+        // Do we want to show team indicators only for those we target?
+        // If so, pick an actor.
+        bool getShowTargetTeamIndicator = ZH2Game::GetShowTargetTeamIndicator();
+        if (getShowTargetTeamIndicator)
+            targetTid = PickActor(0, GetActorAngle(0), GetActorPitch(0), TEAM_INDICATOR_MAX_PICK_RANGE, 0, MF_SHOOTABLE, ML_BLOCKEVERYTHING | ML_BLOCKHITSCAN, PICKAF_RETURNTID);
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // Ignore self.
+            if (ConsolePlayerNumber() == i)
+                continue;
+
+            if (!PlayerInGame(i))
+                continue;
+
+            int tid = Identity::GetTID(i);
+            if (!BCSUTILS::ActorIsAlive(tid))
+                continue;
+
+            int indicatorTid = GetPlayerTeamIndicatorTid(i);
+
+            // Team indicator does not exist.
+            if (ThingCount(T_NONE, indicatorTid) == 0)
+                continue;
+
+            // Do not show in the pregame.
+            if (Round::GetActiveKnownRoundState() < Round::STATECOUNTDOWN)
+            {
+                SetActorProperty(indicatorTid, APROP_ALPHA, 0.0);
+                SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+                continue;
+            }
+            
+            // If we picked an actor, then this team indicator must be from them.
+            if (getShowTargetTeamIndicator && tid != targetTid)
+            {
+                SetActorProperty(indicatorTid, APROP_ALPHA, 0.0);
+                SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+                continue;
+            }
+            
+            // Do not show when the player has any status, except chatting because it does not overlap.
+            int status = GetPlayerStatus(i);
+            if (status != PLAYERSTATUS_CHATTING && status != 0)
+            {
+                SetActorProperty(indicatorTid, APROP_ALPHA, 0.0);
+                SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+                continue;
+            }
+
+            // Distance check which also increases/decreases alpha based on distance.
+            fixed distance = BCSUtils::ActorDistance(consolePlayerTid, tid);
+            fixed end = translucentTeamIndicatorsDistance - TEAM_INDICATOR_FADE_RANGE;
+
+            fixed fadeFactor = 1.0 - (distance - end) / TEAM_INDICATOR_FADE_RANGE;
+            fixed alpha = (fixed)BCSUtils::Clamp(fadeFactor, 0.0, 1.0);
+
+			SetActorProperty(indicatorTid, APROP_ALPHA, alpha);
+			SetActorProperty(indicatorTid, APROP_RENDERSTYLE, alpha != 1.0 ? STYLE_TRANSLUCENT : STYLE_NORMAL);
+
+            // Warp when we have a team indicator drawn.
+            if (alpha == 0.0)
+                continue;
+
+            // For warping we must set the team indicator as the activator.
+            if (!SetActivator(indicatorTid))
+                continue;
+
+            fixed zOffset = GetActorProperty(tid, APROP_VIEWHEIGHT) + 16.0;
+            Player::SpecieTypeT playerSpecie = Player::GetPlayerSpecie(i);
+
+            // Zombies are taller than their view height.
+            if (playerSpecie == Player::SPECIEZOMBIE)
+                zOffset += 32.0;
+
+            // Move the team indicator to the player.
+            Warp(tid, 0.0, 0.0, zOffset, 0.0, WARPF_NOCHECKPOSITION);
+
+            // Update indicator state.
+            // If the round hasn't started, the state should be unknown.
+            if (Round::GetActiveKnownRoundState() == Round::STATECOUNTDOWN)
+            {
+                SetActorState(indicatorTid, TEAM_INDICATOR_UNKNOWN_STATE);
+                continue;
+            }
+
+            bool isAlly = playerSpecie == specie;
+            SetActorState(indicatorTid, isAlly ? TEAM_INDICATOR_ALLY_STATE : TEAM_INDICATOR_ENEMY_STATE);
+        }
+
+        // Update the last tid to the new last, or 0 if we didn't pick an actor.
+        ZH2Game::GameContext.LastTargetActorTid = targetTid;
+
+        // Return activator to the console player.
+        if (!SetActivatorToPlayer(ConsolePlayerNumber()))
+            return;
+    }
+
+    internal void SpawnTeamIndicator()
+    {
+        SpawnPlayerTeamIndicator(PlayerNumber());
+    }
+
+    internal void SpawnPlayerTeamIndicator(int id)
+    {
+		VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        VALIDATE_ID_VALID_FUNCTION(id);
+
+        int tid = Identity::GetTid(id);
+        fixed x = GetActorX(tid),
+              y = GetActorY(tid),
+              z = GetActorZ(tid);
+
+        SpawnForced(TEAM_INDICATOR_NAME, x, y, z, GetPlayerTeamIndicatorTid(id));
+    }
+
+    internal void DisposeTeamIndicator()
+    {
+        DisposePlayerTeamIndicator(PlayerNumber());
+    }
+
+    internal void DisposePlayerTeamIndicator(int id)
+    {
+		VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        VALIDATE_ID_VALID_FUNCTION(id);
+
+        int indicatorTid = GetPlayerTeamIndicatorTid(id);
+
+        // Team indicator does not exist.
+        if (ThingCount(T_NONE, indicatorTid) == 0)
+            return;
+
+        Thing_Remove(indicatorTid);
+    }
+
+    internal int GetPlayerTeamIndicatorTid(int id)
+    {
+        VALIDATE_ID_VALID_FUNCTION_RETURN(id, -1);
+        return TEAM_INDICATOR_TID_BASE + id;
+    }
+}
