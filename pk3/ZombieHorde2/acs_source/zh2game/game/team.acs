@@ -5,6 +5,7 @@
 strict namespace Game
 {
     #define TEAM_INDICATOR_FADE_RANGE 128.0
+    #define TEAM_INDICATOR_MAX_PICK_RANGE 20000.0
 
     internal void TeamIndicatorTicClient()
     {
@@ -60,6 +61,15 @@ strict namespace Game
     {
         int consolePlayerTid = Identity::GetTid(ConsolePlayerNumber());
         fixed translucentTeamIndicatorsDistance = fixed(ZH2Game::GetTeamIndicatorDistance());
+        
+        int last = ZH2Game::GameContext.LastTargetActorTid;
+        int targetTid = 0;
+
+        // Do we want to show team indicators only for those we target?
+        // If so, pick an actor.
+        bool getShowTargetTeamIndicator = ZH2Game::GetShowTargetTeamIndicator();
+        if (getShowTargetTeamIndicator)
+            targetTid = PickActor(0, GetActorAngle(0), GetActorPitch(0), TEAM_INDICATOR_MAX_PICK_RANGE, 0, MF_SHOOTABLE, ML_BLOCKEVERYTHING | ML_BLOCKHITSCAN, PICKAF_RETURNTID);
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
@@ -79,6 +89,14 @@ strict namespace Game
             // Team indicator does not exist.
             if (ThingCount(T_NONE, indicatorTid) == 0)
                 continue;
+            
+            // If we picked an actor, then this team indicator must be from them.
+            if (getShowTargetTeamIndicator && tid != targetTid)
+            {
+                SetActorProperty(indicatorTid, APROP_ALPHA, 0.0);
+                SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+                continue;
+            }
             
             // Do not show when the player has any status, except chatting because it does not overlap.
             int status = GetPlayerStatus(i);
@@ -112,6 +130,9 @@ strict namespace Game
             // Move the team indicator to the player.
             Warp(tid, 0.0, 0.0, zOffset, 0.0, WARPF_NOCHECKPOSITION);
         }
+
+        // Update the last tid to the new last, or 0 if we didn't pick an actor.
+        ZH2Game::GameContext.LastTargetActorTid = targetTid;
 
         // Return activator to the console player.
         if (!SetActivatorToPlayer(ConsolePlayerNumber()))
