@@ -134,6 +134,11 @@ strict namespace Game
                 continue;
 
             fixed zOffset = GetActorProperty(tid, APROP_VIEWHEIGHT) + 16.0;
+            Player::SpecieTypeT playerSpecie = Player::GetPlayerSpecie(i);
+
+            // Zombies are taller than their view height.
+            if (playerSpecie == Player::SPECIEZOMBIE)
+                zOffset += 32.0;
 
             // Move the team indicator to the player.
             Warp(tid, 0.0, 0.0, zOffset, 0.0, WARPF_NOCHECKPOSITION);
@@ -146,7 +151,7 @@ strict namespace Game
                 continue;
             }
 
-            bool isAlly = Player::GetPlayerSpecie(i) == specie;
+            bool isAlly = playerSpecie == specie;
             SetActorState(indicatorTid, isAlly ? TEAM_INDICATOR_ALLY_STATE : TEAM_INDICATOR_ENEMY_STATE);
         }
 
