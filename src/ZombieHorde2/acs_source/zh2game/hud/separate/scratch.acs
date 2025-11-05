@@ -2,9 +2,21 @@
     #error This file must be #included.
 #endif
 
+// General script for scratching a player.
+
 strict namespace Hud
 {
-    // General script for scratching a human in various ways.
+    internal void ShowHudScratch()
+    {
+        ShowPlayerHudScratch(PlayerNumber());
+    }
+
+    internal void ShowPlayerHudScratch(int id)
+    {
+        if (!NamedExecuteClientScript("zh2_internal_zombie_scratch", id))
+            Logger::LogWarning(LogSource, "Zombie scratch effect failed for player " + str(id) + ".");
+    }
+
     script "zh2_internal_zombie_scratch" clientside
     {
         if (!SetActivatorToPlayer(ConsolePlayerNumber())) terminate;
