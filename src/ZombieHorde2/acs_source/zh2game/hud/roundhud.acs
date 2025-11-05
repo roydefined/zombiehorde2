@@ -32,7 +32,9 @@ strict namespace Hud
         x += _xShakeOffset;
         y += _yShakeOffset;
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
-        DrawPlayTime(x, y);
+
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
+            DrawPlayTime(x, y);
     }
 
     internal void DrawPregameStateLabel(fixed x, fixed y)
@@ -69,7 +71,6 @@ strict namespace Hud
         DebugDraw();
     }
 
-    // TODO: Handle countdown effect (game loop should do the sound)
     internal void DrawTimer(fixed x, fixed y)
     {
         int index = RoundTimer::GetActiveTimerIndex();
@@ -115,15 +116,13 @@ strict namespace Hud
 
     internal void DrawPlayTime(fixed x, fixed y)
     {
-        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
-            return;
-
         // Don't draw as the user is typing as the timer is likely overlapping with the chatbox.
         if (GetPlayerStatus(ConsolePlayerNumber()) & PLAYERSTATUS_CHATTING)
              return;
 
         int timer = Game::GetPlayTime();
-        if (timer == 0) return;
+        if (timer == 0)
+            return;
 
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetCenterText(true);
