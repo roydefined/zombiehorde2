@@ -7,7 +7,7 @@ strict namespace Hud
     #define HUD_ENGINE_TRUNCATE_LENGTH 14
 
     // Main list drawer. Returns the count of items drawn.
-    internal int DrawList(int id, fixed x, fixed y, str header, int size, int maxShown, int[]& collection, int function(int)? counter)
+    internal int DrawList(fixed x, fixed y, str header, int size, int maxShown, int[]& collection, int function(int)? counter)
     {
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_TOP);
 
@@ -15,7 +15,7 @@ strict namespace Hud
         BCSUtils::HudSetFont("BigFont");
         BCSUtils::HudSetTextColor(CR_GREEN);
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(id--, header);
+        BCSUtils::HudDrawText(--_drawnHudId, header);
         DebugDraw();
 
         y += 25.0;
@@ -33,13 +33,13 @@ strict namespace Hud
             
             BCSUtils::HudSetTextColor(CR_WHITE);
             BCSUtils::HudSetPoint(x, y + fixed(15 * i));
-            BCSUtils::HudDrawText(id--, truncatedName);
+            BCSUtils::HudDrawText(--_drawnHudId, truncatedName);
 
             if (counter != null)
             {
                 BCSUtils::HudSetTextColor(CR_UNTRANSLATED);
                 BCSUtils::HudSetPoint(x + 110.0, y + fixed(15 * i));
-                BCSUtils::HudDrawText(id--, str(counter(collection[i])));
+                BCSUtils::HudDrawText(--_drawnHudId, str(counter(collection[i])));
             }
 
             DebugDraw();
@@ -57,7 +57,7 @@ strict namespace Hud
 
         BCSUtils::HudSetTextColor(CR_WHITE);
         BCSUtils::HudSetPoint(x, y + fixed(15 * count));
-        BCSUtils::HudDrawText(id--, "... And " + str(left) + " more!");
+        BCSUtils::HudDrawText(--_drawnHudId, "... And " + str(left) + " more!");
 
         // Plus one for the text
         return count + 1;

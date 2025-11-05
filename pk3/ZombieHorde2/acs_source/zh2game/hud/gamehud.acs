@@ -18,14 +18,14 @@ strict namespace Hud
         x += _xShakeOffset;
         y += _yShakeOffset;
 
-        int id = HUD_GAME;
-        id = DrawZombieTeleportTime(id, x, y);
+        _drawnHudId = HUD_GAME;
+        DrawZombieTeleportTime(x, y);
     }
 
-    internal int DrawZombieTeleportTime(int id, fixed x, fixed y)
+    internal void DrawZombieTeleportTime(fixed x, fixed y)
     {
         if (!Game::GetIsZombieTeleporting())
-            return id;
+            return;
 
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetTextColor(CR_WHITE);
@@ -37,13 +37,11 @@ strict namespace Hud
         str formattedTics = Utils::FormatTics(tics, true);
 
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(id--, "Teleporting in " + formattedTics);
+        BCSUtils::HudDrawText(--_drawnHudId, "Teleporting in " + formattedTics);
         DebugDraw();
 
         BCSUtils::HudSetPoint(x, y + 8.0);
-        BCSUtils::HudDrawText(id--, "Do not move");
+        BCSUtils::HudDrawText(--_drawnHudId, "Do not move");
         DebugDraw();
-
-        return id;
     }
 }

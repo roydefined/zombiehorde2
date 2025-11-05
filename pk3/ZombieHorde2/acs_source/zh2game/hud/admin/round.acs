@@ -4,21 +4,21 @@
 
 strict namespace Hud
 {
-    internal void DrawRoundMenuHud(int id, fixed x, fixed y, fixed scale)
+    internal void DrawRoundMenuHud(fixed x, fixed y, fixed scale)
     {
         BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudDrawText(id--, "\cfRound");
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfRound");
 
         y += 10.0 * scale;
-        if (DrawClickableText(id--, x, y, 100.0 * scale, 10.0 * scale, "Back to start"))
+        if (DrawClickableText(--_drawnHudId, x, y, 100.0 * scale, 10.0 * scale, "Back to start"))
             OpenAdminMenu(MENU_START);
         
         y += 20.0 * scale;
 
         BCSUtils::HudSetPoint(x, y);
         if (DrawClickableTextConditional(
-            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, id--, x, y, 60.0 * scale, 10.0 * scale, "End game"))
+            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, x, y, 60.0 * scale, 10.0 * scale, "End game"))
         {
             Admin::AdminEndGameClientside();
         }
@@ -27,7 +27,7 @@ strict namespace Hud
 
         // Kill unsafe players
         if (DrawClickableTextConditional(
-            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, id--, x, y, 80.0 * scale, 10.0 * scale, "Kill unsafe players"))
+            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, x, y, 80.0 * scale, 10.0 * scale, "Kill unsafe players"))
         {
             Admin::AdminKillUnsafePlayersClientSide();
         }
@@ -35,14 +35,14 @@ strict namespace Hud
         y += 20.0 * scale;
         BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudDrawText(id--, "\cfSet round state");
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfSet round state");
 
         y += 10.0 * scale;
 
         // Explicit button for disabling the current round state.
         BCSUtils::HudSetPoint(x, y);
         if (DrawClickableTextConditional(
-            Round::GetActiveRoundStateIndex() != 0, id--, x, y, 80.0 * scale, 10.0 * scale, "Disable round state"))
+            Round::GetActiveRoundStateIndex() != 0, --_drawnHudId, x, y, 80.0 * scale, 10.0 * scale, "Disable round state"))
         {
             Admin::AdminSetRoundStateClientside(0);
         }
@@ -55,7 +55,7 @@ strict namespace Hud
             if (!Round::GetRoundDefined(index)) continue;
 
             if (DrawClickableTextConditional(
-                Round::GetActiveRoundStateIndex() != index, id--, x, (y + fixed(10 * rows) * scale), 80.0 * scale, 10.0 * scale, Round::GetRoundStateIndexAsString(index)))
+                Round::GetActiveRoundStateIndex() != index, --_drawnHudId, x, (y + fixed(10 * rows) * scale), 80.0 * scale, 10.0 * scale, Round::GetRoundStateIndexAsString(index)))
             {
                 Admin::AdminSetRoundStateClientside(index);
             }
@@ -66,14 +66,14 @@ strict namespace Hud
         y += (20.0 + fixed(10 * rows)) * scale;
         BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudDrawText(id--, "\cfSet round timer");
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfSet round timer");
 
         y += 10.0 * scale;
 
         // Explicit button for disabling the current timer.
         BCSUtils::HudSetPoint(x, y);
         if (DrawClickableTextConditional(
-            RoundTimer::GetActiveTimerIndex() != 0, id--, x, y, 80.0 * scale, 10.0 * scale, "Disable timer"))
+            RoundTimer::GetActiveTimerIndex() != 0, --_drawnHudId, x, y, 80.0 * scale, 10.0 * scale, "Disable timer"))
         {
             Admin::AdminSetRoundTimerClientside(0);
         }
@@ -87,7 +87,7 @@ strict namespace Hud
             if (!RoundTimer::GetTimerDefined(index)) continue;
 
             if (DrawClickableTextConditional(
-                RoundTimer::GetActiveTimerIndex() != index, id--, x, (y + fixed(10 * rows)), 80.0 * scale, 10.0 * scale, RoundTimer::GetTimerIndexAsString(index)))
+                RoundTimer::GetActiveTimerIndex() != index, --_drawnHudId, x, (y + fixed(10 * rows)), 80.0 * scale, 10.0 * scale, RoundTimer::GetTimerIndexAsString(index)))
             {
                 Admin::AdminSetRoundTimerClientside(index);
             }

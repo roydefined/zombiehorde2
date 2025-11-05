@@ -4,21 +4,21 @@
 
 strict namespace Hud
 {
-    internal void DrawResistMenuHud(int id, fixed x, fixed y, fixed scale)
+    internal void DrawResistMenuHud(fixed x, fixed y, fixed scale)
     {
         BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudDrawText(id--, "\cfResist");
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfResist");
 
         y += 10.0 * scale;
-        if (DrawClickableText(id--, x, y, 100.0 * scale, 10.0 * scale, "Back to start"))
+        if (DrawClickableText(--_drawnHudId, x, y, 100.0 * scale, 10.0 * scale, "Back to start"))
             OpenAdminMenu(MENU_START);
         
         y += 20.0 * scale;
 
         BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudDrawText(id--, "\cfManage resists");
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfManage resists");
 
         y += 10.0 * scale;
         int rows = 0;
@@ -29,20 +29,20 @@ strict namespace Hud
 
             BCSUtils::HudSetPoint(x, y + fixed(10 * rows) * scale);
             BCSUtils::HudSetTextColor(CR_WHITE);
-            BCSUtils::HudDrawText(id--, "Resist #" + str(index));
+            BCSUtils::HudDrawText(--_drawnHudId, "Resist #" + str(index));
 
             BCSUtils::HudSetPoint(x + 80.0 * scale, y + fixed(10 * rows) * scale);
             BCSUtils::HudSetTextColor(CR_WHITE);
-            BCSUtils::HudDrawText(id--, str(Resist::GetTicsLeft(index)) + "/" + str(Resist::GetMaximumTics(index)));
+            BCSUtils::HudDrawText(--_drawnHudId, str(Resist::GetTicsLeft(index)) + "/" + str(Resist::GetMaximumTics(index)));
 
             if (DrawClickableTextConditional(
-                !Resist::IsActive(index), id--, x + 140.0, y + fixed(10 * rows) * scale, 40.0 * scale, 10.0 * scale, "start"))
+                !Resist::IsActive(index), --_drawnHudId, x + 140.0, y + fixed(10 * rows) * scale, 40.0 * scale, 10.0 * scale, "start"))
             {
                 Admin::AdminSetStartResistClientside(index);
             }
 
             if (DrawClickableTextConditional(
-                Resist::IsActive(index), id--, x + 190.0, y + fixed(10 * rows) * scale, 40.0 * scale, 10.0 * scale, "stop"))
+                Resist::IsActive(index), --_drawnHudId, x + 190.0, y + fixed(10 * rows) * scale, 40.0 * scale, 10.0 * scale, "stop"))
             {
                 Admin::AdminSetStopResistClientside(index);
             }
