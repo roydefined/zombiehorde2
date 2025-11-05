@@ -14,55 +14,51 @@ strict namespace Hud
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetDisappearTime(0.5);
         Utils::ScaleToScreen();
-
-        int id = HUD_PLAYERBLUR;
         
         // Left side
         fixed x = 100.0,
               y = BCSUtils::HudBottom() / 2.0;
 
-        id = DrawAirSupplyBlur(id, x, y);
-        id = DrawHurtBlur(id, x, y);
-        id = DrawHeartbeatHurtBlur(id, x, y);
+        DrawAirSupplyBlur(x, y);
+        DrawHurtBlur(x, y);
+        DrawHeartbeatHurtBlur(x, y);
     }
 
-    internal int DrawAirSupplyBlur(int id, fixed x, fixed y)
+    internal void DrawAirSupplyBlur(fixed x, fixed y)
     {
 		int airSupply = GetAirSupply(ConsolePlayerNumber());
         if (airSupply == MAX_AIRSUPPLY)
-            return id;
+            return;
 
         fixed percentage = fixed(airSupply) / fixed(MAX_AIRSUPPLY);
         BCSUtils::HudSetAlpha(1.0 - percentage);
         
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawImage(id--, BLUR_BLACK_GRAPHIC);
+        BCSUtils::HudDrawImage(--_drawnHudId, BLUR_BLACK_GRAPHIC);
 
         DebugDraw();
-        return id;
     }
 
-    internal int DrawHurtBlur(int id, fixed x, fixed y)
+    internal void DrawHurtBlur(fixed x, fixed y)
     {
         // We multiply by 3 because this graphic should not appear as soon as it would otherwise.
         fixed percentage = fixed(PlayerHealth() * 3) / fixed((int)GetActorProperty(ActivatorTid(), APROP_SPAWNHEALTH));
         BCSUtils::HudSetAlpha(1.0 - percentage);
         
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawImage(id--, BLUR_RED_GRAPHIC);
+        BCSUtils::HudDrawImage(--_drawnHudId, BLUR_RED_GRAPHIC);
 
         DebugDraw();
-        return id;
     }
 
-    internal int DrawHeartbeatHurtBlur(int id, fixed x, fixed y)
+    internal void DrawHeartbeatHurtBlur(fixed x, fixed y)
     {
         if (!ZH2Game::GetEnableHurtHeartbeat())
-            return id;
+            return;
 
         int heartbeatType = Player::GetHeartbeatType();
         if (heartbeatType == 0)
-            return id;
+            return;
 
         // Faster fading when we are on critical health.
         int endTic = heartbeatType == 1 ? 18 : 10;
@@ -71,9 +67,8 @@ strict namespace Hud
         BCSUtils::HudSetAlpha(1.0 - percentage);
         
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawImage(id--, BLUR_RED_GRAPHIC);
+        BCSUtils::HudDrawImage(--_drawnHudId, BLUR_RED_GRAPHIC);
 
         DebugDraw();
-        return id;
     }
 }

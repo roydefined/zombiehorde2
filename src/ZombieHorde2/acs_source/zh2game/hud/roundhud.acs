@@ -18,10 +18,14 @@ strict namespace Hud
         x += _xShakeOffset;
         y += _yShakeOffset;
 
+        _drawnHudId = HUD_ROUND;
+
         // While we are in pregame with no countdown to start, draw the label.
         if (Round::GetActiveKnownRoundState() == Round::STATEPREGAME
             && !RoundTimer::GetAnyTimerActive())
+        {
             DrawPregameStateLabel(x + 320.0 / scale, y - 50.0);
+        }
 
         DrawTimer(x + 320.0 / scale, y - 20.0);
 
@@ -63,11 +67,11 @@ strict namespace Hud
                 : "Invoke 'addbot' in the console to add bots to play with.";
 
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(HUD_PREGAMESTATE, topMessage);
+        BCSUtils::HudDrawText(--_drawnHudId, topMessage);
         DebugDraw();
 
         BCSUtils::HudSetPoint(x, y + 8.0);
-        BCSUtils::HudDrawText(HUD_PREGAMESTATE - 1, bottomMessage);
+        BCSUtils::HudDrawText(--_drawnHudId, bottomMessage);
         DebugDraw();
     }
 
@@ -88,14 +92,14 @@ strict namespace Hud
 
         // Label
         BCSUtils::HudSetPoint(x, y - 10.0);
-        BCSUtils::HudDrawText(HUD_TIMER, RoundTimer::GetTimerLabel(index));
+        BCSUtils::HudDrawText(--_drawnHudId, RoundTimer::GetTimerLabel(index));
         DebugDraw();
         
         // Time left.
         int ticsLeft = RoundTimer::GetTimerTicsLeft(index);
         str timerFormatted = Utils::FormatTics(ticsLeft, RoundTimer::GetTimerDrawDecimals(index));
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(HUD_TIMER - 1, timerFormatted);
+        BCSUtils::HudDrawText(--_drawnHudId, timerFormatted);
         DebugDraw();
 
         // If the timer has countdowns enabled, then the last 10 seconds should have a fading red label on top.
@@ -109,7 +113,7 @@ strict namespace Hud
 
             BCSUtils::HudSetAlpha(alpha);
             BCSUtils::HudSetTextColor(CR_RED);
-            BCSUtils::HudDrawText(HUD_TIMER - 2, timerFormatted);
+            BCSUtils::HudDrawText(--_drawnHudId, timerFormatted);
             DebugDraw();
         }
     }
@@ -140,7 +144,7 @@ strict namespace Hud
         str timerFormatted = Utils::FormatTics(timer, true);
 
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(HUD_PLAY_TIME, "Playing: " + timerFormatted);
+        BCSUtils::HudDrawText(--_drawnHudId, "Playing: " + timerFormatted);
         DebugDraw();
     }
 }

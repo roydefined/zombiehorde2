@@ -9,8 +9,6 @@ strict namespace Hud
 
     internal void DrawTip(fixed x, fixed y)
     {
-        int id = HUD_SUMMARYTIP;
-
         int index = Game::GetCurrentDisplayedTipIndex();
         int total = Game::GetTipCount();
 
@@ -19,7 +17,7 @@ strict namespace Hud
         BCSUtils::HudSetPoint(x, y);
 
         BCSUtils::HudSetAlpha(1.0);
-        BCSUtils::HudDrawText(--id, "Tip " + str(index + 1) + "/" + str(total));
+        BCSUtils::HudDrawText(--_drawnHudId, "Tip " + str(index + 1) + "/" + str(total));
 
         y += 15.0;
 
@@ -35,23 +33,23 @@ strict namespace Hud
         BCSUtils::HudSetTextColor(CR_GREEN);
         BCSUtils::HudSetAlpha(alpha);
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(--id, tipMessage);
+        BCSUtils::HudDrawText(--_drawnHudId, tipMessage);
         DebugDraw();
 
         y += 20.0;
 
         BCSUtils::HudSetAlpha(1.0);
 
-        if (DrawClickableText(--id, x - 50.0, y, 10.0, 10.0, "<<"))
+        if (DrawClickableText(--_drawnHudId, x - 50.0, y, 10.0, 10.0, "<<"))
             IterateTip(-1);
             
         BCSUtils::HudSetTextColor(CR_WHITE);
         BCSUtils::HudSetPoint(x, y);
 
-        if (DrawClickableText(--id, x, y, 50.0, 10.0, "Random tip"))
+        if (DrawClickableText(--_drawnHudId, x, y, 50.0, 10.0, "Random tip"))
             NextRandomTip();
 
-        if (DrawClickableText(--id, x + 50.0, y, 10.0, 10.0, ">>"))
+        if (DrawClickableText(--_drawnHudId, x + 50.0, y, 10.0, 10.0, ">>"))
             IterateTip(1);
     }
 
