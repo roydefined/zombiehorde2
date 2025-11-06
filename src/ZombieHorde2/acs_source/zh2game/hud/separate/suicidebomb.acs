@@ -1,0 +1,44 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+// General script for scratching a player.
+
+strict namespace Hud
+{
+    internal void ShowSuicideBombHud()
+    {
+        ShowPlayerSuicideBombHud(PlayerNumber());
+    }
+
+    internal void ShowPlayerSuicideBombHud(int id)
+    {
+        if (!NamedExecuteClientScript("zh2_internal_suicide_bomb_message", id))
+            Logger::LogError(LogSource, "Failed to call write suicide bomb message to player.");
+    }
+
+    script "zh2_internal_suicide_bomb_message" clientside
+    {
+        if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
+        if (CheckInventory(SUICIDE_BOMB_ITEM) == 0) terminate;
+
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        fixed x = 320.0,
+              y = BCSUtils::HudBottom() - 200.0;
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetCenterText(true);
+
+        BCSUtils::HudSetStayTime(3.0);
+        BCSUtils::HudSetDisappearTime(0.5);
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawText(0, "Warning, you're not surviving this one. Use again to confirm.");
+        Hud::DebugDraw();
+    }
+}

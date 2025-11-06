@@ -12,8 +12,6 @@ strict namespace Hud
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetDisappearTime(1.0);
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
-
-        int id = HUD_PLAYERBAR;
         
         // Left side
         fixed x = 320.0 + ZH2Game::GetHudPlayerBarsOffsetX(),
@@ -22,62 +20,60 @@ strict namespace Hud
         x += _xShakeOffset;
         y += _yShakeOffset;
 
-        id = DrawSprintBar(id, x, y);
+        DrawSprintBar(x, y);
+
         y += 15.0;
-        id = DrawAirSupplyBar(id, x, y);
+
+        DrawAirSupplyBar(x, y);
     }
 
-    internal int DrawSprintBar(int id, fixed x, fixed y)
+    internal void DrawSprintBar(fixed x, fixed y)
     {
         // Draw the sprint bar if human, and if we are not at the maximum.
         if (!Player::GetIsHuman())
-            return id;
+            return;
         
         int left = Player::GetSprintLeft();
         if (left == SPRINT_ITEM_MAX)
-            return id;
+            return;
         
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawImage(id--, BAR_SPRINT_NAME);
+        BCSUtils::HudDrawImage(--_drawnHudId, BAR_SPRINT_NAME);
 
         fixed percentage = fixed(left) / fixed(SPRINT_ITEM_MAX);
         fixed clipX = BCSUtils::Round(fixed(BAR_SPRINT_WIDTH) * percentage);
 
         //BCSUtils::HudSetAlpha(BCSUtils::Min(1.0, percentage * 1.5));
         BCSUtils::HudSetClipRect(fixed(-BAR_SPRINT_WIDTH / 2), fixed(-BAR_SPRINT_HEIGHT), clipX, fixed(BAR_SPRINT_HEIGHT));
-        BCSUtils::HudDrawImage(id--, BAR_SPRINT_METER_NAME);
+        BCSUtils::HudDrawImage(--_drawnHudId, BAR_SPRINT_METER_NAME);
         BCSUtils::HudRemoveClipRect();
         BCSUtils::HudSetAlpha(1.0);
 
         DebugDraw();
-        
-        return id;
     }
 
-    internal int DrawAirSupplyBar(int id, fixed x, fixed y)
+    internal void DrawAirSupplyBar(fixed x, fixed y)
     {
         // Note also that because zombies have no air supply, the bar will show empty even though they will never drown.
         if (!Player::GetIsHuman())
-            return id;
+            return;
 
 		int airSupply = GetAirSupply(ConsolePlayerNumber());
 		if (airSupply == MAX_AIRSUPPLY)
-			return id;
+			return;
 
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawImage(id--, BAR_AIRSUPPLY_NAME);
+        BCSUtils::HudDrawImage(--_drawnHudId, BAR_AIRSUPPLY_NAME);
 
         fixed percentage = fixed(airSupply) / fixed(MAX_AIRSUPPLY);
         fixed clipX = BCSUtils::Round(fixed(BAR_AIRSUPPLY_WIDTH) * percentage);
 
         //BCSUtils::HudSetAlpha(BCSUtils::Min(1.0, percentage * 1.5));
         BCSUtils::HudSetClipRect(fixed(-BAR_AIRSUPPLY_WIDTH / 2), fixed(-BAR_AIRSUPPLY_HEIGHT), clipX, fixed(BAR_AIRSUPPLY_HEIGHT));
-        BCSUtils::HudDrawImage(id--, BAR_AIRSUPPLY_METER_NAME);
+        BCSUtils::HudDrawImage(--_drawnHudId, BAR_AIRSUPPLY_METER_NAME);
         BCSUtils::HudRemoveClipRect();
         BCSUtils::HudSetAlpha(1.0);
 
         DebugDraw();
-
-        return id;
     }
 }

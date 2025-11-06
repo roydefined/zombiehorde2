@@ -4,19 +4,19 @@
 
 #define LogSource "Hud"
 
-#include "other.acs"
-#include "version.acs"
-#include "statshud.acs"
+#include "versionhud.acs"
+#include "debughud.acs"
 #include "roundhud.acs"
 #include "resistshud.acs"
-#include "gamehud.acs"
-#include "deathcam.acs"
+#include "deathcamhud.acs"
+#include "clientsettings.acs"
+#include "fullserver.acs"
+
+#include "game/game.acs"
 #include "player/player.acs"
 #include "ending/ending.acs"
-#include "summary/summary.acs"
+#include "voting/voting.acs"
 #include "separate/separate.acs"
-#include "clientsettings/clientsettings.acs"
-#include "fullserver/fullserver.acs"
 #include "weapons/weapons.acs"
 #include "admin/admin.acs"
 
@@ -24,7 +24,9 @@ strict namespace Hud
 {
     internal AdminMenuT _currentAdminMenu;
     internal bool _cursorEnabled;
+
     internal int _debugHudId;
+    internal int _drawnHudId;
 
     // For shaking of the HUD.
     internal fixed _firingSeedAngle = 0.0;
@@ -35,7 +37,8 @@ strict namespace Hud
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        _debugHudId = HUD_DEBUG;
+        _debugHudId = HUDID_DEBUG_COORDINATES;
+        _drawnHudId = HUDID_BASE;
 
         UpdateHudShakeOffset();
 
@@ -57,8 +60,8 @@ strict namespace Hud
             if (drawHud && ZH2Game::GetDrawResistsHud())
                 DrawResistsHud();
 
-            if (drawHud && ZH2Game::GetDrawStatsHud())
-                DrawStatsHud();
+            if (drawHud && ZH2Game::GetDrawDebugHud())
+                DrawDebugHud();
                 
             // NOTE: We do NOT allow drawing of the admin hud during the voting, because it is also clickable.
             if (ZH2Game::GameContext.HasAdminHudOpen)
@@ -107,28 +110,18 @@ strict namespace Hud
         _cursorEnabled = enabled;
     }
 
-    internal void DebugDraw(int color = CR_WHITE)
+    internal void DebugDraw(fixed x = 0.0, fixed y = 0.0, int color = CR_WHITE)
     {
-        if (!ZH2Game::GetDrawDebugHud()) return;
+        if (!ZH2Game::GetDrawDebugCoordinatesHud()) return;
 
         BCSUtils::HudPushState();
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetTextColor(color);
-        BCSUtils::HudSetFont("SmallFont");
-        BCSUtils::HudDrawText(_debugHudId--, "*");
-        BCSUtils::HudPopState();
-    }
+        
+        if (x != 0.0 && y != 0.0)
+            BCSUtils::HudSetPoint(x, y);
 
-    internal void DebugDrawXY(fixed x, fixed y, int color = CR_WHITE)
-    {
-        if (!ZH2Game::GetDrawDebugHud()) return;
-
-        BCSUtils::HudPushState();
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
-        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-        BCSUtils::HudSetTextColor(color);
-        BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudDrawText(_debugHudId--, "*");
         BCSUtils::HudPopState();
@@ -151,10 +144,10 @@ strict namespace Hud
         // Note the cursor pointer is on the top left, so because of this we draw it slightly offset.
         // 17.0 is the sweet spot.
         BCSUtils::HudSetPoint(BCSUtils::Floor(BCSUtils::CursorX()) + 17.0 * scale, BCSUtils::Floor(BCSUtils::CursorY()));
-        BCSUtils::HudDrawImage(HUD_CURSOR, "CURSOR");
+        BCSUtils::HudDrawImage(HUDID_CURSOR, "CURSOR");
 
         // Debug points for the cursor where it actually points.
-        DebugDrawXY(BCSUtils::Floor(BCSUtils::CursorX()), BCSUtils::Floor(BCSUtils::CursorY()), CR_CYAN);
+        DebugDraw(BCSUtils::Floor(BCSUtils::CursorX()), BCSUtils::Floor(BCSUtils::CursorY()), CR_CYAN);
     }
 
     internal bool DrawClickableTextConditional(bool clickable, int id, fixed x, fixed y, fixed width, fixed height, str text)
@@ -186,10 +179,10 @@ strict namespace Hud
         BCSUtils::HudDrawText(id, text);
         
         // Draw the bounds of the screen.
-        DebugDrawXY(x, y, CR_GRAY);
-        DebugDrawXY(x + width, y, CR_GRAY);
-        DebugDrawXY(x, y + height, CR_GRAY);
-        DebugDrawXY(x + width, y + height, CR_GRAY);
+        DebugDraw(x, y, CR_GRAY);
+        DebugDraw(x + width, y, CR_GRAY);
+        DebugDraw(x, y + height, CR_GRAY);
+        DebugDraw(x + width, y + height, CR_GRAY);
 
         return isOver && BCSUTILS::KeyPressed(BT_ATTACK);
     }
@@ -234,9 +227,9 @@ strict namespace Hud
 
     internal void ResetHud()
     {
-        OpenAdminMenu(MENU_START);
+        OpenAdminMenu(ADMINMENU_START);
         _menuPlayerTargetId = -1;
-        _menuPlayerSubMenu = MENU_NONE;
+        menuPlayerTarget = MENUTARGET_NONE;
         _filteredSpecie = Player::SPECIENONE;
     }
 }

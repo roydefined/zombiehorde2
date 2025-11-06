@@ -19,21 +19,20 @@ strict namespace Hud
         fixed x = BCSUtils::HudLeft() + 100.0,
               y = BCSUtils::HudTop() + 50.0;
 
-        int id = HUD_CLIENTSETTINGSHEADER;
-        id = DrawClientSettingsHeader(id, x, y, scale);
+        DrawClientSettingsHeader(x, y, scale);
+
         y += 110.0;
 
-        id = HUD_CLIENTSETTING;
         for (int i = 0; i < ZH2Game::GameContext.RequestedClientSettingCount; ++i)
-            id = DrawInvalidSetting(id, x, y + fixed(30 * i), scale, i);
+            DrawInvalidSetting(x, y + fixed(30 * i), scale, i);
     }
 
-    internal int DrawClientSettingsHeader(int id, fixed x, fixed y, fixed scale)
+    internal void DrawClientSettingsHeader(fixed x, fixed y, fixed scale)
     {
         // Top
         BCSUtils::HudSetFont("BigFont");
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(id--, "Consolidate settings");
+        BCSUtils::HudDrawText(--_drawnHudId, "Consolidate settings");
         DebugDraw();
 
         // Bottom
@@ -44,7 +43,7 @@ strict namespace Hud
         BCSUtils::HudSetTextColor(CR_YELLOW);
 
         BCSUtils::HudSetPoint(x, y + 15.0);
-        BCSUtils::HudDrawText(id--, "Note: \cjUpdating CVars makes use of ConsoleCommand, which could possibly be phased out of the engine in the future.");
+        BCSUtils::HudDrawText(--_drawnHudId, "Note: \cjUpdating CVars makes use of ConsoleCommand, which could possibly be phased out of the engine in the future.");
         DebugDraw();
 
         // Inform client of cl_protectcvars if set.
@@ -54,7 +53,7 @@ strict namespace Hud
             BCSUtils::HudSetTextColor(CR_YELLOW);
 
             BCSUtils::HudSetPoint(x, y + 25.0);
-            BCSUtils::HudDrawText(id--, "Note: \cjyou have enabled 'cl_protectcvars', which means any changes here are reverted when you disconnect. Please disable it to persist them.");
+            BCSUtils::HudDrawText(--_drawnHudId, "Note: \cjyou have enabled 'cl_protectcvars', which means any changes here are reverted when you disconnect. Please disable it to persist them.");
             DebugDraw();
             
             y += 10.0;
@@ -63,25 +62,23 @@ strict namespace Hud
         // Inform user of the issue with ConsoleCommand
         BCSUtils::HudSetPoint(x, y + 25.0);
         BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudDrawText(id--, "Total invalid settings: \cd" + str(count) + "\cj/\cd" + str(persistingCount) + "\cj.");
+        BCSUtils::HudDrawText(--_drawnHudId, "Total invalid settings: \cd" + str(count) + "\cj/\cd" + str(persistingCount) + "\cj.");
 
         // Clickable buttons
-        if (DrawClickableText(id--, x, y + 40.0, 140.0 * scale, 10.0 * scale, "Open keybinds menu"))
+        if (DrawClickableText(--_drawnHudId, x, y + 40.0, 140.0 * scale, 10.0 * scale, "Open keybinds menu"))
             Settings::CloseMenuAndOpenCustomizeMenu();
 
-        if (DrawClickableText(id--, x, y + 55.0, 140.0 * scale, 10.0 * scale, "Open zombie horde 2 menu"))
+        if (DrawClickableText(--_drawnHudId, x, y + 55.0, 140.0 * scale, 10.0 * scale, "Open zombie horde 2 menu"))
             Settings::CloseMenuAndOpenZh2Menu();
 
-        if (DrawClickableText(id--, x, y + 70.0, 140.0 * scale, 10.0 * scale, "Refresh settings"))
+        if (DrawClickableText(--_drawnHudId, x, y + 70.0, 140.0 * scale, 10.0 * scale, "Refresh settings"))
             Settings::UpdateCurrentClientSettings();
 
-        if (DrawClickableText(id--, x, y + 85.0, 140.0 * scale, 10.0 * scale, "Close settings"))
+        if (DrawClickableText(--_drawnHudId, x, y + 85.0, 140.0 * scale, 10.0 * scale, "Close settings"))
             Settings::CloseClientSettingsMenu();
-        
-        return id;
     }
 
-    internal int DrawInvalidSetting(int id, fixed x, fixed y, fixed scale, int index)
+    internal void DrawInvalidSetting(fixed x, fixed y, fixed scale, int index)
     {
         str type = Settings::GetInvalidClientSettingType(index);
         str name = Settings::GetInvalidClientSettingName(index);
@@ -92,33 +89,31 @@ strict namespace Hud
         BCSUtils::HudSetTextColor(CR_WHITE);
 
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(id--, type == "cvar" ? "CVar" : "Keybind");
+        BCSUtils::HudDrawText(--_drawnHudId, type == "cvar" ? "CVar" : "Keybind");
 
         BCSUtils::HudSetPoint(x + 90.0, y);
-        BCSUtils::HudDrawText(id--, "\cd" + name);
+        BCSUtils::HudDrawText(--_drawnHudId, "\cd" + name);
 
         BCSUtils::HudSetPoint(x + 220.0, y);
-        if (type == "cvar") BCSUtils::HudDrawText(id--, "\cd" + str(value));
-        else BCSUtils::HudDrawText(id--, "\cd" + (value ? "bound" : "unbound"));
+        if (type == "cvar") BCSUtils::HudDrawText(--_drawnHudId, "\cd" + str(value));
+        else BCSUtils::HudDrawText(--_drawnHudId, "\cd" + (value ? "bound" : "unbound"));
 
         BCSUtils::HudSetPoint(x + 290.0, y);
-        if (type == "cvar") BCSUtils::HudDrawText(id--, "currently \cd" + str(GetCvar(name)));
-        else BCSUtils::HudDrawText(id--, "currently \cd" + (BCSUtils::KeyBound(name) ? "bound" : "unbound"));
+        if (type == "cvar") BCSUtils::HudDrawText(--_drawnHudId, "currently \cd" + str(GetCvar(name)));
+        else BCSUtils::HudDrawText(--_drawnHudId, "currently \cd" + (BCSUtils::KeyBound(name) ? "bound" : "unbound"));
 
         // Possibly update CVar.
         // Restrictions of ConsoleCommand prevents us from binding/unbinding, so this is not supported.
         if (type == "cvar")
         {
-            if (DrawClickableText(id--, x + 400.0, y, 100.0 * scale, 10.0 * scale, "Update CVar"))
+            if (DrawClickableText(--_drawnHudId, x + 400.0, y, 100.0 * scale, 10.0 * scale, "Update CVar"))
                 UpdateSettingToRequested(index);
         }
         
         BCSUtils::HudSetTextColor(CR_WHITE);
 
         BCSUtils::HudSetPoint(x, y + 10.0);
-        BCSUtils::HudDrawText(id--, label);
-
-        return id;
+        BCSUtils::HudDrawText(--_drawnHudId, label);
     }
 
     internal void UpdateSettingToRequested(int index)

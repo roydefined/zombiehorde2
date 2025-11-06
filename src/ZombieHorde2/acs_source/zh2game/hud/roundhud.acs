@@ -21,7 +21,9 @@ strict namespace Hud
         // While we are in pregame with no countdown to start, draw the label.
         if (Round::GetActiveKnownRoundState() == Round::STATEPREGAME
             && !RoundTimer::GetAnyTimerActive())
+        {
             DrawPregameStateLabel(x + 320.0 / scale, y - 50.0);
+        }
 
         DrawTimer(x + 320.0 / scale, y - 20.0);
 
@@ -32,11 +34,14 @@ strict namespace Hud
         x += _xShakeOffset;
         y += _yShakeOffset;
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+        
         DrawPlayTime(x, y);
     }
 
     internal void DrawPregameStateLabel(fixed x, fixed y)
     {
+        int id = HUDID_PREGAMESTATUS;
+
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetTextColor(CR_RED);
         BCSUtils::HudSetCenterText(true);
@@ -61,17 +66,18 @@ strict namespace Hud
                 : "Invoke 'addbot' in the console to add bots to play with.";
 
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(HUD_PREGAMESTATE, topMessage);
+        BCSUtils::HudDrawText(--id, topMessage);
         DebugDraw();
 
         BCSUtils::HudSetPoint(x, y + 8.0);
-        BCSUtils::HudDrawText(HUD_PREGAMESTATE - 1, bottomMessage);
+        BCSUtils::HudDrawText(--id, bottomMessage);
         DebugDraw();
     }
 
-    // TODO: Handle countdown effect (game loop should do the sound)
     internal void DrawTimer(fixed x, fixed y)
     {
+        int id = HUDID_TIMER;
+
         int index = RoundTimer::GetActiveTimerIndex();
         if (!RoundTimer::GetTimerDefined(index) || !RoundTimer::GetTimerActive(index) || !RoundTimer::GetTimerVisible(index))
             return;
@@ -87,14 +93,14 @@ strict namespace Hud
 
         // Label
         BCSUtils::HudSetPoint(x, y - 10.0);
-        BCSUtils::HudDrawText(HUD_TIMER, RoundTimer::GetTimerLabel(index));
+        BCSUtils::HudDrawText(--id, RoundTimer::GetTimerLabel(index));
         DebugDraw();
         
         // Time left.
         int ticsLeft = RoundTimer::GetTimerTicsLeft(index);
         str timerFormatted = Utils::FormatTics(ticsLeft, RoundTimer::GetTimerDrawDecimals(index));
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(HUD_TIMER - 1, timerFormatted);
+        BCSUtils::HudDrawText(--id, timerFormatted);
         DebugDraw();
 
         // If the timer has countdowns enabled, then the last 10 seconds should have a fading red label on top.
@@ -108,13 +114,15 @@ strict namespace Hud
 
             BCSUtils::HudSetAlpha(alpha);
             BCSUtils::HudSetTextColor(CR_RED);
-            BCSUtils::HudDrawText(HUD_TIMER - 2, timerFormatted);
+            BCSUtils::HudDrawText(--id, timerFormatted);
             DebugDraw();
         }
     }
 
     internal void DrawPlayTime(fixed x, fixed y)
     {
+        int id = HUDID_PLAYTIMER;
+
         if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
             return;
 
@@ -123,7 +131,8 @@ strict namespace Hud
              return;
 
         int timer = Game::GetPlayTime();
-        if (timer == 0) return;
+        if (timer == 0)
+            return;
 
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetCenterText(true);
@@ -141,7 +150,7 @@ strict namespace Hud
         str timerFormatted = Utils::FormatTics(timer, true);
 
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(HUD_PLAY_TIME, "Playing: " + timerFormatted);
+        BCSUtils::HudDrawText(--id, "Playing: " + timerFormatted);
         DebugDraw();
     }
 }
