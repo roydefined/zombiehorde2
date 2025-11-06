@@ -45,7 +45,7 @@ for /d %%P in ("%SRC%\*") do (
         )
         echo.
     ) else (
-        echo [INFO] Skipping "!PROJECT_NAME!" (no "maps" directory found)
+        echo [INFO] Skipping "!PROJECT_NAME!". No 'maps/' directory found.
         echo.
     )
 )
