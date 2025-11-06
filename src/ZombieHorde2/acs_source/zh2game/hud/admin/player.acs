@@ -5,7 +5,7 @@
 strict namespace Hud
 {
     // This indicates the sub menu that we are on when in the `ADMINMENU_PLAYER` menu.
-    internal AdminPlayerSubMenuT _menuPlayerSubMenu;
+    internal AdminMenuPlayerTargetT menuPlayerTarget;
 
     // This indicates what player we should target when we are in the `ADMINMENU_PLAYER` screen and targeting a specific player.
     // If -1 we don't target anybody and we render the initial window instead.
@@ -27,34 +27,34 @@ strict namespace Hud
 
         y += 10.0 * scale;
 
-        if (_menuPlayerSubMenu != MENU_NONE)
+        if (menuPlayerTarget != MENUTARGET_NONE)
         {
             if (DrawClickableText(--_drawnHudId, x, y, 100.0 * scale, 10.0 * scale, "Back to list"))
             {
                 _menuPlayerTargetId = -1;
-                _menuPlayerSubMenu = MENU_NONE;
+                menuPlayerTarget = MENUTARGET_NONE;
             }
         }
         else
         {
             if (DrawClickableText(--_drawnHudId, x, y, 100.0 * scale, 10.0 * scale, "For all players"))
-                _menuPlayerSubMenu = MENU_ALL;
+                menuPlayerTarget = MENUTARGET_ALL;
         }
         
         y += 20.0 * scale;
 
         // Draw player specific commands when we select a player, otherwise draw the player list.
-        switch(_menuPlayerSubMenu)
+        switch(menuPlayerTarget)
         {
-            case MENU_NONE:
+            case MENUTARGET_NONE:
                 DrawPlayerList(x, y, scale);
                 break;
             
-            case MENU_ALL:
+            case MENUTARGET_ALL:
                 DrawGiveAll(x, y, scale);
                 break;
             
-            case ADMINMENU_PLAYERSPECIFIC:
+            case MENUTARGET_PLAYERSPECIFIC:
                 DrawPlayerDetails(x, y, scale, _menuPlayerTargetId);
                 break;
         }
@@ -97,7 +97,7 @@ strict namespace Hud
             if (DrawClickableText(--_drawnHudId, x + 20.0, y + fixed(10 * offset) * scale, 60.0 * scale, 10.0 * scale, BCSUTILS::PlayerName(i)))
             {
                 _menuPlayerTargetId = i;
-                _menuPlayerSubMenu = ADMINMENU_PLAYERSPECIFIC;
+                menuPlayerTarget = MENUTARGET_PLAYERSPECIFIC;
             }
 
             offset++;
