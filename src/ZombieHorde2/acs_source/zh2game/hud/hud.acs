@@ -109,7 +109,7 @@ strict namespace Hud
         _cursorEnabled = enabled;
     }
 
-    internal void DebugDraw(int color = CR_WHITE)
+    internal void DebugDraw(fixed x = 0.0, fixed y = 0.0, int color = CR_WHITE)
     {
         if (!ZH2Game::GetDrawDebugCoordinatesHud()) return;
 
@@ -117,20 +117,10 @@ strict namespace Hud
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetTextColor(color);
-        BCSUtils::HudSetFont("SmallFont");
-        BCSUtils::HudDrawText(_debugHudId--, "*");
-        BCSUtils::HudPopState();
-    }
+        
+        if (x != 0.0 && y != 0.0)
+            BCSUtils::HudSetPoint(x, y);
 
-    internal void DebugDrawXY(fixed x, fixed y, int color = CR_WHITE)
-    {
-        if (!ZH2Game::GetDrawDebugCoordinatesHud()) return;
-
-        BCSUtils::HudPushState();
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
-        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-        BCSUtils::HudSetTextColor(color);
-        BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudDrawText(_debugHudId--, "*");
         BCSUtils::HudPopState();
@@ -156,7 +146,7 @@ strict namespace Hud
         BCSUtils::HudDrawImage(HUDID_CURSOR, "CURSOR");
 
         // Debug points for the cursor where it actually points.
-        DebugDrawXY(BCSUtils::Floor(BCSUtils::CursorX()), BCSUtils::Floor(BCSUtils::CursorY()), CR_CYAN);
+        DebugDraw(BCSUtils::Floor(BCSUtils::CursorX()), BCSUtils::Floor(BCSUtils::CursorY()), CR_CYAN);
     }
 
     internal bool DrawClickableTextConditional(bool clickable, int id, fixed x, fixed y, fixed width, fixed height, str text)
@@ -188,10 +178,10 @@ strict namespace Hud
         BCSUtils::HudDrawText(id, text);
         
         // Draw the bounds of the screen.
-        DebugDrawXY(x, y, CR_GRAY);
-        DebugDrawXY(x + width, y, CR_GRAY);
-        DebugDrawXY(x, y + height, CR_GRAY);
-        DebugDrawXY(x + width, y + height, CR_GRAY);
+        DebugDraw(x, y, CR_GRAY);
+        DebugDraw(x + width, y, CR_GRAY);
+        DebugDraw(x, y + height, CR_GRAY);
+        DebugDraw(x + width, y + height, CR_GRAY);
 
         return isOver && BCSUTILS::KeyPressed(BT_ATTACK);
     }
