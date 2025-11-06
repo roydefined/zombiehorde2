@@ -2,6 +2,9 @@
     #error This file must be #included.
 #endif
 
+#include "ztele.acs"
+#include "counter.acs"
+
 strict namespace Hud
 {
     internal void DrawGameHud()
@@ -20,5 +23,15 @@ strict namespace Hud
 
         _drawnHudId = HUDID_GAME;
         DrawZombieTeleportTime(x, y);
+
+        x = BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX();
+        y = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY();
+
+        x += _xShakeOffset;
+        y += _yShakeOffset;
+
+        // Do not draw the counters unless there are more than two players playing.
+        if (PlayerCount() >= 2)
+            DrawCounters(x - 110.0, y - 180.0);
     }
 }
