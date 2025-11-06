@@ -32,7 +32,16 @@ for /d %%P in ("%SRC%\*") do (
         set "OUT_WAD=!OUTDIR!\!MAP_NAME!.wad"
 
         echo   Packing !MAP_NAME! -> "!OUT_WAD!"...
-        "%TOOL%" "!MAP_PATH!" -o "!OUT_WAD!"
+
+        "%TOOL%" ^
+            "file:!MAP_PATH!\!MAP_NAME!" ^
+            "file:!MAP_PATH!\TEXTMAP" ^
+            "file:!MAP_PATH!\BEHAVIOR" ^
+            "file:!MAP_PATH!\ZNODES" ^
+            "file:!MAP_PATH!\SCRIPTS" ^
+            "file:!MAP_PATH!\ENDMAP" ^
+            -o "!OUT_WAD!"
+
         if errorlevel 1 (
             echo   [FAIL] Failed to pack !MAP_NAME!
         ) else (
