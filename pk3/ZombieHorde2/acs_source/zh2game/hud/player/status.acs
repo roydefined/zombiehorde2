@@ -18,13 +18,22 @@ strict namespace Hud
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         
         // Left side
-        fixed x = BCSUtils::HudLeft() + ZH2Game::GetHudPlayerStatusOffsetX(),
-              y = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY();
+        fixed x = BCSUtils::HudLeft() + ZH2Game::GetHudPlayerStatusOffsetX() + 30.0,
+              y = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 20.0;
 
         x += _xShakeOffset;
         y += _yShakeOffset;
 
-        DrawPlayerIdentification(x + 30.0, y - 20.0, scale);
+        DrawPlayerBackground(x, y);
+
+        DrawPlayerSkin(x + 25.0, y - 18.0);
+        DrawArmor(x + 50.0, y - 30.0);
+        DrawHealth(x + 50.0, y - 20.0);
+        DrawCurrentOwnedItem(x + 100.0, y - 125.0);
+
+        BCSUtils::HudSetVirtualSize(960.0 / scale, 720.0 / scale);
+        DrawKeyList(x + 118.0, y - 70.0);
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
 
         // Right side
         x = BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX(),
@@ -39,7 +48,7 @@ strict namespace Hud
             DrawZombieAbilities(x - 80.0, y - 220.0);
     }
 
-    internal void DrawPlayerIdentification(fixed x, fixed y, fixed scale)
+    internal void DrawPlayerBackground(fixed x, fixed y)
     {
         BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudDrawImage(--_drawnHudId, "HUDBACK");
@@ -48,12 +57,6 @@ strict namespace Hud
         BCSUtils::HudSetPoint(x + 90.0, y - 40.0);
         BCSUtils::HudDrawImage(--_drawnHudId, "HUDIBACK");
         DebugDraw();
-
-        DrawPlayerSkin(x + 25.0, y - 18.0);
-        DrawArmor(x + 50.0, y - 30.0);
-        DrawHealth(x + 50.0, y - 20.0);
-        DrawCurrentOwnedItem(x + 100.0, y - 125.0);
-        DrawKeyList(x + 118.0, y - 70.0, scale);
     }
 
     // TODO: Should come from a parsed lump.
@@ -147,7 +150,7 @@ strict namespace Hud
         }
     }
 
-    internal void DrawKeyList(fixed x, fixed y, fixed scale)
+    internal void DrawKeyList(fixed x, fixed y)
     {
         // No keys to draw.
         int keyCount = Item::GetClientOwnedKeySize();
@@ -160,8 +163,6 @@ strict namespace Hud
         x *= 1.5;
         y *= 1.5;
 
-        BCSUtils::HudSetVirtualSize(960.0 / scale, 720.0 / scale);
-
         for (int i = 0; i < keyCount; ++i)
         {
             fixed itemX = x + 15.0 * fixed(i / PLAYERID_KEYROWCOUNT);
@@ -171,8 +172,6 @@ strict namespace Hud
             BCSUtils::HudSetPoint(itemX, itemY);
             BCSUtils::HudDrawImage(--_drawnHudId, Item::GetItemGraphic(itemIndex));
         }
-
-        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
     }
 
     internal void DrawWeaponIcon(fixed x, fixed y)
