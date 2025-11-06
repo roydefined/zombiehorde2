@@ -4,15 +4,15 @@
 
 strict namespace Hud
 {
-    internal void DrawTimerMenuHud(int id, fixed x, fixed y, fixed scale)
+    internal void DrawTimerMenuHud(fixed x, fixed y, fixed scale)
     {
         BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudDrawText(id--, "\cfTimers");
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfTimers");
 
         y += 10.0 * scale;
-        if (DrawClickableText(id--, x, y, 100.0 * scale, 10.0 * scale, "Back to start"))
-            OpenAdminMenu(MENU_START);
+        if (DrawClickableText(--_drawnHudId, x, y, 100.0 * scale, 10.0 * scale, "Back to start"))
+            OpenAdminMenu(ADMINMENU_START);
         
         y += 20.0 * scale;
 
@@ -21,36 +21,36 @@ strict namespace Hud
         {
             BCSUtils::HudSetPoint(x, y);
             BCSUtils::HudSetTextColor(CR_WHITE);
-            BCSUtils::HudDrawText(id--, "\cfAdd current timer");
+            BCSUtils::HudDrawText(--_drawnHudId, "\cfAdd current timer");
 
             // Increment / decrement
-            if (DrawClickableText(id--, x, y + 10.0 * scale, 30.0 * scale, 10.0 * scale, "-1m"))
+            if (DrawClickableText(--_drawnHudId, x, y + 10.0 * scale, 30.0 * scale, 10.0 * scale, "-1m"))
                 Admin::AdminIncrementCurrentTimerClientSide(-35 * 60);
 
-            if (DrawClickableText(id--, x + 30.0 * scale, y + 10.0 * scale, 30.0 * scale, 10.0 * scale, "-10s"))
+            if (DrawClickableText(--_drawnHudId, x + 30.0 * scale, y + 10.0 * scale, 30.0 * scale, 10.0 * scale, "-10s"))
                 Admin::AdminIncrementCurrentTimerClientSide(-35 * 10);
 
-            if (DrawClickableText(id--, x + 60.0 * scale, y + 10.0 * scale, 30.0 * scale, 10.0 * scale, "-1s"))
+            if (DrawClickableText(--_drawnHudId, x + 60.0 * scale, y + 10.0 * scale, 30.0 * scale, 10.0 * scale, "-1s"))
                 Admin::AdminIncrementCurrentTimerClientSide(-35 * 1);
 
-            if (DrawClickableText(id--, x + 90.0 * scale, y + 10.0 * scale, 30.0 * scale, 10.0 * scale, "+1s"))
+            if (DrawClickableText(--_drawnHudId, x + 90.0 * scale, y + 10.0 * scale, 30.0 * scale, 10.0 * scale, "+1s"))
                 Admin::AdminIncrementCurrentTimerClientSide(35 * 1);
 
-            if (DrawClickableText(id--, x + 120.0 * scale, y + 10.0 * scale, 30.0 * scale, 10.0 * scale, "+10s"))
+            if (DrawClickableText(--_drawnHudId, x + 120.0 * scale, y + 10.0 * scale, 30.0 * scale, 10.0 * scale, "+10s"))
                 Admin::AdminIncrementCurrentTimerClientSide(35 * 10);
 
-            if (DrawClickableText(id--, x + 150.0 * scale, y + 10.0 * scale, 30.0 * scale, 10.0 * scale, "+1m"))
+            if (DrawClickableText(--_drawnHudId, x + 150.0 * scale, y + 10.0 * scale, 30.0 * scale, 10.0 * scale, "+1m"))
                 Admin::AdminIncrementCurrentTimerClientSide(35 * 60);
 
             // Pause / resume
             if (DrawClickableTextConditional(
-                !RoundTimer::GetTimerPaused(index), id--, x, y + 20.0 * scale, 80.0 * scale, 10.0 * scale, "Pause timer"))
+                !RoundTimer::GetTimerPaused(index), --_drawnHudId, x, y + 20.0 * scale, 80.0 * scale, 10.0 * scale, "Pause timer"))
             {
                 Admin::AdminPauseCurrentTimerClientSide();
             }
 
             if (DrawClickableTextConditional(
-                RoundTimer::GetTimerPaused(index), id--, x, y + 30.0 * scale, 80.0 * scale, 10.0 * scale, "Resume timer"))
+                RoundTimer::GetTimerPaused(index), --_drawnHudId, x, y + 30.0 * scale, 80.0 * scale, 10.0 * scale, "Resume timer"))
             {
                 Admin::AdminResumeCurrentTimerClientSide();
             }

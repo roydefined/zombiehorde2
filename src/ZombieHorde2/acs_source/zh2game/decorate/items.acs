@@ -169,8 +169,7 @@ strict namespace Decorate
         // Otherwise we can.
         if (CheckInventory(SUICIDE_BOMB_ITEM_CONFIRM_TIMESTAMP) < Timer())
         {
-            if (!NamedExecuteClientScript("zh2_internal_suicide_bomb_message", PlayerNumber()))
-                Logger::LogError(LOGSOURCE , "Failed to call write suicide bomb message to player.");
+            Hud::ShowSuicideBombHud();
             
             GiveInventory(SUICIDE_BOMB_ITEM_CONFIRM_TIMESTAMP, Timer() + SUICIDE_BOMB_ITEM_CONFIRM_TIMESTAMP_MAX_TICS);
             SetResultValue((int)false);
@@ -178,30 +177,5 @@ strict namespace Decorate
         }
 
         SetResultValue((int)true);
-    }
-
-    script "zh2_internal_suicide_bomb_message" clientside
-    {
-        if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
-        if (CheckInventory(SUICIDE_BOMB_ITEM) == 0) terminate;
-
-        BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0, 480.0);
-        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
-
-        fixed x = 320.0,
-              y = BCSUtils::HudBottom() - 200.0;
-
-        BCSUtils::HudSetFont("SmallFont");
-        BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudSetCenterText(true);
-
-        BCSUtils::HudSetStayTime(3.0);
-        BCSUtils::HudSetDisappearTime(0.5);
-
-        BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(0, "Warning, you're not surviving this one. Use again to confirm.");
-        Hud::DebugDraw();
     }
 }
