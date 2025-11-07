@@ -80,14 +80,13 @@ strict namespace ZH2Game
         Game::CallZombieTeleport();
     }
 
+    // Note: Can be called whilst dead. This works fine.
     script "zh2_action_toggleadminhud" net clientside
     {
-        // Ignore if we are in the voting state.
-        // The voting state has cickable buttons itself and it's messy if we allow this.
-        if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
+        // Ignore if the game ended.
+        // The ending has a lot of HUD elements and clickable buttons which would interfere.
+        if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
             terminate;
-
-        // TODO: Ignore if dead.
 
         // Do not allow enabling the hud if not admin.
         if (!ZH2Game::GameContext.HasAdminHudOpen && !Admin::GetAdmin())
