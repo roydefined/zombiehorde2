@@ -34,6 +34,11 @@ strict namespace Settings
 
     internal void OpenClientSettingsMenu()
     {
+        // Ignore if the game ended.
+        // The ending has a lot of HUD elements and clickable buttons which would interfere.
+        if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
+            return;
+
         ZH2Game::GameContext.HasClientSettingsHudOpen = true;
         ZH2Game::GameContext.HasAdminHudOpen = false; // Also make sure the admin hud is disabled.
         Hud::SetCursorEnabled(true);
