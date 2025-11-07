@@ -242,20 +242,24 @@ strict namespace ZH2Game
             Hud::SetCursorEnabled(true);
 
         // Initialize team indicators for all existing players.
-        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        // This does not have to run offline as the enter script works fine.
+        if (IsNetworkGame())
         {
-            // Ignore self.
-            if (ConsolePlayerNumber() == i)
-                continue;
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            {
+                // Ignore self.
+                if (ConsolePlayerNumber() == i)
+                    continue;
 
-            if (!PlayerInGame(i))
-                continue;
+                if (!PlayerInGame(i))
+                    continue;
 
-            int tid = Identity::GetTID(i);
-            if (!BCSUTILS::ActorIsAlive(tid))
-                continue;
-                
-            Game::SpawnPlayerTeamIndicator(i);
+                int tid = Identity::GetTID(i);
+                if (!BCSUTILS::ActorIsAlive(tid))
+                    continue;
+                    
+                Game::SpawnPlayerTeamIndicator(i);
+            }
         }
         
         // Everything below requires the client to be the activator.
