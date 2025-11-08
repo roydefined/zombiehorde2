@@ -45,6 +45,7 @@ The project contains various `.bat` files that help preparing the rpoejct. Pleas
    - `bcsutils.acs` -> `bcsutils.o`
    - `zh2lib.acs` -> `zh2lib.o`
    - `zh2game.acs` -> `zh2game.o`
+- `unpack-maps.bat` and `pack-maps.bat` exist to unpack and pack the binary wad files that you use to play and edit maps. This project stores the raw files of these maps. You will need to manually repack them to play and edit them, and unpack then to store changes.
 
 ### 1) Fetch project
 ```bash
@@ -73,6 +74,9 @@ For both options, subsequent builds do not need another call of `pack-acsutils.b
 ---
 
 ### 3) Edit / Run maps
+
+The first step is to repack all maps before you can edit / run them. For this you run `pack-maps.bat`. If succeeded, all `maps/` folders will contain their maps.
+This process only has to be done once, unless you pull in changes.
 
 #### Option A: Using PubDoomer
 1. Start PubDoomer.
