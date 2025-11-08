@@ -36,6 +36,19 @@ for /d %%P in ("%SRC%\*") do (
                     echo   [FAIL] Failed to extract %%~nxW
                 ) else (
                     echo   [OK] Extracted %%~nxW
+
+                    set "MAPFOLDER=!OUTDIR!\%%~nW"
+
+                    if exist "!MAPFOLDER!\ENDMAP" (
+                        echo     Removing ENDMAP from "!MAPFOLDER!"...
+                        del /f /q "!MAPFOLDER!\ENDMAP"
+                    )
+
+                    set "LEVELFILE=!MAPFOLDER!\%%~nW"
+                    if exist "!LEVELFILE!" (
+                        echo     Removing level file "%%~nW" from "!MAPFOLDER!"...
+                        del /f /q "!LEVELFILE!"
+                    )
                 )
             )
         )
