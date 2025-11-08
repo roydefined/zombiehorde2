@@ -9,7 +9,6 @@ strict namespace Sync
     internal void SyncMapVotingActor()
     {
         int syncId = SYNC_MAPVOTING;
-
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing map voting through actors. Sync id: " + str(syncId) + "."));
 
         syncId = SyncWriteVotableMaps(syncId);
@@ -18,6 +17,7 @@ strict namespace Sync
         BCSUtils::SyncVariable(--syncId, Map::GetFinalVotedMapIndex());
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing map voting through actors."));
+        VERIFY_SYNCID(syncId, SYNC_MAPVOTING, SYNC_MAPVOTING_LENGTH);
     }
 
     internal void CallSyncMapVotingActorOnClients()
@@ -34,7 +34,6 @@ strict namespace Sync
     internal void SyncMapVotingActorClientside()
     {
         int syncId = SYNC_MAPVOTING;
-        
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading map voting on client through actors. Sync id: " + str(syncId) + "."));
         
         syncId = SyncReadVotableMaps(syncId);
@@ -43,6 +42,7 @@ strict namespace Sync
         Map::SetFinalVotedMapIndex(BCSUtils::GetSyncVarDefault(--syncId, 0));
         
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Synced general map voting to client."));
+        VERIFY_SYNCID(syncId, SYNC_MAPVOTING, SYNC_MAPVOTING_LENGTH);
     }
 
     internal int SyncWriteVotableMaps(int syncId)
