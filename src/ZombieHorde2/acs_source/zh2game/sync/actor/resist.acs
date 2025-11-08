@@ -14,25 +14,25 @@ strict namespace Sync
         Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Start writing resist packs through actors. Sync id: " + str(syncId) + ". Length: " + str(lengthof(resists)) + "."));
 
         // The second value represents the length of the collection, so the client can also allocate accordingly.
-        BCSUtils::SyncVariable(syncId++, lengthof(resists));
+        BCSUtils::SyncVariable(--syncId, lengthof(resists));
 
         for (int i = 0; i < lengthof(resists); ++i)
         {
             // Skip if undefined.
-            BCSUtils::SyncVariable(syncId++, int(resists[i].Defined));
+            BCSUtils::SyncVariable(--syncId, int(resists[i].Defined));
 
             // TODO: should be 2, not 3?
             if (!resists[i].Defined)
             {
-                syncId += 3;
+                syncId -= 3;
                 continue;
             }
 
             // For the client so they know the index of the resist on their side.
             // We can also not do this but then it's unclear what resists to define.
-            BCSUtils::SyncVariable(syncId++, resists[i].InitialState.Length);
-            BCSUtils::SyncVariable(syncId++, resists[i].EndingTic);
-            BCSUtils::SyncVariable(syncId++, resists[i].RunState);
+            BCSUtils::SyncVariable(--syncId, resists[i].InitialState.Length);
+            BCSUtils::SyncVariable(--syncId, resists[i].EndingTic);
+            BCSUtils::SyncVariable(--syncId, resists[i].RunState);
 
             str topReasonLabel = resists[i].InitialState.TopReasonLabel;
             str timeReasonLabel = resists[i].InitialState.TimeReasonLabel;
@@ -43,7 +43,7 @@ strict namespace Sync
             // On the client we can't differentiate 0 from "" using GetCVarString.
             // We additionally pack this integer to specify if the labels are set.
             int pack = BCSUtils::PackShorts((int)topReasonLabelSet, (int)timeReasonLabelSet);
-            BCSUtils::SyncVariable(syncId++, pack);
+            BCSUtils::SyncVariable(--syncId, pack);
 
             // TODO: Use some sort of string formatting function.
             if (topReasonLabelSet)
@@ -74,7 +74,7 @@ strict namespace Sync
 
         Resist::ResistT[]& resists = ZH2Game::GameContext.MapDetails.Resists;
 
-        int collectionLength = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int collectionLength = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
         // Note we don't check the target index here since the server should supply a valid value.
 
@@ -89,19 +89,19 @@ strict namespace Sync
 
         for (int i = 0; i < collectionLength; ++i)
         {
-            resists[i].Defined = BCSUtils::GetSyncVarDefault(syncId++, -1);
+            resists[i].Defined = BCSUtils::GetSyncVarDefault(--syncId, -1);
             if (!resists[i].Defined)
             {
-                syncId += 3;
+                syncId -= 3;
                 continue;
             }
 
-            resists[i].InitialState.Length = BCSUtils::GetSyncVarDefault(syncId++, 0);
-            resists[i].EndingTic = BCSUtils::GetSyncVarDefault(syncId++, 0);
-            resists[i].RunState = Resist::GetRunStateTypeByIndex(BCSUtils::GetSyncVarDefault(syncId++, 0));
+            resists[i].InitialState.Length = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            resists[i].EndingTic = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            resists[i].RunState = Resist::GetRunStateTypeByIndex(BCSUtils::GetSyncVarDefault(--syncId, 0));
 
             // As specified above, `GetCVarString` doesn't differentiate 0 from "" so we must pass this data.
-            int pack = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            int pack = BCSUtils::GetSyncVarDefault(--syncId, 0);
             bool topReasonLabelSet = (bool)BCSUtils::UnpackShort1(pack);
             bool timeReasonLabelSet = (bool)BCSUtils::UnpackShort2(pack);
 
