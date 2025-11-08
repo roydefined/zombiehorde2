@@ -2,7 +2,8 @@
     #error This file must be #included.
 #endif
 
-// TODO: Reorganize this mess.
+#include "preprocess.h.acs"
+
 strict namespace Sync
 {
     #define ACTOR_SYNC_PLAYER_NAME_TEMPLATE "__playername%n"
@@ -12,17 +13,34 @@ strict namespace Sync
     #define ACTOR_SYNC_RESIST_LABEL_TOP_TEMPLATE "__resistlabeltop%n"
     #define ACTOR_SYNC_RESIST_LABEL_BOTTOM_TEMPLATE "__resistlabelbottom%n"
     
+    // Sync base is what the sync TIDs will base off.
+    // Each sync category then takes a certain length which they need to sync its data.
+    // The length in this case is used to debug the result and to make sure the sync stays inbounds,
+    // in case we sync more TIDs and possible lose data due to overflowing.
+
+    // NOTE: The range of TIDs is quite broad. None of these length match what we actually need.
+
     #define SYNC_BASE 900
-    #define SYNC_PLAYERS SYNC_BASE + 1
-    #define SYNC_ROUNDTIMERS SYNC_PLAYERS + 300
+    
+    // Player sync has at least three instances of 64 players needing their own sync tid.
+    #define SYNC_PLAYERS_LENGTH (BCSUtils::MAX_PLAYERS * 3 + 20)
+    #define SYNC_PLAYERS SYNC_BASE + SYNC_PLAYERS_LENGTH
+    
+    #define SYNC_ROUNDTIMERS_LENGTH (MAX_TIMERS * 10)
+    #define SYNC_ROUNDTIMERS SYNC_PLAYERS + SYNC_ROUNDTIMERS_LENGTH
 
-    // Should make sure that we offset by whatever the timers need.
-    // Just to be safe I made it 10.
-    #define SYNC_RESISTS SYNC_ROUNDTIMERS + MAX_TIMERS * 10
+    #define SYNC_RESISTS_LENGTH (MAX_RESISTS * 10 + 10)
+    #define SYNC_RESISTS SYNC_ROUNDTIMERS + SYNC_ROUNDTIMERS_LENGTH
 
-    #define SYNC_ROUND SYNC_RESISTS + MAX_RESISTS * 10
+    #define SYNC_ROUND_LENGTH (MAX_ROUNDSTATES * 2 + 20)
+    #define SYNC_ROUND SYNC_RESISTS + SYNC_ROUND_LENGTH
 
-    #define SYNC_ADMIN SYNC_ROUND + 200
-    #define SYNC_GAME SYNC_ADMIN + 50
-    #define SYNC_MAPVOTING SYNC_GAME + 1000
+    #define SYNC_ADMIN_LENGTH 10
+    #define SYNC_ADMIN SYNC_ROUND + SYNC_ADMIN_LENGTH
+    
+    #define SYNC_GAME_LENGTH 20
+    #define SYNC_GAME SYNC_ADMIN + SYNC_GAME_LENGTH
+
+    #define SYNC_MAPVOTING_LENGTH (MAX_VOTABLEMAPS + 10)
+    #define SYNC_MAPVOTING SYNC_GAME + SYNC_MAPVOTING_LENGTH
 }

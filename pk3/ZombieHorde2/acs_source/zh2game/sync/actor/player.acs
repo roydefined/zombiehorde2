@@ -9,6 +9,7 @@ strict namespace Sync
     internal void SyncPlayersActor()
     {
         int syncId = SYNC_PLAYERS;
+        
         syncId = SyncWritePlayerNames(syncId);
         syncId = SyncWriteState(syncId);
         syncId = SyncWriteSafe(syncId);
@@ -18,6 +19,8 @@ strict namespace Sync
         syncId = SyncWriteZombieInfections(syncId);
         syncId = SyncWriteHumanKills(syncId);
         syncId = SyncWriteZombieKills(syncId);
+
+        VERIFY_SYNCID(syncId, SYNC_PLAYERS, SYNC_PLAYERS_LENGTH);
     }
 
     internal void CallSyncPlayersActorOnClients()
@@ -34,6 +37,7 @@ strict namespace Sync
     internal void SyncPlayersActorClientside()
     {
         int syncId = SYNC_PLAYERS;
+
         syncId = SyncReadPlayerNames(syncId);
         syncId = SyncReadState(syncId);
         syncId = SyncReadSafe(syncId);
@@ -43,6 +47,8 @@ strict namespace Sync
         syncId = SyncReadZombieInfections(syncId);
         syncId = SyncReadHumanKills(syncId);
         syncId = SyncReadZombieKills(syncId);
+
+        VERIFY_SYNCID(syncId, SYNC_PLAYERS, SYNC_PLAYERS_LENGTH);
     }
 
     internal int SyncWritePlayerNames(int syncId)
@@ -84,10 +90,10 @@ strict namespace Sync
         }
 
         // Store back for syncing
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack3());
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack4());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack2());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack3());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack4());
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing state packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj, pack3 \cd" + str(BitMath::GetBitPack3()) + "\cj, pack4 \cd" + str(BitMath::GetBitPack4())));
         return syncId;
@@ -97,10 +103,10 @@ strict namespace Sync
     {
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading state packs on client through actors. Sync id: " + str(syncId) + "."));
 
-        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        int pack3 = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        int pack4 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack1 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack3 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack4 = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
@@ -132,8 +138,8 @@ strict namespace Sync
         }
 
         // Store back for syncing
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack2());
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing safe packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2())));
         return syncId;
@@ -143,8 +149,8 @@ strict namespace Sync
     {
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading safe packs on client through actors. Sync id: " + str(syncId) + "."));
 
-        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack1 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
@@ -177,10 +183,10 @@ strict namespace Sync
         }
 
         // Store back for syncing
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack3());
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack4());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack2());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack3());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack4());
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing specie packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj, pack3 \cd" + str(BitMath::GetBitPack3()) + "\cj, pack4 \cd" + str(BitMath::GetBitPack4())));
         return syncId;
@@ -190,10 +196,10 @@ strict namespace Sync
     {
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading specie packs on client through actors. Sync id: " + str(syncId) + "."));
 
-        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        int pack3 = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        int pack4 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack1 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack3 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack4 = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
@@ -220,8 +226,8 @@ strict namespace Sync
             BitMath::SetBit64(BitMath::GetBitPack1(), BitMath::GetBitPack2(), i, Player::GetPlayerInitialZombie(i));
         }
 
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack2());
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing initial zombie packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj."));
         return syncId;
@@ -231,8 +237,8 @@ strict namespace Sync
     {
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading initial zombie packs on client through actors. Sync id: " + str(syncId) + "."));
 
-        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack1 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
@@ -254,7 +260,7 @@ strict namespace Sync
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             int infects = Player::GetPlayerInfects(i);
-            BCSUtils::SyncVariable(syncId++, infects);
+            BCSUtils::SyncVariable(--syncId, infects);
         }
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing zombie infection packs through actors. Sync id: " + str(syncId) + "."));
@@ -268,7 +274,7 @@ strict namespace Sync
         // TODO: Same as above, could be more compact.
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
-            int infects = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            int infects = BCSUtils::GetSyncVarDefault(--syncId, 0);
             Player::SetPlayerInfects(i, infects);
         }
 
@@ -284,7 +290,7 @@ strict namespace Sync
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             int kills = Player::GetPlayerHumanKills(i);
-            BCSUtils::SyncVariable(syncId++, kills);
+            BCSUtils::SyncVariable(--syncId, kills);
         }
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing human kills packs through actors. Sync id: " + str(syncId) + "."));
@@ -298,7 +304,7 @@ strict namespace Sync
         // TODO: Same as above, could be more compact.
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
-            int kills = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            int kills = BCSUtils::GetSyncVarDefault(--syncId, 0);
             Player::SetPlayerHumanKills(i, kills);
         }
 
@@ -314,7 +320,7 @@ strict namespace Sync
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             int kills = Player::GetPlayerZombieKills(i);
-            BCSUtils::SyncVariable(syncId++, kills);
+            BCSUtils::SyncVariable(--syncId, kills);
         }
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing zombie kills packs through actors. Sync id: " + str(syncId) + "."));
@@ -328,7 +334,7 @@ strict namespace Sync
         // TODO: Same as above, could be more compact.
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
-            int kills = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            int kills = BCSUtils::GetSyncVarDefault(--syncId, 0);
             Player::SetPlayerZombieKills(i, kills);
         }
 
@@ -345,8 +351,8 @@ strict namespace Sync
             BitMath::SetBit64(BitMath::GetBitPack1(), BitMath::GetBitPack2(), i, Player::GetPlayerPreviouslyInitialZombie(i));
         }
 
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack2());
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing previously initial zombie packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj."));
         return syncId;
@@ -356,8 +362,8 @@ strict namespace Sync
     {
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading previously initial zombie packs on client through actors. Sync id: " + str(syncId) + "."));
 
-        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack1 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
