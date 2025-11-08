@@ -165,11 +165,15 @@ strict namespace Hud
         // We don't draw them if the block is not enabled.
         if (enabled)
         {
+            // If spectators are not allowed to vote, we don't want to include this on the HUD.
+            int totalVotablePlayerCount = ZH2Game::GetAllowSpectatorVoting() ? BCSUtils::ClientCount() : PlayerCount();
+            totalVotablePlayerCount -= BCSUtils::BotCount();
+
             fixed propertiesY = y - 70.0;
             BCSUtils::HudSetPoint(x, propertiesY);
             BCSUtils::HudSetTextColor(clientPicked ? CR_GREEN : CR_WHITE);
             BCSUtils::HudSetFont("SmallFont");
-            BCSUtils::HudDrawText(--_drawnHudId, str(pickCount) + "/" + str(BCSUtils::ClientCount() - BCSUtils::BotCount()));
+            BCSUtils::HudDrawText(--_drawnHudId, str(pickCount) + "/" + str(totalVotablePlayerCount));
             DebugDraw();
 
             propertiesY += 10.0;

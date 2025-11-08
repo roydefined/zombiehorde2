@@ -59,6 +59,13 @@ strict namespace Map
         if (GetPickCooldownTics() > 0) terminate;
         if (GetVotedMapIndex() == index) terminate;
 
+        // Spectators may not vote.
+        if (!ZH2Game::GetAllowSpectatorVoting() && !PlayerInGame(PlayerNumber()))
+        {
+            Logger::LogActivator("This server has disabled spectator voting.");
+            terminate;
+        }
+
         // A map was already picked when this timer is running.
         if (RoundTimer::GetActiveTimerKnownType() == RoundTimer::TIMERVOTED)
         {
@@ -131,20 +138,31 @@ strict namespace Map
     // Çhecks if the voting should finish as everybody has voted.
     internal void CheckMapVoteFinished()
     {
+        bool allowSpectatorVoting = ZH2Game::GetAllowSpectatorVoting();
+
         // We check if map voting finished by taking the number of voted players and comparing them to those who still have to vote.
+        // Note: We also want to check spectator votes here if the cvar was enabled after a spectator already voted.
         int votedPlayers = 0;
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
-            if (!BCSUtils::PlayerIsConnected(i)) continue;
+            if (!BCSUtils::PlayerIsConnected(i))
+                continue;
+            
+            // We don't count spectator votes.
+            if (!allowSpectatorVoting && !PlayerInGame(i))
+                continue;
 
             if (HasPlayerVoted(i))
                 votedPlayers++;
         }
 
+        int totalVotablePlayerCount = allowSpectatorVoting ? BCSUtils::ClientCount() : PlayerCount();
+        totalVotablePlayerCount -= BCSUtils::BotCount();
+
         // Avoid division by zero in case everyone left.
         int votePercentage = 0;
-        if (BCSUtils::ClientCount() - BCSUtils::BotCount() > 0)
-            votePercentage = (votedPlayers * 100) / (BCSUtils::ClientCount() - BCSUtils::BotCount());
+        if (totalVotablePlayerCount > 0)
+            votePercentage = (votedPlayers * 100) / totalVotablePlayerCount;
 
         // Vote threshold reached.
         if (votePercentage > ZH2Game::GetPlayerVotePercentage())
