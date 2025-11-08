@@ -14,6 +14,7 @@ strict namespace Sync
         syncId = SyncWriteVotableMaps(syncId);
         syncId = SyncWritePlayerVotes(syncId);
         syncId = SyncWriteOtherMapVotingData(syncId);
+        syncId = SyncWriteMapVoteCooldowns(syncId);
 
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing map voting through actors."));
         VERIFY_SYNCID(syncId, SYNC_MAPVOTING, SYNC_MAPVOTING_LENGTH);
@@ -38,6 +39,7 @@ strict namespace Sync
         syncId = SyncReadVotableMaps(syncId);
         syncId = SyncReadPlayerVotes(syncId);
         syncId = SyncReadOtherMapVotingData(syncId);
+        syncId = SyncReadMapVoteCooldowns(syncId);
         
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Synced general map voting to client."));
         VERIFY_SYNCID(syncId, SYNC_MAPVOTING, SYNC_MAPVOTING_LENGTH);
@@ -168,6 +170,37 @@ strict namespace Sync
         }
 
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished syncing player votes to client."));
+        return syncId;
+    }
+
+    internal int SyncWriteMapVoteCooldowns(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing map vote cooldown packs through actors. Sync id: " + str(syncId) + "."));
+
+        // TODO: Logic could be compacted more. We use quite a big number now for the cooldown but realistically it won't ever get this high.
+        // Also, we can do this based on the ending tic, which means this really would never ever go above `35 * 30` tics or something.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int cooldown = ZH2Game::GameContext.Players[i].MapVoteCooldown;
+            BCSUtils::SyncVariable(--syncId, cooldown);
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing map vote cooldown packs through actors. Sync id: " + str(syncId) + "."));
+        return syncId;
+    }
+
+    internal int SyncReadMapVoteCooldowns(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading map vote cooldown packs through actors. Sync id: " + str(syncId) + "."));
+
+        // TODO: Same as above, could be more compact.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int cooldown = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            ZH2Game::GameContext.Players[i].MapVoteCooldown = cooldown;
+        }
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished reading map vote cooldown packs through actors. Sync id: " + str(syncId) + "."));
         return syncId;
     }
 
