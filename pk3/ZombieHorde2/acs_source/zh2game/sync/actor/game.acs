@@ -12,8 +12,7 @@ strict namespace Sync
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing general game state through actors. Sync id: " + str(syncId) + "."));
         
         syncId = SyncWriteZombieAbilities(syncId);
-        syncId = SyncWriteOther(syncId);
-        syncId = SyncWriteMap(syncId);
+        syncId = SyncWriteOtherGameData(syncId);
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing general game state through actors."));
         VERIFY_SYNCID(syncId, SYNC_GAME, SYNC_GAME_LENGTH);
@@ -36,8 +35,7 @@ strict namespace Sync
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading general game on client through actors. Sync id: " + str(syncId) + "."));
 
         syncId = SyncReadZombieAbilities(syncId);
-        syncId = SyncReadOther(syncId);
-        syncId = SyncReadMap(syncId);
+        syncId = SyncReadOtherGameData(syncId);
 
         // Tell the client to update their ending stats.
         // TODO: Move this when adding the sync callback system.
@@ -114,7 +112,7 @@ strict namespace Sync
         return syncId;
     }
 
-    internal int SyncWriteOther(int syncId)
+    internal int SyncWriteOtherGameData(int syncId)
     {
         BCSUtils::SyncVariable(--syncId, Game::GetGameStartTic());
         BCSUtils::SyncVariable(--syncId, Game::GetGameEndingTic());
@@ -122,11 +120,12 @@ strict namespace Sync
         BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.WinningSpecie);
         BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.EndReason);
         BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.FullServerStartTimestamp);
+        BCSUtils::SyncVariable(--syncId, Player::GetPlayFinalHeartbeat());
 
         return syncId;
     }
 
-    internal int SyncReadOther(int syncId)
+    internal int SyncReadOtherGameData(int syncId)
     {
         Game::SetGameStartTic(BCSUtils::GetSyncVarDefault(--syncId, 0));
         Game::SetGameEndingTic(BCSUtils::GetSyncVarDefault(--syncId, 0));
@@ -140,18 +139,8 @@ strict namespace Sync
 
         ZH2Game::GameContext.FullServerStartTimestamp = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
-        return syncId;
-    }
-
-    internal int SyncWriteMap(int syncId)
-    {
-        BCSUtils::SyncVariable(--syncId, Player::GetPlayFinalHeartbeat());
-        return syncId;
-    }
-
-    internal int SyncReadMap(int syncId)
-    {
         Player::SetPlayFinalHeartbeat((bool)BCSUtils::GetSyncVarDefault(--syncId, 0));
+
         return syncId;
     }
 

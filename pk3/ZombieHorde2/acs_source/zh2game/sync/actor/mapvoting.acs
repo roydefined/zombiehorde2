@@ -13,8 +13,7 @@ strict namespace Sync
 
         syncId = SyncWriteVotableMaps(syncId);
         syncId = SyncWritePlayerVotes(syncId);
-
-        BCSUtils::SyncVariable(--syncId, Map::GetFinalVotedMapIndex());
+        syncId = SyncWriteOtherMapVotingData(syncId);
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing map voting through actors."));
         VERIFY_SYNCID(syncId, SYNC_MAPVOTING, SYNC_MAPVOTING_LENGTH);
@@ -38,8 +37,7 @@ strict namespace Sync
         
         syncId = SyncReadVotableMaps(syncId);
         syncId = SyncReadPlayerVotes(syncId);
-        
-        Map::SetFinalVotedMapIndex(BCSUtils::GetSyncVarDefault(--syncId, 0));
+        syncId = SyncReadOtherMapVotingData(syncId);
         
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Synced general map voting to client."));
         VERIFY_SYNCID(syncId, SYNC_MAPVOTING, SYNC_MAPVOTING_LENGTH);
@@ -113,6 +111,13 @@ strict namespace Sync
         return syncId;
     }
 
+    internal int SyncWriteOtherMapVotingData(int syncId)
+    {
+        BCSUtils::SyncVariable(--syncId, Map::GetFinalVotedMapIndex());
+
+        return syncId;
+    }
+
     internal int SyncReadVotableMaps(int syncId)
     {
         int length = BCSUtils::GetSyncVarDefault(--syncId, 0);
@@ -170,6 +175,13 @@ strict namespace Sync
         }
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing player votes to client."));
+        return syncId;
+    }
+
+    internal int SyncReadOtherMapVotingData(int syncId)
+    {
+        Map::SetFinalVotedMapIndex(BCSUtils::GetSyncVarDefault(--syncId, 0));
+
         return syncId;
     }
 

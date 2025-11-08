@@ -9,6 +9,37 @@ strict namespace Sync
     internal void SyncTimersActor()
     {
         int syncId = SYNC_ROUNDTIMERS;
+        
+        syncId = SyncWriteTimerStates(syncId);
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing round timer packs through actors."));
+        VERIFY_SYNCID(syncId, SYNC_ROUNDTIMERS, SYNC_ROUNDTIMERS_LENGTH);
+    }
+
+    internal void CallSyncTimersActorOnClients()
+    {
+        if (!ACS_NamedExecuteAlways("zh2_internal_sync_timers_actor_clientside", 0))
+            Logger::LogError(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for timers."));
+    }
+
+    script "zh2_internal_sync_timers_actor_clientside" clientside
+    {
+        SyncTimersActorClientside();
+    }
+
+    internal void SyncTimersActorClientside()
+    {
+        int syncId = SYNC_ROUNDTIMERS;
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading round timer packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        syncId = SyncReadTimerStates(syncId);
+        
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Synced timers to client."));
+        VERIFY_SYNCID(syncId, SYNC_ROUNDTIMERS, SYNC_ROUNDTIMERS_LENGTH);
+    }
+
+    internal int SyncWriteTimerStates(int syncId)
+    {
         RoundTimer::RoundTimerContextT[]& timers = ZH2Game::GameContext.MapDetails.Timers;
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing round timer packs through actors. Sync id: " + str(syncId) + ". Length: " + str(lengthof(timers)) + "."));
@@ -50,26 +81,11 @@ strict namespace Sync
                     "Timer \cd" + timerName + "\cj. Length: \cd" + str(timers[i].InitialState.Length) + "\cj. End tic: \cd" + str(timers[i].EndingTic) + "\cj (\cd" + str(lengthLeft) + "\cj tics left)."));
         }
 
-        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing round timer packs through actors."));
-        VERIFY_SYNCID(syncId, SYNC_ROUNDTIMERS, SYNC_ROUNDTIMERS_LENGTH);
+        return syncId;
     }
 
-    internal void CallSyncTimersActorOnClients()
+    internal int SyncReadTimerStates(int syncId)
     {
-        if (!ACS_NamedExecuteAlways("zh2_internal_sync_timers_actor_clientside", 0))
-            Logger::LogError(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for timers."));
-    }
-
-    script "zh2_internal_sync_timers_actor_clientside" clientside
-    {
-        SyncTimersActorClientside();
-    }
-
-    internal void SyncTimersActorClientside()
-    {
-        int syncId = SYNC_ROUNDTIMERS;
-        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading round timer packs on client through actors. Sync id: " + str(syncId) + "."));
-
         RoundTimer::RoundTimerContextT[]& timers = ZH2Game::GameContext.MapDetails.Timers;
         int collectionLength = BCSUtils::GetSyncVarDefault(--syncId, 0);
         
@@ -116,9 +132,8 @@ strict namespace Sync
                 FormatLog(SYNC_CATEGORY,
                     "Timer \cd" + timerName + "\cj. Length: \cd" + str(timers[i].InitialState.Length) + "\cj. End tic: \cd" + str(timers[i].EndingTic) + "\cj (\cd" + str(lengthLeft) + "\cj tics left)."));
         }
-        
-        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Synced timers to client."));
-        VERIFY_SYNCID(syncId, SYNC_ROUNDTIMERS, SYNC_ROUNDTIMERS_LENGTH);
+
+        return syncId;
     }
 
     #undef SYNC_CATEGORY
