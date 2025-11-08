@@ -407,14 +407,15 @@ strict namespace ZH2Game
         if (!PlayerIsBot(infectedId))
             Hud::ShowPlayerHudScratch(infectedId);
 
-        // Check infected if they wear armor (such as kevlar).
+        // Check infected if they wear kevlar.
         // If so, they are protected for this hit.
         int infectedTid = Identity::GetTid(infectedId);
         VALIDATE_TID_VALID_SCRIPT(infectedTid);
 
-        if (CheckActorInventory(infectedTid, "Armor") > 0)
+        if (Player::GetPlayerKevlarPoints(infectedId) > 0)
         {
-            TakeActorInventory(infectedTid, "Armor", 1);
+            // Take a point.
+            Player::AddPlayerKevlarPoints(infectedId, -1);
 
 			PlaySound(infectedTid, "items/ARMORHIT", CHAN_AUTO);
 			Power::SetPlayerPowerTics(infectedId, Power::POWERZOMBIEPROTECT, 18);
