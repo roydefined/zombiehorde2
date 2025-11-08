@@ -14,10 +14,10 @@ strict namespace Sync
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing round timer packs through actors. Sync id: " + str(syncId) + ". Length: " + str(lengthof(timers)) + "."));
 
         // The second value represents the length of the collection, so the client can also allocate accordingly.
-        BCSUtils::SyncVariable(syncId++, lengthof(timers));
+        BCSUtils::SyncVariable(--syncId, lengthof(timers));
 
         // Active round timer.
-        BCSUtils::SyncVariable(syncId++, ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex);
+        BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex);
 
         // For logging
         int time = Timer();
@@ -25,20 +25,20 @@ strict namespace Sync
         for (int i = 0; i < lengthof(timers); ++i)
         {
             // Skip if undefined.
-            BCSUtils::SyncVariable(syncId++, int(timers[i].Defined));
+            BCSUtils::SyncVariable(--syncId, int(timers[i].Defined));
             if (!timers[i].Defined)
             {
-                syncId += 6;
+                syncId -= 6;
                 continue;
             }
 
-            BCSUtils::SyncVariable(syncId++, timers[i].InitialState.Length);
-            BCSUtils::SyncVariable(syncId++, timers[i].InitialState.MaximumTime);
-            BCSUtils::SyncVariable(syncId++, timers[i].InitialState.Flags);
+            BCSUtils::SyncVariable(--syncId, timers[i].InitialState.Length);
+            BCSUtils::SyncVariable(--syncId, timers[i].InitialState.MaximumTime);
+            BCSUtils::SyncVariable(--syncId, timers[i].InitialState.Flags);
 
-            BCSUtils::SyncVariable(syncId++, timers[i].EndingTic);
-            BCSUtils::SyncVariable(syncId++, timers[i].PauseTic);
-            BCSUtils::SyncVariable(syncId++, timers[i].Flags);
+            BCSUtils::SyncVariable(--syncId, timers[i].EndingTic);
+            BCSUtils::SyncVariable(--syncId, timers[i].PauseTic);
+            BCSUtils::SyncVariable(--syncId, timers[i].Flags);
 
             // TODO: Use some sort of string formatting function.
             SetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_TIMER_LABEL_TEMPLATE, "%n", str(i)), timers[i].InitialState.Label);
@@ -70,9 +70,9 @@ strict namespace Sync
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading round timer packs on client through actors. Sync id: " + str(syncId) + "."));
 
         RoundTimer::RoundTimerContextT[]& timers = ZH2Game::GameContext.MapDetails.Timers;
-        int collectionLength = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int collectionLength = BCSUtils::GetSyncVarDefault(--syncId, 0);
         
-        int index = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int index = BCSUtils::GetSyncVarDefault(--syncId, 0);
         ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex = index;
 
         // Note we don't check the target index here since the server should supply a valid value.
@@ -91,20 +91,20 @@ strict namespace Sync
 
         for (int i = 0; i < collectionLength; ++i)
         {
-            timers[i].Defined = BCSUtils::GetSyncVarDefault(syncId++, -1);
+            timers[i].Defined = BCSUtils::GetSyncVarDefault(--syncId, -1);
             if (!timers[i].Defined)
             {
-                syncId += 6;
+                syncId -= 6;
                 continue;
             }
 
-            timers[i].InitialState.Length = BCSUtils::GetSyncVarDefault(syncId++, 0);
-            timers[i].InitialState.MaximumTime = BCSUtils::GetSyncVarDefault(syncId++, 0);
-            timers[i].InitialState.Flags = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            timers[i].InitialState.Length = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            timers[i].InitialState.MaximumTime = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            timers[i].InitialState.Flags = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
-            timers[i].EndingTic = BCSUtils::GetSyncVarDefault(syncId++, 0);
-            timers[i].PauseTic = BCSUtils::GetSyncVarDefault(syncId++, 0);
-            timers[i].Flags = BCSUtils::GetSyncVarDefault(syncId++, 0);
+            timers[i].EndingTic = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            timers[i].PauseTic = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            timers[i].Flags = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
             // TODO: Use some sort of string formatting function.
             timers[i].InitialState.Label = GetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_TIMER_LABEL_TEMPLATE, "%n", str(i)));
