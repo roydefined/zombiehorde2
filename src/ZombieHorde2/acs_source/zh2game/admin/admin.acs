@@ -47,6 +47,52 @@ strict namespace Admin
         Logger::LogTo("\cfYou have been " + (set ? "added" : "removed") + " as an admin player!", id);
         Logger::LogExcept(logMessage, id);
     }
+
+    internal void ToggleAdminHud()
+    {
+        if (ZH2Game::GameContext.HasAdminHudOpen)
+            DisableAdminHud();
+        else
+            EnableAdminHud();
+    }
+
+    
+    internal void EnableAdminHud()
+    {
+        // Ignore if the game ended.
+        // The ending has a lot of HUD elements and clickable buttons which would interfere.
+        if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
+            return;
+
+        if (!Admin::GetAdmin())
+        {
+            Logger::LogActivator("You must be an admin for this operation.");
+            return;
+        }
+
+        // If we enable the admin menu, make sure the settings hud is disabled.
+        ZH2Game::GameContext.HasClientSettingsHudOpen = false;
+
+        SetAdminHudEnabledInternal(true);
+    }
+
+    internal void DisableAdminHud()
+    {
+        // If we disable the admin menu, we want to make sure to go back to the start menu.
+        // Also reset the target player id if we had somebody.
+        Hud::ResetHud();
+        
+        SetAdminHudEnabledInternal(false);
+    }
+
+    internal void SetAdminHudEnabledInternal(bool set)
+    {
+        ZH2Game::GameContext.HasAdminHudOpen = set;
+        Hud::SetCursorEnabled(set);
+
+        if (!NamedRequestScriptPuke("zh2_internal_menu_admin_request_set_frozen", int(set)))
+            Logger::LogError(LOGSOURCE , "Failed to set frozen state on player for admin hud.");
+    }
 }
 
 #undef LOGSOURCE 
