@@ -9,7 +9,6 @@ strict namespace Sync
     internal void SyncGameActor()
     {
         int syncId = SYNC_GAME;
-
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing general game state through actors. Sync id: " + str(syncId) + "."));
         
         syncId = SyncWriteZombieAbilities(syncId);
@@ -17,6 +16,7 @@ strict namespace Sync
         syncId = SyncWriteMap(syncId);
 
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing general game state through actors."));
+        VERIFY_SYNCID(syncId, SYNC_GAME, SYNC_GAME_LENGTH);
     }
 
     internal void CallSyncGameActorOnClients()
@@ -33,7 +33,6 @@ strict namespace Sync
     internal void SyncGameActorClientside()
     {
         int syncId = SYNC_GAME;
-        
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading general game on client through actors. Sync id: " + str(syncId) + "."));
 
         syncId = SyncReadZombieAbilities(syncId);
@@ -45,6 +44,7 @@ strict namespace Sync
         Game::ClientBuildEnding();
         
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Synced general game to client."));
+        VERIFY_SYNCID(syncId, SYNC_GAME, SYNC_GAME_LENGTH);
     }
 
     internal int SyncWriteZombieAbilities(int syncId)

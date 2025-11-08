@@ -9,6 +9,7 @@ strict namespace Sync
     internal void SyncPlayersActor()
     {
         int syncId = SYNC_PLAYERS;
+        
         syncId = SyncWritePlayerNames(syncId);
         syncId = SyncWriteState(syncId);
         syncId = SyncWriteSafe(syncId);
@@ -18,6 +19,8 @@ strict namespace Sync
         syncId = SyncWriteZombieInfections(syncId);
         syncId = SyncWriteHumanKills(syncId);
         syncId = SyncWriteZombieKills(syncId);
+
+        VERIFY_SYNCID(syncId, SYNC_PLAYERS, SYNC_PLAYERS_LENGTH);
     }
 
     internal void CallSyncPlayersActorOnClients()
@@ -34,6 +37,7 @@ strict namespace Sync
     internal void SyncPlayersActorClientside()
     {
         int syncId = SYNC_PLAYERS;
+
         syncId = SyncReadPlayerNames(syncId);
         syncId = SyncReadState(syncId);
         syncId = SyncReadSafe(syncId);
@@ -43,6 +47,8 @@ strict namespace Sync
         syncId = SyncReadZombieInfections(syncId);
         syncId = SyncReadHumanKills(syncId);
         syncId = SyncReadZombieKills(syncId);
+
+        VERIFY_SYNCID(syncId, SYNC_PLAYERS, SYNC_PLAYERS_LENGTH);
     }
 
     internal int SyncWritePlayerNames(int syncId)
