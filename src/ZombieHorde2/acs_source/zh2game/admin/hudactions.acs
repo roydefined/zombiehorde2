@@ -496,13 +496,11 @@ strict namespace Admin
         if (amount == 0) terminate;
         VALIDATE_ID_VALID_SCRIPT(playerId);
 
-        int tid = Identity::GetTid(playerId);
         int amountNormalized = BCSUtils::Abs(amount);
-        if (amount > 0) GiveActorInventory(tid, "ArmorBonus", amountNormalized);
-	    else            TakeActorInventory(tid, "Armor", amountNormalized);
+        Player::AddPlayerKevlarPoints(playerId, amountNormalized);
 
-        if (amount > 0) Logger::LogBold("An \cfadmin\cj has given \cd" + str(amountNormalized) + "\cj points of armor to " + BCSUtils::PlayerName(playerId) + "\cj!");
-        else            Logger::LogBold("An \cfadmin\cj has taken \cd" + str(amountNormalized) + "\cj points of armor from " + BCSUtils::PlayerName(playerId) + "\cj!");
+        if (amount > 0) Logger::LogBold("An \cfadmin\cj has given \cd" + str(amountNormalized) + "\cj points of kevlar armor to " + BCSUtils::PlayerName(playerId) + "\cj!");
+        else            Logger::LogBold("An \cfadmin\cj has taken \cd" + str(amountNormalized) + "\cj points of kevlar armor from " + BCSUtils::PlayerName(playerId) + "\cj!");
     }
 
     internal void AdminIncrementSpecieArmorClientSide(Player::SpecieTypeT specie, int amount)
@@ -522,15 +520,16 @@ strict namespace Admin
 
         Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
         int amountNormalized = BCSUtils::Abs(amount);
-        if (amount > 0) Game::GiveSpecieInventory(specie, "ArmorBonus", amountNormalized);
-	    else            Game::TakeSpecieInventory(specie, "Armor", amountNormalized);
+        ITERATESPECIES(specie, {
+            Player::AddPlayerKevlarPoints(id, amountNormalized);
+        });
 
         str target = specieIndex == 0
             ? "everybody"
             : "all " + Player::GetSpecieIndexAsString(specieIndex) + "s";
 
-        if (amount > 0) Logger::LogBold("An \cfadmin\cj has given \cd" + str(amountNormalized) + "\cj points of armor to \cf" + target + "\cj!");
-        else            Logger::LogBold("An \cfadmin\cj has taken \cd" + str(amountNormalized) + "\cj points of armor from \cf" + target + "\cj!");
+        if (amount > 0) Logger::LogBold("An \cfadmin\cj has given \cd" + str(amountNormalized) + "\cj points of kevlar armor to \cf" + target + "\cj!");
+        else            Logger::LogBold("An \cfadmin\cj has taken \cd" + str(amountNormalized) + "\cj points of kevlar armor from \cf" + target + "\cj!");
     }
 
     // Rewards (for everybody or specie specific)

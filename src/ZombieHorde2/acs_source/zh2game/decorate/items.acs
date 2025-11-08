@@ -19,12 +19,13 @@ strict namespace Decorate
 
     internal void UseKevlar()
     {
-        if (CheckInventory(KEVLAR_ARMOR_ITEM) != 0)
+        // Players may only have one point of kevlar.
+        if (Player::GetKevlarPoints() != 0)
             return;
 
         // Note, I would set zombie protection power here, but it doesn't persist.
         TakeInventory(KEVLAR_ITEM, 1);
-        GiveInventory(KEVLAR_ARMOR_ITEM, 1);
+        Player::AddKevlarPoints(1);
 
         Logger::LogActivator("You are now able to withstand one more hit from zombies.");
     }
