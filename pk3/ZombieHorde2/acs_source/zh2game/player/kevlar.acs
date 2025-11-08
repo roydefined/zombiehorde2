@@ -1,0 +1,39 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal int GetKevlarPoints()
+    {
+        return GetPlayerKevlarPoints(PlayerNumber());
+    }
+
+    internal int GetPlayerKevlarPoints(int id)
+    {
+        return CheckActorInventory(Identity::GetTid(id), KEVLAR_ARMOR_POINTS_ITEM);
+    }
+
+    internal void SetKevlarPoints(int amount)
+    {
+        SetPlayerKevlarPoints(PlayerNumber(), amount);
+    }
+
+    internal void SetPlayerKevlarPoints(int id, int amount)
+    {
+        BCSUtils::SetActorInventory(
+            Identity::GetTid(id),
+            KEVLAR_ARMOR_POINTS_ITEM,
+            BCSUtils::Max(0, amount));
+    }
+
+    internal void AddKevlarPoints(int amount)
+    {
+        AddPlayerKevlarPoints(PlayerNumber(), amount);
+    }
+
+    internal void AddPlayerKevlarPoints(int id, int amount)
+    {
+        SetPlayerKevlarPoints(id, GetPlayerKevlarPoints(id) + amount);
+    }
+}
