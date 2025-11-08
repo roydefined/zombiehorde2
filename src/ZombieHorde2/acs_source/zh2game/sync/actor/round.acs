@@ -9,26 +9,8 @@ strict namespace Sync
     internal void SyncRoundStateActor()
     {
         int syncId = SYNC_ROUND;
-        Round::RoundStateContextT[]& rounds = ZH2Game::GameContext.MapDetails.Rounds;
-
-        Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Start writing round state packs through actors. Sync id: " + str(syncId) + ". Length: " + str(lengthof(rounds)) + "."));
-
-        // The second value represents the length of the collection, so the client can also allocate accordingly.
-        BCSUtils::SyncVariable(--syncId, lengthof(rounds));
-        BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.MapDetails.ActiveRoundStateIndex);
-
-        for (int i = 0; i < lengthof(rounds); ++i)
-        {
-            // Skip if undefined.
-            BCSUtils::SyncVariable(--syncId, int(rounds[i].Defined));
-            if (!rounds[i].Defined)
-            {
-                --syncId;
-                continue;
-            }
-
-            BCSUtils::SyncVariable(--syncId, rounds[i].AllowJoin);
-        }
+        
+        syncId = SyncWriteRoundStates(syncId);
 
         Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Finished writing round state packs through actors."));
         VERIFY_SYNCID(syncId, SYNC_ROUND, SYNC_ROUND_LENGTH);
@@ -50,6 +32,40 @@ strict namespace Sync
         int syncId = SYNC_ROUND;
         Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Start reading round timer packs on client through actors. Sync id: " + str(syncId) + "."));
 
+        syncId = SyncReadRoundStates(syncId);
+        
+        Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Synced round states to client."));
+        VERIFY_SYNCID(syncId, SYNC_ROUND, SYNC_ROUND_LENGTH);
+    }
+
+    internal int SyncWriteRoundStates(int syncId)
+    {
+        Round::RoundStateContextT[]& rounds = ZH2Game::GameContext.MapDetails.Rounds;
+
+        Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Start writing round state packs through actors. Sync id: " + str(syncId) + ". Length: " + str(lengthof(rounds)) + "."));
+
+        // The second value represents the length of the collection, so the client can also allocate accordingly.
+        BCSUtils::SyncVariable(--syncId, lengthof(rounds));
+        BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.MapDetails.ActiveRoundStateIndex);
+
+        for (int i = 0; i < lengthof(rounds); ++i)
+        {
+            // Skip if undefined.
+            BCSUtils::SyncVariable(--syncId, int(rounds[i].Defined));
+            if (!rounds[i].Defined)
+            {
+                --syncId;
+                continue;
+            }
+
+            BCSUtils::SyncVariable(--syncId, rounds[i].AllowJoin);
+        }
+
+        return syncId;
+    }
+
+    internal int SyncReadRoundStates(int syncId)
+    {
         Round::RoundStateContextT[]& rounds = ZH2Game::GameContext.MapDetails.Rounds;
         int collectionLength = BCSUtils::GetSyncVarDefault(--syncId, 0);
         
@@ -70,9 +86,8 @@ strict namespace Sync
             rounds[i].AllowJoin = BCSUtils::GetSyncVarDefault(--syncId, 0);
             Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Synced timer under index " + str(i) + "."));
         }
-        
-        Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Synced round states to client."));
-        VERIFY_SYNCID(syncId, SYNC_ROUND, SYNC_ROUND_LENGTH);
+
+        return syncId;
     }
 
     #undef SYNC_CATEGORY
