@@ -9,8 +9,39 @@ strict namespace Sync
     internal void SyncResistsActor()
     {
         int syncId = SYNC_RESISTS;
-        Resist::ResistT[]& resists = ZH2Game::GameContext.MapDetails.Resists;
+        
+        syncId = SyncWriteResistStates(syncId);
 
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing resist packs through actors."));
+        VERIFY_SYNCID(syncId, SYNC_RESISTS, SYNC_RESISTS_LENGTH);
+    }
+
+    internal void CallSyncResistsActorOnClients()
+    {
+        if (!ACS_NamedExecuteAlways("zh2_internal_sync_resists_actor_clientside", 0))
+            Logger::LogError(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for resists."));
+    }
+
+    script "zh2_internal_sync_resists_actor_clientside" clientside
+    {
+        SyncResistsActorClientside();
+    }
+
+    internal void SyncResistsActorClientside()
+    {
+        int syncId = SYNC_RESISTS;
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading resist packs on client through actors. Sync id: " + str(syncId) + "."));
+        
+        syncId = SyncReadResistStates(syncId);
+
+        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Synced resists to client."));
+        VERIFY_SYNCID(syncId, SYNC_RESISTS, SYNC_RESISTS_LENGTH);
+    }
+
+    internal int SyncWriteResistStates(int syncId)
+    {
+        Resist::ResistT[]& resists = ZH2Game::GameContext.MapDetails.Resists;
+        
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start writing resist packs through actors. Sync id: " + str(syncId) + ". Length: " + str(lengthof(resists)) + "."));
 
         // The second value represents the length of the collection, so the client can also allocate accordingly.
@@ -53,26 +84,11 @@ strict namespace Sync
                 SetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_RESIST_LABEL_BOTTOM_TEMPLATE, "%n", str(i)), timeReasonLabel);
         }
 
-        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing resist packs through actors."));
-        VERIFY_SYNCID(syncId, SYNC_RESISTS, SYNC_RESISTS_LENGTH);
+        return syncId;
     }
 
-    internal void CallSyncResistsActorOnClients()
+    internal int SyncReadResistStates(int syncId)
     {
-        if (!ACS_NamedExecuteAlways("zh2_internal_sync_resists_actor_clientside", 0))
-            Logger::LogError(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for resists."));
-    }
-
-    script "zh2_internal_sync_resists_actor_clientside" clientside
-    {
-        SyncResistsActorClientside();
-    }
-
-    internal void SyncResistsActorClientside()
-    {
-        int syncId = SYNC_RESISTS;
-        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading resist packs on client through actors. Sync id: " + str(syncId) + "."));
-
         Resist::ResistT[]& resists = ZH2Game::GameContext.MapDetails.Resists;
 
         int collectionLength = BCSUtils::GetSyncVarDefault(--syncId, 0);
@@ -121,9 +137,8 @@ strict namespace Sync
 
             Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Synced new resist under index " + str(i) + "."));
         }
-        
-        Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Synced resists to client."));
-        VERIFY_SYNCID(syncId, SYNC_RESISTS, SYNC_RESISTS_LENGTH);
+
+        return syncId;
     }
 
     #undef SYNC_CATEGORY
