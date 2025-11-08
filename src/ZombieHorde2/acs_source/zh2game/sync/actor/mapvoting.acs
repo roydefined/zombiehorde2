@@ -9,15 +9,14 @@ strict namespace Sync
     internal void SyncMapVotingActor()
     {
         int syncId = SYNC_MAPVOTING;
-
         Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Start writing map voting through actors. Sync id: " + str(syncId) + "."));
 
         syncId = SyncWriteVotableMaps(syncId);
         syncId = SyncWritePlayerVotes(syncId);
-
-        BCSUtils::SyncVariable(syncId++, Map::GetFinalVotedMapIndex());
+        syncId = SyncWriteOtherMapVotingData(syncId);
 
         Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Finished writing map voting through actors."));
+        VERIFY_SYNCID(syncId, SYNC_MAPVOTING, SYNC_MAPVOTING_LENGTH);
     }
 
     internal void CallSyncMapVotingActorOnClients()
@@ -34,22 +33,21 @@ strict namespace Sync
     internal void SyncMapVotingActorClientside()
     {
         int syncId = SYNC_MAPVOTING;
-        
         Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Start reading map voting on client through actors. Sync id: " + str(syncId) + "."));
         
         syncId = SyncReadVotableMaps(syncId);
         syncId = SyncReadPlayerVotes(syncId);
-        
-        Map::SetFinalVotedMapIndex(BCSUtils::GetSyncVarDefault(syncId++, 0));
+        syncId = SyncReadOtherMapVotingData(syncId);
         
         Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Synced general map voting to client."));
+        VERIFY_SYNCID(syncId, SYNC_MAPVOTING, SYNC_MAPVOTING_LENGTH);
     }
 
     internal int SyncWriteVotableMaps(int syncId)
     {
         // This is a basic index so no special bit stuff is done here.
         int length = ZH2Game::GameContext.VotableMapCount;
-        BCSUtils::SyncVariable(syncId++, length);
+        BCSUtils::SyncVariable(--syncId, length);
         
         str logMessage;
         buildmsg(logMessage = StrParam())
@@ -58,7 +56,7 @@ strict namespace Sync
             for (int i = 0; i < length; ++i)
             {
                 int mapIndex = ZH2Game::GameContext.VotableMaps[i];
-                BCSUtils::SyncVariable(syncId++, mapIndex);
+                BCSUtils::SyncVariable(--syncId, mapIndex);
 
                 Append(s:GetMapRotationInfo(mapIndex, MAPROTATION_LUMPNAME));
 
@@ -104,18 +102,25 @@ strict namespace Sync
         }
 
         // Store back for syncing
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack1());
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack2());
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack3());
-        BCSUtils::SyncVariable(syncId++, BitMath::GetBitPack4());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack2());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack3());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack4());
 
         Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Finished writing voted maps from players. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj, pack3 \cd" + str(BitMath::GetBitPack3()) + "\cj, pack4 \cd" + str(BitMath::GetBitPack4())));
         return syncId;
     }
 
+    internal int SyncWriteOtherMapVotingData(int syncId)
+    {
+        BCSUtils::SyncVariable(--syncId, Map::GetFinalVotedMapIndex());
+
+        return syncId;
+    }
+
     internal int SyncReadVotableMaps(int syncId)
     {
-        int length = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int length = BCSUtils::GetSyncVarDefault(--syncId, 0);
         ZH2Game::GameContext.VotableMapCount = length;
         
         str logMessage;
@@ -124,7 +129,7 @@ strict namespace Sync
             Append(s:"Finished reading votable maps for players. Maps: ");
             for (int i = 0; i < length; ++i)
             {
-                int mapIndex = BCSUtils::GetSyncVarDefault(syncId++, 0);
+                int mapIndex = BCSUtils::GetSyncVarDefault(--syncId, 0);
                 ZH2Game::GameContext.VotableMaps[i] = mapIndex;
 
                 Append(s:GetMapRotationInfo(mapIndex, MAPROTATION_LUMPNAME));
@@ -142,10 +147,10 @@ strict namespace Sync
     {
         Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Start reading player votes on client through actors. Sync id: " + str(syncId) + "."));
 
-        int pack1 = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        int pack2 = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        int pack3 = BCSUtils::GetSyncVarDefault(syncId++, 0);
-        int pack4 = BCSUtils::GetSyncVarDefault(syncId++, 0);
+        int pack1 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack3 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack4 = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
@@ -170,6 +175,13 @@ strict namespace Sync
         }
 
         Logger::LogDebug(LogSource, FormatLog(SYNC_CATEGORY, "Finished syncing player votes to client."));
+        return syncId;
+    }
+
+    internal int SyncReadOtherMapVotingData(int syncId)
+    {
+        Map::SetFinalVotedMapIndex(BCSUtils::GetSyncVarDefault(--syncId, 0));
+
         return syncId;
     }
 
