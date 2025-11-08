@@ -402,9 +402,6 @@ strict namespace ZH2Game
         else
             Player::SetPlayerState(killedId, Player::STATEDEAD);
 
-        // TODO: Turn off the admin hud
-        // TODO: Turn off the settings consolidation hud.
-
         Sync::SyncPlayers();
     }
     
@@ -420,8 +417,8 @@ strict namespace ZH2Game
         if (ConsolePlayerNumber() != PlayerNumber())
             terminate;
         
-        // If we don't do this the cursor will be enabled when we respawn.
-        Hud::SetCursorEnabled(false);
+        Settings::CloseClientSettingsMenu();
+        Admin::DisableAdminHud();
 
         // Trigger a death cam when the round has started and the player dies.
         if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()) && Player::GetPlayerState(PlayerNumber()) == Player::STATEPLAYING)
