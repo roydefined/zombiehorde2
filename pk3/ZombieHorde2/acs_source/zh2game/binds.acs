@@ -81,31 +81,7 @@ strict namespace ZH2Game
     // Note: Can be called whilst dead. This works fine.
     script "zh2_action_toggleadminhud" net clientside
     {
-        // Ignore if the game ended.
-        // The ending has a lot of HUD elements and clickable buttons which would interfere.
-        if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
-            terminate;
-
-        // Do not allow enabling the hud if not admin.
-        if (!ZH2Game::GameContext.HasAdminHudOpen && !Admin::GetAdmin())
-        {
-            Logger::LogActivator("You must be an admin for this operation.");
-            terminate;
-        }
-
-        ZH2Game::GameContext.HasAdminHudOpen = !ZH2Game::GameContext.HasAdminHudOpen;
-        Hud::SetCursorEnabled(ZH2Game::GameContext.HasAdminHudOpen);
-        if (!NamedRequestScriptPuke("zh2_internal_menu_admin_request_set_frozen", int(ZH2Game::GameContext.HasAdminHudOpen)))
-            Logger::LogError(LOGSOURCE, "Failed to set frozen state on player for admin hud.");
-
-        // If we disable the admin menu, we want to make sure to go back to the start menu.
-        // Also reset the target player id if we had somebody.
-        if (!ZH2Game::GameContext.HasAdminHudOpen)
-            Hud::ResetHud();
-        
-        // If we enable it, make sure the settings hud is disabled.
-        else
-            ZH2Game::GameContext.HasClientSettingsHudOpen = false;
+        Admin::ToggleAdminHud();
     }
 
     script "zh2_action_consolidateclientsettings" net clientside
