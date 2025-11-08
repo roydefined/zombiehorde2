@@ -20,33 +20,13 @@ strict namespace Sync
         return "[" + category + "] " + message;
     }
 
-    internal bool VerifyCallSyncServerside(str functionName)
-    {
-        if (!BCSUtils::IsServer())
-        {
-            Logger::LogError(LOGSOURCE, functionName + " must be called serverside.");
-            return false;
-        }
-        
-        return IsNetworkGame();
-    }
-
-    internal bool VerifyCallSyncClientside(str functionName)
-    {
-        if (!BCSUtils::IsClient())
-        {
-            Logger::LogError(LOGSOURCE, functionName + " must be called clientside.");
-            return false;
-        }
-        
-        return IsNetworkGame();
-    }
-
     /* COMBINED */
 
     internal void SyncAll(bool callSyncOnClients = true)
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__))
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
             return;
 
         Sync::SyncPlayers(callSyncOnClients);
@@ -60,7 +40,9 @@ strict namespace Sync
 
     internal void CallClientSyncAll()
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__))
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
             return;
 
         Sync::CallSyncPlayersOnClients();
@@ -74,7 +56,9 @@ strict namespace Sync
 
     internal void SynAllClientside()
     {
-        if (!VerifyCallSyncClientside(__FUNCTION__))
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
             return;
 
         Sync::SyncPlayersClientside();
@@ -90,7 +74,11 @@ strict namespace Sync
 
     internal void SyncPlayers(bool callSyncOnClients = true)
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncPlayersActor();
 
         if (callSyncOnClients)
@@ -99,13 +87,21 @@ strict namespace Sync
 
     internal void CallSyncPlayersOnClients()
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         CallSyncPlayersActorOnClients();
     }
 
     internal void SyncPlayersClientside()
     {
-        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncPlayersActorClientSide();
     }
 
@@ -113,7 +109,11 @@ strict namespace Sync
 
     internal void SyncTimers(bool callSyncOnClients = true)
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncTimersActor();
 
         if (callSyncOnClients)
@@ -122,13 +122,21 @@ strict namespace Sync
 
     internal void CallSyncTimersOnClients()
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         CallSyncTimersActorOnClients();
     }
 
     internal void SyncTimersClientside()
     {
-        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncTimersActorClientside();
     }
 
@@ -136,7 +144,11 @@ strict namespace Sync
 
     internal void SyncResists(bool callSyncOnClients = true)
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncResistsActor();
 
         if (callSyncOnClients)
@@ -145,13 +157,21 @@ strict namespace Sync
 
     internal void CallSyncResistsOnClients()
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         CallSyncResistsActorOnClients();
     }
 
     internal void SyncResistsClientside()
     {
-        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncResistsActorClientside();
     }
 
@@ -159,7 +179,11 @@ strict namespace Sync
 
     internal void SyncRoundState(bool callSyncOnClients = true)
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncRoundStateActor();
 
         if (callSyncOnClients)
@@ -168,13 +192,21 @@ strict namespace Sync
 
     internal void CallSyncRoundStateOnClients()
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         CallSyncRoundStateActorOnClients();
     }
 
     internal void SyncRoundStateClientside()
     {
-        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncRoundStateActorClientside();
     }
 
@@ -182,7 +214,11 @@ strict namespace Sync
 
     internal void SyncAdmins(bool callSyncOnClients = true)
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncAdminsActor();
 
         if (callSyncOnClients)
@@ -191,13 +227,21 @@ strict namespace Sync
 
     internal void CallSyncAdminsOnClients()
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         CallSyncAdminsActorOnClients();
     }
 
     internal void SyncAdminsClientside()
     {
-        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncAdminsActorClientside();
     }
 
@@ -205,7 +249,11 @@ strict namespace Sync
 
     internal void SyncGame(bool callSyncOnClients = true)
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncGameActor();
 
         if (callSyncOnClients)
@@ -214,13 +262,21 @@ strict namespace Sync
 
     internal void CallSyncGameOnClients()
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         CallSyncGameActorOnClients();
     }
 
     internal void SyncGameClientside()
     {
-        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncGameActorClientside();
     }
 
@@ -228,7 +284,11 @@ strict namespace Sync
 
     internal void SyncMapVoting(bool callSyncOnClients = true)
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncMapVotingActor();
 
         if (callSyncOnClients)
@@ -237,13 +297,21 @@ strict namespace Sync
 
     internal void CallSyncMapVotingOnClients()
     {
-        if (!VerifyCallSyncServerside(__FUNCTION__)) return;
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         CallSyncMapVotingActorOnClients();
     }
 
     internal void SyncMapVotingClientside()
     {
-        if (!VerifyCallSyncClientside(__FUNCTION__)) return;
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+        
         SyncMapVotingActorClientside();
     }
 }
