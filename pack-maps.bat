@@ -33,6 +33,21 @@ for /d %%P in ("%SRC%\*") do (
 
         echo   Packing !MAP_NAME! -> "!OUT_WAD!"...
 
+        rem Create temporary empty ENDMAP and MAP_NAME lumps if they do not exist
+        set "TMP_ENDMAP_CREATED=0"
+        set "TMP_LEVEL_CREATED=0"
+
+        if not exist "!MAP_PATH!\ENDMAP" (
+            rem Create empty ENDMAP lump
+            type nul > "!MAP_PATH!\ENDMAP"
+            set "TMP_ENDMAP_CREATED=1"
+        )
+
+        if not exist "!MAP_PATH!\!MAP_NAME!" (
+            type nul > "!MAP_PATH!\!MAP_NAME!"
+            set "TMP_LEVEL_CREATED=1"
+        )
+
         "%TOOL%" ^
             "file:!MAP_PATH!\!MAP_NAME!" ^
             "file:!MAP_PATH!\TEXTMAP" ^
@@ -46,6 +61,14 @@ for /d %%P in ("%SRC%\*") do (
             echo   [FAIL] Failed to pack !MAP_NAME!
         ) else (
             echo   [OK] Packed !MAP_NAME!
+        )
+
+        rem Clean up the temporary lumps we created.
+        if "!TMP_ENDMAP_CREATED!"=="1" (
+            del /f /q "!MAP_PATH!\ENDMAP" >nul 2>&1
+        )
+        if "!TMP_LEVEL_CREATED!"=="1" (
+            del /f /q "!MAP_PATH!\!MAP_NAME!" >nul 2>&1
         )
     )
 
