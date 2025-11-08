@@ -181,7 +181,7 @@ strict namespace Sync
         // Also, we can do this based on the ending tic, which means this really would never ever go above `35 * 30` tics or something.
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
-            int cooldown = ZH2Game::GameContext.Players[i].MapVoteCooldown;
+            int cooldown = Map::GetPlayerCooldownTics(i);
             BCSUtils::SyncVariable(--syncId, cooldown);
         }
 
@@ -197,7 +197,7 @@ strict namespace Sync
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             int cooldown = BCSUtils::GetSyncVarDefault(--syncId, 0);
-            ZH2Game::GameContext.Players[i].MapVoteCooldown = cooldown;
+            Map::SetPlayerCooldownTics(i, cooldown);
         }
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished reading map vote cooldown packs through actors. Sync id: " + str(syncId) + "."));
