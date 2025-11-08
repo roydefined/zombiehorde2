@@ -76,7 +76,27 @@ strict namespace Map
 
     internal int GetPlayerPickCooldownTics(int id)
     {
-        return BCSUtils::Max(0, ZH2Game::GameContext.Players[id].MapVoteCooldown - Utils::GetSynchronizedTimer());
+        return BCSUtils::Max(0, GetPlayerCooldownTics(id) - Utils::GetSynchronizedTimer());
+    }
+
+    internal int GetCooldownTics()
+    {
+        return GetPlayerPickCooldownTics(PlayerNumber());
+    }
+
+    internal int GetPlayerCooldownTics(int id)
+    {
+        return ZH2Game::GameContext.Players[id].MapVoteCooldown;
+    }
+
+    internal void SetCooldownTics(int tics)
+    {
+        SetPlayerCooldownTics(PlayerNumber(), tics);
+    }
+
+    internal void SetPlayerCooldownTics(int id, int tics)
+    {
+        ZH2Game::GameContext.Players[id].MapVoteCooldown = tics;
     }
 
     internal void SetPickCooldown()
@@ -88,7 +108,7 @@ strict namespace Map
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
         int timestamp = Utils::GetSynchronizedTimer() + ZH2Game::GetPlayerCooldownTics();
-        ZH2Game::GameContext.Players[id].MapVoteCooldown = timestamp;
+        SetPlayerCooldownTics(id, timestamp);
     }
 }
 
