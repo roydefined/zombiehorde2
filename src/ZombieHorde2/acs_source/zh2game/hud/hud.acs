@@ -19,6 +19,10 @@ strict namespace Hud
     internal fixed _xShakeOffset = 0.0;
     internal fixed _yShakeOffset = 0.0;
 
+    // The main positioning and scale used when drawing elements.
+    internal fixed _hudX,
+                   _hudY;
+
     internal void Tic()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
@@ -29,6 +33,34 @@ strict namespace Hud
         UpdateHudShakeOffset();
 
         DrawHud();
+    }
+
+    internal void PrepareHud(fixed x, fixed y, bool addShake)
+    {
+        _hudX = x;
+        _hudY = y;
+
+        if (addShake)
+        {
+            _hudX += _xShakeOffset;
+            _hudY += _yShakeOffset;
+        }
+    }
+
+    internal fixed GetHudX()
+    {
+        return _hudX;
+    }
+
+    internal fixed GetHudY()
+    {
+        return _hudY;
+    }
+
+    // Helper method to set the hud point based on possible scaling.
+    internal void HudSetPointInternal(fixed addX = 0.0, fixed addY = 0.0)
+    {
+        BCSUtils::HudSetPoint(_hudX + addX, _hudY + addY);
     }
 
     internal void DebugDraw(fixed x = 0.0, fixed y = 0.0, int color = CR_WHITE)

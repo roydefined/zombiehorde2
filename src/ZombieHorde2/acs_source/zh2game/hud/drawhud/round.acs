@@ -12,33 +12,36 @@ strict namespace Hud
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
 
-        fixed x = 0.0 + ZH2Game::GetHudRoundOffsetX(),
-              y = BCSUtils::HudBottom() - ZH2Game::GetHudRoundOffsetY();
-              
-        x += _xShakeOffset;
-        y += _yShakeOffset;
-
         // While we are in pregame with no countdown to start, draw the label.
         if (Round::GetActiveKnownRoundState() == Round::STATEPREGAME
             && !RoundTimer::GetAnyTimerActive())
         {
-            DrawPregameStateLabel(x + 320.0 / scale, y - 50.0);
+            PrepareHud(
+                ZH2Game::GetHudRoundOffsetX() + 320.0,
+                BCSUtils::HudBottom() - ZH2Game::GetHudRoundOffsetY() - 50.0,
+                true);
+
+            DrawPregameStateLabel();
         }
 
-        DrawTimer(x + 320.0 / scale, y - 20.0);
+        PrepareHud(
+            ZH2Game::GetHudRoundOffsetX() + 320.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudRoundOffsetY() - 20.0,
+            true);
+                
+        DrawTimer();
 
-        // Bottom left
-        x = BCSUtils::HudLeft(),
-        y = BCSUtils::HudBottom();
-              
-        x += _xShakeOffset;
-        y += _yShakeOffset;
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
         
-        DrawPlayTime(x, y);
+        PrepareHud(
+            BCSUtils::HudLeft(),
+            BCSUtils::HudBottom(),
+            true);
+
+        DrawPlayTime();
     }
 
-    internal void DrawPregameStateLabel(fixed x, fixed y)
+    internal void DrawPregameStateLabel()
     {
         int id = HUDID_PREGAMESTATUS;
 
@@ -65,16 +68,16 @@ strict namespace Hud
                 ? "Please spectate."
                 : "Invoke 'addbot' in the console to add bots to play with.";
 
-        BCSUtils::HudSetPoint(x, y);
+        HudSetPointInternal();
         BCSUtils::HudDrawText(--id, topMessage);
         DebugDraw();
 
-        BCSUtils::HudSetPoint(x, y + 8.0);
+        HudSetPointInternal(0.0, 8.0);
         BCSUtils::HudDrawText(--id, bottomMessage);
         DebugDraw();
     }
 
-    internal void DrawTimer(fixed x, fixed y)
+    internal void DrawTimer()
     {
         int id = HUDID_TIMER;
 
@@ -92,14 +95,15 @@ strict namespace Hud
         BCSUtils::HudSetDisappearTime(0.5);
 
         // Label
-        BCSUtils::HudSetPoint(x, y - 10.0);
+        HudSetPointInternal(0.0, -10.0);
         BCSUtils::HudDrawText(--id, RoundTimer::GetTimerLabel(index));
         DebugDraw();
         
         // Time left.
         int ticsLeft = RoundTimer::GetTimerTicsLeft(index);
         str timerFormatted = Utils::FormatTics(ticsLeft, RoundTimer::GetTimerDrawDecimals(index));
-        BCSUtils::HudSetPoint(x, y);
+        
+        HudSetPointInternal();
         BCSUtils::HudDrawText(--id, timerFormatted);
         DebugDraw();
 
@@ -119,7 +123,7 @@ strict namespace Hud
         }
     }
 
-    internal void DrawPlayTime(fixed x, fixed y)
+    internal void DrawPlayTime()
     {
         int id = HUDID_PLAYTIMER;
 
@@ -149,7 +153,7 @@ strict namespace Hud
 
         str timerFormatted = Utils::FormatTics(timer, true);
 
-        BCSUtils::HudSetPoint(x, y);
+        HudSetPointInternal();
         BCSUtils::HudDrawText(--id, "Playing: " + timerFormatted);
         DebugDraw();
     }

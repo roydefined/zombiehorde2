@@ -14,14 +14,13 @@ strict namespace Hud
         BCSUtils::HudSetVirtualSize(640.0, 480.0);
         BCSUtils::HudSetScale(scale);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-
-        fixed x = 320.0;
-        fixed y = BCSUtils::HudTop() + 80.0;
         
-        DrawEndingHeader(x, y);
-
-        x = 30.0;
-        y += 60.0;
+        PrepareHud(
+            320.0,
+            BCSUtils::HudTop() + 80.0,
+            false);
+        
+        DrawEndingHeader();
 
         // Offset is set based on what lists are shown, meaning we might shift lists to a different position if the stat has no data.
         int listOffset = 0;
@@ -32,8 +31,8 @@ strict namespace Hud
 
         // Each column 220 units wide.
         // Each row 190 units tall.
-        fixed GetX(int listOffset) { return x + fixed(listOffset % 3) * 220.0; }
-        fixed GetY(int listOffset) { return y + fixed(listOffset / 3) * verticalOffset; }
+        fixed GetAddX(int listOffset) { return fixed(listOffset % 3) * 220.0; }
+        fixed GetAddY(int listOffset) { return fixed(listOffset / 3) * verticalOffset; }
 
         void UpdateOffsets(int count)
         {
@@ -53,49 +52,54 @@ strict namespace Hud
             }
         }
 
-        /* ACTUAL DRAWING BELOW */
-
         // Used below to hold the final drawn item count, used for determining the y offset.
         int drawnCount;
 
+        PrepareHud(
+            30.0,
+            BCSUtils::HudTop() + 140.0,
+            false);
+
+        /* ACTUAL DRAWING */
+        
         if (ZH2Game::GameContext.SurvivorsShuffledCount > 0)
         {
-            drawnCount = DrawList(GetX(listOffset), GetY(listOffset), "\cdSurvivors",
+            drawnCount = DrawList(GetAddX(listOffset), GetAddY(listOffset), "\cdSurvivors",
                 ZH2Game::GameContext.SurvivorsShuffledCount, 8, ZH2Game::GameContext.SurvivorsShuffled, null);
             UpdateOffsets(drawnCount);
         }
 
         if (ZH2Game::GameContext.HordeShuffledCount > 0)
         {
-            drawnCount = DrawList(GetX(listOffset), GetY(listOffset), "\cqThe horde",
+            drawnCount = DrawList(GetAddX(listOffset), GetAddY(listOffset), "\cqThe horde",
                 ZH2Game::GameContext.HordeShuffledCount, 8, ZH2Game::GameContext.HordeShuffled, null);
             UpdateOffsets(drawnCount);
         }
 
         if (ZH2Game::GameContext.DeadShuffledCount > 0)
         {
-            drawnCount = DrawList(GetX(listOffset), GetY(listOffset), "\cjIn memory of",
+            drawnCount = DrawList(GetAddX(listOffset), GetAddY(listOffset), "\cjIn memory of",
                 ZH2Game::GameContext.DeadShuffledCount, 8, ZH2Game::GameContext.DeadShuffled, null);
             UpdateOffsets(drawnCount);
         }
 
         if (ZH2Game::GameContext.HumanKillsOrderedCount > 0)
         {
-            drawnCount = DrawList(GetX(listOffset), GetY(listOffset), "\cgTop human killers",
+            drawnCount = DrawList(GetAddX(listOffset), GetAddY(listOffset), "\cgTop human killers",
                 ZH2Game::GameContext.HumanKillsOrderedCount, 4, ZH2Game::GameContext.HumanKillsOrdered, Player::GetPlayerHumanKills);
             UpdateOffsets(drawnCount);
         }
 
         if (ZH2Game::GameContext.ZombieKillsOrderedCount > 0)
         {
-            drawnCount = DrawList(GetX(listOffset), GetY(listOffset), "\cfTop zombie killers",
+            drawnCount = DrawList(GetAddX(listOffset), GetAddY(listOffset), "\cfTop zombie killers",
                 ZH2Game::GameContext.ZombieKillsOrderedCount, 4, ZH2Game::GameContext.ZombieKillsOrdered, Player::GetPlayerZombieKills);
             UpdateOffsets(drawnCount);
         }
             
         if (ZH2Game::GameContext.InfectsOrderedCount > 0)
         {
-            drawnCount = DrawList(GetX(listOffset), GetY(listOffset), "\cgTop infects",
+            drawnCount = DrawList(GetAddX(listOffset), GetAddY(listOffset), "\cgTop infects",
                 ZH2Game::GameContext.InfectsOrderedCount, 4, ZH2Game::GameContext.InfectsOrdered, Player::GetPlayerInfects);
             UpdateOffsets(drawnCount);
         }

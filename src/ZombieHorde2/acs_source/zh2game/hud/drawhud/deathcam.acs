@@ -16,18 +16,20 @@ strict namespace Hud
         BCSUtils::HudSetCenterText(true);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
 
-        fixed x = 320.0,
-              y = BCSUtils::HudTop() + 50.0;
+        PrepareHud(
+            320.0,
+            BCSUtils::HudTop() + 50.0,
+            false);
 
-        DrawDeathCamMessage(x, y);
+        DrawDeathCamMessage();
     }
 
-    internal void DrawDeathCamMessage(fixed x, fixed y)
+    internal void DrawDeathCamMessage()
     {
         BCSUtils::HudSetCenterText(true);
         BCSUtils::HudSetDisappearTime(0.5);
 
-        BCSUtils::HudSetPoint(x, y);
+        HudSetPointInternal();
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetTextColor(CR_RED);
         BCSUtils::HudDrawText(--_drawnHudId, "You are dead");
@@ -37,9 +39,10 @@ strict namespace Hud
             ? "Press " + GetUseKey() + " to spectate"
             : "Please bind a key for \"use\" in order to spectate";
 
-        BCSUtils::HudSetPoint(x, y + 8.0);
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetTextColor(CR_WHITE);
+        
+        HudSetPointInternal(0.0, 8.0);
         BCSUtils::HudDrawText(--_drawnHudId, message);
         DebugDraw();
     }
