@@ -1,4 +1,5 @@
 
+
 <div align="center">
 	<img src="https://github.com/RoyDefined/zombiehorde2/blob/main/docs/logo.png?raw=true" />
 </div>
@@ -24,13 +25,10 @@ You have two options to pack and build Zombie Horde 2:
      - [.NET SDK 9.0.x](https://dotnet.microsoft.com/) (confirm with `dotnet --info`)  
      - (Optional) Visual Studio 2022 / Rider / VS Code.
 
-2. **Without PubDoomer (manual build)**  
-   - Use the provided `.bat` scripts:  
-     - `pack-acsutils.bat` -> prepares ACSUtils into `dist/`  
-     - `build-project.bat` -> compiles ACSUtils, library, and core ACS files  
+2. **Without PubDoomer (manual build)**
    - No .NET or Visual Studio required.
    - Certain steps will take longer as no support is given.
-   - Manual packing is **not** supported.
+   - Manual packing into devbuilds etc. is **not** supported.
 
 Additional tools you may want:
 - Git with submodules support.
@@ -39,6 +37,15 @@ Additional tools you may want:
 - For editing maps and mod assets: [Slade 3](https://slade.mancubus.net/) (provided in `tools/`).
 
 ---
+
+### Before you start
+The project contains various `.bat` files that help preparing the rpoejct. Please read through them to understand their use.
+- `pack-acsutils.bat` -> prepares ACSUtils into `dist/`
+- `build-project.bat` -> compiles ACSUtils, library, and core ACS files.
+   - `bcsutils.acs` -> `bcsutils.o`
+   - `zh2lib.acs` -> `zh2lib.o`
+   - `zh2game.acs` -> `zh2game.o`
+- `unpack-maps.bat` and `pack-maps.bat` exist to unpack and pack the binary wad files that you use to play and edit maps. This project stores the raw files of these maps. You will need to manually repack them to play and edit them, and unpack then to store changes.
 
 ### 1) Fetch project
 ```bash
@@ -61,15 +68,15 @@ git clone --recurse-submodules https://github.com/RoyDefined/zombiehorde2
 #### Option B: Manually
 1. Run `pack-acsutils.bat`. This prepares ACSUtils into `modules\acsutils\dist`.  
 2. Run `build-project.bat`. This compiles all files.
-   - `bcsutils.acs` -> `bcsutils.o`  
-   - `zh2lib.acs` -> `zh2lib.o`  
-   - `zh2game.acs` -> `zh2game.o` 
 
 For both options, subsequent builds do not need another call of `pack-acsutils.bat`.
 
 ---
 
 ### 3) Edit / Run maps
+
+The first step is to repack all maps before you can edit / run them. For this you run `pack-maps.bat`. If succeeded, all `maps/` folders will contain their maps.
+This process only has to be done once, unless you pull in changes.
 
 #### Option A: Using PubDoomer
 1. Start PubDoomer.

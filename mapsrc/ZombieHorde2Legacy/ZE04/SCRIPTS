@@ -1,0 +1,172 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+int DeloreanReached = 0;
+int DeloreanSpeed = 20;
+int Speedreached = 0;
+int YouCanStillReachIt = 1;
+
+script "ze04_open" open // Level setups
+{
+	SetLineBlocking(1, BLOCK_CREATURES);
+	SetLineBlocking(2, BLOCK_CREATURES);
+	Sector_SetDamage(27, 10000, 20);
+}
+
+/* RESIST EVENT */
+script "ze04_internal_event_resistelapsed" (int index)
+{
+	switch(index)
+	{
+		case 0:
+			Floor_LowerByValue(9, 32, 248);
+			SetLineBlocking(1, BLOCK_NOTHING);
+			Delay(35*5);
+			Floor_LowerByValue(5, 32, 184);
+			break;
+		case 1:
+			Floor_LowerByValue(8, 16, 120);
+			break;
+		case 2:
+			Floor_LowerByValue(30, 16, 120);
+			break;
+	}
+}
+
+Script 6 (void)
+{
+	if(!DeloreanReached)
+	{
+		SetFont("CONFONT");
+		HudMessageBold(n:0, s:" has reached the train!\nGet on the Delorean before it reaches 88mph!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+		ACS_Execute(7, 0, 0, 0, 0);
+		DeloreanReached = 1;
+	}
+
+	if(DeloreanReached)
+	{
+		if(Player::GetIsHuman())
+			Teleport(PlayerNumber()+400);
+		Else
+			Teleport(PlayerNumber()+800);
+	}
+}
+
+Script 7 (void)
+{
+	SetActivator(-1);
+	Delay(35*5);
+	While(DeloreanSpeed<=50)
+	{
+		SetFont("CONFONT");
+		HudMessageBold(s:"Delorean Speed : ", d:DeloreanSpeed, s:" mph"; HUDMSG_PLAIN, 86, CR_GREY, 0.05, 0.85, 1.5);
+		DeloreanSpeed++;
+		Delay(20);
+	}
+	While(DeloreanSpeed<=70)
+	{
+		SetFont("CONFONT");
+		HudMessageBold(s:"Delorean Speed : ", d:DeloreanSpeed, s:" mph"; HUDMSG_PLAIN, 86, CR_GREY, 0.05, 0.85, 1.5);
+		DeloreanSpeed++;
+		Delay(30);
+	}
+	Acs_execute(9, 0, 0, 0, 0);
+	While(DeloreanSpeed<=88)
+	{
+		SetFont("CONFONT");
+		HudMessageBold(s:"Delorean Speed : ", d:DeloreanSpeed, s:" mph"; HUDMSG_PLAIN, 86, CR_GREY, 0.05, 0.85, 1.5);
+		DeloreanSpeed++;
+		Delay(40);
+	}
+	SpeedReached = 1;
+	YouCanStillReachIt = 0;
+	Delay(35);
+	SetFont("SMALLFONT");
+	PrintBold(s:"\cCThe Delorean has passed through time...");
+	Delay(35*3);
+	SetFont("BIGFONT");
+	HudMessageBold(s:"\cGWarning : \cKAbyss right ahead!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+	Delay(35*4);
+	ChangeCamera(26, 1, 0);
+
+	for(int k = 0; k <= BCSUtils::MAX_PLAYERS; k++)
+	{
+		if(!Game::GetPlayerIsSafe(k))
+		{
+			int tid = Identity::GetTid(k);
+			TeleportOther(tid, 900 + k, 0);
+		}
+	}
+
+	for(int l = 0; l <= BCSUtils::MAX_PLAYERS; l++)
+	{
+		if(!Game::GetPlayerIsSafe(l))
+		{
+			tid = Identity::GetTid(k);
+			ThrustThing(64, 200, 0, tid);
+			ThrustThingZ(tid, 100, 0, 0);
+		}
+	}
+
+	Delay(35*2);
+	AmbientSound("world/nuke1", 127);
+	SetFont("SMALLFONT");
+	HudMessageBold(s:"The train and its passengers have fallen over the cliff!"; HUDMSG_PLAIN, 0, CR_RED, 0.5, 0.75, 3.0);
+	Delay(35*2);
+	Game::KillUnsafePlayers();
+	Delay(35*5);
+	ChangeCamera(0, 1, 0); // Just in case
+}
+
+Script 8 (void)
+{
+	Teleport(PlayerNumber()+400);
+}
+
+Script 9 (void) // Music
+{
+	SetActivator(-1);
+	SetMusic("ROUTE3");
+	Delay(35*55);
+	SetMusic("D_NULL");
+}
+
+Script 10 Enter
+{
+	If(SpeedReached)
+	{
+		FadeTo(255, 255, 0, 1.0, 0.2);
+		Delay(7);
+		FadeTo(255, 255, 0, 0.0, 0.2);
+		Delay(7);
+		FadeTo(255, 255, 0, 1.0, 0.2);
+		Delay(7);
+		FadeTo(255, 255, 0, 0.0, 0.2);
+
+		If(Game::GetIsSafe())
+			Teleport_NoFog(300+PlayerNumber());
+
+		Terminate;
+	}
+
+	Delay(35);
+	Restart;
+}
+
+Script 11 (void)
+{
+	if(YouCanStillReachIt)
+		Game::SetIsSafe(true);
+}
+
+Script 12 (void)
+{
+	if(YouCanStillReachIt)
+		Game::SetIsSafe(false);
+}
