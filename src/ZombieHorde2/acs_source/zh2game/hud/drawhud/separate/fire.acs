@@ -23,9 +23,10 @@ strict namespace Hud
             BCSUtils::HudSetVirtualSize(80.0, 60.0);
             BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
             BCSUtils::HudSetShowOnFullAutomap(false);
-
             BCSUtils::HudSetAlpha(alpha);
-            BCSUtils::HudSetPoint(fixed(x), fixed(y));
+
+            PrepareHud(fixed(x), fixed(y), false);
+            HudSetPointInternal();
             BCSUtils::HudDrawImage(0, sprite + str(i / 2));
 
             y -= 1;
@@ -49,10 +50,12 @@ strict namespace Hud
         BCSUtils::HudSetDisappearTime(0.5);
         Utils::ScaleToScreen();
         
-        fixed x = 100.0,
-              y = BCSUtils::HudBottom() / 2.0;
+        PrepareHud(
+            100.0,
+            BCSUtils::HudBottom() / 2.0,
+            false);
               
-		BCSUtils::HudSetPoint(x, y);
+        HudSetPointInternal();
         BCSUtils::HudDrawImage(0, BLUR_ORANGE_GRAPHIC);
 	}
 }

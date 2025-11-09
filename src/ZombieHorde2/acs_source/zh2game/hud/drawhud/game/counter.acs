@@ -4,7 +4,7 @@
 
 strict namespace Hud
 {
-    internal void DrawCounters(fixed x, fixed y)
+    internal void DrawCounters()
     {
         BCSUtils::HudResetState();
         BCSUtils::HudSetVirtualSize(640.0, 480.0);
@@ -15,16 +15,21 @@ strict namespace Hud
         int zombieCount = Player::ZombieCount();
         int kills = Player::GetZombieKills();
         int infects = Player::GetInfects();
+
+        // The vertical offset will change depending on if the counter exists.
+        fixed y = 0.0;
         
         if (humanCount > 0)
         {
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
-            BCSUtils::HudSetPoint(x, y);
+            
+            HudSetPointInternal(0.0, y);
             BCSUtils::HudDrawImage(--_drawnHudId, "HUD_CHUM");
             DebugDraw();
 
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
-            BCSUtils::HudSetPoint(x + 8.0, y);
+            
+            HudSetPointInternal(8.0, y);
             BCSUtils::HudDrawText(--_drawnHudId, str(humanCount));
             DebugDraw();
 
@@ -34,12 +39,14 @@ strict namespace Hud
         if (zombieCount > 0)
         {
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
-            BCSUtils::HudSetPoint(x, y);
+            
+            HudSetPointInternal(0.0, y);
             BCSUtils::HudDrawImage(--_drawnHudId, "HUD_CZOM");
             DebugDraw();
 
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
-            BCSUtils::HudSetPoint(x + 8.0, y);
+            
+            HudSetPointInternal(8.0, y);
             BCSUtils::HudDrawText(--_drawnHudId, str(zombieCount));
             DebugDraw();
 
@@ -49,12 +56,14 @@ strict namespace Hud
         if (kills > 0)
         {
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
-            BCSUtils::HudSetPoint(x, y);
+            
+            HudSetPointInternal(0.0, y);
             BCSUtils::HudDrawImage(--_drawnHudId, "HUD_CZKL");
             DebugDraw();
 
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
-            BCSUtils::HudSetPoint(x + 8.0, y);
+            
+            HudSetPointInternal(8.0, y);
             BCSUtils::HudDrawText(--_drawnHudId, str(kills));
             DebugDraw();
 
@@ -64,12 +73,14 @@ strict namespace Hud
         if (infects > 0)
         {
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
-            BCSUtils::HudSetPoint(x, y);
+            
+            HudSetPointInternal(0.0, y);
             BCSUtils::HudDrawImage(--_drawnHudId, "HUD_CINF");
             DebugDraw();
 
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
-            BCSUtils::HudSetPoint(x + 8.0, y);
+            
+            HudSetPointInternal(8.0, y);
             BCSUtils::HudDrawText(--_drawnHudId, str(infects));
             DebugDraw();
         }

@@ -4,13 +4,14 @@
 
 strict namespace Hud
 {
-    internal void DrawEndingHeader(fixed x, fixed y)
+    internal void DrawEndingHeader()
     {
         BCSUtils::HudSetCenterText(true);
 
         // Graphic
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
-        BCSUtils::HudSetPoint(x, y);
+        
+        HudSetPointInternal();
         BCSUtils::HudDrawImage(--_drawnHudId, ZH2Game::GameContext.WinGraphic);
         DebugDraw();
 
@@ -18,13 +19,15 @@ strict namespace Hud
 
         // Top
         BCSUtils::HudSetFont("BigFont");
-        BCSUtils::HudSetPoint(x, y);
+        
+        HudSetPointInternal();
         BCSUtils::HudDrawText(--_drawnHudId, ZH2Game::GameContext.WinMessageTop);
         DebugDraw();
 
         // Bottom
         BCSUtils::HudSetFont("SmallFont");
-        BCSUtils::HudSetPoint(x, y + 15.0);
+        
+        HudSetPointInternal(0.0, 15.0);
         BCSUtils::HudDrawText(--_drawnHudId, ZH2Game::GameContext.WinMessageBottom);
         DebugDraw();
 
@@ -33,7 +36,8 @@ strict namespace Hud
         if (reason != Game::REASONNONE && reason != Game::REASONSPECIEWON)
         {
             BCSUtils::HudSetFont("SmallFont");
-            BCSUtils::HudSetPoint(x, y + 25.0);
+            
+            HudSetPointInternal(0.0, 25.0);
             
             if (reason == Game::REASONHUMANLEFT)
             {
@@ -58,7 +62,8 @@ strict namespace Hud
         // Elapsed time
         str timerFormatted = Utils::FormatTics(Game::GetPlayTime(), true);
         BCSUtils::HudSetFont("SmallFont");
-        BCSUtils::HudSetPoint(x, y + 35.0);
+        
+        HudSetPointInternal(0.0, 35.0);
         BCSUtils::HudDrawText(--_drawnHudId, "Play time: " + timerFormatted);
         DebugDraw();
     }

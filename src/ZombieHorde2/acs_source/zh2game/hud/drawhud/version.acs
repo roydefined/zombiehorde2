@@ -12,39 +12,42 @@ strict namespace Hud
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
 
-        fixed x = BCSUtils::HudRight(),
-              y = BCSUtils::HudBottom();
-              
-        x += _xShakeOffset;
-        y += _yShakeOffset;
-        
-        DrawVersionString(x - 10.0, y);
+        PrepareHud(
+            BCSUtils::HudRight() - 10.0,
+            BCSUtils::HudBottom(),
+            true);
+
+        DrawVersionString();
     }
 
-    internal void DrawVersionString(fixed x, fixed y)
+    internal void DrawVersionString()
     {
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetTextColor(CR_RED);
+        
+        // Depending on how many elements are enabled, the hud might have to draw higher.
+        fixed y = 0.0;
 
         if (DevelopmentPlayerCap())
         {
             int count = PlayerCount() - BCSUtils::BotCount();
 
-            BCSUtils::HudSetPoint(x, y);
+            HudSetPointInternal();
             BCSUtils::HudDrawText(--_drawnHudId, "player cap: " + str(count) + "/" + str(DEV_PLAYERCAP_COUNT));
             DebugDraw();
 
             y -= 10.0;
         }
 
-        BCSUtils::HudSetPoint(x, y);
+        HudSetPointInternal(0.0, y);
         BCSUtils::HudDrawText(--_drawnHudId, "v" + GetVersion());
         DebugDraw();
 
         if (IsDevelopment())
         {
             y -= 10.0;
-            BCSUtils::HudSetPoint(x, y);
+
+            HudSetPointInternal(0.0, y);
             BCSUtils::HudDrawText(--_drawnHudId, "devbuild");
             DebugDraw();
         }

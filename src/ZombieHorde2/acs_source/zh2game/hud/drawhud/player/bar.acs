@@ -14,20 +14,22 @@ strict namespace Hud
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
         
         // Left side
-        fixed x = 320.0 + ZH2Game::GetHudPlayerBarsOffsetX(),
-              y = BCSUtils::HudBottom() - 100.0 - ZH2Game::GetHudPlayerBarsOffsetY();
+        PrepareHud(
+            320.0 + ZH2Game::GetHudPlayerBarsOffsetX(),
+            BCSUtils::HudBottom() - 100.0 - ZH2Game::GetHudPlayerBarsOffsetY(),
+            true);
 
-        x += _xShakeOffset;
-        y += _yShakeOffset;
+        DrawSprintBar();
 
-        DrawSprintBar(x, y);
+        PrepareHud(
+            320.0 + ZH2Game::GetHudPlayerBarsOffsetX(),
+            BCSUtils::HudBottom() - 85.0 - ZH2Game::GetHudPlayerBarsOffsetY(),
+            true);
 
-        y += 15.0;
-
-        DrawAirSupplyBar(x, y);
+        DrawAirSupplyBar();
     }
 
-    internal void DrawSprintBar(fixed x, fixed y)
+    internal void DrawSprintBar()
     {
         // Draw the sprint bar if human, and if we are not at the maximum.
         if (!Player::GetIsHuman())
@@ -37,7 +39,7 @@ strict namespace Hud
         if (left == SPRINT_ITEM_MAX)
             return;
         
-        BCSUtils::HudSetPoint(x, y);
+        HudSetPointInternal();
         BCSUtils::HudDrawImage(--_drawnHudId, BAR_SPRINT_NAME);
 
         fixed percentage = fixed(left) / fixed(SPRINT_ITEM_MAX);
@@ -52,7 +54,7 @@ strict namespace Hud
         DebugDraw();
     }
 
-    internal void DrawAirSupplyBar(fixed x, fixed y)
+    internal void DrawAirSupplyBar()
     {
         // Note also that because zombies have no air supply, the bar will show empty even though they will never drown.
         if (!Player::GetIsHuman())
@@ -62,7 +64,7 @@ strict namespace Hud
 		if (airSupply == MAX_AIRSUPPLY)
 			return;
 
-        BCSUtils::HudSetPoint(x, y);
+        HudSetPointInternal();
         BCSUtils::HudDrawImage(--_drawnHudId, BAR_AIRSUPPLY_NAME);
 
         fixed percentage = fixed(airSupply) / fixed(MAX_AIRSUPPLY);

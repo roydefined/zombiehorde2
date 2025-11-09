@@ -8,7 +8,7 @@ strict namespace Hud
     internal fixed _sniperHudTargetOffset,
                    _sniperHudCurrentOffset;
 
-    internal void DrawSniperHud(fixed x, fixed y, fixed scale)
+    internal void DrawSniperHud()
     {
         _sniperHudTargetOffset = fixed(CheckInventory(WEAPON_SNIPER_ZOOM_LEVEL_NAME)) * 110.0;
 
@@ -23,18 +23,17 @@ strict namespace Hud
         if (CheckInventory(WEAPON_SNIPER_IS_ZOOMED_NAME) == 0)
             return;
 
-        BCSUtils::HudSetPoint(x, y);
+        HudSetPointInternal();
         BCSUtils::HudDrawImage(--_drawnHudId, HUDID_WEAPONSNIPER_BACKGROUNDNAME);
         DebugDraw();
-        
-        y += 180.0 * scale;
 
-        BCSUtils::HudSetPoint(x, y);
+        HudSetPointInternal(0.0, 180.0);
         BCSUtils::HudDrawImage(--_drawnHudId, HUDID_WEAPONSNIPER_METERNAME);
         DebugDraw();
         
-        fixed offset = _sniperHudCurrentOffset * scale;
-        BCSUtils::HudSetPoint(x - 100.0 * scale + offset, y + 20.0 * scale);
+        fixed offset = _sniperHudCurrentOffset;
+
+        HudSetPointInternal(- 100.0 + _sniperHudCurrentOffset, 20.0);
         BCSUtils::HudDrawImage(--_drawnHudId, HUDID_WEAPONSNIPER_METERPOINTERNAME);
         DebugDraw();
     }

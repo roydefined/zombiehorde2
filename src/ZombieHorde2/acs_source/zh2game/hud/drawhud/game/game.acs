@@ -15,22 +15,22 @@ strict namespace Hud
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
 
-        fixed x = 320.0,
-              y = BCSUtils::HudBottom() - 100.0;
-              
-        x += _xShakeOffset;
-        y += _yShakeOffset;
+        PrepareHud(
+            320.0,
+            BCSUtils::HudBottom() - 100.0,
+            true);
 
-        DrawZombieTeleportTime(x, y);
-
-        x = BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX();
-        y = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY();
-
-        x += _xShakeOffset;
-        y += _yShakeOffset;
+        DrawZombieTeleportTime();
 
         // Do not draw the counters unless there are more than two players playing.
         if (PlayerCount() >= 2)
-            DrawCounters(x - 110.0, y - 180.0);
+        {
+            PrepareHud(
+                BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX() - 110.0,
+                BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 180.0,
+                true);
+
+            DrawCounters();
+        }
     }
 }
