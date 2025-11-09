@@ -9,12 +9,12 @@
 
 strict namespace Round
 {
-    internal void DefineRoundByKnown(KnownRoundStateT roundType, bool allowJoin, bool isEnding)
+    internal void DefineRoundByKnown(KnownRoundStateT roundType, bool denyJoin, bool isEnding)
     {
-        DefineRoundByIndex(GetIndexOfKnownRoundStateType(roundType), allowJoin, isEnding);
+        DefineRoundByIndex(GetIndexOfKnownRoundStateType(roundType), denyJoin, isEnding);
     }
 
-    internal void DefineRoundByIndex(int index, bool allowJoin, bool isEnding)
+    internal void DefineRoundByIndex(int index, bool denyJoin, bool isEnding)
     {
         if (index < 0 || index >= MAX_ROUNDSTATES)
         {
@@ -25,7 +25,7 @@ strict namespace Round
         // TODO: If we ever support reallocation we must add it here too.
 
         RoundStateContextT& state = GetRoundRefByindex(index);
-        state.AllowJoin = allowJoin;
+        state.DenyJoin = denyJoin;
         state.IsEnding = isEnding;
         state.Defined = true;
     }
@@ -48,7 +48,7 @@ strict namespace Round
     internal RoundStateContextT& GetRoundRefByKnownRoundStateType(KnownRoundStateT stateType) { return GetRoundRefByindex(GetIndexOfKnownRoundStateType(stateType)); }
     internal RoundStateContextT& GetRoundRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Rounds[index]; }
 
-    internal bool GetRoundJoinable(int index) { return GetRoundRefByindex(index).AllowJoin; }
+    internal bool GetRoundJoinable(int index) { return !GetRoundRefByindex(index).DenyJoin; }
     internal bool GetRoundIsEnding(int index) { return GetRoundRefByindex(index).IsEnding; }
     internal bool GetRoundDefined(int index) { return GetRoundRefByindex(index).Defined; }
     
