@@ -21,8 +21,10 @@ strict namespace Hud
     {
         if (!SetActivatorToPlayer(ConsolePlayerNumber())) terminate;
         
-        fixed x = 400.0 + Math::FRandom(-300.0, 300.0);
-        fixed y = 225.0 + Math::FRandom(-150.0, 150.0);
+        PrepareHud(
+            400.0 + Math::FRandom(-300.0, 300.0),
+            225.0 + Math::FRandom(-150.0, 150.0),
+            false);
 
         int scratchType = Random(1, 2);
         
@@ -32,7 +34,6 @@ strict namespace Hud
             BCSUtils::HudSetVirtualSize(800.0, 450.0);
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
             BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-            BCSUtils::HudSetPoint(x, y);
         }
 
         str GetFrame(int index)
@@ -45,7 +46,10 @@ strict namespace Hud
         for (i = 1; i < 4; ++i)
         {
             PrepFrame();
+
+            HudSetPointInternal();
             BCSUtils::HudDrawImage(0, GetFrame(i));
+
             Delay(const: 1);
         }
 
@@ -53,6 +57,8 @@ strict namespace Hud
         PrepFrame();
         BCSUtils::HudSetStayTime(1.0);
         BCSUtils::HudSetDisappearTime(0.5);
+        
+        HudSetPointInternal();
         BCSUtils::HudDrawImage(0, GetFrame(i));
     }
 }

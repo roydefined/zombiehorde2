@@ -7,18 +7,19 @@ strict namespace Hud
     #define HUD_ENGINE_TRUNCATE_LENGTH 14
 
     // Main list drawer. Returns the count of items drawn.
-    internal int DrawList(fixed x, fixed y, str header, int size, int maxShown, int[]& collection, int function(int)? counter)
+    internal int DrawList(fixed addX, fixed addY, str header, int size, int maxShown, int[]& collection, int function(int)? counter)
     {
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_TOP);
 
         // Header
         BCSUtils::HudSetFont("BigFont");
         BCSUtils::HudSetTextColor(CR_GREEN);
-        BCSUtils::HudSetPoint(x, y);
+        
+        HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, header);
         DebugDraw();
 
-        y += 25.0;
+        addY += 25.0;
 
         // Limit number of shown players based on how many we can show + how many actually infected.
         int count = BCSUtils::Min(maxShown, size);
@@ -32,13 +33,15 @@ strict namespace Hud
                 Player::GetStrippedPlayerName(collection[i]), HUD_ENGINE_TRUNCATE_LENGTH);
             
             BCSUtils::HudSetTextColor(CR_WHITE);
-            BCSUtils::HudSetPoint(x, y + fixed(15 * i));
+
+            HudSetPointInternal(addX, addY + fixed(15 * i));
             BCSUtils::HudDrawText(--_drawnHudId, truncatedName);
 
             if (counter != null)
             {
                 BCSUtils::HudSetTextColor(CR_UNTRANSLATED);
-                BCSUtils::HudSetPoint(x + 110.0, y + fixed(15 * i));
+
+                HudSetPointInternal(addX + 110.0, addY + fixed(15 * i));
                 BCSUtils::HudDrawText(--_drawnHudId, str(counter(collection[i])));
             }
 
@@ -56,7 +59,8 @@ strict namespace Hud
             return count;
 
         BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudSetPoint(x, y + fixed(15 * count));
+
+        HudSetPointInternal(addX, addY + fixed(15 * count));
         BCSUtils::HudDrawText(--_drawnHudId, "... And " + str(left) + " more!");
 
         // Plus one for the text

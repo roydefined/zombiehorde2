@@ -20,12 +20,6 @@ strict namespace Hud
         BCSUtils::HudSetVirtualSize(640.0, 480.0);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
 
-        fixed x = 320.0;
-        fixed y = BCSUtils::HudBottom() - 160.0;
-
-        x += _xShakeOffset;
-        y += _yShakeOffset;
-
         // Never drawn.
         if (Item::_lastInventoryInteractionTimestamp == 0)
             return;
@@ -40,11 +34,22 @@ strict namespace Hud
         if (elapsed > INVENTORY_DISPLAY_DURATION - INVENTORY_FADE_DURATION)
             alpha = 1.0 - fixed(elapsed - (INVENTORY_DISPLAY_DURATION - INVENTORY_FADE_DURATION)) / fixed(INVENTORY_FADE_DURATION);
 
-        DrawInventoryBar(x, y, 1.0, alpha);
-        DrawKeyBar(x, y + 60.0, 1.0, alpha);
+        PrepareHud(
+            320.0,
+            BCSUtils::HudBottom() - 160.0,
+            true);
+
+        DrawInventoryBar(alpha);
+
+        PrepareHud(
+            320.0,
+            BCSUtils::HudBottom() - 100.0,
+            true);
+
+        DrawKeyBar(alpha);
     }
 
-    internal void DrawInventoryBar(fixed x, fixed y, fixed scale, fixed alpha)
+    internal void DrawInventoryBar(fixed alpha)
     {
         // No inventory items to draw.
         if (Item::GetClientOwnedInventorySize() == 0)
@@ -59,7 +64,7 @@ strict namespace Hud
         // Draw left part.
         for (int i = 0; i < drawnSideCount; ++i)
         {
-            fixed itemX = x - (INVENTORY_ITEM_SPACING * fixed(i)) - INVENTORY_ITEM_SPACING;
+            fixed addX = (INVENTORY_ITEM_SPACING * fixed(i)) - INVENTORY_ITEM_SPACING;
 			fixed opacity = alpha - 0.5 - (0.1 * fixed(i));
 
             // Determine index. We must account for wrapping around.
@@ -70,13 +75,13 @@ strict namespace Hud
             while (index < 0) index += Item::GetClientOwnedInventorySize();
 
             int itemIndex = Item::GetInventoryIndex(Item::GetClientOwnedInventoryIndex(index));
-            DrawInventoryItem(specie, itemIndex, itemX, y, opacity, scale, false);
+            DrawInventoryItem(specie, itemIndex, addX, opacity, false);
         }
 
         // Draw right part.
         for (int i = 0; i < drawnSideCount; ++i)
         {
-            fixed itemX = x + (INVENTORY_ITEM_SPACING * fixed(i)) + INVENTORY_ITEM_SPACING;
+            fixed addX = (INVENTORY_ITEM_SPACING * fixed(i)) + INVENTORY_ITEM_SPACING;
 			fixed opacity = alpha - 0.5 - (0.1 * fixed(i));
 
             // Determine index. We must account for wrapping around.
@@ -87,25 +92,23 @@ strict namespace Hud
             while (index >= Item::GetClientOwnedInventorySize()) index -= Item::GetClientOwnedInventorySize();
             
             int itemIndex = Item::GetInventoryIndex(Item::GetClientOwnedInventoryIndex(index));
-            DrawInventoryItem(specie, itemIndex, itemX, y, opacity, scale, false);
+            DrawInventoryItem(specie, itemIndex, addX, opacity, false);
         }
 
         // Draw current item.
         int currentItemIndex = Item::GetInventoryIndex(Item::GetClientOwnedInventoryIndex(Item::_currentInventoryIndex));
-        DrawInventoryItem(specie, currentItemIndex, x, y, alpha, scale, true);
+        DrawInventoryItem(specie, currentItemIndex, 0.0, alpha, true);
     }
 
-    internal void DrawKeyBar(fixed x, fixed y, fixed scale, fixed alpha)
+    internal void DrawKeyBar(fixed alpha)
     {
         // No keys to draw.
         int keyCount = Item::GetClientOwnedKeySize();
         if (keyCount == 0)
             return;
 
-        BCSUtils::HudSetPoint(x, y);
+        HudSetPointInternal();
         BCSUtils::HudDrawText(--_drawnHudId, "Owned keys");
-
-        y += 30.0;
 
         for (int i = 0; i < keyCount; ++i)
         {
@@ -117,13 +120,13 @@ strict namespace Hud
                 offset = (i % 2 == 1) ? step : -step;
             }
 
-            fixed itemX = x + KEY_ITEM_SPACING * fixed(offset);
+            fixed addX = KEY_ITEM_SPACING * fixed(offset);
             int itemIndex = Item::GetKeyIndex(Item::GetClientOwnedKeyIndex(i));
-            DrawKeyItem(itemIndex, itemX, y, alpha, scale);
+            DrawKeyItem(itemIndex, addX, alpha);
         }
     }
 
-    internal void DrawInventoryItem(Player::SpecieTypeT ownerSpecie, int index, fixed x, fixed y, fixed alpha, fixed scale, bool current)
+    internal void DrawInventoryItem(Player::SpecieTypeT ownerSpecie, int index, fixed addX, fixed alpha, bool current)
     {
         // Note if we didn't set this data then just assume it can be used.
         bool humanOwned = Item::GetItemHumanOwned(index);
@@ -138,31 +141,33 @@ strict namespace Hud
             alpha *= 0.2;
 
         BCSUtils::HudSetAlpha(alpha);
-        BCSUtils::HudSetPoint(x, y + 5.0);
+
+        HudSetPointInternal(addX, 5.0);
         BCSUtils::HudDrawImage(--_drawnHudId, Item::GetItemGraphic(index));
 
         int count = CheckInventory(Item::GetItemName(index));
         if (count > 1)
         {
-            BCSUtils::HudSetScale(scale / 1.4);
+            BCSUtils::HudSetScale(0.7);
             BCSUtils::HudSetTextColor(CR_YELLOW);
-            BCSUtils::HudSetPoint(x + 10.0 * scale, y - 5.0 * scale);
+
+            HudSetPointInternal(addX + 10.0, - 5.0);
             BCSUtils::HudDrawText(--_drawnHudId, str(count));
-            BCSUtils::HudSetScale(scale);
+
+            BCSUtils::HudSetScale(1.0);
         }
 
         if (current)
         {
-            y += 25.0 * scale;
-
             str itemLabel = Item::GetItemLabel(index);
             BCSUtils::HudSetTextColor(CR_YELLOW);
-            BCSUtils::HudSetPoint(x, y);
+
+            HudSetPointInternal(0.0, 25.0);
             BCSUtils::HudDrawText(--_drawnHudId, itemLabel);
             
-            y += 10.0 * scale;
             BCSUtils::HudSetTextColor(CR_WHITE);
-            BCSUtils::HudSetPoint(x, y);
+
+            HudSetPointInternal(0.0, 35.0);
             BCSUtils::HudDrawText(--_drawnHudId, Item::GetItemDescription(index));
 
             // Write a label if we can't use this item.
@@ -170,19 +175,20 @@ strict namespace Hud
             {
                 str label = "You can't use " + itemLabel + " as a " + Player::GetSpecieIndexAsString(ownerSpecie) + ".";
             
-                y += 10.0 * scale;
                 BCSUtils::HudSetAlpha(baseAlpha);
                 BCSUtils::HudSetTextColor(CR_RED);
-                BCSUtils::HudSetPoint(x, y);
+
+                HudSetPointInternal(0.0, 45.0);
                 BCSUtils::HudDrawText(--_drawnHudId, label);
             }
         }
     }
 
-    internal void DrawKeyItem(int index, fixed x, fixed y, fixed alpha, fixed scale)
+    internal void DrawKeyItem(int index, fixed addX, fixed alpha)
     {
         BCSUtils::HudSetAlpha(alpha);
-        BCSUtils::HudSetPoint(x, y);
+        
+        HudSetPointInternal(addX, 30.0);
         BCSUtils::HudDrawImage(--_drawnHudId, Item::GetItemGraphic(index));
     }
 }

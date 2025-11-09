@@ -7,19 +7,18 @@ strict namespace Hud
     #define TIP_FADETICS 20
     #define TIP_WRAPLENGTH 100
 
-    internal void DrawTip(fixed x, fixed y)
+    internal void DrawTip()
     {
         int index = Game::GetCurrentDisplayedTipIndex();
         int total = Game::GetTipCount();
 
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudSetPoint(x, y);
 
         BCSUtils::HudSetAlpha(1.0);
+        
+        HudSetPointInternal();
         BCSUtils::HudDrawText(--_drawnHudId, "Tip " + str(index + 1) + "/" + str(total));
-
-        y += 15.0;
 
         int elapsed   = Game::GetElapsedTipTics();
         int disappear = Game::GetTipTimeToDisappear();
@@ -32,19 +31,18 @@ strict namespace Hud
 
         BCSUtils::HudSetTextColor(CR_GREEN);
         BCSUtils::HudSetAlpha(alpha);
-        BCSUtils::HudSetPoint(x, y);
+
+        HudSetPointInternal(0.0, 15.0);
         BCSUtils::HudDrawText(--_drawnHudId, tipMessage);
         DebugDraw();
 
-        y += 20.0;
+        fixed x = GetHudX(),
+              y = GetHudY() + 35.0;
 
         BCSUtils::HudSetAlpha(1.0);
 
         if (DrawClickableText(--_drawnHudId, x - 50.0, y, 10.0, 10.0, "<<"))
             IterateTip(-1);
-            
-        BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudSetPoint(x, y);
 
         if (DrawClickableText(--_drawnHudId, x, y, 50.0, 10.0, "Random tip"))
             NextRandomTip();

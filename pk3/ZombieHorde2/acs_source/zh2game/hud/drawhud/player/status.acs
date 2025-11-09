@@ -17,50 +17,71 @@ strict namespace Hud
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         
-        // Left side
-        fixed x = BCSUtils::HudLeft() + ZH2Game::GetHudPlayerStatusOffsetX() + 30.0,
-              y = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 20.0;
+        // Base x and y offsets used by the hud elements.
+        fixed baseX = BCSUtils::HudLeft() + ZH2Game::GetHudPlayerStatusOffsetX() + 30.0,
+              baseY = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 20.0;
 
-        x += _xShakeOffset;
-        y += _yShakeOffset;
+        PrepareHud(
+            baseX, baseY, true);
+        DrawPlayerBackground();
 
-        DrawPlayerBackground(x, y);
+        PrepareHud(
+            baseX + 25.0, baseY - 18.0, true);
+        DrawPlayerSkin();
+        
+        PrepareHud(
+            baseX + 50.0, baseY - 30.0, true);
+        DrawKevlarArmor();
+        
+        PrepareHud(
+            baseX + 50.0, baseY - 20.0, true);
+        DrawHealth();
+        
+        PrepareHud(
+            baseX + 100.0, baseY - 125.0, true);
+        DrawCurrentOwnedItem();
 
-        DrawPlayerSkin(x + 25.0, y - 18.0);
-        DrawKevlarArmor(x + 50.0, y - 30.0);
-        DrawHealth(x + 50.0, y - 20.0);
-        DrawCurrentOwnedItem(x + 100.0, y - 125.0);
-
+        
         BCSUtils::HudSetVirtualSize(960.0 / scale, 720.0 / scale);
-        DrawKeyList(x + 118.0, y - 70.0);
+        
+        PrepareHud(
+            baseX + 118.0, baseY - 70.0, true);
+        DrawKeyList();
+
         BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
 
         // Right side
-        x = BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX(),
-        y = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY();
+        PrepareHud(
+            BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX() - 80.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 40.0,
+            true);
 
-        x += _xShakeOffset;
-        y += _yShakeOffset;
-
-        DrawWeaponIcon(x - 80.0, y - 40.0);
+        DrawWeaponIcon();
         
         if (Player::GetIsZombie())
-            DrawZombieAbilities(x - 80.0, y - 220.0);
+        {
+            PrepareHud(
+                BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX() - 80.0,
+                BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 220.0,
+                true);
+
+            DrawZombieAbilities();
+        }
     }
 
-    internal void DrawPlayerBackground(fixed x, fixed y)
+    internal void DrawPlayerBackground()
     {
-        BCSUtils::HudSetPoint(x, y);
+        HudSetPointInternal();
         BCSUtils::HudDrawImage(--_drawnHudId, "HUDBACK");
         DebugDraw();
 
-        BCSUtils::HudSetPoint(x + 90.0, y - 40.0);
+        HudSetPointInternal(90.0, -40.0);
         BCSUtils::HudDrawImage(--_drawnHudId, "HUDIBACK");
         DebugDraw();
     }
 
     // TODO: Should come from a parsed lump.
-    internal void DrawPlayerSkin(fixed x, fixed y)
+    internal void DrawPlayerSkin()
     {
         str skinIcon = (raw)0;
         int indexAcs = GetPlayerSkin(ConsolePlayerNumber(), PLAYERSKIN_VISIBLE);
@@ -90,12 +111,12 @@ strict namespace Hud
 
 		if (skinIcon == (raw)0)
             return;
-        
-        BCSUtils::HudSetPoint(x, y);
+
+        HudSetPointInternal();
         BCSUtils::HudDrawImage(--_drawnHudId, skinIcon);
     }
 
-    internal void DrawKevlarArmor(fixed x, fixed y)
+    internal void DrawKevlarArmor()
     {
         int armount = Player::GetKevlarPoints();
         if (armount == 0)
@@ -103,13 +124,14 @@ strict namespace Hud
 
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetTextColor(CR_BLUE);
-        BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetCenterText(true);
+        
+        HudSetPointInternal();
         BCSUtils::HudDrawText(--_drawnHudId, str(armount));
         DebugDraw();
     }
 
-    internal int DrawHealth(fixed x, fixed y)
+    internal int DrawHealth()
     {
         // Also flicker health based on current health.
         int health = BCSUtils::Max(0, PlayerHealth());
@@ -118,7 +140,9 @@ strict namespace Hud
         {
             BCSUtils::HudSetFont("SmallFont");
             BCSUtils::HudSetTextColor(flicker ? CR_RED : CR_WHITE);
-            BCSUtils::HudSetPoint(x, y);
+            
+
+            HudSetPointInternal();
             BCSUtils::HudDrawText(--_drawnHudId, str(health));
             DebugDraw();
         }
@@ -126,7 +150,7 @@ strict namespace Hud
         return _drawnHudId;
     }
 
-    internal void DrawCurrentOwnedItem(fixed x, fixed y)
+    internal void DrawCurrentOwnedItem()
     {
         if (Item::GetClientOwnedInventorySize() == 0)
             return;
@@ -136,22 +160,24 @@ strict namespace Hud
         str name = Item::GetItemName(index);
         int inventoryCount = CheckInventory(name);
 
-        BCSUtils::HudSetPoint(x, y);
+
+        HudSetPointInternal();
         BCSUtils::HudDrawImage(--_drawnHudId, graphic);
         DebugDraw();
 
         // Draw the current count of the item if we have more than one.
         if (inventoryCount > 1)
         {
-            BCSUtils::HudSetPoint(x + 20.0, y - 10.0);
             BCSUtils::HudSetFont("SmallFont");
             BCSUtils::HudSetTextColor(CR_YELLOW);
+
+            HudSetPointInternal(20.0, -10.0);
             BCSUtils::HudDrawText(--_drawnHudId, str(inventoryCount));
             DebugDraw();
         }
     }
 
-    internal void DrawKeyList(fixed x, fixed y)
+    internal void DrawKeyList()
     {
         // No keys to draw.
         int keyCount = Item::GetClientOwnedKeySize();
@@ -159,23 +185,20 @@ strict namespace Hud
             return;
         
         // Start more left as we have more keys
-        x -= 10.0 * fixed(keyCount / (PLAYERID_KEYROWCOUNT + 1));
-
-        x *= 1.5;
-        y *= 1.5;
+        fixed x = 10.0 * fixed(keyCount / (PLAYERID_KEYROWCOUNT + 1));
 
         for (int i = 0; i < keyCount; ++i)
         {
-            fixed itemX = x + 15.0 * fixed(i / PLAYERID_KEYROWCOUNT);
-            fixed itemY = y + 10.0 * fixed(i % PLAYERID_KEYROWCOUNT);
+            fixed addX = x + 15.0 * fixed(i / PLAYERID_KEYROWCOUNT);
+            fixed addY = 10.0 * fixed(i % PLAYERID_KEYROWCOUNT);
             int itemIndex = Item::GetKeyIndex(Item::GetClientOwnedKeyIndex(i));
             
-            BCSUtils::HudSetPoint(itemX, itemY);
+            HudSetPointInternal(addX, addY);
             BCSUtils::HudDrawImage(--_drawnHudId, Item::GetItemGraphic(itemIndex));
         }
     }
 
-    internal void DrawWeaponIcon(fixed x, fixed y)
+    internal void DrawWeaponIcon()
     {
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
         
@@ -188,16 +211,17 @@ strict namespace Hud
 		
 		if (weaponIcon != "")
 		{
-            BCSUtils::HudSetPoint(x, y);
+            HudSetPointInternal();
             BCSUtils::HudDrawImage(--_drawnHudId, weaponIcon);
             DebugDraw();
+
             return;
 		}
 
         // Special logic for the chaingun and fire grenade, which have two graphics and some clipping.
         if (CheckWeapon(WEAPON_CHAINGUN_NAME))
         {
-            BCSUtils::HudSetPoint(x, y);
+            HudSetPointInternal();
             BCSUtils::HudDrawImage(--_drawnHudId, WEAPON_HUD_SKIN_CHAINGUN);
 
             fixed percentage = fixed(CheckInventory(WEAPON_CHAINGUN_HEAT_NAME)) / fixed(WEAPON_CHAINGUN_MAX_HEAT);
@@ -214,7 +238,7 @@ strict namespace Hud
         }
         else if (CheckWeapon(WEAPON_FIREGRENADE_NAME))
         {
-            BCSUtils::HudSetPoint(x, y);
+            HudSetPointInternal();
             BCSUtils::HudDrawImage(--_drawnHudId, WEAPON_HUD_SKIN_FIREGRENADE);
 
 			fixed percentage = fixed(CheckInventory(WEAPON_FIREGRENADE_THROWPOWER_NAME)) / fixed(WEAPON_FIREGRENADE_MAX_THROWPOWER);
@@ -230,7 +254,7 @@ strict namespace Hud
         }
     }
 
-    internal void DrawZombieAbilities(fixed x, fixed y)
+    internal void DrawZombieAbilities()
     {
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
 
@@ -244,6 +268,9 @@ strict namespace Hud
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetTextColor(CR_WHITE);
         BCSUtils::HudSetCenterText(true);
+
+        // The vertical offset goes down with each ability.
+        fixed y = 0.0;
         
         for (int i = ABILITY_COUNT - 1; i >= 0; --i)
         {
@@ -269,7 +296,7 @@ strict namespace Hud
             // Visual indication of the ability not being ready.
             BCSUtils::HudSetAlpha(!selected && tics > 0 ? 0.4 : 1.0);
 
-            BCSUtils::HudSetPoint(x, y);
+            HudSetPointInternal(0.0, y);
             BCSUtils::HudDrawImage(--_drawnHudId, "HUD_ZA" + str(i) + str(1));
 
             // Visualize the time left before this ability can be used.
@@ -287,8 +314,9 @@ strict namespace Hud
             if (selected && tics > 0)
             {
                 BCSUtils::HudSetAlpha(1.0);
-                BCSUtils::HudSetPoint(x - 20.0, y - 10.0);
                 str label = Utils::FormatTics(tics, true);
+                
+                HudSetPointInternal(-20.0, y - 10.0);
                 BCSUtils::HudDrawText(--_drawnHudId, str(label));
             }
 

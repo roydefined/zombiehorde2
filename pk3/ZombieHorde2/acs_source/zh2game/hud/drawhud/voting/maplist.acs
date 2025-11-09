@@ -12,28 +12,17 @@ strict namespace Hud
 
     #define MAPNAME_WRAPLENGTH 18
 
-    internal void DrawMapList(fixed x, fixed y)
+    internal void DrawMapList()
     {
-        fixed GetMapX(int offset)
-        {
-            int col = offset % MAPBLOCKCOLUMNS;
-            return x + fixed(col * MAPBLOCKHORIZONTALSPACING);
-        }
-        fixed GetMapY(int offset)
-        {
-            int row = offset / MAPBLOCKCOLUMNS;
-            return y - fixed(row * MAPBLOCKVERTICALSPACING);
-        }
-
         // Hardcoded columns.
         // The `Next map` option is disabled when we have no maps in rotation.
         // The `Random map` option is disabled when we have no votable maps.
         bool nextMapPickEnabled = GetMapRotationSize() > 0;
         bool randomMapPickEnabled = ZH2Game::GameContext.VotableMapCount > 0;
         int offset = 0;
-        DrawMapBlock(true, GetMapX(offset), GetMapY(offset), offset++, "Replay map", "", "VIBACK", "VIRESTRT");
-        DrawMapBlock(nextMapPickEnabled, GetMapX(offset), GetMapY(offset), offset++, "Next map", "", "VIBACK", "VINEXT");
-        DrawMapBlock(randomMapPickEnabled, GetMapX(offset), GetMapY(offset), offset++, "Random map", "", "VIBACK", "VIRANDOM");
+        DrawMapBlock(true, offset++, "Replay map", "", "VIBACK", "VIRESTRT");
+        DrawMapBlock(nextMapPickEnabled, offset++, "Next map", "", "VIBACK", "VINEXT");
+        DrawMapBlock(randomMapPickEnabled, offset++, "Random map", "", "VIBACK", "VIRANDOM");
 
         // Draw remaining maps.
         for (int i = 0; i < ZH2Game::GameContext.VotableMapCount; ++i)
@@ -48,7 +37,7 @@ strict namespace Hud
             int parsePosition = Map::GetParsedMapPosition(mapIndex);
             if (parsePosition == -1)
             {
-                DrawMapBlock(true, GetMapX(offset), GetMapY(offset), offset++, header, label, graphic);
+                DrawMapBlock(true, offset++, header, label, graphic);
                 continue;
             }
 
@@ -62,11 +51,11 @@ strict namespace Hud
 
             bool isNew = Map::GetMapIsNew(parsePosition);
             bool isLegacyMap = Map::GetMapIsLegacyMap(parsePosition);
-            DrawMapBlock(true, GetMapX(offset), GetMapY(offset), offset++, header, label, graphic, (raw)0, isNew, isLegacyMap);
+            DrawMapBlock(true, offset++, header, label, graphic, (raw)0, isNew, isLegacyMap);
         }
     }
 
-    internal void DrawMapBlock(bool enabled, fixed x, fixed y, int offset, str header, str label, str graphic, str iconGraphic = (raw)0, bool isNew = false, bool isLegacyMap = false)
+    internal void DrawMapBlock(bool enabled, int offset, str header, str label, str graphic, str iconGraphic = (raw)0, bool isNew = false, bool isLegacyMap = false)
     {
         bool isVotedTimer = RoundTimer::GetActiveTimerKnownType() == RoundTimer::TIMERVOTED;
 
@@ -76,6 +65,15 @@ strict namespace Hud
 
         fixed cursorX = BCSUTILS::Floor(BCSUTILS::CursorX());
         fixed cursorY = BCSUTILS::Floor(BCSUTILS::CursorY());
+
+        int col = offset % MAPBLOCKCOLUMNS;
+        int row = offset / MAPBLOCKCOLUMNS;
+        
+        fixed addX = fixed(col * MAPBLOCKHORIZONTALSPACING),
+              addY = fixed(row * MAPBLOCKVERTICALSPACING);
+        
+        fixed x = GetHudX() + addX,
+              y = GetHudY() + addY;
 
         fixed graphicX1 = x - MAPBLOCKWIDTH * 0.5;
         fixed graphicX2 = x + MAPBLOCKWIDTH * 0.5;
@@ -116,9 +114,10 @@ strict namespace Hud
         BCSUtils::HudSetAlpha(baseAlpha);
         BCSUtils::HudSetTextColor(CR_WHITE);
 
-        BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetAlpha(graphicAlpha);
         BCSUtils::HudSetScale(0.3 * scale);
+        
+        HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawImage(--_drawnHudId, graphic);
         DebugDraw();
 
@@ -128,8 +127,9 @@ strict namespace Hud
 
         if (iconGraphic != (raw)0)
         {
-            BCSUtils::HudSetPoint(x, y - 30.0);
             BCSUtils::HudSetAlpha(graphicAlpha);
+            
+            HudSetPointInternal(addX, addY - 30.0);
             BCSUtils::HudDrawImage(--_drawnHudId, iconGraphic);
             DebugDraw();
         }
@@ -139,8 +139,9 @@ strict namespace Hud
 
         if (header != "" && isOver || clientPicked || isVotedTimer)
         {
-            BCSUtils::HudSetPoint(x, y - 20.0);
             BCSUtils::HudSetFont("BigFont");
+            
+            HudSetPointInternal(addX, addY - 20.0);
             BCSUtils::HudDrawText(--_drawnHudId, header);
             DebugDraw();
         }
@@ -152,9 +153,9 @@ strict namespace Hud
 
             // We should reset the alignment for this so the label does not offset weirdly.
             BCSUTILS::HudSetAlignment(BCSUTILS::HUD_ALIGN_CENTER, BCSUTILS::HUD_ALIGN_CENTER);
-            
-            BCSUtils::HudSetPoint(x, y - 10.0);
             BCSUtils::HudSetFont("SmallFont");
+
+            HudSetPointInternal(addX, addY - 10.0);
             BCSUtils::HudDrawText(--_drawnHudId, wrappedLabel);
             DebugDraw();
 
@@ -169,10 +170,13 @@ strict namespace Hud
             int totalVotablePlayerCount = ZH2Game::GetAllowSpectatorVoting() ? BCSUtils::ClientCount() : PlayerCount();
             totalVotablePlayerCount -= BCSUtils::BotCount();
 
-            fixed propertiesY = y - 70.0;
-            BCSUtils::HudSetPoint(x, propertiesY);
+            // Properties conditionally get added and so the y offset changes a bit.
+            fixed propertiesY = addY - 70.0;
+            
             BCSUtils::HudSetTextColor(clientPicked ? CR_GREEN : CR_WHITE);
             BCSUtils::HudSetFont("SmallFont");
+
+            HudSetPointInternal(addX, propertiesY);
             BCSUtils::HudDrawText(--_drawnHudId, str(pickCount) + "/" + str(totalVotablePlayerCount));
             DebugDraw();
 
@@ -181,25 +185,29 @@ strict namespace Hud
             if (isLegacyMap)
             {
                 BCSUtils::HudSetAlpha(pulsatingAlpha);
-                BCSUtils::HudSetPoint(x, propertiesY);
                 BCSUtils::HudSetTextColor(CR_GOLD);
                 BCSUtils::HudSetFont("SmallFont");
+
+                HudSetPointInternal(addX, propertiesY);
                 BCSUtils::HudDrawText(--_drawnHudId, "legacy map!");
-                BCSUtils::HudSetAlpha(baseAlpha);
                 DebugDraw();
                 
+                BCSUtils::HudSetAlpha(baseAlpha);
+
                 propertiesY += 10.0;
             }
 
             if (isNew)
             {
                 BCSUtils::HudSetAlpha(pulsatingAlpha);
-                BCSUtils::HudSetPoint(x, propertiesY);
                 BCSUtils::HudSetTextColor(CR_ORANGE);
                 BCSUtils::HudSetFont("SmallFont");
+
+                HudSetPointInternal(addX, propertiesY);
                 BCSUtils::HudDrawText(--_drawnHudId, "new!");
-                BCSUtils::HudSetAlpha(baseAlpha);
                 DebugDraw();
+                
+                BCSUtils::HudSetAlpha(baseAlpha);
             }
         }
 
@@ -209,6 +217,8 @@ strict namespace Hud
             BCSUtils::HudSetTextColor(CR_RED);
             BCSUtils::HudSetPoint(x, y - 10.0);
             BCSUtils::HudSetFont("SmallFont");
+
+            HudSetPointInternal(addX, addY - 10.0);
             BCSUtils::HudDrawText(--_drawnHudId, "Can't pick");
             DebugDraw();
         }
@@ -218,9 +228,11 @@ strict namespace Hud
         if (isOver && tics > 0 && !isVotedTimer)
         {
             str countdownLabel = Utils::FormatTics(tics, true);
-            BCSUtils::HudSetPoint(x, y - 40.0);
+            
             BCSUtils::HudSetTextColor(CR_WHITE);
             BCSUtils::HudSetFont("SmallFont");
+
+            HudSetPointInternal(addX, addY - 40.0);
             BCSUtils::HudDrawText(--_drawnHudId, countdownLabel);
             DebugDraw();
         }
