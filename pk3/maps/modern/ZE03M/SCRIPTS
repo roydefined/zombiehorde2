@@ -1,0 +1,131 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+Int housereached = 0;
+Int pearlreached = 0;
+
+// Setups
+Script "zm03m_open" open
+{
+    SetLineBlocking(1, BLOCK_EVERYTHING);
+    SetLineBlocking(2, BLOCK_CREATURES);
+    SetLineBlocking(3, BLOCK_CREATURES);
+    //Scroll_Texture_Both(2, 0, 0, 0, 200);
+    //Scroll_Texture_Both(-2, 0, 0, 0, 200);
+    TranslucentLine(2, 96, 0);
+    Floor_Waggle(13, 8, 128, 16, 0);
+    Floor_Waggle(14, 8, 128, 16, 0);
+    Floor_Waggle(15, 8, 128, 16, 0);
+    Ceiling_Waggle(15, 8, 128, 16, 0);
+    Floor_Waggle(16, 8, 128, 16, 0);
+    Scroll_floor(23,12,5,0);
+
+	Ceiling_LowerByValueTimes8(29, 10000, 20);
+	Scroll_Texture_Both(-28, 0, 0, 0, 200);
+	Scroll_Texture_Both(28, 0, 0, 0, 200);
+}
+
+/* RESIST EVENT */
+script "ze03m_internal_event_resistelapsed" (int index)
+{
+	switch(index)
+	{
+		case 0:
+			SetLineBlocking(2, BLOCK_NOTHING);
+			TranslucentLine(2, 0, 0);
+			SetFont("SMALLFONT");
+			PrintBold(s:"The prison will open itself in 5 seconds.");
+
+			// Music 1
+			SetMusic("D_RCARIB");
+
+			Delay(35*5);
+			SetLineBlocking(1, BLOCK_NOTHING);
+			Floor_LowerByValue(12, 64, 120);
+			thing_remove(24);
+
+			Delay(35*52);
+			SetMusic("D_NULL");
+
+			break;
+		case 1:
+			Floor_LowerByValue(21, 16, 128);
+			PrintBold(s:"The side entrance will open in 10 seconds.");
+			Delay(35*10);
+			Floor_LowerByValue(17, 16, 120);
+			break;
+
+		case 2:
+			Floor_LowerByValue(11, 32, 112);
+			SetLineBlocking(3, BLOCK_NOTHING);
+
+			Delay(35 * 3);
+
+			// Music 2
+			SetMusic("D_PIRAT");
+			Delay(35 * 88);
+			SetMusic("D_NULL");
+
+			break;
+	}
+}
+
+Script 1 (void) // Picking up Jack's Pistol
+{
+    PrintBold(n:0, s:" \cFHas picked up Jack Sparrow's pistol!");
+}
+
+
+Script 6 (void) // Checks if a human has reached the house
+{
+	If(Player::GetIsHuman() && housereached == 0)
+	{
+		housereached = 1;
+		SetActivator(-1);
+		Ceiling_RaiseByValueTimes8(29, 10000, 20);
+		Delay(Resist::StartResistByIndex(3));
+		Ceiling_LowerByValueTimes8(29, 10000, 20);
+		housereached = 2;
+	}
+}
+
+Script 7 (void) // Will hold back zombies
+{
+    If(Player::GetIsZombie() && housereached == 1) ThrustThing(64, 20, 0, 0);
+}
+
+Script 10 (void) // Pearl reached
+{
+    If(pearlreached==0)
+    {
+        SetFont("CONFONT");
+        HudMessageBold(n:0, s:" has reached the \cMBlack Pearl!\n\cCLoad artillery before the infected come!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+        pearlreached++;
+
+        Acs_execute(11, 0, 0, 0, 0);
+    }
+}
+
+Script 11 (void)
+{
+    SetActivator(-1);
+	Delay(Resist::StartResistByIndex(4));
+    Delay(35*1);
+    SetFont("BIGFONT");
+    HudMessageBold(s:"\cGWarning : \cKCannons Loaded!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+    Delay(35*4);
+	AmbientSound("world/nuke1", 127);
+	Game::KillUnsafePlayers();
+    Sector_SetDamage(23, 10000, 12);
+}
+
+Script 13 (void)
+{
+    Print(s:"Watchout! The Royal Navy is bombarding the north beach.");
+}
