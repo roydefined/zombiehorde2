@@ -2,6 +2,7 @@
 
 rem This file will pack all maps from `mapsrc/` into `.wad` files so they can be edited or run.
 rem Note unpacking said maps after editing can be done with `unpack-maps.bat`.
+rem NOTE: Unlike `pack-maps.bat` this file will NOT include the ACS source of maps.
 
 setlocal enabledelayedexpansion
 
@@ -57,7 +58,6 @@ for /d %%P in ("%SRC%\*") do (
             "file:!MAP_PATH!\TEXTMAP" ^
             "file:!MAP_PATH!\BEHAVIOR" ^
             "file:!MAP_PATH!\ZNODES" ^
-            "file:!MAP_PATH!\SCRIPTS" ^
             "file:!MAP_PATH!\ENDMAP" ^
             -o "!OUT_WAD!"
 
