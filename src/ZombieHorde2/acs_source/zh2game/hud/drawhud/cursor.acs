@@ -1,0 +1,29 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    // This uses HudSetScale because the positioning will be better.
+    internal void DrawCursor()
+    {
+        fixed scale = ZH2Game::GetCursorScale();
+
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetScale(scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
+
+        BCSUtils::UpdateCursor();
+        BCSUtils::HudSetTextColor(CR_WHITE);
+
+        // Note the cursor pointer is on the top left, so because of this we draw it slightly offset.
+        // 17.0 is the sweet spot.
+        BCSUtils::HudSetPoint(BCSUtils::Floor(BCSUtils::CursorX()) + 17.0 * scale, BCSUtils::Floor(BCSUtils::CursorY()));
+        BCSUtils::HudDrawImage(HUDID_CURSOR, "CURSOR");
+
+        // Debug points for the cursor where it actually points.
+        DebugDraw(BCSUtils::Floor(BCSUtils::CursorX()), BCSUtils::Floor(BCSUtils::CursorY()), CR_CYAN);
+    }
+}
