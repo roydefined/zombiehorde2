@@ -62,7 +62,7 @@ strict namespace Hud
     internal void DrawPlayerList()
     {
         fixed x = GetHudX(),
-              y = GetHudY() + 20.0;
+              y = GetHudY() + 40.0;
 
         // Add bots as human/zombie. Doesn't work if we reached max players.
         
@@ -92,7 +92,7 @@ strict namespace Hud
             
             BCSUtils::HudSetTextColor(CR_WHITE);
             
-            HudSetPointInternal(0.0, 10.0 + fixed(10 * offset));
+            HudSetPointInternal(0.0, 50.0 + fixed(10 * offset));
             BCSUtils::HudDrawText(--_drawnHudId, str(i));
 
             if (DrawClickableText(--_drawnHudId, x + 20.0, y + 10.0 + fixed(10 * offset), 60.0, 10.0, BCSUTILS::PlayerName(i)))
@@ -116,7 +116,7 @@ strict namespace Hud
               y = GetHudY();
             
         fixed addX = 0.0,
-              addY = 0.0;
+              addY = 40.0;
 
         /* LIST OF POWERS */
 
@@ -144,7 +144,7 @@ strict namespace Hud
             }
         }
         
-        y += 20.0;
+        addY += 20.0;
 
         /* ALLOW JOIN */
 
@@ -276,7 +276,7 @@ strict namespace Hud
               y = GetHudY();
             
         fixed addX = 0.0,
-              addY = 0.0;
+              addY = 40.0;
         
         if (playerId == -1)
         {
@@ -306,18 +306,18 @@ strict namespace Hud
         }
 
         if (DrawClickableTextConditional(
-            !Player::GetPlayerIsZombie(playerId), --_drawnHudId, x, y, 50.0, 10.0, "infect"))
+            !Player::GetPlayerIsZombie(playerId), --_drawnHudId, x, y + addY, 50.0, 10.0, "infect"))
         {
             Admin::AdminInfectPlayerClientside(playerId);
         }
 
         if (DrawClickableTextConditional(
-            !Player::GetPlayerIsHuman(playerId), --_drawnHudId, x + 50.0, y, 50.0, 10.0, "cure"))
+            !Player::GetPlayerIsHuman(playerId), --_drawnHudId, x + 50.0, y + addY, 50.0, 10.0, "cure"))
         {
             Admin::AdminCurePlayerClientside(playerId);
         }
 
-        if (DrawClickableText(--_drawnHudId, x + 90.0, y, 50.0, 10.0, "kill"))
+        if (DrawClickableText(--_drawnHudId, x + 90.0, y + addY, 50.0, 10.0, "kill"))
             Admin::AdminKillPlayerClientside(playerId);
 
         addY += 20.0;
@@ -334,10 +334,10 @@ strict namespace Hud
 
         addY += 20.0;
         
-        if (DrawClickableText(--_drawnHudId, x, y, 30.0, 10.0, "enable"))
+        if (DrawClickableText(--_drawnHudId, x, y + addY, 30.0, 10.0, "enable"))
             Admin::AdminSetPlayerAllowJoinClientSide(playerId, true);
         
-        if (DrawClickableText(--_drawnHudId, (x + 60.0), y, 40.0, 10.0, "disable"))
+        if (DrawClickableText(--_drawnHudId, (x + 60.0), y+ addY, 40.0, 10.0, "disable"))
             Admin::AdminSetPlayerAllowJoinClientSide(playerId, false);
 
         addY += 20.0;
