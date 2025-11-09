@@ -4,12 +4,12 @@
 
 #define LogSource "Hud"
 
+#include "cursor.acs"
 #include "drawhud/drawhud.acs"
 
 strict namespace Hud
 {
     internal AdminMenuT _currentAdminMenu;
-    internal bool _cursorEnabled;
 
     internal int _debugHudId;
     internal int _drawnHudId;
@@ -31,11 +31,6 @@ strict namespace Hud
         DrawHud();
     }
 
-    internal void SetCursorEnabled(bool enabled)
-    {
-        _cursorEnabled = enabled;
-    }
-
     internal void DebugDraw(fixed x = 0.0, fixed y = 0.0, int color = CR_WHITE)
     {
         if (!ZH2Game::GetDrawDebugCoordinatesHud()) return;
@@ -51,29 +46,6 @@ strict namespace Hud
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudDrawText(_debugHudId--, "*");
         BCSUtils::HudPopState();
-    }
-
-    // This uses HudSetScale because the positioning will be better.
-    internal void DrawCursor()
-    {
-        fixed scale = ZH2Game::GetCursorScale();
-
-        BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0, 480.0);
-        BCSUtils::HudSetScale(scale);
-        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
-
-        BCSUtils::UpdateCursor();
-        BCSUtils::HudSetTextColor(CR_WHITE);
-
-        // Note the cursor pointer is on the top left, so because of this we draw it slightly offset.
-        // 17.0 is the sweet spot.
-        BCSUtils::HudSetPoint(BCSUtils::Floor(BCSUtils::CursorX()) + 17.0 * scale, BCSUtils::Floor(BCSUtils::CursorY()));
-        BCSUtils::HudDrawImage(HUDID_CURSOR, "CURSOR");
-
-        // Debug points for the cursor where it actually points.
-        DebugDraw(BCSUtils::Floor(BCSUtils::CursorX()), BCSUtils::Floor(BCSUtils::CursorY()), CR_CYAN);
     }
 
     internal bool DrawClickableTextConditional(bool clickable, int id, fixed x, fixed y, fixed width, fixed height, str text)
