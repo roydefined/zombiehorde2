@@ -9,12 +9,12 @@
 
 strict namespace Round
 {
-    internal void DefineRoundByKnown(KnownRoundStateT roundType, bool allowJoin = false)
+    internal void DefineRoundByKnown(KnownRoundStateT roundType, bool allowJoin, bool isEnding)
     {
-        DefineRoundByIndex(GetIndexOfKnownRoundStateType(roundType), allowJoin);
+        DefineRoundByIndex(GetIndexOfKnownRoundStateType(roundType), allowJoin, isEnding);
     }
 
-    internal void DefineRoundByIndex(int index, bool allowJoin = false)
+    internal void DefineRoundByIndex(int index, bool allowJoin, bool isEnding)
     {
         if (index < 0 || index >= MAX_ROUNDSTATES)
         {
@@ -26,6 +26,7 @@ strict namespace Round
 
         RoundStateContextT& state = GetRoundRefByindex(index);
         state.AllowJoin = allowJoin;
+        state.IsEnding = isEnding;
         state.Defined = true;
     }
 
@@ -48,6 +49,7 @@ strict namespace Round
     internal RoundStateContextT& GetRoundRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Rounds[index]; }
 
     internal bool GetRoundJoinable(int index) { return GetRoundRefByindex(index).AllowJoin; }
+    internal bool GetRoundIsEnding(int index) { return GetRoundRefByindex(index).IsEnding; }
     internal bool GetRoundDefined(int index) { return GetRoundRefByindex(index).Defined; }
     
     /* Casting / Conversions */
