@@ -226,31 +226,26 @@ strict namespace RoundTimer
     internal KnownRoundTimerT GetKnownTypeOfIndex(int index)
     {
         static KnownRoundTimerT collection[] = { TIMERNONE, TIMERPREGAMECOUNTDOWN, TIMERCOUNTDOWN, TIMERPLAYING, TIMERENDING, TIMERVOTING, TIMERVOTED };
-        
-        // No known timer.
-        if (index < TIMERPREGAMECOUNTDOWN && index > TIMERVOTED)
-            return TIMERNONE;
+        foreach(KnownRoundTimerT item; collection)
+        {
+            if (index != item)
+                continue;
+            
+            return item;
+        }
 
-        return collection[index];
+        return TIMERNONE;
     }
 
     internal str GetTimerIndexAsString(int index)
     {
+        static str collection[] = { "Pregame Countdown", "Countdown", "Playing", "Ending", "Voting", "Voted" };
+        KnownRoundTimerT knownTimer = GetKnownTypeOfIndex(index);
+        if (knownTimer != TIMERNONE)
+            return collection[index];
+            
         // No known timer, return custom and the index.
-        if (index < TIMERPREGAMECOUNTDOWN || index > TIMERVOTED)
-            return "Custom (" + str(index) + ")";
-
-        // No point returning TIMERNONE when it's not supposed to be used.
-        return //index == TIMERNONE ? "None" :
-            index == TIMERPREGAMECOUNTDOWN ? "Pregame Countdown" :
-            index == TIMERCOUNTDOWN ? "Countdown":
-            index == TIMERPLAYING ? "Playing" :
-            index == TIMERENDING ? "Ending" :
-            index == TIMERVOTING ? "Voting" :
-            index == TIMERVOTED ? "Voted" :
-
-            // Should not be possible.
-            "Unknown";
+        return "Custom (" + str(index) + ")";
     }
 }
 
