@@ -56,34 +56,30 @@ strict namespace Round
 
     internal int GetIndexOfKnownRoundStateType(KnownRoundStateT stateType) { return (int)stateType; }
 
-    internal KnownRoundStateT GetKnownRoundStateTypeByIndex(int stateIndex)
+    // Returns STATENONE if the round timer is not known.
+    internal KnownRoundStateT GetKnownRoundStateTypeByIndex(int index)
     {
-        static KnownRoundStateT collection[] = { StateNone, StatePregame, StateStarting, StateCountdown, StatePlaying, StateEnding, STATEVOTING };
-        
-        // No known round state.
-        if (stateIndex < StatePregame && stateIndex > STATEVOTING)
-            return StateNone;
-        
-        return collection[stateIndex];
+        static KnownRoundStateT collection[] = { STATEPREGAME, STATESTARTING, STATECOUNTDOWN, STATEPLAYING, STATEENDING, STATEVOTING };
+        foreach(KnownRoundStateT item; collection)
+        {
+            if (index != item)
+                continue;
+            
+            return item;
+        }
+
+        return STATENONE;
     }
 
-    internal str GetRoundStateIndexAsString(int stateIndex)
+    internal str GetRoundStateIndexAsString(int index)
     {
-        // No known round state, return custom and the index.
-        if (stateIndex < StatePregame || stateIndex > STATEVOTING)
-            return "Custom (" + str(stateIndex) + ")";
-
-        // No point returning StateNone when it's not supposed to be used.
-        return //stateIndex == StateNone ? "None" :
-            stateIndex == StatePregame ? "Pregame" :
-            stateIndex == StateStarting ? "Starting" :
-            stateIndex == StateCountdown ? "Countdown" :
-            stateIndex == StatePlaying ? "Playing" :
-            stateIndex == StateEnding ? "Ending" :
-            stateIndex == STATEVOTING ? "Voting" :
+        static str collection[] = { "Pregame", "Starting", "Countdown", "Playing", "Ending", "Voting" };
+        KnownRoundStateT knownRoundState = GetKnownRoundStateTypeByIndex(index);
+        if (knownRoundState != STATENONE)
+            return collection[index];
             
-            // Should not be possible.
-            "Unknown";
+        // No known round state, return custom and the index.
+        return "Custom (" + str(index) + ")";
     }
 }
 
