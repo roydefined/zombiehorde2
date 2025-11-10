@@ -4,32 +4,43 @@
 
 strict namespace Reward
 {
-    // Extension that gives the given reward container to a random living player.
-    internal void GiveRandomPlayerRewardContainer(RewardItemTypeFlagsT type)
+    // Extension that gives a number of random players the given reward container.
+    internal void GiveRandomPlayerRewardContainers(RewardItemTypeFlagsT type)
     {
-        // No player to reward.
+        // No players to reward.
         if (PlayerCount() == 0)
+            return;
+
+        // Check how many players to give an item.
+        int givePlayerCount = ZH2Game::GetEndOfRoundRewardCount();
+        if (givePlayerCount == 0)
             return;
 
         str itemName = Reward::ContainerTypeToItemName(type);
         Shuffle::ShuffleByNotOwningItem(itemName);
 
-        // Everybody has a reward already.
-        if (Shuffle::GetRelevantSize() == 0)
+        // Ensure there are players that we can give an item.
+        int relevantSize = Shuffle::GetRelevantSize();
+        if (relevantSize == 0)
             return;
 
-        // Get first relevant tid.
-        int id = Shuffle::GetIndexValue(0);
-        int tid = Identity::GetTid(id);
-
-        // Should also not happen, we just checked if the player has the item already.
-        if (CheckActorInventory(tid, itemName))
+        // Now loop until we either exhaust the buffer or gave everybody an item.
+        int index = 0;
+        while (givePlayerCount-- && relevantSize--)
         {
-            Logger::LogWarning(LOGSOURCE, "Returned player to reward already has the container.");
-            return;
-        }
+            int id = Shuffle::GetIndexValue(index);
+            int tid = Identity::GetTid(id);
+            index++;
+            
+            // Should also not happen, we just checked if the player has the item already.
+            if (CheckActorInventory(tid, itemName))
+            {
+                Logger::LogWarning(LOGSOURCE, "Returned player to reward already has the container.");
+                return;
+            }
 
-        GiveActorInventory(tid, itemName, 1);
-        InformPlayerContainerReceived(id, type);
+            GiveActorInventory(tid, itemName, 1);
+            InformPlayerContainerReceived(id, type);
+        }
     }
 }
