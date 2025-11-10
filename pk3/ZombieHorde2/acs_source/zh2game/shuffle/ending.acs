@@ -29,52 +29,43 @@ strict namespace Shuffle
         ));
     }
 
+    internal bool SortByHumanKillsComparer(int id)
+    {
+        return Player::GetPlayerHumanKills(id) == 0;
+    }
+
+    internal bool SortByZombieKillsComparer(int id)
+    {
+        return Player::GetPlayerZombieKills(id) == 0;
+    }
+
+    internal bool SortByInfectsComparer(int id)
+    {
+        return Player::GetPlayerInfects(id) == 0;
+    }
+
     internal void SortByHumanKills(ShufflePrepareTypeT shuffleType = SHUFFLEASSIGNED)
     {
         PrepareBufferPlayers(shuffleType);
+        
         BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_comparehumankills", "zh2_internal_shuffle_swapbufferitems");
-
-        _context.BufferRelevantSize = 0;
-        while (_context.BufferRelevantSize < _context.BufferIteratorSize)
-        {
-            int id = _context.Buffer[_context.BufferRelevantSize];
-            if(Player::GetPlayerHumanKills(id) == 0)
-                break;
-                
-            _context.BufferRelevantSize++;
-        }
+        UpdateRelevantBufferSize(SortByHumanKillsComparer);
     }
 
     internal void SortByZombieKills(ShufflePrepareTypeT shuffleType = SHUFFLEASSIGNED)
     {
         PrepareBufferPlayers(shuffleType);
+        
         BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_comparezombiekills", "zh2_internal_shuffle_swapbufferitems");
-
-        _context.BufferRelevantSize = 0;
-        while (_context.BufferRelevantSize < _context.BufferIteratorSize)
-        {
-            int id = _context.Buffer[_context.BufferRelevantSize];
-            if(Player::GetPlayerZombieKills(id) == 0)
-                break;
-                
-            _context.BufferRelevantSize++;
-        }
+        UpdateRelevantBufferSize(SortByZombieKillsComparer);
     }
 
     internal void SortByInfects(ShufflePrepareTypeT shuffleType = SHUFFLEASSIGNED)
     {
         PrepareBufferPlayers(shuffleType);
-        BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_compareinfects", "zh2_internal_shuffle_swapbufferitems");
 
-        _context.BufferRelevantSize = 0;
-        while (_context.BufferRelevantSize < _context.BufferIteratorSize)
-        {
-            int id = _context.Buffer[_context.BufferRelevantSize];
-            if(Player::GetPlayerInfects(id) == 0)
-                break;
-                
-            _context.BufferRelevantSize++;
-        }
+        BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_compareinfects", "zh2_internal_shuffle_swapbufferitems");
+        UpdateRelevantBufferSize(SortByInfectsComparer);
     }
 
     /* SHUFFLED ENDING ITEMS */
@@ -102,25 +93,31 @@ strict namespace Shuffle
             int(!BCSUtils::ActorIsAlive(_context.Buffer[left])));
     }
 
+    internal bool ShuffleBySurvivedComparer(int id)
+    {
+        int tid = Identity::GetTID(id);
+        return !BCSUtils::ActorIsAlive(tid) || !Player::GetPlayerIsHuman(id);
+    }
+
+    internal bool ShuffleByHordeComparer(int id)
+    {
+        int tid = Identity::GetTID(id);
+        return !BCSUtils::ActorIsAlive(tid) || !Player::GetPlayerIsZombie(id);
+    }
+
+    internal bool ShuffleByDeadComparer(int id)
+    {
+        int tid = Identity::GetTID(id);
+        return !BCSUtils::ActorIsAlive(tid);
+    }
+
     internal void ShuffleBySurvived()
     {
         // This function is explicitly used for playing players (obviously).
         PrepareBufferPlayers(SHUFFLEPLAYING);
 
         BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_comparesurvived", "zh2_internal_shuffle_swapbufferitems");
-
-        _context.BufferRelevantSize = 0;
-        while (_context.BufferRelevantSize < _context.BufferIteratorSize)
-        {
-            int id = _context.Buffer[_context.BufferRelevantSize];
-            if(!BCSUtils::ActorIsAlive(Identity::GetTID(id))
-                || !Player::GetPlayerIsHuman(id))
-                break;
-            
-            _context.BufferRelevantSize++;
-        }
-        
-        // Shuffle results to ensure we get a true random player list rather than id based.
+        UpdateRelevantBufferSize(ShuffleBySurvivedComparer);
         BCSUtils::ShuffleArray(0, _context.BufferRelevantSize, "zh2_internal_shuffle_swapbufferitems");
     }
 
@@ -130,19 +127,7 @@ strict namespace Shuffle
         PrepareBufferPlayers(SHUFFLEPLAYING);
 
         BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_comparehorde", "zh2_internal_shuffle_swapbufferitems");
-
-        _context.BufferRelevantSize = 0;
-        while (_context.BufferRelevantSize < _context.BufferIteratorSize)
-        {
-            int id = _context.Buffer[_context.BufferRelevantSize];
-            if(!BCSUtils::ActorIsAlive(Identity::GetTID(id))
-                || !Player::GetPlayerIsZombie(id))
-                break;
-
-            _context.BufferRelevantSize++;
-        }
-        
-        // Shuffle results to ensure we get a true random player list rather than id based.
+        UpdateRelevantBufferSize(ShuffleByHordeComparer);
         BCSUtils::ShuffleArray(0, _context.BufferRelevantSize, "zh2_internal_shuffle_swapbufferitems");
     }
 
@@ -152,18 +137,7 @@ strict namespace Shuffle
         PrepareBufferPlayers(SHUFFLEDEAD);
 
         BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_comparedead", "zh2_internal_shuffle_swapbufferitems");
-
-        _context.BufferRelevantSize = 0;
-        while (_context.BufferRelevantSize < _context.BufferIteratorSize)
-        {
-            int id = _context.Buffer[_context.BufferRelevantSize];
-            if(!BCSUtils::ActorIsAlive(Identity::GetTID(id)))
-                break;
-                
-            _context.BufferRelevantSize++;
-        }
-        
-        // Shuffle results to ensure we get a true random player list rather than id based.
+        UpdateRelevantBufferSize(ShuffleByDeadComparer);
         BCSUtils::ShuffleArray(0, _context.BufferRelevantSize, "zh2_internal_shuffle_swapbufferitems");
     }
 }
