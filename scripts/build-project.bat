@@ -8,11 +8,11 @@
 :: Alternatively make sure that they do another way.
 
 set "SCRIPT_DIR=%~dp0"
-set "ROOT=C:\Projects\zombiehorde2"
-set "BCC=%SCRIPT_DIR%tools\Zt-bcc_x86\zt-bcc.exe"
+for %%i in ("%SCRIPT_DIR%\..") do set "ROOT=%%~fi"
+set "BCC=%ROOT%\tools\Zt-bcc_x86\zt-bcc.exe"
 
 :: ACSUtils
-set "ACSUTILS_DIST=%SCRIPT_DIR%modules\acsutils\dist"
+set "ACSUTILS_DIST=%ROOT%\modules\acsutils\dist"
 set "BCSUTILS_TARGET_DIR=%ROOT%\libsrc\acs_source\bcsutils"
 
 :: Library

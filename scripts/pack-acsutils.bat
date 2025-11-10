@@ -6,7 +6,8 @@
 :: Alternatively you may use `build-project.bat` after calling this file to build the project itself.
 
 set "SCRIPT_DIR=%~dp0"
-cd /d "%SCRIPT_DIR%modules\acsutils"
+for %%i in ("%SCRIPT_DIR%\..") do set "ROOT=%%~fi"
+cd /d "%ROOT%\modules\acsutils"
 
 rmdir dist /S /Q
 mkdir dist
