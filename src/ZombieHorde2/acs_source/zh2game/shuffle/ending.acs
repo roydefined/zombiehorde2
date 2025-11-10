@@ -95,20 +95,17 @@ strict namespace Shuffle
 
     internal bool ShuffleBySurvivedComparer(int id)
     {
-        int tid = Identity::GetTID(id);
-        return BCSUtils::ActorIsAlive(tid) && Player::GetPlayerIsHuman(id);
+        return Player::GetPlayerState(id) == Player::STATEPLAYING && Player::GetPlayerIsHuman(id);
     }
 
     internal bool ShuffleByHordeComparer(int id)
     {
-        int tid = Identity::GetTID(id);
-        return BCSUtils::ActorIsAlive(tid) && Player::GetPlayerIsZombie(id);
+        return Player::GetPlayerState(id) == Player::STATEPLAYING && Player::GetPlayerIsZombie(id);
     }
 
     internal bool ShuffleByDeadComparer(int id)
     {
-        int tid = Identity::GetTID(id);
-        return !BCSUtils::ActorIsAlive(tid);
+        return Player::GetPlayerState(id) == Player::STATEDEAD;
     }
 
     internal void ShuffleBySurvived()
