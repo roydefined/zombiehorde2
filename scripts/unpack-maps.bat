@@ -1,9 +1,12 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set "TOOL=tools\Gdcc_x64\gdcc-ar-wad.exe"
-set "SRC=src"
-set "OUTROOT=mapsrc"
+set "SCRIPT_DIR=%~dp0"
+for %%i in ("%SCRIPT_DIR%\..") do set "ROOT=%%~fi"
+
+set "TOOL=%ROOT%\tools\Gdcc_x64\gdcc-ar-wad.exe"
+set "SRC=%ROOT%\src"
+set "OUTROOT=%ROOT%\mapsrc"
 
 if not exist "%TOOL%" (
     echo [ERROR] gdcc-ar-wad.exe not found at "%TOOL%"

@@ -5,9 +5,12 @@ rem Note unpacking said maps after editing can be done with `unpack-maps.bat`.
 
 setlocal enabledelayedexpansion
 
-set "TOOL=tools\Gdcc_x64\gdcc-ar-wad.exe"
-set "SRC=mapsrc"
-set "OUTROOT=src"
+set "SCRIPT_DIR=%~dp0"
+for %%i in ("%SCRIPT_DIR%\..") do set "ROOT=%%~fi"
+
+set "TOOL=%ROOT%\tools\Gdcc_x64\gdcc-ar-wad.exe"
+set "SRC=%ROOT%\mapsrc"
+set "OUTROOT=%ROOT%\src"
 
 if not exist "%TOOL%" (
     echo [ERROR] gdcc-ar-wad.exe not found at "%TOOL%"
