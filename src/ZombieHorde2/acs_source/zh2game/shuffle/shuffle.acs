@@ -4,57 +4,15 @@
 
 #define LOGSOURCE  "Shuffle"
 
-#include "shuffledstats.acs"
 #include "clientsettings.acs"
-#include "stats.acs"
+#include "player.acs"
+#include "ending.acs"
+#include "round.acs"
 #include "map.acs"
 
 strict namespace Shuffle
 {
     internal BufferContextT _context;
-
-    // Shuffling supports three types, which might be hardcoded by shuffle functions, or can be configured.
-    // SHUFFLEPLAYING: Slot must be STATEPLAYING.
-    // SHUFFLEASSIGNED: Slot is/has been assigned. We expect any set state except STATENONE.
-    // SHUFFLEDEAD: Slot must not be STATENONE/STATEPLAYING.
-    internal void PrepareBufferPlayers(ShufflePrepareTypeT shuffleType = SHUFFLEASSIGNED)
-    {
-        _context.BufferIteratorSize = 0;
-        for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-        {
-            Player::PlayerStateT state = Player::GetPlayerState(i);
-            bool valid = shuffleType == SHUFFLEPLAYING
-                ? state == Player::STATEPLAYING
-                : shuffleType == SHUFFLEASSIGNED
-                    ? state != Player::STATENONE
-                    : state != Player::STATENONE && state != Player::STATEPLAYING;
-
-            If (valid)
-                _context.Buffer[_context.BufferIteratorSize++] = i;
-        }
-    }
-
-    internal void PrepareVotableMaps(int flags)
-    {
-        _context.BufferIteratorSize = 0;
-
-        int currentMapPosition = GetMapPosition(MAPPOSITION_CURRENT);
-        int nextMapPosition = GetMapPosition(MAPPOSITION_NEXT);
-
-        for (int i = 1; i <= GetMapRotationSize(); i++)
-        {
-            if ((flags & FLAGIGNORECURRENTMAP) && i == currentMapPosition)
-                continue;
-
-            if ((flags & FLAGIGNORENEXTMAP) && i == nextMapPosition)
-                continue;
-
-            if ((flags & FLAGIGNOREPLAYEDMAP) && GetMapRotationInfo(i, MAPROTATION_USED))
-                continue;
-
-            _context.Buffer[_context.BufferIteratorSize++] = i;
-        }
-    }
 
     internal int GetIndexValue(int index)
     {

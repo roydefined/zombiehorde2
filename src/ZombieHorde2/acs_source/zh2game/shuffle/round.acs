@@ -1,0 +1,32 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Shuffle
+{
+    script "zh2_internal_shuffle_compareinitials" (int left, int _)
+    {
+        SetResultValue(
+            int(!Player::GetPlayerPreviouslyInitialZombie(_context.Buffer[left])));
+    }
+
+    internal void ShuffleByNotPreviouslyInitialZombie()
+    {
+        // This function is explicitly used for playing players.
+        PrepareBufferPlayers(SHUFFLEPLAYING);
+
+        BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_compareinitials", "zh2_internal_shuffle_swapbufferitems");
+
+        _context.BufferRelevantSize = 0;
+        while (_context.BufferRelevantSize < _context.BufferIteratorSize)
+        {
+            if(Player::GetPlayerPreviouslyInitialZombie(_context.Buffer[_context.BufferRelevantSize]))
+                break;
+
+            _context.BufferRelevantSize++;
+        }
+        
+        // Shuffle results to ensure we get a true random player list rather than id based.
+        BCSUtils::ShuffleArray(0, _context.BufferRelevantSize, "zh2_internal_shuffle_swapbufferitems");
+    }
+}
