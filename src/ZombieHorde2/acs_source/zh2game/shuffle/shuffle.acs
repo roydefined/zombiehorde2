@@ -30,6 +30,21 @@ strict namespace Shuffle
         _context.Buffer[left] = BCSUtils::r1;
         _context.Buffer[right] = BCSUtils::r2;
     }
+
+    // Helper method that calculates the relevant size of the buffer after preparing it.
+    // The comparer is used to determine when to break out.
+    // Note it should return true if the item is no longer considered relevant.
+    internal void UpdateRelevantBufferSize(bool function(int)& comparer)
+    {
+        _context.BufferRelevantSize = 0;
+        while (_context.BufferRelevantSize < _context.BufferIteratorSize)
+        {
+            if(comparer(_context.Buffer[_context.BufferRelevantSize]))
+                break;
+
+            _context.BufferRelevantSize++;
+        }
+    }
 }
 
 #undef LOGSOURCE 
