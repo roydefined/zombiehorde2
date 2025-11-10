@@ -32,14 +32,13 @@ strict namespace Shuffle
     }
 
     // Helper method that calculates the relevant size of the buffer after preparing it.
-    // The comparer is used to determine when to break out.
-    // Note it should return true if the item is no longer considered relevant.
+    // The comparer is used to determine when to break out. Return `true` if the item is still relevant
     internal void UpdateRelevantBufferSize(bool function(int)& comparer)
     {
         _context.BufferRelevantSize = 0;
         while (_context.BufferRelevantSize < _context.BufferIteratorSize)
         {
-            if(comparer(_context.Buffer[_context.BufferRelevantSize]))
+            if(!comparer(_context.Buffer[_context.BufferRelevantSize]))
                 break;
 
             _context.BufferRelevantSize++;
