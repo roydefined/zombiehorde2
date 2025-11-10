@@ -1,0 +1,27 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Shuffle
+{
+    // Shuffling supports three types, which might be hardcoded by shuffle functions, or can be configured.
+    // SHUFFLEPLAYING: Slot must be STATEPLAYING.
+    // SHUFFLEASSIGNED: Slot is/has been assigned. We expect any set state except STATENONE.
+    // SHUFFLEDEAD: Slot must not be STATENONE/STATEPLAYING.
+    internal void PrepareBufferPlayers(ShufflePrepareTypeT shuffleType = SHUFFLEASSIGNED)
+    {
+        _context.BufferIteratorSize = 0;
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+        {
+            Player::PlayerStateT state = Player::GetPlayerState(i);
+            bool valid = shuffleType == SHUFFLEPLAYING
+                ? state == Player::STATEPLAYING
+                : shuffleType == SHUFFLEASSIGNED
+                    ? state != Player::STATENONE
+                    : state != Player::STATENONE && state != Player::STATEPLAYING;
+
+            If (valid)
+                _context.Buffer[_context.BufferIteratorSize++] = i;
+        }
+    }
+}
