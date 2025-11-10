@@ -47,10 +47,14 @@ strict namespace Reward
         }
 
 		GiveActorInventory(tid, itemName, 1);
-
-		if (!NamedExecuteClientScript("zh2_internal_reward_informcontainerreceived", id, type))
-			Logger::LogError(LogSource, "Failed to execute zh2_internal_reward_informcontainerreceived for player (" + str(id) + ") " + BCSUtils::PlayerName(id) + ".");
+        InformPlayerContainerReceived(id, type);
 	}
+
+    internal void InformPlayerContainerReceived(int id, RewardItemTypeFlagsT type)
+    {
+        if (!NamedExecuteClientScript("zh2_internal_reward_informcontainerreceived", id, type))
+			Logger::LogError(LogSource, "Failed to execute zh2_internal_reward_informcontainerreceived for player (" + str(id) + ") " + BCSUtils::PlayerName(id) + ".");
+    }
 
 	script "zh2_internal_reward_informcontainerreceived"(raw typeRaw) clientside
 	{
