@@ -31,17 +31,17 @@ strict namespace Shuffle
 
     internal bool SortByHumanKillsComparer(int id)
     {
-        return Player::GetPlayerHumanKills(id) == 0;
+        return Player::GetPlayerHumanKills(id) > 0;
     }
 
     internal bool SortByZombieKillsComparer(int id)
     {
-        return Player::GetPlayerZombieKills(id) == 0;
+        return Player::GetPlayerZombieKills(id) > 0;
     }
 
     internal bool SortByInfectsComparer(int id)
     {
-        return Player::GetPlayerInfects(id) == 0;
+        return Player::GetPlayerInfects(id) > 0;
     }
 
     internal void SortByHumanKills(ShufflePrepareTypeT shuffleType = SHUFFLEASSIGNED)
@@ -96,19 +96,19 @@ strict namespace Shuffle
     internal bool ShuffleBySurvivedComparer(int id)
     {
         int tid = Identity::GetTID(id);
-        return !BCSUtils::ActorIsAlive(tid) || !Player::GetPlayerIsHuman(id);
+        return BCSUtils::ActorIsAlive(tid) && Player::GetPlayerIsHuman(id);
     }
 
     internal bool ShuffleByHordeComparer(int id)
     {
         int tid = Identity::GetTID(id);
-        return !BCSUtils::ActorIsAlive(tid) || !Player::GetPlayerIsZombie(id);
+        return BCSUtils::ActorIsAlive(tid) && Player::GetPlayerIsZombie(id);
     }
 
     internal bool ShuffleByDeadComparer(int id)
     {
         int tid = Identity::GetTID(id);
-        return !BCSUtils::ActorIsAlive(tid);
+        return BCSUtils::ActorIsAlive(tid);
     }
 
     internal void ShuffleBySurvived()
