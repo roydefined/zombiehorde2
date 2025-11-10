@@ -88,6 +88,26 @@ strict namespace Game
                 break;
         }
 
+        // Determine health to give based on current player health.
+        // Zombie health is based on the player's health.
+        int spawnHealth;
+        int health;
+        switch(type)
+        {
+            case INFECT_REGULAR:
+                spawnHealth = Game::GetRegularZombieMaxHealth();
+                health = Game::DetermineHealthToGivePlayerRegularZombie(infectedId);
+                break;
+            case INFECT_INITIAL:
+                spawnHealth = Game::GetInitialZombieMaxHealth();
+                health = Game::DetermineHealthToGivePlayerInitialZombie(infectedId);
+                break;
+            case INFECT_ADMIN:
+                spawnHealth = 2000;
+                health = 2000;
+                break;
+        }
+
         // Set up to be a zombie.
         Player::SetPlayerZombie(infectedId);
         Player::MorphPlayerToZombie(infectedId);
@@ -95,6 +115,10 @@ strict namespace Game
         Player::SetPlayerZombieSkin(infectedId, skin);
         Player::GivePlayerZombieInventory(infectedId);
         Player::SetPlayerNextZombieTauntTic(infectedId);
+
+        // Now also set health.
+        BCSUtils::SetActorSpawnHealth(tid, spawnHealth);
+        BCSUtils::SetActorHealth(tid, health);
 
         // Initials get abilities
         if (type == INFECT_INITIAL)
@@ -108,23 +132,6 @@ strict namespace Game
                 for (int i = 0; i < ABILITY_COUNT; ++i)
                     Game::GivePlayerZombieAbilityCooldownByIndex(infectedId, i);
             }
-        }
-
-        // Admin health is static, otherwise it's determined based on health.
-        switch(type)
-        {
-            case INFECT_REGULAR:
-                BCSUtils::SetActorSpawnHealth(tid, Game::GetRegularZombieMaxHealth());
-                BCSUtils::SetActorHealth(tid, Game::DetermineHealthToGivePlayerRegularZombie(infectedId));
-                break;
-            case INFECT_INITIAL:
-                BCSUtils::SetActorSpawnHealth(tid, Game::GetInitialZombieMaxHealth());
-                BCSUtils::SetActorHealth(tid, Game::DetermineHealthToGivePlayerInitialZombie(infectedId));
-                break;
-            case INFECT_ADMIN:
-                BCSUtils::SetActorSpawnHealth(tid, 2000);
-                BCSUtils::SetActorHealth(tid, 2000);
-                break;
         }
 
         // Additional hardcoded items that must be taken, related to weaponry that otherwise causes weird behavior.
