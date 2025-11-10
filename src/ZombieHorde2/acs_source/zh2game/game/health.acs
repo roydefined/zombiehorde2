@@ -15,6 +15,7 @@ strict namespace Game
         return health != 0 ? health : 200;
     }
 
+    // Helper function that sets zombie health values on map start.
     internal void SetZombieHealthValues(bool initial, int max, int min)
     {
         if (initial)
@@ -48,14 +49,12 @@ strict namespace Game
     internal int DetermineHealthCore(int id, int min, int max)
     {
         fixed ratio = GetPlayerHPFactor(id);
-        printbold(f:ratio);
         return min + int(ratio * fixed(max - min));
     }
 
     internal fixed GetPlayerHPFactor(int id)
     {
         int tid = Identity::GetTid(id);
-        printbold(d:BCSUtils::GetActorHealth(tid), s:", ", d:BCSUtils::GetActorSpawnHealth(tid));
         return BCSUtils::Clamp(
             fixed(BCSUtils::GetActorHealth(tid)) / fixed(BCSUtils::GetActorSpawnHealth(tid)), 0.0, 1.0);
     }
