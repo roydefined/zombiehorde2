@@ -1,0 +1,35 @@
+#ifdef __IMPORTED__
+	#error This file must be #included.
+#endif
+
+strict namespace Reward
+{
+    // Extension that gives the given reward container to a random living player.
+    internal void GiveRandomPlayerRewardContainer(RewardItemTypeFlagsT type)
+    {
+        // No player to reward.
+        if (PlayerCount() == 0)
+            return;
+
+        str itemName = Reward::ContainerTypeToItemName(type);
+        Shuffle::ShuffleByNotOwningItem(itemName);
+
+        // Everybody has a reward already.
+        if (Shuffle::GetRelevantSize() == 0)
+            return;
+
+        // Get first relevant tid.
+        int id = Shuffle::GetIndexValue(0);
+        int tid = Identity::GetTid(id);
+
+        // Should also not happen, we just checked if the player has the item already.
+        if (CheckActorInventory(tid, itemName))
+        {
+            Logger::LogWarning(LOGSOURCE, "Returned player to reward already has the container.");
+            return;
+        }
+
+        GiveActorInventory(tid, itemName, 1);
+        InformPlayerContainerReceived(id, type);
+    }
+}
