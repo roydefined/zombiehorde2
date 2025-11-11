@@ -1,0 +1,60 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "header.acs"
+#include "tip.acs"
+#include "maplist.acs"
+
+strict namespace Hud
+{
+    internal void DrawSummaryHud()
+    {
+        fixed scale = ZH2Game::GetHudSummaryScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetScale(scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
+        BCSUtils::HudSetCenterText(true);
+
+        SetFade();
+
+        PrepareHud(
+            320.0,
+            BCSUtils::HudTop() + 60.0,
+            false);
+        
+        DrawSummaryHeader();
+
+        PrepareHud(
+            320.0,
+            BCSUtils::HudTop() + 120.0,
+            false);
+
+        DrawTip();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        PrepareHud(
+            100.0,
+            BCSUtils::HudBottom() - 80.0,
+            false);
+
+        DrawMapList();
+    }
+
+    internal void SetFade()
+    {
+        int voteTic = Game::GetGameVotingTic();
+        int diff = Utils::GetSynchronizedTimer() - voteTic;
+
+        if (voteTic == 0 || diff <= 0)
+            return;
+
+        // 1 second of fadeout.
+        fixed fadeAmount = BCSUtils::Min(1.0, fixed(diff) / 35.0);
+        FadeTo(0, 0, 0, fadeAmount, BCSUtils::HUDTIC);
+    }
+}

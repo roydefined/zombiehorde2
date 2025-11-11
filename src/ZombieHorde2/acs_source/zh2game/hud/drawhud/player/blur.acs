@@ -1,0 +1,76 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawBlurHud()
+    {
+        if (!Player::GetIsHuman())
+            return;
+
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(200.0, 150.0);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetDisappearTime(0.5);
+        Utils::ScaleToScreen();
+        
+        // Left side
+        PrepareHud(
+            100.0,
+            BCSUtils::HudBottom() / 2.0,
+            false);
+
+        DrawAirSupplyBlur();
+        DrawHurtBlur();
+        DrawHeartbeatHurtBlur();
+    }
+
+    internal void DrawAirSupplyBlur()
+    {
+		int airSupply = GetAirSupply(ConsolePlayerNumber());
+        if (airSupply == MAX_AIRSUPPLY)
+            return;
+
+        fixed percentage = fixed(airSupply) / fixed(MAX_AIRSUPPLY);
+        BCSUtils::HudSetAlpha(1.0 - percentage);
+        
+        HudSetPointInternal();
+        BCSUtils::HudDrawImage(--_drawnHudId, BLUR_BLACK_GRAPHIC);
+
+        DebugDraw();
+    }
+
+    internal void DrawHurtBlur()
+    {
+        // We multiply by 3 because this graphic should not appear as soon as it would otherwise.
+        fixed percentage = fixed(PlayerHealth() * 3) / fixed((int)GetActorProperty(ActivatorTid(), APROP_SPAWNHEALTH));
+        BCSUtils::HudSetAlpha(1.0 - percentage);
+        
+        HudSetPointInternal();
+        BCSUtils::HudDrawImage(--_drawnHudId, BLUR_RED_GRAPHIC);
+
+        DebugDraw();
+    }
+
+    internal void DrawHeartbeatHurtBlur()
+    {
+        if (!ZH2Game::GetEnableHurtHeartbeat())
+            return;
+
+        int heartbeatType = Player::GetHeartbeatType();
+        if (heartbeatType == 0)
+            return;
+
+        // Faster fading when we are on critical health.
+        int endTic = heartbeatType == 1 ? 18 : 10;
+
+        fixed percentage = (fixed(Player::GetElapsedLocalHeartbeatTics()) / fixed(endTic)) * 1.5 + 0.4;
+        BCSUtils::HudSetAlpha(1.0 - percentage);
+        
+        HudSetPointInternal();
+        BCSUtils::HudDrawImage(--_drawnHudId, BLUR_RED_GRAPHIC);
+
+        DebugDraw();
+    }
+}

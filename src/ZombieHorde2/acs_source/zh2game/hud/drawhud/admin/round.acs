@@ -1,0 +1,93 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawRoundMenuHud()
+    {
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        
+        HudSetPointInternal();
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfRound");
+
+        if (DrawClickableText(--_drawnHudId, 0.0, 10.0, 100.0, 10.0, "Back to start"))
+            OpenAdminMenu(ADMINMENU_START);
+
+        if (DrawClickableTextConditional(
+            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 0.0, 30.0, 60.0, 10.0, "End game"))
+        {
+            Admin::AdminEndGameClientside();
+        }
+
+        // Kill unsafe players
+        if (DrawClickableTextConditional(
+            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 0.0, 40.0, 80.0, 10.0, "Kill unsafe players"))
+        {
+            Admin::AdminKillUnsafePlayersClientSide();
+        }
+
+        BCSUtils::HudSetTextColor(CR_WHITE);
+
+        HudSetPointInternal(0.0, 60.0);
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfSet round state");
+
+        // Explicit button for disabling the current round state.
+        if (DrawClickableTextConditional(
+            Round::GetActiveRoundStateIndex() != 0, --_drawnHudId, 0.0, 70.0, 80.0, 10.0, "Disable round state"))
+        {
+            Admin::AdminSetRoundStateClientside(0);
+        }
+
+        // Last value used is then used to set the next offset.
+        fixed addY = 0.0;
+
+        int rows = 0;
+        Round::RoundStateContextT[]& rounds = ZH2Game::GameContext.MapDetails.Rounds;
+        for (int index = 0; index < lengthof(rounds); ++index)
+        {
+            if (!Round::GetRoundDefined(index)) continue;
+
+            addY = 80.0 + fixed(10 * rows);
+
+            if (DrawClickableTextConditional(
+                Round::GetActiveRoundStateIndex() != index, --_drawnHudId, 0.0, addY, 80.0, 10.0, Round::GetRoundStateIndexAsString(index)))
+            {
+                Admin::AdminSetRoundStateClientside(index);
+            }
+
+            rows++;
+        }
+
+        addY += 20.0;
+        
+        BCSUtils::HudSetTextColor(CR_WHITE);
+
+        HudSetPointInternal(0.0, addY);
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfSet round timer");
+
+        // Explicit button for disabling the current timer.
+        if (DrawClickableTextConditional(
+            RoundTimer::GetActiveTimerIndex() != 0, --_drawnHudId, 0.0, addY + 10.0, 80.0, 10.0, "Disable timer"))
+        {
+            Admin::AdminSetRoundTimerClientside(0);
+        }
+
+        rows = 0;
+        RoundTimer::RoundTimerContextT[]& roundTimers = ZH2Game::GameContext.MapDetails.Timers;
+        for (int index = 0; index < lengthof(roundTimers); ++index)
+        {
+            if (!RoundTimer::GetTimerDefined(index)) continue;
+
+            fixed addY2 = addY + 20.0 + fixed(10 * rows);
+
+            if (DrawClickableTextConditional(
+                RoundTimer::GetActiveTimerIndex() != index, --_drawnHudId, 0.0, addY2, 80.0, 10.0, RoundTimer::GetTimerIndexAsString(index)))
+            {
+                Admin::AdminSetRoundTimerClientside(index);
+            }
+
+            rows++;
+        }
+    }
+}
