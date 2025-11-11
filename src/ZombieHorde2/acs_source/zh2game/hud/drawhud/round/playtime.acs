@@ -1,0 +1,41 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawPlayTime()
+    {
+        int id = HUDID_PLAYTIMER;
+
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
+            return;
+
+        // Don't draw as the user is typing as the timer is likely overlapping with the chatbox.
+        if (GetPlayerStatus(ConsolePlayerNumber()) & PLAYERSTATUS_CHATTING)
+             return;
+
+        int timer = Game::GetPlayTime();
+        if (timer == 0)
+            return;
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetStayTime(0.0);
+        BCSUtils::HudSetDisappearTime(0.2);
+
+        // Gradual alpha increase as play time goes on.
+        // 40 tics, configurable.
+        int fadeInDurationTics = 40;
+        fixed progress = fixed(timer) / fixed(fadeInDurationTics);
+        fixed alpha = BCSUtils::Clamp(progress, 0.0, 1.0);
+        BCSUtils::HudSetAlpha(alpha);
+
+        str timerFormatted = Utils::FormatTics(timer, true);
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawText(--id, "Playing: " + timerFormatted);
+        DebugDraw();
+    }
+}
