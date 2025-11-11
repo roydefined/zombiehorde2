@@ -17,20 +17,21 @@ strict namespace Hud
 
     internal void DrawPlayerMenuHud()
     {
-        fixed x = GetHudX(),
-              y = GetHudY() + 10.0;
-
         BCSUtils::HudSetTextColor(CR_WHITE);
         
         HudSetPointInternal();
         BCSUtils::HudDrawText(--_drawnHudId, "\cfPlayers");
 
-        if (DrawClickableText(--_drawnHudId, x, y, 100.0, 10.0, "Back to start"))
+        fixed addY = 10.0;
+
+        if (DrawClickableText(--_drawnHudId, 0.0, addY, 100.0, 10.0, "Back to start"))
             OpenAdminMenu(ADMINMENU_START);
+
+        addY += 10.0;
 
         if (menuPlayerTarget != MENUTARGET_NONE)
         {
-            if (DrawClickableText(--_drawnHudId, x, y + 10.0, 100.0, 10.0, "Back to players"))
+            if (DrawClickableText(--_drawnHudId, 0.0, addY, 100.0, 10.0, "Back to players"))
             {
                 _menuPlayerTargetId = -1;
                 menuPlayerTarget = MENUTARGET_NONE;
@@ -38,7 +39,7 @@ strict namespace Hud
         }
         else
         {
-            if (DrawClickableText(--_drawnHudId, x, y + 10.0, 100.0, 10.0, "For all players"))
+            if (DrawClickableText(--_drawnHudId, 0.0, addY, 100.0, 10.0, "For all players"))
                 menuPlayerTarget = MENUTARGET_ALL;
         }
 
@@ -61,25 +62,24 @@ strict namespace Hud
 
     internal void DrawPlayerList()
     {
-        fixed x = GetHudX(),
-              y = GetHudY() + 40.0;
+        fixed addY = 40.0;
 
         // Add bots as human/zombie. Doesn't work if we reached max players.
         
         if (DrawClickableTextConditional(
-            BCSUtils::ClientCount() != BCSUtils::MAX_PLAYERS, --_drawnHudId, x, y, 100.0, 10.0, "add bot (human)"))
+            BCSUtils::ClientCount() != BCSUtils::MAX_PLAYERS, --_drawnHudId, 0.0, addY, 100.0, 10.0, "add bot (human)"))
         {
             Admin::AdminAddHumanBotClientside();
         }
 
         if (DrawClickableTextConditional(
-            BCSUtils::ClientCount() != BCSUtils::MAX_PLAYERS, --_drawnHudId, x + 150.0, y, 100.0, 10.0, "add bot (zombie)"))
+            BCSUtils::ClientCount() != BCSUtils::MAX_PLAYERS, --_drawnHudId, 150.0, addY, 100.0, 10.0, "add bot (zombie)"))
         {
             Admin::AdminAddZombieBotClientside();
         }
 
         if (DrawClickableTextConditional(
-            BCSUtils::BotCount() != 0, --_drawnHudId, x + 300.0, y, 100.0, 10.0, "remove bot"))
+            BCSUtils::BotCount() != 0, --_drawnHudId, 300.0, addY, 100.0, 10.0, "remove bot"))
         {
             Admin::AdminRemoveBotClientside();
         }
@@ -95,7 +95,7 @@ strict namespace Hud
             HudSetPointInternal(0.0, 50.0 + fixed(10 * offset));
             BCSUtils::HudDrawText(--_drawnHudId, str(i));
 
-            if (DrawClickableText(--_drawnHudId, x + 20.0, y + 10.0 + fixed(10 * offset), 60.0, 10.0, BCSUTILS::PlayerName(i)))
+            if (DrawClickableText(--_drawnHudId, 20.0, addY + 10.0 + fixed(10 * offset), 60.0, 10.0, BCSUTILS::PlayerName(i)))
             {
                 _menuPlayerTargetId = i;
                 menuPlayerTarget = MENUTARGET_PLAYERSPECIFIC;
@@ -112,9 +112,6 @@ strict namespace Hud
         // Note specie "none" means we give the reward to everybody in this instance.
         // (No point making a whole separate set of code when we can just reuse it).
 
-        fixed x = GetHudX(),
-              y = GetHudY();
-            
         fixed addX = 0.0,
               addY = 40.0;
 
@@ -138,7 +135,7 @@ strict namespace Hud
                 : Player::GetSpecieIndexAsString(specie);
 
             if (DrawClickableTextConditional(
-                _filteredSpecie != specie, --_drawnHudId, x + addX + fixed(50 * i), y + addY, 50.0, 10.0, label))
+                _filteredSpecie != specie, --_drawnHudId, addX + fixed(50 * i), addY, 50.0, 10.0, label))
             {
                 _filteredSpecie = specie;
             }
@@ -158,10 +155,10 @@ strict namespace Hud
 
         addY += 20.0;
         
-        if (DrawClickableText(--_drawnHudId, x + addX, y + addY, 30.0, 10.0, "enable"))
+        if (DrawClickableText(--_drawnHudId, addX, addY, 30.0, 10.0, "enable"))
             Admin::AdminSetAllowJoinClientSide(true);
         
-        if (DrawClickableText(--_drawnHudId, x + 60.0 + addX, y + addY, 40.0, 10.0, "disable"))
+        if (DrawClickableText(--_drawnHudId, 60.0 + addX, addY, 40.0, 10.0, "disable"))
             Admin::AdminSetAllowJoinClientSide(false);
 
         addY += 20.0;
@@ -272,9 +269,6 @@ strict namespace Hud
 
     internal void DrawPlayerDetails(int playerId)
     {
-        fixed x = GetHudX(),
-              y = GetHudY();
-            
         fixed addX = 0.0,
               addY = 40.0;
         
@@ -306,18 +300,18 @@ strict namespace Hud
         }
 
         if (DrawClickableTextConditional(
-            !Player::GetPlayerIsZombie(playerId), --_drawnHudId, x, y + addY, 50.0, 10.0, "infect"))
+            !Player::GetPlayerIsZombie(playerId), --_drawnHudId, 0.0, addY, 50.0, 10.0, "infect"))
         {
             Admin::AdminInfectPlayerClientside(playerId);
         }
 
         if (DrawClickableTextConditional(
-            !Player::GetPlayerIsHuman(playerId), --_drawnHudId, x + 50.0, y + addY, 50.0, 10.0, "cure"))
+            !Player::GetPlayerIsHuman(playerId), --_drawnHudId, 50.0, addY, 50.0, 10.0, "cure"))
         {
             Admin::AdminCurePlayerClientside(playerId);
         }
 
-        if (DrawClickableText(--_drawnHudId, x + 90.0, y + addY, 50.0, 10.0, "kill"))
+        if (DrawClickableText(--_drawnHudId, 90.0, addY, 50.0, 10.0, "kill"))
             Admin::AdminKillPlayerClientside(playerId);
 
         addY += 20.0;
@@ -334,10 +328,10 @@ strict namespace Hud
 
         addY += 20.0;
         
-        if (DrawClickableText(--_drawnHudId, x, y + addY, 30.0, 10.0, "enable"))
+        if (DrawClickableText(--_drawnHudId, 0.0, addY, 30.0, 10.0, "enable"))
             Admin::AdminSetPlayerAllowJoinClientSide(playerId, true);
         
-        if (DrawClickableText(--_drawnHudId, (x + 60.0), y+ addY, 40.0, 10.0, "disable"))
+        if (DrawClickableText(--_drawnHudId, 60.0, addY, 40.0, 10.0, "disable"))
             Admin::AdminSetPlayerAllowJoinClientSide(playerId, false);
 
         addY += 20.0;
@@ -447,9 +441,6 @@ strict namespace Hud
     // TODO: Should split this by category maybe.
     internal void DrawItemSelectors(fixed addX, fixed addY, void function(int, int)& invoker)
     {
-        fixed x = GetHudX() + addX,
-              y = GetHudY() + addY;
-
         for (int i = 0; i < Item::GetItemCollectionSize(); ++i)
         {
             // This will always exist as it is required.
@@ -462,19 +453,16 @@ strict namespace Hud
             HudSetPointInternal(addX, addY + fixed(10 * i));
             BCSUtils::HudDrawText(--_drawnHudId, label);
 
-            if (DrawClickableText(--_drawnHudId, x + 200.0, y + fixed(10 * i), 40.0, 10.0, "give"))
+            if (DrawClickableText(--_drawnHudId, addX + 200.0, addY + fixed(10 * i), 40.0, 10.0, "give"))
                 invoker(i, 1);
 
-            if (DrawClickableText(--_drawnHudId, x + 240.0, y + fixed(10 * i), 40.0, 10.0, "take"))
+            if (DrawClickableText(--_drawnHudId, addX + 240.0, addY + fixed(10 * i), 40.0, 10.0, "take"))
                 invoker(i, -1);
         }
     }
 
     internal void DrawRewardSelectors(fixed addX, fixed addY, void function(int)& invoker)
     {
-        fixed x = GetHudX() + addX,
-              y = GetHudY() + addY;
-
         for (int i = 0; i < Reward::GetRewardCollectionSize(); ++i)
         {
             // This will always exist as it is required.
@@ -485,16 +473,13 @@ strict namespace Hud
             HudSetPointInternal(addX, addY + fixed(10 * i));
             BCSUtils::HudDrawText(--_drawnHudId, name);
 
-            if (DrawClickableText(--_drawnHudId, x, y + fixed(10 * i), 140.0, 10.0, name))
+            if (DrawClickableText(--_drawnHudId, addX, addY + fixed(10 * i), 140.0, 10.0, name))
                 invoker(i);
         }
     }
 
     internal void DrawPowerSelectors(fixed addX, fixed addY, void function(int, int)& invoker)
     {
-        fixed x = GetHudX() + addX,
-              y = GetHudY() + addY;
-
         int offset = 0;
         for (int i = 0; i < Power::GetPowerSize(); ++i)
         {
@@ -511,7 +496,7 @@ strict namespace Hud
             BCSUtils::HudDrawText(--_drawnHudId, Power::GetPowerIndexAsString(i));
 
             // TODO: Support more increments, possibly even the ability to decrement.
-            if (DrawClickableText(--_drawnHudId, x + 100.0, y + fixed(10 * offset), 20.0, 10.0, "+5s"))
+            if (DrawClickableText(--_drawnHudId, addX + 100.0, addY + fixed(10 * offset), 20.0, 10.0, "+5s"))
                 invoker(i, 35 * 5);
 
             offset++;
@@ -520,38 +505,32 @@ strict namespace Hud
 
     internal void DrawArmorIncrementSelectors(fixed addX, fixed addY, void function(int)& invoker)
     {
-        fixed x = GetHudX() + addX,
-              y = GetHudY() + addY;
-
         // Increment / decrement
-        if (DrawClickableText(--_drawnHudId, x, y, 30.0, 10.0, "-50"))
+        if (DrawClickableText(--_drawnHudId, addX, addY, 30.0, 10.0, "-50"))
             invoker(-50);
 
-        if (DrawClickableText(--_drawnHudId, x + 30.0, y, 30.0, 10.0, "-10"))
+        if (DrawClickableText(--_drawnHudId, addX + 30.0, addY, 30.0, 10.0, "-10"))
             invoker(-10);
 
-        if (DrawClickableText(--_drawnHudId, x + 60.0, y, 30.0, 10.0, "-1"))
+        if (DrawClickableText(--_drawnHudId, addX + 60.0, addY, 30.0, 10.0, "-1"))
             invoker(-1);
 
-        if (DrawClickableText(--_drawnHudId, x + 90.0, y, 30.0, 10.0, "+1"))
+        if (DrawClickableText(--_drawnHudId, addX + 90.0, addY, 30.0, 10.0, "+1"))
             invoker(1);
 
-        if (DrawClickableText(--_drawnHudId, x + 120.0, y, 30.0, 10.0, "+10"))
+        if (DrawClickableText(--_drawnHudId, addX + 120.0, addY, 30.0, 10.0, "+10"))
             invoker(10);
 
-        if (DrawClickableText(--_drawnHudId, x + 150.0, y, 30.0, 10.0, "+50"))
+        if (DrawClickableText(--_drawnHudId, addX + 150.0, addY, 30.0, 10.0, "+50"))
             invoker(50);
     }
 
     internal void DrawRewardContainerSelectors(fixed addX, fixed addY, void function(Reward::RewardItemTypeFlagsT)& invoker)
     {
-        fixed x = GetHudX() + addX,
-              y = GetHudY() + addY;
-              
         for (int j = 0; j < REWARD_CONTAINER_COUNT; ++j)
         {
-            fixed buttonX = x + fixed(100 * (j % 2));
-            fixed buttonY = y + fixed(10 * (j / 2));
+            fixed buttonX = addX + fixed(100 * (j % 2));
+            fixed buttonY = addY + fixed(10 * (j / 2));
 
             Reward::RewardItemTypeFlagsT type = Reward::GetRewardItemTypeByIndex(j + 1);
             str buttonName = Reward::ContainerTypeToShortReadableString(type);

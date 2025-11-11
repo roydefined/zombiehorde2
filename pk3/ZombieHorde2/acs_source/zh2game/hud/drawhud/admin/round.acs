@@ -6,26 +6,23 @@ strict namespace Hud
 {
     internal void DrawRoundMenuHud()
     {
-        fixed x = GetHudX(),
-              y = GetHudY();
-
         BCSUtils::HudSetTextColor(CR_WHITE);
         
         HudSetPointInternal();
         BCSUtils::HudDrawText(--_drawnHudId, "\cfRound");
 
-        if (DrawClickableText(--_drawnHudId, x, y + 10.0, 100.0, 10.0, "Back to start"))
+        if (DrawClickableText(--_drawnHudId, 0.0, 10.0, 100.0, 10.0, "Back to start"))
             OpenAdminMenu(ADMINMENU_START);
 
         if (DrawClickableTextConditional(
-            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, x, y + 30.0, 60.0, 10.0, "End game"))
+            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 0.0, 30.0, 60.0, 10.0, "End game"))
         {
             Admin::AdminEndGameClientside();
         }
 
         // Kill unsafe players
         if (DrawClickableTextConditional(
-            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, x, y + 40.0, 80.0, 10.0, "Kill unsafe players"))
+            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 0.0, 40.0, 80.0, 10.0, "Kill unsafe players"))
         {
             Admin::AdminKillUnsafePlayersClientSide();
         }
@@ -37,7 +34,7 @@ strict namespace Hud
 
         // Explicit button for disabling the current round state.
         if (DrawClickableTextConditional(
-            Round::GetActiveRoundStateIndex() != 0, --_drawnHudId, x, y + 70.0, 80.0, 10.0, "Disable round state"))
+            Round::GetActiveRoundStateIndex() != 0, --_drawnHudId, 0.0, 70.0, 80.0, 10.0, "Disable round state"))
         {
             Admin::AdminSetRoundStateClientside(0);
         }
@@ -54,7 +51,7 @@ strict namespace Hud
             addY = 80.0 + fixed(10 * rows);
 
             if (DrawClickableTextConditional(
-                Round::GetActiveRoundStateIndex() != index, --_drawnHudId, x, y + addY, 80.0, 10.0, Round::GetRoundStateIndexAsString(index)))
+                Round::GetActiveRoundStateIndex() != index, --_drawnHudId, 0.0, addY, 80.0, 10.0, Round::GetRoundStateIndexAsString(index)))
             {
                 Admin::AdminSetRoundStateClientside(index);
             }
@@ -64,13 +61,14 @@ strict namespace Hud
 
         addY += 20.0;
         
-        BCSUtils::HudSetPoint(x, y + addY);
         BCSUtils::HudSetTextColor(CR_WHITE);
+
+        HudSetPointInternal(0.0, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfSet round timer");
 
         // Explicit button for disabling the current timer.
         if (DrawClickableTextConditional(
-            RoundTimer::GetActiveTimerIndex() != 0, --_drawnHudId, x, y + addY + 10.0, 80.0, 10.0, "Disable timer"))
+            RoundTimer::GetActiveTimerIndex() != 0, --_drawnHudId, 0.0, addY + 10.0, 80.0, 10.0, "Disable timer"))
         {
             Admin::AdminSetRoundTimerClientside(0);
         }
@@ -84,7 +82,7 @@ strict namespace Hud
             fixed addY2 = addY + 20.0 + fixed(10 * rows);
 
             if (DrawClickableTextConditional(
-                RoundTimer::GetActiveTimerIndex() != index, --_drawnHudId, x, y + addY2, 80.0, 10.0, RoundTimer::GetTimerIndexAsString(index)))
+                RoundTimer::GetActiveTimerIndex() != index, --_drawnHudId, 0.0, addY2, 80.0, 10.0, RoundTimer::GetTimerIndexAsString(index)))
             {
                 Admin::AdminSetRoundTimerClientside(index);
             }

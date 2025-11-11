@@ -6,18 +6,14 @@ strict namespace Hud
 {
     internal void DrawResistMenuHud()
     {
-        fixed x = GetHudX(),
-              y = GetHudY();
-
         BCSUtils::HudSetTextColor(CR_WHITE);
 
         HudSetPointInternal();
         BCSUtils::HudDrawText(--_drawnHudId, "\cfResist");
 
-        if (DrawClickableText(--_drawnHudId, x, y + 10.0, 100.0, 10.0, "Back to start"))
+        if (DrawClickableText(--_drawnHudId, 0.0, 10.0, 100.0, 10.0, "Back to start"))
             OpenAdminMenu(ADMINMENU_START);
 
-        BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetTextColor(CR_WHITE);
         
         HudSetPointInternal(0.0, 30.0);
@@ -31,26 +27,24 @@ strict namespace Hud
 
             fixed addY = 40.0 + fixed(10 * rows);
 
-            BCSUtils::HudSetPoint(x, y + addY);
             BCSUtils::HudSetTextColor(CR_WHITE);
             
             HudSetPointInternal(0.0, addY);
             BCSUtils::HudDrawText(--_drawnHudId, "Resist #" + str(index));
 
-            BCSUtils::HudSetPoint(x + 80.0, addY);
             BCSUtils::HudSetTextColor(CR_WHITE);
             
             HudSetPointInternal(80.0, addY);
             BCSUtils::HudDrawText(--_drawnHudId, str(Resist::GetTicsLeft(index)) + "/" + str(Resist::GetMaximumTics(index)));
 
             if (DrawClickableTextConditional(
-                !Resist::IsActive(index), --_drawnHudId, x + 140.0, y + addY, 40.0, 10.0, "start"))
+                !Resist::IsActive(index), --_drawnHudId, 140.0, addY, 40.0, 10.0, "start"))
             {
                 Admin::AdminSetStartResistClientside(index);
             }
 
             if (DrawClickableTextConditional(
-                Resist::IsActive(index), --_drawnHudId, x + 190.0, y + addY, 40.0, 10.0, "stop"))
+                Resist::IsActive(index), --_drawnHudId, 190.0, addY, 40.0, 10.0, "stop"))
             {
                 Admin::AdminSetStopResistClientside(index);
             }

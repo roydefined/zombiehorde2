@@ -80,24 +80,29 @@ strict namespace Hud
         BCSUtils::HudPopState();
     }
 
-    internal bool DrawClickableTextConditional(bool clickable, int id, fixed x, fixed y, fixed width, fixed height, str text)
+    internal bool DrawClickableTextConditional(bool clickable, int id, fixed addX, fixed addY, fixed width, fixed height, str text)
     {
         if (!clickable)
         {
             BCSUtils::HudSetTextColor(CR_DARKGRAY);
-            BCSUtils::HudSetPoint(x, y);
+
+            HudSetPointInternal(addX, addY);
             BCSUtils::HudDrawText(id, text);
+
             return false;
         }
 
-        return DrawClickableText(id, x, y, width, height, text);
+        return DrawClickableText(id, addX, addY, width, height, text);
     }
 
-    internal bool DrawClickableText(int id, fixed x, fixed y, fixed width, fixed height, str text)
+    internal bool DrawClickableText(int id, fixed addX, fixed addY, fixed width, fixed height, str text)
     {
         fixed mouseScale = ZH2Game::GetCursorScale();
         fixed cursorX = BCSUTILS::Floor(BCSUTILS::CursorX()),
               cursorY = BCSUTILS::Floor(BCSUTILS::CursorY());
+        
+        fixed x = GetHudX() + addX,
+              y = GetHudY() + addY;
 
         // Determine if this text is currently being selected.
         bool isOver =
@@ -105,7 +110,8 @@ strict namespace Hud
             && cursorY > y && cursorY < y + height;
 
         BCSUtils::HudSetTextColor(isOver ? CR_RED : CR_WHITE);
-        BCSUtils::HudSetPoint(x, y);
+        
+        HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(id, text);
         
         // Draw the bounds of the screen.
