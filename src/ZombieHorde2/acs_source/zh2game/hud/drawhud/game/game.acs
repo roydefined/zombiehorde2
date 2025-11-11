@@ -1,0 +1,40 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "ztele.acs"
+#include "counter.acs"
+
+// TODO: has its own flow, should probably be combined to avoid confusion.
+#include "fullserver.acs"
+#include "resist.acs"
+
+strict namespace Hud
+{
+    internal void DrawGameHud()
+    {
+        fixed scale = ZH2Game::GetHudGameScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        PrepareHud(
+            320.0,
+            BCSUtils::HudBottom() - 100.0,
+            true);
+
+        DrawZombieTeleportTime();
+
+        // Do not draw the counters unless there are more than two players playing.
+        if (PlayerCount() >= 2)
+        {
+            PrepareHud(
+                BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX() - 110.0,
+                BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 180.0,
+                true);
+
+            DrawCounters();
+        }
+    }
+}

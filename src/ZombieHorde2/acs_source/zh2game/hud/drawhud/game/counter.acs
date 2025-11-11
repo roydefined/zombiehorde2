@@ -1,0 +1,88 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawCounters()
+    {
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        
+        int humanCount = Player::HumanCount();
+        int zombieCount = Player::ZombieCount();
+        int kills = Player::GetZombieKills();
+        int infects = Player::GetInfects();
+
+        // The vertical offset will change depending on if the counter exists.
+        fixed y = 0.0;
+        
+        if (humanCount > 0)
+        {
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
+            
+            HudSetPointInternal(0.0, y);
+            BCSUtils::HudDrawImage(--_drawnHudId, "HUD_CHUM");
+            DebugDraw();
+
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+            
+            HudSetPointInternal(8.0, y);
+            BCSUtils::HudDrawText(--_drawnHudId, str(humanCount));
+            DebugDraw();
+
+            y += 20.0;
+        }
+        
+        if (zombieCount > 0)
+        {
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
+            
+            HudSetPointInternal(0.0, y);
+            BCSUtils::HudDrawImage(--_drawnHudId, "HUD_CZOM");
+            DebugDraw();
+
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+            
+            HudSetPointInternal(8.0, y);
+            BCSUtils::HudDrawText(--_drawnHudId, str(zombieCount));
+            DebugDraw();
+
+            y += 20.0;
+        }
+        
+        if (kills > 0)
+        {
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
+            
+            HudSetPointInternal(0.0, y);
+            BCSUtils::HudDrawImage(--_drawnHudId, "HUD_CZKL");
+            DebugDraw();
+
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+            
+            HudSetPointInternal(8.0, y);
+            BCSUtils::HudDrawText(--_drawnHudId, str(kills));
+            DebugDraw();
+
+            y += 20.0;
+        }
+        
+        if (infects > 0)
+        {
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
+            
+            HudSetPointInternal(0.0, y);
+            BCSUtils::HudDrawImage(--_drawnHudId, "HUD_CINF");
+            DebugDraw();
+
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+            
+            HudSetPointInternal(8.0, y);
+            BCSUtils::HudDrawText(--_drawnHudId, str(infects));
+            DebugDraw();
+        }
+    }
+}

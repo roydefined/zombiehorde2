@@ -1,0 +1,42 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawPregameStateLabel()
+    {
+        int id = HUDID_PREGAMESTATUS;
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_RED);
+        BCSUtils::HudSetCenterText(true);
+
+        BCSUtils::HudSetStayTime(1.5);
+        BCSUtils::HudSetDisappearTime(0.5);
+
+        // Conditionally draw based on the number of clients that are available.
+        int availableClients = BCSUtils::ClientCount();
+        int minimumRequiredClients = ZH2Game::GetMinimumClientCount();
+        
+        // The game is ready when we have the minimum number of clients.
+        str topMessage = availableClients < minimumRequiredClients
+            ? "This game requires atleast " + str(minimumRequiredClients) + " clients."
+            : "Game is ready, " + str(availableClients) + " clients available.";
+        str bottomMessage = availableClients >= minimumRequiredClients
+            ? ZH2Game::GetIsRequestGameStartKeyBound()
+                ? "To start, press the 'Request game start' key (" + ZH2Game::GetRequestGameStartKey() + ")"
+                : "To start, bind and press the 'Request game start' key."
+            : IsNetworkGame()
+                ? "Please spectate."
+                : "Invoke 'addbot' in the console to add bots to play with.";
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawText(--id, topMessage);
+        DebugDraw();
+
+        HudSetPointInternal(0.0, 8.0);
+        BCSUtils::HudDrawText(--id, bottomMessage);
+        DebugDraw();
+    }
+}
