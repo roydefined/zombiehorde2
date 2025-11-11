@@ -1,0 +1,61 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawTimerMenuHud()
+    {
+        BCSUtils::HudSetTextColor(CR_WHITE);
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfTimers");
+
+        if (DrawClickableText(--_drawnHudId, 0.0, 10.0, 100.0, 10.0, "Back to start"))
+            OpenAdminMenu(ADMINMENU_START);
+
+        int index = RoundTimer::GetActiveTimerIndex();
+        if (RoundTimer::GetTimerDefined(index))
+        {
+            BCSUtils::HudSetTextColor(CR_WHITE);
+
+            HudSetPointInternal(0.0, 30.0);
+            BCSUtils::HudDrawText(--_drawnHudId, "\cfAdd current timer");
+
+            // Helper
+            fixed addY = 40.0;
+
+            // Increment / decrement
+            if (DrawClickableText(--_drawnHudId, 0.0, addY, 30.0, 10.0, "-1m"))
+                Admin::AdminIncrementCurrentTimerClientSide(-35 * 60);
+
+            if (DrawClickableText(--_drawnHudId, 30.0, addY, 30.0, 10.0, "-10s"))
+                Admin::AdminIncrementCurrentTimerClientSide(-35 * 10);
+
+            if (DrawClickableText(--_drawnHudId, 60.0, addY, 30.0, 10.0, "-1s"))
+                Admin::AdminIncrementCurrentTimerClientSide(-35 * 1);
+
+            if (DrawClickableText(--_drawnHudId, 90.0, addY, 30.0, 10.0, "+1s"))
+                Admin::AdminIncrementCurrentTimerClientSide(35 * 1);
+
+            if (DrawClickableText(--_drawnHudId, 120.0, addY, 30.0, 10.0, "+10s"))
+                Admin::AdminIncrementCurrentTimerClientSide(35 * 10);
+
+            if (DrawClickableText(--_drawnHudId, 150.0, addY, 30.0, 10.0, "+1m"))
+                Admin::AdminIncrementCurrentTimerClientSide(35 * 60);
+
+            // Pause / resume
+            if (DrawClickableTextConditional(
+                !RoundTimer::GetTimerPaused(index), --_drawnHudId, 0.0, addY + 10.0, 80.0, 10.0, "Pause timer"))
+            {
+                Admin::AdminPauseCurrentTimerClientSide();
+            }
+
+            if (DrawClickableTextConditional(
+                RoundTimer::GetTimerPaused(index), --_drawnHudId, 0.0, addY + 20.0, 80.0, 10.0, "Resume timer"))
+            {
+                Admin::AdminResumeCurrentTimerClientSide();
+            }
+        }
+    }
+}

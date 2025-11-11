@@ -1,0 +1,47 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "pregame.acs"
+#include "timer.acs"
+#include "playtime.acs"
+
+strict namespace Hud
+{
+    internal void DrawRoundHud()
+    {
+        fixed scale = ZH2Game::GetHudRoundScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        // While we are in pregame with no countdown to start, draw the label.
+        if (Round::GetActiveKnownRoundState() == Round::STATEPREGAME
+            && !RoundTimer::GetAnyTimerActive())
+        {
+            PrepareHud(
+                ZH2Game::GetHudRoundOffsetX() + 320.0,
+                BCSUtils::HudBottom() - ZH2Game::GetHudRoundOffsetY() - 50.0,
+                true);
+
+            DrawPregameStateLabel();
+        }
+
+        PrepareHud(
+            ZH2Game::GetHudRoundOffsetX() + 320.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudRoundOffsetY() - 20.0,
+            true);
+                
+        DrawTimer();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+        
+        PrepareHud(
+            BCSUtils::HudLeft(),
+            BCSUtils::HudBottom(),
+            false);
+
+        DrawPlayTime();
+    }
+}

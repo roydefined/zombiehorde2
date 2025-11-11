@@ -1,0 +1,67 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    #define TIP_FADETICS 20
+    #define TIP_WRAPLENGTH 100
+
+    internal void DrawTip()
+    {
+        int index = Game::GetCurrentDisplayedTipIndex();
+        int total = Game::GetTipCount();
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+
+        BCSUtils::HudSetAlpha(1.0);
+        
+        HudSetPointInternal();
+        BCSUtils::HudDrawText(--_drawnHudId, "Tip " + str(index + 1) + "/" + str(total));
+
+        int elapsed   = Game::GetElapsedTipTics();
+        int disappear = Game::GetTipTimeToDisappear();
+
+        fixed fadeIn = BCSUtils::Min(1.0, (fixed)elapsed / (fixed)TIP_FADETICS);
+        fixed fadeOut = BCSUtils::Min(1.0, (fixed)disappear / (fixed)TIP_FADETICS);
+        fixed alpha = BCSUtils::Min(fadeIn, fadeOut);
+
+        str tipMessage = Utils::WrapString(Game::GetTip(index), TIP_WRAPLENGTH);
+
+        BCSUtils::HudSetTextColor(CR_GREEN);
+        BCSUtils::HudSetAlpha(alpha);
+
+        HudSetPointInternal(0.0, 15.0);
+        BCSUtils::HudDrawText(--_drawnHudId, tipMessage);
+        DebugDraw();
+
+        BCSUtils::HudSetAlpha(1.0);
+
+        if (DrawClickableText(--_drawnHudId, -50.0, 35.0, 10.0, 10.0, "<<"))
+            IterateTip(-1);
+
+        if (DrawClickableText(--_drawnHudId, 0.0, 35.0, 50.0, 10.0, "Random tip"))
+            NextRandomTip();
+
+        if (DrawClickableText(--_drawnHudId, 50.0, 35.0, 10.0, 10.0, ">>"))
+            IterateTip(1);
+    }
+
+    internal void IterateTip(int direction)
+    {
+        int index = Game::GetCurrentDisplayedTipIndex();
+        int total = Game::GetTipCount();
+
+        index += direction;
+        if (index < 0) index = total - 1;
+        if (index >= total) index = 0;
+
+        Game::SetCurrentDisplayedTipIndex(index);
+    }
+
+    internal void NextRandomTip()
+    {
+        Game::SetCurrentDisplayedTipIndex(Game::GetRandomTipIndex());
+    }
+}
