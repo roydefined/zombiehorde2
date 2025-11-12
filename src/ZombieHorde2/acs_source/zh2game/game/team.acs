@@ -170,6 +170,13 @@ strict namespace Game
 		VALIDATE_IS_CLIENTSIDE_FUNCTION();
         VALIDATE_ID_VALID_FUNCTION(id);
 
+        int indicatorTid = GetPlayerTeamIndicatorTid(id);
+
+        // Team indicator already exists.
+        // This can happen in online games, as the `open client` and `enter client` scripts run at the same time.
+        if (ThingCount(T_NONE, indicatorTid) != 0)
+            return;
+
         int tid = Identity::GetTid(id);
         fixed x = GetActorX(tid),
               y = GetActorY(tid),
