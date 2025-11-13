@@ -1,5 +1,3 @@
-
-
 <div align="center">
 	<img src="https://github.com/RoyDefined/zombiehorde2/blob/main/docs/logo.png?raw=true" />
 </div>
@@ -40,12 +38,15 @@ Additional tools you may want:
 
 ### Before you start
 The project contains various `.bat` files that help preparing the project. Please read through them to understand their use.
+
+The `.bat` files are found in the `scripts/` folder.
+
 - `pack-acsutils.bat` -> prepares ACSUtils into `dist/`
 - `build-project.bat` -> compiles ACSUtils, library, and core ACS files.
    - `bcsutils.acs` -> `bcsutils.o`
    - `zh2lib.acs` -> `zh2lib.o`
    - `zh2game.acs` -> `zh2game.o`
-- `unpack-maps.bat` and `pack-maps.bat` exist to unpack and pack the binary wad files that you use to play and edit maps. This project stores the raw files of these maps. You will need to manually repack them to play and edit them, and unpack then to store changes.
+- `unpack-maps.bat` and `pack-maps.bat` exist to unpack and pack the binary wad files that you use to play and edit maps. This project stores the raw files of these maps. You will need to manually repack them to play and edit them, and unpack then to store changes. The variant `pack-maps-no-source.bat` is similar to `pack-maps.bat`, but excludes the ACS source of maps when packing them.
 
 ### 1) Fetch project
 ```bash
