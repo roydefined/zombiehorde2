@@ -39,7 +39,7 @@ Additional tools you may want:
 ---
 
 ### Before you start
-The project contains various `.bat` files that help preparing the rpoejct. Please read through them to understand their use.
+The project contains various `.bat` files that help preparing the project. Please read through them to understand their use.
 - `pack-acsutils.bat` -> prepares ACSUtils into `dist/`
 - `build-project.bat` -> compiles ACSUtils, library, and core ACS files.
    - `bcsutils.acs` -> `bcsutils.o`
