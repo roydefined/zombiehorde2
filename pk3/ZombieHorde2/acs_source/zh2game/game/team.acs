@@ -106,19 +106,24 @@ strict namespace Game
             // If we don't do this then there's a very clear jump.
             Warp(tid, 0.0, 0.0, zOffset, 0.0, WARPF_NOCHECKPOSITION);
 
-            // Do not show in the pregame.
-            if (Round::GetActiveKnownRoundState() < Round::STATECOUNTDOWN)
+            // Helper function to make the indicator invisible.
+            void HideTeamIndicator()
             {
                 SetActorProperty(indicatorTid, APROP_ALPHA, 0.0);
                 SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+            }
+
+            // Do not show in the pregame.
+            if (Round::GetActiveKnownRoundState() < Round::STATECOUNTDOWN)
+            {
+                HideTeamIndicator();
                 continue;
             }
             
             // If we picked an actor, then this team indicator must be from them.
             if (getShowTargetTeamIndicator && tid != targetTid)
             {
-                SetActorProperty(indicatorTid, APROP_ALPHA, 0.0);
-                SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+                HideTeamIndicator();
                 continue;
             }
             
@@ -126,8 +131,7 @@ strict namespace Game
             int status = GetPlayerStatus(i);
             if (status != PLAYERSTATUS_CHATTING && status != 0)
             {
-                SetActorProperty(indicatorTid, APROP_ALPHA, 0.0);
-                SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+                HideTeamIndicator();
                 continue;
             }
 
