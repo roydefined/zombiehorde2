@@ -90,6 +90,22 @@ strict namespace Game
             if (ThingCount(T_NONE, indicatorTid) == 0)
                 continue;
 
+            // For warping we must set the team indicator as the activator.
+            if (!SetActivator(indicatorTid))
+                continue;
+
+            fixed zOffset = GetActorProperty(tid, APROP_VIEWHEIGHT) + 16.0;
+            Player::SpecieTypeT playerSpecie = Player::GetPlayerSpecie(i);
+
+            // Zombies are taller than their view height.
+            if (playerSpecie == Player::SPECIEZOMBIE)
+                zOffset += 8.0;
+
+            // Move the team indicator to the player.
+            // NOTE: We warp regardless of visibility as the indicator needs a moment to lerp to the right position.
+            // If we don't do this then there's a very clear jump.
+            Warp(tid, 0.0, 0.0, zOffset, 0.0, WARPF_NOCHECKPOSITION);
+
             // Do not show in the pregame.
             if (Round::GetActiveKnownRoundState() < Round::STATECOUNTDOWN)
             {
@@ -125,25 +141,11 @@ strict namespace Game
 			SetActorProperty(indicatorTid, APROP_ALPHA, alpha);
 			SetActorProperty(indicatorTid, APROP_RENDERSTYLE, alpha != 1.0 ? STYLE_TRANSLUCENT : STYLE_NORMAL);
 
-            // Warp when we have a team indicator drawn.
+            // Update indicator state.
+            // No need to update when it's not visible.
             if (alpha == 0.0)
                 continue;
 
-            // For warping we must set the team indicator as the activator.
-            if (!SetActivator(indicatorTid))
-                continue;
-
-            fixed zOffset = GetActorProperty(tid, APROP_VIEWHEIGHT) + 16.0;
-            Player::SpecieTypeT playerSpecie = Player::GetPlayerSpecie(i);
-
-            // Zombies are taller than their view height.
-            if (playerSpecie == Player::SPECIEZOMBIE)
-                zOffset += 8.0;
-
-            // Move the team indicator to the player.
-            Warp(tid, 0.0, 0.0, zOffset, 0.0, WARPF_NOCHECKPOSITION);
-
-            // Update indicator state.
             // If the round hasn't started, the state should be unknown.
             if (Round::GetActiveKnownRoundState() == Round::STATECOUNTDOWN)
             {
