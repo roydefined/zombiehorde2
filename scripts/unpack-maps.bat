@@ -67,5 +67,3 @@ for /d %%P in ("%SRC%\*") do (
 )
 
 echo [DONE] All projects processed.
-pause
-exit /b 0

@@ -56,5 +56,3 @@ for /d %%P in ("%SRC%\*") do (
 )
 
 echo [DONE] All map editor files cleaned.
-pause
-exit /b 0
