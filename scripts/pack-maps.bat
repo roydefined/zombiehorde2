@@ -22,6 +22,12 @@ if not exist "%SRC%" (
     exit /b 1
 )
 
+rem First compile all ACS scripts so BEHAVIOR lumps are present
+echo.
+echo Running compile-maps.bat...
+call "%SCRIPT_DIR%\compile-maps.bat"
+echo.
+
 echo Packing projects from "%SRC%"...
 
 for /d %%P in ("%SRC%\*") do (
@@ -81,6 +87,10 @@ for /d %%P in ("%SRC%\*") do (
 
     echo.
 )
+
+echo Running delete-map-behaviors.bat to clean up BEHAVIOR lumps...
+call "%SCRIPT_DIR%\delete-map-behaviors.bat"
+echo.
 
 echo [DONE] All projects packed successfully.
 pause
