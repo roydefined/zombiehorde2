@@ -93,5 +93,3 @@ call "%SCRIPT_DIR%\delete-map-behaviors.bat"
 echo.
 
 echo [DONE] All projects packed successfully.
-pause
-exit /b 0

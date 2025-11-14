@@ -60,5 +60,3 @@ echo [core]
 "%BCC%" %INCLUDE_CORE% %MACRO_CORE% "%SRC_CORE%" "%OUT_CORE%" || exit /b 1
 
 @echo SUCCESS
-
-@PAUSE

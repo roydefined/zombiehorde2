@@ -28,5 +28,3 @@ py tools\changeflaggen.py
     PAUSE
     EXIT
 )
-
-@PAUSE
