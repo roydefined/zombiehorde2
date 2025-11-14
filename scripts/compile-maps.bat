@@ -65,5 +65,3 @@ for /d %%P in ("%SRC%\*") do (
 )
 
 echo [DONE] All map scripts compiled.
-pause
-exit /b 0

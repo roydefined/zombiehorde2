@@ -48,4 +48,3 @@ for /d %%P in ("%SRC%\*") do (
 )
 
 echo [DONE] All BEHAVIOR lumps removed.
-exit /b 0
