@@ -46,6 +46,14 @@ strict namespace Reward
             return;
         }
 
+        // Can't give the container as the player already has one. Inform the player.
+        if (CheckActorInventory(tid, itemName) > 0)
+        {
+            str name = ContainerTypeToReadableString(type);
+            Logger::LogTo("You received \cd" + name + "\cj but it appears you already have one! You must use containers before receiving new ones.", id);
+            return;
+        }
+
 		GiveActorInventory(tid, itemName, 1);
         InformPlayerContainerReceived(id, type);
 	}
