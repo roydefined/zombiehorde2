@@ -14,8 +14,7 @@ strict namespace Reward
 		VALIDATE_ID_VALID_FUNCTION(id);
 		int tid = Identity::GetTid(id);
 
-		Player::SpecieTypeT specie = Player::GetPlayerSpecie(id);
-		Weight::PrepareWeightsByReward(type, specie);
+		Weight::PrepareWeightsByReward(id, type);
 
 		int index = -1;
 		while(true)
@@ -27,13 +26,14 @@ strict namespace Reward
 			// Also because we can loop when an item was being restricted (like the cure).
 			if (index == -1)
 			{
-				Logger::LogTo("No reward could be given at this time. Try again later.", id);
+				Logger::LogTo("You have all the rewards! Use some before receiving new ones.", id);
 				return;
 			}
 
+            // We already checked this when preparing the weights, it should not happen.
             if (!GetCanGivePlayerReward(id, index))
             {
-                Logger::LogDebug(LOGSOURCE , "Skipping call. Reward can't be given (restricted/duplicate/disabled/etc).");
+                Logger::LogWarning(LOGSOURCE , "Unexpected item index " + str(index) + " when attempting to give an item to player " + str(id) + ".");
                 continue;
             }
 			

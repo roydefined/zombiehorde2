@@ -4,7 +4,7 @@
 
 strict namespace Weight
 {
-    internal void PrepareWeightsByReward(Reward::RewardItemTypeFlagsT type, Player::SpecieTypeT specie = Player::SPECIENONE)
+    internal void PrepareWeightsByReward(int id, Reward::RewardItemTypeFlagsT type)
     {
         PrepareWeights();
 
@@ -14,6 +14,8 @@ strict namespace Weight
             Logger::LogWarning(LOGSOURCE , "Failed to set up reward weights. No rewards are defined.");
             return;
 		}
+
+		Player::SpecieTypeT specie = Player::GetPlayerSpecie(id);
 
         for (int i = 0; i < count; ++i)
         {
@@ -30,6 +32,10 @@ strict namespace Weight
                 if (rewardSpecie != Player::SPECIENONE && specie != rewardSpecie)
                     continue;
             }
+
+            // Check if the reward has a restriction of sorts.
+            if (!Reward::GetCanGivePlayerReward(id, i))
+                continue;
 
             AddWeight(i, Reward::GetRewardWeight(i));
         }
