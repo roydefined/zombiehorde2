@@ -26,7 +26,7 @@ strict namespace Reward
 
         // Now loop until we either exhaust the buffer or gave everybody an item.
         int index = 0;
-        while (givePlayerCount-- && relevantSize--)
+        while (givePlayerCount && relevantSize--)
         {
             int id = Shuffle::GetIndexValue(index);
             int tid = Identity::GetTid(id);
@@ -36,11 +36,12 @@ strict namespace Reward
             if (CheckActorInventory(tid, itemName))
             {
                 Logger::LogWarning(LOGSOURCE, "Returned player to reward already has the container.");
-                return;
+                continue;
             }
 
             GiveActorInventory(tid, itemName, 1);
             InformPlayerContainerReceived(id, type);
+            --givePlayerCount;
         }
     }
 }
