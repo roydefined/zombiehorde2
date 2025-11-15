@@ -63,7 +63,16 @@ strict namespace Reward
         if (callRestrict != (raw)0 && callRestrict != ""
             && ACS_NamedExecuteWithResult(callRestrict, id))
         {
-            Logger::LogDebug(LOGSOURCE, "Can't give reward, restrict script \"" + callRestrict + "\" returned 'true'.");
+            Logger::LogDebug(LOGSOURCE, "Can't give reward, restrict script \cd\"" + callRestrict + "\"\cj returned 'true'.");
+            return false;
+        }
+
+        // Check for duplicates, skip if the user already has the item.
+        str give = GetRewardGive(index);
+        if ((raw)give != 0 && give != ""
+            && CheckActorInventory(Identity::GetTid(id), give) > 0)
+        {
+            Logger::LogDebug(LOGSOURCE, "Can't give reward, the user already has item \cd\"" + give + "\"\cj.");
             return false;
         }
 
