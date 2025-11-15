@@ -16,24 +16,31 @@ strict namespace Reward
 
 		Weight::PrepareWeightsByReward(id, type);
 
+        // No weights means the player has all rewards already.
+        if (!Weight::HasWeights())
+        {
+            Logger::LogTo("You have all the rewards! Use some before receiving new ones.", id);
+            return;
+        }
+
 		int index = -1;
 		while(true)
 		{
 			index = Weight::Next(index);
 
-			// No reward to give.
-			// It is possible we can't give a reward when none were defined.
-			// Also because we can loop when an item was being restricted (like the cure).
+			// This should not happen.
+            // We have weights, and we already filtered non-applicable items.
+            // We should ALWAYS get a valid weight.
 			if (index == -1)
 			{
-				Logger::LogTo("You have all the rewards! Use some before receiving new ones.", id);
-				return;
+                Logger::LogWarning(LOGSOURCE, "No more weights exist when attempting to give an item to player " + str(id) + ".");
+                continue;
 			}
 
             // We already checked this when preparing the weights, it should not happen.
             if (!GetCanGivePlayerReward(id, index))
             {
-                Logger::LogWarning(LOGSOURCE, "Unexpected item index " + str(index) + " when attempting to give an item to player " + str(id) + ".");
+                Logger::LogWarning(LOGSOURCE, "Unexpected item index " + str(index) + " can't be given when attempting to give an item to player " + str(id) + ".");
                 continue;
             }
 			
