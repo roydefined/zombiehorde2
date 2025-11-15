@@ -57,6 +57,18 @@ strict namespace Reward
 
     internal bool GetCanGivePlayerReward(int id, int index)
     {
+        Player::SpecieTypeT specie = Player::GetPlayerSpecie(id);
+
+        // Conditionally check for specie.
+        // Both instances must be specie specific.
+        // If one doesn't provide it we assume the reward can be for any specie.
+        if (specie != Player::SPECIENONE)
+        {
+            Player::SpecieTypeT rewardSpecie = Reward::GetRewardSpecieSpecific(index);
+            if (rewardSpecie != Player::SPECIENONE && specie != rewardSpecie)
+                return false;
+        }
+
         // Check for restriction.
         // Restriction means there's some reason the item can't be given (restricted/duplicate/disabled/etc).
         str callRestrict = GetRewardCallRestrict(index);
