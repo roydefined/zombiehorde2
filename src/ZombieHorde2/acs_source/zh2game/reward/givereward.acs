@@ -50,15 +50,16 @@ strict namespace Reward
 		if ((raw)itemName != 0 && itemName != "" && CheckActorInventory(tid, itemName) > 0)
 			TakeActorInventory(tid, itemName, 1);
 
-		GivePlayerRewardByIndex(id, index, true);
+		GivePlayerRewardByIndex(id, index);
+        BroadcastGiveItem(id, index);
 	}
 
-	internal void GiveRewardByIndex(int index, bool broadcast)
+	internal void GiveRewardByIndex(int index)
 	{
-		GivePlayerRewardByIndex(PlayerNumber(), index, broadcast);
+		GivePlayerRewardByIndex(PlayerNumber(), index);
 	}
 
-	internal void GivePlayerRewardByIndex(int id, int index, bool broadcast)
+	internal void GivePlayerRewardByIndex(int id, int index)
 	{
 		VALIDATE_ID_VALID_FUNCTION(id);
 		int tid = Identity::GetTid(id);
@@ -66,13 +67,11 @@ strict namespace Reward
 		str name = GetRewardName(index),
             callGive = GetRewardCallGive(index),
 			give = GetRewardGive(index),
-			sound = GetRewardSound(index),
-			localMessage = GetRewardLocalMessage(index),
-			message = GetRewardMessage(index);
+			sound = GetRewardSound(index);
 
 		if ((raw)callGive != 0 && callGive != "")
 		{
-            if (!ACS_NamedExecuteAlways(callGive, 0,id))
+            if (!ACS_NamedExecuteAlways(callGive, 0, id))
                 Logger::logError(LogSource, "Failed to call script \"" + callGive + "\" for reward index " + str(index) + ".");
         }
 
@@ -81,11 +80,14 @@ strict namespace Reward
 			
 		if ((raw)sound != 0 && sound != "")
 			PlaySound(tid, sound, CHAN_ITEM, 1.0);
+	}
 
-		if (!broadcast)
-			return;
+    internal void BroadcastGiveItem(int id, int index)
+    {
+		str localMessage = GetRewardLocalMessage(index),
+			message = GetRewardMessage(index);
 
-		if ((raw)localMessage != 0 && localMessage != "")
+        if ((raw)localMessage != 0 && localMessage != "")
 			Logger::LogTo(localMessage, id);
 
 		if ((raw)message != 0 && message != "")
@@ -95,5 +97,5 @@ strict namespace Reward
 
 			Logger::LogExcept(message, id);
 		}
-	}
+    }
 }
