@@ -31,13 +31,9 @@ strict namespace Reward
 				return;
 			}
 
-			// Check for restriction.
-			// If so, call with the player's id and check against restriction.
-			str callRestrict = GetRewardCallRestrict(index);
-			if (callRestrict != (raw)0 && callRestrict != ""
-				&& ACS_NamedExecuteWithResult(callRestrict, id))
-			{
-                Logger::LogDebug(LOGSOURCE, "Skipping call. Restricted by script \"" + callRestrict + "\".");
+            if (!GetCanGivePlayerReward(id, index))
+            {
+                Logger::LogDebug(LOGSOURCE, "Skipping call. Reward can't be given (restricted/duplicate/disabled/etc).");
                 continue;
             }
 			
@@ -53,6 +49,26 @@ strict namespace Reward
 		GivePlayerRewardByIndex(id, index);
         BroadcastGiveItem(id, index);
 	}
+
+    internal bool GetCanGiveReward(int index)
+    {
+        GetCanGivePlayerReward(PlayerNumber(), index);
+    }
+
+    internal bool GetCanGivePlayerReward(int id, int index)
+    {
+        // Check for restriction.
+        // Restriction means there's some reason the item can't be given (restricted/duplicate/disabled/etc).
+        str callRestrict = GetRewardCallRestrict(index);
+        if (callRestrict != (raw)0 && callRestrict != ""
+            && ACS_NamedExecuteWithResult(callRestrict, id))
+        {
+            Logger::LogDebug(LOGSOURCE, "Can't give reward, restrict script \"" + callRestrict + "\" returned 'true'.");
+            return false;
+        }
+
+        return true;
+    }
 
 	internal void GiveRewardByIndex(int index)
 	{
