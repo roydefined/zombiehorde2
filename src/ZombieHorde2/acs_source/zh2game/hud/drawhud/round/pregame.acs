@@ -23,13 +23,26 @@ strict namespace Hud
         str topMessage = availableClients < minimumRequiredClients
             ? "This game requires atleast " + str(minimumRequiredClients) + " clients."
             : "Game is ready, " + str(availableClients) + " clients available.";
-        str bottomMessage = availableClients >= minimumRequiredClients
-            ? ZH2Game::GetIsRequestGameStartKeyBound()
+
+        str bottomMessage = "";
+        if (availableClients >= minimumRequiredClients)
+        {
+            bottomMessage = ZH2Game::GetIsRequestGameStartKeyBound()
                 ? "To start, press the 'Request game start' key (" + ZH2Game::GetRequestGameStartKey() + ")"
-                : "To start, bind and press the 'Request game start' key."
-            : IsNetworkGame()
-                ? "Please spectate."
-                : "Invoke 'addbot' in the console to add bots to play with.";
+                : "To start, bind and press the 'Request game start' key.";
+        }
+        else
+        {
+            // Extra check, we should not show the label when the client is already spectating.
+            if (IsNetworkGame())
+            {
+                if (PlayerInGame(ConsolePlayerNumber()))
+                    bottomMessage = "Please spectate.";
+            }
+
+            else
+                bottomMessage = "Invoke 'addbot' in the console to add bots to play with.";
+        }
 
         HudSetPointInternal();
         BCSUtils::HudDrawText(--id, topMessage);
