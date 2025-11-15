@@ -24,6 +24,9 @@ strict namespace Reward
         if (relevantSize == 0)
             return;
 
+        // Optionally, reward only players that are safe. This mimics the original Zombie Horde 1 behavior.
+        bool mustBeSafe = ZH2Game::GetEndOfRoundRewardSafePlayers();
+
         // Now loop until we either exhaust the buffer or gave everybody an item.
         int index = 0;
         while (givePlayerCount && relevantSize--)
@@ -38,6 +41,9 @@ strict namespace Reward
                 Logger::LogWarning(LOGSOURCE , "Returned player to reward already has the container.");
                 continue;
             }
+
+            if (mustBeSafe && !Game::GetPlayerIsSafe(id))
+                continue;
 
             GiveActorInventory(tid, itemName, 1);
             InformPlayerContainerReceived(id, type);
