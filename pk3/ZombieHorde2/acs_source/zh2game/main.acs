@@ -453,6 +453,28 @@ strict namespace ZH2Game
             terminate;
         }
 
+        // New in 3.3: player attempts to join the game.
+        if (type == GAMEEVENT_PLAYERJOINS)
+        {
+            // Forced player cap is enabled and the player must join within the cap.
+            bool canJoinPlayercap = !DevelopmentPlayerCap() || PlayerIsBot(arg1) || PlayerCount() - BCSUtils::BotCount() <= DEV_PLAYERCAP_COUNT;
+
+            // The game must be in a state where players can join.
+            bool canJoinJoinable = AllowPlayerJoin(arg1) || Round::GetRoundJoinable(Round::GetActiveRoundStateIndex());
+
+            // Print a message if a reason applies.
+            if (!canJoinPlayercap)
+                Logger::LogTo("This development build enforces a maximum player cap of " + str(DEV_PLAYERCAP_COUNT) + ". Please use a compatible, non-development version of Zombie Horde 2 to lift this limit.", arg1);
+            else if (!canJoinJoinable)
+                Logger::LogTo("You will join the next map.", arg1);
+            
+            bool canJoin = canJoinPlayercap && canJoinJoinable;
+            Logger::LogDebug(LOGSOURCE, "Can player \cd" + str((int)arg1) + "\cj join: \cd" + (canJoin ? "true" : "false") + "\cj.");
+
+            SetResultValue((int)canJoin);
+            terminate;
+        }
+
         // Damage to player without any armor affecting it.
         if (type == GAMEEVENT_ACTOR_DAMAGED_PREMOD)
         {
@@ -585,23 +607,7 @@ strict namespace ZH2Game
         WAIT_FOR_SCRIPT_OPEN_SERVER();
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_enter_respawn\" after awaiter");
 
-        // Forced player cap is enabled so the player will be kicked if we reached the limit.
-        if (DevelopmentPlayerCap() && !PlayerIsBot(PlayerNumber()) && PlayerCount() - BCSUtils::BotCount() > DEV_PLAYERCAP_COUNT)
-        {
-            RemovePlayer(PlayerNumber(), "This development build enforces a maximum player cap of " + str(DEV_PLAYERCAP_COUNT) + ". Please use a compatible, non-development version of Zombie Horde 2 to lift this limit.");
-            terminate;
-        }
-
         Identity::InitializeActivator();
-
-        // The game is not in a state where players can join.
-        // Depending on configuration we set the player as a dead spectator or kick them to spectate.
-        // Should setting dead spectator fail then we fall back to using KickFromGame.
-        if (!AllowPlayerJoin(PlayerNumber()) && !Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
-        {
-            RemovePlayer(PlayerNumber(), "You will join the next map.");
-            terminate;
-        }
 
         // Set specie, possibly forced to a specific specie.
         // SPECIENONE defaults to SPECIEHUMAN.
