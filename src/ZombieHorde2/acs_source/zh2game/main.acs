@@ -457,16 +457,17 @@ strict namespace ZH2Game
         if (type == GAMEEVENT_PLAYERJOINS)
         {
             // Forced player cap is enabled and the player must join within the cap.
-            bool canJoinPlayercap = !DevelopmentPlayerCap() || PlayerIsBot(arg1) || PlayerCount() - BCSUtils::BotCount() <= DEV_PLAYERCAP_COUNT;
-
-            // The game must be in a state where players can join.
-            bool canJoinJoinable = AllowPlayerJoin(arg1) || Round::GetRoundJoinable(Round::GetActiveRoundStateIndex());
-
-            // Print a message if a reason applies.
-            if (!canJoinPlayercap)
+            if (!GetPlayerIsWithinPlayerCap(arg1))
+            {
                 Logger::LogTo("This development build enforces a maximum player cap of " + str(DEV_PLAYERCAP_COUNT) + ". Please use a compatible, non-development version of Zombie Horde 2 to lift this limit.", arg1);
-            else if (!canJoinJoinable)
+                terminate;
+            }
+            
+            // The game must be in a state where players can join.
+            if (!GetPlayerCanJoin(arg1))
+            {
                 Logger::LogTo("You will join the next map.", arg1);
+            }
             
             bool canJoin = canJoinPlayercap && canJoinJoinable;
             Logger::LogDebug(LOGSOURCE , "Can player \cd" + str((int)arg1) + "\cj join: \cd" + (canJoin ? "true" : "false") + "\cj.");
@@ -704,8 +705,8 @@ strict namespace ZH2Game
         WAIT_FOR_SCRIPT_OPEN_CLIENT();
         Logger::LogDebug(LOGSOURCE , "Call script \"zh2_internal_enter_respawn_clientside\" after awaiter");
 
-        // The game is not in a state where players can join.
-        if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
+        // Same as on the serverside, check if we can join the game at all or if we are capped/restricted.
+        if (!GetPlayerIsWithinPlayerCap(PlayerNumber()) || !GetPlayerCanJoin(PlayerNumber()))
             terminate;
 
         // Spawn a team indicator unless we're the one entering/respawning
@@ -718,6 +719,18 @@ strict namespace ZH2Game
     internal bool AllowPlayerJoin(int id)
     {
         return GameContext.AlwaysAllowJoin || GameContext.Players[id].AlwaysAllowJoin;
+    }
+
+    // Returns `true` if the player is within the player cap, assuming it's enabled.
+    internal bool GetPlayerIsWithinPlayerCap(int id)
+    {
+        return !DevelopmentPlayerCap() || PlayerIsBot(id) || PlayerCount() - BCSUtils::BotCount() <= DEV_PLAYERCAP_COUNT;
+    }
+
+    // Returns `true` if the player canJoin.
+    internal bool GetPlayerCanJoin(int id)
+    {
+        return AllowPlayerJoin(arg1) || Round::GetRoundJoinable(Round::GetActiveRoundStateIndex());
     }
 
     // Note this is not always emptied in the game.
