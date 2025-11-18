@@ -1,5 +1,5 @@
 <div align="center">
-	<img src="https://github.com/RoyDefined/zombiehorde2/blob/main/docs/logo.png?raw=true" />
+	<img src="https://github.com/RoyDefined/zombiehorde2/blob/dev/docs/logo.png?raw=true" />
 </div>
 
 <div align="center">
