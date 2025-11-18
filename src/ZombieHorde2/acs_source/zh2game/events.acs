@@ -161,8 +161,14 @@ strict namespace ZH2Game
                 int targetMapIndex = 0;
                 switch(index)
                 {
+                    // Replay map.
                     case 0:
+                        ChangeLevel(StrParam(n:PRINTNAME_LEVEL), 0, CHANGELEVEL_NOINTERMISSION, GameSkill());
+                        terminate;
+
+                    // Next map (no need to set next map position).
                     case 1:
+                        Exit_Normal(0);
                         break;
 
                     case 2:
@@ -173,16 +179,8 @@ strict namespace ZH2Game
                         targetMapIndex = ZH2Game::GameContext.VotableMaps[index - 3];
                         break;
                 }
-
-                // Special case for 0, which resets back to the current map.
-                if (index == 0)
-                {
-                    ChangeLevel(StrParam(n:PRINTNAME_LEVEL), 0, CHANGELEVEL_NOINTERMISSION, GameSkill());
-                    terminate;
-                }
-
                 // Note the internal next map can't use this, and we will skip it as we will automatically switch to it then.
-                if (index != 1 && !SetNextMapPosition(targetMapIndex, true))
+                if (!SetNextMapPosition(targetMapIndex, true))
                 {
                     Logger::LogError(LOGSOURCE , "Failed to set next map position to " + str(targetMapIndex) + ".");
 
