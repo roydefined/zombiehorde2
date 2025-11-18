@@ -1,0 +1,92 @@
+New features
+------------------------------------------------
+
+ * * New translucent allies system * *
+The system allows for controlling translucency between allies, and can be configured to increase or decrease translucency based on distance and also by setting a base translucency.
+The system only works for the same specie.
+New cvars:
+- sv_zh2_translucentallies: Cvar manages translucent clients as a whole regardless of client settings.
+- cl_zh2_translucentallies: Manages whether allies should be translucent in general.
+    - 0: off
+    - 1: on when either cvar `sv_shootthroughallies` or `sv_unblockallies` is enabled. This option improves support, ensuring translucent allies have more of a reason to be enabled (since it otherwise doesn’t work as well when everything is blocking anyway).
+    - 2: on
+- cl_zh2_translucentalliesdistance - Manages the distance at which allies start to turn translucent.
+- cl_zh2_baseallytranslucency - Sets the base translucency that clients must always have. This value is then gradually decremented based on distance.
+
+ * * New team identification icon system * * 
+New icons have been added for identifying allies and foes. Additionally at the start of the round, before initial zombies are picked, a tertiary state exists which shows the undetermined side of players. When zombies are picked, the state changes.
+The status icons can be configured similarly to the new translucent system.
+New cvars:
+- sv_zh2_teamindicators - Cvar manages team indicators as a whole regardless of client settings.
+- cl_zh2_teamindicators - Manages whether allies should be translucent in general. This is a boolean value.
+- cl_zh2_teamindicatordistance - Manages the distance at which the team indicators appear. A higher value means the team indicator appears sooner.
+- cl_zh2_showtargetteamindicator - If this value is set, team indicators additionally require the client to look at a player before their team icon is shown.
+
+ * * New player identify * * 
+A new identify system has been added which allows you to view player names and their specie by looking at them. This system replaces the existing engine identity system as it does not work correctly in Zombie Horde 2.
+CVar `cl_zh2_identifyplayers` can be used to turn identifying players on or off.
+
+ * * New random rewards for surviving players * * 
+A new system has been added for rewarding random surviving players at the end of the round. This system is similar to Zombie Horde, where players could also be rewarded. In Zombie Horde 2, this system now properly checks if the player is alive, and it also makes sure a player not already owning a reward container gets the item.
+A cvar was added to control how many players get an item at once. This cvar is `sv_zh2_endofroundrewardcount` and can be up to 64 players.
+Additionally, CVar `sv_zh2_endofroundrewardsafeplayers` was added to only reward players that are in a safezone. This is similar to how Zombie Horde 1 did random rewards.
+
+ * * Reward + container system improvements * * 
+The reward system has seen significant improvements to how the player receives rewards and reward containers.
+The feedback on why a reward or reward container is not given is now much clearer (e.g. you already have the given container or reward).
+All rewards now also properly check if they can be given through scripts.
+Additionally, the reward system now checks for duplicate rewards, meaning you will no longer be able to receive the same reward twice.
+Lastly, the reward system now filters out rewards that you can't receive much better instead of attempting to give them.
+
+
+API changes
+------------------------------------------------
+
+ * * `Round` namespace * * 
+`GetGameIsPregameOrPlaying`, `GetGameIsPlaying` and `GetGameIsEnding`.
+These functions can be used by map developers to check the state of the game and to ensure ACS does not invoke when the game is in a state where it should not be run. For example, this is useful for preventing ACS from running when the map has ended.
+
+ * * `Music` namespace * * 
+`SetMusic`, `SetDefaultMusic` and `PlayDefaultMusic`
+These functions are now exposed for public use and are improvements over the existing `SetMusic` Zandronum function using the same syntax.
+`Music::SetMusic` will set the music based on the round state, and it does not force new users to use the track. This function will not change the music when the round ended, or the user has radio or full server music playing.
+`Music::SetDefaultMusic` extends how `SetMusic(“*”)` behaves by giving more granular control over default music and allows you to set the new default track to play instead of the track being hardcoded from MAPINFO. Users can then return to this default music through the menu.
+At a later stage, `Music::SetMusic` will be extended with features that allows you to replace radio or full server music.
+
+Both changes are now available on the wiki.
+
+
+Other mod changes
+------------------------------------------------
+
+- Improved weapon balance. Weapons now do more damage and additionally have a bit of randomization to them. The system attempts to mostly mimic how Zombie Horde 1 Beta 29 damage worked.
+- The chaingun's spread has been lowered.
+- Fixed player blood not properly rendering as a 3d model.
+- New icons have been added that replaces the default status icons for chatting, talking, lagging and either entering the console or the menu. Thanks to Tesefy for making these icons!
+- Reduced the string length of various menu labels to improve the sizing issues.
+- The scale of zombies have been reduced to match their original scale.
+- Fixed how the end of round stat sorting checked for living humans and zombies.
+- Fixed the end of round ‘In Memory Of’ not working.
+- Significant hud improvements to improve performance and organization.
+- Significant sync improvements to better handle syncing and preventing possible out of bounds sync data.
+- Fixed spectators not having a vote cooldown.
+- Add `sv_zh2_allowspectatorvoting` which when blocks spectators from voting when disabled.
+- Improve kevlar armor logic which also fixes it being taken by falldamage.
+- Fix zombie health logic not properly giving the intended health on infect.
+- Fix the visual effect that shows when the timer increases or decreases not working online.
+- Fix rewards that trigger a script not properly working for the intended player.
+- Fix F_SKY1 textures appearing when maps change the floor texture with a sky texture above.
+- Rewards can now only be used when the match is being played. There is an exception however, as rewards can also be used if the round has not started and is in a pregame.
+- The 'Please spectate' pregame label will no longer show if you already spectate.
+- Maps that implement music through `SetMusic` have now been changed to instead call `Music::SetMusic`.
+- `Music::SetMusic` no longer works when the round has ended.
+
+Repository changes
+------------------------------------------------
+
+The Zombie Horde 2 repository has changed how maps are being tracked. As maps are originally saved as binary wad files, any changes made are not clearly logged by GitHub, and neither is it clear what maps contain script-wise, which means possible breaking changes when the API goes through changes.
+The repository now uses `gdcc-ar-wad` which is part of the GDCC package by DavidPH. With this tool, maps are now manually packed and unpacked into their raw files, which greatly improved tracking their changes with Git.
+
+Additionally, map scripts will now be compiled as they are packed into the mod to ensure the latest version is being used.
+
+
