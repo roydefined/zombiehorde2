@@ -70,13 +70,23 @@ actor ZH2LegacyWeaponDisplay6 : ZH2LegacyDecoration 22115
 	}
 }
 
-// TODO: Give a pistol?
-actor ZH2LegacyFakePistol : ZH2LegacyDecoration 24419
+actor ZH2LegacyFakePistol : ZH2WeaponSpawn 24419
 {
+	inventory.pickupmessage "Handgun"
+	tag "Handgun"
+	
 	States
 	{
 		Spawn:
 			SI07 A -1
 			Stop
+		
+        // Give the main handgun (for now)
+		Pickup:
+			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, "PickupSuccess")
+			stop
+		PickupSuccess:
+			TNT1 A 0 A_GiveInventory("ZH2WeaponHandgun", 1)
+			stop
 	}
 }
