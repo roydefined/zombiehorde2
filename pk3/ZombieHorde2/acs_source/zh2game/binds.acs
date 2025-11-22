@@ -137,7 +137,10 @@ strict namespace ZH2Game
     {
         // We must either be in an offline game, the server must run in development mode, or sv_cheats must be enabled.
         if (IsNetworkGame() && !IsDevelopment() && !ZH2Game::GetSvCheats())
+        {
+            Logger::LogActivator("You're not allowed to be set as an admin.");
             terminate;
+        }
         
         Admin::RconSetPlayerAdmin(PlayerNumber(), true);
     }
@@ -157,13 +160,18 @@ strict namespace ZH2Game
     {
         // Can't be called when not offline, not in development and we are not admin.
         if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
+        {
+            Logger::LogActivator("You're not allowed to give yourself start weapons.");
             terminate;
+        }
 
         Player::SpecieTypeT specie = Player::GetSpecie();
         ClearInventory();
         
         if (specie == Player::SPECIEHUMAN) Player::GiveHumanInventory(true);
         else if (specie == Player::SPECIEZOMBIE) Player::GiveZombieInventory();
+
+        Logger::LogActivator("You've been given start weapons.");
     }
 
     /* DEBUG - STATE LOGGING */
@@ -479,27 +487,39 @@ strict namespace ZH2Game
     {
         // Can't be called when not offline, not in development and we are not admin.
         if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
+        {
+            Logger::LogActivator("You're not allowed to call sync scripts.");
             terminate;
+        }
 
         Sync::SyncAll(false);
+        Logger::LogActivator("Sync all triggered.");
     }
 
     script "zh2_action_callclientsyncall" net
     {
         // Can't be called when not offline, not in development and we are not admin.
         if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
+        {
+            Logger::LogActivator("You're not allowed to call sync scripts.");
             terminate;
+        }
 
         Sync::CallClientSyncAll();
+        Logger::LogActivator("Call client sync all triggered.");
     }
 
     script "zh2_action_clientsyncall" net clientside
     {
         // Can't be called when not offline, not in development and we are not admin.
         if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
+        {
+            Logger::LogActivator("You're not allowed to call sync scripts.");
             terminate;
+        }
             
         Sync::SynAllClientside();
+        Logger::LogActivator("Sync all clientside triggered.");
     }
 
     /* INVENTORY */
