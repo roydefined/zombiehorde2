@@ -28,7 +28,14 @@ strict namespace Hud
         
         // Time left.
         int ticsLeft = RoundTimer::GetTimerTicsLeft(index);
-        str timerFormatted = Utils::FormatTics(ticsLeft, RoundTimer::GetTimerDrawDecimals(index));
+        bool drawDecimals = RoundTimer::GetTimerDrawDecimals(index);
+
+		// Add one second to tics if decimals are disabled unless the tics equal zero.
+		// This way the result will not display zero on the final second, making for a better visualization of the tics.
+		if (!drawDecimals && ticsLeft != 0)
+			ticsLeft += 35 * BCSUtils::Sgn(ticsLeft);
+
+        str timerFormatted = Utils::FormatTics(ticsLeft, drawDecimals);
         
         HudSetPointInternal();
         BCSUtils::HudDrawText(--id, timerFormatted);
@@ -36,7 +43,7 @@ strict namespace Hud
 
         // If the timer has countdowns enabled, then the last 10 seconds should have a fading red label on top.
         // First 18 tics of every 35 we display this.
-        if (RoundTimer::GetTimerDoCountdown(index) && ticsLeft <= 350)
+        if (RoundTimer::GetTimerDoCountdown(index) && ticsLeft <= 35 * 11)
         {
             int tics = ticsLeft % 35;
             fixed alpha = (tics > 18) ? (1.0 - fixed(35 - tics) / 18.0) : 0.0;
