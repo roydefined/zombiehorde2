@@ -176,6 +176,12 @@ strict namespace ZH2Game
 
         // Resync admin list
         Sync::SyncAdmins();
+
+        // After a moment, sync all players and allow them to sync themselves on enter.
+        Delay(const: 5);
+        
+        ZH2Game::GameContext.SyncPlayerOnEnter = true;
+        Sync::SyncPlayers();
     }
 
     script "zh2_internal_open_client" open clientside
@@ -655,8 +661,9 @@ strict namespace ZH2Game
         // Set initial name. The player's loop will then track possible changes.
         Player::SetName(BCSUtils::PlayerName(PlayerNumber()));
 
-        // TODO: This is something worth looking into by maybe checking if the timer passed a single tic? Otherwise we call this a lot.
-        Sync::SyncPlayers();
+        // Should we sync this player?
+        if (ZH2Game::GameContext.SyncPlayerOnEnter)
+            Sync::SyncPlayers();
 
         // Set the player as an admin.
         // This is now removed and you can turn it on through the menu/rcon. Always works offline.
