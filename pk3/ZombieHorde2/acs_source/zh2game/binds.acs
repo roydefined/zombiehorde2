@@ -9,16 +9,9 @@ strict namespace ZH2Game
 
     script "zh2_action_requestgamestart" net
     {
-        // In development this script additionally has the ability to skip a round.
-        // If not, it must be in pregame.
-        if (!IsDevelopment() && Round::GetActiveKnownRoundState() != Round::STATEPREGAME)
-        {
-            Logger::LogActivator("The game is already starting or has already started.");
-            terminate;
-        }
-
         // Set the timer to be 1 second left if a timer is active and we either play offline, or the user is an admin.
-        if (RoundTimer::GetAnyTimerActive() && (!IsNetworkGame() || Admin::GetAdmin()))
+        // Do not check for development, for now.
+        if (/*IsDevelopment() &&*/ RoundTimer::GetAnyTimerActive() && (!IsNetworkGame() || Admin::GetAdmin()))
         {
             int index = RoundTimer::GetActiveTimerIndex();
 
@@ -61,6 +54,9 @@ strict namespace ZH2Game
             Sync::SyncTimers();
             terminate;
         }
+
+        // Nothing triggered, so log a message instead.
+        Logger::LogActivator("The game is already starting or has already started.");
     }
 
     script "zh2_action_sprint" (raw doSprint) net
