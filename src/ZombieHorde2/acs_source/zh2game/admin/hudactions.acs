@@ -496,9 +496,9 @@ strict namespace Admin
         if (amount == 0) terminate;
         VALIDATE_ID_VALID_SCRIPT(playerId);
 
-        int amountNormalized = BCSUtils::Abs(amount);
-        Player::AddPlayerKevlarPoints(playerId, amountNormalized);
+        Player::AddPlayerKevlarPoints(playerId, amount);
 
+        int amountNormalized = BCSUtils::Abs(amount);
         if (amount > 0) Logger::LogBold("An \cfadmin\cj has given \cd" + str(amountNormalized) + "\cj points of kevlar armor to " + BCSUtils::PlayerName(playerId) + "\cj!");
         else            Logger::LogBold("An \cfadmin\cj has taken \cd" + str(amountNormalized) + "\cj points of kevlar armor from " + BCSUtils::PlayerName(playerId) + "\cj!");
     }
@@ -519,15 +519,15 @@ strict namespace Admin
         if (amount == 0) terminate;
 
         Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
-        int amountNormalized = BCSUtils::Abs(amount);
         ITERATESPECIES(specie, {
-            Player::AddPlayerKevlarPoints(id, amountNormalized);
+            Player::AddPlayerKevlarPoints(id, amount);
         });
 
         str target = specieIndex == 0
             ? "everybody"
             : "all " + Player::GetSpecieIndexAsString(specieIndex) + "s";
 
+        int amountNormalized = BCSUtils::Abs(amount);
         if (amount > 0) Logger::LogBold("An \cfadmin\cj has given \cd" + str(amountNormalized) + "\cj points of kevlar armor to \cf" + target + "\cj!");
         else            Logger::LogBold("An \cfadmin\cj has taken \cd" + str(amountNormalized) + "\cj points of kevlar armor from \cf" + target + "\cj!");
     }
