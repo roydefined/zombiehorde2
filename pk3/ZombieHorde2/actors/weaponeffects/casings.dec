@@ -2,189 +2,189 @@ const int MAXBOUNCECOUNT = 4;
 
 actor ZH2WeaponCaseInternal
 {
-	speed 20
-	+NOCLIP
-	+CLIENTSIDEONLY
-	+NOTIMEFREEZE
+    speed 20
+    +NOCLIP
+    +CLIENTSIDEONLY
+    +NOTIMEFREEZE
 }
 
 actor ZH2ShotgunCase : ZH2WeaponCaseInternal
 {
-	States
-	{
-		Spawn:
-			TNT1 A 0 NoDelay A_CustomMissile("ZH2ShellCaseParticle", 0, 0, random(-80, -100), CMF_AIMDIRECTION, random(30, 50))
-			stop
-	}
+    States
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_CustomMissile("ZH2ShellCaseParticle", 0, 0, random(-80, -100), CMF_AIMDIRECTION, random(30, 50))
+            stop
+    }
 }
 
 actor ZH2DoubleShotgunCase : ZH2WeaponCaseInternal
 {
-	States
-	{
-		Spawn:
-			TNT1 A 0 NoDelay A_CustomMissile("ZH2ShellCaseParticle", 0, 0, random(-80,-100), 275, random(60, 90))
-			stop
-	}
+    States
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_CustomMissile("ZH2ShellCaseParticle", 0, 0, random(-80,-100), 275, random(60, 90))
+            stop
+    }
 }
 
 actor ZH2ChaingunCase : ZH2WeaponCaseInternal
 {
-	States
-	{
-		Spawn:
-			TNT1 A 0 NoDelay A_CustomMissile("ZH2BulletCaseParticle", 0, 0, random(-80,-100), CMF_AIMDIRECTION, random(45, 80))
-			stop
-	}
+    States
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_CustomMissile("ZH2BulletCaseParticle", 0, 0, random(-80,-100), CMF_AIMDIRECTION, random(45, 80))
+            stop
+    }
 }
 
 actor ZH2PistolCase : ZH2WeaponCaseInternal
 {
-	States
-	{
-		Spawn:
-			TNT1 A 0 NoDelay A_CustomMissile("ZH2BulletCaseParticle", 0, 0, random(-80,-100), CMF_AIMDIRECTION, random(45, 80))
-			stop
-	}
+    States
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_CustomMissile("ZH2BulletCaseParticle", 0, 0, random(-80,-100), CMF_AIMDIRECTION, random(45, 80))
+            stop
+    }
 }
 
 actor ZH2SniperCase : ZH2WeaponCaseInternal
 {
-	States
-	{
-		Spawn:
-			TNT1 A 0 NoDelay A_CustomMissile("ZH2RifleCaseParticle", -5, 0, random(-80,-100), CMF_AIMDIRECTION, random(45, 80))
-			stop
-	}
+    States
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_CustomMissile("ZH2RifleCaseParticle", -5, 0, random(-80,-100), CMF_AIMDIRECTION, random(45, 80))
+            stop
+    }
 }
 
 actor ZH2WeaponCasingBase
 {
-	Speed 8
-	Height 1
-	Radius 1
-	
-	BounceType "Doom"
-	Bouncefactor 0.4
-	
-	+MISSILE
-	-NOGRAVITY
-	+WINDTHRUST
-	+CLIENTSIDEONLY
-	+MOVEWITHSECTOR
-	+NOTELEPORT
-	+FORCEXYBILLBOARD
-	+DONTSPLASH
-	+NOTIMEFREEZE
-	+USEBOUNCESTATE
-	
-	var int user_bounces;
-	
-	States
-	{
-		Spawn.Main:
-			"####" ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_JumpIf(waterlevel > 0, "Underwater")
-			goto Bounce.Maximum
-		
-		Bounce.Floor:
-			"####" A 0 A_SetUserVar("user_bounces", user_bounces + 1)
-			"####" A 0 A_JumpIf(user_bounces >= MAXBOUNCECOUNT, "Bounce.Maximum")
-			goto Spawn.Main
-		
-		// This state is entered after the max number of bounces is reached, or if the main spawn state finished.
-		// This prevents the case to stay for too long.
-		Bounce.Maximum:
-			"####" ABCDEFGH 1 A_Fadeout(.1)
-			stop
-			
-		// Underwater Fade out
-		Underwater:
-			"####" "########" 2 A_ChangeVelocity(velx/1.4, vely/1.4, velz/1.1, CVF_REPLACE)
-		Underwater.Rest:
-			"####" "########" 2 A_Fadeout(.05)
-			loop
-		
-		// Death fade out
-		Death.Rest:
-			"####" "#" 0 A_SetTranslucent(1.0)
-			"####" "#" 0 A_SetUserVar("user_bounces", random(35, 100))
-		Death.Fade:
-			"####" "#" 1 A_Fadeout(.01)
-			goto Death.Fade
-	}
+    Speed 8
+    Height 1
+    Radius 1
+
+    BounceType "Doom"
+    Bouncefactor 0.4
+
+    +MISSILE
+    -NOGRAVITY
+    +WINDTHRUST
+    +CLIENTSIDEONLY
+    +MOVEWITHSECTOR
+    +NOTELEPORT
+    +FORCEXYBILLBOARD
+    +DONTSPLASH
+    +NOTIMEFREEZE
+    +USEBOUNCESTATE
+
+    var int user_bounces;
+
+    States
+    {
+        Spawn.Main:
+            "####" ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_JumpIf(waterlevel > 0, "Underwater")
+            goto Bounce.Maximum
+
+        Bounce.Floor:
+            "####" A 0 A_SetUserVar("user_bounces", user_bounces + 1)
+            "####" A 0 A_JumpIf(user_bounces >= MAXBOUNCECOUNT, "Bounce.Maximum")
+            goto Spawn.Main
+
+        // This state is entered after the max number of bounces is reached, or if the main spawn state finished.
+        // This prevents the case to stay for too long.
+        Bounce.Maximum:
+            "####" ABCDEFGH 1 A_Fadeout(.1)
+            stop
+
+        // Underwater Fade out
+        Underwater:
+            "####" "########" 2 A_ChangeVelocity(velx/1.4, vely/1.4, velz/1.1, CVF_REPLACE)
+        Underwater.Rest:
+            "####" "########" 2 A_Fadeout(.05)
+            loop
+
+        // Death fade out
+        Death.Rest:
+            "####" "#" 0 A_SetTranslucent(1.0)
+            "####" "#" 0 A_SetUserVar("user_bounces", random(35, 100))
+        Death.Fade:
+            "####" "#" 1 A_Fadeout(.01)
+            goto Death.Fade
+    }
 }
 
 Actor ZH2BulletCaseParticle : ZH2WeaponCasingBase
 {
-	Scale 0.25
-	BounceSound "effects/casings/BULLET"
-	
-	States
-	{
-		Spawn:
-			CAS1 A 0 NoDelay A_Jump(128, 1)
-			goto Spawn.Main
-			CAS2 A 0
-			goto Spawn.Main
-		
-		Death:
-			CAS1 C 0 A_Jump(85, 1, 2, 3)
-			goto Death.Rest
-			CAS1 G 0
-			goto Death.Rest
-			CAS2 C 0
-			goto Death.Rest
-			CAS2 G 0
-			goto Death.Rest
-	}
+    Scale 0.25
+    BounceSound "effects/casings/BULLET"
+
+    States
+    {
+        Spawn:
+            CAS1 A 0 NoDelay A_Jump(128, 1)
+            goto Spawn.Main
+            CAS2 A 0
+            goto Spawn.Main
+
+        Death:
+            CAS1 C 0 A_Jump(85, 1, 2, 3)
+            goto Death.Rest
+            CAS1 G 0
+            goto Death.Rest
+            CAS2 C 0
+            goto Death.Rest
+            CAS2 G 0
+            goto Death.Rest
+    }
 }
 
 Actor ZH2ShellCaseParticle : ZH2WeaponCasingBase
 {
-	Scale 0.3
-	BounceSound "effects/casings/SHELL"
-	
-	States
-	{
-		Spawn:
-			CAS3 A 0 NoDelay A_Jump(128, 1)
-			goto Spawn.Main
-			CAS4 A 0
-			goto Spawn.Main
-		
-		Death:
-			CAS3 C 0 A_Jump(85, 1, 2, 3)
-			goto Death.Rest
-			CAS3 G 0
-			goto Death.Rest
-			CAS4 C 0
-			goto Death.Rest
-			CAS4 G 0
-			goto Death.Rest
-	}
+    Scale 0.3
+    BounceSound "effects/casings/SHELL"
+
+    States
+    {
+        Spawn:
+            CAS3 A 0 NoDelay A_Jump(128, 1)
+            goto Spawn.Main
+            CAS4 A 0
+            goto Spawn.Main
+
+        Death:
+            CAS3 C 0 A_Jump(85, 1, 2, 3)
+            goto Death.Rest
+            CAS3 G 0
+            goto Death.Rest
+            CAS4 C 0
+            goto Death.Rest
+            CAS4 G 0
+            goto Death.Rest
+    }
 }
 
 Actor ZH2RifleCaseParticle : ZH2WeaponCasingBase
 {
-	scale 0.15
-	BounceSound "effects/casings/BULLET"
-	
-	States
-	{
-		Spawn:
-			CAS5 A 0 NoDelay A_Jump(128, 1)
-			goto Spawn.Main
-			CAS6 A 0
-			goto Spawn.Main
-		
-		Death:
-			CAS5 C 0 A_Jump(85, 1, 2, 3)
-			goto Death.Rest
-			CAS5 G 0
-			goto Death.Rest
-			CAS6 C 0
-			goto Death.Rest
-			CAS6 G 0
-			goto Death.Rest
-	}
+    scale 0.15
+    BounceSound "effects/casings/BULLET"
+
+    States
+    {
+        Spawn:
+            CAS5 A 0 NoDelay A_Jump(128, 1)
+            goto Spawn.Main
+            CAS6 A 0
+            goto Spawn.Main
+
+        Death:
+            CAS5 C 0 A_Jump(85, 1, 2, 3)
+            goto Death.Rest
+            CAS5 G 0
+            goto Death.Rest
+            CAS6 C 0
+            goto Death.Rest
+            CAS6 G 0
+            goto Death.Rest
+    }
 }

@@ -1,120 +1,120 @@
 // This could probably be cleaner. Wasn't sure how I could get one puff to play on walls, and one on players...
 actor ZH2ClawsScratchPuff : BulletPuff
 {
-	DamageType "ZH2ZombieScratch"
-	
-	states
+    DamageType "ZH2ZombieScratch"
+
+    states
     {
-		Spawn:
-		Melee:
-			TNT1 A 5  A_Jump(256, "MakeSound")
-			stop
-			
-		Crash:
-			TNT1 A 0
-			stop
-		
-		MakeSound:
-			TNT1 A 5 A_PlaySound("weapons/claws/HIT")
-			stop
+        Spawn:
+        Melee:
+            TNT1 A 5  A_Jump(256, "MakeSound")
+            stop
+
+        Crash:
+            TNT1 A 0
+            stop
+
+        MakeSound:
+            TNT1 A 5 A_PlaySound("weapons/claws/HIT")
+            stop
     }
 }
 
 actor ZH2ClawsWallScratchPuff : ZH2ClawsScratchPuff
 {
-	states
+    states
     {
-		Spawn:
-			TNT1 A 0
-			stop
-			
-		Crash:
-			TNT1 A 0 A_Jump(256, "MakeSound")
-			stop
+        Spawn:
+            TNT1 A 0
+            stop
+
+        Crash:
+            TNT1 A 0 A_Jump(256, "MakeSound")
+            stop
     }
 }
 
 // Barrel push ability
 actor ZH2ClawsPushPuff : BulletPuff
 {
-	DamageType "ZH2ZombiePush"
-	AttackSound "weapons/claws/PUSH"
-	
-	+PUFFONACTORS
-	
-	states
+    DamageType "ZH2ZombiePush"
+    AttackSound "weapons/claws/PUSH"
+
+    +PUFFONACTORS
+
+    states
     {
-		Spawn:
-		Melee:
-		XDeath:
-			TNT1 A 0
-			stop
+        Spawn:
+        Melee:
+        XDeath:
+            TNT1 A 0
+            stop
     }
 }
 
 actor ZH2WeaponBulletPuff : BulletPuff
 {
-	DamageType "ZH2HumanDefault"
-	AttackSound "weapons/DECALWEAPON"
-	
-	+PUFFGETSOWNER
-	+NOTIMEFREEZE
-	+NOGRAVITY
-	+PUFFONACTORS
-	+ALWAYSPUFF
-	
-	states
+    DamageType "ZH2HumanDefault"
+    AttackSound "weapons/DECALWEAPON"
+
+    +PUFFGETSOWNER
+    +NOTIMEFREEZE
+    +NOGRAVITY
+    +PUFFONACTORS
+    +ALWAYSPUFF
+
+    states
     {
-		Spawn:
-		Melee:
-			TNT1 A 0 NoDelay A_SpawnItem("ZH2DecalSmokeSpawner")
-		XDeath:
-			TNT1 A 5 ACS_NamedExecuteWithResult("zh2_dec_tracer_spawn")
-			stop
+        Spawn:
+        Melee:
+            TNT1 A 0 NoDelay A_SpawnItem("ZH2DecalSmokeSpawner")
+        XDeath:
+            TNT1 A 5 ACS_NamedExecuteWithResult("zh2_dec_tracer_spawn")
+            stop
     }
 }
 
 actor ZH2DecalSmokeSpawner
 {
-	+CLIENTSIDEONLY
-	+NOTIMEFREEZE
-	+NOBLOCKMAP
-	+NOGRAVITY
-	
-	states
+    +CLIENTSIDEONLY
+    +NOTIMEFREEZE
+    +NOBLOCKMAP
+    +NOGRAVITY
+
+    states
     {
-		Spawn:
-			TNT1 AA 0 NoDelay A_SpawnItemEx("ZH2DecalSmoke", 0, 0, 0, Frandom(-0.4, 0.4), Frandom(-0.4, 0.4), Frandom(-0.4, 0.4), random(0, 360))
-			stop
+        Spawn:
+            TNT1 AA 0 NoDelay A_SpawnItemEx("ZH2DecalSmoke", 0, 0, 0, Frandom(-0.4, 0.4), Frandom(-0.4, 0.4), Frandom(-0.4, 0.4), random(0, 360))
+            stop
     }
 }
 
 actor ZH2DecalSmoke
 {
-	height 1
-	radius 1
-	
-	RenderStyle Add
-	
-	+FORCEXYBILLBOARD
-	+CLIENTSIDEONLY
-	+DONTSPLASH
-	+NOTIMEFREEZE
-	+ALLOWPARTICLES
-	+NOBLOCKMAP
-	+NOGRAVITY
-	
-	States
-	{
-		Spawn:
-			TNT1 A 0 NoDelay A_JumpIf(waterlevel != 0, "Underwater")
-			TNT1 A 0 A_SetScale(Frandom(.4, .5), Frandom(.4, .5))
-			TNT1 A 0 A_SetTranslucent(FRandom(0.2, 0.4), 1)
-			BPUF ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 A_FadeOut(Frandom(.01, .04))
-			stop
-		
-		Underwater:
-			TNT1 A 0
-			stop
-	}
+    height 1
+    radius 1
+
+    RenderStyle Add
+
+    +FORCEXYBILLBOARD
+    +CLIENTSIDEONLY
+    +DONTSPLASH
+    +NOTIMEFREEZE
+    +ALLOWPARTICLES
+    +NOBLOCKMAP
+    +NOGRAVITY
+
+    States
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_JumpIf(waterlevel != 0, "Underwater")
+            TNT1 A 0 A_SetScale(Frandom(.4, .5), Frandom(.4, .5))
+            TNT1 A 0 A_SetTranslucent(FRandom(0.2, 0.4), 1)
+            BPUF ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 A_FadeOut(Frandom(.01, .04))
+            stop
+
+        Underwater:
+            TNT1 A 0
+            stop
+    }
 }
