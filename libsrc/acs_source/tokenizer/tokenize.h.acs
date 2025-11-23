@@ -1,91 +1,91 @@
 #ifdef __IMPORTED__
-	#error This file must be #included.
+    #error This file must be #included.
 #endif
 
 #define MAX_TOKENIZERS 5
 
 strict namespace Tokenizer
 {
-	internal struct TokenizerT
-	{
-		TokenizerStateT State;
+    internal struct TokenizerT
+    {
+        TokenizerStateT State;
 
-		str Buffer;
-		int PositionStart;
-		int Position;
+        str Buffer;
+        int PositionStart;
+        int Position;
 
-		int LinePositionStart;
-		int Line;
+        int LinePositionStart;
+        int Line;
 
-		int ParenthesisLevel;
-		int BraceLevel;
-		int BracketLevel;
-	
-		str Symbol;
-		TokenTypeT Token;
+        int ParenthesisLevel;
+        int BraceLevel;
+        int BracketLevel;
+
+        str Symbol;
+        TokenTypeT Token;
     };
 
     internal enum TokenizerStateT : int
     {
         STATENONE,
-		STATEACTIVE,
-		STATEERRORED,
+        STATEACTIVE,
+        STATEERRORED,
     };
 
     enum TokenTypeT : int
     {
         TUNKNOWN,
-		TEOF,
-		THASH,
-		TCOMMA,
-		TDOT,
-		TCOLON,
-		TSEMI,
-		TEQ,
-		TDASH,
-		TDOLLAR,
+        TEOF,
+        THASH,
+        TCOMMA,
+        TDOT,
+        TCOLON,
+        TSEMI,
+        TEQ,
+        TDASH,
+        TDOLLAR,
 
-		TLPAREN,
-		TRPAREN,
+        TLPAREN,
+        TRPAREN,
 
-		TLBRACE,
-		TRBRACE,
+        TLBRACE,
+        TRBRACE,
 
-		TLBRACKET,
-		TRBRACKET,
+        TLBRACKET,
+        TRBRACKET,
 
-		TSTRING,
-		TINTEGER,
-		TFLOAT,
+        TSTRING,
+        TINTEGER,
+        TFLOAT,
 
-		TSYMBOL,
+        TSYMBOL,
     };
 
-	extern str GetSymbol(int handle);
-	extern TokenTypeT GetToken(int handle);
-	extern int GetParenthesisLevel(int handle);
-	extern int GetBraceLevel(int handle);
-	extern int GetBracketLevel(int handle);
-	extern int GetPosition(int handle);
+    extern str GetSymbol(int handle);
+    extern TokenTypeT GetToken(int handle);
+    extern int GetParenthesisLevel(int handle);
+    extern int GetBraceLevel(int handle);
+    extern int GetBracketLevel(int handle);
+    extern int GetPosition(int handle);
 
-	extern bool IsActive(int handle);
-	extern bool CanRead(int handle);
-	extern void SetErrored(int handle, str message = "");
-	extern str HandleToString(int handle);
+    extern bool IsActive(int handle);
+    extern bool CanRead(int handle);
+    extern void SetErrored(int handle, str message = "");
+    extern str HandleToString(int handle);
 
-	extern int RentTokenizer(str buffer);
+    extern int RentTokenizer(str buffer);
     extern void ReturnTokenizer(int handle);
-	extern void Next(int handle, bool errorOnEOF = true);
+    extern void Next(int handle, bool errorOnEOF = true);
 
-	extern bool ExpectNextChar(int handle, int character);
-	extern bool ExpectNextStr(int handle, str string);
-	extern bool ExpectNextToken(int handle, TokenTypeT tokenType);
-	extern bool ExpectChar(int handle, int character);
-	extern bool ExpectStr(int handle, str string);
-	extern bool ExpectToken(int handle, TokenTypeT tokenType);
+    extern bool ExpectNextChar(int handle, int character);
+    extern bool ExpectNextStr(int handle, str string);
+    extern bool ExpectNextToken(int handle, TokenTypeT tokenType);
+    extern bool ExpectChar(int handle, int character);
+    extern bool ExpectStr(int handle, str string);
+    extern bool ExpectToken(int handle, TokenTypeT tokenType);
 
-	// Parse utils
-	extern raw GetParsedValue();
+    // Parse utils
+    extern raw GetParsedValue();
     extern bool ParseBodyAsEmpty(int handle, str identifyingSymbol, str expectedSymbol);
     extern void ParseRemainingBodyAsEmpty(int handle);
     extern bool TryParseBooleanOrNumbericValue(int handle);
