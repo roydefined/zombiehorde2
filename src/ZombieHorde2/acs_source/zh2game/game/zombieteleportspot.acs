@@ -22,13 +22,13 @@ strict namespace Game
             SetZombieTeleportTics(0);
             return;
         }
-        
+
         if (GetZombieTeleportTics() > 0)
             return;
-        
+
         IncrementUsedZombieTeleports();
         SetZombieTeleportTics(0);
-		Teleport(GetCurrentZombieTeleportSpotTid());
+        Teleport(GetCurrentZombieTeleportSpotTid());
         Logger::LogActivator("Teleports left: " + str(GetZombieTeleportsLeft()) + ".");
     }
 
@@ -42,30 +42,30 @@ strict namespace Game
             _initialZombieTeleportSpawnSpotTid = UniqueTID();
             SetCurrentZombieTeleportSpotTid(_initialZombieTeleportSpawnSpotTid);
         }
-        
+
         // Get the tid or use the defined initial zombie teleport spot tid if 0.
         int tid = ActivatorTID();
         if (tid == 0)
         {
             tid = _initialZombieTeleportSpawnSpotTid;
-			Thing_ChangeTID(0, tid);
+            Thing_ChangeTID(0, tid);
         }
 
         // Validate the spot is not already defined, which is possible when we have multiple possible spots to teleport to under the tid.
         for (int i = 0; i < ZH2Game::GameContext.ZombieTeleportSpotCount; ++i)
-		{
-			if (ZH2Game::GameContext.ZombieTeleportSpots[i] == tid)
-				return;
-		}
+        {
+            if (ZH2Game::GameContext.ZombieTeleportSpots[i] == tid)
+                return;
+        }
 
         // Hard limit of number of allowed spots.
         if (ZH2Game::GameContext.ZombieTeleportSpotCount == MAX_ZOMBIETELEPORTSPOTS)
         {
-			Logger::LogWarning(LogSource, "Unable to track zombie teleport spot: maximum number of trackable spots reached (" + str(MAX_ZOMBIETELEPORTSPOTS) + ").");
-			return;
+            Logger::LogWarning(LogSource, "Unable to track zombie teleport spot: maximum number of trackable spots reached (" + str(MAX_ZOMBIETELEPORTSPOTS) + ").");
+            return;
         }
 
-		ZH2Game::GameContext.ZombieTeleportSpots[ZH2Game::GameContext.ZombieTeleportSpotCount++] = tid;
+        ZH2Game::GameContext.ZombieTeleportSpots[ZH2Game::GameContext.ZombieTeleportSpotCount++] = tid;
         Logger::LogDebug(LogSource, "Start tracking zombie teleport spot \cd" + str(tid) + "\cj, index \cd" + str(ZH2Game::GameContext.ZombieTeleportSpotCount - 1) + "\cj.");
     }
 
