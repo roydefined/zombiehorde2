@@ -7,7 +7,7 @@ strict namespace ZH2Game
     internal void SetSurvivalDefaults()
     {
         Logger::LogDebug(LOGSOURCE, "Setting survival gamemode profile for events.");
-        
+
         EventBus::AddEventBusCallbackByScriptName(EVENTTIMERELAPSED, "zh2_internal_event_timerelapsed");
         EventBus::AddEventBusCallbackByScriptName(EVENTROUNDSWITCHED, "zh2_internal_event_roundswitched");
         EventBus::AddEventBusCallbackByScriptName(EVENTROUNDSWITCHED, "zh2_internal_event_roundswitched_client");
@@ -20,7 +20,7 @@ strict namespace ZH2Game
     internal void SetEscapeDefaults()
     {
         Logger::LogDebug(LOGSOURCE, "Setting escape gamemode profile for events.");
-        
+
         EventBus::AddEventBusCallbackByScriptName(EVENTTIMERELAPSED, "zh2_internal_event_timerelapsed");
         EventBus::AddEventBusCallbackByScriptName(EVENTROUNDSWITCHED, "zh2_internal_event_roundswitched");
         EventBus::AddEventBusCallbackByScriptName(EVENTROUNDSWITCHED, "zh2_internal_event_roundswitched_client");
@@ -81,7 +81,7 @@ strict namespace ZH2Game
                     RoundTimer::ResetTimer(
                         RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERCOUNTDOWN));
                     RoundTimer::DisableTimer();
-                    
+
                     Sync::SyncRoundState();
                     Sync::SyncTimers();
                     Logger::LogBold("Countdown cancelled. The game requires atleast " + str(minimumRequiredPlayers) + " playing players before starting.");
@@ -124,7 +124,7 @@ strict namespace ZH2Game
                 {
                     RoundTimer::SetActiveTimerByKnownType(RoundTimer::TIMERVOTING);
                     RoundTimer::StartTimer(index);
-                    
+
                     Sync::SyncTimers();
                 }
                 else Logger::LogError(LOGSOURCE, "Missing required voting timer.");
@@ -157,7 +157,7 @@ strict namespace ZH2Game
                 int index = Map::GetFinalVotedMapIndex();
                 if (index < 0 || index > ZH2Game::GameContext.VotableMapCount + 3)
                     index = 0;
-                
+
                 int targetMapIndex = 0;
                 switch(index)
                 {
@@ -174,7 +174,7 @@ strict namespace ZH2Game
                     case 2:
                         targetMapIndex = Map::GetRandomMap(Shuffle::FLAGIGNORECURRENTMAP | Shuffle::FLAGIGNORENEXTMAP);
                         break;
-                        
+
                     default:
                         targetMapIndex = ZH2Game::GameContext.VotableMaps[index - 3];
                         break;
@@ -195,7 +195,7 @@ strict namespace ZH2Game
                 Exit_Normal(0);
                 break;
             }
-            
+
             default:
                 Logger::LogError(LOGSOURCE, "Received invalid timer index " + str(index));
         }
@@ -254,7 +254,7 @@ strict namespace ZH2Game
 
                                 else if (!IsTIDUsed(teleportTid))
                                     Logger::LogError(LOGSOURCE, "Initial zombie spawn spot with TID " + str(teleportTid) + " does not exist exist.");
-                                
+
                                 else
                                     TeleportOther(tid, teleportTid, 0);
 
@@ -270,7 +270,7 @@ strict namespace ZH2Game
 
                     Append(s:(multiple ? " have " : " has ") + "been chosen as the initial zombie" + (multiple ? "s" : "") + ".");
                 }
-                
+
                 // Log the players that have been picked as an initial zombie.
                 Logger::LogBold(logMessage);
                 Sync::SyncPlayers();
@@ -278,7 +278,7 @@ strict namespace ZH2Game
                 // The match has started so we set the start tic.
                 Game::SetGameStartTicNow();
                 Sync::SyncGame();
-                
+
                 Delay(const: 35);
 
                 // Timer is completely optional in escape maps, so the map developer is free to leave it out.
@@ -298,7 +298,7 @@ strict namespace ZH2Game
 
                 break;
             }
-                
+
             case Round::StateEnding:
             {
                 // This timer is required. If not set we log an error.
@@ -308,7 +308,7 @@ strict namespace ZH2Game
                 {
                     RoundTimer::SetActiveTimerByKnownType(RoundTimer::TIMERENDING);
                     RoundTimer::StartTimer(index);
-                    
+
                     Sync::SyncTimers();
                     Sync::CallSyncTimersOnClients();
                 }
@@ -346,14 +346,14 @@ strict namespace ZH2Game
                 // (even if there's nothing to reset we set initial indexes to -1 since 0 is a map index).
                 for (int i = 0; i < Map::GetVotedMapIndexSize(); ++i)
                     Map::SetPlayerVotedMapIndex(i, -1);
-                
+
                 Map::UpdateVotableMaps();
                 SetPlayerProperty(1, 1, PROP_TOTALLYFROZEN);
 
                 Sync::SyncMapVoting();
                 break;
             }
-            
+
             default:
                 break;
         }
@@ -370,7 +370,7 @@ strict namespace ZH2Game
             terminate;
 
         switch (roundType)
-        { 
+        {
             case Round::StateEnding:
             {
                 Settings::CloseClientSettingsMenu();
@@ -393,7 +393,7 @@ strict namespace ZH2Game
             }
         }
     }
-    
+
     script "zh2_internal_event_scratched" (int infectedId, int infectorId)
     {
         // Double check a zombie infects a human.
@@ -404,9 +404,9 @@ strict namespace ZH2Game
         Logger::LogDebug(LOGSOURCE, "Scratching (\cd" + str(infectedId) + "\cj) " + BCSUtils::PlayerName(infectedId) + " by (\cd" + str(infectorId) + "\cj) " + BCSUtils::PlayerName(infectorId) + ".");
 
         // Check for protection.
-		if (Power::GetPlayerHasPower(infectedId, Power::POWERZOMBIEPROTECT))
+        if (Power::GetPlayerHasPower(infectedId, Power::POWERZOMBIEPROTECT))
             terminate;
-		
+
         // Always visualize a scratch at this point.
         if (!PlayerIsBot(infectedId))
             Hud::ShowPlayerHudScratch(infectedId);
@@ -421,8 +421,8 @@ strict namespace ZH2Game
             // Take a point.
             Player::AddPlayerKevlarPoints(infectedId, -1);
 
-			PlaySound(infectedTid, "items/ARMORHIT", CHAN_AUTO);
-			Power::SetPlayerPowerTics(infectedId, Power::POWERZOMBIEPROTECT, 18);
+            PlaySound(infectedTid, "items/ARMORHIT", CHAN_AUTO);
+            Power::SetPlayerPowerTics(infectedId, Power::POWERZOMBIEPROTECT, 18);
             terminate;
         }
 
@@ -438,7 +438,7 @@ strict namespace ZH2Game
         }
 
         Logger::LogBold("\cf" + Player::GetPlayerName(infectedId) + "\cj has been infected by \cf" + Player::GetPlayerName(infectorId) + "\cj!");
-        
+
         Game::InfectPlayer(infectedId, Game::INFECT_REGULAR);
 
         // Update score and state.
@@ -453,7 +453,7 @@ strict namespace ZH2Game
 
         Sync::SyncPlayers();
     }
-    
+
     script "zh2_internal_event_playerdied" (int killedId, int killerId)
     {
         int killedTid = Identity::GetTid(killedId);
@@ -468,7 +468,7 @@ strict namespace ZH2Game
 
         // Player died in a way that didn't involve a player
         if (killerId == -1) terminate;
-        
+
         Logger::LogDebug(LOGSOURCE,
             "\cd" + Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(killerId)) + "\cj " + Player::GetPlayerName(killerId)
             + " has killed \cd"
@@ -483,7 +483,7 @@ strict namespace ZH2Game
             killerSpecie == Player::SPECIEZOMBIE && killedSpecie == Player::SPECIEZOMBIE ? KILL_TYPE_ZOMBIE_TO_ZOMBIE :
             killerSpecie == Player::SPECIEZOMBIE && killedSpecie == Player::SPECIEHUMAN ? KILL_TYPE_ZOMBIE_TO_HUMAN :
             KILL_TYPE_NONE;
-        
+
         // A kill is accidental if the species match.
         bool accidental = killerSpecie == killedSpecie;
 

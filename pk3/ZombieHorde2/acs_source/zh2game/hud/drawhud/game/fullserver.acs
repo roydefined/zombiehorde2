@@ -25,24 +25,24 @@ strict namespace Hud
 
     internal void DrawEffectText(str message, int elapsed)
     {
-		for (int i = 0; i < strlen(message); ++i)
-		{
-			// Draw characters using a type on effect.
-			if (elapsed < 8 * i)
-				continue;
-			
-			// This ensures each character is displayed in order.
-			fixed charX = 240.0 + (15.0 * fixed(i));
-			
-			// Wave effect
-			fixed part = fixed(elapsed) / fixed(10 * i + (360 / 3));
-			fixed charY = 60.0 + BCSUtils::Round(3.0 * Sin(part));
-			
-			// Goes through all the colors, changing every 10 tics.
-			BCSUtils::HudSetTextColor((Timer() / 10 + i) % 20);
+        for (int i = 0; i < strlen(message); ++i)
+        {
+            // Draw characters using a type on effect.
+            if (elapsed < 8 * i)
+                continue;
+
+            // This ensures each character is displayed in order.
+            fixed charX = 240.0 + (15.0 * fixed(i));
+
+            // Wave effect
+            fixed part = fixed(elapsed) / fixed(10 * i + (360 / 3));
+            fixed charY = 60.0 + BCSUtils::Round(3.0 * Sin(part));
+
+            // Goes through all the colors, changing every 10 tics.
+            BCSUtils::HudSetTextColor((Timer() / 10 + i) % 20);
 
             BCSUtils::HudSetPoint(charX, charY);
             BCSUtils::HudDrawText(--_drawnHudId, StrParam(c:message[i]));
-		}
+        }
     }
 }
