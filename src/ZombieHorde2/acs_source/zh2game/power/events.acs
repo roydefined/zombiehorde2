@@ -30,11 +30,11 @@ strict namespace Power
 
                 if (hasExpired)
                     Append(s:", ");
-                
+
                 hasExpired = true;
                 Append(s:"\cd" + GetPowerIndexAsString(i) + "\cj");
             }
-			
+
             Append(s:".");
         }
 
@@ -54,12 +54,12 @@ strict namespace Power
         fixed jumpZ = 8.0;
         fixed damageFactor = 1.0;
         fixed damageMultiplier = 1.0;
-		
+
         str speedLogMessage = "Setting speed of player " + BCSUtils::PlayerName(id) + ": \cj" + str(speed);
         str jumpLogMessage = "Setting jump of player " + BCSUtils::PlayerName(id) + ": \cj" + str(jumpZ);
         str damageFactorLogMessage = "Setting damage factor of player " + BCSUtils::PlayerName(id) + ": \cj" + str(damageFactor);
         str damageMultiplierLogMessage = "Setting damage multiplier of player " + BCSUtils::PlayerName(id) + ": \cj" + str(damageMultiplier);
-        
+
         bool speedChanged = false,
              jumpZChanged = false,
              damageFactorChanged = false,
@@ -69,26 +69,26 @@ strict namespace Power
         {
             if (!GetPlayerHasPower(id, i))
                 continue;
-            
+
             PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[i];
-            
+
             if (context.SpeedModifier != 1.0)
             {
-                speedLogMessage += " * " + str(context.SpeedModifier); 
+                speedLogMessage += " * " + str(context.SpeedModifier);
                 speed *= context.SpeedModifier;
                 speedChanged = true;
             }
 
             if (context.JumpModifier != 1.0)
             {
-                jumpLogMessage += " * " + str(context.JumpModifier); 
+                jumpLogMessage += " * " + str(context.JumpModifier);
                 jumpZ *= context.JumpModifier;
                 jumpZChanged = true;
             }
 
             if (context.DamageFactor != 1.0)
             {
-                damageFactorLogMessage += " * " + str(context.DamageFactor); 
+                damageFactorLogMessage += " * " + str(context.DamageFactor);
                 damageFactor *= context.DamageFactor;
                 damageFactorChanged = true;
             }
@@ -96,12 +96,12 @@ strict namespace Power
 
             if (context.DamageMultiplier != 1.0)
             {
-                damageMultiplierLogMessage += " * " + str(context.DamageMultiplier); 
+                damageMultiplierLogMessage += " * " + str(context.DamageMultiplier);
                 damageMultiplier *= context.DamageMultiplier;
                 damageMultiplierChanged = true;
             }
         }
-		
+
         if (speedChanged)
         {
             speedLogMessage += ". Total: \cd" + str(speed) + "\cj.";
@@ -128,10 +128,10 @@ strict namespace Power
 
         // Note the values must still be set in case we go back to default values after having it set.
         int tid = Identity::GetTid(id);
-		SetActorProperty(tid, APROP_SPEED, speed);
-		SetActorProperty(tid, APROP_JUMPZ, jumpZ);
-		SetActorProperty(tid, APROP_DAMAGEFACTOR, damageFactor);
-		SetActorProperty(tid, APROP_DAMAGEMULTIPLIER, damageFactor);
+        SetActorProperty(tid, APROP_SPEED, speed);
+        SetActorProperty(tid, APROP_JUMPZ, jumpZ);
+        SetActorProperty(tid, APROP_DAMAGEFACTOR, damageFactor);
+        SetActorProperty(tid, APROP_DAMAGEMULTIPLIER, damageFactor);
     }
 
     internal void ResetPowers()
@@ -153,7 +153,7 @@ strict namespace Power
             TakePlayerPower(id, i, false);
             hasPower = true;
         }
-        
+
         // Secondly recalculate the new properties so they reset properly, but only if they had a power.
         if (hasPower)
             RecalculatePlayerPowers(id);
