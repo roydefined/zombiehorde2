@@ -1,43 +1,43 @@
 #ifdef __IMPORTED__
-	#error This file must be #included.
+    #error This file must be #included.
 #endif
 
 strict namespace Utils
 {
-	str FormatTics (int tics, bool includeDecimals = false)
-	{
-		// A negative number has to be handled as a positive number.
-		// We apply the dash to the result if we have a negative number.
-		bool isNegativeTics = tics < 0;
-		tics = BCSUtils::Abs(tics);
+    str FormatTics (int tics, bool includeDecimals = false)
+    {
+        // A negative number has to be handled as a positive number.
+        // We apply the dash to the result if we have a negative number.
+        bool isNegativeTics = tics < 0;
+        tics = BCSUtils::Abs(tics);
 
-		int hoursInt = (tics / 35) / 3600;
-		int minutesInt = (tics / 35) / 60 % 60;
-		int secondsInt = (tics / 35) % 60;
-		
-		// Determine hours and minutes.
-		// For minutes, add leading zeroes if we have hours.
-		str hours = hoursInt ? str(hoursInt) + ":" : "";
-		str minutes = hoursInt ? BCSUtils::LeftPad(str(minutesInt), '0', 2) : str(minutesInt);
-		str seconds = BCSUtils::LeftPad(str(secondsInt), '0', 2);
-		
-		// Add colons to the minutes if we have a value and we do not include decimals
-		if (!minutesInt && !hoursInt && includeDecimals) minutes = "";
-		else minutes = minutes + ":";
+        int hoursInt = (tics / 35) / 3600;
+        int minutesInt = (tics / 35) / 60 % 60;
+        int secondsInt = (tics / 35) % 60;
 
-		// Final value if we don't include decimals.
-		if (!includeDecimals) return (isNegativeTics ? "-" : "") + hours + minutes + seconds;
+        // Determine hours and minutes.
+        // For minutes, add leading zeroes if we have hours.
+        str hours = hoursInt ? str(hoursInt) + ":" : "";
+        str minutes = hoursInt ? BCSUtils::LeftPad(str(minutesInt), '0', 2) : str(minutesInt);
+        str seconds = BCSUtils::LeftPad(str(secondsInt), '0', 2);
 
-		// Decimals. Makes sure a tic is properly shown as a full second,
-		// and round to one decimal, while making sure it's parsed properly.
-		fixed decimals = fixed(tics % 35) * TICTOSECOND;
-		str decimalsStr = str(decimals);
-		
-		// Do not show the decimal value if it's below 10.
-		// Otherwise it will show the second decimal value.
-		decimalsStr = decimals >= 10.0 ? StrLeft(decimalsStr, 1) : "0";
-		
-		// Final value with decimals.
-		return (isNegativeTics ? "-" : "") + hours + minutes + seconds + "." + decimalsStr;
-	}
+        // Add colons to the minutes if we have a value and we do not include decimals
+        if (!minutesInt && !hoursInt && includeDecimals) minutes = "";
+        else minutes = minutes + ":";
+
+        // Final value if we don't include decimals.
+        if (!includeDecimals) return (isNegativeTics ? "-" : "") + hours + minutes + seconds;
+
+        // Decimals. Makes sure a tic is properly shown as a full second,
+        // and round to one decimal, while making sure it's parsed properly.
+        fixed decimals = fixed(tics % 35) * TICTOSECOND;
+        str decimalsStr = str(decimals);
+
+        // Do not show the decimal value if it's below 10.
+        // Otherwise it will show the second decimal value.
+        decimalsStr = decimals >= 10.0 ? StrLeft(decimalsStr, 1) : "0";
+
+        // Final value with decimals.
+        return (isNegativeTics ? "-" : "") + hours + minutes + seconds + "." + decimalsStr;
+    }
 }
