@@ -57,7 +57,7 @@ strict namespace Hud
 
         // We use the specie of the player to determine if the item can be used.
         Player::SpecieTypeT specie = Player::GetSpecie();
-        
+
         int drawnCount = ZH2Game::GetShownInventoryItems();
         int drawnSideCount = int(BCSUtils::Floor(fixed(drawnCount) / 2.0));
 
@@ -65,7 +65,7 @@ strict namespace Hud
         for (int i = 0; i < drawnSideCount; ++i)
         {
             fixed addX = (INVENTORY_ITEM_SPACING * fixed(i)) - INVENTORY_ITEM_SPACING;
-			fixed opacity = alpha - 0.5 - (0.1 * fixed(i));
+            fixed opacity = alpha - 0.5 - (0.1 * fixed(i));
 
             // Determine index. We must account for wrapping around.
             // Decrement by 1 or we draw the current item.
@@ -82,7 +82,7 @@ strict namespace Hud
         for (int i = 0; i < drawnSideCount; ++i)
         {
             fixed addX = (INVENTORY_ITEM_SPACING * fixed(i)) + INVENTORY_ITEM_SPACING;
-			fixed opacity = alpha - 0.5 - (0.1 * fixed(i));
+            fixed opacity = alpha - 0.5 - (0.1 * fixed(i));
 
             // Determine index. We must account for wrapping around.
             // Increment by 1 or we draw the current item.
@@ -90,7 +90,7 @@ strict namespace Hud
 
             if (index >= Item::GetClientOwnedInventorySize() && !ZH2Game::GetWrapInventoryItems()) break;
             while (index >= Item::GetClientOwnedInventorySize()) index -= Item::GetClientOwnedInventorySize();
-            
+
             int itemIndex = Item::GetInventoryIndex(Item::GetClientOwnedInventoryIndex(index));
             DrawInventoryItem(specie, itemIndex, addX, opacity, false);
         }
@@ -134,7 +134,7 @@ strict namespace Hud
         bool specieCanUse = !humanOwned && !zombieOwned
             || ownerSpecie == Player::SPECIEHUMAN && humanOwned
             || ownerSpecie == Player::SPECIEZOMBIE && zombieOwned;
-        
+
         // Reduce the alpha if current and can't be used to further indicate you can't use it.
         fixed baseAlpha = alpha;
         if ((!specieCanUse && current))
@@ -164,7 +164,7 @@ strict namespace Hud
 
             HudSetPointInternal(0.0, 25.0);
             BCSUtils::HudDrawText(--_drawnHudId, itemLabel);
-            
+
             BCSUtils::HudSetTextColor(CR_WHITE);
 
             HudSetPointInternal(0.0, 35.0);
@@ -174,7 +174,7 @@ strict namespace Hud
             if (!specieCanUse)
             {
                 str label = "You can't use " + itemLabel + " as a " + Player::GetSpecieIndexAsString(ownerSpecie) + ".";
-            
+
                 BCSUtils::HudSetAlpha(baseAlpha);
                 BCSUtils::HudSetTextColor(CR_RED);
 
@@ -187,7 +187,7 @@ strict namespace Hud
     internal void DrawKeyItem(int index, fixed addX, fixed alpha)
     {
         BCSUtils::HudSetAlpha(alpha);
-        
+
         HudSetPointInternal(addX, 20.0);
         BCSUtils::HudDrawImage(--_drawnHudId, Item::GetItemGraphic(index));
     }
