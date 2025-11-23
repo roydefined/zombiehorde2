@@ -1,33 +1,33 @@
 #ifdef __IMPORTED__
-	#error This file must be #included.
+    #error This file must be #included.
 #endif
 
 strict namespace Utils
 {
-	internal int _synchronizedTimerOffset = 0;
-	
-	int GetSynchronizedTimer(void)
-	{
-		// Return regular timer serverside.
-		if (!BCSUtils::IsClient()) return Timer();
-		return Timer() + _synchronizedTimerOffset;
-	}
+    internal int _synchronizedTimerOffset = 0;
+
+    int GetSynchronizedTimer(void)
+    {
+        // Return regular timer serverside.
+        if (!BCSUtils::IsClient()) return Timer();
+        return Timer() + _synchronizedTimerOffset;
+    }
 
     void InitializeSynchronizedTimerForPlayer(int playerId)
     {
-		if (!BCSUtils::IsServer())
-		{
-			Logger::LogError(LogSource, "InitializeSynchronizedTimerForPlayer must be called serverside");
-			return;
-		}
-		
-		if (!NamedExecuteClientScript("utils_internal_synchronizedtimer_client", playerId, Timer()))
+        if (!BCSUtils::IsServer())
+        {
+            Logger::LogError(LogSource, "InitializeSynchronizedTimerForPlayer must be called serverside");
+            return;
+        }
+
+        if (!NamedExecuteClientScript("utils_internal_synchronizedtimer_client", playerId, Timer()))
             Logger::LogError(LogSource, "Failed to call utils_internal_synchronizedtimer_client on client " + str(playerId) + ".");
     }
-	
-	script "utils_internal_synchronizedtimer_client" (int offset) clientside
-	{
-		_synchronizedTimerOffset = offset;
-		Logger::LogDebug(LogSource, "Synchronized timer offset has been set to \cd" + str(_synchronizedTimerOffset) + "\cj.");
-	}
+
+    script "utils_internal_synchronizedtimer_client" (int offset) clientside
+    {
+        _synchronizedTimerOffset = offset;
+        Logger::LogDebug(LogSource, "Synchronized timer offset has been set to \cd" + str(_synchronizedTimerOffset) + "\cj.");
+    }
 }

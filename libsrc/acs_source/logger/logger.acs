@@ -1,5 +1,5 @@
 #ifdef __IMPORTED__
-	#error This file must be #included.
+    #error This file must be #included.
 #endif
 
 #define LogSource "Logger"
@@ -10,38 +10,38 @@
 
 strict namespace Logger
 {
-	internal void PrintError(str message)
-	{
-		PrintBold(s:"\cgError\cj: " + message);
-	}
+    internal void PrintError(str message)
+    {
+        PrintBold(s:"\cgError\cj: " + message);
+    }
 
-	// General scripts retrieve a log message as string or integer format and log it.
+    // General scripts retrieve a log message as string or integer format and log it.
     // These are called from general log functions not tied to a severity. We don't buffer them.
     // We also don't expect these to require an explicit order.
     script "LoggerLib_LogOnClientInt" (raw stringInt) clientside
-	{
+    {
         if (!SetActivatorToPlayer(ConsolePlayerNumber())) terminate;
         Log(s:(str)stringInt);
-	}
-	
-	script "LoggerLib_LogOnClientString" (raw message) clientside
-	{
+    }
+
+    script "LoggerLib_LogOnClientString" (raw message) clientside
+    {
         if (!SetActivatorToPlayer(ConsolePlayerNumber())) terminate;
         Log(s:message);
-	}
-	
+    }
+
     // Scripts to retrieve a packet log message as string or integer and buffer it for logging later.
-	script "LoggerLib_LogPacketOnClientInt" (raw stringInt) clientside
-	{
+    script "LoggerLib_LogPacketOnClientInt" (raw stringInt) clientside
+    {
         if (!SetActivatorToPlayer(ConsolePlayerNumber())) terminate;
-		AddPacketLogToBuffer((str)stringInt);
-	}
-	
-	script "LoggerLib_LogPacketOnClientString" (raw messagePacket) clientside
-	{
+        AddPacketLogToBuffer((str)stringInt);
+    }
+
+    script "LoggerLib_LogPacketOnClientString" (raw messagePacket) clientside
+    {
         if (!SetActivatorToPlayer(ConsolePlayerNumber())) terminate;
         AddPacketLogToBuffer((str)messagePacket);
-	}
+    }
 }
 
 #undef LogSource
