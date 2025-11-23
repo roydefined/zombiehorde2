@@ -1,20 +1,20 @@
 #ifdef __IMPORTED__
-	#error This file must be #included.
+    #error This file must be #included.
 #endif
 
 strict namespace Reward
 {
-	internal void GiveReward(RewardItemTypeFlagsT type)
-	{
-		GivePlayerReward(PlayerNumber(), type);
-	}
-	
-	internal void GivePlayerReward(int id, RewardItemTypeFlagsT type)
-	{
-		VALIDATE_ID_VALID_FUNCTION(id);
-		int tid = Identity::GetTid(id);
+    internal void GiveReward(RewardItemTypeFlagsT type)
+    {
+        GivePlayerReward(PlayerNumber(), type);
+    }
 
-		Weight::PrepareWeightsByReward(id, type);
+    internal void GivePlayerReward(int id, RewardItemTypeFlagsT type)
+    {
+        VALIDATE_ID_VALID_FUNCTION(id);
+        int tid = Identity::GetTid(id);
+
+        Weight::PrepareWeightsByReward(id, type);
 
         // No weights means the player has all rewards already.
         if (!Weight::HasWeights())
@@ -23,19 +23,19 @@ strict namespace Reward
             return;
         }
 
-		int index = -1;
-		while(true)
-		{
-			index = Weight::Next(index);
+        int index = -1;
+        while(true)
+        {
+            index = Weight::Next(index);
 
-			// This should not happen.
+            // This should not happen.
             // We have weights, and we already filtered non-applicable items.
             // We should ALWAYS get a valid weight.
-			if (index == -1)
-			{
+            if (index == -1)
+            {
                 Logger::LogWarning(LOGSOURCE, "No more weights exist when attempting to give an item to player " + str(id) + ".");
                 continue;
-			}
+            }
 
             // We already checked this when preparing the weights, it should not happen.
             if (!GetCanGivePlayerReward(id, index))
@@ -43,19 +43,19 @@ strict namespace Reward
                 Logger::LogWarning(LOGSOURCE, "Unexpected item index " + str(index) + " can't be given when attempting to give an item to player " + str(id) + ".");
                 continue;
             }
-			
-			break;
-		}
-		
-		// Determine and take the user's item.
-		// This is done loosely in case this function is called internally and the player won't have the item.
-		str itemName = ContainerTypeToItemName(type);
-		if ((raw)itemName != 0 && itemName != "" && CheckActorInventory(tid, itemName) > 0)
-			TakeActorInventory(tid, itemName, 1);
 
-		GivePlayerRewardByIndex(id, index);
+            break;
+        }
+
+        // Determine and take the user's item.
+        // This is done loosely in case this function is called internally and the player won't have the item.
+        str itemName = ContainerTypeToItemName(type);
+        if ((raw)itemName != 0 && itemName != "" && CheckActorInventory(tid, itemName) > 0)
+            TakeActorInventory(tid, itemName, 1);
+
+        GivePlayerRewardByIndex(id, index);
         BroadcastGiveItem(id, index);
-	}
+    }
 
     internal bool GetCanGiveReward(int index)
     {
@@ -98,48 +98,48 @@ strict namespace Reward
         return true;
     }
 
-	internal void GiveRewardByIndex(int index)
-	{
-		GivePlayerRewardByIndex(PlayerNumber(), index);
-	}
+    internal void GiveRewardByIndex(int index)
+    {
+        GivePlayerRewardByIndex(PlayerNumber(), index);
+    }
 
-	internal void GivePlayerRewardByIndex(int id, int index)
-	{
-		VALIDATE_ID_VALID_FUNCTION(id);
-		int tid = Identity::GetTid(id);
+    internal void GivePlayerRewardByIndex(int id, int index)
+    {
+        VALIDATE_ID_VALID_FUNCTION(id);
+        int tid = Identity::GetTid(id);
 
-		str name = GetRewardName(index),
+        str name = GetRewardName(index),
             callGive = GetRewardCallGive(index),
-			give = GetRewardGive(index),
-			sound = GetRewardSound(index);
+            give = GetRewardGive(index),
+            sound = GetRewardSound(index);
 
-		if ((raw)callGive != 0 && callGive != "")
-		{
+        if ((raw)callGive != 0 && callGive != "")
+        {
             if (!ACS_NamedExecuteAlways(callGive, 0, id))
                 Logger::logError(LOGSOURCE, "Failed to call script \"" + callGive + "\" for reward index " + str(index) + ".");
         }
 
-		if ((raw)give != 0 && give != "")
-			GiveActorInventory(tid, give, 1);
-			
-		if ((raw)sound != 0 && sound != "")
-			PlaySound(tid, sound, CHAN_ITEM, 1.0);
-	}
+        if ((raw)give != 0 && give != "")
+            GiveActorInventory(tid, give, 1);
+
+        if ((raw)sound != 0 && sound != "")
+            PlaySound(tid, sound, CHAN_ITEM, 1.0);
+    }
 
     internal void BroadcastGiveItem(int id, int index)
     {
-		str localMessage = GetRewardLocalMessage(index),
-			message = GetRewardMessage(index);
+        str localMessage = GetRewardLocalMessage(index),
+            message = GetRewardMessage(index);
 
         if ((raw)localMessage != 0 && localMessage != "")
-			Logger::LogTo(localMessage, id);
+            Logger::LogTo(localMessage, id);
 
-		if ((raw)message != 0 && message != "")
-		{
-			if (BCSUtils::StrContains(message, REWARD_PLAYER_TOKEN))
-				message = BCSUtils::StrReplace(message, REWARD_PLAYER_TOKEN, BCSUtils::PlayerName(id));
+        if ((raw)message != 0 && message != "")
+        {
+            if (BCSUtils::StrContains(message, REWARD_PLAYER_TOKEN))
+                message = BCSUtils::StrReplace(message, REWARD_PLAYER_TOKEN, BCSUtils::PlayerName(id));
 
-			Logger::LogExcept(message, id);
-		}
+            Logger::LogExcept(message, id);
+        }
     }
 }
