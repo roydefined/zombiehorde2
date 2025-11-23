@@ -1,36 +1,36 @@
 actor ZH2ItemSuicideBomb : ZH2CustomInventoryPowerup 21121
 {
-	Inventory.Amount 1
-	Inventory.MaxAmount 1
-	
-	inventory.icon "SBOMBI"
-	Inventory.PickupMessage "Suicide bomb"
-	Tag "Suicide bomb"
-	
-	states
-	{
-		Spawn:
-			SBOM A -1
-			stop
-			
-		Pickup:
-			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, 1)
-			stop
-			TNT1 A 0 A_RailWait
-			Stop
-		
-		// We want confirmation on using the bomb.
-		Use:
-			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, 1)
-			Stop
-			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_use_suicide_bomb", 0, 0, 0) == true, 1)
-			Stop
-			TNT1 A 0 A_SpawnItemEx("ZH2ItemSuicideBombExplosionFX")
-			
-			TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfire_area", 0, 600, 350, 350)
-			
-			// 400 is enough to definitely gib a human.
-			TNT1 A 0 Thing_Damage(tid, 400, "none")
-			Stop
-	}
+    Inventory.Amount 1
+    Inventory.MaxAmount 1
+
+    inventory.icon "SBOMBI"
+    Inventory.PickupMessage "Suicide bomb"
+    Tag "Suicide bomb"
+
+    states
+    {
+        Spawn:
+            SBOM A -1
+            stop
+
+        Pickup:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, 1)
+            stop
+            TNT1 A 0 A_RailWait
+            Stop
+
+        // We want confirmation on using the bomb.
+        Use:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, 1)
+            Stop
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_use_suicide_bomb", 0, 0, 0) == true, 1)
+            Stop
+            TNT1 A 0 A_SpawnItemEx("ZH2ItemSuicideBombExplosionFX")
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfire_area", 0, 600, 350, 350)
+
+            // 400 is enough to definitely gib a human.
+            TNT1 A 0 Thing_Damage(tid, 400, "none")
+            Stop
+    }
 }
