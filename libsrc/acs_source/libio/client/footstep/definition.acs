@@ -7,11 +7,11 @@ strict namespace LibIO
     internal bool ParseStepDefinitions(int handle, str identifyingSymbol)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "stepdefinitions")) return false;
-        
+
         int braceLevel = Tokenizer::GetBraceLevel(handle);
         if (!Tokenizer::ExpectNextChar(handle, '{'))
             return false;
-        
+
         Tokenizer::Next(handle);
 
         // While the brace level does not match the end level, we keep parsing.
@@ -24,7 +24,7 @@ strict namespace LibIO
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing footstep sound definition: '" + symbol + "'.");
             return false;
         }
-        
+
         // Optional comma.
         Tokenizer::Next(handle, false);
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
@@ -95,7 +95,7 @@ strict namespace LibIO
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing footstep surface definition " + surface + ": '" + symbol + "'.");
             return false;
         }
-            
+
         // Optional comma.
         Tokenizer::Next(handle, false);
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
@@ -126,7 +126,7 @@ strict namespace LibIO
                 Logger::LogWarning(LogSource, "Surface range " + surfaceRange + " was defined but surface " + surface + " has no defined range.");
                 return true;
             }
-            
+
             int surfaceRangeSplitIndex = Utils::GetFrameCutoffPoint(surfaceRange);
             if (surfaceRangeSplitIndex == -1)
             {
@@ -191,7 +191,7 @@ strict namespace LibIO
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "sound"))
             return false;
-        
+
         Tokenizer::Next(handle);
         if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
             && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
@@ -211,7 +211,7 @@ strict namespace LibIO
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "volume"))
             return false;
-        
+
         Tokenizer::Next(handle);
 
         if (!Tokenizer::TryParseFixedValue(handle))
@@ -233,7 +233,7 @@ strict namespace LibIO
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "terrainactor"))
             return false;
-        
+
         Tokenizer::Next(handle);
         if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
             && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
