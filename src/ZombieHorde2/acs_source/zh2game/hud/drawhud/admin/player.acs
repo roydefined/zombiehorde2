@@ -18,7 +18,7 @@ strict namespace Hud
     internal void DrawPlayerMenuHud()
     {
         BCSUtils::HudSetTextColor(CR_WHITE);
-        
+
         HudSetPointInternal();
         BCSUtils::HudDrawText(--_drawnHudId, "\cfPlayers");
 
@@ -49,11 +49,11 @@ strict namespace Hud
             case MENUTARGET_NONE:
                 DrawPlayerList();
                 break;
-            
+
             case MENUTARGET_ALL:
                 DrawGiveAll();
                 break;
-            
+
             case MENUTARGET_PLAYERSPECIFIC:
                 DrawPlayerDetails(_menuPlayerTargetId);
                 break;
@@ -65,7 +65,7 @@ strict namespace Hud
         fixed addY = 40.0;
 
         // Add bots as human/zombie. Doesn't work if we reached max players.
-        
+
         if (DrawClickableTextConditional(
             BCSUtils::ClientCount() != BCSUtils::MAX_PLAYERS, --_drawnHudId, 0.0, addY, 100.0, 10.0, "add bot (human)"))
         {
@@ -89,9 +89,9 @@ strict namespace Hud
         {
             if (!BCSUTILS::ActorIsAlive(Identity::GetTID(i)))
                 continue;
-            
+
             BCSUtils::HudSetTextColor(CR_WHITE);
-            
+
             HudSetPointInternal(0.0, 50.0 + fixed(10 * offset));
             BCSUtils::HudDrawText(--_drawnHudId, str(i));
 
@@ -105,7 +105,7 @@ strict namespace Hud
         }
     }
 
-    
+
     internal void DrawGiveAll()
     {
         // In some cases we loop over all species.
@@ -118,15 +118,15 @@ strict namespace Hud
         /* LIST OF POWERS */
 
         BCSUtils::HudSetFont("BigFont");
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfFilter specie");
-            
+
         BCSUtils::HudSetTextColor(CR_WHITE);
         BCSUtils::HudSetFont("SmallFont");
 
         addY += 20.0;
-    
+
         for (int i = Player::SPECIENONE; i <= Player::SPECIEZOMBIE; ++i)
         {
             Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(i);
@@ -140,24 +140,24 @@ strict namespace Hud
                 _filteredSpecie = specie;
             }
         }
-        
+
         addY += 20.0;
 
         /* ALLOW JOIN */
 
         BCSUtils::HudSetFont("BigFont");
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfAllow join");
-            
+
         BCSUtils::HudSetTextColor(CR_WHITE);
         BCSUtils::HudSetFont("SmallFont");
 
         addY += 20.0;
-        
+
         if (DrawClickableText(--_drawnHudId, addX, addY, 30.0, 10.0, "enable"))
             Admin::AdminSetAllowJoinClientSide(true);
-        
+
         if (DrawClickableText(--_drawnHudId, 60.0 + addX, addY, 40.0, 10.0, "disable"))
             Admin::AdminSetAllowJoinClientSide(false);
 
@@ -166,7 +166,7 @@ strict namespace Hud
         /* LIST OF POWERS */
 
         BCSUtils::HudSetFont("BigFont");
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfPowers");
 
@@ -177,13 +177,13 @@ strict namespace Hud
 
         // Note, hardcoded 2 for the current two available items you can increase.
         addY += 10.0 * 2.0;
-        
+
         addY += 20.0;
 
         /* KEVLAR ARMOR */
 
         BCSUtils::HudSetFont("BigFont");
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfAdd kevlar armor");
 
@@ -191,17 +191,17 @@ strict namespace Hud
 
         BCSUtils::HudSetFont("SmallFont");
         DrawArmorIncrementSelectors(addX, addY, InvokeArmorIncrementOnAll);
-        
+
         addY += 20.0;
 
         /* REWARD CONTAINERS */
 
         BCSUtils::HudSetFont("BigFont");
         BCSUtils::HudSetTextColor(CR_WHITE);
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfGive containers");
-        
+
         addY += 20.0;
 
         BCSUtils::HudSetFont("SmallFont");
@@ -212,13 +212,13 @@ strict namespace Hud
         addX += 200.0;
 
         /* ITEMS */
-        
+
         BCSUtils::HudSetFont("BigFont");
         BCSUtils::HudSetTextColor(CR_WHITE);
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfGive items");
-        
+
         addY += 20.0;
 
         BCSUtils::HudSetFont("SmallFont");
@@ -229,13 +229,13 @@ strict namespace Hud
         addX += 300.0;
 
         /* REWARDS */
-        
+
         BCSUtils::HudSetFont("BigFont");
         BCSUtils::HudSetTextColor(CR_WHITE);
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfGive rewards");
-        
+
         addY += 20.0;
 
         BCSUtils::HudSetFont("SmallFont");
@@ -271,19 +271,19 @@ strict namespace Hud
     {
         fixed addX = 0.0,
               addY = 40.0;
-        
+
         if (playerId == -1)
         {
             BCSUtils::HudSetTextColor(CR_RED);
-            
+
             HudSetPointInternal(addX, addY);
             BCSUtils::HudDrawText(--_drawnHudId, "Error: failed to determine player id.");
 
             return;
         }
-        
+
         BCSUtils::HudSetTextColor(CR_WHITE);
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, Player::GetPlayerName(playerId));
 
@@ -293,7 +293,7 @@ strict namespace Hud
         if (!BCSUTILS::ActorIsAlive(Identity::GetTID(playerId)))
         {
             BCSUtils::HudSetTextColor(CR_RED);
-        
+
             HudSetPointInternal(addX, addY);
             BCSUtils::HudDrawText(--_drawnHudId, "Player is dead or left.");
             return;
@@ -319,27 +319,27 @@ strict namespace Hud
         /* ALLOW JOIN */
 
         BCSUtils::HudSetFont("BigFont");
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfAllow join");
-            
+
         BCSUtils::HudSetTextColor(CR_WHITE);
         BCSUtils::HudSetFont("SmallFont");
 
         addY += 20.0;
-        
+
         if (DrawClickableText(--_drawnHudId, 0.0, addY, 30.0, 10.0, "enable"))
             Admin::AdminSetPlayerAllowJoinClientSide(playerId, true);
-        
+
         if (DrawClickableText(--_drawnHudId, 60.0, addY, 40.0, 10.0, "disable"))
             Admin::AdminSetPlayerAllowJoinClientSide(playerId, false);
 
         addY += 20.0;
-            
+
         /* LIST OF POWERS */
 
         BCSUtils::HudSetFont("BigFont");
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfPowers");
 
@@ -347,14 +347,14 @@ strict namespace Hud
 
         BCSUtils::HudSetFont("SmallFont");
         DrawPowerSelectors(addX, addY, InvokeIncrementPowerOnSelectedPlayer);
-        
+
         addY += 20.0;
 
         /* KEVLAR ARMOR */
 
         BCSUtils::HudSetFont("BigFont");
         BCSUtils::HudSetTextColor(CR_WHITE);
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfAdd kevlar armor");
 
@@ -369,44 +369,44 @@ strict namespace Hud
 
         BCSUtils::HudSetFont("BigFont");
         BCSUtils::HudSetTextColor(CR_WHITE);
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfGive containers");
-        
+
         addY += 20.0;
 
         BCSUtils::HudSetFont("SmallFont");
         DrawRewardContainerSelectors(addX, addY, InvokeContainerOnSelectedPlayer);
-        
+
         // Resets y and moves x
         addY = -100.0;
         addX += 200.0;
 
         /* ITEMS */
-        
+
         BCSUtils::HudSetFont("BigFont");
         BCSUtils::HudSetTextColor(CR_WHITE);
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfGive items");
-        
+
         addY += 20.0;
 
         BCSUtils::HudSetFont("SmallFont");
         DrawItemSelectors(addX, addY, InvokeIncrementItemOnSelectedPlayer);
-        
+
         // Resets y and moves x
         addY = -100.0;
         addX += 300.0;
 
         /* REWARDS */
-        
+
         BCSUtils::HudSetFont("BigFont");
         BCSUtils::HudSetTextColor(CR_WHITE);
-        
+
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfGive rewards");
-        
+
         addY += 20.0;
 
         BCSUtils::HudSetFont("SmallFont");
@@ -449,7 +449,7 @@ strict namespace Hud
                 label = Item::GetItemName(i);
 
             BCSUtils::HudSetTextColor(CR_WHITE);
-            
+
             HudSetPointInternal(addX, addY + fixed(10 * i));
             BCSUtils::HudDrawText(--_drawnHudId, label);
 
@@ -469,7 +469,7 @@ strict namespace Hud
             str name = Reward::GetRewardName(i);
 
             BCSUtils::HudSetTextColor(CR_WHITE);
-            
+
             HudSetPointInternal(addX, addY + fixed(10 * i));
             BCSUtils::HudDrawText(--_drawnHudId, name);
 
@@ -489,9 +489,9 @@ strict namespace Hud
             // They make no sense to provide.
             if (context.MaxTics == BCSUtils::INT_MAX)
                 continue;
-            
+
             BCSUtils::HudSetTextColor(CR_WHITE);
-            
+
             HudSetPointInternal(addX, addY + fixed(10 * i));
             BCSUtils::HudDrawText(--_drawnHudId, Power::GetPowerIndexAsString(i));
 

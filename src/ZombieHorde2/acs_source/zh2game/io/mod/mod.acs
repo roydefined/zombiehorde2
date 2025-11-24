@@ -58,18 +58,18 @@ strict namespace IO
                 Logger::LogDebug(LOGSOURCE , "No more mod def lumps found.");
                 break;
             }
-            
+
             Logger::LogDebug(LOGSOURCE , "Found mod def lump: \cd" + (str)LumpGetInfo(startIndex, LUMP_INFO_NAME) + "\cj.");
             if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) == 0)
             {
                 Logger::LogDebug(LOGSOURCE , "Mod def file is empty.");
                 continue;
             }
-            
+
             ParseModDefLump(LumpReadString(startIndex, 0), isServerSide);
             LumpClose(startIndex);
         }
-        
+
         Logger::LogDebug(LOGSOURCE , "Finished parsing mod def lumps. Is serverside: \cd" + (isServerSide ? "true" : "false") + "\cj.");
     }
 
@@ -105,7 +105,7 @@ strict namespace IO
                     || ParseRadio(handle, symbol)
                     || ParseTips(handle, symbol))
                     continue;
-                
+
                 // As powers consists of shared data, parsing them in an offline game only has to be done serverside.
                 // The items are also parsed clientside online since the whole system for the inventory and such rely on it.
                 if (IsNetworkGame()
@@ -113,14 +113,14 @@ strict namespace IO
                     || ParseItems(handle, symbol)
                     || ParseRewards(handle, symbol)))
                     continue;
-                
+
                 if (!IsNetworkGame()
                     && (Tokenizer::ParseBodyAsEmpty(handle, symbol, "powers")
                     || Tokenizer::ParseBodyAsEmpty(handle, symbol, "items")
                     || Tokenizer::ParseBodyAsEmpty(handle, symbol, "rewards")))
                     continue;
             }
-            
+
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MODDEFLUMPNAME + " (serverside: " + (isServerside ? "true" : "false") + "): '" + symbol + "'.");
             Tokenizer::ReturnTokenizer(handle);
             return;
