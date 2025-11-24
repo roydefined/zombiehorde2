@@ -21,7 +21,7 @@ strict namespace ZH2Game
             // Removing 1 tic prevents the countdown ambient from playing every tic if it's the play timer.
             RoundTimer::SetTimerTicsLeft(index, 1 * 35 - 1);
             Logger::LogBold(BCSUTILS::PlayerName(PlayerNumber()) + " has sped up the timer.");
-          
+
             Sync::SyncTimers();
             terminate;
         }
@@ -50,7 +50,7 @@ strict namespace ZH2Game
             RoundTimer::SetActiveTimerByKnownType(RoundTimer::TIMERPREGAMECOUNTDOWN);
             RoundTimer::StartTimer(index);
             Logger::LogBold(BCSUtils::PlayerName(PlayerNumber()) + " has requested to start the game.");
-          
+
             Sync::SyncTimers();
             terminate;
         }
@@ -95,7 +95,7 @@ strict namespace ZH2Game
     {
         if (!BCSUtils::IsAlive())
             terminate;
-        
+
         if (!Player::GetIsZombie())
             terminate;
 
@@ -141,7 +141,7 @@ strict namespace ZH2Game
             Logger::LogActivator("You're not allowed to be set as an admin.");
             terminate;
         }
-        
+
         Admin::RconSetPlayerAdmin(PlayerNumber(), true);
     }
 
@@ -163,7 +163,7 @@ strict namespace ZH2Game
 
         Player::SpecieTypeT specie = Player::GetSpecie();
         ClearInventory();
-        
+
         if (specie == Player::SPECIEHUMAN) Player::GiveHumanInventory(true);
         else if (specie == Player::SPECIEZOMBIE) Player::GiveZombieInventory();
 
@@ -201,7 +201,7 @@ strict namespace ZH2Game
                 {
                     int parsePosition = Map::GetParsedMapPosition(rotationPosition);
                     Append(s:"\cj Parse position: \cd" + str(rotationPosition));
-                    
+
                     Append(s:"\cj Name: \cd" + GetMapRotationInfo(rotationPosition, MAPROTATION_NAME));
                     Append(s:"\cj Used: \cd" + (GetMapRotationInfo(rotationPosition, MAPROTATION_USED) ? "yes" : "no"));
 
@@ -221,12 +221,12 @@ strict namespace ZH2Game
         }
         Logger::LogActivator(logMessage);
     }
-    
+
     script "zh2_action_debugmaprotation_serverside" net
     {
         InternalDebugMapRotation();
     }
-    
+
     // The clientsided variant seems pointless for an internal set of functions but w/e.
     script "zh2_action_debugmaprotation_clientside" net clientside
     {
@@ -267,7 +267,7 @@ strict namespace ZH2Game
         }
         Logger::LogActivator(logMessage);
     }
-    
+
     // Clientside not supported. Or at least doesn't make sense to do.
     script "zh2_action_debugvotablemaps_serverside" net
     {
@@ -287,7 +287,7 @@ strict namespace ZH2Game
 
             int nextMapPosition = GetMapPosition(MAPPOSITION_NEXT);
             Append(s:"Next map: \cd" + (str)GetMapRotationInfo(nextMapPosition, MAPROTATION_LUMPNAME) + "\cj: \cd" + (str)GetMapRotationInfo(nextMapPosition, MAPROTATION_NAME) + "\cj.\n");
-            
+
             for (int i = 0; i < Shuffle::GetRelevantSize(); ++i)
             {
                 int value = Shuffle::GetIndexValue(i);
@@ -296,7 +296,7 @@ strict namespace ZH2Game
         }
         Logger::LogActivator(logMessage);
     }
-    
+
     // Serverside not supported, because this is a clientside feature.
     script "zh2_action_debugrequestedclientsettings_clientside" net clientside
     {
@@ -326,7 +326,7 @@ strict namespace ZH2Game
                 // For cvars we log the expected value, and the actual value.
                 if (type == "cvar")
                     Append(s:"(\cd" + str(value) + "\cj, current: \cd" + str(GetCvar(name)) + "\cj) ");
-                
+
                 // For keybinds we log if it should be bound or unbound.
                 else
                     Append(s:"(must be \cd" + (value ? "bound" : "unbound") + "\cj) ");
@@ -403,7 +403,7 @@ strict namespace ZH2Game
                 Append(s:"\cf#" + str(i));
                 WriteItem(Item::GetWeaponIndex(i));
             }
-            
+
             size = Item::GetInventoryCollectionSize();
             Append(s:"\n");
             Append(s:"\cjInventory \cd" + str(size) + "\cj/\cd" + str(totalSize));
@@ -413,7 +413,7 @@ strict namespace ZH2Game
                 Append(s:"\cf#" + str(i));
                 WriteItem(Item::GetInventoryIndex(i));
             }
-            
+
             size = Item::GetKeyCollectionSize();
             Append(s:"\n");
             Append(s:"\cjKeys \cd" + str(size) + "\cj/\cd" + str(totalSize));
@@ -513,7 +513,7 @@ strict namespace ZH2Game
             Logger::LogActivator("You're not allowed to call sync scripts.");
             terminate;
         }
-            
+
         Sync::SynAllClientside();
         Logger::LogActivator("Sync all clientside triggered.");
     }
