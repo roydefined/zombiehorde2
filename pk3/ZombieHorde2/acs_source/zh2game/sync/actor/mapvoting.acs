@@ -35,12 +35,12 @@ strict namespace Sync
     {
         int syncId = SYNC_MAPVOTING;
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading map voting on client through actors. Sync id: " + str(syncId) + "."));
-        
+
         syncId = SyncReadVotableMaps(syncId);
         syncId = SyncReadPlayerVotes(syncId);
         syncId = SyncReadOtherMapVotingData(syncId);
         syncId = SyncReadMapVoteCooldowns(syncId);
-        
+
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Synced general map voting to client."));
         VERIFY_SYNCID(syncId, SYNC_MAPVOTING, SYNC_MAPVOTING_LENGTH);
     }
@@ -50,7 +50,7 @@ strict namespace Sync
         // This is a basic index so no special bit stuff is done here.
         int length = ZH2Game::GameContext.VotableMapCount;
         BCSUtils::SyncVariable(--syncId, length);
-        
+
         str logMessage;
         buildmsg(logMessage = StrParam())
         {
@@ -75,7 +75,7 @@ strict namespace Sync
     {
         int length = BCSUtils::GetSyncVarDefault(--syncId, 0);
         ZH2Game::GameContext.VotableMapCount = length;
-        
+
         str logMessage;
         buildmsg(logMessage = StrParam())
         {
@@ -92,7 +92,7 @@ strict namespace Sync
             }
         }
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, logMessage));
-        
+
         return syncId;
     }
 
@@ -102,7 +102,7 @@ strict namespace Sync
         // Additionally, this failsafe is added just in case we forget this if we update the max number.
         if (MAX_VOTABLEMAPS > 3)
             Logger::LogError(LOGSOURCE, FormatLog(SYNC_CATEGORY, "MAX_VOTABLEMAPS must not exceed 3!"));
-        
+
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             // We have to make sure to split the value over two bits.
@@ -122,8 +122,8 @@ strict namespace Sync
             BitMath::SetBit128(BitMath::GetBitPack1(), BitMath::GetBitPack2(), BitMath::GetBitPack3(), BitMath::GetBitPack4(), baseIndex + 2, bit2);
 
             if (PlayerInGame(i))
-                Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Player (\cd" + str(i) + "\cj) " 
-                    + BCSUTILS::PlayerName(i) 
+                Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Player (\cd" + str(i) + "\cj) "
+                    + BCSUTILS::PlayerName(i)
                     + " vote: \cd" + str(vote - 1) + "\cj,"
                     + " bits: \cd" + str(int(bit2)) + " - " + str(int(bit1)) + " - " + str(int(bit0)) + "\cj."));
         }
@@ -163,8 +163,8 @@ strict namespace Sync
             Map::SetPlayerVotedMapIndex(i, vote);
 
             if (PlayerInGame(i))
-                Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Player (\cd" + str(i) + "\cj) " 
-                    + BCSUTILS::PlayerName(i) 
+                Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Player (\cd" + str(i) + "\cj) "
+                    + BCSUTILS::PlayerName(i)
                     + " vote: \cd" + str(vote) + "\cj,"
                     + " bits: \cd" + str(int(bit2)) + " - " + str(int(bit1)) + " - " + str(int(bit0)) + "\cj."));
         }
