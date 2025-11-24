@@ -7,7 +7,7 @@ strict namespace IO
     // Holds a parsed value that was parsed from a resist.
     // This is placed in a local variable in the same frame, located in the main parsing method.
     internal raw _tokenizerResistParsedValue;
-    
+
     // Parse resists.
     // The format of the collection is `resist [ { definition } ]`, where definition is a collection of key or key-value pairs.
     internal bool ParseResistCollection(int handle, str mapLump, str identifyingSymbol)
@@ -58,14 +58,14 @@ strict namespace IO
                 length = _tokenizerResistParsedValue;
                 continue;
             }
-            
+
             if (ParseResistTopReasonLabel(handle, symbol))
             {
                 if (topReasonLabel != (raw)0) Logger::LogWarning(LOGSOURCE, "The top reason was already defined for the resist. Replacing.");
                 topReasonLabel = _tokenizerResistParsedValue;
                 continue;
             }
-            
+
             if (ParseResistTimeReasonLabel(handle, symbol))
             {
                 if (timeReasonLabel != (raw)0) Logger::LogWarning(LOGSOURCE, "The time reason was already defined for the resist. Replacing.");
@@ -121,7 +121,7 @@ strict namespace IO
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
 
         _tokenizerResistParsedValue = Tokenizer::GetSymbol(handle);
-        
+
         // Peek next character, see if we have a comma.
         // These are optional and if so, make sure to skip it.
         Tokenizer::Next(handle);
@@ -137,13 +137,13 @@ strict namespace IO
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
 
         _tokenizerResistParsedValue = Tokenizer::GetSymbol(handle);
-        
+
         // Peek next character, see if we have a comma.
         // These are optional and if so, make sure to skip it.
         Tokenizer::Next(handle);
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
             Tokenizer::Next(handle);
-            
+
         return true;
     }
 }
