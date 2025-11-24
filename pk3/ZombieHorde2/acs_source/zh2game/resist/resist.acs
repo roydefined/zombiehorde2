@@ -16,7 +16,7 @@ strict namespace Resist
     internal void TicServer()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
-        
+
         ResistT[]& resists = ZH2Game::GameContext.MapDetails.Resists;
         for (int index = 0; index < lengthof(resists); ++index)
         {
@@ -70,7 +70,7 @@ strict namespace Resist
         // TODO: Use a flag to explicitly indicate NOT to do this?
         if (resist.InitialState.TimeReasonLabel == (raw)0)
             resist.InitialState.TimeReasonLabel = "Resist for " + RESIST_TIME_TOKEN + " second" + RESIST_PLURAL_TOKEN;
-        
+
         // Determine if the top reason / time reason has a time token.
         // If yes, also check if it's colored (if not, then the hud will add it).
         str topReason = resist.InitialState.TopReasonLabel;
@@ -84,7 +84,7 @@ strict namespace Resist
                     resist.InitialState.TopReasonHasColoredTimeToken = true;
             }
         }
-        
+
         str timeReason = resist.InitialState.TimeReasonLabel;
         if (timeReason != (raw)0 && timeReason != "")
         {
@@ -111,7 +111,7 @@ strict namespace Resist
         int timeLeft = BCSUtils::Max(GetTicsDifference(index), 0);
         return timeLeft;
     }
-    
+
     internal int GetTicsDifference(int index)
     {
         return GetRefByindex(index).EndingTic - Utils::GetSynchronizedTimer();
@@ -132,7 +132,7 @@ strict namespace Resist
         SetRunState(index, STATERUNNING);
 
         Logger::LogDebug(LOGSOURCE, "Starting resist. True length: \cd" + str(resist.EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
-    
+
         if (broadcast)
             EventBus::CallEvent(EVENTRESISTSTARTED, index);
     }
@@ -140,7 +140,7 @@ strict namespace Resist
     internal void StopResist(int index, bool broadcast = true)
     {
         GetRefByindex(index).EndingTic = -1;
-        
+
         if (broadcast)
             EventBus::CallEvent(EVENTRESISTSTOPPED, index);
     }
@@ -158,11 +158,11 @@ strict namespace Resist
     internal ResistRunStateT GetRunStateTypeByIndex(int stateIndex)
     {
         static ResistRunStateT collection[] = { STATENONE, STATERUNNING, STATEENDED };
-        
+
         // No known round state.
         if (stateIndex < STATENONE && stateIndex > STATEENDED)
             return STATENONE;
-        
+
         return collection[stateIndex];
     }
 }

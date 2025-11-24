@@ -9,7 +9,7 @@ strict namespace Sync
     internal void SyncResistsActor()
     {
         int syncId = SYNC_RESISTS;
-        
+
         syncId = SyncWriteResistStates(syncId);
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing resist packs through actors."));
@@ -31,7 +31,7 @@ strict namespace Sync
     {
         int syncId = SYNC_RESISTS;
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading resist packs on client through actors. Sync id: " + str(syncId) + "."));
-        
+
         syncId = SyncReadResistStates(syncId);
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Synced resists to client."));
@@ -41,7 +41,7 @@ strict namespace Sync
     internal int SyncWriteResistStates(int syncId)
     {
         Resist::ResistT[]& resists = ZH2Game::GameContext.MapDetails.Resists;
-        
+
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing resist packs through actors. Sync id: " + str(syncId) + ". Length: " + str(lengthof(resists)) + "."));
 
         // The second value represents the length of the collection, so the client can also allocate accordingly.
@@ -130,7 +130,7 @@ strict namespace Sync
             resists[i].InitialState.TimeReasonLabel = timeReasonLabelSet
                 ? GetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_RESIST_LABEL_BOTTOM_TEMPLATE, "%n", str(i)))
                 : (raw)0;
-        
+
             // Initialize the remainder clientside.
             // TODO: Move this when adding the sync callback system.
             Resist::InitializeResistClientside(i);
