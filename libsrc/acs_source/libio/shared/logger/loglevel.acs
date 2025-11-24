@@ -7,11 +7,11 @@ strict namespace LibIO
     internal bool ParseLogLevels(int handle, str identifyingSymbol)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "loglevels")) return false;
-        
+
         int braceLevel = Tokenizer::GetBraceLevel(handle);
         if (!Tokenizer::ExpectNextChar(handle, '{'))
             return false;
-        
+
         Tokenizer::Next(handle);
 
         // While the brace level does not match the end level, we keep parsing.
@@ -25,7 +25,7 @@ strict namespace LibIO
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing loglevels of log definition: '" + symbol + "'.");
             return false;
         }
-        
+
         // Optional comma.
         Tokenizer::Next(handle, false);
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
@@ -66,7 +66,7 @@ strict namespace LibIO
             if (parsedLevel == Logger::LEVELNONE)
                 Logger::LogWarning(LogSource, "The given string (" + logLevelString + ") is not a valid log level.");
         }
-            
+
         // Optional comma.
         Tokenizer::Next(handle, false);
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
@@ -84,7 +84,7 @@ strict namespace LibIO
         int braceLevel = Tokenizer::GetBraceLevel(handle);
         if (!Tokenizer::ExpectNextChar(handle, '{'))
             return false;
-        
+
         Tokenizer::Next(handle);
 
         // While the brace level does not match the end level, we keep parsing.
@@ -97,7 +97,7 @@ strict namespace LibIO
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing log level override of log definition: '" + symbol + "'.");
             return false;
         }
-        
+
         // Optional comma.
         Tokenizer::Next(handle, false);
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
@@ -150,7 +150,7 @@ strict namespace LibIO
 
         ZH2Lib::PersistingLibContext.LogContext.OverrideCount++;
         Logger::LogDebug(LogSource, "Added log override. Source: \cd" + source + "\cj, level: \cd" + Logger::GetLogLevelAsString(parsedLevel) + "\cj.");
-        
+
         // Optional comma.
         Tokenizer::Next(handle, false);
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
@@ -158,13 +158,13 @@ strict namespace LibIO
 
         if (!Tokenizer::ExpectChar(handle, '}'))
             return false;
-        
+
         // Optional comma.
         Tokenizer::Next(handle, false);
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
             Tokenizer::Next(handle, false);
 
-        
+
         return true;
     }
 }

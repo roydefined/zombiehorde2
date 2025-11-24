@@ -61,7 +61,7 @@ strict namespace IO
         // Get the specific buffer chunk that contains our map data.
         str buffer = StrMid(LumpReadString(lumpIndex, 0), startOffset, endOffset - startOffset);
         Logger::LogDebug(LogSource, "Found map buffer chunk for \cd" + MAPDEFLUMPNAME + "\cj map \cd" + mapLump + "\cj, start parsing.");
-        
+
         ParseMapLumpDetails(mapLump, buffer);
         LumpClose(lumpIndex);
 
@@ -78,10 +78,10 @@ strict namespace IO
 
             return i;
         }
-        
+
         return -1;
     }
-    
+
     internal void ParseMapLumpDetails(str mapLump, str buffer)
     {
         int handle = Tokenizer::RentTokenizer(buffer);
@@ -90,7 +90,7 @@ strict namespace IO
         int braceLevel = Tokenizer::GetBraceLevel(handle);
         if (!Tokenizer::ExpectNextChar(handle, '{'))
             return;
-        
+
         Tokenizer::Next(handle);
 
         // While the brace level does not match the end level, we keep parsing.
@@ -108,7 +108,7 @@ strict namespace IO
                 Tokenizer::Next(handle, false);
                 if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
                     Tokenizer::Next(handle, false);
-                    
+
                 continue;
             }
 
