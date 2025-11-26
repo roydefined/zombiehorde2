@@ -29,7 +29,7 @@ def main():
             behavior_file = map_path / "BEHAVIOR"
 
             if behavior_file.exists():
-                logging.info(f"  Deleting BEHAVIOR for {map_name}...")
+                #logging.info(f"  Deleting BEHAVIOR for {map_name}...")
                 try:
                     behavior_file.unlink()
                 except Exception:

@@ -49,7 +49,7 @@ def main():
                 continue
 
             had_wads = True
-            logging.info(f"  Extracting {wad_file.name} -> {outdir}...")
+            #logging.info(f"  Extracting {wad_file.name} -> {outdir}...")
 
             # Run extractor
             try:
@@ -71,13 +71,13 @@ def main():
             # Remove ENDMAP
             endmap = mapfolder / "ENDMAP"
             if endmap.exists():
-                logging.info(f"    Removing ENDMAP from {mapfolder}...")
+                #logging.info(f"    Removing ENDMAP from {mapfolder}...")
                 safe_delete(endmap)
 
             # Remove level lump
             level_file = mapfolder / wad_file.stem
             if level_file.exists():
-                logging.info(f"    Removing {wad_file.stem} from {mapfolder}...")
+                #logging.info(f"    Removing {wad_file.stem} from {mapfolder}...")
                 safe_delete(level_file)
 
         if not had_wads:

@@ -20,7 +20,7 @@ def safe_delete(path: Path):
 
 def pack_single_map(tool: Path, map_path: Path, out_wad: Path,
                     map_name: str, include_scripts: bool):
-    logging.info(f"  Packing {map_name} -> {out_wad}...")
+    #logging.info(f"  Packing {map_name} -> {out_wad}...")
 
     # Temporary ENDMAP + MAP_NAME lumps
     tmp_endmap = create_temp_file(map_path / "ENDMAP")

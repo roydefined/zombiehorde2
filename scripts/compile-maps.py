@@ -43,10 +43,10 @@ def main():
                 logging.info(f"  [SKIP] {map_name} contains no script")
                 continue
 
-            logging.info(f"  Compiling {map_name}...")
+            #logging.info(f"  Compiling {map_name}...")
 
             cmd = [str(bcc)] + include_args + [str(src_acs), str(dst_behavior)]
-            logging.info("    " + " ".join(cmd))
+            #logging.info("    " + " ".join(cmd))
 
             result = subprocess.run(cmd)
 
