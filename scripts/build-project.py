@@ -7,7 +7,7 @@ from utils import setup_logging, get_paths, copy_file, run_cmd
 # This script copies over the previously packed ACSUtils files and puts them inside the library project.
 # Secondly this script ensures all files are compiled.
 
-# Note: You must call `pack-acsutils.bat` before calling this file to ensure all files exist.
+# Note: You must call `pack-acsutils.py` before calling this file to ensure all files exist.
 # Alternatively make sure that they do another way.
 
 def main():
