@@ -37,7 +37,12 @@ def get_paths():
 # Helper function to copy over a file.
 def copy_file(src: Path, dest: Path):
     import shutil
-    logging.info(f"Copy {src} -> {dest}")
+
+    if not src.exists():
+        raise FileNotFoundError(f"Source does not exist: {src}")
+
+    logging.info(f"Copy {src.name} -> {dest}")
+
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dest)
 
