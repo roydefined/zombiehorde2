@@ -49,7 +49,7 @@ def copy_file(src: Path, dest: Path):
 # Helper function to run an executable.
 def run_cmd(cmd: list[str]):
     import subprocess
-    logging.info(" ".join(cmd))
+    #logging.info(" ".join(cmd))
     result = subprocess.run(cmd)
     if result.returncode != 0:
         raise SystemExit(result.returncode)
