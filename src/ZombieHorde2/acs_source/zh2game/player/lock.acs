@@ -15,7 +15,7 @@ strict namespace Player
 
     internal void LockMovement(bool lock)
     {
-        VALIDATE_IS_SERVERSIDE_FUNCTION();
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
         ZH2Game::GameContext.LockMovement = lock;
         ZH2Game::GameContext.LockedAngle = GetActorAngle(Identity::GetTid(ConsolePlayerNumber()));
@@ -46,7 +46,7 @@ strict namespace Player
         bool add = (bool)addRaw;
 
         // Check if we should remove the block. We do always allow adding the block.
-        if (!add && !Decorate::GetCanFire())
+        if (!add && Round::GetActiveKnownRoundState() >= Round::STATEENDING)
             terminate;
 
         BCSUtils::SetInventory(WEAPON_BLOCK_FIRING_ITEM, (int)add);
