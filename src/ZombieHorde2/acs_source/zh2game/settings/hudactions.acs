@@ -42,26 +42,13 @@ strict namespace Settings
         ZH2Game::GameContext.HasClientSettingsHudOpen = true;
         ZH2Game::GameContext.HasAdminHudOpen = false; // Also make sure the admin hud is disabled.
         Hud::SetCursorEnabled(true);
-
-        if (!NamedRequestScriptPuke("zh2_internal_menu_clientsettings_request_set_frozen", int(true)))
-            Logger::LogError(LOGSOURCE , "Failed to set frozen state on player for settings hud.");
+        Player::LockMovement(true);
     }
 
     internal void CloseClientSettingsMenu()
     {
         ZH2Game::GameContext.HasClientSettingsHudOpen = false;
         Hud::SetCursorEnabled(false);
-
-        if (!NamedRequestScriptPuke("zh2_internal_menu_clientsettings_request_set_frozen", int(false)))
-            Logger::LogError(LOGSOURCE , "Failed to unset frozen state on player for settings hud.");
-    }
-
-
-    // Called from the client to set/unset freeze.
-    script "zh2_internal_menu_clientsettings_request_set_frozen" (int set) net
-    {
-        if (set && TrackedProperties::AddProperty((int)TrackedProperties::TRACKED_TOTALLYFROZEN)
-            || !set && TrackedProperties::RemoveProperty((int)TrackedProperties::TRACKED_TOTALLYFROZEN))
-            SetPlayerProperty(0, set, PROP_TOTALLYFROZEN);
+        Player::LockMovement(false);
     }
 }
