@@ -314,7 +314,6 @@ strict namespace ZH2Game
                 }
                 else Logger::LogError(LogSource, "Missing required ending timer.");
 
-                // Reset all powers. Removes excess visual noise.
                 for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
                 {
                     if (!PlayerInGame(i))
@@ -324,7 +323,12 @@ strict namespace ZH2Game
                     if (!BCSUTILS::ActorIsAlive(tid))
                         continue;
 
+                    // Reset all powers. Removes excess visual noise.
                     Power::ResetPlayerPowers(i);
+
+                    // Prevent from firing.
+                    // TODO: Look into where this can be unset again? Should the state change somehow.
+                    BCSUtils::SetActorInventory(tid, WEAPON_BLOCK_FIRING_ITEM, 1);
                 }
 
                 // Reward a random player.
