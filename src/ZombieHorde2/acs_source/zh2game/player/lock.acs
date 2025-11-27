@@ -1,0 +1,54 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal void LockTic()
+    {
+        if (!GetLockMovement())
+            return;
+
+        SetActorAngle(ActivatorTid(), GetLockAngle());
+        SetActorPitch(ActivatorTid(), GetLockPitch());
+    }
+
+    internal void LockMovement(bool lock)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        ZH2Game::GameContext.LockMovement = lock;
+        ZH2Game::GameContext.LockedAngle = GetActorAngle(Identity::GetTid(ConsolePlayerNumber()));
+        ZH2Game::GameContext.LockedPitch = GetActorPitch(Identity::GetTid(ConsolePlayerNumber()));
+
+        if (!NamedRequestScriptPuke("zh2_internal_lock_movement_block_weapon_firing", int(lock)))
+            Logger::LogError(LOGSOURCE , "Failed to call internal block weapon firing script.");
+    }
+
+    internal bool GetLockMovement()
+    {
+        return ZH2Game::GameContext.LockMovement;
+    }
+
+    internal fixed GetLockAngle()
+    {
+        return ZH2Game::GameContext.LockedAngle;
+    }
+
+    internal fixed GetLockPitch()
+    {
+        return ZH2Game::GameContext.LockedPitch;
+    }
+
+    // This gives the inventory item to block weapon firing. Sadly I can't prevent this clientside.
+    script "zh2_internal_lock_movement_block_weapon_firing" (raw addRaw) net
+    {
+        bool add = (bool)addRaw;
+
+        // Check if we should remove the block. We do always allow adding the block.
+        if (!add && !Decorate::GetCanFire())
+            terminate;
+
+        BCSUtils::SetInventory(WEAPON_BLOCK_FIRING_ITEM, (int)add);
+    }
+}
