@@ -167,8 +167,9 @@ strict namespace Hud
         if (enabled)
         {
             // If spectators are not allowed to vote, we don't want to include this on the HUD.
-            int totalVotablePlayerCount = ZH2Game::GetAllowSpectatorVoting() ? BCSUtils::ClientCount() : PlayerCount();
-            totalVotablePlayerCount -= BCSUtils::BotCount();
+            bool allowSpectatorVoting = ZH2Game::GetAllowSpectatorVoting();
+            int totalVotablePlayerCount = allowSpectatorVoting ? BCSUtils::ClientCount() : PlayerCount();
+            totalVotablePlayerCount -= allowSpectatorVoting ? BCSUtils::BotCount() : Utils::PlayingBotCount();
 
             // Properties conditionally get added and so the y offset changes a bit.
             fixed propertiesY = addY - 70.0;
