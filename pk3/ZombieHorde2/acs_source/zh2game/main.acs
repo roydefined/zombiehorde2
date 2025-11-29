@@ -245,7 +245,10 @@ strict namespace ZH2Game
         // Voting is active, so the client needs a mouse.
         // TODO: Move this when adding the sync callback system.
         if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
+        {
             Hud::SetCursorEnabled(true);
+            Player::LockMovement(true);
+        }
 
         // Initialize team indicators for all existing players.
         // This does not have to run offline as the enter script works fine.
@@ -310,10 +313,6 @@ strict namespace ZH2Game
     script "zh2_internal_unloading" unloading
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_unloading\"");
-
-        // Regardless of what the game does, we always unfreeze players.
-        // Specifically this could be the case with admin players and when the game ends.
-        SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
 
         // Reset the default music, or the music will move to the next map.
         Music::SetDefaultMusic("");
