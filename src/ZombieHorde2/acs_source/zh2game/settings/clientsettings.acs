@@ -24,6 +24,13 @@ strict namespace Settings
         if (!ZH2Game::GetInformClientOfCVars())
             return;
 
+        // Should we show the notification or should we wait another map?
+        if (ZH2Game::PersistingGameContext.NotifyClientConsolidateMapCount != 0)
+        {
+            ZH2Game::PersistingGameContext.NotifyClientConsolidateMapCount--;
+            return;
+        }
+
         int count = ZH2Game::GameContext.RequestedClientSettingCount;
         if (count == 0)
         {
@@ -33,7 +40,9 @@ strict namespace Settings
             return;
         }
 
+        // Notify, then update the count to wait some maps before notifying again..
         Logger::LogActivator("\cfNotice:\cj You have " + str(count) + " setting" + (count > 1 ? "" : "s") + " that can be improved for a better experience. Consider opening the \"client consolidation\" menu for this through the Zombie Horde 2 game settings menu.");
+        ZH2Game::PersistingGameContext.NotifyClientConsolidateMapCount = SETTINGS_INFORMEVERYMAPCOUNT - 1;
     }
 
     // NOTE: Everything below takes a handle, which is what we have determined to be an invalid setting.
