@@ -314,7 +314,6 @@ strict namespace ZH2Game
                 }
                 else Logger::LogError(LOGSOURCE , "Missing required ending timer.");
 
-                // Reset all powers. Removes excess visual noise.
                 for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
                 {
                     if (!PlayerInGame(i))
@@ -324,7 +323,12 @@ strict namespace ZH2Game
                     if (!BCSUTILS::ActorIsAlive(tid))
                         continue;
 
+                    // Reset all powers. Removes excess visual noise.
                     Power::ResetPlayerPowers(i);
+
+                    // Prevent from firing.
+                    // TODO: Look into where this can be unset again? Should the state change somehow.
+                    BCSUtils::SetActorInventory(tid, WEAPON_BLOCK_FIRING_ITEM, 1);
                 }
 
                 // Reward a random player.
@@ -348,8 +352,6 @@ strict namespace ZH2Game
                     Map::SetPlayerVotedMapIndex(i, -1);
 
                 Map::UpdateVotableMaps();
-                SetPlayerProperty(1, 1, PROP_TOTALLYFROZEN);
-
                 Sync::SyncMapVoting();
                 break;
             }
@@ -387,8 +389,9 @@ strict namespace ZH2Game
             case Round::STATEVOTING:
             {
                 // TODO: Move this when adding the sync callback system.
-                // Turn the cursor (back) on.
+                // Turn the cursor (back) on and lock the player.
                 Hud::SetCursorEnabled(true);
+                Player::LockMovement(true);
                 break;
             }
         }
