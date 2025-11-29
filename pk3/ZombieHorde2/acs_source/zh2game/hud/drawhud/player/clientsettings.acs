@@ -25,14 +25,45 @@ strict namespace Hud
 
         DrawClientSettingsHeader();
 
-        for (int i = 0; i < ZH2Game::GameContext.RequestedClientSettingCount; ++i)
-        {
-            PrepareHud(
-                BCSUtils::HudLeft() + 100.0,
-                y + 110.0 + fixed(30 * i),
-                false);
+        BCSUtils::HudSetFont("BigFont");
+        HudSetPointInternal(0.0, 60.0 + y);
 
-            DrawInvalidSetting(i);
+        if (ZH2Game::GameContext.RequestedClientSettingCount > 0)
+        {
+            BCSUtils::HudDrawText(--_drawnHudId, "Settings");
+
+            BCSUtils::HudSetFont("SmallFont");
+            BCSUtils::HudSetTextColor(CR_YELLOW);
+
+            HudSetPointInternal(0.0, 80.0 + y);
+            BCSUtils::HudDrawText(--_drawnHudId, "Type");
+
+            HudSetPointInternal(90.0, 80.0 + y);
+            BCSUtils::HudDrawText(--_drawnHudId, "Name");
+
+            HudSetPointInternal(250.0, 80.0 + y);
+            BCSUtils::HudDrawText(--_drawnHudId, "Current");
+
+            HudSetPointInternal(320.0, 80.0 + y);
+            BCSUtils::HudDrawText(--_drawnHudId, "Required");
+
+            HudSetPointInternal(400.0, 80.0 + y);
+            BCSUtils::HudDrawText(--_drawnHudId, "Action");
+
+            for (int i = 0; i < ZH2Game::GameContext.RequestedClientSettingCount; ++i)
+            {
+                PrepareHud(
+                    BCSUtils::HudLeft() + 100.0,
+                    y + 150.0 + fixed(30 * i),
+                    false);
+
+                DrawInvalidSetting(i);
+            }
+        }
+        else
+        {
+            BCSUtils::HudSetTextColor(CR_GREEN);
+            BCSUtils::HudDrawText(--_drawnHudId, "No settings to consolidate.");
         }
     }
 
@@ -78,18 +109,25 @@ strict namespace Hud
         HudSetPointInternal(0.0, 25.0 + addY);
         BCSUtils::HudDrawText(--_drawnHudId, "Total invalid settings: \cd" + str(count) + "\cj/\cd" + str(persistingCount) + "\cj.");
 
+        BCSUtils::HudSetFont("BigFont");
+
+        HudSetPointInternal(0.0, 50.0 + addY);
+        BCSUtils::HudDrawText(--_drawnHudId, "Actions");
+
+        BCSUtils::HudSetFont("SmallFont");
+
         // Clickable buttons
-        if (DrawClickableText(--_drawnHudId, 0.0, 40.0 + addY, 140.0, 10.0, "Open keybinds menu"))
-            Settings::CloseMenuAndOpenCustomizeMenu();
-
-        if (DrawClickableText(--_drawnHudId, 0.0, 55.0 + addY, 140.0, 10.0, "Open zombie horde 2 menu"))
-            Settings::CloseMenuAndOpenZh2Menu();
-
-        if (DrawClickableText(--_drawnHudId, 0.0, 70.0 + addY, 140.0, 10.0, "Refresh settings"))
+        if (DrawClickableText(--_drawnHudId, 0.0, 65.0 + addY, 140.0, 10.0, "Refresh settings"))
             Settings::UpdateCurrentClientSettings();
 
-        if (DrawClickableText(--_drawnHudId, 0.0, 85.0 + addY, 140.0, 10.0, "Close settings"))
+        if (DrawClickableText(--_drawnHudId, 0.0, 80.0 + addY, 140.0, 10.0, "Close settings"))
             Settings::CloseClientSettingsMenu();
+
+        if (DrawClickableText(--_drawnHudId, 160.0, 65.0 + addY, 140.0, 10.0, "Open keybinds menu"))
+            Settings::CloseMenuAndOpenCustomizeMenu();
+
+        if (DrawClickableText(--_drawnHudId, 160.0, 80.0 + addY, 140.0, 10.0, "Open zombie horde 2 menu"))
+            Settings::CloseMenuAndOpenZh2Menu();
     }
 
     internal void DrawInvalidSetting(int index)
@@ -108,13 +146,13 @@ strict namespace Hud
         HudSetPointInternal(90.0, 0.0);
         BCSUtils::HudDrawText(--_drawnHudId, "\cd" + name);
 
-        HudSetPointInternal(220.0, 0.0);
+        HudSetPointInternal(250.0, 0.0);
+        if (type == "cvar") BCSUtils::HudDrawText(--_drawnHudId, "\cd" + str(GetCvar(name)));
+        else BCSUtils::HudDrawText(--_drawnHudId, "\cd" + (BCSUtils::KeyBound(name) ? "bound" : "unbound"));
+
+        HudSetPointInternal(320.0, 0.0);
         if (type == "cvar") BCSUtils::HudDrawText(--_drawnHudId, "\cd" + str(value));
         else BCSUtils::HudDrawText(--_drawnHudId, "\cd" + (value ? "bound" : "unbound"));
-
-        HudSetPointInternal(290.0, 0.0);
-        if (type == "cvar") BCSUtils::HudDrawText(--_drawnHudId, "currently \cd" + str(GetCvar(name)));
-        else BCSUtils::HudDrawText(--_drawnHudId, "currently \cd" + (BCSUtils::KeyBound(name) ? "bound" : "unbound"));
 
         // Possibly update CVar.
         // Restrictions of ConsoleCommand prevents us from binding/unbinding, so this is not supported.
