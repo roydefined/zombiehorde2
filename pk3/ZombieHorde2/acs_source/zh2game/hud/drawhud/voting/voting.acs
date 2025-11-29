@@ -8,18 +8,31 @@
 
 strict namespace Hud
 {
+    // TODO: The fade offsetting is not fully correct here. Should somebody ever encoutner issues it should be revisited.
     internal void DrawSummaryHud()
     {
+        // Draw a fade to black out the window.
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(32.0, 32.0);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        Utils::ScaleToScreen();
+
+        PrepareHud(
+            64.0,
+            64.0,
+            false);
+
+        SetFade();
+
+        // Draw other parts.
         fixed scale = ZH2Game::GetHudSummaryScale();
         BCSUtils::HudResetState();
         BCSUtils::HudSetVirtualSize(640.0, 480.0);
-        BCSUtils::HudSetScale(scale);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetScale(scale);
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
         BCSUtils::HudSetCenterText(true);
-
-        SetFade();
 
         PrepareHud(
             320.0,
@@ -55,6 +68,9 @@ strict namespace Hud
 
         // 1 second of fadeout.
         fixed fadeAmount = BCSUtils::Min(1.0, fixed(diff) / 35.0);
-        FadeTo(0, 0, 0, fadeAmount, BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlpha(fadeAmount);
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawImage(HUDID_SUMMARY_FADE, "BLACK");
     }
 }

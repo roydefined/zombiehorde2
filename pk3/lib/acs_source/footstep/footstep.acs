@@ -15,6 +15,10 @@ strict namespace Footstep
         // Should we tic this player?
         int type = ZH2Lib::GetClientStepType();
 
+        int cameraTid = CheckPlayerCamera(PlayerNumber());
+        if (cameraTid == -1)
+            return;
+
         // Never.
         if (type == 0)
             return;
@@ -26,13 +30,12 @@ strict namespace Footstep
         // Type == 2 not checked, because it's for everyone.
 
         int tid = Identity::GetTid(id);
-        int consolePlayerTid = Identity::GetTid(ConsolePlayerNumber());
 
         if (!BCSUtils::ActorIsAlive(tid))
             return;
 
         // Check distance between the source and the client.
-        if (BCSUtils::ActorDistance(tid, consolePlayerTid) > fixed(ZH2Lib::GetClientMaxStepDistance()))
+        if (BCSUtils::ActorDistance(tid, cameraTid) > fixed(ZH2Lib::GetClientMaxStepDistance()))
             return;
 
         // Ignore actors in the air.
