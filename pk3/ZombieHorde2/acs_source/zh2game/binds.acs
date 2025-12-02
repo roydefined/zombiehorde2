@@ -11,7 +11,7 @@ strict namespace ZH2Game
     {
         // Set the timer to be 1 second left if a timer is active and we either play offline, or the user is an admin.
         // Do not check for development, for now.
-        if (/*IsDevelopment() &&*/ RoundTimer::GetAnyTimerActive() && (!IsNetworkGame() || Admin::GetAdmin()))
+        if (/*IsDevelopment() &&*/ RoundTimer::GetAnyTimerActive() && (!IsNetworkGame() || Admin::GetIsAdmin()))
         {
             int index = RoundTimer::GetActiveTimerIndex();
 
@@ -142,12 +142,12 @@ strict namespace ZH2Game
             terminate;
         }
 
-        Admin::RconSetPlayerAdmin(PlayerNumber(), true);
+        Admin::RconSetPlayerIsAdmin(PlayerNumber(), true);
     }
 
     script "zh2_action_disableadmin" net
     {
-        Admin::RconSetPlayerAdmin(PlayerNumber(), false);
+        Admin::RconSetPlayerIsAdmin(PlayerNumber(), false);
     }
 
     /* DEBUG - GENERAL */
@@ -160,13 +160,13 @@ strict namespace ZH2Game
     script "zh2_action_debuggivestartweapons" net
     {
         // Can't be called when not offline, not in development and we are not admin.
-        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
+        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
         {
             Logger::LogActivator("You're not allowed to give yourself start weapons.");
             terminate;
         }
 
-        Player::SpecieTypeT specie = Player::GetSpecie();
+        Player::PlayerSpecieT specie = Player::GetSpecie();
         ClearInventory();
 
         if (specie == Player::SPECIEHUMAN) Player::GiveHumanInventory(true);
@@ -455,7 +455,7 @@ strict namespace ZH2Game
                 str name = Reward::GetRewardName(i);
                 int weight = Reward::GetRewardWeight(i);
 
-                Player::SpecieTypeT specie = Reward::GetRewardSpecieSpecific(i);
+                Player::PlayerSpecieT specie = Reward::GetRewardSpecieSpecific(i);
 
                 str give = Reward::GetRewardGive(i);
                 str sound = Reward::GetRewardSound(i);
@@ -487,7 +487,7 @@ strict namespace ZH2Game
     script "zh2_action_syncall" net
     {
         // Can't be called when not offline, not in development and we are not admin.
-        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
+        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
         {
             Logger::LogActivator("You're not allowed to call sync scripts.");
             terminate;
@@ -500,7 +500,7 @@ strict namespace ZH2Game
     script "zh2_action_callclientsyncall" net
     {
         // Can't be called when not offline, not in development and we are not admin.
-        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
+        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
         {
             Logger::LogActivator("You're not allowed to call sync scripts.");
             terminate;
@@ -513,7 +513,7 @@ strict namespace ZH2Game
     script "zh2_action_clientsyncall" net clientside
     {
         // Can't be called when not offline, not in development and we are not admin.
-        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
+        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
         {
             Logger::LogActivator("You're not allowed to call sync scripts.");
             terminate;
