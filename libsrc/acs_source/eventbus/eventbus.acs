@@ -63,26 +63,20 @@ strict namespace EventBus
             return;
         }
 
+        // Note, we use `ACS_(Named)ExecuteWithResult` here to ensure the event is passed without a tic delay.
+
         int scriptNameCallbackCount = _eventBusEvents[index].scriptNameCallbackCount;
         for (int i = 0; i < scriptNameCallbackCount; ++i)
         {
             str scriptName = _eventBusEvents[index].scriptNameCallbacks[i];
-            if (!ACS_NamedExecuteAlways(scriptName, 0, arg1, arg2, arg3))
-            {
-                Logger::LogError(LOGSOURCE , "Failed to call script " + scriptName + " callback under event with key " + eventKey + ".");
-                continue;
-            }
+            ACS_NamedExecuteWithResult(scriptName, arg1, arg2, arg3);
         }
 
         int scriptNumberCallbackCount = _eventBusEvents[index].scriptNumberCallbackCount;
         for (int i = 0; i < scriptNumberCallbackCount; ++i)
         {
             int scriptNumber = _eventBusEvents[index].scriptNumberCallbacks[i];
-            if (!ACS_ExecuteAlways(scriptNumber, 0, arg1, arg2, arg3))
-            {
-                Logger::LogError(LOGSOURCE , "Failed to call script " + str(scriptNumber) + " callback under event with key " + eventKey + ".");
-                continue;
-            }
+            ACS_ExecuteWithResult(scriptNumber, arg1, arg2, arg3);
         }
     }
 
