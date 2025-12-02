@@ -4,21 +4,21 @@
 
 strict namespace Player
 {
-    internal SpecieTypeT GetSpecie()
+    internal PlayerSpecieT GetSpecie()
     {
         return GetPlayerSpecie(PlayerNumber());
     }
-    internal SpecieTypeT GetPlayerSpecie(int id)
+    internal PlayerSpecieT GetPlayerSpecie(int id)
     {
         if (!Identity::IsValidID(id)) return SPECIENONE;
         return ZH2Game::GameContext.Players[id].SpecieType;
     }
 
-    internal bool SetSpecie(SpecieTypeT specie)
+    internal bool SetSpecie(PlayerSpecieT specie)
     {
         return SetPlayerSpecie(PlayerNumber(), specie);
     }
-    internal bool SetPlayerSpecie(int id, SpecieTypeT specie)
+    internal bool SetPlayerSpecie(int id, PlayerSpecieT specie)
     {
         if (!Identity::IsValidID(id)) return false;
         ZH2Game::GameContext.Players[id].SpecieType = specie;
@@ -56,7 +56,7 @@ strict namespace Player
         SetResultValue(int(GetIsHuman()));
     }
 
-    internal int SpecieCount(SpecieTypeT type, bool includeDead = false)
+    internal int SpecieCount(PlayerSpecieT type, bool includeDead = false)
     {
         int count;
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
@@ -85,12 +85,12 @@ strict namespace Player
         return SpecieCount(SPECIEZOMBIE, includeDead);
     }
 
-    internal SpecieTypeT GetSpecieTypeByIndex(int index)
+    internal PlayerSpecieT GetSpecieTypeByIndex(int index)
     {
         if (index <= SPECIENONE || index > SPECIEZOMBIE)
             return SPECIENONE;
 
-        static SpecieTypeT collection[] = { SPECIEHUMAN, SPECIEZOMBIE };
+        static PlayerSpecieT collection[] = { SPECIEHUMAN, SPECIEZOMBIE };
         return collection[index - 1];
     }
 

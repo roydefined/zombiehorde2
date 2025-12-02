@@ -324,7 +324,7 @@ strict namespace Admin
         }
     }
 
-    internal void AdminIncrementSpecieItemClientside(Player::SpecieTypeT specie, int itemIndex, int amount)
+    internal void AdminIncrementSpecieItemClientside(Player::PlayerSpecieT specie, int itemIndex, int amount)
     {
         if (!NamedRequestScriptPuke("zh2_internal_menu_increment_item_specie", specie, itemIndex, amount))
             Logger::LogError(LogSource, "Failed to call admin increment specie item.");
@@ -344,7 +344,7 @@ strict namespace Admin
         // For now only allow giving or taking one item.
         amount = BCSUtils::Sgn(amount);
 
-        Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
+        Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(specieIndex);
 
         str name = Item::GetItemName(itemIndex);
         str label = Item::GetItemLabel(itemIndex);
@@ -397,7 +397,7 @@ strict namespace Admin
         Logger::LogBold("An \cfadmin\cj has given reward \cd" + name + "\cj to \cf" + BCSUtils::PlayerName(playerId) + "\cj!");
     }
 
-    internal void AdminGiveSpecieRewardClientside(Player::SpecieTypeT specie, int rewardIndex)
+    internal void AdminGiveSpecieRewardClientside(Player::PlayerSpecieT specie, int rewardIndex)
     {
         if (!NamedRequestScriptPuke("zh2_internal_menu_give_reward_specie", specie, rewardIndex))
             Logger::LogError(LogSource, "Failed to call admin give specie reward.");
@@ -413,7 +413,7 @@ strict namespace Admin
         if (rewardIndex < 0 || rewardIndex >= Reward::GetRewardCollectionSize())
             terminate;
 
-        Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
+        Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(specieIndex);
         ITERATESPECIES(specie, {
             Reward::GivePlayerRewardByIndex(id, rewardIndex);
         });
@@ -443,7 +443,7 @@ strict namespace Admin
         Logger::LogBold("An \cfadmin\cj has added power \cd" + Power::GetPowerIndexAsString(powerIndex) + "\cj to " + BCSUtils::PlayerName(playerId) + "\cj!");
     }
 
-    internal void AdminIncrementSpeciePowerClientside(Player::SpecieTypeT specie, int powerIndex, int tics)
+    internal void AdminIncrementSpeciePowerClientside(Player::PlayerSpecieT specie, int powerIndex, int tics)
     {
         if (!NamedRequestScriptPuke("zh2_internal_menu_increment_power_specie", specie, powerIndex, tics))
             Logger::LogError(LogSource, "Failed to call admin increment specie power.");
@@ -460,7 +460,7 @@ strict namespace Admin
         // For now only allow incrementing
         if (tics <= 0) terminate;
 
-        Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
+        Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(specieIndex);
         ITERATESPECIES(specie, {
             Power::AddPlayerPowerTics(id, powerIndex, tics);
         });
@@ -491,7 +491,7 @@ strict namespace Admin
         else            Logger::LogBold("An \cfadmin\cj has taken \cd" + str(amountNormalized) + "\cj points of kevlar armor from " + BCSUtils::PlayerName(playerId) + "\cj!");
     }
 
-    internal void AdminIncrementSpecieArmorClientSide(Player::SpecieTypeT specie, int amount)
+    internal void AdminIncrementSpecieArmorClientSide(Player::PlayerSpecieT specie, int amount)
     {
         if (!NamedRequestScriptPuke("zh2_internal_menu_increment_armor_specie", specie, amount))
             Logger::LogError(LogSource, "Failed to call admin increment player armor on specie.");
@@ -506,7 +506,7 @@ strict namespace Admin
 
         if (amount == 0) terminate;
 
-        Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
+        Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(specieIndex);
         ITERATESPECIES(specie, {
             Player::AddPlayerKevlarPoints(id, amount);
         });
@@ -521,7 +521,7 @@ strict namespace Admin
     }
 
     // Rewards (for everybody or specie specific)
-    internal void AdminGiveRewardContainerSpecieClientSide(Player::SpecieTypeT specie, Reward::RewardItemTypeFlagsT type)
+    internal void AdminGiveRewardContainerSpecieClientSide(Player::PlayerSpecieT specie, Reward::RewardItemTypeFlagsT type)
     {
         if (!NamedRequestScriptPuke("zh2_internal_menu_give_container_specie", specie, type))
             Logger::LogError(LogSource, "Failed to call admin give reward container specie.");
@@ -535,7 +535,7 @@ strict namespace Admin
         int typeInt = (int)typeRaw;
         int index = BCSUtils::Flag2Index(typeInt) + 1;
 
-        Player::SpecieTypeT specie = Player::GetSpecieTypeByIndex(specieIndex);
+        Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(specieIndex);
         Reward::RewardItemTypeFlagsT type = Reward::GetRewardItemTypeByIndex(index);
         if (type == Reward::REWARDNONE) terminate;
 
