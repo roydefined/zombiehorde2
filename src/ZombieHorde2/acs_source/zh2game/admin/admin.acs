@@ -11,15 +11,15 @@
 
 strict namespace Admin
 {
-    internal bool GetAdmin() { return GetPlayerAdmin(PlayerNumber()); }
-    internal bool GetPlayerAdmin(int id)
+    internal bool GetIsAdmin() { return GetPlayerIsAdmin(PlayerNumber()); }
+    internal bool GetPlayerIsAdmin(int id)
     {
         VALIDATE_ID_VALID_FUNCTION_RETURN(id, false);
         return ZH2Game::PersistingGameContext.Players[id].IsAdmin;
     }
 
-    internal void SetAdmin(bool set) { SetPlayerAdmin(PlayerNumber(), set); }
-    internal void SetPlayerAdmin(int id, bool set)
+    internal void SetIsAdmin(bool set) { SetPlayerIsAdmin(PlayerNumber(), set); }
+    internal void SetPlayerIsAdmin(int id, bool set)
     {
         VALIDATE_ID_VALID_FUNCTION(id);
 
@@ -33,8 +33,13 @@ strict namespace Admin
         Logger::LogDebug(LogSource, "Player (\cd" + str(id) + "\cj) " + BCSUTILS::PlayerName(id) + " has been \cd" + (set ? "added" : "removed") + "\cj as an admin.");
     }
 
+    internal void BroadcastAdmin(bool set)
+    {
+        BroadcastPlayerAdmin(PlayerNumber(), set);
+    }
+
     // General broadcast function to inform everybody somebody was set/unset as an admin.
-    internal void BroadcastAdmin(int id, bool set)
+    internal void BroadcastPlayerAdmin(int id, bool set)
     {
         str logMessage;
         buildmsg(logMessage = StrParam())
@@ -64,7 +69,7 @@ strict namespace Admin
         if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
             return;
 
-        if (!Admin::GetAdmin())
+        if (!Admin::GetIsAdmin())
         {
             Logger::LogActivator("You must be an admin for this operation.");
             return;
@@ -73,7 +78,7 @@ strict namespace Admin
         // If we enable the admin menu, make sure the settings hud is disabled.
         ZH2Game::GameContext.HasClientSettingsHudOpen = false;
 
-        SetAdminHudEnabledInternal(true);
+        SetIsAdminHudEnabledInternal(true);
     }
 
     internal void DisableAdminHud()
@@ -82,10 +87,10 @@ strict namespace Admin
         // Also reset the target player id if we had somebody.
         Hud::ResetHud();
 
-        SetAdminHudEnabledInternal(false);
+        SetIsAdminHudEnabledInternal(false);
     }
 
-    internal void SetAdminHudEnabledInternal(bool set)
+    internal void SetIsAdminHudEnabledInternal(bool set)
     {
         ZH2Game::GameContext.HasAdminHudOpen = set;
         Hud::SetCursorEnabled(set);
