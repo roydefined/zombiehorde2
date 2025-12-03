@@ -1,0 +1,146 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Events
+{
+    script "zh2_internal_event_scratched" (int infectedId, int infectorId)
+    {
+        // Double check a zombie infects a human.
+        // If two players infect on the same tic, this can not be the case.
+        if (!Player::GetPlayerIsHuman(infectedId) || !Player::GetPlayerIsZombie(infectorId))
+            terminate;
+
+        Logger::LogDebug(LOGSOURCE , "Scratching (\cd" + str(infectedId) + "\cj) " + BCSUtils::PlayerName(infectedId) + " by (\cd" + str(infectorId) + "\cj) " + BCSUtils::PlayerName(infectorId) + ".");
+
+        // Check for protection.
+        if (Power::GetPlayerHasPower(infectedId, Power::POWERZOMBIEPROTECT))
+            terminate;
+
+        // Always visualize a scratch at this point.
+        if (!PlayerIsBot(infectedId))
+            Hud::ShowPlayerHudScratch(infectedId);
+
+        // Check infected if they wear kevlar.
+        // If so, they are protected for this hit.
+        int infectedTid = Identity::GetTid(infectedId);
+        VALIDATE_TID_VALID_SCRIPT(infectedTid);
+
+        if (Player::GetPlayerKevlarPoints(infectedId) > 0)
+        {
+            // Take a point.
+            Player::AddPlayerKevlarPoints(infectedId, -1);
+
+            PlaySound(infectedTid, "items/ARMORHIT", CHAN_AUTO);
+            Power::SetPlayerPowerTics(infectedId, Power::POWERZOMBIEPROTECT, 18);
+            terminate;
+        }
+
+        // Check if they are protected against infection.
+        // If so, we damage for 32 (ZH1's claws hit 4 and this protection used to multiply this by 8).
+        // Also make immune for 18 tics since the claw can hit multiple times and it kills very quickly.
+        if (Power::GetPlayerHasPower(infectedId, Power::POWERHUMANIMMUNITY))
+        {
+            Power::SetPlayerPowerTics(infectedId, Power::POWERZOMBIEPROTECT, 18);
+            SetActivatorToPlayer(infectorId);
+            Thing_Damage(infectedTid, 32);
+            terminate;
+        }
+
+        Logger::LogBold("\cf" + Player::GetPlayerName(infectedId) + "\cj has been infected by \cf" + Player::GetPlayerName(infectorId) + "\cj!");
+
+        Game::InfectPlayer(infectedId, Game::INFECT_REGULAR);
+
+        // Update score and state.
+        Player::IncrementPlayerInfects(infectorId);
+        Game::UpdateScoreBoard(infectorId);
+        Game::IncreaseTimerOnInfect();
+
+        // Reward the infector.
+        // Every 5 infects, give an item.
+        if (Player::GetPlayerInfects(infectorId) % 5 == 0)
+            Reward::GivePlayerContainer(infectorId, Reward::REWARDORBMINOR);
+
+        Sync::SyncPlayers();
+    }
+
+    script "zh2_internal_event_playerdied" (int killedId, int killerId)
+    {
+        int killedTid = Identity::GetTid(killedId);
+
+        // No logic when player suicided.
+        if (killerId == killedId)
+        {
+            Logger::LogDebug(LOGSOURCE , Player::GetPlayerName(killerId) + " has committed suicide.");
+            Identity::DisposeTID(killedTid);
+            terminate;
+        }
+
+        // Player died in a way that didn't involve a player
+        if (killerId == -1) terminate;
+
+        Logger::LogDebug(LOGSOURCE ,
+            "\cd" + Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(killerId)) + "\cj " + Player::GetPlayerName(killerId)
+            + " has killed \cd"
+            + Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(killedId)) + "\cj " + Player::GetPlayerName(killedId) + ".");
+
+        // Determine kill type. Makes the stuff below simpler.
+        Player::PlayerSpecieT killerSpecie = Player::GetPlayerSpecie(killerId);
+        Player::PlayerSpecieT killedSpecie = Player::GetPlayerSpecie(killedId);
+        KillTypeT killType =
+            killerSpecie == Player::SPECIEHUMAN && killedSpecie == Player::SPECIEHUMAN ? KILL_TYPE_HUMAN_TO_HUMAN :
+            killerSpecie == Player::SPECIEHUMAN && killedSpecie == Player::SPECIEZOMBIE ? KILL_TYPE_HUMAN_TO_ZOMBIE :
+            killerSpecie == Player::SPECIEZOMBIE && killedSpecie == Player::SPECIEZOMBIE ? KILL_TYPE_ZOMBIE_TO_ZOMBIE :
+            killerSpecie == Player::SPECIEZOMBIE && killedSpecie == Player::SPECIEHUMAN ? KILL_TYPE_ZOMBIE_TO_HUMAN :
+            KILL_TYPE_NONE;
+
+        // A kill is accidental if the species match.
+        bool accidental = killerSpecie == killedSpecie;
+
+        // Update score and state.
+        // For kills to count, the player must either kill a zombie as a human, or kill a human as a zombie.
+        if (killType == KILL_TYPE_HUMAN_TO_ZOMBIE)      Player::IncrementPlayerZombieKills(killerId);
+        else if (killType == KILL_TYPE_ZOMBIE_TO_HUMAN) Player::IncrementPlayerHumanKills(killerId);
+
+        Game::UpdateScoreBoard(killerId);
+        Identity::DisposeTID(killedTid);
+
+        // Reward the killer if the kill is not accidental.
+        // Then determine if we killed 2 of the given specie and reward them.
+        if (!accidental)
+        {
+            int count = killType == KILL_TYPE_HUMAN_TO_ZOMBIE
+                ? Player::GetPlayerZombieKills(killerId)
+                : Player::GetPlayerHumanKills(killerId);
+
+            if (count % 2 == 0)
+                Reward::GivePlayerContainer(killerId, Reward::REWARDORBMAJOR);
+        }
+    }
+
+    script "zh2_internal_event_playerleftround" (int id)
+    {
+        if (Player::GetPlayerIsZombie(id) && Player::ZombieCount() == 0)
+        {
+            Game::SetEndReason(Game::REASONZOMBIELEFT);
+            AmbientSound("world/RAGEQUIT", 127);
+        }
+        else if (Player::GetPlayerIsHuman(id))
+        {
+            if (Player::HumanCount() == 0)
+                Game::SetEndReason(Game::REASONHUMANLEFT);
+        }
+
+        // No sync, the game ending does it already.
+    }
+
+    script "zh2_internal_event_specie_changed" (raw idRaw, raw specieIndexRaw)
+    {
+        int id = (int)idRaw;
+        int specieIndex = (int)specieIndexRaw;
+        Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(specieIndex);
+
+        // Full reset of powers on specie change.
+        Power::ResetPlayerPowers(id);
+    }
+}
