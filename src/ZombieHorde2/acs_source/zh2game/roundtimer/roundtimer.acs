@@ -24,7 +24,7 @@ strict namespace RoundTimer
         if (GetTimerDefined(index) && GetTimerActive(index) && timeLeft == 0)
         {
             StopTimer(index);
-            EventBus::CallEvent(EVENTTIMERELAPSED, index);
+            Events::SendTimerElapsed(index);
         }
     }
 
@@ -99,7 +99,7 @@ strict namespace RoundTimer
         Logger::LogDebug(LOGSOURCE , "Timer has switched to \cd" + GetTimerIndexAsString(index) + "\cj.");
 
         if (broadcast)
-            EventBus::CallEvent(EVENTTIMERSWITCHED, previousIndex, index);
+            Events::SendTimerSwitched(previousIndex, index);
     }
     internal void SetActiveTimerByKnownType(KnownRoundTimerT timerType, bool broadcast = true) { SetActiveTimerByIndex(GetIndexOfKnownType(timerType), broadcast); }
     internal void DisableTimer(bool broadcast = true) { SetActiveTimerByIndex(0, broadcast); }
@@ -161,7 +161,7 @@ strict namespace RoundTimer
         GetTimerRefByindex(index).PauseTic = Timer();
 
         if (broadcast)
-            EventBus::CallEvent(EVENTTIMERPAUSED, index);
+            Events::SendTimerPaused(index);
     }
 
     internal void ResumeTimer(int index, bool broadcast = true)
@@ -176,7 +176,7 @@ strict namespace RoundTimer
         timerContext.EndingTic = Timer() + diff;
 
         if (broadcast)
-            EventBus::CallEvent(EVENTTIMERRESUMED, index);
+            Events::SendTimerResumed(index);
     }
 
     internal void ResetTimer(int index)
@@ -199,7 +199,7 @@ strict namespace RoundTimer
         ResumeTimer(index);
 
         if (broadcast)
-            EventBus::CallEvent(EVENTTIMERSTARTED, index);
+            Events::SendTimerStarted(index);
     }
 
     internal void StopTimer(int index, bool broadcast = true)
@@ -207,7 +207,7 @@ strict namespace RoundTimer
         GetTimerRefByindex(index).EndingTic = -1;
 
         if (broadcast)
-            EventBus::CallEvent(EVENTTIMERSTOPPED, index);
+            Events::SendTimerStopped(index);
     }
 
     internal void ShowTimer(int index) { GetTimerRefByindex(index).Flags &= ~TIMERHIDDEN; }

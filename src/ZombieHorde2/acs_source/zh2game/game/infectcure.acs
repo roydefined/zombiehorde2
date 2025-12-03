@@ -39,8 +39,8 @@ strict namespace Game
         if (!SpawnForced("CureEffect", GetActorX(tid), GetActorY(tid), GetActorZ(tid)))
             Logger::LogWarning(LOGSOURCE , "Failed to spawn cure effect for player " + str(id) + ".");
 
-        EventBus::CallEvent(EVENTCURED, id);
-        EventBus::CallEvent(EVENTPLAYERSPECIECHANGED, id, Player::SPECIEHUMAN);
+        Events::SendPlayerCured(id);
+        Events::SendPlayerSpecieChanged(id, Player::SPECIEHUMAN);
     }
 
     internal void InfectPlayer(int infectedId, InfectTypeT type)
@@ -152,8 +152,8 @@ strict namespace Game
         // Remove panic state
         Player::SetPlayerPanicState(infectedId, Player::PANICSTATENONE);
 
-        EventBus::CallEvent(EVENTINFECTED, infectedId);
-        EventBus::CallEvent(EVENTPLAYERSPECIECHANGED, infectedId, Player::SPECIEZOMBIE);
+        Events::SendPlayerInfected(infectedId);
+        Events::SendPlayerSpecieChanged(infectedId, Player::SPECIEZOMBIE);
     }
 
     // Drop fire grenade if the player owns one and is eligible to drop one depending on specie and configuration.
