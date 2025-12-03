@@ -37,6 +37,28 @@ strict namespace Events
         EventBus::AddCallbackByScriptName(EVENTPLAYERLEFTROUND, "zh2_internal_event_playerleftround");
         EventBus::AddCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_event_specie_changed");
     }
+
+    internal void SetReceiveData(int index, raw data)
+    {
+        if (index >= EVENT_RECEIVE_MAX_SIZE)
+        {
+            Logger::LogError(LOGSOURCE, "SetReceiveData index " + str(index) + " is out of bounds (0 - " + str(EVENT_RECEIVE_MAX_SIZE - 1) + ")!");
+            return;
+        }
+
+        ZH2Game::GameContext.EventReceiveContext.ReceiveData[index] = data;
+    }
+
+    internal raw GetReceiveData(int index)
+    {
+        if (index >= EVENT_RECEIVE_MAX_SIZE)
+        {
+            Logger::LogError(LOGSOURCE, "SetReceiveData index " + str(index) + " is out of bounds (0 - " + str(EVENT_RECEIVE_MAX_SIZE - 1) + ")!");
+            return 0;
+        }
+
+        return ZH2Game::GameContext.EventReceiveContext.ReceiveData[index];
+    }
 }
 
 #undef LOGSOURCE 
