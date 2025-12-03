@@ -48,31 +48,52 @@ strict namespace EventBus
         ZH2Lib::LibContext.EventBusCollection.Collection[index].ScriptNumberCallbacks[ZH2Lib::LibContext.EventBusCollection.Collection[index].ScriptNumberCallbackCount++] = scriptNumber;
     }
 
-    void CallEvent(str eventKey, str packet)
+    void CallEvent(str packet)
     {
+        // This is what is send to clients online.
+        // We need to keep a copy so that they can also handle the event.
+        str originalPacket = packet;
+
+        packet = Packet::Packet_ReadStr(packet);
+        str eventKey = Packet::Packet_Rval;
+
         Logger::LogDebug(LOGSOURCE, "Calling event " + eventKey + ".");
         int index = GetEventIndexByKey(eventKey);
         if (index == -1)
         {
             Logger::LogDebug(LOGSOURCE, "Event " + eventKey + " was not found.");
-            return;
         }
-
-        // Note, we use `ACS_(Named)ExecuteWithResult` here to ensure the event is passed without a tic delay.
-
-        int scriptNameCallbackCount = ZH2Lib::LibContext.EventBusCollection.Collection[index].scriptNameCallbackCount;
-        for (int i = 0; i < scriptNameCallbackCount; ++i)
+        else
         {
-            str scriptName = ZH2Lib::LibContext.EventBusCollection.Collection[index].scriptNameCallbacks[i];
-            ACS_NamedExecuteWithResult(scriptName, (int)packet);
+            // Note, we use `ACS_(Named)ExecuteWithResult` here to ensure the event is passed without a tic delay.
+
+            int scriptNameCallbackCount = ZH2Lib::LibContext.EventBusCollection.Collection[index].scriptNameCallbackCount;
+            for (int i = 0; i < scriptNameCallbackCount; ++i)
+            {
+                str scriptName = ZH2Lib::LibContext.EventBusCollection.Collection[index].scriptNameCallbacks[i];
+                ACS_NamedExecuteWithResult(scriptName, (int)packet);
+            }
+
+            int scriptNumberCallbackCount = ZH2Lib::LibContext.EventBusCollection.Collection[index].scriptNumberCallbackCount;
+            for (int i = 0; i < scriptNumberCallbackCount; ++i)
+            {
+                int scriptNumber = ZH2Lib::LibContext.EventBusCollection.Collection[index].scriptNumberCallbacks[i];
+                ACS_ExecuteWithResult(scriptNumber, (int)packet);
+            }
         }
 
-        int scriptNumberCallbackCount = ZH2Lib::LibContext.EventBusCollection.Collection[index].scriptNumberCallbackCount;
-        for (int i = 0; i < scriptNumberCallbackCount; ++i)
+        // If we're serverside, we want to make sure we inform clients of the event.
+        if (BCSUtils::IsServerOnly())
         {
-            int scriptNumber = ZH2Lib::LibContext.EventBusCollection.Collection[index].scriptNumberCallbacks[i];
-            ACS_ExecuteWithResult(scriptNumber, (int)packet);
+            if(!NamedSendNetworkString("zh2_internal_event_callclient", originalPacket))
+                Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_event_callclient. Event key: " + eventKey + " Message packet: '" + originalPacket + "'.");
         }
+    }
+
+    script "zh2_internal_event_callclient" (raw packetRaw) clientside
+    {
+        str packet = (str)packetRaw;
+        CallEvent(packet);
     }
 
     internal int EnsureEventExists(str eventKey)
