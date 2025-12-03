@@ -111,12 +111,12 @@ strict namespace ZH2Game
         str gameMode = Map::GetCurrentMapGameMode();
         if (((raw)gameMode) != 0 && gameMode != "")
         {
-            Logger::LogDebug(LOGSOURCE , "Setting up game mode: \cd" + gameMode + "\cj.");
+            Logger::LogDebug(LOGSOURCE , "Setting up serverside game mode: \cd" + gameMode + "\cj.");
 
             switch (BCSUtils::StrToLower(gameMode))
             {
                 case "survival":
-                    Events::SetSurvivalDefaults();
+                    Events::SetSurvivalDefaultsServer();
                     Player::SetSurvivalDefaults();
                     Game::SetSurvivalDefaults();
                     Round::SetSurvivalDefaults();
@@ -124,7 +124,7 @@ strict namespace ZH2Game
                     break;
 
                 case "escape":
-                    Events::SetEscapeDefaults();
+                    Events::SetEscapeDefaultsServer();
                     Player::SetEscapeDefaults();
                     Game::SetEscapeDefaults();
                     Round::SetEscapeDefaults();
@@ -232,6 +232,32 @@ strict namespace ZH2Game
             if      (type == Item::TYPE_WEAPON)    collection.WeaponCollection[collection.WeaponCollectionSize++] = i;
             else if (type == Item::TYPE_INVENTORY) collection.InventoryCollection[collection.InventoryCollectionSize++] = i;
             else if (type == Item::TYPE_KEY)       collection.KeyCollection[collection.KeyCollectionSize++] = i;
+        }
+
+        // Set the current game mode if we have it set.
+        str gameMode = Map::GetCurrentMapGameMode();
+        if (((raw)gameMode) != 0 && gameMode != "")
+        {
+            Logger::LogDebug(LOGSOURCE , "Setting up clientside game mode: \cd" + gameMode + "\cj.");
+
+            switch (BCSUtils::StrToLower(gameMode))
+            {
+                case "survival":
+                    Events::SetSurvivalDefaultsClient();
+                    break;
+
+                case "escape":
+                    Events::SetEscapeDefaultsClient();
+                    break;
+
+                default:
+                    Logger::LogWarning(LOGSOURCE , "The given game mode profile does not exist: " + gamemode + ".");
+                    break;
+            }
+        }
+        else
+        {
+            Logger::LogDebug(LOGSOURCE , "Map has no game mode defined.");
         }
 
         // Now the loop starts because we have loaded everything.
