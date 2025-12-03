@@ -344,7 +344,7 @@ strict namespace ZH2Game
             {
                 Logger::LogDebug(LOGSOURCE, "Playing player has spectated: (\cd" + str(id) + "\cj)" + BCSUTILS::PlayerName(id) + ".");
                 Player::SetPlayerState(id, Player::STATEGONE);
-                EventBus::CallEvent(EVENTPLAYERLEFTROUND, id);
+                Events::SendPlayerLeftRound(id);
             }
 
             // Check if the round was still joinable.
@@ -397,7 +397,7 @@ strict namespace ZH2Game
 
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_death\" for player " + str(killedId) + " killed by player " + str(killerId) + ".");
 
-        EventBus::CallEvent(EVENTPLAYERDIED, killedId, killerId);
+        Events::SendPlayerDied(killedId, killerId);
 
         // Reset transient context if still in a joinable state.
         // Otherwise set as dead.
@@ -489,7 +489,7 @@ strict namespace ZH2Game
                 // This fixes damage in general, and also prevents infinite loops (which happends when the human is immune).
                 if ((str)arg2 == DAMAGETYPE_ZOMBIESCRATCH_NAME)
                 {
-                    EventBus::CallEvent(EVENTSCRATCHED, attackedId, attackerId);
+                    Events::SendPlayerScratched(attackedId, attackerId);
 
                     // We always set the damage to 0.
                     SetResultValue(0);
@@ -536,7 +536,7 @@ strict namespace ZH2Game
 
                     // Finally, if the round was the playing round, call the event.
                     if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
-                        EventBus::CallEvent(EVENTPLAYERLEFTROUND, arg1);
+                        Events::SendPlayerLeftRound(arg1);
                 }
                 else
                 {
