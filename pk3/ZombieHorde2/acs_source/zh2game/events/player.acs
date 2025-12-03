@@ -4,8 +4,13 @@
 
 strict namespace Events
 {
-    script "zh2_internal_event_scratched" (int infectedId, int infectorId)
+    script "zh2_internal_event_scratched" (raw packetStr)
     {
+        str packet = (str)packetStr;
+        Events::ReceivePlayerScratched(packet);
+        int infectedId = ZH2Game::GameContext.EventReceiveContext.ReceiveData[0];
+        int infectorId = ZH2Game::GameContext.EventReceiveContext.ReceiveData[1];
+
         // Double check a zombie infects a human.
         // If two players infect on the same tic, this can not be the case.
         if (!Player::GetPlayerIsHuman(infectedId) || !Player::GetPlayerIsZombie(infectorId))
@@ -64,8 +69,13 @@ strict namespace Events
         Sync::SyncPlayers();
     }
 
-    script "zh2_internal_event_playerdied" (int killedId, int killerId)
+    script "zh2_internal_event_playerdied" (raw packetStr)
     {
+        str packet = (str)packetStr;
+        Events::ReceivePlayerScratched(packet);
+        int killedId = ZH2Game::GameContext.EventReceiveContext.ReceiveData[0];
+        int killerId = ZH2Game::GameContext.EventReceiveContext.ReceiveData[1];
+
         int killedTid = Identity::GetTid(killedId);
 
         // No logic when player suicided.
@@ -118,8 +128,12 @@ strict namespace Events
         }
     }
 
-    script "zh2_internal_event_playerleftround" (int id)
+    script "zh2_internal_event_playerleftround" (raw packetStr)
     {
+        str packet = (str)packetStr;
+        Events::ReceivePlayerScratched(packet);
+        int id = ZH2Game::GameContext.EventReceiveContext.ReceiveData[0];
+
         if (Player::GetPlayerIsZombie(id) && Player::ZombieCount() == 0)
         {
             Game::SetEndReason(Game::REASONZOMBIELEFT);
@@ -134,10 +148,13 @@ strict namespace Events
         // No sync, the game ending does it already.
     }
 
-    script "zh2_internal_event_specie_changed" (raw idRaw, raw specieIndexRaw)
+    script "zh2_internal_event_specie_changed" (raw packetStr)
     {
-        int id = (int)idRaw;
-        int specieIndex = (int)specieIndexRaw;
+        str packet = (str)packetStr;
+        Events::ReceivePlayerScratched(packet);
+        int id = ZH2Game::GameContext.EventReceiveContext.ReceiveData[0];
+        int specieIndex = ZH2Game::GameContext.EventReceiveContext.ReceiveData[1];
+
         Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(specieIndex);
 
         // Full reset of powers on specie change.

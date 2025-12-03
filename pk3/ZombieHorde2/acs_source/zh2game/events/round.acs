@@ -4,13 +4,18 @@
 
 strict namespace Events
 {
-    script "zh2_internal_event_roundswitched" (int _, int index)
+    script "zh2_internal_event_roundswitched" (raw packetStr)
     {
-        Logger::LogDebug(LOGSOURCE, "Round started: \cd" + Round::GetRoundStateIndexAsString(index) + "\cj.");
+        str packet = (str)packetStr;
+        Events::ReceivePlayerScratched(packet);
+        //int prevIndex = ZH2Game::GameContext.EventReceiveContext.ReceiveData[0];
+        int newIndex = ZH2Game::GameContext.EventReceiveContext.ReceiveData[1];
+
+        Logger::LogDebug(LOGSOURCE, "Round started: \cd" + Round::GetRoundStateIndexAsString(newIndex) + "\cj.");
 
         // This even only handles known round types.
         // If the starting round is not a known type, terminate.
-        Round::KnownRoundStateT roundType = Round::GetKnownRoundStateTypeByIndex(index);
+        Round::KnownRoundStateT roundType = Round::GetKnownRoundStateTypeByIndex(newIndex);
         if (roundType == Round::StateNone)
             terminate;
 
@@ -164,13 +169,18 @@ strict namespace Events
         }
     }
 
-    script "zh2_internal_event_roundswitched_client" (int _, int index) clientside
+    script "zh2_internal_event_roundswitched_client" (raw packetStr) clientside
     {
-        Logger::LogDebug(LOGSOURCE, "Round started (clientside): \cd" + Round::GetRoundStateIndexAsString(index) + "\cj.");
+        str packet = (str)packetStr;
+        Events::ReceivePlayerScratched(packet);
+        //int prevIndex = ZH2Game::GameContext.EventReceiveContext.ReceiveData[0];
+        int newIndex = ZH2Game::GameContext.EventReceiveContext.ReceiveData[1];
+
+        Logger::LogDebug(LOGSOURCE, "Round started (clientside): \cd" + Round::GetRoundStateIndexAsString(newIndex) + "\cj.");
 
         // This even only handles known round types.
         // If the starting round is not a known type, terminate.
-        Round::KnownRoundStateT roundType = Round::GetKnownRoundStateTypeByIndex(index);
+        Round::KnownRoundStateT roundType = Round::GetKnownRoundStateTypeByIndex(newIndex);
         if (roundType == Round::StateNone)
             terminate;
 
