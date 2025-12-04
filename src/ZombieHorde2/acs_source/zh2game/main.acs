@@ -116,7 +116,7 @@ strict namespace ZH2Game
             switch (BCSUtils::StrToLower(gameMode))
             {
                 case "survival":
-                    Events::SetSurvivalDefaultsServer();
+                    Event::SetSurvivalDefaultsServer();
                     Player::SetSurvivalDefaults();
                     Game::SetSurvivalDefaults();
                     Round::SetSurvivalDefaults();
@@ -124,7 +124,7 @@ strict namespace ZH2Game
                     break;
 
                 case "escape":
-                    Events::SetEscapeDefaultsServer();
+                    Event::SetEscapeDefaultsServer();
                     Player::SetEscapeDefaults();
                     Game::SetEscapeDefaults();
                     Round::SetEscapeDefaults();
@@ -243,11 +243,11 @@ strict namespace ZH2Game
             switch (BCSUtils::StrToLower(gameMode))
             {
                 case "survival":
-                    Events::SetSurvivalDefaultsClient();
+                    Event::SetSurvivalDefaultsClient();
                     break;
 
                 case "escape":
-                    Events::SetEscapeDefaultsClient();
+                    Event::SetEscapeDefaultsClient();
                     break;
 
                 default:
@@ -370,7 +370,7 @@ strict namespace ZH2Game
             {
                 Logger::LogDebug(LOGSOURCE , "Playing player has spectated: (\cd" + str(id) + "\cj)" + BCSUTILS::PlayerName(id) + ".");
                 Player::SetPlayerState(id, Player::STATEGONE);
-                Events::SendPlayerLeftRound(id);
+                Event::SendPlayerLeftRound(id);
             }
 
             // Check if the round was still joinable.
@@ -423,7 +423,7 @@ strict namespace ZH2Game
 
         Logger::LogDebug(LOGSOURCE , "Call script \"zh2_internal_death\" for player " + str(killedId) + " killed by player " + str(killerId) + ".");
 
-        Events::SendPlayerDied(killedId, killerId);
+        Event::SendPlayerDied(killedId, killerId);
 
         // Reset transient context if still in a joinable state.
         // Otherwise set as dead.
@@ -515,7 +515,7 @@ strict namespace ZH2Game
                 // This fixes damage in general, and also prevents infinite loops (which happends when the human is immune).
                 if ((str)arg2 == DAMAGETYPE_ZOMBIESCRATCH_NAME)
                 {
-                    Events::SendPlayerScratched(attackedId, attackerId);
+                    Event::SendPlayerScratched(attackedId, attackerId);
 
                     // We always set the damage to 0.
                     SetResultValue(0);
@@ -562,7 +562,7 @@ strict namespace ZH2Game
 
                     // Finally, if the round was the playing round, call the event.
                     if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
-                        Events::SendPlayerLeftRound(arg1);
+                        Event::SendPlayerLeftRound(arg1);
                 }
                 else
                 {
