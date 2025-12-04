@@ -1,11 +1,47 @@
 New features
 ------------------------------------------------
 
-API changes
+ * * Event bus improvements and new packet-based system * *
+The event bus has existed for a very long time in Zombie Horde 2, and it has received a significant update to improve its behavior.
+The eventbus system is now packet-based, which gives space for as many parameters as needed (until the packet is full).
+When Zandronum 3.3 releases I will further extend this system with better checks for scripts to ensure callbacks are valid.
+The eventbus will now also send events to clients using this new system. This means clients will now also be able to hook onto events.
+This improves the previous system where it was technically also possible, but this logic relied on a serverside event to also be available.
+If this was not the case the eventbus would not invoke the script as it assumed none existed.
+Lastly, he eventbus now also longer waits 1 extra tic when invoking events, and now handles instantly.
+
+API changes (Could contain breaking changes for mappers. Make sure to check this list for migrations)
 ------------------------------------------------
 
+As part of the eventbus refactor, a lot of new functions have been added to help mappers with handling the new packet-based events.
+The current list of events all have a receive function that can be used to parse the packet.
+- `void ReceivePlayerLeftRound(str packet)`
+- `void ReceivePlayerDied(str packet)`
+- `void ReceivePlayerScratched(str packet)`
+- `void ReceivePlayerCured(str packet)`
+- `void ReceivePlayerInfected(str packet)`
+- `void ReceivePlayerSpecieChanged(str packet)`
+- `void ReceiveResistStarted(str packet)`
+- `void ReceiveResistElapsed(str packet)`
+- `void ReceiveResistStopped(str packet)`
+- `void ReceiveRoundSwitched(str packet)`
+- `void ReceiveTimerStarted(str packet)`
+- `void ReceiveTimerStopped(str packet)`
+- `void ReceiveTimerPaused(str packet)`
+- `void ReceiveTimerResumed(str packet)`
+- `void ReceiveTimerElapsed(str packet)`
+- `void ReceiveTimerSwitched(str packet)`
+	
+Additionally, a function exists to then get the data from these packets.
+- `raw GetReceiveData(int index)`
+
+For more info on this new system, make sure to read the wiki for more information on how to use this system.
+
+Other changes:
 - `Logger::LogTo` has its API changed. The id parameter must now be passed first instead of second.
 - `Logger::LogExcept` has its API changed. The id parameter must now be passed first instead of second.
+- Enum `SpecieTypeT` has its API changed to `PlayerSpecieT`
+- Enum `PanicStateT` has its API changed to `PlayerPanicStateT`
 
 Other mod changes
 ------------------------------------------------
@@ -13,6 +49,8 @@ Other mod changes
 - The mod now forces `sv_noidentifytarget` to always be disabled. This feature does not work well with the mod, and instead the build in identification should be used.
 - Fix an issue where the shotgun did an animation when blocked and reloading.
 - Fix Doom keycards showing the wrong icon on the hud due to overlapping texture names.
+- Cvar `sv_zh2_voteincludeplayedmaps` is now `true` by default as it seems like the better choise to allow played maps to be replayed.
+- Textures `0522` & `0545` were defined twice and have now been removed.
 
 Repository changes
 ------------------------------------------------
@@ -20,4 +58,4 @@ Repository changes
 The Zombie Horde 2 repository has changed how its tooling works. This tooling has been migrated from the original `.bat` files to Python files. These are both faster and more readable.
 This change should improve how the tooling is handled in the mod so more can be added if needed.
 
-
+Additionally, a new script has been added for finding duplicate texture names.
