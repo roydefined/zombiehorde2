@@ -76,7 +76,7 @@ def main():
 
     # Compile maps first
     logging.info("Compiling maps...\n")
-    run_cmd(["python", str(root / "scripts" / "compile-maps.py")])
+    run_cmd(["python", str(root / "scripts" / "compile_maps.py")])
     logging.info("")
 
     logging.info(f'Packing projects from "{mapsrc}"...')
@@ -100,7 +100,7 @@ def main():
 
     # Cleanup BEHAVIOR lumps
     logging.info("Deleting map behaviors...\n")
-    run_cmd(["python", str(root / "scripts" / "delete-map-behaviors.py")])
+    run_cmd(["python", str(root / "scripts" / "delete_map_behaviors.py")])
     logging.info("")
 
     logging.info("[DONE] All projects packed successfully.")
