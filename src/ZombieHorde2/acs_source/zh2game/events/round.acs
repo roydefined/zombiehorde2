@@ -23,68 +23,51 @@ strict namespace Event
         {
             case Round::StatePlaying:
             {
-                int chosenZombieCount = Round::DetermineInitialZombies();
-                bool multiple = chosenZombieCount > 1;
-
                 // Set up initial zombies.
-                // This part is wrapped in a string builder so we can log the result.
-                str logMessage;
-                buildmsg(logMessage = StrParam())
+                int chosenZombieCount = Round::DetermineInitialZombies();
+
+                // Manage teleporting players to initial spawn spots.
+                int initialSpawnSpotIndex = 0;
+                int zombiesLeft = chosenZombieCount;
+
+                for(int i = 0; i < BCSUTILS::MAX_PLAYERS; ++i)
                 {
-                    // Manage teleporting players to intiial spawn spots.
-                    int initialSpawnSpotIndex = 0;
-                    int zombiesLeft = chosenZombieCount;
+                    if (!PlayerInGame(i))
+                        continue;
 
-                    for(int i = 0; i < BCSUTILS::MAX_PLAYERS; ++i)
+                    int tid = Identity::GetTID(i);
+                    if (!BCSUTILS::ActorIsAlive(tid))
+                        continue;
+
+                    if (Player::GetPlayerInitialZombie(i))
                     {
-                        if (!PlayerInGame(i))
-                            continue;
+                        Game::InfectPlayer(i, Game::INFECT_INITIAL);
 
-                        int tid = Identity::GetTID(i);
-                        if (!BCSUTILS::ActorIsAlive(tid))
-                            continue;
-
-                        if (Player::GetPlayerInitialZombie(i))
+                        // Teleport to the initial spawn spot if defined.
+                        // Also make sure we reset the index if we are at the end of the index count.
+                        // TODO: Look into preventing the teleporting from telefragging.
+                        if (Game::GetInitialSpawnSpotCount() > 0)
                         {
-                            Game::InfectPlayer(i, Game::INFECT_INITIAL);
+                            int teleportTid = Game::GetInitialSpawnSpot(initialSpawnSpotIndex);
+                            Logger::LogDebug(LOGSOURCE , "Teleporting initial zombie \cd" + str(tid) + "\cj to \cd" + str(teleportTid) + "\cj.");
 
-                            zombiesLeft--;
+                            if (teleportTid == -1)
+                                Logger::LogError(LOGSOURCE , "Initial zombie spawn spot under index " + str(initialSpawnSpotIndex) + " was not found.");
 
-                            // Teleport to the initial spawn spot if defined.
-                            // Also make sure we reset the index if we are at the end of the index count.
-                            // TODO: Look into preventing the teleporting from telefragging.
-                            if (Game::GetInitialSpawnSpotCount() > 0)
-                            {
-                                int teleportTid = Game::GetInitialSpawnSpot(initialSpawnSpotIndex);
-                                Logger::LogDebug(LOGSOURCE , "Teleporting initial zombie \cd" + str(tid) + "\cj to \cd" + str(teleportTid) + "\cj.");
+                            else if (!IsTIDUsed(teleportTid))
+                                Logger::LogError(LOGSOURCE , "Initial zombie spawn spot with TID " + str(teleportTid) + " does not exist exist.");
 
-                                if (teleportTid == -1)
-                                    Logger::LogError(LOGSOURCE , "Initial zombie spawn spot under index " + str(initialSpawnSpotIndex) + " was not found.");
+                            else
+                                TeleportOther(tid, teleportTid, 0);
 
-                                else if (!IsTIDUsed(teleportTid))
-                                    Logger::LogError(LOGSOURCE , "Initial zombie spawn spot with TID " + str(teleportTid) + " does not exist exist.");
-
-                                else
-                                    TeleportOther(tid, teleportTid, 0);
-
-                                initialSpawnSpotIndex++;
-                                initialSpawnSpotIndex %= Game::GetInitialSpawnSpotCount();
-                            }
-
-                            Append(s:BCSUTILS::PlayerName(i));
-                            if (zombiesLeft == 1) Append(s:" and ");
-                            else if (zombiesLeft != 0) Append(s:", ");
+                            initialSpawnSpotIndex++;
+                            initialSpawnSpotIndex %= Game::GetInitialSpawnSpotCount();
                         }
                     }
-
-                    Append(s:(multiple ? " have " : " has ") + "been chosen as the initial zombie" + (multiple ? "s" : "") + ".");
                 }
 
                 // Send an event of the chosen initials.
                 Event::SendInitialsChosen(chosenZombieCount);
-
-                // Log the players that have been picked as an initial zombie.
-                Logger::LogBold(logMessage);
                 Sync::SyncPlayers();
 
                 // The match has started so we set the start tic.
