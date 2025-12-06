@@ -4,6 +4,21 @@
 
 strict namespace Event
 {
+    internal void SendInitialsChosen(int chosenCount)
+    {
+        str packet = Packet::Packet_New();
+        packet = Packet::Packet_AppendStr(packet, EVENTINITIALSCHOSEN);
+        packet = Packet::Packet_Append(packet, chosenCount, Packet::PACKET_WORD);
+
+        for(int i = 0; i < BCSUTILS::MAX_PLAYERS; ++i)
+        {
+            if (Player::GetPlayerInitialZombie(i))
+                packet = Packet::Packet_Append(packet, i, Packet::PACKET_WORD);
+        }
+
+        EventBus::CallEvent(packet);
+    }
+
     internal void SendPlayerLeftRound(int id)
     {
         str packet = Packet::Packet_New();
@@ -24,6 +39,7 @@ strict namespace Event
     internal void SendPlayerScratched(int attackedId, int attackerId)
     {
         str packet = Packet::Packet_New();
+
         packet = Packet::Packet_AppendStr(packet, EVENTPLAYERSCRATCHED);
         packet = Packet::Packet_Append(packet, attackedId, Packet::PACKET_WORD);
         packet = Packet::Packet_Append(packet, attackerId, Packet::PACKET_WORD);
