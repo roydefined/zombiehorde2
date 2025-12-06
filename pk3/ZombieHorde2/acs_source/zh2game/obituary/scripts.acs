@@ -8,9 +8,28 @@ strict namespace Obituary
     {
         str packet = (str)packetStr;
         Event::ReceiveInitialsChosen(packet);
-        int count = GetReceiveData(0);
 
-        // TODO
+        int count = Event::GetReceiveData(0);
+        bool multiple = count > 1;
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int index = 1;
+            while(count--)
+            {
+                int id = Event::GetReceiveData(index++);
+                count--;
+
+                Append(s:BCSUTILS::PlayerName(id));
+                if (count == 1) Append(s:" and ");
+                else if (count != 0) Append(s:", ");
+            }
+
+            Append(s:(multiple ? " have " : " has ") + "been chosen as the initial zombie" + (multiple ? "s" : "") + ".");
+        }
+
+        Logger::LogConsolePlayer(logMessage);
     }
 
     script "zh2_internal_obituary_playersafe_client" (raw packetStr) clientside
