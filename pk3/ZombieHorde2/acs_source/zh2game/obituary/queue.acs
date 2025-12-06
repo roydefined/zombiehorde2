@@ -1,0 +1,30 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Obituary
+{
+    internal void QueueInitialsChosen()
+    {
+        // NOTE: We split up the initials to their own obituary.
+
+        int count = Event::GetReceiveData(0);
+        int index = 1;
+        while (count--)
+        {
+            int queueIndex = GetNextQueueIndex();
+            SetQueueType(queueIndex, OBITUARY_INITIAL);
+            SetQueueData(queueIndex, 0, Event::GetReceiveData(index));
+            index++;
+        }
+    }
+
+    internal void QueuePlayerSafe()
+    {
+        int queueIndex = GetNextQueueIndex();
+        SetQueueType(queueIndex, OBITUARY_SAFE);
+        SetQueueData(queueIndex, 0, Event::GetReceiveData(0));
+        SetQueueData(queueIndex, 1, Event::GetReceiveData(1));
+        SetQueueData(queueIndex, 2, Event::GetReceiveData(2));
+    }
+}
