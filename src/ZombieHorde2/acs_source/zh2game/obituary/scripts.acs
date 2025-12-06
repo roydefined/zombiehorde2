@@ -1,0 +1,37 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Obituary
+{
+    script "zh2_internal_obituary_initialschosen_client" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceiveInitialsChosen(packet);
+        int count = GetReceiveData(0);
+
+        // TODO
+    }
+
+    script "zh2_internal_obituary_playersafe_client" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerSafe(packet);
+        int id = Event::GetReceiveData(0);
+        bool safe = Event::GetReceiveData(0);
+        bool firstTime = Event::GetReceiveData(0);
+
+        // We only log if players entered the safezone, not left.
+        if (!safe)
+            terminate;
+
+        // We only log first time safety.
+        if (!firstTime)
+            terminate;
+
+        if (id == ConsolePlayerNumber())
+            Logger::LogConsolePlayer("You have reached the safezone!");
+        else
+            Logger::LogConsolePlayer(BCSUtils::PlayerName(id) + " has reached the safezone!");
+    }
+}
