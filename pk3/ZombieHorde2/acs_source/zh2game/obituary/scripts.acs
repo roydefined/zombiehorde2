@@ -12,6 +12,8 @@ strict namespace Obituary
         int count = Event::GetReceiveData(0);
         bool multiple = count > 1;
 
+        printbold(d:count);
+
         str logMessage;
         buildmsg(logMessage = StrParam())
         {
@@ -19,7 +21,6 @@ strict namespace Obituary
             while(count--)
             {
                 int id = Event::GetReceiveData(index++);
-                count--;
 
                 Append(s:BCSUTILS::PlayerName(id));
                 if (count == 1) Append(s:" and ");
@@ -37,8 +38,8 @@ strict namespace Obituary
         str packet = (str)packetStr;
         Event::ReceivePlayerSafe(packet);
         int id = Event::GetReceiveData(0);
-        bool safe = Event::GetReceiveData(0);
-        bool firstTime = Event::GetReceiveData(0);
+        bool safe = Event::GetReceiveData(1);
+        bool firstTime = Event::GetReceiveData(2);
 
         // We only log if players entered the safezone, not left.
         if (!safe)
