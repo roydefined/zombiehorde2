@@ -10,6 +10,13 @@ strict namespace EventBus
 {
     void AddCallbackByScriptName(str eventKey, str scriptName)
     {
+        // Ensure this script exists.
+        if (!CheckScript(scriptName, true))
+        {
+            Logger::LogError(LOGSOURCE , "Failed to add event " + eventKey + " with script name callback " + scriptName +". Script not found.");
+            return;
+        }
+
         int index = EnsureEventExists(eventKey);
         if (index == -1)
         {
@@ -30,6 +37,13 @@ strict namespace EventBus
 
     void AddCallbackByScriptNumber(str eventKey, int scriptNumber)
     {
+        // Ensure this script exists.
+        if (!CheckScript(scriptNumber, false))
+        {
+            Logger::LogError(LOGSOURCE , "Failed to add event " + eventKey + " with script number callback " + str(scriptNumber) +". Script not found.");
+            return;
+        }
+
         int index = EnsureEventExists(eventKey);
         if (index == -1)
         {
@@ -125,4 +139,4 @@ strict namespace EventBus
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE
