@@ -23,16 +23,17 @@ strict namespace Event
         {
             case Round::StatePlaying:
             {
+                int chosenZombieCount = Round::DetermineInitialZombies();
+                bool multiple = chosenZombieCount > 1;
+
                 // Set up initial zombies.
                 // This part is wrapped in a string builder so we can log the result.
                 str logMessage;
                 buildmsg(logMessage = StrParam())
                 {
-                    int chosenZombieCount = Round::DetermineInitialZombies();
-                    bool multiple = chosenZombieCount > 1;
-
                     // Manage teleporting players to intiial spawn spots.
                     int initialSpawnSpotIndex = 0;
+                    int zombiesLeft = chosenZombieCount;
 
                     for(int i = 0; i < BCSUTILS::MAX_PLAYERS; ++i)
                     {
@@ -47,7 +48,7 @@ strict namespace Event
                         {
                             Game::InfectPlayer(i, Game::INFECT_INITIAL);
 
-                            chosenZombieCount--;
+                            zombiesLeft--;
 
                             // Teleport to the initial spawn spot if defined.
                             // Also make sure we reset the index if we are at the end of the index count.
@@ -71,13 +72,16 @@ strict namespace Event
                             }
 
                             Append(s:BCSUTILS::PlayerName(i));
-                            if (chosenZombieCount == 1) Append(s:" and ");
-                            else if (chosenZombieCount != 0) Append(s:", ");
+                            if (zombiesLeft == 1) Append(s:" and ");
+                            else if (zombiesLeft != 0) Append(s:", ");
                         }
                     }
 
                     Append(s:(multiple ? " have " : " has ") + "been chosen as the initial zombie" + (multiple ? "s" : "") + ".");
                 }
+
+                // Send an event of the chosen initials.
+                Event::SendInitialsChosen(chosenZombieCount);
 
                 // Log the players that have been picked as an initial zombie.
                 Logger::LogBold(logMessage);
