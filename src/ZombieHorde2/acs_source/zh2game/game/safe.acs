@@ -12,6 +12,12 @@ strict namespace Game
         ZH2Game::GameContext.Players[id].Safe = safe;
         Logger::LogDebug(LOGSOURCE , BCSUTILS::PlayerName(id) + " (\cd" + str(id) + "\cj) \cd" + (safe ? "entered" : "left") + "\cj the safe zone.");
 
+        bool firstTime = safe && !ZH2Game::GameContext.Players[id].FirstTimeSafe;
+        if (safe)
+            ZH2Game::GameContext.Players[id].FirstTimeSafe = true;
+
+        Events::SendPlayerSafe(id, safe, firstTime);
+
         if (broadcast)
             Sync::SyncPlayers();
     }
