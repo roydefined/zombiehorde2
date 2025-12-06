@@ -4,6 +4,19 @@
 
 strict namespace Event
 {
+    void ReceiveInitialsChosen(str packet)
+    {
+        packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
+        int count = Packet::Packet_Rval;
+
+        int index = 1;
+        while (count--)
+        {
+            packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
+            SetReceiveData(index++, Packet::Packet_Rval);
+        }
+    }
+
     void ReceivePlayerLeftRound(str packet)
     {
         packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
@@ -62,6 +75,22 @@ strict namespace Event
 
         SetReceiveData(0, id);
         SetReceiveData(1, specieInt);
+    }
+
+    void ReceivePlayerSafe(str packet)
+    {
+        packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
+        int id = Packet::Packet_Rval;
+
+        packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
+        int safe = Packet::Packet_Rval;
+
+        packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
+        int firstTime = Packet::Packet_Rval;
+
+        SetReceiveData(0, id);
+        SetReceiveData(1, safe);
+        SetReceiveData(2, firstTime);
     }
 
     void ReceiveResistStarted(str packet)
