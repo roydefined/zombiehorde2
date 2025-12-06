@@ -1,0 +1,50 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Obituary
+{
+    internal void LogInitialsChosen()
+    {
+        int count = Event::GetReceiveData(0);
+        bool multiple = count > 1;
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int index = 1;
+            while(count--)
+            {
+                int id = Event::GetReceiveData(index++);
+
+                Append(s:BCSUTILS::PlayerName(id));
+                if (count == 1) Append(s:" and ");
+                else if (count != 0) Append(s:", ");
+            }
+
+            Append(s:(multiple ? " have " : " has ") + "been chosen as the initial zombie" + (multiple ? "s" : "") + ".");
+        }
+
+        Logger::LogConsolePlayer(logMessage);
+    }
+
+    internal void LogPlayerSafe()
+    {
+        int id = Event::GetReceiveData(0);
+        bool safe = Event::GetReceiveData(1);
+        bool firstTime = Event::GetReceiveData(2);
+
+        // We only log if players entered the safezone, not left.
+        if (!safe)
+            return;
+
+        // We only log first time safety.
+        if (!firstTime)
+            return;
+
+        if (id == ConsolePlayerNumber())
+            Logger::LogConsolePlayer("You have reached the safezone!");
+        else
+            Logger::LogConsolePlayer(BCSUtils::PlayerName(id) + " has reached the safezone!");
+    }
+}
