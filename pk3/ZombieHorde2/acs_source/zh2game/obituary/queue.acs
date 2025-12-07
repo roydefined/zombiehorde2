@@ -28,16 +28,21 @@ strict namespace Obituary
 
     internal void QueuePlayerSafe()
     {
+        int id = Event::GetReceiveData(0);
         int queueIndex = GetNextQueueIndex();
         SetQueueType(queueIndex, OBITUARY_SAFE);
-        SetQueueData(queueIndex, 0, Event::GetReceiveData(0));
+        SetQueueData(queueIndex, 0, id);
+        SetQueueData(queueIndex, 1, GetPlayerObituarySpecieType(id));
     }
 
     internal void QueuePlayerScratched()
     {
+        // No need to get specie of the infected because they are always human.
+        int infectorId = Event::GetReceiveData(0);
         int queueIndex = GetNextQueueIndex();
         SetQueueType(queueIndex, OBITUARY_PLAYER_SCRATCHED);
-        SetQueueData(queueIndex, 0, Event::GetReceiveData(0));
+        SetQueueData(queueIndex, 0, infectorId);
         SetQueueData(queueIndex, 1, Event::GetReceiveData(1));
+        SetQueueData(queueIndex, 2, GetPlayerObituarySpecieType(infectorId));
     }
 }

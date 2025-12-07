@@ -10,11 +10,15 @@ strict namespace Hud
         int id = Obituary::GetQueueData(queueIndex, 1);
         int multiple = Obituary::GetQueueData(queueIndex, 2);
 
-        HudSetPointInternal(-15.0, yOffset);
+        HudSetPointInternal(-26.0, yOffset);
         BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(id));
         DebugDraw();
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        HudSetPointInternal(-18.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_HUMAN);
+        DebugDraw();
 
         HudSetPointInternal(0.0, yOffset);
         BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_INITIAL_CHOSEN);
@@ -35,20 +39,23 @@ strict namespace Hud
     internal void DrawPlayerSafe(int queueIndex, fixed yOffset)
     {
         int id = Obituary::GetQueueData(queueIndex, 0);
+        int type = Obituary::GetQueueData(queueIndex, 1);
+        str graphic = TranslateSpecieGraphic(type);
 
-        HudSetPointInternal(-15.0, yOffset);
+        HudSetPointInternal(-26.0, yOffset);
         BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(id));
         DebugDraw();
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
 
+        if (graphic != (str)0)
+        {
+            HudSetPointInternal(-18.0, yOffset);
+            BCSUtils::HudDrawImage(--_drawnHudId, graphic);
+            DebugDraw();
+        }
+
         HudSetPointInternal(0.0, yOffset);
-        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_HUMAN);
-        DebugDraw();
-
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
-
-        HudSetPointInternal(15.0, yOffset);
         BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_SAFE);
         DebugDraw();
     }
@@ -57,20 +64,33 @@ strict namespace Hud
     {
         int infected = Obituary::GetQueueData(queueIndex, 0);
         int infector = Obituary::GetQueueData(queueIndex, 1);
+        int infectorType = Obituary::GetQueueData(queueIndex, 2);
+        str infectorGraphic = TranslateSpecieGraphic(infectorType);
 
-        HudSetPointInternal(-15.0, yOffset);
+        HudSetPointInternal(-26.0, yOffset);
         BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(infector));
         DebugDraw();
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
 
+        HudSetPointInternal(-18.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_HUMAN);
+        DebugDraw();
+
         HudSetPointInternal(0.0, yOffset);
         BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_SCRATCH);
         DebugDraw();
 
+        if (infectorGraphic != (str)0)
+        {
+            HudSetPointInternal(18.0, yOffset);
+            BCSUtils::HudDrawImage(--_drawnHudId, infectorGraphic);
+            DebugDraw();
+        }
+
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
 
-        HudSetPointInternal(15.0, yOffset);
+        HudSetPointInternal(26.0, yOffset);
         BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(infected));
         DebugDraw();
     }
