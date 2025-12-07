@@ -38,11 +38,34 @@ strict namespace Obituary
         return ZH2Game::GameContext.ObituaryCollectionContext.HighIndex;
     }
 
+    internal int GetShownObituaryCount()
+    {
+        int count = 0;
+        int lowIndex = GetLowIndex();
+        int highIndex = GetHighIndex();
+        while (lowIndex != highIndex)
+        {
+            lowIndex++;
+            lowIndex %= OBITUARY_COLLECTION_MAX_SIZE;
+            count++;
+        }
+
+        return count;
+    }
+
     // Returns the next index to queue on. Ensures indexes are shiften correctly.
     internal int GetNextQueueIndex()
     {
         ZH2Game::GameContext.ObituaryCollectionContext.HighIndex++;
         ZH2Game::GameContext.ObituaryCollectionContext.HighIndex %= OBITUARY_COLLECTION_MAX_SIZE;
+
+        // Move low index up to fit configured obituary count.
+        int count = ZH2Game::GetShownObituaries(ConsolePlayerNumber());
+        while (GetShownObituaryCount() > count && GetLowIndex() != GetHighIndex())
+        {
+            ZH2Game::GameContext.ObituaryCollectionContext.LowIndex++;
+            ZH2Game::GameContext.ObituaryCollectionContext.LowIndex %= OBITUARY_COLLECTION_MAX_SIZE;
+        }
 
         // Replace lowest index.
         if (ZH2Game::GameContext.ObituaryCollectionContext.LowIndex == ZH2Game::GameContext.ObituaryCollectionContext.HighIndex)
