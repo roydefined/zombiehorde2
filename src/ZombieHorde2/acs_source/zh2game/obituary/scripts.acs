@@ -25,4 +25,15 @@ strict namespace Obituary
         else
             LogPlayerSafe();
     }
+
+    script "zh2_internal_obituary_playerscratched" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerScratched(packet);
+
+        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
+            QueuePlayerScratched();
+        else
+            LogPlayerScratched();
+    }
 }
