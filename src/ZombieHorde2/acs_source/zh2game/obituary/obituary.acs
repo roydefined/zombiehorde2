@@ -139,6 +139,25 @@ strict namespace Obituary
 
         return Timer() - ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].Timestamp;
     }
+
+    internal ObituarySpecieTypeT GetPlayerObituarySpecieType(int id)
+    {
+        if (Player::GetPlayerIsHuman(id))
+            return OBITUARYSPECIE_HUMAN;
+
+        // TODO: Determine non-overridden behavior.
+        switch (ZH2Game::GetZombieSkinBehaviour())
+        {
+            case ZH2Game::BEHAVIOUR_FORCEOLDSKIN:
+                return OBITUARYSPECIE_ZOMBIE_OLD;
+            case ZH2Game::BEHAVIOUR_FORCENEWSKIN:
+                return Player::GetPlayerInitialZombie(id)
+                    ? OBITUARYSPECIE_ZOMBIE_INITIAL
+                    : OBITUARYSPECIE_ZOMBIE_REGULAR;
+        }
+
+        return OBITUARYSPECIE_UNKNOWN;
+    }
 }
 
 #undef LOGSOURCE
