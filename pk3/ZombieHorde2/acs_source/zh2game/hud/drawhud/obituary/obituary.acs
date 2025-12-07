@@ -1,0 +1,50 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "draw.acs"
+
+strict namespace Hud
+{
+    internal void DrawObituaryHud()
+    {
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetFont("KILFONT");
+
+        PrepareHud(
+            BCSUtils::HudRight() - 40.0,
+            BCSUtils::HudTop() + 10.0,
+            false);
+
+        DrawObituaries();
+    }
+
+    internal void DrawObituaries()
+    {
+        // Obituaries are drawn from highest index to lowest.
+        int lowIndex = Obituary::GetLowIndex();
+        int highIndex = Obituary::GetHighIndex();
+        int offset = 0;
+        while (highIndex != lowIndex)
+        {
+            fixed yOffset = fixed(15 * offset);
+
+            Obituary::ObiruaryTypeT type = Obituary::GetQueueType(highIndex);
+            switch(type)
+            {
+                case Obituary::OBITUARY_INITIAL: DrawInitialChosen(highIndex, yOffset);
+                case Obituary::OBITUARY_SAFE: DrawPlayerSafe(highIndex, yOffset);
+                default: break;
+            }
+
+            // Go upwards, make sure to loop around.
+            highIndex--;
+            if (highIndex == -1)
+                highIndex = OBITUARY_COLLECTION_MAX_SIZE - 1;
+
+            offset++;
+        }
+    }
+}
