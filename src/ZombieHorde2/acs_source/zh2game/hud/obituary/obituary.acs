@@ -32,6 +32,20 @@ strict namespace Hud
             BCSUtils::HudSetTextColor(CR_WHITE);
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
 
+            int elapsedTics = Obituary::GetQueueElapsedDuration(highIndex);
+
+            // Determine alpha based on elapsed time.
+            fixed alpha;
+            if (elapsedTics < OBITUARY_FADEIN_TICS)
+                alpha = fixed(elapsedTics) / fixed(OBITUARY_FADEIN_TICS);
+            else if (elapsedTics < OBITUARY_FADEIN_TICS + OBITUARY_DURATION_TICS)
+                alpha = fixed(1.0);
+            else if (elapsedTics < OBITUARY_FADEIN_TICS + OBITUARY_DURATION_TICS + OBITUARY_FADEOUT_TICS)
+                alpha = fixed(OBITUARY_FADEIN_TICS + OBITUARY_DURATION_TICS + OBITUARY_FADEOUT_TICS - elapsedTics) / fixed(OBITUARY_FADEOUT_TICS);
+            else
+                alpha = fixed(0);
+            BCSUtils::HudSetAlpha(alpha);
+
             fixed yOffset = fixed(18 * offset);
 
             Obituary::ObituaryTypeT type = Obituary::GetQueueType(highIndex);
