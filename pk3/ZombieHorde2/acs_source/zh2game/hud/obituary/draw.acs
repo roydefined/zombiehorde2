@@ -6,9 +6,37 @@ strict namespace Hud
 {
     internal void DrawInitialChosen(int queueIndex, fixed yOffset)
     {
-        HudSetPointInternal(0.0, yOffset);
-        BCSUtils::HudDrawText(--_drawnHudId, "Initial");
+        int index = Obituary::GetQueueData(queueIndex, 0);
+        int id = Obituary::GetQueueData(queueIndex, 1);
+        int multiple = Obituary::GetQueueData(queueIndex, 2);
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_TOP);
+
+        HudSetPointInternal(-20.0, yOffset);
+        BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(id));
         DebugDraw();
+
+        HudSetPointInternal(0.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_INITIAL_CHOSEN);
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_TOP);
+
+        // With multiple zombies we want to show the index of this zombie.
+        if (multiple)
+        {
+            BCSUtils::HudSetFont("SMALLFONT");
+            BCSUtils::HudSetTextColor(CR_RED);
+
+            HudSetPointInternal(-10.0, yOffset + 2.0);
+            BCSUtils::HudDrawText(--_drawnHudId, str(index + 1));
+            DebugDraw();
+
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_TOP);
+
+            BCSUtils::HudSetFont("KILFONT");
+            BCSUtils::HudSetTextColor(CR_WHITE);
+        }
     }
 
     internal void DrawPlayerSafe(int queueIndex, fixed yOffset)

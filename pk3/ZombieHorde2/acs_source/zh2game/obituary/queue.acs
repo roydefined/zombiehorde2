@@ -9,12 +9,19 @@ strict namespace Obituary
         // NOTE: We split up the initials to their own obituary.
 
         int count = Event::GetReceiveData(0);
-        int index = 1;
+        bool multiple = count != 1;
+        int index = 0;
+
         while (count--)
         {
             int queueIndex = GetNextQueueIndex();
             SetQueueType(queueIndex, OBITUARY_INITIAL);
-            SetQueueData(queueIndex, 0, Event::GetReceiveData(index));
+            SetQueueData(queueIndex, 0, index);
+            SetQueueData(queueIndex, 1, Event::GetReceiveData(index + 1));
+
+            // We also pass if this is the only zombie.
+            // This way we tell clients if an index should be shown.
+            SetQueueData(queueIndex, 2, multiple);
             index++;
         }
     }
