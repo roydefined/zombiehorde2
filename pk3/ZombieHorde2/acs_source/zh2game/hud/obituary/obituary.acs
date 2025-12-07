@@ -25,7 +25,7 @@ strict namespace Hud
         // Obituaries are drawn from highest index to lowest.
         int lowIndex = Obituary::GetLowIndex();
         int highIndex = Obituary::GetHighIndex();
-        int offset = 0;
+        fixed offset = fixed(0);
         while (highIndex != lowIndex)
         {
             BCSUtils::HudSetFont("KILFONT");
@@ -46,14 +46,15 @@ strict namespace Hud
                 alpha = fixed(0);
             BCSUtils::HudSetAlpha(alpha);
 
-            fixed yOffset = fixed(18 * offset);
+            // The height factor gradually increases on fadein to give the obituary an additional offset.
+            fixed heightFactor = elapsedTics < OBITUARY_FADEIN_TICS ? alpha : fixed(1.0);
 
             Obituary::ObituaryTypeT type = Obituary::GetQueueType(highIndex);
             switch(type)
             {
-                case Obituary::OBITUARY_INITIAL: DrawInitialChosen(highIndex, yOffset); break;
-                case Obituary::OBITUARY_SAFE: DrawPlayerSafe(highIndex, yOffset); break;
-                case Obituary::OBITUARY_PLAYER_SCRATCHED: DrawPlayerScratched(highIndex, yOffset); break;
+                case Obituary::OBITUARY_INITIAL: DrawInitialChosen(highIndex, offset); break;
+                case Obituary::OBITUARY_SAFE: DrawPlayerSafe(highIndex, offset); break;
+                case Obituary::OBITUARY_PLAYER_SCRATCHED: DrawPlayerScratched(highIndex, offset); break;
                 default: break;
             }
 
@@ -62,7 +63,7 @@ strict namespace Hud
             if (highIndex == -1)
                 highIndex = OBITUARY_COLLECTION_MAX_SIZE - 1;
 
-            offset++;
+            offset += fixed(18) * heightFactor;
         }
     }
 }
