@@ -4,7 +4,7 @@
 
 strict namespace Event
 {
-    script "zh2_internal_event_scratched" (raw packetStr)
+    script "zh2_internal_event_prescratched" (raw packetStr)
     {
         str packet = (str)packetStr;
         Event::ReceivePlayerScratched(packet);
@@ -55,6 +55,7 @@ strict namespace Event
         Logger::LogBold("\cf" + Player::GetPlayerName(infectedId) + "\cj has been infected by \cf" + Player::GetPlayerName(infectorId) + "\cj!");
 
         Game::InfectPlayer(infectedId, Game::INFECT_REGULAR);
+        Event::SendPlayerScratched(infectedId, infectorId);
 
         // Update score and state.
         Player::IncrementPlayerInfects(infectorId);
