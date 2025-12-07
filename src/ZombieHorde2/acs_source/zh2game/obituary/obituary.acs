@@ -26,7 +26,15 @@ strict namespace Obituary
         EventBus::AddCallbackByScriptName(EVENTPLAYERSAFE, "zh2_internal_obituary_playersafe_client");
     }
 
+    internal int GetLowIndex()
+    {
+        return ZH2Game::GameContext.ObituaryCollectionContext.LowIndex;
+    }
 
+    internal int GetHighIndex()
+    {
+        return ZH2Game::GameContext.ObituaryCollectionContext.HighIndex;
+    }
 
     // Returns the next index to queue on. Ensures indexes are shiften correctly.
     internal int GetNextQueueIndex()
@@ -44,32 +52,58 @@ strict namespace Obituary
         return ZH2Game::GameContext.ObituaryCollectionContext.HighIndex;
     }
 
-    internal void SetQueueType(int queueIndex, ObiruaryTypeT type)
+    internal bool ValidateQueueIndex(str functionName, int queueIndex)
     {
         if (queueIndex >= OBITUARY_COLLECTION_MAX_SIZE)
         {
-            Logger::LogError(LOGSOURCE , "SetQueueType queue index " + str(queueIndex) + " is out of bounds (0 - " + str(OBITUARY_COLLECTION_MAX_SIZE - 1) + ")!");
-            return;
+            Logger::LogError(LOGSOURCE , functionName + " queue index " + str(queueIndex) + " is out of bounds (0 - " + str(OBITUARY_COLLECTION_MAX_SIZE - 1) + ")!");
+            return false;
         }
+
+        return true;
+    }
+
+    internal bool ValidateIndex(str functionName, int index)
+    {
+        if (index >= OBITUARY_DATA_MAX_SIZE)
+        {
+            Logger::LogError(LOGSOURCE , functionName + " index " + str(index) + " is out of bounds (0 - " + str(OBITUARY_DATA_MAX_SIZE - 1) + ")!");
+            return false;
+        }
+
+        return true;
+    }
+
+    internal void SetQueueType(int queueIndex, ObiruaryTypeT type)
+    {
+        if (!ValidateQueueIndex(__FUNCTION__, queueIndex))
+            return;
 
         ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].Type = type;
     }
 
+    internal ObiruaryTypeT GetQueueType(int queueIndex)
+    {
+        if (!ValidateQueueIndex(__FUNCTION__, queueIndex))
+            return OBITUARY_UNKNOWN;
+
+        return ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].Type;
+    }
+
     internal void SetQueueData(int queueIndex, int index, raw data)
     {
-        if (queueIndex >= OBITUARY_COLLECTION_MAX_SIZE)
-        {
-            Logger::LogError(LOGSOURCE , "SetQueueData queue index " + str(queueIndex) + " is out of bounds (0 - " + str(OBITUARY_COLLECTION_MAX_SIZE - 1) + ")!");
+        if (!ValidateQueueIndex(__FUNCTION__, queueIndex) || !ValidateIndex(__FUNCTION__, index))
             return;
-        }
-
-        if (index >= OBITUARY_DATA_MAX_SIZE)
-        {
-            Logger::LogError(LOGSOURCE , "SetQueueData index " + str(index) + " is out of bounds (0 - " + str(OBITUARY_DATA_MAX_SIZE - 1) + ")!");
-            return;
-        }
 
         ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].ReceiveData[index] = data;
+    }
+
+    internal raw GetQueueData(int queueIndex, int index)
+    {
+        if (!ValidateQueueIndex(__FUNCTION__, queueIndex) || !ValidateIndex(__FUNCTION__, index))
+            return 0;
+
+        return ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].ReceiveData[index];
     }
 }
 

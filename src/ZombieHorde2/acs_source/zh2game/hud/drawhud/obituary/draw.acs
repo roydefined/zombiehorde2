@@ -1,0 +1,32 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawInitialChosen(int queueIndex, fixed yOffset)
+    {
+        HudSetPointInternal(0.0, yOffset);
+        BCSUtils::HudDrawText(--_drawnHudId, "Initial");
+        DebugDraw();
+    }
+
+    internal void DrawPlayerSafe(int queueIndex, fixed yOffset)
+    {
+        int id = Obituary::GetQueueData(queueIndex, 0);
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_TOP);
+
+        HudSetPointInternal(-35.0, yOffset);
+        BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(id));
+        DebugDraw();
+
+        HudSetPointInternal(-15.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_HUMAN);
+        DebugDraw();
+
+        HudSetPointInternal(0.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_SAFE);
+        DebugDraw();
+    }
+}
