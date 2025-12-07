@@ -51,6 +51,7 @@ strict namespace Obituary
             ZH2Game::GameContext.ObituaryCollectionContext.LowIndex %= OBITUARY_COLLECTION_MAX_SIZE;
         }
 
+        ZH2Game::GameContext.ObituaryCollectionContext.Collection[ZH2Game::GameContext.ObituaryCollectionContext.HighIndex].Timestamp = Timer();
         return ZH2Game::GameContext.ObituaryCollectionContext.HighIndex;
     }
 
@@ -106,6 +107,14 @@ strict namespace Obituary
             return 0;
 
         return ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].ReceiveData[index];
+    }
+
+    internal int GetQueueElapsedDuration(int queueIndex)
+    {
+        if (!ValidateQueueIndex(__FUNCTION__, queueIndex))
+            return 0;
+
+        return Timer() - ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].Timestamp;
     }
 }
 
