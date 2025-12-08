@@ -53,39 +53,13 @@ strict namespace Game
         Player::TakePlayerHumanWeapons(infectedId);
 
         // Determine skin.
-        // When playing a legacy map or getting infected by an admin, always use old zombies.
-        // Otherwise pick initial/subsequent based on the passed type.
-        str skin = SKIN_ZOMBIEOLD;
-        if (!Map::GetCurrentMapIsLegacyMap())
+        Player::ZombieSkinTypeT skinType = Player::GetZombieSkinType(type == INFECT_INITIAL);
+        str skin;
+        switch(skinType)
         {
-            switch(type)
-            {
-                case INFECT_REGULAR:
-                    skin = SKIN_ZOMBIEREGULAR;
-                    break;
-                case INFECT_INITIAL:
-                    skin = SKIN_ZOMBIEINITIAL;
-                    break;
-            }
-        }
-
-        // Override skin behaviour
-        switch (ZH2Game::GetZombieSkinBehaviour())
-        {
-            case ZH2Game::BEHAVIOUR_FORCEOLDSKIN:
-                skin = SKIN_ZOMBIEOLD;
-                break;
-            case ZH2Game::BEHAVIOUR_FORCENEWSKIN:
-                switch(type)
-                {
-                    case INFECT_REGULAR:
-                        skin = SKIN_ZOMBIEREGULAR;
-                        break;
-                    case INFECT_INITIAL:
-                        skin = SKIN_ZOMBIEINITIAL;
-                        break;
-                }
-                break;
+            case Player::ZOMBIESKIN_REGULAR: skin = SKIN_ZOMBIEREGULAR; break;
+            case Player::ZOMBIESKIN_INITIAL: skin = SKIN_ZOMBIEINITIAL; break;
+            default: skin = SKIN_ZOMBIEOLD;
         }
 
         // Determine health to give based on current player health.
