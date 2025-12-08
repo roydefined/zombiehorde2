@@ -57,4 +57,24 @@ strict namespace Player
             return;
         }
     }
+
+    // When playing a legacy map or getting infected by an admin, always use old zombies.
+    // Otherwise pick initial/subsequent based on the passed type.
+    internal ZombieSkinTypeT GetZombieSkinType(bool initial)
+    {
+        switch (ZH2Game::GetZombieSkinBehaviour())
+        {
+            case ZH2Game::BEHAVIOUR_FORCEOLDSKIN: return ZOMBIESKIN_OLD;
+            case ZH2Game::BEHAVIOUR_FORCENEWSKIN: return initial ? ZOMBIESKIN_INITIAL : ZOMBIESKIN_REGULAR;
+
+            // Also handles the default option.
+            default:
+            {
+                if (Map::GetCurrentMapIsLegacyMap())
+                    return ZOMBIESKIN_OLD;
+                else
+                    return initial ? ZOMBIESKIN_INITIAL : ZOMBIESKIN_REGULAR;
+            }
+        }
+    }
 }
