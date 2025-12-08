@@ -11,9 +11,9 @@ strict namespace Game
         WEAPON_SNIPER_BOLTING_NAME, WEAPON_SHOTGUN_MUST_PUMP_NAME, WEAPON_DOUBLESHOTGUN_EJECT_SHELLS_NAME,
     };
 
-    internal void Infect(InfectTypeT type)
+    internal void Infect(InfectTypeT type, InfectSourceT source)
     {
-        InfectPlayer(PlayerNumber(), type);
+        InfectPlayer(PlayerNumber(), type, source);
     }
 
     internal void Cure()
@@ -43,11 +43,11 @@ strict namespace Game
         Event::SendPlayerSpecieChanged(id, Player::SPECIEHUMAN);
     }
 
-    internal void InfectPlayer(int infectedId, InfectTypeT type)
+    internal void InfectPlayer(int infectedId, InfectTypeT type, InfectSourceT source)
     {
         int tid = Identity::GetTID(infectedId);
 
-        DropFireGrenade(tid, type);
+        DropFireGrenade(tid, type, source);
 
         // Ensure all human weapons are taken.
         Player::TakePlayerHumanWeapons(infectedId);
@@ -75,10 +75,6 @@ strict namespace Game
             case INFECT_INITIAL:
                 spawnHealth = Game::GetInitialZombieMaxHealth();
                 health = Game::DetermineHealthToGivePlayerInitialZombie(infectedId);
-                break;
-            case INFECT_ADMIN:
-                spawnHealth = 2000;
-                health = 2000;
                 break;
         }
 
@@ -131,13 +127,13 @@ strict namespace Game
     }
 
     // Drop fire grenade if the player owns one and is eligible to drop one depending on specie and configuration.
-    internal void DropFireGrenade(int tid, InfectTypeT type)
+    internal void DropFireGrenade(int tid, InfectTypeT type, InfectSourceT source)
     {
         if (CheckActorInventory(tid, WEAPON_AMMO_FIREGRENADE_NAME) == 0)
             return;
 
-        // Never drop when infected by an admin.
-        if (type == INFECT_ADMIN)
+        // Never drop when the source is an admin.
+        if (source == INFECTSOURCE_ADMIN)
             return;
 
         ZH2Game::DropGrenadeOnInfectT dropBehaviour = ZH2Game::GetDropGrenadeOnInfect();
