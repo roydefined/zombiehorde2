@@ -146,10 +146,20 @@ strict namespace Hud
         int killerId = Obituary::GetQueueData(queueIndex, 1);
         int killedType = Obituary::GetQueueData(queueIndex, 2);
         int killerType = Obituary::GetQueueData(queueIndex, 3);
+        int weaponIndex = Obituary::GetQueueData(queueIndex, 4);
         str killedGraphic = TranslateSpecieGraphic(killedType);
         str killerGraphic = TranslateSpecieGraphic(killerType);
+        str weaponGraphic = Item::GetItemObituaryGraphic(weaponIndex);
+        int weaponGraphicWidth = Item::GetItemObituaryGraphicWidth(weaponIndex);
 
-        HudSetPointInternal(-26.0, yOffset);
+        // No graphic, default to a generic icon and its width.
+        if (weaponGraphic == (str)0 || weaponGraphic == "")
+        {
+            weaponGraphic = HUD_OBITUARY_UNKNOWN;
+            weaponGraphicWidth = 36;
+        }
+
+        HudSetPointInternal(fixed(-weaponGraphicWidth / 2) - 8.0, yOffset);
         BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(killerId));
         DebugDraw();
 
@@ -157,26 +167,25 @@ strict namespace Hud
 
         if (killedGraphic != (str)0)
         {
-            HudSetPointInternal(-18.0, yOffset);
+            HudSetPointInternal(fixed(-weaponGraphicWidth / 2), yOffset);
             BCSUtils::HudDrawImage(--_drawnHudId, killerGraphic);
             DebugDraw();
         }
 
-        // TODO: What weapon killed them?
         HudSetPointInternal(0.0, yOffset);
-        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_UNKNOWN);
+        BCSUtils::HudDrawImage(--_drawnHudId, weaponGraphic);
         DebugDraw();
 
         if (killedGraphic != (str)0)
         {
-            HudSetPointInternal(18.0, yOffset);
+            HudSetPointInternal(fixed(weaponGraphicWidth / 2), yOffset);
             BCSUtils::HudDrawImage(--_drawnHudId, killedGraphic);
             DebugDraw();
         }
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
 
-        HudSetPointInternal(26.0, yOffset);
+        HudSetPointInternal(fixed(weaponGraphicWidth / 2) + 8.0, yOffset);
         BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(killedId));
         DebugDraw();
     }
