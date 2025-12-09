@@ -78,11 +78,25 @@ strict namespace Obituary
         int killedId = Event::GetReceiveData(0);
         int killerId = Event::GetReceiveData(1);
 
+        // Attempt to receive the player's weapon.
+        // If we can't determine it, or `GetWeapon()` returns "None", then default to 0.
+        // After that, determine the item's definition in the custom lumps for its index.
+        str weapon = (str)0;
+        if (SetActivatorToPlayer(killerId))
+        {
+            weapon = GetWeapon();
+            if (BCSUtils::StrIEquals(weapon, "none"))
+                weapon = (str)0;
+        }
+
+        int weaponIndex = Item::GetItemIndexByName(weapon);
+
         int queueIndex = GetNextQueueIndex();
         SetQueueType(queueIndex, OBITUARY_PLAYER_FRAGGED);
         SetQueueData(queueIndex, 0, killedId);
         SetQueueData(queueIndex, 1, killerId);
         SetQueueData(queueIndex, 2, GetPlayerObituarySpecieType(killedId));
         SetQueueData(queueIndex, 3, GetPlayerObituarySpecieType(killerId));
+        SetQueueData(queueIndex, 4, weaponIndex);
     }
 }
