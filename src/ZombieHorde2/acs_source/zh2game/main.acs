@@ -409,6 +409,7 @@ strict namespace ZH2Game
             terminate;
 
         // Get the killer.
+        // The killer might not exist for deaths, which means that the id remains -1.
         int killerId = -1;
         if (SetActivatorToTarget(0))
             killerId = PlayerNumber();
@@ -542,6 +543,16 @@ strict namespace ZH2Game
             // Spawn blood on the attacked from the bulletpuff.
             if (!SetActivator(0, AAPTR_DAMAGE_INFLICTOR)) terminate;
             Decorate::SpawnBloodFromBulletPuff(attackerId, attackedId);
+            terminate;
+        }
+
+        // Player frags another player.
+        // This code does not have any extra checks unlike `death` as fragging should always be between two living players.
+        if (type == GAMEEVENT_PLAYERFRAGS)
+        {
+            int killedId = (int)arg1;
+            int killerId = PlayerNumber();
+            Event::SendPlayerFragged(killedId, killerId);
             terminate;
         }
 
