@@ -44,4 +44,26 @@ strict namespace Obituary
         else
             LogPlayerScratched();
     }
+
+    script "zh2_internal_obituary_playerinfected" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerInfected(packet);
+
+        int type = Event::GetReceiveData(1);
+        int source = Event::GetReceiveData(2);
+
+        // Initial infection is not handled, there is a separate event (initialschosen).
+        if (type == Game::INFECT_INITIAL)
+            terminate;
+
+        // Source being another player is not handled, there is a separate event (playerscratched).
+        if (source == Game::INFECTSOURCE_PLAYER)
+            terminate;
+
+        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
+            QueuePlayerInfected();
+        else
+            LogPlayerInfected();
+    }
 }
