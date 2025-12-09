@@ -68,24 +68,16 @@ strict namespace Event
         Sync::SyncPlayers();
     }
 
-    script "zh2_internal_event_playerdied" (raw packetStr)
+    script "zh2_internal_event_playerfragged" (raw packetStr)
     {
         str packet = (str)packetStr;
         Event::ReceivePlayerDied(packet);
         int killedId = GetReceiveData(0);
         int killerId = GetReceiveData(1);
 
-        int killedTid = Identity::GetTid(killedId);
-
-        // No logic when player suicided.
-        if (killerId == killedId)
-        {
-            Logger::LogDebug(LOGSOURCE, Player::GetPlayerName(killerId) + " has committed suicide.");
+        // Ignore suicide. This should never be possible.
+        if (killedId == killerId)
             terminate;
-        }
-
-        // Player died in a way that didn't involve a player
-        if (killerId == -1) terminate;
 
         Logger::LogDebug(LOGSOURCE,
             "\cd" + Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(killerId)) + "\cj " + Player::GetPlayerName(killerId)
