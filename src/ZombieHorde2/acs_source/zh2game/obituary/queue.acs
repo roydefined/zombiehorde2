@@ -54,4 +54,22 @@ strict namespace Obituary
         SetQueueType(queueIndex, OBITUARY_PLAYER_INFECTED);
         SetQueueData(queueIndex, 0, id);
     }
+
+    internal void QueuePlayerDied()
+    {
+        int killedId = Event::GetReceiveData(0);
+        int killerId = Event::GetReceiveData(1);
+
+        // For deaths we only care if it was a suicide.
+        // Player fragging is handled separately.
+        if (killerId != -1 && killerId != killedId)
+            return;
+
+        bool suicide = killedId == killerId;
+        int queueIndex = GetNextQueueIndex();
+        SetQueueType(queueIndex, OBITUARY_PLAYER_DIED);
+        SetQueueData(queueIndex, 0, killedId);
+        SetQueueData(queueIndex, 1, GetPlayerObituarySpecieType(killedId));
+        SetQueueData(queueIndex, 2, suicide);
+    }
 }
