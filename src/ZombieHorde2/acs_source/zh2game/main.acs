@@ -8,6 +8,7 @@
 #include "game/game.acs"
 #include "sync/sync.acs"
 #include "map/map.acs"
+#include "events/events.acs"
 #include "round/round.acs"
 #include "roundtimer/roundtimer.acs"
 #include "player/player.acs"
@@ -27,7 +28,6 @@
 
 #define LOGSOURCE  "Main"
 
-#include "events.acs"
 #include "cvars.acs"
 #include "binds.acs"
 #include "wait.acs"
@@ -111,12 +111,12 @@ strict namespace ZH2Game
         str gameMode = Map::GetCurrentMapGameMode();
         if (((raw)gameMode) != 0 && gameMode != "")
         {
-            Logger::LogDebug(LOGSOURCE , "Setting up game mode: \cd" + gameMode + "\cj.");
+            Logger::LogDebug(LOGSOURCE , "Setting up serverside game mode: \cd" + gameMode + "\cj.");
 
             switch (BCSUtils::StrToLower(gameMode))
             {
                 case "survival":
-                    ZH2Game::SetSurvivalDefaults();
+                    Event::SetSurvivalDefaultsServer();
                     Player::SetSurvivalDefaults();
                     Game::SetSurvivalDefaults();
                     Round::SetSurvivalDefaults();
@@ -124,7 +124,7 @@ strict namespace ZH2Game
                     break;
 
                 case "escape":
-                    ZH2Game::SetEscapeDefaults();
+                    Event::SetEscapeDefaultsServer();
                     Player::SetEscapeDefaults();
                     Game::SetEscapeDefaults();
                     Round::SetEscapeDefaults();
@@ -232,6 +232,32 @@ strict namespace ZH2Game
             if      (type == Item::TYPE_WEAPON)    collection.WeaponCollection[collection.WeaponCollectionSize++] = i;
             else if (type == Item::TYPE_INVENTORY) collection.InventoryCollection[collection.InventoryCollectionSize++] = i;
             else if (type == Item::TYPE_KEY)       collection.KeyCollection[collection.KeyCollectionSize++] = i;
+        }
+
+        // Set the current game mode if we have it set.
+        str gameMode = Map::GetCurrentMapGameMode();
+        if (((raw)gameMode) != 0 && gameMode != "")
+        {
+            Logger::LogDebug(LOGSOURCE , "Setting up clientside game mode: \cd" + gameMode + "\cj.");
+
+            switch (BCSUtils::StrToLower(gameMode))
+            {
+                case "survival":
+                    Event::SetSurvivalDefaultsClient();
+                    break;
+
+                case "escape":
+                    Event::SetEscapeDefaultsClient();
+                    break;
+
+                default:
+                    Logger::LogWarning(LOGSOURCE , "The given game mode profile does not exist: " + gamemode + ".");
+                    break;
+            }
+        }
+        else
+        {
+            Logger::LogDebug(LOGSOURCE , "Map has no game mode defined.");
         }
 
         // Now the loop starts because we have loaded everything.
@@ -344,7 +370,7 @@ strict namespace ZH2Game
             {
                 Logger::LogDebug(LOGSOURCE , "Playing player has spectated: (\cd" + str(id) + "\cj)" + BCSUTILS::PlayerName(id) + ".");
                 Player::SetPlayerState(id, Player::STATEGONE);
-                EventBus::CallEvent(EVENTPLAYERLEFTROUND, id);
+                Event::SendPlayerLeftRound(id);
             }
 
             // Check if the round was still joinable.
@@ -397,11 +423,7 @@ strict namespace ZH2Game
 
         Logger::LogDebug(LOGSOURCE , "Call script \"zh2_internal_death\" for player " + str(killedId) + " killed by player " + str(killerId) + ".");
 
-        EventBus::CallEvent(EVENTPLAYERDIED, killedId, killerId);
-
-        // We must delay a tic before resetting the context to ensure events have time to process the death properly.
-        // TODO: Remove when events are made instant.
-        Delay(const: 1);
+        Event::SendPlayerDied(killedId, killerId);
 
         // Reset transient context if still in a joinable state.
         // Otherwise set as dead.
@@ -493,7 +515,7 @@ strict namespace ZH2Game
                 // This fixes damage in general, and also prevents infinite loops (which happends when the human is immune).
                 if ((str)arg2 == DAMAGETYPE_ZOMBIESCRATCH_NAME)
                 {
-                    EventBus::CallEvent(EVENTSCRATCHED, attackedId, attackerId);
+                    Event::SendPlayerScratched(attackedId, attackerId);
 
                     // We always set the damage to 0.
                     SetResultValue(0);
@@ -540,7 +562,7 @@ strict namespace ZH2Game
 
                     // Finally, if the round was the playing round, call the event.
                     if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
-                        EventBus::CallEvent(EVENTPLAYERLEFTROUND, arg1);
+                        Event::SendPlayerLeftRound(arg1);
                 }
                 else
                 {
