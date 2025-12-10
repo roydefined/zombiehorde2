@@ -20,12 +20,10 @@ strict namespace Admin
 
         int tid = Identity::GetTid(id);
 
-        Game::InfectPlayer(id, Game::INFECT_ADMIN);
+        Game::InfectPlayer(id, Game::INFECT_REGULAR, Game::INFECTSOURCE_ADMIN);
 
         Sync::SyncPlayers(); // Specie change
         Sync::SyncGame(); // Abilities (which should not matter here)
-
-        Logger::LogBold("\cf" + BCSUTILS::PlayerName(id) + "\cj has been infected by an \cfadmin\cj!");
     }
 
     internal void AdminCurePlayerClientside(int id)
@@ -34,17 +32,16 @@ strict namespace Admin
             Logger::LogError(LOGSOURCE, "Failed to call admin cure on player.");
     }
 
+    // TODO: This should be allowed, even if the player is human. It can make them immune.
     script "zh2_internal_menu_action_cure" (int id) net
     {
         if (!GetIsAdmin()) terminate;
         VALIDATE_ID_VALID_SCRIPT(id);
         if (Player::GetPlayerIsHuman(id)) terminate;
 
-        Game::CurePlayer(id);
+        Game::CurePlayer(id, Game::CURESOURCE_ADMIN);
         Sync::SyncPlayers(); // Specie change
         Sync::SyncGame(); // Abilities (which should not matter here)
-
-        Logger::LogBold("\cf" + BCSUTILS::PlayerName(id) + "\cj has been cured by an \cfadmin\cj!");
     }
 
     internal void AdminIncrementCurrentTimerClientSide(int addTics)

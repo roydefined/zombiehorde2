@@ -18,6 +18,7 @@
 #include "music/music.h.acs"
 #include "reward/reward.h.acs"
 #include "weight/weight.h.acs"
+#include "obituary/obituary.h.acs"
 #include "decorate/decorate.h.acs"
 #include "resist/resist.h.acs"
 #include "power/power.h.acs"
@@ -131,6 +132,9 @@ strict namespace ZH2Game
         Event::EventReceiveContextT EventReceiveContext;
 
         // Clientside, not synchronized.
+        Obituary::ObituaryCollectionContextT ObituaryCollectionContext;
+
+        // Clientside, not synchronized.
         // Relevant for the radio as it will track what the client's radio index is and also what they currently play.
         int RadioCurrentlySelectedIndex;
         int CurrentRadioTrackIndex;
@@ -236,7 +240,11 @@ strict namespace ZH2Game
         Player::PlayerStateT State;
         Player::PlayerSpecieT SpecieType;
         bool IsInitialZombie;
+
+        // Safe is synched. Indicates if a player reached the safezone.
+        // FirstTimeSafe is serverside and indicates if the player has reached safety before.
         bool Safe;
+        bool FirstTimeSafe;
 
         // Serverside. If `true`, the join prevention depeding on round state is ignored on this player specifically.
         bool AlwaysAllowJoin;

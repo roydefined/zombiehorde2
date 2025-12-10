@@ -1,0 +1,214 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Obituary
+{
+    internal void LogInitialsChosen()
+    {
+        int count = Event::GetReceiveData(0);
+        bool multiple = count > 1;
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int index = 1;
+            while(count--)
+            {
+                int id = Event::GetReceiveData(index++);
+
+                Append(s:BCSUTILS::PlayerName(id));
+                if (count == 1) Append(s:" and ");
+                else if (count != 0) Append(s:", ");
+            }
+
+            Append(s:(multiple ? " have " : " has ") + "been chosen as the initial zombie" + (multiple ? "s" : "") + ".");
+        }
+
+        Logger::LogConsolePlayer(logMessage);
+    }
+
+    internal void LogPlayerSafe()
+    {
+        int id = Event::GetReceiveData(0);
+        if (id == ConsolePlayerNumber())
+            Logger::LogConsolePlayer("You have reached the safezone!");
+        else
+            Logger::LogConsolePlayer(BCSUtils::PlayerName(id) + " has reached the safezone!");
+    }
+
+    internal void LogPlayerScratched()
+    {
+        int infectedId = Event::GetReceiveData(0);
+        int infectorId = Event::GetReceiveData(1);
+        if (infectedId == ConsolePlayerNumber())
+            Logger::LogConsolePlayer("You have been infected!");
+        else
+            Logger::LogConsolePlayer("\cf" + Player::GetPlayerName(infectedId) + "\cj has been infected by \cf" + Player::GetPlayerName(infectorId) + "\cj!");
+    }
+
+    internal void LogPlayerInfected()
+    {
+        int id = Event::GetReceiveData(0);
+        int source = Event::GetReceiveData(2);
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            // Inform an admin did this
+            if (source == Game::INFECTSOURCE_ADMIN)
+            {
+                Append(s:"An \cfadmin \cjhas infected");
+
+                if (id == ConsolePlayerNumber())
+                    Append(s:" you");
+                else
+                    Append(s:" ", s:BCSUtils::PlayerName(id));
+            }
+            else
+            {
+                if (id == ConsolePlayerNumber())
+                    Append(s:"You have");
+                else
+                    Append(s:BCSUtils::PlayerName(id), s:" has");
+
+                Append(s:" been infected");
+            }
+
+            Append(s:"!");
+        }
+        Logger::LogConsolePlayer(logMessage);
+    }
+
+    internal void LogPlayerCured()
+    {
+        int id = Event::GetReceiveData(0);
+        bool transformed = Event::GetReceiveData(1);
+        int source = Event::GetReceiveData(2);
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            // Inform an admin did this
+            if (source == Game::CURESOURCE_ADMIN)
+            {
+                Append(s:"An \cfadmin \cjhas cured");
+
+                if (transformed)
+                    Append(s:" and transformed");
+
+                if (id == ConsolePlayerNumber())
+                    Append(s:" you");
+                else
+                    Append(s:" ", s:BCSUtils::PlayerName(id));
+            }
+            else
+            {
+                if (id == ConsolePlayerNumber())
+                    Append(s:"You have");
+                else
+                    Append(s:BCSUtils::PlayerName(id), s:" has");
+
+                Append(s:" been cured");
+
+                if (transformed)
+                    Append(s:" and transformed");
+            }
+
+            if (transformed)
+                Append(s:" back into a human");
+
+            Append(s:" and");
+
+            if (id == ConsolePlayerNumber())
+            {
+                Append(s:" you are");
+            }
+            else
+            {
+                int genderInt = GetPlayerInfo(id, PLAYERINFO_GENDER);
+                str gender = genderInt == 0 ? "he is"
+                    : genderInt == 1 ? "she is"
+                    : genderInt == 2 ? "they are"
+                    : "it is";
+                Append(s:" ", s:gender);
+            }
+
+            Append(s:" now immune against the virus!");
+        }
+        Logger::LogConsolePlayer(logMessage);
+    }
+
+    internal void LogPlayerDied()
+    {
+        // Don't log this one if obituaries are enabled.
+        if (!ZH2Game::GetCompatNoObituaries())
+            return;
+
+        int killedId = Event::GetReceiveData(0);
+        int killerId = Event::GetReceiveData(1);
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            // Log suicide
+            if (killerId == killedId)
+            {
+                if (killedId == ConsolePlayerNumber())
+                {
+                    Append(s:"You have killed yourself.");
+                }
+                else
+                {
+                    int genderInt = GetPlayerInfo(killerId, PLAYERINFO_GENDER);
+                    str reflexive = genderInt == 0 ? "himself"
+                        : genderInt == 1 ? "herseld"
+                        : genderInt == 2 ? "themselves"
+                        : "itself";
+                    Append(s:BCSUtils::PlayerName(killedId) + " has killed " + reflexive + ".");
+                }
+            }
+            else
+            {
+                if (killedId == ConsolePlayerNumber())
+                    Append(s:"You have died.");
+                else
+                    Append(s:BCSUtils::PlayerName(killedId) + " has died.");
+            }
+        }
+        Logger::LogConsolePlayer(logMessage);
+    }
+
+    internal void LogPlayerFragged(int killedId, int killerId, int weaponIndex)
+    {
+        // Don't log this one if obituaries are enabled.
+        if (!ZH2Game::GetCompatNoObituaries())
+            return;
+
+        str weaponLabel = Item::GetItemLabel(weaponIndex);
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            if (killedId == ConsolePlayerNumber())
+                Append(s:"You were killed");
+            else
+                Append(s:BCSUtils::PlayerName(killedId) + " was killed");
+
+            Append(s:" by " + BCSUtils::PlayerName(killerId));
+
+            if (weaponLabel != (str)0 && weaponLabel != "")
+            {
+                int genderInt = GetPlayerInfo(killerId, PLAYERINFO_GENDER);
+                str possessive = genderInt == 0 ? "his"
+                    : genderInt == 1 ? "her"
+                    : genderInt == 2 ? "their"
+                    : "its";
+
+                Append(s:" and " + possessive + " " + weaponLabel);
+            }
+
+            Append(s:".");
+        }
+        Logger::LogConsolePlayer(logMessage);
+    }
+}

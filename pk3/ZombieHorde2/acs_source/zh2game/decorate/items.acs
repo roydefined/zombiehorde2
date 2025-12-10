@@ -123,22 +123,7 @@ strict namespace Decorate
         }
 
         TakeInventory(CURE_ITEM, 1);
-
-        // A zombie also gets cured.
-        str messagePart = "";
-        if (!Player::GetPlayerIsHuman(PlayerNumber()))
-        {
-            int genderInt = GetPlayerInfo(PlayerNumber(), PLAYERINFO_GENDER);
-            str gender = genderInt == 0 ? "himself"
-                : genderInt == 1 ? "herself"
-                : genderInt == 2 ? "themself"
-                : "itself";
-
-            messagePart = "has cured " + gender + " and ";
-            Game::CurePlayer(PlayerNumber());
-        }
-
-        Logger::LogBold("\cf" + BCSUTILS::PlayerName(PlayerNumber()) + "\cj " + messagePart + "is now immune against the virus!");
+        Game::CurePlayer(PlayerNumber(), Game::CURESOURCE_ITEM);
         Sync::SyncPlayers();
 
         Power::GivePower(Power::POWERHUMANIMMUNITY);
