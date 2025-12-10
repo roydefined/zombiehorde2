@@ -83,7 +83,9 @@ strict namespace IO
                 || ParseItemDescription(handle, symbol)
                 || ParseItemBloodSeverity(handle, symbol)
                 || ParseItemBloodTics(handle, symbol)
-                || ParseItemTakeOnPanic(handle, symbol))
+                || ParseItemTakeOnPanic(handle, symbol)
+                || ParseItemObituaryGraphic(handle, symbol)
+                || ParseItemObituaryGraphicWidth(handle, symbol))
             {
                 // Optional comma.
                 Tokenizer::Next(handle, false);
@@ -287,6 +289,41 @@ strict namespace IO
         context.TakeOnPanic = true;
 
         Logger::LogDebug(LOGSOURCE , "Parsed item take on panic.");
+        return true;
+    }
+
+    internal bool ParseItemObituaryGraphic(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "obituarygraphic")) return false;
+        Tokenizer::Next(handle);
+
+        Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        context.ObituaryGraphic = Tokenizer::GetSymbol(handle);
+
+        Tokenizer::Next(handle);
+
+        Logger::LogDebug(LOGSOURCE , "Parsed item obituary graphic: \cd" + context.ObituaryGraphic + "\cj.");
+        return true;
+    }
+
+    internal bool ParseItemObituaryGraphicWidth(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "obituarygraphicwidth")) return false;
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for obituary graphic width is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        context.ObituaryGraphicWidth = parsedValue;
+
+        Tokenizer::Next(handle);
+
+        Logger::LogDebug(LOGSOURCE , "Parsed item obituary graphic width: \cd" + str(context.ObituaryGraphicWidth) + "\cj.");
         return true;
     }
 }

@@ -4,7 +4,7 @@
 
 strict namespace Event
 {
-    script "zh2_internal_event_scratched" (raw packetStr)
+    script "zh2_internal_event_prescratched" (raw packetStr)
     {
         str packet = (str)packetStr;
         Event::ReceivePlayerScratched(packet);
@@ -52,9 +52,8 @@ strict namespace Event
             terminate;
         }
 
-        Logger::LogBold("\cf" + Player::GetPlayerName(infectedId) + "\cj has been infected by \cf" + Player::GetPlayerName(infectorId) + "\cj!");
-
-        Game::InfectPlayer(infectedId, Game::INFECT_REGULAR);
+        Game::InfectPlayer(infectedId, Game::INFECT_REGULAR, Game::INFECTSOURCE_PLAYER);
+        Event::SendPlayerScratched(infectedId, infectorId);
 
         // Update score and state.
         Player::IncrementPlayerInfects(infectorId);
@@ -69,25 +68,16 @@ strict namespace Event
         Sync::SyncPlayers();
     }
 
-    script "zh2_internal_event_playerdied" (raw packetStr)
+    script "zh2_internal_event_playerfragged" (raw packetStr)
     {
         str packet = (str)packetStr;
         Event::ReceivePlayerDied(packet);
         int killedId = GetReceiveData(0);
         int killerId = GetReceiveData(1);
 
-        int killedTid = Identity::GetTid(killedId);
-
-        // No logic when player suicided.
-        if (killerId == killedId)
-        {
-            Logger::LogDebug(LOGSOURCE , Player::GetPlayerName(killerId) + " has committed suicide.");
-            Identity::DisposeTID(killedTid);
+        // Ignore suicide. This should never be possible.
+        if (killedId == killerId)
             terminate;
-        }
-
-        // Player died in a way that didn't involve a player
-        if (killerId == -1) terminate;
 
         Logger::LogDebug(LOGSOURCE ,
             "\cd" + Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(killerId)) + "\cj " + Player::GetPlayerName(killerId)
@@ -113,7 +103,6 @@ strict namespace Event
         else if (killType == KILL_TYPE_ZOMBIE_TO_HUMAN) Player::IncrementPlayerHumanKills(killerId);
 
         Game::UpdateScoreBoard(killerId);
-        Identity::DisposeTID(killedTid);
 
         // Reward the killer if the kill is not accidental.
         // Then determine if we killed 2 of the given specie and reward them.
