@@ -1,0 +1,76 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Event"
+
+#include "round.acs"
+#include "timer.acs"
+#include "player.acs"
+#include "send.acs"
+#include "receive.acs"
+
+strict namespace Event
+{
+    internal void SetSurvivalDefaultsServer()
+    {
+        Logger::LogDebug(LOGSOURCE, "Setting survival gamemode profile for events serverside.");
+
+        EventBus::AddCallbackByScriptName(EVENTTIMERELAPSED, "zh2_internal_event_timerelapsed");
+        EventBus::AddCallbackByScriptName(EVENTROUNDSWITCHED, "zh2_internal_event_roundswitched");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSCRATCHED, "zh2_internal_event_scratched");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERDIED, "zh2_internal_event_playerdied");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERLEFTROUND, "zh2_internal_event_playerleftround");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_event_specie_changed");
+    }
+
+    internal void SetSurvivalDefaultsClient()
+    {
+        Logger::LogDebug(LOGSOURCE, "Setting survival gamemode profile for events clientside.");
+
+        EventBus::AddCallbackByScriptName(EVENTROUNDSWITCHED, "zh2_internal_event_roundswitched_client");
+    }
+
+    internal void SetEscapeDefaultsServer()
+    {
+        Logger::LogDebug(LOGSOURCE, "Setting escape gamemode profile for events serverside.");
+
+        EventBus::AddCallbackByScriptName(EVENTTIMERELAPSED, "zh2_internal_event_timerelapsed");
+        EventBus::AddCallbackByScriptName(EVENTROUNDSWITCHED, "zh2_internal_event_roundswitched");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSCRATCHED, "zh2_internal_event_scratched");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERDIED, "zh2_internal_event_playerdied");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERLEFTROUND, "zh2_internal_event_playerleftround");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_event_specie_changed");
+    }
+
+    internal void SetEscapeDefaultsClient()
+    {
+        Logger::LogDebug(LOGSOURCE, "Setting escape gamemode profile for events clientside.");
+
+        EventBus::AddCallbackByScriptName(EVENTROUNDSWITCHED, "zh2_internal_event_roundswitched_client");
+    }
+
+    internal void SetReceiveData(int index, raw data)
+    {
+        if (index >= EVENT_RECEIVE_MAX_SIZE)
+        {
+            Logger::LogError(LOGSOURCE, "SetReceiveData index " + str(index) + " is out of bounds (0 - " + str(EVENT_RECEIVE_MAX_SIZE - 1) + ")!");
+            return;
+        }
+
+        ZH2Game::GameContext.EventReceiveContext.ReceiveData[index] = data;
+    }
+
+    raw GetReceiveData(int index)
+    {
+        if (index >= EVENT_RECEIVE_MAX_SIZE)
+        {
+            Logger::LogError(LOGSOURCE, "SetReceiveData index " + str(index) + " is out of bounds (0 - " + str(EVENT_RECEIVE_MAX_SIZE - 1) + ")!");
+            return 0;
+        }
+
+        return ZH2Game::GameContext.EventReceiveContext.ReceiveData[index];
+    }
+}
+
+#undef LOGSOURCE 

@@ -8,6 +8,7 @@
 #include "game/game.h.acs"
 #include "sync/sync.h.acs"
 #include "map/map.h.acs"
+#include "events/events.h.acs"
 #include "round/round.h.acs"
 #include "player/player.h.acs"
 #include "gameloop/gameloop.h.acs"
@@ -48,15 +49,6 @@ strict namespace ZH2Game
         DROPBEHAVIOUR_ALWAYS,
         DROPBEHAVIOUR_ONLY_REGULAR_ZOMBIES,
         DROPBEHAVIOUR_NEVER,
-    };
-
-    internal enum KillTypeT : int
-    {
-        KILL_TYPE_NONE,
-        KILL_TYPE_HUMAN_TO_HUMAN,
-        KILL_TYPE_HUMAN_TO_ZOMBIE,
-        KILL_TYPE_ZOMBIE_TO_ZOMBIE,
-        KILL_TYPE_ZOMBIE_TO_HUMAN,
     };
 
     // General game info. Non-persisting between rounds.
@@ -133,6 +125,10 @@ strict namespace ZH2Game
         int OwnedKeyCount;
         int OwnedWeaponItems[MAX_ITEMS];
         int OwnedWeaponCount;
+
+        // Clientside and serverside handled. Not synched.
+        // Stores received data from events, which has been unpacked.
+        Event::EventReceiveContextT EventReceiveContext;
 
         // Clientside, not synchronized.
         // Relevant for the radio as it will track what the client's radio index is and also what they currently play.

@@ -4,19 +4,28 @@
 
 strict namespace EventBus
 {
+    #define EVENTBUS_MAX_EVENT_COUNT 10
+    #define EVENTBUS_MAX_EVENT_CALLBACK_COUNT 20
+
+    struct EventBusCollectionT
+    {
+        EventBusEventContextT Collection[EVENTBUS_MAX_EVENT_COUNT];
+        int Count;
+    };
+
     // Defines an event for the event bus to use.
-    internal struct EventBusEventContextT
+    struct EventBusEventContextT
     {
         str EventKey;
-        str ScriptNameCallbacks[20];
-        int ScriptNumberCallbacks[20];
+        str ScriptNameCallbacks[EVENTBUS_MAX_EVENT_CALLBACK_COUNT];
+        int ScriptNumberCallbacks[EVENTBUS_MAX_EVENT_CALLBACK_COUNT];
 
         // Tracks the number of callbacks registered so we can determine if more can be added.
         int ScriptNameCallbackCount,
             ScriptNumberCallbackCount;
     };
 
-    extern void AddEventBusCallbackByScriptName(str eventKey, str scriptName);
-    extern void AddEventBusCallbackByScriptNumber(str eventKey, int scriptNumber);
-    extern void CallEvent(str eventKey, raw arg1 = 0, raw arg2 = 0, raw arg3 = 0);
+    extern void AddCallbackByScriptName(str eventKey, str scriptName);
+    extern void AddCallbackByScriptNumber(str eventKey, int scriptNumber);
+    extern void CallEvent(str packet);
 }
