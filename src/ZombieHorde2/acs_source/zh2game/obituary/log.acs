@@ -54,7 +54,43 @@ strict namespace Obituary
 
     internal void LogPlayerCured()
     {
-        // Todo
+        int id = Event::GetReceiveData(0);
+        bool transformed = Event::GetReceiveData(1);
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            if (id == ConsolePlayerNumber())
+                Append(s:"You");
+            else
+                Append(s:BCSUtils::PlayerName(id));
+
+            if (transformed)
+            {
+                if (id == ConsolePlayerNumber())
+                {
+                    Append(s:" have cured yourself and");
+                }
+                else
+                {
+                    int genderInt = GetPlayerInfo(id, PLAYERINFO_GENDER);
+                    str gender = genderInt == 0 ? "himself"
+                        : genderInt == 1 ? "herself"
+                        : genderInt == 2 ? "themself"
+                        : "itself";
+
+                    Append(s:" has cured " + gender + " and");
+                }
+            }
+
+            if (id == ConsolePlayerNumber())
+                Append(s:" are");
+            else
+                Append(s:" is");
+
+            Append(s:" now immune against the virus!");
+        }
+        Logger::LogConsolePlayer(logMessage);
     }
 
     internal void LogPlayerDied()
