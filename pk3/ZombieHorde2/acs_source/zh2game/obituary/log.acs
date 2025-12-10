@@ -49,7 +49,34 @@ strict namespace Obituary
 
     internal void LogPlayerInfected()
     {
-        // Todo
+        int id = Event::GetReceiveData(0);
+        int source = Event::GetReceiveData(2);
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            // Inform an admin did this
+            if (source == Game::INFECTSOURCE_ADMIN)
+            {
+                Append(s:"An \cfadmin \cjhas infected");
+
+                if (id == ConsolePlayerNumber())
+                    Append(s:" you");
+                else
+                    Append(s:" ", s:BCSUtils::PlayerName(id));
+            }
+            else
+            {
+                if (id == ConsolePlayerNumber())
+                    Append(s:"You have");
+                else
+                    Append(s:BCSUtils::PlayerName(id), s:" has");
+
+                Append(s:" been infected");
+            }
+
+            Append(s:"!");
+        }
+        Logger::LogConsolePlayer(logMessage);
     }
 
     internal void LogPlayerCured()
@@ -113,7 +140,42 @@ strict namespace Obituary
 
     internal void LogPlayerDied()
     {
-        // Todo
+        // Don't log this one if obituaries are enabled.
+        if (!ZH2Game::GetCompatNoObituaries())
+            return;
+
+        int killedId = Event::GetReceiveData(0);
+        int killerId = Event::GetReceiveData(1);
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            // Log suicide
+            if (killerId == killedId)
+            {
+                if (killedId == ConsolePlayerNumber())
+                {
+                    Append(s:"You have killed yourself.");
+                }
+                else
+                {
+                    int genderInt = GetPlayerInfo(killerId, PLAYERINFO_GENDER);
+                    str reflexive = genderInt == 0 ? "himself"
+                        : genderInt == 1 ? "herseld"
+                        : genderInt == 2 ? "themselves"
+                        : "itself";
+                    Append(s:BCSUtils::PlayerName(killedId) + " has killed " + reflexive + ".");
+                }
+            }
+            else
+            {
+                if (killedId == ConsolePlayerNumber())
+                    Append(s:"You have died.");
+                else
+                    Append(s:BCSUtils::PlayerName(killedId) + " has died.");
+            }
+        }
+        Logger::LogConsolePlayer(logMessage);
     }
 
     internal void LogPlayerFragged(int killedId, int killerId, int weaponIndex)
