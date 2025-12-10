@@ -16,12 +16,12 @@ strict namespace Game
         InfectPlayer(PlayerNumber(), type, source);
     }
 
-    internal void Cure()
+    internal void Cure(CureSourceT source)
     {
-        CurePlayer(PlayerNumber());
+        CurePlayer(PlayerNumber(), source);
     }
 
-    internal void CurePlayer(int id)
+    internal void CurePlayer(int id, CureSourceT source)
     {
         bool isZombie = Player::GetPlayerIsZombie(id);
 
@@ -47,7 +47,7 @@ strict namespace Game
         if (!SpawnForced("CureEffect", GetActorX(tid), GetActorY(tid), GetActorZ(tid)))
             Logger::LogWarning(LOGSOURCE , "Failed to spawn cure effect for player " + str(id) + ".");
 
-        Event::SendPlayerCured(id, isZombie);
+        Event::SendPlayerCured(id, isZombie, source);
     }
 
     internal void InfectPlayer(int infectedId, InfectTypeT type, InfectSourceT source)
