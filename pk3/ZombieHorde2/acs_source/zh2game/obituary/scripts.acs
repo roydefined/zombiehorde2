@@ -94,9 +94,25 @@ strict namespace Obituary
         str packet = (str)packetStr;
         Event::ReceivePlayerFragged(packet);
 
+        int killedId = Event::GetReceiveData(0);
+        int killerId = Event::GetReceiveData(1);
+
+        // Attempt to receive the player's weapon.
+        // If we can't determine it, or `GetWeapon()` returns "None", then default to 0.
+        // After that, determine the item's definition in the custom lumps for its index.
+        str weapon = (str)0;
+        if (SetActivatorToPlayer(killerId))
+        {
+            weapon = GetWeapon();
+            if (BCSUtils::StrIEquals(weapon, "none"))
+                weapon = (str)0;
+        }
+
+        int weaponIndex = Item::GetItemIndexByName(weapon);
+
         if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
-            QueuePlayerFragged();
+            QueuePlayerFragged(killedId, killerId, weaponIndex);
         else
-            LogPlayerFragged();
+            LogPlayerFragged(killedId, killerId, weaponIndex);
     }
 }
