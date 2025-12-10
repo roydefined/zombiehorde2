@@ -81,24 +81,8 @@ strict namespace Obituary
         SetQueueData(queueIndex, 2, suicide);
     }
 
-    internal void QueuePlayerFragged()
+    internal void QueuePlayerFragged(int killedId, int killerId, int weaponIndex)
     {
-        int killedId = Event::GetReceiveData(0);
-        int killerId = Event::GetReceiveData(1);
-
-        // Attempt to receive the player's weapon.
-        // If we can't determine it, or `GetWeapon()` returns "None", then default to 0.
-        // After that, determine the item's definition in the custom lumps for its index.
-        str weapon = (str)0;
-        if (SetActivatorToPlayer(killerId))
-        {
-            weapon = GetWeapon();
-            if (BCSUtils::StrIEquals(weapon, "none"))
-                weapon = (str)0;
-        }
-
-        int weaponIndex = Item::GetItemIndexByName(weapon);
-
         int queueIndex = GetNextQueueIndex();
         SetQueueType(queueIndex, OBITUARY_PLAYER_FRAGGED);
         SetQueueData(queueIndex, 0, killedId);

@@ -62,8 +62,37 @@ strict namespace Obituary
         // Todo
     }
 
-    internal void LogPlayerFragged()
+    internal void LogPlayerFragged(int killedId, int killerId, int weaponIndex)
     {
-        // Todo
+        // Don't log this one if obituaries are enabled.
+        if (!ZH2Game::GetCompatNoObituaries())
+            return;
+
+        str weaponLabel = Item::GetItemLabel(weaponIndex);
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            if (killedId == ConsolePlayerNumber())
+                Append(s:"You were killed");
+            else
+                Append(s:BCSUtils::PlayerName(killedId) + " was killed");
+
+            Append(s:" by " + BCSUtils::PlayerName(killerId));
+
+            if (weaponLabel != (str)0 && weaponLabel != "")
+            {
+                int genderInt = GetPlayerInfo(killerId, PLAYERINFO_GENDER);
+                str possessive = genderInt == 0 ? "his"
+                    : genderInt == 1 ? "her"
+                    : genderInt == 2 ? "their"
+                    : "its";
+
+                Append(s:" and " + possessive + " " + weaponLabel);
+            }
+
+            Append(s:".");
+        }
+        Logger::LogConsolePlayer(logMessage);
     }
 }
