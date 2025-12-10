@@ -23,24 +23,31 @@ strict namespace Game
 
     internal void CurePlayer(int id)
     {
-        // Ensure all zombie weapons are taken.
-        Player::TakePlayerZombieWeapons(id);
+        bool isZombie = Player::GetPlayerIsZombie(id);
 
-        Player::SetPlayerHuman(id);
-        Player::MorphPlayerToHuman(id);
-        Player::SetPlayerHumanTeam(id);
-        Player::SetPlayerHumanSkin(id);
-        Player::GivePlayerHumanInventory(id, false);
+        // If the player is a zombie, transform them back.
+        if (isZombie)
+        {
+            // Ensure all zombie weapons are taken.
+            Player::TakePlayerZombieWeapons(id);
 
-        // This not really needed if we take powers, because the recalculate is automatically called.
-        //Power::RecalculatePlayerPowers(id);
+            Player::SetPlayerHuman(id);
+            Player::MorphPlayerToHuman(id);
+            Player::SetPlayerHumanTeam(id);
+            Player::SetPlayerHumanSkin(id);
+            Player::GivePlayerHumanInventory(id, false);
+
+            // This not really needed if we take powers, because the recalculate is automatically called.
+            //Power::RecalculatePlayerPowers(id);
+
+            Event::SendPlayerSpecieChanged(id, Player::SPECIEHUMAN);
+        }
 
         int tid = Identity::GetTID(id);
         if (!SpawnForced("CureEffect", GetActorX(tid), GetActorY(tid), GetActorZ(tid)))
             Logger::LogWarning(LOGSOURCE , "Failed to spawn cure effect for player " + str(id) + ".");
 
-        Event::SendPlayerCured(id);
-        Event::SendPlayerSpecieChanged(id, Player::SPECIEHUMAN);
+        Event::SendPlayerCured(id, isZombie);
     }
 
     internal void InfectPlayer(int infectedId, InfectTypeT type, InfectSourceT source)
