@@ -56,37 +56,55 @@ strict namespace Obituary
     {
         int id = Event::GetReceiveData(0);
         bool transformed = Event::GetReceiveData(1);
+        int source = Event::GetReceiveData(2);
 
         str logMessage;
         buildmsg(logMessage = StrParam())
         {
-            if (id == ConsolePlayerNumber())
-                Append(s:"You");
-            else
-                Append(s:BCSUtils::PlayerName(id));
+            // Inform an admin did this
+            if (source == Game::CURESOURCE_ADMIN)
+            {
+                Append(s:"An \cfadmin \cjhas cured");
 
-            if (transformed)
+                if (transformed)
+                    Append(s:" and transformed");
+
+                if (id == ConsolePlayerNumber())
+                    Append(s:" you");
+                else
+                    Append(s:" ", s:BCSUtils::PlayerName(id));
+            }
+            else
             {
                 if (id == ConsolePlayerNumber())
-                {
-                    Append(s:" have cured yourself and");
-                }
+                    Append(s:"You have");
                 else
-                {
-                    int genderInt = GetPlayerInfo(id, PLAYERINFO_GENDER);
-                    str gender = genderInt == 0 ? "himself"
-                        : genderInt == 1 ? "herself"
-                        : genderInt == 2 ? "themself"
-                        : "itself";
+                    Append(s:BCSUtils::PlayerName(id), s:" has");
 
-                    Append(s:" has cured " + gender + " and");
-                }
+                Append(s:" been cured");
+
+                if (transformed)
+                    Append(s:" and transformed");
             }
 
+            if (transformed)
+                Append(s:" back into a human");
+
+            Append(s:" and");
+
             if (id == ConsolePlayerNumber())
-                Append(s:" are");
+            {
+                Append(s:" you are");
+            }
             else
-                Append(s:" is");
+            {
+                int genderInt = GetPlayerInfo(id, PLAYERINFO_GENDER);
+                str gender = genderInt == 0 ? "he is"
+                    : genderInt == 1 ? "she is"
+                    : genderInt == 2 ? "they are"
+                    : "it is";
+                Append(s:" ", s:gender);
+            }
 
             Append(s:" now immune against the virus!");
         }
