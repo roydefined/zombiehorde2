@@ -33,20 +33,21 @@ Additional tools you may want:
 - [Zandronum 3.2.1](https://zandronum.com/download) or later (provided in `tools/`).
 - For editing maps: [Ultimate Doom Builder](https://ultimatedoombuilder.github.io/) (provided in `tools/`).
 - For editing maps and mod assets: [Slade 3](https://slade.mancubus.net/) (provided in `tools/`).
+- Python, for using the scripts provided in `scripts/`.
 
 ---
 
 ### Before you start
-The project contains various `.bat` files that help preparing the project. Please read through them to understand their use.
+The project contains various Python scripts that help preparing the project. Please read through them to understand their use.
 
-The `.bat` files are found in the `scripts/` folder.
+The Python scripts are found in the `scripts/` folder.
 
-- `pack-acsutils.bat` -> prepares ACSUtils into `dist/`
-- `build-project.bat` -> compiles ACSUtils, library, and core ACS files.
+- `pack-acsutils.py` -> prepares ACSUtils into `dist/`
+- `build-project.py` -> compiles ACSUtils, library, and core ACS files.
    - `bcsutils.acs` -> `bcsutils.o`
    - `zh2lib.acs` -> `zh2lib.o`
    - `zh2game.acs` -> `zh2game.o`
-- `unpack-maps.bat` and `pack-maps.bat` exist to unpack and pack the binary wad files that you use to play and edit maps. This project stores the raw files of these maps. You will need to manually repack them to play and edit them, and unpack then to store changes. The variant `pack-maps-no-source.bat` is similar to `pack-maps.bat`, but excludes the ACS source of maps when packing them.
+- `unpack-maps.py` and `pack-maps.py` exist to unpack and pack the binary wad files that you use to play and edit maps. This project stores the raw files of these maps. You will need to manually repack them to play and edit them, and unpack then to store changes. The script `pack-maps.py` has an optional parameter `--no-source`, which excludes the ACS source of maps when packing them.
 
 ### 1) Fetch project
 ```bash
@@ -60,23 +61,23 @@ git clone --recurse-submodules https://github.com/RoyDefined/zombiehorde2
 ### 2) Build the project
 
 #### Option A: Using PubDoomer
-1. Run `pack-acsutils.bat`. This prepares ACSUtils into `modules\acsutils\dist`.  
+1. Run `pack-acsutils.py`. This prepares ACSUtils into `modules\acsutils\dist`.  
 2. Start PubDoomer.
 3. Open `zh2project.pdtproj` in the application.
 4. Go to the 'Profiles' tab.
 5. Run the 'Compile project' profile.
 
 #### Option B: Manually
-1. Run `pack-acsutils.bat`. This prepares ACSUtils into `modules\acsutils\dist`.  
-2. Run `build-project.bat`. This compiles all files.
+1. Run `pack-acsutils.py`. This prepares ACSUtils into `modules\acsutils\dist`.  
+2. Run `build-project.py`. This compiles all files.
 
-For both options, subsequent builds do not need another call of `pack-acsutils.bat`.
+For both options, subsequent builds do not need another call of `pack-acsutils.py`.
 
 ---
 
 ### 3) Edit / Run maps
 
-The first step is to repack all maps before you can edit / run them. For this you run `pack-maps.bat`. If succeeded, all `maps/` folders will contain their maps.
+The first step is to repack all maps before you can edit / run them. For this you run `pack-maps.py`. If succeeded, all `maps/` folders will contain their maps.
 This process only has to be done once, unless you pull in changes.
 
 #### Option A: Using PubDoomer

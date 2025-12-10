@@ -1,0 +1,211 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawInitialChosen(int queueIndex, fixed yOffset)
+    {
+        int index = Obituary::GetQueueData(queueIndex, 0);
+        int id = Obituary::GetQueueData(queueIndex, 1);
+        int multiple = Obituary::GetQueueData(queueIndex, 2);
+
+        HudSetPointInternal(-26.0, yOffset);
+        BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(id));
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        HudSetPointInternal(-18.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_HUMAN);
+        DebugDraw();
+
+        HudSetPointInternal(0.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_INITIAL_CHOSEN);
+        DebugDraw();
+
+        // With multiple zombies we want to show the index of this zombie.
+        if (multiple)
+        {
+            BCSUtils::HudSetFont("SMALLFONT");
+            BCSUtils::HudSetTextColor(CR_RED);
+
+            HudSetPointInternal(-6.0, yOffset - 3.0);
+            BCSUtils::HudDrawText(--_drawnHudId, str(index + 1));
+            DebugDraw();
+        }
+    }
+
+    internal void DrawPlayerSafe(int queueIndex, fixed yOffset)
+    {
+        int id = Obituary::GetQueueData(queueIndex, 0);
+        int type = Obituary::GetQueueData(queueIndex, 1);
+        str graphic = TranslateSpecieGraphic(type);
+
+        HudSetPointInternal(-26.0, yOffset);
+        BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(id));
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        if (graphic != (str)0)
+        {
+            HudSetPointInternal(-18.0, yOffset);
+            BCSUtils::HudDrawImage(--_drawnHudId, graphic);
+            DebugDraw();
+        }
+
+        HudSetPointInternal(0.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_SAFE);
+        DebugDraw();
+    }
+
+    internal void DrawPlayerScratched(int queueIndex, fixed yOffset)
+    {
+        int infected = Obituary::GetQueueData(queueIndex, 0);
+        int infector = Obituary::GetQueueData(queueIndex, 1);
+        int infectorType = Obituary::GetQueueData(queueIndex, 2);
+        str infectorGraphic = TranslateSpecieGraphic(infectorType);
+
+        HudSetPointInternal(-26.0, yOffset);
+        BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(infector));
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        if (infectorGraphic != (str)0)
+        {
+            HudSetPointInternal(-18.0, yOffset);
+            BCSUtils::HudDrawImage(--_drawnHudId, infectorGraphic);
+            DebugDraw();
+        }
+
+        HudSetPointInternal(0.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_SCRATCH);
+        DebugDraw();
+
+        HudSetPointInternal(18.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_HUMAN);
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+
+        HudSetPointInternal(26.0, yOffset);
+        BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(infected));
+        DebugDraw();
+    }
+
+    internal void DrawPlayerInfected(int queueIndex, fixed yOffset)
+    {
+        int id = Obituary::GetQueueData(queueIndex, 0);
+
+        HudSetPointInternal(-26.0, yOffset);
+        BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(id));
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        HudSetPointInternal(-18.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_HUMAN);
+        DebugDraw();
+
+        HudSetPointInternal(0.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_SCRATCH);
+        DebugDraw();
+    }
+
+    internal void DrawPlayerCured(int queueIndex, fixed yOffset)
+    {
+        int id = Obituary::GetQueueData(queueIndex, 0);
+
+        HudSetPointInternal(-26.0, yOffset);
+        BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(id));
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        HudSetPointInternal(-18.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_ZOMBIE);
+        DebugDraw();
+
+        HudSetPointInternal(0.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_CURE);
+        DebugDraw();
+    }
+
+    internal void DrawPlayerDied(int queueIndex, fixed yOffset)
+    {
+        int id = Obituary::GetQueueData(queueIndex, 0);
+        int killedType = Obituary::GetQueueData(queueIndex, 1);
+        bool suicide = Obituary::GetQueueData(queueIndex, 2);
+        str killedGraphic = TranslateSpecieGraphic(killedType);
+        str deathGraphic = suicide ? HUD_OBITUARY_SUICIDE : HUD_OBITUARY_UNKNOWN;
+
+        HudSetPointInternal(-26.0, yOffset);
+        BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(id));
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        if (killedGraphic != (str)0)
+        {
+            HudSetPointInternal(-18.0, yOffset);
+            BCSUtils::HudDrawImage(--_drawnHudId, killedGraphic);
+            DebugDraw();
+        }
+
+        HudSetPointInternal(0.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, deathGraphic);
+        DebugDraw();
+    }
+
+    internal void DrawPlayerFragged(int queueIndex, fixed yOffset)
+    {
+        int killedId = Obituary::GetQueueData(queueIndex, 0);
+        int killerId = Obituary::GetQueueData(queueIndex, 1);
+        int killedType = Obituary::GetQueueData(queueIndex, 2);
+        int killerType = Obituary::GetQueueData(queueIndex, 3);
+        int weaponIndex = Obituary::GetQueueData(queueIndex, 4);
+        str killedGraphic = TranslateSpecieGraphic(killedType);
+        str killerGraphic = TranslateSpecieGraphic(killerType);
+        str weaponGraphic = Item::GetItemObituaryGraphic(weaponIndex);
+        int weaponGraphicWidth = Item::GetItemObituaryGraphicWidth(weaponIndex);
+
+        // No graphic, default to a generic icon and its width.
+        if (weaponGraphic == (str)0 || weaponGraphic == "")
+        {
+            weaponGraphic = HUD_OBITUARY_UNKNOWN;
+            weaponGraphicWidth = 36;
+        }
+
+        HudSetPointInternal(fixed(-weaponGraphicWidth / 2) - 8.0, yOffset);
+        BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(killerId));
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        if (killedGraphic != (str)0)
+        {
+            HudSetPointInternal(fixed(-weaponGraphicWidth / 2), yOffset);
+            BCSUtils::HudDrawImage(--_drawnHudId, killerGraphic);
+            DebugDraw();
+        }
+
+        HudSetPointInternal(0.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, weaponGraphic);
+        DebugDraw();
+
+        if (killedGraphic != (str)0)
+        {
+            HudSetPointInternal(fixed(weaponGraphicWidth / 2), yOffset);
+            BCSUtils::HudDrawImage(--_drawnHudId, killedGraphic);
+            DebugDraw();
+        }
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+
+        HudSetPointInternal(fixed(weaponGraphicWidth / 2) + 8.0, yOffset);
+        BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(killedId));
+        DebugDraw();
+    }
+}

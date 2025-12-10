@@ -1,0 +1,55 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawVersion()
+    {
+        fixed scale = ZH2Game::GetHudVersionScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        PrepareHud(
+            BCSUtils::HudRight() - 10.0,
+            BCSUtils::HudBottom(),
+            false);
+
+        DrawVersionString();
+    }
+
+    internal void DrawVersionString()
+    {
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_RED);
+
+        // Depending on how many elements are enabled, the hud might have to draw higher.
+        fixed y = 0.0;
+
+        if (DevelopmentPlayerCap())
+        {
+            int count = PlayerCount() - Utils::PlayingBotCount();
+
+            HudSetPointInternal();
+            BCSUtils::HudDrawText(--_drawnHudId, "player cap: " + str(count) + "/" + str(DEV_PLAYERCAP_COUNT));
+            DebugDraw();
+
+            y -= 10.0;
+        }
+
+        HudSetPointInternal(0.0, y);
+        BCSUtils::HudDrawText(--_drawnHudId, "v" + GetVersion());
+        DebugDraw();
+
+        if (IsDevelopment())
+        {
+            y -= 10.0;
+
+            HudSetPointInternal(0.0, y);
+            BCSUtils::HudDrawText(--_drawnHudId, "devbuild");
+            DebugDraw();
+        }
+    }
+}

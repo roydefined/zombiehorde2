@@ -1,0 +1,66 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    #define HUD_IDENTITY_MAX_PICK_RANGE 500.0
+
+    internal void DrawIdentity()
+    {
+        if (!ZH2Game::GetIdentifyPlayers())
+            return;
+
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
+
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        PrepareHud(
+            320.0,
+            BCSUtils::HudBottom() - 70.0,
+            false);
+
+        DrawTargetIdentity();
+    }
+
+    internal void DrawTargetIdentity()
+    {
+        // Check for a player target, or stop.
+        int targetTid = PickActor(0, GetActorAngle(0), GetActorPitch(0), HUD_IDENTITY_MAX_PICK_RANGE, 0, MF_SHOOTABLE, ML_BLOCKEVERYTHING | ML_BLOCKHITSCAN, PICKAF_RETURNTID);
+        if (targetTid == 0)
+            return;
+
+        if (!Identity::IsValidTID(targetTid))
+            return;
+
+        int playerId = Identity::GetId(targetTid);
+        int id = HUDID_IDENTITY;
+
+        Player::PlayerSpecieT specieSelf = Player::GetSpecie();
+
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudSetDisappearTime(0.5);
+
+        HudSetPointInternal();
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudDrawText(--id, BCSUtils::PlayerName(playerId));
+        DebugDraw();
+
+        // Do not draw the specie until the round started.
+        if (!Round::GetGameIsPlaying())
+            return;
+
+        Player::PlayerSpecieT specie = Player::GetPlayerSpecie(playerId);
+        str specieLabel = Player::GetSpecieIndexAsString(specie);
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(specieSelf == specie ? CR_GREEN : CR_RED);
+
+        HudSetPointInternal(0.0, 8.0);
+        BCSUtils::HudDrawText(--id, specieLabel);
+        DebugDraw();
+    }
+}

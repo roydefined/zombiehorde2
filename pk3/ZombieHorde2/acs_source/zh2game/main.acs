@@ -8,6 +8,7 @@
 #include "game/game.acs"
 #include "sync/sync.acs"
 #include "map/map.acs"
+#include "events/events.acs"
 #include "round/round.acs"
 #include "roundtimer/roundtimer.acs"
 #include "player/player.acs"
@@ -17,6 +18,7 @@
 #include "music/music.acs"
 #include "reward/reward.acs"
 #include "weight/weight.acs"
+#include "obituary/obituary.acs"
 #include "decorate/decorate.acs"
 #include "resist/resist.acs"
 #include "power/power.acs"
@@ -27,7 +29,6 @@
 
 #define LOGSOURCE "Main"
 
-#include "events.acs"
 #include "cvars.acs"
 #include "binds.acs"
 #include "wait.acs"
@@ -40,7 +41,7 @@ strict namespace ZH2Game
     // This is used for joining players/bots to force them to a specific specie.
     // This is specifically used for the admin to add bots of specific species.
     // If not set, we default to humans.
-    internal Player::SpecieTypeT _forceSpecie;
+    internal Player::PlayerSpecieT _forceSpecie;
 
     script "zh2_internal_open" open
     {
@@ -111,12 +112,12 @@ strict namespace ZH2Game
         str gameMode = Map::GetCurrentMapGameMode();
         if (((raw)gameMode) != 0 && gameMode != "")
         {
-            Logger::LogDebug(LOGSOURCE, "Setting up game mode: \cd" + gameMode + "\cj.");
+            Logger::LogDebug(LOGSOURCE, "Setting up serverside game mode: \cd" + gameMode + "\cj.");
 
             switch (BCSUtils::StrToLower(gameMode))
             {
                 case "survival":
-                    ZH2Game::SetSurvivalDefaults();
+                    Event::SetSurvivalDefaultsServer();
                     Player::SetSurvivalDefaults();
                     Game::SetSurvivalDefaults();
                     Round::SetSurvivalDefaults();
@@ -124,7 +125,7 @@ strict namespace ZH2Game
                     break;
 
                 case "escape":
-                    ZH2Game::SetEscapeDefaults();
+                    Event::SetEscapeDefaultsServer();
                     Player::SetEscapeDefaults();
                     Game::SetEscapeDefaults();
                     Round::SetEscapeDefaults();
@@ -234,6 +235,34 @@ strict namespace ZH2Game
             else if (type == Item::TYPE_KEY)       collection.KeyCollection[collection.KeyCollectionSize++] = i;
         }
 
+        // Set the current game mode if we have it set.
+        str gameMode = Map::GetCurrentMapGameMode();
+        if (((raw)gameMode) != 0 && gameMode != "")
+        {
+            Logger::LogDebug(LOGSOURCE, "Setting up clientside game mode: \cd" + gameMode + "\cj.");
+
+            switch (BCSUtils::StrToLower(gameMode))
+            {
+                case "survival":
+                    Event::SetSurvivalDefaultsClient();
+                    Obituary::SetSurvivalDefaultsClient();
+                    break;
+
+                case "escape":
+                    Event::SetEscapeDefaultsClient();
+                    Obituary::SetEscapeDefaultsClient();
+                    break;
+
+                default:
+                    Logger::LogWarning(LOGSOURCE, "The given game mode profile does not exist: " + gamemode + ".");
+                    break;
+            }
+        }
+        else
+        {
+            Logger::LogDebug(LOGSOURCE, "Map has no game mode defined.");
+        }
+
         // Now the loop starts because we have loaded everything.
         GameLoop::StartClientPlayerLoopActivator();
 
@@ -245,7 +274,10 @@ strict namespace ZH2Game
         // Voting is active, so the client needs a mouse.
         // TODO: Move this when adding the sync callback system.
         if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
+        {
             Hud::SetCursorEnabled(true);
+            Player::LockMovement(true);
+        }
 
         // Initialize team indicators for all existing players.
         // This does not have to run offline as the enter script works fine.
@@ -311,10 +343,6 @@ strict namespace ZH2Game
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_unloading\"");
 
-        // Regardless of what the game does, we always unfreeze players.
-        // Specifically this could be the case with admin players and when the game ends.
-        SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
-
         // Reset the default music, or the music will move to the next map.
         Music::SetDefaultMusic("");
     }
@@ -345,7 +373,7 @@ strict namespace ZH2Game
             {
                 Logger::LogDebug(LOGSOURCE, "Playing player has spectated: (\cd" + str(id) + "\cj)" + BCSUTILS::PlayerName(id) + ".");
                 Player::SetPlayerState(id, Player::STATEGONE);
-                EventBus::CallEvent(EVENTPLAYERLEFTROUND, id);
+                Event::SendPlayerLeftRound(id);
             }
 
             // Check if the round was still joinable.
@@ -381,6 +409,7 @@ strict namespace ZH2Game
             terminate;
 
         // Get the killer.
+        // The killer might not exist for deaths, which means that the id remains -1.
         int killerId = -1;
         if (SetActivatorToTarget(0))
             killerId = PlayerNumber();
@@ -398,11 +427,7 @@ strict namespace ZH2Game
 
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_death\" for player " + str(killedId) + " killed by player " + str(killerId) + ".");
 
-        EventBus::CallEvent(EVENTPLAYERDIED, killedId, killerId);
-
-        // We must delay a tic before resetting the context to ensure events have time to process the death properly.
-        // TODO: Remove when events are made instant.
-        Delay(const: 1);
+        Event::SendPlayerDied(killedId, killerId);
 
         // Reset transient context if still in a joinable state.
         // Otherwise set as dead.
@@ -411,6 +436,7 @@ strict namespace ZH2Game
         else
             Player::SetPlayerState(killedId, Player::STATEDEAD);
 
+        Identity::DisposeTID(Identity::GetTid(killedId));
         Sync::SyncPlayers();
     }
 
@@ -494,7 +520,7 @@ strict namespace ZH2Game
                 // This fixes damage in general, and also prevents infinite loops (which happends when the human is immune).
                 if ((str)arg2 == DAMAGETYPE_ZOMBIESCRATCH_NAME)
                 {
-                    EventBus::CallEvent(EVENTSCRATCHED, attackedId, attackerId);
+                    Event::SendPlayerPreScratched(attackedId, attackerId);
 
                     // We always set the damage to 0.
                     SetResultValue(0);
@@ -520,6 +546,16 @@ strict namespace ZH2Game
             terminate;
         }
 
+        // Player frags another player.
+        // This code does not have any extra checks unlike `death` as fragging should always be between two living players.
+        if (type == GAMEEVENT_PLAYERFRAGS)
+        {
+            int killedId = (int)arg1;
+            int killerId = PlayerNumber();
+            Event::SendPlayerFragged(killedId, killerId);
+            terminate;
+        }
+
         // Player fully left server.
         if (type == GAMEEVENT_PLAYERLEAVESSERVER)
         {
@@ -541,7 +577,7 @@ strict namespace ZH2Game
 
                     // Finally, if the round was the playing round, call the event.
                     if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
-                        EventBus::CallEvent(EVENTPLAYERLEFTROUND, arg1);
+                        Event::SendPlayerLeftRound(arg1);
                 }
                 else
                 {
@@ -592,7 +628,7 @@ strict namespace ZH2Game
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_enter_respawn\" after awaiter");
 
         // Forced player cap is enabled so the player will be kicked if we reached the limit.
-        if (DevelopmentPlayerCap() && !PlayerIsBot(PlayerNumber()) && PlayerCount() - BCSUtils::BotCount() > DEV_PLAYERCAP_COUNT)
+        if (DevelopmentPlayerCap() && !PlayerIsBot(PlayerNumber()) && PlayerCount() - Utils::PlayingBotCount() > DEV_PLAYERCAP_COUNT)
         {
             RemovePlayer(PlayerNumber(), "This development build enforces a maximum player cap of " + str(DEV_PLAYERCAP_COUNT) + ". Please use a compatible, non-development version of Zombie Horde 2 to lift this limit.");
             terminate;
@@ -667,9 +703,9 @@ strict namespace ZH2Game
 
         // Set the player as an admin.
         // This is now removed and you can turn it on through the menu/rcon. Always works offline.
-        // if (!Admin::GetAdmin())
+        // if (!Admin::GetIsAdmin())
         // {
-        //     Admin::SetAdmin(true);
+        //     Admin::SetIsAdmin(true);
         //     Sync::SyncAdmins();
         // }
     }
@@ -683,7 +719,7 @@ strict namespace ZH2Game
             return;
         }
 
-        Logger::LogTo(message, id);
+        Logger::LogTo(id, message);
 
         if (GetUseDeadSpectators())
         {
@@ -742,4 +778,4 @@ strict namespace ZH2Game
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE

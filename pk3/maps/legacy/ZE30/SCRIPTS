@@ -10,6 +10,7 @@
 bool Resists[4] = {false, false, false, false}; //Needed to prevent a multiple trigger
 Str Messages[4] = {"Opening lab entrance", "Opening laser research complex", "Opening east zone door", "Thalaron laser overcharge"};
 bool teleporter = false;
+bool teleporter2 = false; //[AQW] Anti Zombie Suicide.
 
 Script 1 (int resist, int time)
 {
@@ -128,6 +129,22 @@ Script 8 (void)
     SetLineBlocking(14,BLOCK_NOTHING);
     printbold(s:"Forcefields disabled");
 }
+
+//[AQW] Added this teleport script to disallow Zombies to kill themselves in the Laser.
+Script 9 (void)
+{
+	if(Player::GetIsZombie()){
+		Teleport(12,0,0);
+		if(teleporter2 == false)
+		{
+			teleporter2 = true;
+			Door_Open(15,15,0);
+		}
+	}else{
+		DamageThing(6000,0);
+	}
+}
+
 
 Function void CustomMessage(Str msg1, int time)
 {
