@@ -31,46 +31,60 @@ strict namespace IO
 
     script SCRIPT_PARSE_PERSISTING_MOD_DEFS_SERVERSIDE
     {
-        if (ZH2Game::PersistingGameContext.ParsedModDefServerside) terminate;
-        DoParseModDefLumps(true);
+        if (ZH2Game::PersistingGameContext.ParsedModDefServerside)
+            terminate;
+
+        Logger::LogDebug(LOGSOURCE, "Begin parsing mod def lumps serverside.");
+
+        int startIndex = 0;
+        while(startIndex != -1)
+        {
+            startIndex = DoParseModDefLumps(startIndex, true);
+            Delay(const: 1);
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Finished parsing mod def lumps serverside.");
+
         ZH2Game::PersistingGameContext.ParsedModDefServerside = true;
     }
 
     script SCRIPT_PARSE_PERSISTING_MOD_DEFS_CLIENTSIDE
     {
-        if (ZH2Game::PersistingGameContext.ParsedModDefclientside) terminate;
-        DoParseModDefLumps(false);
+        if (ZH2Game::PersistingGameContext.ParsedModDefclientside)
+            terminate;
+
+        Logger::LogDebug(LOGSOURCE, "Begin parsing mod def lumps clientside.");
+
+        int startIndex = 0;
+        while(startIndex != -1)
+        {
+            startIndex = DoParseModDefLumps(startIndex, false);
+            Delay(const: 1);
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Finished parsing mod def lumps clientside.");
         ZH2Game::PersistingGameContext.ParsedModDefclientside = true;
     }
 
-    internal void DoParseModDefLumps(bool isServerSide)
+    internal int DoParseModDefLumps(int startIndex, bool isServerside)
     {
-        Logger::LogDebug(LOGSOURCE, "Begin parsing mod def lumps. Is serverside: \cd" + (isServerSide ? "true" : "false") + "\cj.");
-
-        // Recursively load lumps and then parse them.
-        // Should this ever get heavy then it's save to add delays given that the mod has the awaiter implemented.
-        int startIndex = 0;
-        while(true)
+        startIndex = LumpOpen(MODDEFLUMPNAME, startIndex);
+        if (startIndex == -1)
         {
-            startIndex = LumpOpen(MODDEFLUMPNAME, startIndex);
-            if (startIndex == -1)
-            {
-                Logger::LogDebug(LOGSOURCE, "No more mod def lumps found.");
-                break;
-            }
-
-            Logger::LogDebug(LOGSOURCE, "Found mod def lump: \cd" + (str)LumpGetInfo(startIndex, LUMP_INFO_NAME) + "\cj.");
-            if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) == 0)
-            {
-                Logger::LogDebug(LOGSOURCE, "Mod def file is empty.");
-                continue;
-            }
-
-            ParseModDefLump(LumpReadString(startIndex, 0), isServerSide);
-            LumpClose(startIndex);
+            Logger::LogDebug(LOGSOURCE, "No more mod def lumps found.");
+            return startIndex;
         }
 
-        Logger::LogDebug(LOGSOURCE, "Finished parsing mod def lumps. Is serverside: \cd" + (isServerSide ? "true" : "false") + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "Found mod def lump: \cd" + (str)LumpGetInfo(startIndex, LUMP_INFO_NAME) + "\cj.");
+        if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) == 0)
+        {
+            Logger::LogDebug(LOGSOURCE, "Mod def file is empty.");
+            return startIndex;
+        }
+
+        ParseModDefLump(LumpReadString(startIndex, 0), isServerSide);
+        LumpClose(startIndex);
+        return startIndex;
     }
 
     internal void ParseModDefLump(str buffer, bool isServerside)
