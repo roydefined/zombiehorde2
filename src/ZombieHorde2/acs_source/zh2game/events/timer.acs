@@ -1,0 +1,181 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Event
+{
+    script "zh2_internal_event_timerelapsed" (raw packetStr)
+    {
+        str packet = (str)packetStr;
+        Event::ReceiveTimerElapsed(packet);
+        int index = GetReceiveData(0);
+
+        Logger::LogDebug(LOGSOURCE , "Timer elapsed: \cd" + RoundTimer::GetTimerIndexAsString(index) + "\cj.");
+
+        // This even only handles known timer types.
+        // If the elapsed timer is not a known type, terminate.
+        RoundTimer::KnownRoundTimerT timerType = RoundTimer::GetKnownTypeOfIndex(index);
+        if (timerType == RoundTimer::TIMERNONE)
+            terminate;
+
+        switch (timerType)
+        {
+            case RoundTimer::TIMERPREGAMECOUNTDOWN:
+            {
+                // Ensure we (still) have enough clients to begin.
+                int availableClients = BCSUtils::ClientCount();
+                int minimumRequiredClients = ZH2Game::GetMinimumClientCount();
+                if (availableClients < minimumRequiredClients)
+                {
+                    // No check for this since it can be assumed the pregame exists here.
+                    Round::SetKnownRoundState(Round::STATEPREGAME);
+                    RoundTimer::ResetTimer(
+                        RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERPREGAMECOUNTDOWN));
+                    RoundTimer::DisableTimer();
+
+                    Sync::SyncRoundState();
+                    Sync::SyncTimers();
+                    Logger::LogBold("Countdown cancelled. The game requires atleast " + str(minimumRequiredClients) + " clients before starting.");
+                    terminate;
+                }
+
+                // Reset map based on configuration.
+                if (ZH2Game::GetUseMapResets()) ResetMap();
+                else ChangeLevel(StrParam(n:PRINTNAME_LEVEL), 0, CHANGELEVEL_NOINTERMISSION, GameSkill());
+                break;
+            }
+
+            case RoundTimer::TIMERCOUNTDOWN:
+            {
+                // Unlike the previous check this checks for actual playing players.
+                // We want at least two players to start.
+                // TODO: Maybe this can be made configurable too.
+                int availablePlayers = PlayerCount();
+                int minimumRequiredPlayers = 2;
+                if (availablePlayers < minimumRequiredPlayers)
+                {
+                    // No check for this since it can be assumed the pregame exists here.
+                    Round::SetKnownRoundState(Round::STATEPREGAME);
+                    RoundTimer::ResetTimer(
+                        RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERCOUNTDOWN));
+                    RoundTimer::DisableTimer();
+
+                    Sync::SyncRoundState();
+                    Sync::SyncTimers();
+                    Logger::LogBold("Countdown cancelled. The game requires atleast " + str(minimumRequiredPlayers) + " playing players before starting.");
+                    terminate;
+                }
+
+                // Ensure the round state is defined.
+                if (!Round::GetRoundDefined(Round::GetIndexOfKnownRoundStateType(Round::STATEPLAYING)))
+                {
+                    Logger::LogError(LOGSOURCE , "Failed to start playing round state. Round not defined, use defaults or define the round.");
+                    terminate;
+                }
+
+                RoundTimer::DisableTimer();
+                Round::SetKnownRoundState(Round::StatePlaying);
+                Sync::SyncRoundState();
+                break;
+            }
+
+            case RoundTimer::TIMERPLAYING:
+            {
+                RoundTimer::CallEndSound();
+                Game::KillZombies();
+                break;
+            }
+
+            case RoundTimer::TIMERENDING:
+            {
+                // Skip the voting process if the cvar is set.
+                if (!ZH2Game::GetAllowMapVoting())
+                {
+                    Exit_Normal(0);
+                    terminate;
+                }
+
+                // This timer is required. If not set we log an error.
+                // TODO: Ideally if we started the match we inform the map developer of this.
+                int index = RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERVOTING);
+                if (RoundTimer::GetTimerDefined(index))
+                {
+                    RoundTimer::SetActiveTimerByKnownType(RoundTimer::TIMERVOTING);
+                    RoundTimer::StartTimer(index);
+
+                    Sync::SyncTimers();
+                }
+                else Logger::LogError(LOGSOURCE , "Missing required voting timer.");
+
+                // Ensure the round state is defined.
+                if (!Round::GetRoundDefined(Round::GetIndexOfKnownRoundStateType(Round::STATEVOTING)))
+                {
+                    Logger::LogError(LOGSOURCE , "Failed to start voting round state. Round not defined, use defaults or define the round.");
+                    terminate;
+                }
+
+                Round::SetKnownRoundState(Round::STATEVOTING);
+                Sync::SyncRoundState();
+                Sync::SyncGame();
+
+                break;
+            }
+
+            case RoundTimer::TIMERVOTING:
+            {
+                Map::EndVoting();
+                Sync::SyncMapVoting();
+                break;
+            }
+
+            case RoundTimer::TIMERVOTED:
+            {
+                // Exit based on what we voted for.
+                // Failsafe, one final check against the index to ensure we have a valid one.
+                int index = Map::GetFinalVotedMapIndex();
+                if (index < 0 || index > ZH2Game::GameContext.VotableMapCount + 3)
+                    index = 0;
+
+                int targetMapIndex = 0;
+                switch(index)
+                {
+                    // Replay map.
+                    case 0:
+                        ChangeLevel(StrParam(n:PRINTNAME_LEVEL), 0, CHANGELEVEL_NOINTERMISSION, GameSkill());
+                        terminate;
+
+                    // Next map (no need to set next map position).
+                    case 1:
+                        Exit_Normal(0);
+                        break;
+
+                    case 2:
+                        targetMapIndex = Map::GetRandomMap(Shuffle::FLAGIGNORECURRENTMAP | Shuffle::FLAGIGNORENEXTMAP);
+                        break;
+
+                    default:
+                        targetMapIndex = ZH2Game::GameContext.VotableMaps[index - 3];
+                        break;
+                }
+                // Note the internal next map can't use this, and we will skip it as we will automatically switch to it then.
+                if (!SetNextMapPosition(targetMapIndex, true))
+                {
+                    Logger::LogError(LOGSOURCE , "Failed to set next map position to " + str(targetMapIndex) + ".");
+
+                    // Artificial delay to allow the log to be broadcasted.
+                    Delay(const: 10);
+
+                    // Reset back to the current map.
+                    ChangeLevel(StrParam(n:PRINTNAME_LEVEL), 0, CHANGELEVEL_NOINTERMISSION, GameSkill());
+                    terminate;
+                }
+
+                Exit_Normal(0);
+                break;
+            }
+
+            default:
+                Logger::LogError(LOGSOURCE , "Received invalid timer index " + str(index));
+        }
+    }
+}

@@ -19,7 +19,7 @@ strict namespace Reward
         // No weights means the player has all rewards already.
         if (!Weight::HasWeights())
         {
-            Logger::LogTo("You have all the rewards! Use some before receiving new ones.", id);
+            Logger::LogTo(id, "You have all the rewards! Use some before receiving new ones.");
             return;
         }
 
@@ -64,14 +64,14 @@ strict namespace Reward
 
     internal bool GetCanGivePlayerReward(int id, int index)
     {
-        Player::SpecieTypeT specie = Player::GetPlayerSpecie(id);
+        Player::PlayerSpecieT specie = Player::GetPlayerSpecie(id);
 
         // Conditionally check for specie.
         // Both instances must be specie specific.
         // If one doesn't provide it we assume the reward can be for any specie.
         if (specie != Player::SPECIENONE)
         {
-            Player::SpecieTypeT rewardSpecie = Reward::GetRewardSpecieSpecific(index);
+            Player::PlayerSpecieT rewardSpecie = Reward::GetRewardSpecieSpecific(index);
             if (rewardSpecie != Player::SPECIENONE && specie != rewardSpecie)
                 return false;
         }
@@ -132,14 +132,14 @@ strict namespace Reward
             message = GetRewardMessage(index);
 
         if ((raw)localMessage != 0 && localMessage != "")
-            Logger::LogTo(localMessage, id);
+            Logger::LogTo(id, localMessage);
 
         if ((raw)message != 0 && message != "")
         {
             if (BCSUtils::StrContains(message, REWARD_PLAYER_TOKEN))
                 message = BCSUtils::StrReplace(message, REWARD_PLAYER_TOKEN, BCSUtils::PlayerName(id));
 
-            Logger::LogExcept(message, id);
+            Logger::LogExcept(id, message);
         }
     }
 }

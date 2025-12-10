@@ -1,0 +1,194 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define POWER_HUD_SPACING 64.0
+
+strict namespace Hud
+{
+    #define INVENTORY_DISPLAY_DURATION 35 * 5
+    #define INVENTORY_FADE_DURATION 35
+
+    #define INVENTORY_ITEM_SPACING 40.0
+    #define KEY_ITEM_SPACING 40.0
+
+    internal fixed _inventoryLerpIndex = 0.0;
+
+    internal void DrawInventory()
+    {
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        // Never drawn.
+        if (Item::_lastInventoryInteractionTimestamp == 0)
+            return;
+
+        // Inventory is no longer drawn.
+        int elapsed = Utils::GetSynchronizedTimer() - Item::_lastInventoryInteractionTimestamp;
+        if (elapsed >= INVENTORY_DISPLAY_DURATION)
+            return;
+
+        // Compute base alpha which can decrement as the final second fades out the inventory.
+        fixed alpha = 1.0;
+        if (elapsed > INVENTORY_DISPLAY_DURATION - INVENTORY_FADE_DURATION)
+            alpha = 1.0 - fixed(elapsed - (INVENTORY_DISPLAY_DURATION - INVENTORY_FADE_DURATION)) / fixed(INVENTORY_FADE_DURATION);
+
+        PrepareHud(
+            320.0,
+            BCSUtils::HudBottom() - 160.0,
+            true);
+
+        DrawInventoryBar(alpha);
+
+        PrepareHud(
+            320.0,
+            BCSUtils::HudBottom() - 100.0,
+            true);
+
+        DrawKeyBar(alpha);
+    }
+
+    internal void DrawInventoryBar(fixed alpha)
+    {
+        // No inventory items to draw.
+        if (Item::GetClientOwnedInventorySize() == 0)
+            return;
+
+        // We use the specie of the player to determine if the item can be used.
+        Player::PlayerSpecieT specie = Player::GetSpecie();
+
+        int drawnCount = ZH2Game::GetShownInventoryItems();
+        int drawnSideCount = int(BCSUtils::Floor(fixed(drawnCount) / 2.0));
+
+        // Draw left part.
+        for (int i = 0; i < drawnSideCount; ++i)
+        {
+            fixed addX = (INVENTORY_ITEM_SPACING * fixed(i)) - INVENTORY_ITEM_SPACING;
+            fixed opacity = alpha - 0.5 - (0.1 * fixed(i));
+
+            // Determine index. We must account for wrapping around.
+            // Decrement by 1 or we draw the current item.
+            int index = Item::_currentInventoryIndex - i - 1;
+
+            if (index < 0 && !ZH2Game::GetWrapInventoryItems()) break;
+            while (index < 0) index += Item::GetClientOwnedInventorySize();
+
+            int itemIndex = Item::GetInventoryIndex(Item::GetClientOwnedInventoryIndex(index));
+            DrawInventoryItem(specie, itemIndex, addX, opacity, false);
+        }
+
+        // Draw right part.
+        for (int i = 0; i < drawnSideCount; ++i)
+        {
+            fixed addX = (INVENTORY_ITEM_SPACING * fixed(i)) + INVENTORY_ITEM_SPACING;
+            fixed opacity = alpha - 0.5 - (0.1 * fixed(i));
+
+            // Determine index. We must account for wrapping around.
+            // Increment by 1 or we draw the current item.
+            int index = Item::_currentInventoryIndex + i + 1;
+
+            if (index >= Item::GetClientOwnedInventorySize() && !ZH2Game::GetWrapInventoryItems()) break;
+            while (index >= Item::GetClientOwnedInventorySize()) index -= Item::GetClientOwnedInventorySize();
+
+            int itemIndex = Item::GetInventoryIndex(Item::GetClientOwnedInventoryIndex(index));
+            DrawInventoryItem(specie, itemIndex, addX, opacity, false);
+        }
+
+        // Draw current item.
+        int currentItemIndex = Item::GetInventoryIndex(Item::GetClientOwnedInventoryIndex(Item::_currentInventoryIndex));
+        DrawInventoryItem(specie, currentItemIndex, 0.0, alpha, true);
+    }
+
+    internal void DrawKeyBar(fixed alpha)
+    {
+        // No keys to draw.
+        int keyCount = Item::GetClientOwnedKeySize();
+        if (keyCount == 0)
+            return;
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawText(--_drawnHudId, "Owned keys");
+
+        for (int i = 0; i < keyCount; ++i)
+        {
+            // Calculate draw offset in a zig-zag pattern:
+            int offset = 0;
+            if (i != 0)
+            {
+                int step = (i + 1) / 2;
+                offset = (i % 2 == 1) ? step : -step;
+            }
+
+            fixed addX = KEY_ITEM_SPACING * fixed(offset);
+            int itemIndex = Item::GetKeyIndex(Item::GetClientOwnedKeyIndex(i));
+            DrawKeyItem(itemIndex, addX, alpha);
+        }
+    }
+
+    internal void DrawInventoryItem(Player::PlayerSpecieT ownerSpecie, int index, fixed addX, fixed alpha, bool current)
+    {
+        // Note if we didn't set this data then just assume it can be used.
+        bool humanOwned = Item::GetItemHumanOwned(index);
+        bool zombieOwned = Item::GetItemZombieOwned(index);
+        bool specieCanUse = !humanOwned && !zombieOwned
+            || ownerSpecie == Player::SPECIEHUMAN && humanOwned
+            || ownerSpecie == Player::SPECIEZOMBIE && zombieOwned;
+
+        // Reduce the alpha if current and can't be used to further indicate you can't use it.
+        fixed baseAlpha = alpha;
+        if ((!specieCanUse && current))
+            alpha *= 0.2;
+
+        BCSUtils::HudSetAlpha(alpha);
+
+        HudSetPointInternal(addX, 5.0);
+        BCSUtils::HudDrawImage(--_drawnHudId, Item::GetItemGraphic(index));
+
+        int count = CheckInventory(Item::GetItemName(index));
+        if (count > 1)
+        {
+            BCSUtils::HudSetScale(0.7);
+            BCSUtils::HudSetTextColor(CR_YELLOW);
+
+            HudSetPointInternal(addX + 10.0, - 5.0);
+            BCSUtils::HudDrawText(--_drawnHudId, str(count));
+
+            BCSUtils::HudSetScale(1.0);
+        }
+
+        if (current)
+        {
+            str itemLabel = Item::GetItemLabel(index);
+            BCSUtils::HudSetTextColor(CR_YELLOW);
+
+            HudSetPointInternal(0.0, 25.0);
+            BCSUtils::HudDrawText(--_drawnHudId, itemLabel);
+
+            BCSUtils::HudSetTextColor(CR_WHITE);
+
+            HudSetPointInternal(0.0, 35.0);
+            BCSUtils::HudDrawText(--_drawnHudId, Item::GetItemDescription(index));
+
+            // Write a label if we can't use this item.
+            if (!specieCanUse)
+            {
+                str label = "You can't use " + itemLabel + " as a " + Player::GetSpecieIndexAsString(ownerSpecie) + ".";
+
+                BCSUtils::HudSetAlpha(baseAlpha);
+                BCSUtils::HudSetTextColor(CR_RED);
+
+                HudSetPointInternal(0.0, 45.0);
+                BCSUtils::HudDrawText(--_drawnHudId, label);
+            }
+        }
+    }
+
+    internal void DrawKeyItem(int index, fixed addX, fixed alpha)
+    {
+        BCSUtils::HudSetAlpha(alpha);
+
+        HudSetPointInternal(addX, 20.0);
+        BCSUtils::HudDrawImage(--_drawnHudId, Item::GetItemGraphic(index));
+    }
+}

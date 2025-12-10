@@ -59,11 +59,15 @@ strict namespace Player
     // Handles actually setting the alpha values on all actors.
     internal void UpdateTranslucentAlliesAlpha()
     {
-        Player::SpecieTypeT specie = Player::GetSpecie();
+        Player::PlayerSpecieT specie = Player::GetSpecie();
         fixed translucentAlliesDistance = fixed(ZH2Game::GetTranslucentAlliesDistance());
 
         // Base configured translucency value on players.
         fixed baseAlpha = fixed(ZH2Game::GetBaseAllyTranslucency()) / 100.0;
+
+        int cameraTid = CheckPlayerCamera(PlayerNumber());
+        if (cameraTid == -1)
+            return;
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
@@ -78,6 +82,14 @@ strict namespace Player
             if (!BCSUTILS::ActorIsAlive(tid))
                 continue;
 
+            // If we are spectating this player, then we should always remove the effect.
+            if (cameraTid == tid)
+            {
+                SetActorProperty(tid, APROP_ALPHA, 1.0);
+                SetActorProperty(tid, APROP_RENDERSTYLE, STYLE_NORMAL);
+                continue;
+            }
+
             // Translucency only works on the same specie.
             // Infection/curing also adjusts properly this way.
             if (Player::GetPlayerSpecie(i) != specie)
@@ -88,7 +100,7 @@ strict namespace Player
             }
 
             // Distance check which also increases/decreases alpha based on distance.
-            fixed distance = BCSUtils::ActorDistance(ActivatorTID(), tid);
+            fixed distance = BCSUtils::ActorDistance(cameraTid, tid);
             fixed alpha = baseAlpha * (fixed)BCSUtils::Min(1.0, distance / translucentAlliesDistance);
             SetActorProperty(tid, APROP_ALPHA, alpha);
             SetActorProperty(tid, APROP_RENDERSTYLE, alpha != 1.0 ? STYLE_TRANSLUCENT : STYLE_NORMAL);

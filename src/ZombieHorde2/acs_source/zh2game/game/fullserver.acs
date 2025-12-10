@@ -29,8 +29,6 @@ strict namespace Game
 
     internal void TryTriggerFullServerEvent()
     {
-        ZH2Game::PersistingGameContext.FullServerCooldown--;
-
         int maxPlayers = ZH2Game::GetMaxPlayers();
         if (PlayerCount() < maxPlayers)
         {
@@ -44,9 +42,10 @@ strict namespace Game
             return;
         }
 
-        if (GetFullServerCooldown() != 0)
+        if (ZH2Game::PersistingGameContext.FullServerCooldown > 0)
         {
             Logger::LogDebug(LOGSOURCE , "Full server event skipped. Cooldown has not ended (" + str(ZH2Game::PersistingGameContext.FullServerCooldown) + " map(s) left).");
+            ZH2Game::PersistingGameContext.FullServerCooldown--;
             return;
         }
 
@@ -58,7 +57,7 @@ strict namespace Game
         });
 
         ZH2Game::GameContext.FullServerStartTimestamp = Utils::GetSynchronizedTimer();
-        ZH2Game::PersistingGameContext.FullServerCooldown += ZH2Game::GetFullServerRoundInterval();
+        ZH2Game::PersistingGameContext.FullServerCooldown = ZH2Game::GetFullServerRoundInterval() - 1;
     }
 
     internal int GetFullServerElapsedTics()
@@ -68,11 +67,5 @@ strict namespace Game
             return 0;
 
         return Utils::GetSynchronizedTimer() - timestamp;
-    }
-
-    internal int GetFullServerCooldown()
-    {
-        // Can be -1 if unset. Assume 0 means we trigger the event.
-        return BCSUtils::Max(0, ZH2Game::PersistingGameContext.FullServerCooldown);
     }
 }

@@ -8,17 +8,22 @@ strict namespace Admin
 {
     // Callable from the rcon.
 
-    script "zh2_enableadminplayer" (int id)
+    script "zh2_admin_playerenable" (int id)
     {
-        RconSetPlayerAdmin(id, true);
+        RconSetPlayerIsAdmin(id, true);
     }
 
-    script "zh2_disableadminplayer" (int id)
+    script "zh2_admin_playerdisable" (int id)
     {
-        RconSetPlayerAdmin(id, false);
+        RconSetPlayerIsAdmin(id, false);
     }
 
-    internal void RconSetPlayerAdmin(int id, bool set)
+    internal void RconSetIsAdmin(bool set)
+    {
+        RconSetPlayerIsAdmin(PlayerNumber(), set);
+    }
+
+    internal void RconSetPlayerIsAdmin(int id, bool set)
     {
         if (!Identity::IsValidID(id))
             return;
@@ -27,10 +32,10 @@ strict namespace Admin
             return;
 
         // Just ignore if we try to enable/disable on somebody that already has admin set to the same state.
-        if (GetPlayerAdmin(id) == set) return;
+        if (GetPlayerIsAdmin(id) == set) return;
 
-        SetPlayerAdmin(id, set);
-        BroadcastAdmin(id, set);
+        SetPlayerIsAdmin(id, set);
+        BroadcastPlayerAdmin(id, set);
 
         Sync::SyncAdmins();
     }

@@ -8,6 +8,7 @@
 #include "game/game.h.acs"
 #include "sync/sync.h.acs"
 #include "map/map.h.acs"
+#include "events/events.h.acs"
 #include "round/round.h.acs"
 #include "player/player.h.acs"
 #include "gameloop/gameloop.h.acs"
@@ -17,6 +18,7 @@
 #include "music/music.h.acs"
 #include "reward/reward.h.acs"
 #include "weight/weight.h.acs"
+#include "obituary/obituary.h.acs"
 #include "decorate/decorate.h.acs"
 #include "resist/resist.h.acs"
 #include "power/power.h.acs"
@@ -50,15 +52,6 @@ strict namespace ZH2Game
         DROPBEHAVIOUR_NEVER,
     };
 
-    internal enum KillTypeT : int
-    {
-        KILL_TYPE_NONE,
-        KILL_TYPE_HUMAN_TO_HUMAN,
-        KILL_TYPE_HUMAN_TO_ZOMBIE,
-        KILL_TYPE_ZOMBIE_TO_ZOMBIE,
-        KILL_TYPE_ZOMBIE_TO_HUMAN,
-    };
-
     // General game info. Non-persisting between rounds.
     internal struct GameContextT
     {
@@ -85,6 +78,12 @@ strict namespace ZH2Game
 
         // Serverside. If `true`, the join prevention depeding on round state is ignored.
         bool AlwaysAllowJoin;
+
+        // Clientside. If `true`, the game locks the player's angle and pitch.
+        // The added angle and pitch values are then enforces.
+        bool LockMovement;
+        fixed LockedAngle;
+        fixed LockedPitch;
 
         // Synced when a match ends to indicate what specie won the round.
         Game::WinningSpecieT WinningSpecie;
@@ -127,6 +126,13 @@ strict namespace ZH2Game
         int OwnedKeyCount;
         int OwnedWeaponItems[MAX_ITEMS];
         int OwnedWeaponCount;
+
+        // Clientside and serverside handled. Not synched.
+        // Stores received data from events, which has been unpacked.
+        Event::EventReceiveContextT EventReceiveContext;
+
+        // Clientside, not synchronized.
+        Obituary::ObituaryCollectionContextT ObituaryCollectionContext;
 
         // Clientside, not synchronized.
         // Relevant for the radio as it will track what the client's radio index is and also what they currently play.
@@ -213,6 +219,9 @@ strict namespace ZH2Game
         Settings::RequestedClientSettingT RequestedClientSettings[SETTINGS_CLIENTMAX];
         int RequestedClientSettingCount;
 
+        // Clientside, this tracks when we notify the player again.
+        int NotifyClientConsolidateMapCount;
+
         IO::MapBaseCollectionT MapBaseCollection;
         Power::PowerCollectionContextT PowerCollection;
         Item::ItemCollectionContextT ItemCollection;
@@ -229,15 +238,19 @@ strict namespace ZH2Game
         str StrippedName;
 
         Player::PlayerStateT State;
-        Player::SpecieTypeT SpecieType;
+        Player::PlayerSpecieT SpecieType;
         bool IsInitialZombie;
+
+        // Safe is synched. Indicates if a player reached the safezone.
+        // FirstTimeSafe is serverside and indicates if the player has reached safety before.
         bool Safe;
+        bool FirstTimeSafe;
 
         // Serverside. If `true`, the join prevention depeding on round state is ignored on this player specifically.
         bool AlwaysAllowJoin;
 
         // TODO: Sync this state, maybe make use of it.
-        Player::PanicStateT PanicState;
+        Player::PlayerPanicStateT PanicState;
         int PanicCount;
 
         // Not synched.
