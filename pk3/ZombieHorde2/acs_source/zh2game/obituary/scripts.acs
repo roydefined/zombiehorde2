@@ -67,6 +67,17 @@ strict namespace Obituary
             LogPlayerInfected();
     }
 
+    script "zh2_internal_obituary_playercured" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerCured(packet);
+
+        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
+            QueuePlayerCured();
+        else
+            LogPlayerCured();
+    }
+
     script "zh2_internal_obituary_playerdied" (raw packetStr) clientside
     {
         str packet = (str)packetStr;
