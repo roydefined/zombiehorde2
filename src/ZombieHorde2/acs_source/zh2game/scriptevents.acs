@@ -1,0 +1,161 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace ZH2Game
+{
+    script "zh2_internal_event" (raw type, raw arg1, raw arg2) event
+    {
+        // This does not trigger offline so the OPEN script is used for that instead.
+        // IsNetworkGame is therefore not needed, but added in case the behaviour does end up changing somehow.
+        if (IsNetworkGame() && type == GAMEEVENT_PLAYERCONNECT)
+        {
+            Logger::LogDebug(LOGSOURCE , "Call event \cdGAMEEVENT_PLAYERCONNECT\cj.");
+
+            VALIDATE_ID_VALID_SCRIPT((int)arg1);
+
+            /*ZH2Lib::ResetPlayerLibContext(arg1);
+            ResetPlayerPersistingContext(arg1);
+            ResetPlayerContext(arg1);*/
+
+            GameLoop::StartServerPlayerLoopById(arg1);
+            Utils::InitializeSynchronizedTimerForPlayer(arg1);
+            terminate;
+        }
+
+        // Damage to player without any armor affecting it.
+        if (type == GAMEEVENT_ACTOR_DAMAGED_PREMOD)
+        {
+            // Disable damaging entirely if the round ended.
+            if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
+            {
+                SetResultValue(0);
+                terminate;
+            }
+
+            Logger::LogDebug(LOGSOURCE , "Call event \cdGAMEEVENT_ACTOR_DAMAGED_PREMOD\cj.");
+
+            // Check for infect.
+            int attackedId = PlayerNumber();
+            VALIDATE_ID_VALID_SCRIPT(attackedId);
+
+            // The attacked player is to be set on fire with this damagetype.
+            if ((str)arg2 == DAMAGETYPE_SETONFIRE_NAME)
+                Decorate::SetOnFire(-1, attackedId, 350, 200);
+
+            // Everything below is for player on player contact.
+            if (!SetActivator(0, AAPTR_DAMAGE_SOURCE)) terminate;
+
+            // If -1, not a player.
+            int attackerId = PlayerNumber();
+            if (attackerId == -1)
+                terminate;
+
+            // Zombie attacked a human.
+            if (Player::GetPlayerIsHuman(attackedId) && Player::GetPlayerIsZombie(attackerId))
+            {
+                // The damage type must be the type given by claws here, or it wasn't a scratch.
+                // This fixes damage in general, and also prevents infinite loops (which happends when the human is immune).
+                if ((str)arg2 == DAMAGETYPE_ZOMBIESCRATCH_NAME)
+                {
+                    Event::SendPlayerPreScratched(attackedId, attackerId);
+
+                    // We always set the damage to 0.
+                    SetResultValue(0);
+                }
+
+                // Alternatively, the zombie pushed the human with the barrel push ability.
+                // To avoid complete annihilation of the human we want to set the damage to 0
+                else if ((str)arg2 == DAMAGETYPE_ZOMBIEPUSH_NAME)
+                    SetResultValue(0);
+            }
+
+            // Human attacked human
+            if (Player::GetPlayerIsHuman(attackedId) && Player::GetPlayerIsHuman(attackerId))
+            {
+                // If we shot somebody, nullify the damage (telefragging is still possible).
+                if ((str)arg2 == DAMAGETYPE_HUMANDEFAULT_NAME)
+                    SetResultValue(0);
+            }
+
+            // Spawn blood on the attacked from the bulletpuff.
+            if (!SetActivator(0, AAPTR_DAMAGE_INFLICTOR)) terminate;
+            Decorate::SpawnBloodFromBulletPuff(attackerId, attackedId);
+            terminate;
+        }
+
+        // Player frags another player.
+        // This code does not have any extra checks unlike `death` as fragging should always be between two living players.
+        if (type == GAMEEVENT_PLAYERFRAGS)
+        {
+            int killedId = (int)arg1;
+            int killerId = PlayerNumber();
+            Event::SendPlayerFragged(killedId, killerId);
+            terminate;
+        }
+
+        // Player fully left server.
+        if (type == GAMEEVENT_PLAYERLEAVESSERVER)
+        {
+            Logger::LogDebug(LOGSOURCE , "Call event \cdGAMEEVENT_PLAYERLEAVESSERVER\cj.");
+
+            VALIDATE_ID_VALID_SCRIPT((int)arg1);
+
+            int activeRoundIndex = Round::GetActiveRoundStateIndex();
+
+            // Only run if player was playing in the round.
+            if (Player::GetPlayerState(arg1) == Player::STATEPLAYING)
+            {
+                // The round was being played. We must not reset the player context.
+                // Otherwise another player can take the spot, so we clean up the context.
+                if (!Round::GetRoundJoinable(activeRoundIndex))
+                {
+                    Logger::LogDebug(LOGSOURCE , "Playing player has disconnected: (\cd" + str((int)arg1) + "\cj)" + BCSUTILS::PlayerName((int)arg1) + ". Reason: \cd" + str((int)arg2) + "\cj.");
+                    Player::SetPlayerState(arg1, Player::STATEGONE);
+
+                    // Finally, if the round was the playing round, call the event.
+                    if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
+                        Event::SendPlayerLeftRound(arg1);
+                }
+                else
+                {
+                    Logger::LogDebug(LOGSOURCE , "Playing player has disconnected (not a playing round): (\cd" + str((int)arg1) + "\cj)" + BCSUTILS::PlayerName((int)arg1) + ".");
+                    ResetPlayerContext(arg1);
+                }
+
+                Sync::SyncPlayers();
+            }
+
+            // If we are currently voting, then we want to make sure this player no longer contributes to voting.
+            if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
+            {
+                Map::SetPlayerVotedMapIndex(arg1, -1);
+                Map::CheckMapVoteFinished();
+                Sync::SyncMapVoting();
+            }
+
+            // The persisting context is always reset. This might still have data for the spectating player.
+            // NOTE: This does not contain data required for anything specific. This should be revisited if it does.
+            // We'd have to do this in unloading or something.
+            ResetPlayerPersistingContext(arg1);
+
+            // Always reset the lib context of the player.
+            ZH2Lib::ResetPlayerLibContext(arg1);
+            terminate;
+        }
+
+        // Track initial spawn spots and zombie teleport spots.
+        // The arg must be 1 here, or we do something weird with random spawners which I won't support.
+        if (type == GAMEEVENT_ACTOR_SPAWNED && arg1 == 1)
+        {
+            Logger::LogDebug(LOGSOURCE , "Call event \cdGAMEEVENT_ACTOR_SPAWNED\cj.");
+
+            str class = GetActorClass(0);
+            if (class == ACTOR_INITIALSPAWNSPOT_NAME) Game::TrackInitialSpawnSpot();
+            else if (class == ACTOR_ZOMBIETELEPORTSPOT_NAME) Game::TrackZombieTeleportSpot();
+        }
+
+        if (type == GAMEEVENT_CHAT && arg1 != -1)
+            SetResultValue((int)Game::HandlePlayerChatMessage(arg1, GetChatMessage(arg1, 0)));
+    }
+}
