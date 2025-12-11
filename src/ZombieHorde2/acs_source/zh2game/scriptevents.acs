@@ -6,35 +6,24 @@ strict namespace ZH2Game
 {
     script "zh2_internal_event" (raw type, raw arg1, raw arg2) event
     {
-        // This does not trigger offline so the OPEN script is used for that instead.
-        // IsNetworkGame is therefore not needed, but added in case the behaviour does end up changing somehow.
-        if (IsNetworkGame() && type == GAMEEVENT_PLAYERCONNECT)
-            OnPlayerConnect(arg1);
-
-        // Damage to player without any armor affecting it.
-        if (type == GAMEEVENT_ACTOR_DAMAGED_PREMOD)
-            SetResultValue(OnActorPreModifiedDamage(arg1, arg2));
-
-        // Player frags another player.
-        // This code does not have any extra checks unlike `death` as fragging should always be between two living players.
-        if (type == GAMEEVENT_PLAYERFRAGS)
-            OnPlayerFragged(arg1);
-
-        // Player fully left server.
-        if (type == GAMEEVENT_PLAYERLEAVESSERVER)
-            OnPlayerLeavesServer(arg1, arg2);
-
-        // Track initial spawn spots and zombie teleport spots.
-        // The arg must be 1 here, or we do something weird with random spawners which I won't support.
-        if (type == GAMEEVENT_ACTOR_SPAWNED && arg1 == 1)
-            OnActorSpawned();
-
-        if (type == GAMEEVENT_CHAT && arg1 != -1)
-            SetResultValue((int)OnChat(arg1));
+        switch(type)
+        {
+            case GAMEEVENT_PLAYERCONNECT: OnPlayerConnect(arg1); terminate;
+            case GAMEEVENT_ACTOR_DAMAGED_PREMOD: SetResultValue(OnActorPreModifiedDamage(arg1, arg2)); terminate;
+            case GAMEEVENT_PLAYERFRAGS: OnPlayerFragged(arg1, PlayerNumber()); terminate;
+            case GAMEEVENT_PLAYERLEAVESSERVER: OnPlayerLeavesServer(arg1, arg2); terminate;
+            case GAMEEVENT_ACTOR_SPAWNED: OnActorSpawned(arg1); terminate;
+            case GAMEEVENT_CHAT: SetResultValue((int)OnChat(arg1)); terminate;
+        }
     }
 
     internal void OnPlayerConnect(int id)
     {
+        // This does not trigger offline so the OPEN script is used for that instead.
+        // IsNetworkGame is therefore not needed, but added in case the behaviour does end up changing somehow.
+        if (!IsNetworkGame())
+            return;
+
         Logger::LogDebug(LOGSOURCE , "Call event \cdGAMEEVENT_PLAYERCONNECT\cj.");
 
         VALIDATE_ID_VALID_FUNCTION(id);
@@ -47,6 +36,7 @@ strict namespace ZH2Game
         Utils::InitializeSynchronizedTimerForPlayer(id);
     }
 
+    // Damage to player without any armor affecting it.
     internal int OnActorPreModifiedDamage(int damage, str damageType)
     {
         // Disable damaging entirely if the round ended.
@@ -88,7 +78,9 @@ strict namespace ZH2Game
             // Alternatively, the zombie pushed the human with the barrel push ability.
             // To avoid complete annihilation of the human we want to set the damage to 0
             else if (damageType == DAMAGETYPE_ZOMBIEPUSH_NAME)
+            {
                 return 0;
+            }
         }
 
         // Human attacked human
@@ -107,12 +99,14 @@ strict namespace ZH2Game
         return damage;
     }
 
-    internal void OnPlayerFragged(int killedId)
+    // Player frags another player.
+    // This code does not have any extra checks unlike `death` as fragging should always be between two living players.
+    internal void OnPlayerFragged(int killedId, int killerId)
     {
-        int killerId = PlayerNumber();
         Event::SendPlayerFragged(killedId, killerId);
     }
 
+    // Player fully left server.
     internal void OnPlayerLeavesServer(int id, int reason)
     {
         Logger::LogDebug(LOGSOURCE , "Call event \cdGAMEEVENT_PLAYERLEAVESSERVER\cj.");
@@ -161,8 +155,13 @@ strict namespace ZH2Game
         ZH2Lib::ResetPlayerLibContext(id);
     }
 
-    internal void OnActorSpawned()
+    // Track initial spawn spots and zombie teleport spots.
+    internal void OnActorSpawned(int spawnBits)
     {
+        // The spawnBits must be 1 here, or we do something weird with random spawners which I won't support.
+        if (spawnBits != GAMEEVENT_SPAWN_LEVELSPAWNED)
+            return;
+
         Logger::LogDebug(LOGSOURCE , "Call event \cdGAMEEVENT_ACTOR_SPAWNED\cj.");
 
         str class = GetActorClass(0);
@@ -172,6 +171,10 @@ strict namespace ZH2Game
 
     internal bool OnChat(int id)
     {
+        // Ignore if the server send the message.
+        if (id == -1)
+            return true;
+
         return Game::HandlePlayerChatMessage(id, GetChatMessage(id, 0));
     }
 }
