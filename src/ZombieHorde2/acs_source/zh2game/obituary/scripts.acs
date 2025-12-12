@@ -104,23 +104,30 @@ strict namespace Obituary
 
         int killedId = Event::GetReceiveData(0);
         int killerId = Event::GetReceiveData(1);
+        int inflictorType = Event::GetReceiveData(2);
 
-        // Attempt to receive the player's weapon.
-        // If we can't determine it, or `GetWeapon()` returns "None", then default to 0.
-        // After that, determine the item's definition in the custom lumps for its index.
-        str weapon = (str)0;
-        if (SetActivatorToPlayer(killerId))
+        int itemIndex = -1;
+
+        // Attempt to receive the player's weapon if the inflictor's type was a weapon.
+        if (inflictorType == ZH2Game::INFLICTORTYPE_WEAPON)
         {
-            weapon = GetWeapon();
-            if (BCSUtils::StrIEquals(weapon, "none"))
-                weapon = (str)0;
+            // If we can't determine it, or `GetWeapon()` returns "None", then default to 0.
+            // After that, determine the item's definition in the custom lumps for its index.
+            str weapon = (str)0;
+            if (SetActivatorToPlayer(killerId))
+            {
+                weapon = GetWeapon();
+                if (BCSUtils::StrIEquals(weapon, "none"))
+                    weapon = (str)0;
+            }
+
+            itemIndex = Item::GetItemIndexByName(weapon);
         }
 
-        int weaponIndex = Item::GetItemIndexByName(weapon);
 
         if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
-            QueuePlayerKilledByPlayer(killedId, killerId, weaponIndex);
+            QueuePlayerKilledByPlayer(killedId, killerId, itemIndex);
         else
-            LogPlayerKilledByPlayer(killedId, killerId, weaponIndex);
+            LogPlayerKilledByPlayer(killedId, killerId, itemIndex);
     }
 }

@@ -11,7 +11,6 @@ strict namespace ZH2Game
             case GAMEEVENT_PLAYERCONNECT: OnPlayerConnect(arg1); terminate;
             case GAMEEVENT_ACTOR_DAMAGED_PREMOD: SetResultValue(OnActorPreModifiedDamage(arg1, arg2)); terminate;
             case GAMEEVENT_ACTOR_DAMAGED: OnActorDamaged(arg1, arg2); terminate;
-            case GAMEEVENT_PLAYERFRAGS: OnPlayerFragged(arg1, PlayerNumber()); terminate;
             case GAMEEVENT_PLAYERLEAVESSERVER: OnPlayerLeavesServer(arg1, arg2); terminate;
             case GAMEEVENT_ACTOR_SPAWNED: OnActorSpawned(arg1); terminate;
             case GAMEEVENT_CHAT: SetResultValue((int)OnChat(arg1)); terminate;
@@ -142,6 +141,13 @@ strict namespace ZH2Game
                 inflictorName = inflictorClass;
         }
 
+        // Determine what the source used to kill.
+        // Either a weapon, item, or unknown thing.
+        // TODO: Support items.
+        DamageInflictorTypeT inflictorType = INFLICTORTYPE_UNKNOWN;
+        if (inflictorClass == HUMAN_BULLETPUFF)
+            inflictorType = INFLICTORTYPE_WEAPON;
+
         str logMessage;
         buildmsg(logMessage = StrParam())
         {
@@ -168,6 +174,9 @@ strict namespace ZH2Game
 
             if (hasInflictor)
             {
+                if (inflictorType == INFLICTORTYPE_WEAPON)
+                    Append(s:"weapon ");
+
                 Append(s:inflictorName + ".");
             }
         }
@@ -177,14 +186,9 @@ strict namespace ZH2Game
         if (!targetDied || targetIsMonster)
             return;
 
-        // TODO
-    }
-
-    // Player frags another player.
-    // This code does not have any extra checks unlike `death` as fragging should always be between two living players.
-    internal void OnPlayerFragged(int killedId, int killerId)
-    {
-        Event::SendPlayerKilledByPlayer(killedId, killerId);
+        // Player killed by player
+        if (targetId != -1 && sourceId != -1)
+            Event::SendPlayerKilledByPlayer(targetId, sourceId, inflictorType);
     }
 
     // Player fully left server.
