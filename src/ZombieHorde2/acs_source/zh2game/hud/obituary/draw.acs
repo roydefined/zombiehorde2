@@ -139,7 +139,18 @@ strict namespace Hud
         int type = Obituary::GetQueueData(queueIndex, 1);
         int deathType = Obituary::GetQueueData(queueIndex, 2);
         str specieGraphic = TranslateSpecieGraphic(type);
-        str deathGraphic = deathType == ZH2Game::DEATHTYPE_SUICIDE ? HUD_OBITUARY_SUICIDE : HUD_OBITUARY_UNKNOWN;
+
+        // Determine the graphic to draw based on the type.
+        str deathGraphic;
+        switch(deathType)
+        {
+            case ZH2Game::DEATHTYPE_SUICIDE: { deathGraphic = HUD_OBITUARY_SUICIDE; break; }
+            case ZH2Game::DEATHTYPE_FALLING: { deathGraphic = HUD_OBITUARY_FALLING; break; }
+            case ZH2Game::DEATHTYPE_DROWNING: { deathGraphic = HUD_OBITUARY_DROWNING; break; }
+            case ZH2Game::DEATHTYPE_CRUSHING: { deathGraphic = HUD_OBITUARY_CRUSHING; break; }
+            case ZH2Game::DEATHTYPE_TELEFRAG: { deathGraphic = HUD_OBITUARY_TELEFRAG; break; }
+            default: deathGraphic = HUD_OBITUARY_UNKNOWN; break;
+        }
 
         HudSetPointInternal(-26.0, yOffset);
         BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(id));
@@ -223,7 +234,7 @@ strict namespace Hud
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
 
         HudSetPointInternal(0.0, yOffset);
-        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_UNKNOWN);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_MONSTER);
         DebugDraw();
 
         if (specieGraphic != (str)0)
