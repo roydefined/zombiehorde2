@@ -10,6 +10,7 @@ strict namespace ZH2Game
         {
             case GAMEEVENT_PLAYERCONNECT: OnPlayerConnect(arg1); terminate;
             case GAMEEVENT_ACTOR_DAMAGED_PREMOD: SetResultValue(OnActorPreModifiedDamage(arg1, arg2)); terminate;
+            case GAMEEVENT_ACTOR_DAMAGED: OnActorDamaged(arg1, arg2); terminate;
             case GAMEEVENT_PLAYERFRAGS: OnPlayerFragged(arg1, PlayerNumber()); terminate;
             case GAMEEVENT_PLAYERLEAVESSERVER: OnPlayerLeavesServer(arg1, arg2); terminate;
             case GAMEEVENT_ACTOR_SPAWNED: OnActorSpawned(arg1); terminate;
@@ -36,7 +37,7 @@ strict namespace ZH2Game
         Utils::InitializeSynchronizedTimerForPlayer(id);
     }
 
-    // Damage to player without any armor affecting it.
+    // Damage to player without any modifications.
     internal int OnActorPreModifiedDamage(int damage, str damageType)
     {
         // Disable damaging entirely if the round ended.
@@ -52,24 +53,14 @@ strict namespace ZH2Game
         if (damageType == DAMAGETYPE_SETONFIRE_NAME)
             Decorate::SetOnFire(-1, attackedId, 350, 200);
 
-        // Handle actor on player damage
-        if (SetActivator(0, AAPTR_DAMAGE_SOURCE))
-        {
-            // If -1, not a player.
-            int attackerId = PlayerNumber();
-            if (attackerId != -1)
-                return OnPlayerDamagedPlayer(attackedId, attackerId, damage, damageType);
-            else
-                return OnActorDamagedPlayer(attackedId, damage, damageType);
-        }
+        // Premod only handles modifications to damage when a player caused them.
+        if (!SetActivator(0, AAPTR_DAMAGE_SOURCE))
+            return damage;
 
-        Logger::LogDebug(LOGSOURCE, "Unknown damage to player " + BCSUtils::PlayerName(attackedId) + ". Damage: \cf" + str(damage) + "\cj. Damage type: \cf" + damageType + "\cj.");
+        int attackerId = PlayerNumber();
+        if (attackerId == -1)
+            return damage;
 
-        return damage;
-    }
-
-    internal int OnPlayerDamagedPlayer(int attackedId, int attackerId, int damage, str damageType)
-    {
         // Zombie attacked a human.
         if (Player::GetPlayerIsHuman(attackedId) && Player::GetPlayerIsZombie(attackerId))
         {
@@ -99,46 +90,94 @@ strict namespace ZH2Game
                 return 0;
         }
 
-        int attackedHealth = BCSUtils::GetActorHealth(Identity::GetTid(attackedId));
-        bool died = attackedHealth - damage <= 0;
-
-        str attackedSpecieName = Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(attackedId));
-        str attackerSpecieName = Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(attackerId));
-        Logger::LogDebug(LOGSOURCE, "Damage \cf" + attackedSpecieName + " \cj" + BCSUtils::PlayerName(attackedId) + " by \cf" + attackerSpecieName + " \cj" + BCSUtils::PlayerName(attackerId) + ". Damage: \cf" + str(damage) + "\cj. Damage type: \cf" + damageType + "\cj. Died: \cf" + (died ? "true" : "false")+ "\cj.");
-
-        // Spawn blood on the attacked from the bulletpuff.
-        if (!SetActivator(0, AAPTR_DAMAGE_INFLICTOR))
-            return damage;
-
-        Decorate::SpawnBloodFromBulletPuff(attackerId, attackedId);
         return damage;
     }
 
-    // Note: Activator is the attacker. No guarantee they'd have a TID.
-    internal int OnActorDamagedPlayer(int attackedId, int damage, str damageType)
+    // Main damage handler.
+    // This is currently used for the obituary system.
+    internal void OnActorDamaged(int damage, str damageType)
     {
-        str attackedSpecieName = Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(attackedId));
-        int attackedHealth = BCSUtils::GetActorHealth(Identity::GetTid(attackedId));
-        bool died = attackedHealth - damage <= 0;
-        bool isMonster = ClassifyActor(0) & ACTOR_MONSTER;
+        int targetId = PlayerNumber();
+        bool targetIsMonster = (ClassifyActor(0) & ACTOR_MONSTER) != 0;
 
-        str sourceName = GetActorProperty(0, APROP_NAMETAG);
-        if (sourceName == (str)0 || sourceName == "")
-            sourceName = GetActorClass(0);
+        int targetHealth = BCSUtils::GetActorHealth(0);
+        bool targetDied = targetHealth - damage <= 0;
 
-        // Is the actor a monster?
-        if (isMonster)
+        str targetName;
+        if (targetId != -1)
         {
-            // TODO
-
-            Logger::LogDebug(LOGSOURCE, "Damage \cf" + attackedSpecieName + " \cj" + BCSUtils::PlayerName(attackedId) + " by monster \cf" + sourceName + "\cj. Damage: \cf" + str(damage) + "\cj. Damage type: \cf" + damageType + "\cj. Died: \cf" + (died ? "true" : "false")+ "\cj.");
-            return damage;
+            targetName = BCSUtils::PlayerName(targetId);
+        }
+        else
+        {
+            targetName = GetActorProperty(0, APROP_NAMETAG);
+            if (targetName == (str)0 || targetName == "")
+                targetName = GetActorClass(0);
         }
 
-        // TODO: Is the actor a known item?
+        // Determine source info
+        int sourceId;
+        bool sourceIsMonster;
+        str sourceName;
+        bool hasSource = !IsPointerEqual(AAPTR_DAMAGE_SOURCE, AAPTR_NULL);
+        if (hasSource && SetActivator(0, AAPTR_DAMAGE_SOURCE))
+        {
+            sourceId = PlayerNumber();
+            sourceIsMonster = (ClassifyActor(0) & ACTOR_MONSTER) != 0;
 
-        Logger::LogDebug(LOGSOURCE, "Damage \cf" + attackedSpecieName + " \cj" + BCSUtils::PlayerName(attackedId) + " by unknown actor \cf" + sourceName + "\cj. Damage: \cf" + str(damage) + "\cj. Damage type: \cf" + damageType + "\cj. Died: \cf" + (died ? "true" : "false")+ "\cj.");
-        return damage;
+            sourceName = GetActorProperty(0, APROP_NAMETAG);
+            if (sourceName == (str)0 || sourceName == "")
+                sourceName = GetActorClass(0);
+        }
+
+        // Determine inflictor info.
+        str inflictorName;
+        str inflictorClass;
+        bool hasInflictor = !IsPointerEqual(AAPTR_DAMAGE_INFLICTOR, AAPTR_NULL);
+        if (hasInflictor && SetActivator(0, AAPTR_DAMAGE_INFLICTOR))
+        {
+            inflictorName = GetActorProperty(0, APROP_NAMETAG);
+            inflictorClass = GetActorClass(0);
+            if (inflictorName == (str)0 || inflictorName == "")
+                inflictorName = inflictorClass;
+        }
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int count = GetMapRotationSize();
+            if (targetId != -1) Append(s:"Player");
+            else if (targetIsMonster) Append(s:"Monster");
+            else Append(s:"Actor");
+
+            Append(s:" \cf" + targetName + " \cjwas damaged for \cf" + str(damage) + "\cj using damage type \cf" + damageType + "\cj. Died: \cf" + (targetDied ? "true" : "false")+ "\cj.");
+
+            if (hasSource || hasInflictor) Append(s:" From ");
+
+            if (hasSource)
+            {
+                if (sourceId != -1) Append(s:"player");
+                else if (sourceIsMonster) Append(s:"monster");
+                else Append(s:"actor");
+
+                Append(s:" \cf" + targetName + "\cj");
+
+                if (hasInflictor) Append(s:" using ");
+                else Append(s:".");
+            }
+
+            if (hasInflictor)
+            {
+                Append(s:inflictorName + ".");
+            }
+        }
+        Logger::LogDebug(LOGSOURCE, logMessage);
+
+        // For now we don't handle non-death or deaths by monsters.
+        if (!targetDied || targetIsMonster)
+            return;
+
+        // TODO
     }
 
     // Player frags another player.
