@@ -190,28 +190,31 @@ strict namespace ZH2Game
         if (targetId != -1)
         {
             // Handle special damage types
-            if (damageType == "Suicide")
-                Event::SendPlayerDied(targetId, DEATHTYPE_SUICIDE);
-            else if (damageType == "Falling")
-                Event::SendPlayerDied(targetId, DEATHTYPE_FALLING);
-            else if (damageType == "Drowning")
-                Event::SendPlayerDied(targetId, DEATHTYPE_DROWNING);
-            else if (damageType == "Crush")
-                Event::SendPlayerDied(targetId, DEATHTYPE_CRUSHING);
+            switch(damageType)
+            {
+                case "Suicide": Event::SendPlayerDied(targetId, DEATHTYPE_SUICIDE); return;
+                case "Falling": Event::SendPlayerDied(targetId, DEATHTYPE_FALLING); return;
+                case "Drowning": Event::SendPlayerDied(targetId, DEATHTYPE_DROWNING); return;
+                case "Crush": Event::SendPlayerDied(targetId, DEATHTYPE_CRUSHING); return;
+                case "Telefrag": Event::SendPlayerDied(targetId, DEATHTYPE_TELEFRAG); return;
+                case "SpawnTelefrag": Event::SendPlayerDied(targetId, DEATHTYPE_TELEFRAG); return;
+                default:
+                {
+                    // Player killed by player
+                    if (sourceId != -1)
+                        Event::SendPlayerKilledByPlayer(targetId, sourceId, inflictorType);
 
-            // Player killed by player
-            else if (sourceId != -1)
-                Event::SendPlayerKilledByPlayer(targetId, sourceId, inflictorType);
+                    // Player killed by monster
+                    else if (sourceIsMonster)
+                        Event::SendPlayerKilledByMonster(targetId, sourceName);
 
-            // Player killed by monster
-            else if (sourceIsMonster)
-                Event::SendPlayerKilledByMonster(targetId, sourceName);
+                    // Unknown
+                    else
+                        Event::SendPlayerDied(targetId, DEATHTYPE_UNKNOWN);
 
-            // Unknown
-            else
-                Event::SendPlayerDied(targetId, DEATHTYPE_UNKNOWN);
-
-            return;
+                    return;
+                }
+            }
         }
     }
 
