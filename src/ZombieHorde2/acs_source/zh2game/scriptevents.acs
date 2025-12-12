@@ -43,25 +43,33 @@ strict namespace ZH2Game
         if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
             return 0;
 
-        Logger::LogDebug(LOGSOURCE , "Call event \cdGAMEEVENT_ACTOR_DAMAGED_PREMOD\cj.");
-
-        // Check for infect.
+        // We only handle damage to a player here.
         int attackedId = PlayerNumber();
-        VALIDATE_ID_VALID_FUNCTION_RETURN(attackedId, damage);
+        if (attackedId == -1)
+            return damage;
 
         // The attacked player is to be set on fire with this damagetype.
         if (damageType == DAMAGETYPE_SETONFIRE_NAME)
             Decorate::SetOnFire(-1, attackedId, 350, 200);
 
-        // Everything below is for player on player contact.
-        if (!SetActivator(0, AAPTR_DAMAGE_SOURCE))
-            return damage;
+        // Handle actor on player damage
+        if (SetActivator(0, AAPTR_DAMAGE_SOURCE))
+        {
+            // If -1, not a player.
+            int attackerId = PlayerNumber();
+            if (attackerId != -1)
+                return OnPlayerDamagedPlayer(attackedId, attackerId, damage, damageType);
+            else
+                return OnActorDamagedPlayer(attackedId, damage, damageType);
+        }
 
-        // If -1, not a player.
-        int attackerId = PlayerNumber();
-        if (attackerId == -1)
-            return damage;
+        Logger::LogDebug(LOGSOURCE, "Unknown damage to player " + BCSUtils::PlayerName(attackedId) + ". Damage: \cf" + str(damage) + "\cj. Damage type: \cf" + damageType + "\cj.");
 
+        return damage;
+    }
+
+    internal int OnPlayerDamagedPlayer(int attackedId, int attackerId, int damage, str damageType)
+    {
         // Zombie attacked a human.
         if (Player::GetPlayerIsHuman(attackedId) && Player::GetPlayerIsZombie(attackerId))
         {
@@ -91,11 +99,45 @@ strict namespace ZH2Game
                 return 0;
         }
 
+        int attackedHealth = BCSUtils::GetActorHealth(Identity::GetTid(attackedId));
+        bool died = attackedHealth - damage <= 0;
+
+        str attackedSpecieName = Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(attackedId));
+        str attackerSpecieName = Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(attackerId));
+        Logger::LogDebug(LOGSOURCE, "Damage \cf" + attackedSpecieName + " \cj" + BCSUtils::PlayerName(attackedId) + " by \cf" + attackerSpecieName + " \cj" + BCSUtils::PlayerName(attackerId) + ". Damage: \cf" + str(damage) + "\cj. Damage type: \cf" + damageType + "\cj. Died: \cf" + (died ? "true" : "false")+ "\cj.");
+
         // Spawn blood on the attacked from the bulletpuff.
         if (!SetActivator(0, AAPTR_DAMAGE_INFLICTOR))
             return damage;
 
         Decorate::SpawnBloodFromBulletPuff(attackerId, attackedId);
+        return damage;
+    }
+
+    // Note: Activator is the attacker. No guarantee they'd have a TID.
+    internal int OnActorDamagedPlayer(int attackedId, int damage, str damageType)
+    {
+        str attackedSpecieName = Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(attackedId));
+        int attackedHealth = BCSUtils::GetActorHealth(Identity::GetTid(attackedId));
+        bool died = attackedHealth - damage <= 0;
+        bool isMonster = ClassifyActor(0) & ACTOR_MONSTER;
+
+        str sourceName = GetActorProperty(0, APROP_NAMETAG);
+        if (sourceName == (str)0 || sourceName == "")
+            sourceName = GetActorClass(0);
+
+        // Is the actor a monster?
+        if (isMonster)
+        {
+            // TODO
+
+            Logger::LogDebug(LOGSOURCE, "Damage \cf" + attackedSpecieName + " \cj" + BCSUtils::PlayerName(attackedId) + " by monster \cf" + sourceName + "\cj. Damage: \cf" + str(damage) + "\cj. Damage type: \cf" + damageType + "\cj. Died: \cf" + (died ? "true" : "false")+ "\cj.");
+            return damage;
+        }
+
+        // TODO: Is the actor a known item?
+
+        Logger::LogDebug(LOGSOURCE, "Damage \cf" + attackedSpecieName + " \cj" + BCSUtils::PlayerName(attackedId) + " by unknown actor \cf" + sourceName + "\cj. Damage: \cf" + str(damage) + "\cj. Damage type: \cf" + damageType + "\cj. Died: \cf" + (died ? "true" : "false")+ "\cj.");
         return damage;
     }
 
