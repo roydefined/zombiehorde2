@@ -136,10 +136,10 @@ strict namespace Hud
     internal void DrawPlayerDied(int queueIndex, fixed yOffset)
     {
         int id = Obituary::GetQueueData(queueIndex, 0);
-        int killedType = Obituary::GetQueueData(queueIndex, 1);
-        bool suicide = Obituary::GetQueueData(queueIndex, 2);
-        str killedGraphic = TranslateSpecieGraphic(killedType);
-        str deathGraphic = suicide ? HUD_OBITUARY_SUICIDE : HUD_OBITUARY_UNKNOWN;
+        int type = Obituary::GetQueueData(queueIndex, 1);
+        int deathType = Obituary::GetQueueData(queueIndex, 2);
+        str specieGraphic = TranslateSpecieGraphic(type);
+        str deathGraphic = deathType == ZH2Game::DEATHTYPE_SUICIDE ? HUD_OBITUARY_SUICIDE : HUD_OBITUARY_UNKNOWN;
 
         HudSetPointInternal(-26.0, yOffset);
         BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(id));
@@ -147,10 +147,10 @@ strict namespace Hud
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
 
-        if (killedGraphic != (str)0)
+        if (specieGraphic != (str)0)
         {
             HudSetPointInternal(-18.0, yOffset);
-            BCSUtils::HudDrawImage(--_drawnHudId, killedGraphic);
+            BCSUtils::HudDrawImage(--_drawnHudId, specieGraphic);
             DebugDraw();
         }
 
