@@ -186,9 +186,22 @@ strict namespace ZH2Game
         if (!targetDied || targetIsMonster)
             return;
 
-        // Player killed by player
-        if (targetId != -1 && sourceId != -1)
-            Event::SendPlayerKilledByPlayer(targetId, sourceId, inflictorType);
+        if (targetId != -1)
+        {
+            // Suicide
+            if (damageType == "Suicide")
+                Event::SendPlayerDied(targetId, DEATHTYPE_SUICIDE);
+
+            // Player killed by player
+            else if (sourceId != -1)
+                Event::SendPlayerKilledByPlayer(targetId, sourceId, inflictorType);
+
+            // Unknown
+            else
+                Event::SendPlayerDied(targetId, DEATHTYPE_UNKNOWN);
+
+            return;
+        }
     }
 
     // Player fully left server.

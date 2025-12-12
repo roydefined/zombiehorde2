@@ -144,38 +144,32 @@ strict namespace Obituary
         if (!ZH2Game::GetCompatNoObituaries())
             return;
 
-        int killedId = Event::GetReceiveData(0);
-        int killerId = Event::GetReceiveData(1);
+        int id = Event::GetReceiveData(0);
+        int type = Event::GetReceiveData(1);
 
-        str logMessage;
-        buildmsg(logMessage = StrParam())
+        int genderInt = GetPlayerInfo(id, PLAYERINFO_GENDER);
+        str reflexive = genderInt == 0 ? "himself"
+            : genderInt == 1 ? "herseld"
+            : genderInt == 2 ? "themselves"
+            : "itself";
+
+        switch(type)
         {
-            // Log suicide
-            if (killerId == killedId)
+            case ZH2Game::DEATHTYPE_SUICIDE:
             {
-                if (killedId == ConsolePlayerNumber())
-                {
-                    Append(s:"You have killed yourself.");
-                }
+                if (id == ConsolePlayerNumber())
+                    Logger::LogConsolePlayer("You have killed yourself.");
                 else
-                {
-                    int genderInt = GetPlayerInfo(killerId, PLAYERINFO_GENDER);
-                    str reflexive = genderInt == 0 ? "himself"
-                        : genderInt == 1 ? "herseld"
-                        : genderInt == 2 ? "themselves"
-                        : "itself";
-                    Append(s:BCSUtils::PlayerName(killedId) + " has killed " + reflexive + ".");
-                }
+                    Logger::LogConsolePlayer(BCSUtils::PlayerName(id) + " has killed " + reflexive + ".");
             }
-            else
+            default:
             {
-                if (killedId == ConsolePlayerNumber())
-                    Append(s:"You have died.");
+                if (id == ConsolePlayerNumber())
+                    Logger::LogConsolePlayer("You have died.");
                 else
-                    Append(s:BCSUtils::PlayerName(killedId) + " has died.");
+                    Logger::LogConsolePlayer(BCSUtils::PlayerName(id) + " has died.");
             }
         }
-        Logger::LogConsolePlayer(logMessage);
     }
 
     internal void LogPlayerKilledByPlayer(int killedId, int killerId, int itemIndex)
