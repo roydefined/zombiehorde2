@@ -205,4 +205,23 @@ strict namespace Obituary
         }
         Logger::LogConsolePlayer(logMessage);
     }
+
+    internal void LogPlayerKilledByMonster(int id, str monsterName)
+    {
+        // Don't log this one if obituaries are enabled.
+        if (!ZH2Game::GetCompatNoObituaries())
+            return;
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            if (id == ConsolePlayerNumber())
+                Append(s:"You were killed");
+            else
+                Append(s:BCSUtils::PlayerName(id) + " was killed");
+
+            Append(s:" by " + monsterName + ".");
+        }
+        Logger::LogConsolePlayer(logMessage);
+    }
 }

@@ -122,4 +122,18 @@ strict namespace Obituary
         else
             LogPlayerKilledByPlayer(killedId, killerId, itemIndex);
     }
+
+    script "zh2_internal_obituary_playerkilledByMonster" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerKilledByMonster(packet);
+
+        int id = Event::GetReceiveData(0);
+        str monsterName = Event::GetReceiveData(1);
+
+        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
+            QueuePlayerKilledByMonster(id, monsterName);
+        else
+            LogPlayerKilledByMonster(id, monsterName);
+    }
 }
