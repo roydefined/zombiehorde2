@@ -203,7 +203,13 @@ strict namespace ZH2Game
                 {
                     // Player killed by player
                     if (sourceId != -1)
-                        Event::SendPlayerKilledByPlayer(targetId, sourceId, inflictorType);
+                    {
+                        // Additional info about the player to draw with the obituary.
+                        // I have to send this data from the server as the client might no longer have it due to the death.
+                        bool addFireEffect = Player::GetPlayerIsZombie(targetId) && Decorate::PlayerIsOnFire(targetId);
+                        bool addAcidEffect = Player::GetPlayerIsHuman(targetId) && Decorate::PlayerIsOnAcid(targetId);
+                        Event::SendPlayerKilledByPlayer(targetId, sourceId, inflictorType, addFireEffect, addAcidEffect);
+                    }
 
                     // Player killed by monster
                     else if (sourceIsMonster)
