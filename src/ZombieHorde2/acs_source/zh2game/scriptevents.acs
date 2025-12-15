@@ -158,6 +158,27 @@ strict namespace ZH2Game
 
                 itemIndex = Item::GetItemIndexByName(weapon);
             }
+
+            // Check if the inflictor is an item.
+            // This uses a map to map the damaging actor back to the source item.
+            else
+            {
+                // TODO: Make this configurable.
+                static str itemMap[][] =
+                {
+                    { "ZH2HolyCrossLight", HOLYCROSS_ITEM },
+                    { "ZH2CirculatorFireBall", CIRCULATOR_ITEM },
+                };
+
+                foreach(auto item; itemMap)
+                {
+                    if (item[0] == inflictorName)
+                    {
+                        itemIndex = Item::GetItemIndexByName(item[1]);
+                        break;
+                    }
+                }
+            }
         }
 
         str logMessage;
