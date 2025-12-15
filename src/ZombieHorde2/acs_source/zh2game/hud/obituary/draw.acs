@@ -60,14 +60,14 @@ strict namespace Hud
         DebugDraw();
     }
 
-    internal void DrawPlayerScratched(int queueIndex, fixed yOffset)
+    internal void DrawPlayerScratched(int queueIndex, fixed yOffset, fixed alpha)
     {
         int infected = Obituary::GetQueueData(queueIndex, 0);
         int infector = Obituary::GetQueueData(queueIndex, 1);
         int infectorType = Obituary::GetQueueData(queueIndex, 2);
         str infectorGraphic = TranslateSpecieGraphic(infectorType);
 
-        HudSetPointInternal(-26.0, yOffset);
+        HudSetPointInternal(-18.0, yOffset);
         BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(infector));
         DebugDraw();
 
@@ -75,43 +75,53 @@ strict namespace Hud
 
         if (infectorGraphic != (str)0)
         {
-            HudSetPointInternal(-18.0, yOffset);
+            HudSetPointInternal(-9.0, yOffset);
             BCSUtils::HudDrawImage(--_drawnHudId, infectorGraphic);
             DebugDraw();
         }
 
-        HudSetPointInternal(0.0, yOffset);
-        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_SCRATCH);
-        DebugDraw();
-
-        HudSetPointInternal(18.0, yOffset);
+        HudSetPointInternal(9.0, yOffset);
         BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_HUMAN);
         DebugDraw();
 
+        fixed effectAlpha = BCSUtils::Max(0, alpha - 0.4);
+        BCSUtils::HudSetAlpha(effectAlpha);
+
+        HudSetPointInternal(9.0, yOffset);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_SCRATCH);
+        DebugDraw();
+
+        BCSUtils::HudSetAlpha(alpha);
+
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
 
-        HudSetPointInternal(26.0, yOffset);
+        HudSetPointInternal(18.0, yOffset);
         BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(infected));
         DebugDraw();
     }
 
-    internal void DrawPlayerInfected(int queueIndex, fixed yOffset)
+    internal void DrawPlayerInfected(int queueIndex, fixed yOffset, fixed alpha)
     {
         int id = Obituary::GetQueueData(queueIndex, 0);
 
-        HudSetPointInternal(-26.0, yOffset);
+        HudSetPointInternal(-8.0, yOffset);
         BCSUtils::HudDrawText(--_drawnHudId, BCSUtils::PlayerName(id));
         DebugDraw();
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
 
-        HudSetPointInternal(-18.0, yOffset);
+        HudSetPointInternal(0.0, yOffset);
         BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_HUMAN);
         DebugDraw();
+
+        fixed effectAlpha = BCSUtils::Max(0, alpha - 0.4);
+        BCSUtils::HudSetAlpha(effectAlpha);
 
         HudSetPointInternal(0.0, yOffset);
         BCSUtils::HudDrawImage(--_drawnHudId, HUD_OBITUARY_SCRATCH);
         DebugDraw();
+
+        BCSUtils::HudSetAlpha(alpha);
     }
 
     internal void DrawPlayerCured(int queueIndex, fixed yOffset)
