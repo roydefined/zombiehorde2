@@ -141,12 +141,24 @@ strict namespace ZH2Game
                 inflictorName = inflictorClass;
         }
 
-        // Determine what the source used to kill.
-        // Either a weapon, item, or unknown thing.
-        // TODO: Support items.
-        DamageInflictorTypeT inflictorType = INFLICTORTYPE_UNKNOWN;
-        if (inflictorClass == HUMAN_BULLETPUFF)
-            inflictorType = INFLICTORTYPE_WEAPON;
+        int itemIndex = -1;
+
+        // Determine inflictor item type.
+        // Either a weapon, item, or something unknown.
+        if (hasInflictor)
+        {
+            // Inflictor is a bulletpuff, meaning a weapon was used.
+            if (inflictorClass == HUMAN_BULLETPUFF && SetActivator(0, AAPTR_DAMAGE_TARGET))
+            {
+                // If we can't determine it, or `GetWeapon()` returns "None", then default to 0.
+                // After that, determine the item's definition in the custom lumps for its index.
+                str weapon = GetWeapon();
+                if (BCSUtils::StrIEquals(weapon, "none"))
+                    weapon = (str)0;
+
+                itemIndex = Item::GetItemIndexByName(weapon);
+            }
+        }
 
         str logMessage;
         buildmsg(logMessage = StrParam())
@@ -173,12 +185,7 @@ strict namespace ZH2Game
             }
 
             if (hasInflictor)
-            {
-                if (inflictorType == INFLICTORTYPE_WEAPON)
-                    Append(s:"weapon ");
-
                 Append(s:inflictorName + ".");
-            }
         }
         Logger::LogDebug(LOGSOURCE, logMessage);
 
@@ -208,7 +215,7 @@ strict namespace ZH2Game
                         // I have to send this data from the server as the client might no longer have it due to the death.
                         bool addFireEffect = Player::GetPlayerIsZombie(targetId) && Decorate::PlayerIsOnFire(targetId);
                         bool addAcidEffect = Player::GetPlayerIsHuman(targetId) && Decorate::PlayerIsOnAcid(targetId);
-                        Event::SendPlayerKilledByPlayer(targetId, sourceId, inflictorType, addFireEffect, addAcidEffect);
+                        Event::SendPlayerKilledByPlayer(targetId, sourceId, itemIndex, addFireEffect, addAcidEffect);
                     }
 
                     // Player killed by monster
