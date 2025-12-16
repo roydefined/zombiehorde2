@@ -7,6 +7,7 @@ strict namespace Power
     internal void Tic()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
+        int id = PlayerNumber();
 
         // Check if the activator's powers have expired.
         bool hasExpired = false;
@@ -14,7 +15,6 @@ strict namespace Power
         str logMessage;
         BuildMsg(logMessage = StrParam())
         {
-            int id = PlayerNumber();
             Append(s:"Power(s) expired of " + BCSUtils::PlayerName(id) + ": ");
 
             for (int i = 0; i < ZH2Game::PersistingGameContext.PowerCollection.Size; ++i)
@@ -43,6 +43,11 @@ strict namespace Power
         {
             Logger::LogDebug(LOGSOURCE, logMessage);
             RecalculatePowers();
+
+            // Send an event unless the round ended.
+            // No need to send it in that case.
+            if (Round::GetActiveKnownRoundState() < Round::STATEENDING)
+                Event::SendPowerExpired(id);
         }
     }
 
