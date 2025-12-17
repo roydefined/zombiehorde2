@@ -10,7 +10,7 @@ strict namespace ZH2Game
         {
             case GAMEEVENT_PLAYERCONNECT: OnPlayerConnect(arg1); terminate;
             case GAMEEVENT_ACTOR_DAMAGED_PREMOD: SetResultValue(OnActorPreModifiedDamage(arg1, arg2)); terminate;
-            case GAMEEVENT_PLAYERFRAGS: OnPlayerFragged(arg1, PlayerNumber()); terminate;
+            case GAMEEVENT_ACTOR_DAMAGED: OnActorDamaged(arg1, arg2); terminate;
             case GAMEEVENT_PLAYERLEAVESSERVER: OnPlayerLeavesServer(arg1, arg2); terminate;
             case GAMEEVENT_ACTOR_SPAWNED: OnActorSpawned(arg1); terminate;
             case GAMEEVENT_CHAT: SetResultValue((int)OnChat(arg1)); terminate;
@@ -36,28 +36,27 @@ strict namespace ZH2Game
         Utils::InitializeSynchronizedTimerForPlayer(id);
     }
 
-    // Damage to player without any armor affecting it.
+    // Damage to player without any modifications.
     internal int OnActorPreModifiedDamage(int damage, str damageType)
     {
         // Disable damaging entirely if the round ended.
         if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
             return 0;
 
-        Logger::LogDebug(LOGSOURCE, "Call event \cdGAMEEVENT_ACTOR_DAMAGED_PREMOD\cj.");
-
-        // Check for infect.
+        // We only handle damage to a player here.
         int attackedId = PlayerNumber();
-        VALIDATE_ID_VALID_FUNCTION_RETURN(attackedId, damage);
+        if (attackedId == -1)
+            return damage;
 
         // The attacked player is to be set on fire with this damagetype.
+        // TODO: Properly determine the source.
         if (damageType == DAMAGETYPE_SETONFIRE_NAME)
-            Decorate::SetOnFire(-1, attackedId, 350, 200);
+            Decorate::SetOnFire(-1, attackedId, (str)0, 350, 200);
 
-        // Everything below is for player on player contact.
+        // Premod only handles modifications to damage when a player caused them.
         if (!SetActivator(0, AAPTR_DAMAGE_SOURCE))
             return damage;
 
-        // If -1, not a player.
         int attackerId = PlayerNumber();
         if (attackerId == -1)
             return damage;
@@ -92,18 +91,189 @@ strict namespace ZH2Game
         }
 
         // Spawn blood on the attacked from the bulletpuff.
-        if (!SetActivator(0, AAPTR_DAMAGE_INFLICTOR))
-            return damage;
+        if (SetActivator(0, AAPTR_DAMAGE_INFLICTOR))
+            Decorate::SpawnBloodFromBulletPuff(attackerId, attackedId);
 
-        Decorate::SpawnBloodFromBulletPuff(attackerId, attackedId);
         return damage;
     }
 
-    // Player frags another player.
-    // This code does not have any extra checks unlike `death` as fragging should always be between two living players.
-    internal void OnPlayerFragged(int killedId, int killerId)
+    // Main damage handler.
+    // This is currently used for the obituary system.
+    internal void OnActorDamaged(int damage, str damageType)
     {
-        Event::SendPlayerFragged(killedId, killerId);
+        int targetId = PlayerNumber();
+        bool targetIsMonster = (ClassifyActor(0) & ACTOR_MONSTER) != 0;
+
+        int targetHealth = BCSUtils::GetActorHealth(0);
+        bool targetDied = targetHealth - damage <= 0;
+
+        str targetName;
+        if (targetId != -1)
+        {
+            targetName = BCSUtils::PlayerName(targetId);
+        }
+        else
+        {
+            targetName = GetActorProperty(0, APROP_NAMETAG);
+            if (targetName == (str)0 || targetName == "")
+                targetName = GetActorClass(0);
+        }
+
+        // Determine source info
+        int sourceId;
+        bool sourceIsMonster;
+        str sourceName;
+        bool hasSource = !IsPointerEqual(AAPTR_DAMAGE_SOURCE, AAPTR_NULL);
+        if (hasSource && SetActivator(0, AAPTR_DAMAGE_SOURCE))
+        {
+            sourceId = PlayerNumber();
+            sourceIsMonster = (ClassifyActor(0) & ACTOR_MONSTER) != 0;
+
+            sourceName = GetActorProperty(0, APROP_NAMETAG);
+            if (sourceName == (str)0 || sourceName == "")
+                sourceName = GetActorClass(0);
+        }
+
+        // Determine inflictor info.
+        str inflictorName;
+        str inflictorClass;
+        bool hasInflictor = !IsPointerEqual(AAPTR_DAMAGE_INFLICTOR, AAPTR_NULL);
+        if (hasInflictor && SetActivator(0, AAPTR_DAMAGE_INFLICTOR))
+            inflictorClass = GetActorClass(0);
+
+        int itemIndex = -1;
+
+        // If damage type is internal fire or acid then the source is saved in memory.
+        if (targetId != -1 && (damageType == DAMAGETYPE_FIRE || damageType == DAMAGETYPE_ACID))
+        {
+            Player::DamageSourceTypeT sourceType = damageType == DAMAGETYPE_FIRE
+                ? Player::SOURCE_FIRE : Player::SOURCE_ACID;
+
+            // The damage source should exist.
+            if (!Player::GetPlayerDamageSourceActive(targetId, sourceType))
+            {
+                Logger::LogWarning(LOGSOURCE, "Expected a valid damage source for player " + str(targetId) + ". Source type: " + str(sourceType) + ".");
+            }
+            else
+            {
+                hasInflictor = true;
+                inflictorClass = Player::GetPlayerDamageSourceSourceActor(targetId, sourceType);
+                sourceId = Player::GetPlayerDamageSourceOwnerId(targetId, sourceType);
+                sourceName = BCSutils::PlayerName(sourceId);
+                sourceIsMonster = false;
+
+                itemIndex = Item::GetItemIndexByName(inflictorClass);
+            }
+        }
+
+        // Determine inflictor item type.
+        // Either a weapon, item, or something unknown.
+        else if (hasInflictor)
+        {
+            // Inflictor is a bulletpuff, meaning a weapon was used.
+            if (inflictorClass == HUMAN_BULLETPUFF && SetActivator(0, AAPTR_DAMAGE_SOURCE))
+            {
+                // If we can't determine it, or `GetWeapon()` returns "None", then default to 0.
+                // After that, determine the item's definition in the custom lumps for its index.
+                str weapon = GetWeapon();
+                if (BCSUtils::StrIEquals(weapon, "none"))
+                    weapon = (str)0;
+
+                itemIndex = Item::GetItemIndexByName(weapon);
+            }
+
+            // Check if the inflictor is an item.
+            // This uses a map to map the damaging actor back to the source item.
+            else
+            {
+                // TODO: Make this configurable.
+                static str itemMap[][] =
+                {
+                    { "ZH2HolyCrossLight", HOLYCROSS_ITEM },
+                    { "ZH2CirculatorFireBall", CIRCULATOR_ITEM },
+                };
+
+                foreach(auto item; itemMap)
+                {
+                    if (item[0] == inflictorClass)
+                    {
+                        itemIndex = Item::GetItemIndexByName(item[1]);
+                        break;
+                    }
+                }
+            }
+        }
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int count = GetMapRotationSize();
+            if (targetId != -1) Append(s:"Player");
+            else if (targetIsMonster) Append(s:"Monster");
+            else Append(s:"Actor");
+
+            Append(s:" \cf" + targetName + " \cjwas damaged for \cf" + str(damage) + "\cj using damage type \cf" + damageType + "\cj. Died: \cf" + (targetDied ? "true" : "false")+ "\cj.");
+
+            if (hasSource || hasInflictor) Append(s:" From ");
+
+            if (hasSource)
+            {
+                if (sourceId != -1) Append(s:"player");
+                else if (sourceIsMonster) Append(s:"monster");
+                else Append(s:"actor");
+
+                Append(s:" \cf" + targetName + "\cj");
+
+                if (hasInflictor) Append(s:" using ");
+                else Append(s:".");
+            }
+
+            if (hasInflictor)
+                Append(s:inflictorClass + ".");
+        }
+        Logger::LogDebug(LOGSOURCE, logMessage);
+
+        // For now we don't handle non-death or deaths by monsters.
+        if (!targetDied || targetIsMonster)
+            return;
+
+        // Expect a dead player.
+        if (targetId != -1)
+        {
+            // Handle special damage types
+            switch(damageType)
+            {
+                case "Suicide": Event::SendPlayerDied(targetId, DEATHTYPE_SUICIDE); return;
+                case "Falling": Event::SendPlayerDied(targetId, DEATHTYPE_FALLING); return;
+                case "Drowning": Event::SendPlayerDied(targetId, DEATHTYPE_DROWNING); return;
+                case "Crush": Event::SendPlayerDied(targetId, DEATHTYPE_CRUSHING); return;
+                case "Telefrag": Event::SendPlayerDied(targetId, DEATHTYPE_TELEFRAG); return;
+                case "SpawnTelefrag": Event::SendPlayerDied(targetId, DEATHTYPE_TELEFRAG); return;
+                case "Exit": Event::SendPlayerDied(targetId, DEATHTYPE_UNSAFE); return;
+                default:
+                {
+                    // Player killed by player
+                    if (sourceId != -1)
+                    {
+                        // Additional info about the player to draw with the obituary.
+                        // I have to send this data from the server as the client might no longer have it due to the death.
+                        bool addFireEffect = Player::GetPlayerIsZombie(targetId) && Decorate::PlayerIsOnFire(targetId);
+                        bool addAcidEffect = Player::GetPlayerIsHuman(targetId) && Decorate::PlayerIsOnAcid(targetId);
+                        Event::SendPlayerKilledByPlayer(targetId, sourceId, itemIndex, addFireEffect, addAcidEffect);
+                    }
+
+                    // Player killed by monster
+                    else if (sourceIsMonster)
+                        Event::SendPlayerKilledByMonster(targetId, sourceName);
+
+                    // Unknown
+                    else
+                        Event::SendPlayerDied(targetId, DEATHTYPE_UNKNOWN);
+
+                    return;
+                }
+            }
+        }
     }
 
     // Player fully left server.

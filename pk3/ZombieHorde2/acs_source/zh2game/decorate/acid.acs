@@ -6,22 +6,35 @@ strict namespace Decorate
 {
     script "zh2_dec_setacid_area" (raw area, raw initialDamageTics, raw subsequentDamageTics)
     {
-        AreaSetOnAcidAtTid(
-            -1, (int)area, (int)initialDamageTics, (int)subsequentDamageTics);
-    }
+        // Will just be -1 if we passed nobody.
+        int ownerId = Identity::GetId(GetActorProperty(0, APROP_TARGETTID));
 
-    script "zh2_dec_setacid_area_targetsource" (raw area, raw initialDamageTics, raw subsequentDamageTics)
-    {
-        AreaSetOnAcidAtTid(
-            GetActorProperty(0, APROP_TARGETTID), (int)area, (int)initialDamageTics, (int)subsequentDamageTics);
+        str inflictorClass = GetActorClass(0);
+
+        // Map acid actor to known actor.
+        // TODO: Make configurable
+        static str itemMap[][] =
+        {
+            // Note this one doesn't actually have an obituary actor, just added for readability.
+            // This therefore isn't used.
+            { "ZH2ZombieAcidSpotBig", "ZH2ZombieAcidSpot" },
+        };
+
+        foreach(auto item; itemMap)
+        {
+            if (item[0] == inflictorClass)
+            {
+                inflictorClass = item[1];
+                break;
+            }
+        }
+
+        AreaSetOnAcidAtTid(ownerId, inflictorClass, (int)area, (int)initialDamageTics, (int)subsequentDamageTics);
     }
 
     // Sets the area as acidic at the given tid.
-    internal void AreaSetOnAcidAtTid(int sourceTid, int area, int initialDamageTics, int subsequentDamageTics)
+    internal void AreaSetOnAcidAtTid(int ownerId, str inflictorClass, int area, int initialDamageTics, int subsequentDamageTics)
     {
-        // Will just be -1 if we passed nobody.
-        int sourceId = Identity::GetId(sourceTid);
-
         bool hasHit = false;
         str logMessage;
         BuildMsg(logMessage = StrParam())
@@ -41,10 +54,10 @@ strict namespace Decorate
 
                 hasHit = true;
                 Append(s:BCSUtils::PlayerName(i));
-                SetOnAcid(sourceId, i, initialDamageTics, subsequentDamageTics);
+                SetOnAcid(ownerId, i, inflictorClass, initialDamageTics, subsequentDamageTics);
             }
 
-            if (sourceId != -1) Append(s:". Source player: " + BCSUtils::PlayerName(sourceId) + ".");
+            if (ownerId != -1) Append(s:". Owner player: " + BCSUtils::PlayerName(ownerId) + ". Inflictor: " + inflictorClass + ".");
             else Append(s:".");
         }
 
@@ -52,7 +65,7 @@ strict namespace Decorate
             Logger::LogDebug(LOGSOURCE, logMessage);
     }
 
-    internal void SetOnAcid(int sourceId, int targetId, int initialBurningDamageTics, int subsequentBurningDamageTics)
+    internal void SetOnAcid(int ownerId, int targetId, str inflictorClass, int initialBurningDamageTics, int subsequentBurningDamageTics)
     {
         // Human-only.
         if (!Player::GetPlayerIsHuman(targetId))
@@ -64,7 +77,8 @@ strict namespace Decorate
             subsequentBurningDamageTics :
             initialBurningDamageTics;
 
-        // TODO: Set source as igniter. We don't have the source feature yet so this info is lost.
+        // Set up the source of the fire.
+        Player::SetPlayerDamageSourceActive(targetId, ownerId, inflictorClass, Player::SOURCE_ACID);
 
         Power::AddPlayerPowerTics(targetId, Power::POWERACIDBURNING, tics);
     }
