@@ -48,7 +48,7 @@ strict namespace Event
         {
             Power::SetPlayerPowerTics(infectedId, Power::POWERZOMBIEPROTECT, 18);
             SetActivatorToPlayer(infectorId);
-            Thing_Damage(infectedTid, 32);
+            Thing_Damage(infectedTid, 32, MOD_UNKNOWN);
             terminate;
         }
 
@@ -68,10 +68,10 @@ strict namespace Event
         Sync::SyncPlayers();
     }
 
-    script "zh2_internal_event_playerfragged" (raw packetStr)
+    script "zh2_internal_event_playerkilledbyplayer" (raw packetStr)
     {
         str packet = (str)packetStr;
-        Event::ReceivePlayerDied(packet);
+        Event::ReceivePlayerKilledByPlayer(packet);
         int killedId = GetReceiveData(0);
         int killerId = GetReceiveData(1);
 

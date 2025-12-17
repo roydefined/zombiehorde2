@@ -26,11 +26,29 @@ actor ZH2ItemSuicideBomb : ZH2CustomInventoryPowerup 21121
             TNT1 A 0 A_JumpIf(CallACS("zh2_dec_use_suicide_bomb", 0, 0, 0) == true, 1)
             Stop
             TNT1 A 0 A_SpawnItemEx("ZH2ItemSuicideBombExplosionFX")
-
-            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfire_area", 0, 600, 350, 350)
+            TNT1 A 0 A_SpawnItemEx("ZH2ItemSuicideBombDeathFX")
 
             // 400 is enough to definitely gib a human.
-            TNT1 A 0 Thing_Damage(tid, 400, "none")
+            TNT1 A 0 Thing_Damage(tid, 400, 18)
             Stop
+    }
+}
+
+actor ZH2ItemSuicideBombDeathFX
+{
+    +NOTIMEFREEZE
+    +NOCLIP
+
+    -SOLID
+
+    Radius 0
+    Height 0
+
+    States
+    {
+        Spawn:
+			// For some reason ACS_NamedExecuteWithResult is required or it will never pass the owner.
+            TNT1 A 0 NoDelay ACS_NamedExecuteWithResult("zh2_dec_setfire_area", 600, 350, 350)
+            stop
     }
 }

@@ -69,25 +69,35 @@ strict namespace Obituary
 
     internal void QueuePlayerDied()
     {
-        int killedId = Event::GetReceiveData(0);
-        int killerId = Event::GetReceiveData(1);
+        int id = Event::GetReceiveData(0);
+        int type = Event::GetReceiveData(1);
 
-        bool suicide = killedId == killerId;
         int queueIndex = GetNextQueueIndex();
         SetQueueType(queueIndex, OBITUARY_PLAYER_DIED);
-        SetQueueData(queueIndex, 0, killedId);
-        SetQueueData(queueIndex, 1, GetPlayerObituarySpecieType(killedId));
-        SetQueueData(queueIndex, 2, suicide);
+        SetQueueData(queueIndex, 0, id);
+        SetQueueData(queueIndex, 1, GetPlayerObituarySpecieType(id));
+        SetQueueData(queueIndex, 2, type);
     }
 
-    internal void QueuePlayerFragged(int killedId, int killerId, int weaponIndex)
+    internal void QueuePlayerKilledByPlayer(int killedId, int killerId, int itemIndex, bool addFireEffect, bool addAcidEffect)
     {
         int queueIndex = GetNextQueueIndex();
-        SetQueueType(queueIndex, OBITUARY_PLAYER_FRAGGED);
+        SetQueueType(queueIndex, OBITUARY_PLAYER_KILLEDBYPLAYER);
         SetQueueData(queueIndex, 0, killedId);
         SetQueueData(queueIndex, 1, killerId);
         SetQueueData(queueIndex, 2, GetPlayerObituarySpecieType(killedId));
         SetQueueData(queueIndex, 3, GetPlayerObituarySpecieType(killerId));
-        SetQueueData(queueIndex, 4, weaponIndex);
+        SetQueueData(queueIndex, 4, itemIndex);
+        SetQueueData(queueIndex, 5, addFireEffect);
+        SetQueueData(queueIndex, 6, addAcidEffect);
+    }
+
+    internal void QueuePlayerKilledByMonster(int id, str monsterName)
+    {
+        int queueIndex = GetNextQueueIndex();
+        SetQueueType(queueIndex, OBITUARY_PLAYER_KILLEDBYMONSTER);
+        SetQueueData(queueIndex, 0, id);
+        SetQueueData(queueIndex, 1, GetPlayerObituarySpecieType(id));
+        SetQueueData(queueIndex, 2, monsterName);
     }
 }

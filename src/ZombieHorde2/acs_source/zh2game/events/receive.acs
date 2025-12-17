@@ -29,16 +29,16 @@ strict namespace Event
     void ReceivePlayerDied(str packet)
     {
         packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
-        int killedId = Packet::Packet_Rval;
+        int id = Packet::Packet_Rval;
 
         packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
-        int killerId = Packet::Packet_Rval;
+        int type = Packet::Packet_Rval;
 
-        SetReceiveData(0, killedId);
-        SetReceiveData(1, killerId);
+        SetReceiveData(0, id);
+        SetReceiveData(1, type);
     }
 
-    void ReceivePlayerFragged(str packet)
+    void ReceivePlayerKilledByPlayer(str packet)
     {
         packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
         int killedId = Packet::Packet_Rval;
@@ -46,8 +46,32 @@ strict namespace Event
         packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
         int killerId = Packet::Packet_Rval;
 
+        packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
+        int itemIndex = Packet::Packet_Rval;
+
+        packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
+        int addFireEffect = Packet::Packet_Rval;
+
+        packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
+        int addAcidEffect = Packet::Packet_Rval;
+
         SetReceiveData(0, killedId);
         SetReceiveData(1, killerId);
+        SetReceiveData(2, itemIndex);
+        SetReceiveData(3, addFireEffect);
+        SetReceiveData(4, addAcidEffect);
+    }
+
+    void ReceivePlayerKilledByMonster(str packet)
+    {
+        packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
+        int id = Packet::Packet_Rval;
+
+        packet = Packet::Packet_ReadStr(packet);
+        str monsterName = Packet::Packet_Rval;
+
+        SetReceiveData(0, id);
+        SetReceiveData(1, monsterName);
     }
 
     void ReceivePlayerScratched(str packet)
@@ -208,5 +232,13 @@ strict namespace Event
 
         SetReceiveData(0, prevIndex);
         SetReceiveData(1, newIndex);
+    }
+
+    void ReceivePowerExpired(str packet)
+    {
+        packet = Packet::Packet_Read(packet, Packet::PACKET_WORD);
+        int id = Packet::Packet_Rval;
+
+        SetReceiveData(0, id);
     }
 }

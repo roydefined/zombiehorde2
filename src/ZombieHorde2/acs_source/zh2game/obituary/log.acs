@@ -144,47 +144,41 @@ strict namespace Obituary
         if (!ZH2Game::GetCompatNoObituaries())
             return;
 
-        int killedId = Event::GetReceiveData(0);
-        int killerId = Event::GetReceiveData(1);
+        int id = Event::GetReceiveData(0);
+        int type = Event::GetReceiveData(1);
 
-        str logMessage;
-        buildmsg(logMessage = StrParam())
+        int genderInt = GetPlayerInfo(id, PLAYERINFO_GENDER);
+        str reflexive = genderInt == 0 ? "himself"
+            : genderInt == 1 ? "herseld"
+            : genderInt == 2 ? "themselves"
+            : "itself";
+
+        switch(type)
         {
-            // Log suicide
-            if (killerId == killedId)
+            case ZH2Game::DEATHTYPE_SUICIDE:
             {
-                if (killedId == ConsolePlayerNumber())
-                {
-                    Append(s:"You have killed yourself.");
-                }
+                if (id == ConsolePlayerNumber())
+                    Logger::LogConsolePlayer("You have killed yourself.");
                 else
-                {
-                    int genderInt = GetPlayerInfo(killerId, PLAYERINFO_GENDER);
-                    str reflexive = genderInt == 0 ? "himself"
-                        : genderInt == 1 ? "herseld"
-                        : genderInt == 2 ? "themselves"
-                        : "itself";
-                    Append(s:BCSUtils::PlayerName(killedId) + " has killed " + reflexive + ".");
-                }
+                    Logger::LogConsolePlayer(BCSUtils::PlayerName(id) + " has killed " + reflexive + ".");
             }
-            else
+            default:
             {
-                if (killedId == ConsolePlayerNumber())
-                    Append(s:"You have died.");
+                if (id == ConsolePlayerNumber())
+                    Logger::LogConsolePlayer("You have died.");
                 else
-                    Append(s:BCSUtils::PlayerName(killedId) + " has died.");
+                    Logger::LogConsolePlayer(BCSUtils::PlayerName(id) + " has died.");
             }
         }
-        Logger::LogConsolePlayer(logMessage);
     }
 
-    internal void LogPlayerFragged(int killedId, int killerId, int weaponIndex)
+    internal void LogPlayerKilledByPlayer(int killedId, int killerId, int itemIndex)
     {
         // Don't log this one if obituaries are enabled.
         if (!ZH2Game::GetCompatNoObituaries())
             return;
 
-        str weaponLabel = Item::GetItemLabel(weaponIndex);
+        str label = Item::GetItemLabel(itemIndex);
 
         str logMessage;
         buildmsg(logMessage = StrParam())
@@ -196,7 +190,7 @@ strict namespace Obituary
 
             Append(s:" by " + BCSUtils::PlayerName(killerId));
 
-            if (weaponLabel != (str)0 && weaponLabel != "")
+            if (label != (str)0 && label != "")
             {
                 int genderInt = GetPlayerInfo(killerId, PLAYERINFO_GENDER);
                 str possessive = genderInt == 0 ? "his"
@@ -204,10 +198,29 @@ strict namespace Obituary
                     : genderInt == 2 ? "their"
                     : "its";
 
-                Append(s:" and " + possessive + " " + weaponLabel);
+                Append(s:" and " + possessive + " " + label);
             }
 
             Append(s:".");
+        }
+        Logger::LogConsolePlayer(logMessage);
+    }
+
+    internal void LogPlayerKilledByMonster(int id, str monsterName)
+    {
+        // Don't log this one if obituaries are enabled.
+        if (!ZH2Game::GetCompatNoObituaries())
+            return;
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            if (id == ConsolePlayerNumber())
+                Append(s:"You were killed");
+            else
+                Append(s:BCSUtils::PlayerName(id) + " was killed");
+
+            Append(s:" by " + monsterName + ".");
         }
         Logger::LogConsolePlayer(logMessage);
     }
