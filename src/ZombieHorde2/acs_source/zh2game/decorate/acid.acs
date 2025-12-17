@@ -6,17 +6,35 @@ strict namespace Decorate
 {
     script "zh2_dec_setacid_area" (raw area, raw initialDamageTics, raw subsequentDamageTics)
     {
-        AreaSetOnAcidAtTid((int)area, (int)initialDamageTics, (int)subsequentDamageTics);
-    }
-
-    // Sets the area as acidic at the given tid.
-    internal void AreaSetOnAcidAtTid(int area, int initialDamageTics, int subsequentDamageTics)
-    {
-        str inflictorClass = GetActorClass(0);
-
         // Will just be -1 if we passed nobody.
         int ownerId = Identity::GetId(GetActorProperty(0, APROP_TARGETTID));
 
+        str inflictorClass = GetActorClass(0);
+
+        // Map acid actor to known actor.
+        // TODO: Make configurable
+        static str itemMap[][] =
+        {
+            // Note this one doesn't actually have an obituary actor, just added for readability.
+            // This therefore isn't used.
+            { "ZH2ZombieAcidSpotBig", "ZH2ZombieAcidSpot" },
+        };
+
+        foreach(auto item; itemMap)
+        {
+            if (item[0] == inflictorClass)
+            {
+                inflictorClass = item[1];
+                break;
+            }
+        }
+
+        AreaSetOnAcidAtTid(ownerId, inflictorClass, (int)area, (int)initialDamageTics, (int)subsequentDamageTics);
+    }
+
+    // Sets the area as acidic at the given tid.
+    internal void AreaSetOnAcidAtTid(int ownerId, str inflictorClass, int area, int initialDamageTics, int subsequentDamageTics)
+    {
         bool hasHit = false;
         str logMessage;
         BuildMsg(logMessage = StrParam())

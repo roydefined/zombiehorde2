@@ -135,18 +135,34 @@ strict namespace ZH2Game
         str inflictorClass;
         bool hasInflictor = !IsPointerEqual(AAPTR_DAMAGE_INFLICTOR, AAPTR_NULL);
         if (hasInflictor && SetActivator(0, AAPTR_DAMAGE_INFLICTOR))
-        {
-            inflictorName = GetActorProperty(0, APROP_NAMETAG);
             inflictorClass = GetActorClass(0);
-            if (inflictorName == (str)0 || inflictorName == "")
-                inflictorName = inflictorClass;
-        }
 
         int itemIndex = -1;
 
+        // If damage type is internal fire or acid then the source is saved in memory.
+        if (targetId != -1 && (damageType == DAMAGETYPE_FIRE || damageType == DAMAGETYPE_ACID))
+        {
+            Player::DamageSourceTypeT sourceType = damageType == DAMAGETYPE_FIRE
+                ? Player::SOURCE_FIRE : Player::SOURCE_ACID;
+
+            // The damage source should exist.
+            if (!Player::GetPlayerDamageSourceActive(targetId, sourceType))
+            {
+                Logger::LogWarning(LOGSOURCE, "Expected a valid damage source for player " + str(targetId) + ". Source type: " + str(sourceType) + ".");
+            }
+            else
+            {
+                hasInflictor = true;
+                inflictorClass = Player::GetPlayerDamageSourceSourceActor(targetId, sourceType);
+                sourceId = Player::GetPlayerDamageSourceOwnerId(targetId, sourceType);
+                sourceName = BCSutils::PlayerName(sourceId);
+                sourceIsMonster = false;
+            }
+        }
+
         // Determine inflictor item type.
         // Either a weapon, item, or something unknown.
-        if (hasInflictor)
+        else if (hasInflictor)
         {
             // Inflictor is a bulletpuff, meaning a weapon was used.
             if (inflictorClass == HUMAN_BULLETPUFF && SetActivator(0, AAPTR_DAMAGE_TARGET))
@@ -173,7 +189,7 @@ strict namespace ZH2Game
 
                 foreach(auto item; itemMap)
                 {
-                    if (item[0] == inflictorName)
+                    if (item[0] == inflictorClass)
                     {
                         itemIndex = Item::GetItemIndexByName(item[1]);
                         break;
@@ -207,7 +223,7 @@ strict namespace ZH2Game
             }
 
             if (hasInflictor)
-                Append(s:inflictorName + ".");
+                Append(s:inflictorClass + ".");
         }
         Logger::LogDebug(LOGSOURCE, logMessage);
 
