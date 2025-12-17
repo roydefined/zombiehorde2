@@ -190,14 +190,17 @@ strict namespace Hud
         int itemIndex = Obituary::GetQueueData(queueIndex, 4);
         bool addFireEffect = Obituary::GetQueueData(queueIndex, 5);
         bool addAcidEffect = Obituary::GetQueueData(queueIndex, 6);
+
         str killedGraphic = TranslateSpecieGraphic(killedType);
         str killerGraphic = TranslateSpecieGraphic(killerType);
         str itemGraphic = Item::GetItemObituaryGraphic(itemIndex);
         int itemGraphicWidth = Item::GetItemObituaryGraphicWidth(itemIndex);
 
         bool isWeapon = Item::GetItemType(itemIndex) == Item::TYPE_WEAPON;
-        bool drawStatusEffect = isWeapon && (addFireEffect || addAcidEffect);
+        bool hasStatusEffect = addFireEffect || addAcidEffect;
         bool hudObituaryIsUnknown = itemGraphic == (str)0;
+        bool drawItemGraphic = !hasStatusEffect || !hudObituaryIsUnknown;
+        bool drawStatusEffect = hasStatusEffect && (hudObituaryIsUnknown || isWeapon);
 
         // No graphic, default to a generic icon and its width.
         if (itemGraphic == (str)0 || itemGraphic == "")
@@ -220,7 +223,7 @@ strict namespace Hud
         }
 
         // In the event a status effect is drawn, we only want to draw the item graphic if it's a known item.
-        if (!drawStatusEffect || !hudObituaryIsUnknown)
+        if (drawItemGraphic)
         {
             HudSetPointInternal(0.0, yOffset);
             BCSUtils::HudDrawImage(--_drawnHudId, itemGraphic);
