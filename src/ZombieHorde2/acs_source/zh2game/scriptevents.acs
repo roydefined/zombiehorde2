@@ -48,16 +48,17 @@ strict namespace ZH2Game
         if (attackedId == -1)
             return damage;
 
+        int attackerId = -1;
+
+        if (SetActivator(0, AAPTR_DAMAGE_SOURCE))
+            attackerId = PlayerNumber();
+
         // The attacked player is to be set on fire with this damagetype.
-        // TODO: Properly determine the source.
+        // The source is optional.
         if (damageType == DAMAGETYPE_SETONFIRE_NAME)
-            Decorate::SetOnFire(-1, attackedId, (str)0, 350, 200);
+            Decorate::SetOnFire(attackerId, attackedId, (str)0, 350, 200);
 
         // Premod only handles modifications to damage when a player caused them.
-        if (!SetActivator(0, AAPTR_DAMAGE_SOURCE))
-            return damage;
-
-        int attackerId = PlayerNumber();
         if (attackerId == -1)
             return damage;
 
