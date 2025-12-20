@@ -9,7 +9,6 @@
 
 bool forcefield2 = false;
 bool forcefield3 = false;
-bool secretActivated = false;
 
 str realWorld[4] =
 {
@@ -32,11 +31,23 @@ Script "ZM07_open" OPEN
 	for(int i = 0; i < 120; i ++)
 		Sector_ChangeFlags(i, SECF_NOFALLINGDAMAGE, 0);
 
-	delay(1);
-
 	// Night mode (12.5 % chance)
 	if(random(0,255) < 32)
-		Acs_Execute(5, 0);
+	{
+        for(i = 0; i < 120; i++)
+			Light_LowerByValue(i, 128);
+
+		delay(35);
+		Music::SetMusic("SNEAKING");
+	}
+    else
+	{
+        for(i = 0; i < 120; i++)
+			Light_RaiseByValue(i, 128);
+
+		delay(35);
+		Music::SetMusic("VARIETY");
+	}
 }
 
 Script "ZM07_open_client" OPEN CLIENTSIDE
@@ -88,30 +99,6 @@ Script 3 (void) // Forcefield 2
         forcefield3 = 0;
 	}
     delay(20);
-}
-
-// Who the fuck turned off the light ?
-Script 5 (void)
-{
-    if(!secretActivated)
-	{
-		Music::SetMusic("SNEAKING");
-        for(int i=0; i<120; i++)
-			Light_LowerByValue(i, 128);
-
-        secretActivated = true;
-	}
-    else
-	{
-		Music::SetMusic("VARIETY");
-        for(i=0; i<120; i++)
-			Light_RaiseByValue(i, 128);
-
-        secretActivated = false;
-	}
-
-	// prevents spamming
-    delay(35*30);
 }
 
 Script 6 (void)
