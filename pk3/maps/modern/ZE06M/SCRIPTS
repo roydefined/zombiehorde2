@@ -7,12 +7,19 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-Int FloorNumber    = 40;
-Int OutsideReached = 0;
+int FloorNumber    = 40;
+int OutsideReached = 0;
 
-Bool LiftReached[BCSUtils::MAX_PLAYERS];
-Bool LiftOne[BCSUtils::MAX_PLAYERS];
-Bool LiftTwo[BCSUtils::MAX_PLAYERS];
+// Tracks if the player reached the lift.
+// The integer indicates which of the lift the player is in.
+// 1 = bottom left
+// 2 = bottom right
+// 3 = top left
+// 4 = top right
+int LiftReached[BCSUtils::MAX_PLAYERS];
+
+// [ZH2] Handles terminating the push scripts.
+bool terminateLiftPushScripts;
 
 /* Level Setups */
 Script "ze06b_open" OPEN
@@ -131,6 +138,11 @@ Script 3 (void)
 	Floor_LowerByValue(29, 24, 2048);
 	Ceiling_LowerByValue(29, 24, 2048);
 	Delay(35*3);
+
+	// Call lift pushers for the first lifts.
+	ACS_NamedExecuteAlways("ze06m_lift_ledge_pusher", 0, 2, 192);
+	ACS_NamedExecuteAlways("ze06m_lift_ledge_pusher", 0, 4, 64);
+
 	SetFont("BIGFONT");
 	HudMessageBold(s:"Get into the second elevator before it leaves!!"; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.2, 1.5, 1.0);
 	Polyobj_DoorSlide(4, 20, 128, 56, 35*5);
@@ -140,6 +152,11 @@ Script 3 (void)
 	ceiling_LowerByValue(30, 24, 2048);
 	ACS_Execute(7, 0, 0, 0, 0);
 	Delay(35*2);
+
+	// Call lift pushers for the second lifts.
+	ACS_NamedExecuteAlways("ze06m_lift_ledge_pusher", 0, 1, 192);
+	ACS_NamedExecuteAlways("ze06m_lift_ledge_pusher", 0, 3, 64);
+
 	SetFont("BIGFONT");
 	HudMessageBold(s:"\cGWarning : \cKNeurotoxins released in 69-70th floors!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 1.0, 1.0);
 	AmbientSound("world/gas1", 100);
@@ -165,7 +182,12 @@ Script 3 (void)
 	TeleportInSector(25, 52, 53, 0, 0);
 	TeleportInSector(26, 52, 53, 0, 0);
 	TeleportInSector(27, 52, 53, 0, 0);
+
 	ACS_Execute(4, 0, 0, 0, 0);
+
+	// Terminate the lift push scripts.
+	terminateLiftPushScripts = true;
+
 	Delay(35*2);
 	Floor_LowerByValue(21, 16, 960);
 	ceiling_LowerByValue(21, 16, 960);
@@ -175,6 +197,35 @@ Script 3 (void)
 	Delay(35);
 	SetLineBlocking(3, BLOCK_NOTHING);
 	TranslucentLine(3, 0, 0);
+}
+
+// [ZH2] This exists to push off players that are on the lift ledges.
+// It will do this constantly until terminated.
+Script "ze06m_lift_ledge_pusher" (raw index, raw angle)
+{
+	while(!terminateLiftPushScripts)
+	{
+		for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+		{
+			int tid = Identity::GetTid(i);
+
+			if (!BCSUtils::ActorIsAlive(tid))
+				continue;
+
+			// Not in the lift the script is for.
+			if (LiftReached[i] != index)
+				continue;
+
+			// Actor is not on the ledge (-168 is the hardcoded z position of the ledge)
+			if (GetActorZ(tid) < -168.0)
+				continue;
+
+			ThrustThing(angle, 40, 1, tid);
+		}
+
+
+		Delay(const: 1);
+	}
 }
 
 Script 4 (void) /* Displays the floor number*/
@@ -237,33 +288,9 @@ Script 7 (void)  /* Lift sound */
 	restart;
 }
 
-Script 8 (void) // FIRST LIFT
+Script "ze06m_lift_enter" (raw index)
 {
-	if(LineSide())
-	{
-		LiftReached[PlayerNumber()] = 1;
-		LiftOne[PlayerNumber()] = 1;
-	}
-	else
-	{
-		LiftReached[PlayerNumber()] = 0;
-		LiftOne[PlayerNumber()] = 0;
-	}
-}
-
-
-Script 10 (void) // SECOND LIFT
-{
-	if(LineSide())
-	{
-		LiftReached[PlayerNumber()] = 1;
-		LiftTwo[PlayerNumber()] = 1;
-	}
-	else
-	{
-		LiftReached[PlayerNumber()] = 0;
-		LiftTwo[PlayerNumber()] = 0;
-	}
+	LiftReached[PlayerNumber()] = LineSide() == LINE_FRONT ? index : 0;
 }
 
 Script 12 (void) /* 2nd teleport */
@@ -271,23 +298,28 @@ Script 12 (void) /* 2nd teleport */
 	SetActivator(-1);
 	Floor_LowerByValue(41, 20, 1780);
 	Ceiling_LowerByValue(41, 20, 1780);
+
+	// Depending on which lift you took (north set or south set), and based on specie, we teleport the player.
 	for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
 	{
 		int tid = Identity::GetTid(i);
-		if(Player::GetPlayerIsZombie(i))
-		{
-			if(LiftOne[i])
-				TeleportOther(tid, 200+i, 0);
-			else
-				TeleportOther(tid, 300+i, 0);
-		}
-		else
-		{
-			if(LiftOne[i])
-				TeleportOther(tid, 250+i, 0);
-			else
-				TeleportOther(tid, 350+i, 0);
-		}
+
+		// Prevent dead bodies from being teleported.
+		if (!BCSUtils::ActorIsAlive(tid))
+			continue;
+
+		// Determine their lift index. 1 and 2 are the south ones.
+		int teleportTid = LiftReached[i] < 3
+			// South
+			? 200
+			// North
+			: 300;
+
+		// And if a human, we add 50 so they are moved to the side.
+		if (Player::GetPlayerIsHuman(i))
+			teleportTid += 50;
+
+		TeleportOther(tid, teleportTid, 0);
 	}
 
 	TagWait(41);
