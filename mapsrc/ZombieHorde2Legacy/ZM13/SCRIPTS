@@ -7,11 +7,11 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-#define KEY_BOOK "ZH2LegacyBookKey"
-#define KEY_LARAROOM "ZH2LegacyLaraRoomKey" // This one seems to more act like a variable to ensure something is not taken twice.
-
 bool jacks = true;
 bool tele = false;
+
+// Tracks who has taken fruit.
+bool tookFruit[BCSUtils::MAX_PLAYERS];
 
 //OMGOMGOMG DONT SPOIL DEM SECRETS
 script "zm13_open" open
@@ -36,7 +36,6 @@ script "zm13_open" open
     sector_setrotation(135,224,224);
     setactorproperty(136,APROP_Gravity,0);
     setactorproperty(138,APROP_Gravity,1.9);
-    giveinventory(KEY_BOOK, 1);
 }
 
 script 2 (void)
@@ -125,47 +124,45 @@ script 10 (void) //little secret
 	{
 		print(s:"these are apples, not brains...");
 		delay(9);
+		terminate;
 	}
-	else if(checkinventory(KEY_LARAROOM))
+
+	if(checkinventory(tookFruit[PlayerNumber()]))
 	{
 		print(s:"don't be greedy!");
 		delay(9);
+		terminate;
 	}
-	else
+
+	switch(random(1,5))
 	{
-		switch(random(1,5))
-		{
-			case 1:
-				healthing(15);
-				print(s:"mmm, tasty!");
-				giveinventory(KEY_LARAROOM,1);
-				break;
+		case 1:
+			healthing(15);
+			print(s:"mmm, tasty!");
+			break;
 
-			case 2:
-				healthing(25);
-				print(s:"damn, that's good!");
-				giveinventory(KEY_LARAROOM,1);
-				break;
+		case 2:
+			healthing(25);
+			print(s:"damn, that's good!");
+			break;
 
-			case 3:
-				healthing(10);
-				print(s:"not half bad...");
-				giveinventory(KEY_LARAROOM,1);
-				break;
+		case 3:
+			healthing(10);
+			print(s:"not half bad...");
+			break;
 
-			case 4:
-				healthing(5);
-				print(s:"urgh! it's rotten.");
-				giveinventory(KEY_LARAROOM,1);
-				break;
+		case 4:
+			healthing(5);
+			print(s:"urgh! it's rotten.");
+			break;
 
-			case 5:
-				healthing(20);
-				print(s:"i want some more!");
-				giveinventory(KEY_LARAROOM,1);
-				break;
-		}
+		case 5:
+			healthing(20);
+			print(s:"i want some more!");
+			break;
 	}
+
+	tookFruit[PlayerNumber()] = true;
 }
 script 11 (void)
 {
