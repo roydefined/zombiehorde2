@@ -39,6 +39,9 @@ Int Box = 0;                            //Check when the box must go open
 Int ScrlX = 0;                          //Resolution check for weegee picture (X)
 Int Scrly = 0;                          //Resolution check for weegee picture (Y)
 
+// [ZH2] Indicates somebody reached the secret exit to the safezone.
+bool secretExitReached;
+
 //Function for letting see the resists
 function void ResistMessage1 (int restime, str todo)
 {
@@ -298,9 +301,14 @@ Script 11 (void) //Closes the chute
     printbold(s:" \cJThe chute has been opened!");
 }
 
-script 13 (void) // No idea what this is XDDDD
+// Lower pillars just before the airstrike.
+script 13 (void)
 {
     Floor_lowerbyvalue(91,25,146);
+
+    delay (35*3);
+
+    ACS_NamedExecute("ze25_start_airstrike_early", 0);
 }
 
 Script 66 (void) // Chute teleport script
@@ -320,6 +328,15 @@ Script 88 (void) //Anti zombie forcefield
 /* ##################################################*/
 
 //Last (3th) resist
+
+script "ze25_start_airstrike_early"
+{
+    // Start airstrike early if somebody reached the secret exit.
+    if (secretExitReached)
+    {
+        ACS_Execute(14, 0);
+    }
+}
 
 script 14 (void) // airstrike
 {
@@ -504,6 +521,7 @@ Script 59 (void) //DA BOX PART 1 :D
     Door_Close(201,255);
     Teleport_Nofog(0,0,203);
     Acs_Execute(60,0);
+    secretExitReached = true;
 }
 
 Script 60 (Void) //DA BOX PART 2 :D
