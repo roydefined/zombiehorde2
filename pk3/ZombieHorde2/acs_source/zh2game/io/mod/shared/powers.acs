@@ -40,9 +40,24 @@ strict namespace IO
 
     internal bool ParsePower(int handle)
     {
-        if (!Tokenizer::ExpectToken(handle, Tokenizer::TLBRACE)) return false;
+        if (!BCSUTILS::StrIEquals(Tokenizer::GetSymbol(handle), "power"))
+            return false;
 
+        Logger::LogDebug(LOGSOURCE, "Start parsing single power.");
+        Tokenizer::Next(handle);
+
+        // Expecting a string-like type for the name
+        Tokenizer::TokenTypeT token = Tokenizer::GetToken(handle);
+        if (token != Tokenizer::TSYMBOL && token != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Expected symbol or string for power name, received '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        str name = Tokenizer::GetSymbol(handle);
         int braceLevel = Tokenizer::GetBraceLevel(handle);
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TLBRACE)) return false;
         Tokenizer::Next(handle);
 
         // No more room for more powers. Log a warning and skip the remaining body.
@@ -61,7 +76,7 @@ strict namespace IO
              hasParsedDamageMultiplier = false;
 
         // As long as we are inside this body, parse properties and insert them into the new power.
-        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) == braceLevel)
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
         {
             str symbol = Tokenizer::GetSymbol(handle);
             if (ParsePowerHudGraphicAttribute(handle, symbol))
@@ -140,6 +155,8 @@ strict namespace IO
 
         Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
 
+        context.Name = name;
+
         // We don't verify the power. The index has now been used and code could merely check for the index to exist.
         // We do set some default values in the event values were not parsed.
         if (!hasParsedMaxTics)
@@ -159,7 +176,7 @@ strict namespace IO
             Tokenizer::Next(handle, false);
 
         str graphicOrNone = (raw)context.HudGraphic == 0 ? "N/A" : context.HudGraphic;
-        Logger::LogDebug(LOGSOURCE, "Parsed power. Hud graphic: \cd" + graphicOrNone + "\cj, max tics: \cd" + str(context.MaxTics) + "\cj, speed modifier: \cd" + str(context.SpeedModifier) + "\cj, jump modifier: \cd" + str(context.JumpModifier) + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "Parsed power " + name + ". Hud graphic: \cd" + graphicOrNone + "\cj, max tics: \cd" + str(context.MaxTics) + "\cj, speed modifier: \cd" + str(context.SpeedModifier) + "\cj, jump modifier: \cd" + str(context.JumpModifier) + "\cj.");
         ZH2Game::PersistingGameContext.PowerCollection.Size++;
         return true;
     }

@@ -37,7 +37,7 @@ strict namespace Power
         // Never set powers when the round ended.
         if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
         {
-            Logger::LogDebug(LOGSOURCE, "Ignore power \cd" + GetPowerIndexAsString(powerIndex) + "\cj change for " + BCSUtils::PlayerName(id) + ". Round is over.");
+            Logger::LogDebug(LOGSOURCE, "Ignore power \cd" + GetPowerName(powerIndex) + "\cj change for " + BCSUtils::PlayerName(id) + ". Round is over.");
             return;
         }
 
@@ -54,7 +54,7 @@ strict namespace Power
         BCSUtils::SetActorInventory(Identity::GetTid(id), GetItemName(powerIndex), timeStamp);
         RecalculatePlayerPowers(id);
 
-        Logger::LogDebug(LOGSOURCE, "Power updated for player " + BCSUtils::PlayerName(id) + ". Power \cd" + GetPowerIndexAsString(powerIndex) + "\cj now has \cd" + str(tics) + " \cjtics left.");
+        Logger::LogDebug(LOGSOURCE, "Power updated for player " + BCSUtils::PlayerName(id) + ". Power \cd" + GetPowerName(powerIndex) + "\cj now has \cd" + str(tics) + " \cjtics left.");
     }
 
     internal int GetPowerTicsLeft(int powerIndex) { return GetPlayerPowerTicsLeft(PlayerNumber(), powerIndex); }
@@ -79,24 +79,15 @@ strict namespace Power
         return context.HudGraphic;
     }
 
+    internal str GetPowerName(int powerIndex)
+    {
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        return context.Name;
+    }
+
     internal str GetItemName(int index)
     {
         return BCSUtils::StrReplace(POWER_ACTOR_BASE, "{0}", str(index));
-    }
-
-    internal str GetPowerIndexAsString(int powerIndex)
-    {
-        static str collection[] = {
-            "fire burning", "acid burning", "sprinting",
-            "panicking", "caffeine", "zombie protection",
-            "human immunity", "human speed reward", "human weapon upgrade reward",
-            "zombie speed reward", "zombie jump reward", "zombie vulnerability reward" };
-
-        // No known type, return custom and the index.
-        if (powerIndex < 0 || powerIndex >= lengthof(collection))
-            return "Custom (" + str(powerIndex) + ")";
-
-        return collection[powerIndex];
     }
 }
 
