@@ -87,6 +87,97 @@ strict namespace Power
         return context.Name;
     }
 
+    internal int GetPowerMaxTics(int powerIndex)
+    {
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        return context.MaxTics;
+    }
+
+    internal fixed GetPowerDefaultFactorValue(int powerIndex, int factorIndex)
+    {
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        if (factorIndex < 0 || factorIndex >= MAX_POWER_TYPES)
+            return 0.0;
+
+        return context.DefaultFactors[factorIndex].Factor;
+    }
+
+    internal void SetPowerDefaultFactorValue(int powerIndex, int factorIndex, fixed factor)
+    {
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        if (factorIndex < 0 || factorIndex >= MAX_POWER_TYPES)
+            return;
+
+        context.DefaultFactors[factorIndex].Factor = factor;
+    }
+
+    internal bool GetPowerDefaultFactorDefined(int powerIndex, int factorIndex)
+    {
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        if (factorIndex < 0 || factorIndex >= MAX_POWER_TYPES)
+            return false;
+
+        return context.DefaultFactors[factorIndex].Defined;
+    }
+
+    internal void SetPowerDefaultFactorDefined(int powerIndex, int factorIndex, bool defined)
+    {
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        if (factorIndex < 0 || factorIndex >= MAX_POWER_TYPES)
+            return;
+
+        context.DefaultFactors[factorIndex].Defined = defined;
+    }
+
+    internal fixed GetPowerOverrideFactorValue(int powerIndex, int factorIndex)
+    {
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        if (factorIndex < 0 || factorIndex >= MAX_POWER_TYPES)
+            return 0.0;
+
+        return context.OverrideFactors[factorIndex].Factor;
+    }
+
+    internal void SetPowerOverrideFactorValue(int powerIndex, int factorIndex, fixed factor)
+    {
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        if (factorIndex < 0 || factorIndex >= MAX_POWER_TYPES)
+            return;
+
+        context.OverrideFactors[factorIndex].Factor = factor;
+    }
+
+    internal bool GetPowerOverrideFactorDefined(int powerIndex, int factorIndex)
+    {
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        if (factorIndex < 0 || factorIndex >= MAX_POWER_TYPES)
+            return false;
+
+        return context.OverrideFactors[factorIndex].Defined;
+    }
+
+    internal void SetPowerOverrideFactorDefined(int powerIndex, int factorIndex, bool defined)
+    {
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        if (factorIndex < 0 || factorIndex >= MAX_POWER_TYPES)
+            return;
+
+        context.OverrideFactors[factorIndex].Defined = defined;
+    }
+
+    // No setter for this one. Use the override one instead.
+    internal fixed GetPowerFactorValue(int powerIndex, int factorIndex)
+    {
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        if (factorIndex < 0 || factorIndex >= MAX_POWER_TYPES)
+            return 0.0;
+
+        // If we have overridden the factor, return that one instead.
+        return context.OverrideFactors[factorIndex].Defined
+            ? context.OverrideFactors[factorIndex].Factor
+            : context.DefaultFactors[factorIndex].Factor;
+    }
+
     internal str GetItemName(int index)
     {
         return BCSUtils::StrReplace(POWER_ACTOR_BASE, "{0}", str(index));
