@@ -5,6 +5,7 @@
 strict namespace Power
 {
     #define MAX_POWERS 20
+    #define MAX_POWER_TYPES 4
 
     struct PowerCollectionContextT
     {
@@ -20,10 +21,23 @@ strict namespace Power
         str Name;
         str HudGraphic;
         int MaxTics;
-        fixed SpeedModifier;
-        fixed JumpModifier;
-        fixed DamageFactor;
-        fixed DamageMultiplier;
+
+        // Note: The power type is implicitly defined using the index.
+        PowerFactorContextT Factors[MAX_POWER_TYPES];
+    };
+
+    struct PowerFactorContextT
+    {
+        bool Defined;
+        fixed Factor;
+    };
+
+    internal enum PowerFactorTypeT : int
+    {
+        POWERTYPE_SPEED,
+        POWERTYPE_JUMP,
+        POWERTYPE_DAMAGEFACTOR,
+        POWERTYPE_DAMAGEMULTIPLIER,
     };
 
     enum KnownPowerTypeT : int
