@@ -4,6 +4,12 @@
 
 strict namespace Power
 {
+    // Holds the final factors to apply to the player.
+    internal fixed _buildFactors[MAX_POWER_TYPES];
+
+    // Holds a debug message to display when recalculating powers.
+    internal str _logFactors[MAX_POWER_TYPES];
+
     internal void Tic()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
@@ -54,89 +60,60 @@ strict namespace Power
     internal void RecalculatePowers() { RecalculatePlayerPowers(PlayerNumber()); }
     internal void RecalculatePlayerPowers(int id)
     {
-        // Zombies have a forced default speed of 1.2
-        fixed speed = Player::GetPlayerIsZombie(id) ? 1.2 : 1.0;
-        fixed jumpZ = 8.0;
-        fixed damageFactor = 1.0;
-        fixed damageMultiplier = 1.0;
+        // Set initial factor values.
+        for (int i = 0; i < MAX_POWER_TYPES; ++i)
+            _buildFactors[i] = 1.0;
 
-        str speedLogMessage = "Setting speed of player " + BCSUtils::PlayerName(id) + ": \cj" + str(speed);
-        str jumpLogMessage = "Setting jump of player " + BCSUtils::PlayerName(id) + ": \cj" + str(jumpZ);
-        str damageFactorLogMessage = "Setting damage factor of player " + BCSUtils::PlayerName(id) + ": \cj" + str(damageFactor);
-        str damageMultiplierLogMessage = "Setting damage multiplier of player " + BCSUtils::PlayerName(id) + ": \cj" + str(damageMultiplier);
+        // Special factor values.
+        fixed defaultSpeedValue = Player::GetPlayerIsZombie(id) ? 1.2 : 1.0;
+        fixed defaultJumpValue = 8.0;
+        _buildFactors[POWERTYPE_SPEED] = defaultSpeedValue;
+        _buildFactors[POWERTYPE_JUMP] = defaultJumpValue;
 
-        bool speedChanged = false,
-             jumpZChanged = false,
-             damageFactorChanged = false,
-             damageMultiplierChanged = false;
+        // Set initial log factor values
+        for (int i = 0; i < MAX_POWER_TYPES; ++i)
+            _logFactors[i] = "Setting power factor \cd" + GetPowerFactorName(i) + "\cj of player \cd" + BCSUtils::PlayerName(id) + "\cj: \cd" + str(_buildFactors[i]) + "\cj";
 
         for (int i = 0; i < ZH2Game::PersistingGameContext.PowerCollection.Size; ++i)
         {
             if (!GetPlayerHasPower(id, i))
                 continue;
 
-            PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[i];
-
-            if (context.SpeedModifier != 1.0)
+            for(int j = 0; j < MAX_POWER_TYPES; ++j)
             {
-                speedLogMessage += " * " + str(context.SpeedModifier);
-                speed *= context.SpeedModifier;
-                speedChanged = true;
-            }
+                // TODO: Reference properly instead of inline. It didn't work properly otherwise.
+                bool defined = ZH2Game::PersistingGameContext.PowerCollection.Collection[i].Factors[j].Defined;
+                if (!defined) continue;
 
-            if (context.JumpModifier != 1.0)
-            {
-                jumpLogMessage += " * " + str(context.JumpModifier);
-                jumpZ *= context.JumpModifier;
-                jumpZChanged = true;
-            }
-
-            if (context.DamageFactor != 1.0)
-            {
-                damageFactorLogMessage += " * " + str(context.DamageFactor);
-                damageFactor *= context.DamageFactor;
-                damageFactorChanged = true;
-            }
-
-
-            if (context.DamageMultiplier != 1.0)
-            {
-                damageMultiplierLogMessage += " * " + str(context.DamageMultiplier);
-                damageMultiplier *= context.DamageMultiplier;
-                damageMultiplierChanged = true;
+                // TODO: Reference properly instead of inline. It didn't work properly otherwise.
+                fixed factor = ZH2Game::PersistingGameContext.PowerCollection.Collection[i].Factors[j].Factor;
+                _buildFactors[j] *= factor;
+                _logFactors[j] += " * " + str(factor) + "\cj";
             }
         }
 
-        if (speedChanged)
-        {
-            speedLogMessage += ". Total: \cd" + str(speed) + "\cj.";
-            Logger::LogDebug(LOGSOURCE , speedLogMessage);
-        }
-
-        if (jumpZChanged)
-        {
-            jumpLogMessage += ". Total: \cd" + str(jumpZ) + "\cj.";
-            Logger::LogDebug(LOGSOURCE , jumpLogMessage);
-        }
-
-        if (damageFactorChanged)
-        {
-            damageFactorLogMessage += ". Total: \cd" + str(damageFactor) + "\cj.";
-            Logger::LogDebug(LOGSOURCE , damageFactorLogMessage);
-        }
-
-        if (damageMultiplierChanged)
-        {
-            damageMultiplierLogMessage += ". Total: \cd" + str(damageMultiplier) + "\cj.";
-            Logger::LogDebug(LOGSOURCE , damageMultiplierLogMessage);
-        }
-
-        // Note the values must still be set in case we go back to default values after having it set.
         int tid = Identity::GetTid(id);
-        SetActorProperty(tid, APROP_SPEED, speed);
-        SetActorProperty(tid, APROP_JUMPZ, jumpZ);
-        SetActorProperty(tid, APROP_DAMAGEFACTOR, damageFactor);
-        SetActorProperty(tid, APROP_DAMAGEMULTIPLIER, damageFactor);
+
+        // Set the values and possible log the result.
+        for(int i = 0; i < MAX_POWER_TYPES; ++i)
+        {
+            SetActorProperty(tid, PowerFactorToProperty(i), _buildFactors[i]);
+
+            // Check the new value. If it's the default don't log it.
+            fixed defaultValue;
+            switch(i)
+            {
+                case POWERTYPE_SPEED: defaultValue = defaultSpeedValue; break;
+                case POWERTYPE_JUMP: defaultValue = defaultJumpValue; break;
+                default: defaultValue = 1.0;
+            }
+
+            if (_buildFactors[i] == defaultValue)
+                continue;
+
+            _logFactors[i] += ". Total: \cd" + str(_buildFactors[i]) + "\cj.";
+            Logger::LogDebug(LOGSOURCE, _logFactors[i]);
+        }
     }
 
     internal void ResetPowers()

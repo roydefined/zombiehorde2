@@ -44,6 +44,8 @@ strict namespace Power
         PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
 
         // Min / Max tics
+        // Max tics default to being infinite if not set.
+        int maxTics = context.MaxTics == 0 ? BCSUtils::INT_MAX : context.MaxTics;
         tics = BCSUtils::Clamp(tics, 0, context.MaxTics);
 
         // Ensure we don't underflow or overflow the timestamp in the clamp.
@@ -88,6 +90,32 @@ strict namespace Power
     internal str GetItemName(int index)
     {
         return BCSUtils::StrReplace(POWER_ACTOR_BASE, "{0}", str(index));
+    }
+
+    internal str GetPowerFactorName(int index)
+    {
+        static str collection[] = {
+            "Speed", "Jump", "Damage Factor", "Damage Multiplier"
+        };
+
+        // Should not happen. The index should always point to a known type.
+        if (index < 0 || index >= lengthof(collection))
+            return "Unknown (" + str(index) + ")";
+
+        return collection[index];
+    }
+
+    internal int PowerFactorToProperty(int index)
+    {
+        static int collection[] = {
+            APROP_SPEED, APROP_JUMPZ, APROP_DAMAGEFACTOR, APROP_DAMAGEMULTIPLIER
+        };
+
+        // Should not happen. The index should always point to a known type.
+        if (index < 0 || index >= lengthof(collection))
+            return 0;
+
+        return collection[index];
     }
 }
 

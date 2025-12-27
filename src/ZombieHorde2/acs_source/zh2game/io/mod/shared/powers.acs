@@ -69,78 +69,14 @@ strict namespace IO
             return true;
         }
 
-        bool hasParsedMaxTics = false,
-             hasParsedSpeedModifier = false,
-             hasParsedJumpModifier = false,
-             hasParsedDamageFactor = false,
-             hasParsedDamageMultiplier = false;
-
         // As long as we are inside this body, parse properties and insert them into the new power.
         while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
         {
             str symbol = Tokenizer::GetSymbol(handle);
-            if (ParsePowerHudGraphicAttribute(handle, symbol))
+            if (ParsePowerHudGraphicAttribute(handle, symbol)
+                || ParsePowerMaxTicsAttribute(handle, symbol)
+                || ParsePowerFactor(handle, symbol))
             {
-                // Optional comma.
-                Tokenizer::Next(handle, false);
-                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
-                    Tokenizer::Next(handle, false);
-
-                continue;
-            }
-
-            if (ParsePowerMaxTicsAttribute(handle, symbol))
-            {
-                hasParsedMaxTics = true;
-
-                // Optional comma.
-                Tokenizer::Next(handle, false);
-                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
-                    Tokenizer::Next(handle, false);
-
-                continue;
-            }
-
-            if (ParsePowerSpeedAttribute(handle, symbol))
-            {
-                hasParsedSpeedModifier = true;
-
-                // Optional comma.
-                Tokenizer::Next(handle, false);
-                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
-                    Tokenizer::Next(handle, false);
-
-                continue;
-            }
-
-            if (ParsePowerJumpAttribute(handle, symbol))
-            {
-                hasParsedJumpModifier = true;
-
-                // Optional comma.
-                Tokenizer::Next(handle, false);
-                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
-                    Tokenizer::Next(handle, false);
-
-                continue;
-            }
-
-            if (ParsePowerDamageFactorAttribute(handle, symbol))
-            {
-                hasParsedDamageFactor = true;
-
-                // Optional comma.
-                Tokenizer::Next(handle, false);
-                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
-                    Tokenizer::Next(handle, false);
-
-                continue;
-            }
-
-            if (ParsePowerDamageMultiplierAttribute(handle, symbol))
-            {
-                hasParsedDamageMultiplier = true;
-
                 // Optional comma.
                 Tokenizer::Next(handle, false);
                 if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
@@ -158,25 +94,41 @@ strict namespace IO
         context.Name = name;
 
         // We don't verify the power. The index has now been used and code could merely check for the index to exist.
-        // We do set some default values in the event values were not parsed.
-        if (!hasParsedMaxTics)
-            context.MaxTics = BCSUtils::INT_MAX;
-        if (!hasParsedSpeedModifier)
-            context.SpeedModifier = 1.0;
-        if (!hasParsedJumpModifier)
-            context.JumpModifier = 1.0;
-        if (!hasParsedDamageFactor)
-            context.DamageFactor = 1.0;
-        if (!hasParsedDamageMultiplier)
-            context.DamageMultiplier = 1.0;
 
         // Optional comma.
         Tokenizer::Next(handle, false);
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
             Tokenizer::Next(handle, false);
 
-        str graphicOrNone = (raw)context.HudGraphic == 0 ? "N/A" : context.HudGraphic;
-        Logger::LogDebug(LOGSOURCE , "Parsed power " + name + ". Hud graphic: \cd" + graphicOrNone + "\cj, max tics: \cd" + str(context.MaxTics) + "\cj, speed modifier: \cd" + str(context.SpeedModifier) + "\cj, jump modifier: \cd" + str(context.JumpModifier) + "\cj.");
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            Append(s:"Parsed power \cd" + context.Name + "\cj.");
+
+            if ((raw)context.HudGraphic != 0)
+                Append(s:" Hud graphic: \cd" + context.HudGraphic + "\cj.");
+
+            // TODO: Reference properly instead of inline. It didn't work properly otherwise.
+            int maxTics = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size].MaxTics;
+            if (maxTics != 0)
+                Append(s:" Max tics: \cd" + str(maxTics) + "\cj.");
+
+            for(int i = 0; i < MAX_POWER_TYPES; ++i)
+            {
+                // TODO: Reference properly instead of inline. It didn't work properly otherwise.
+                bool defined = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size].Factors[i].Defined;
+                if (!defined) continue;
+
+                str name = Power::GetPowerFactorName(i);
+
+                // TODO: Reference properly instead of inline. It didn't work properly otherwise.
+                fixed factor = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size].Factors[i].Factor;
+                Append(s:" Factor \cd" + name + "\cj: \cd" + str(factor) + "\cj.");
+            }
+        }
+
+        Logger::LogDebug(LOGSOURCE, logMessage);
+
         ZH2Game::PersistingGameContext.PowerCollection.Size++;
         return true;
     }
@@ -187,6 +139,13 @@ strict namespace IO
         Tokenizer::Next(handle);
 
         Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
+
+        // Already parsed
+        if (context.HudGraphic != (str)0)
+        {
+            Tokenizer::SetErrored(handle, "Failed to parse power attribute: The power's hud graphic was previously defined. You can only define the hud graphic once, or make a new power.");
+            return false;
+        }
 
         str graphic = Tokenizer::GetSymbol(handle);
         context.HudGraphic = graphic;
@@ -202,6 +161,13 @@ strict namespace IO
 
         Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
 
+        // Already parsed
+        if (context.MaxTics != 0)
+        {
+            Tokenizer::SetErrored(handle, "Failed to parse power attribute: The power's maximum tics was previously defined. You can only define the maximum tics once, or make a new power.");
+            return false;
+        }
+
         if (!Tokenizer::TryParseBooleanOrNumbericValue(handle))
         {
             Tokenizer::SetErrored(handle, "Failed to parse power attribute: the given value for MaxTics is not a correct value. Expected numeric value within bounds.");
@@ -215,83 +181,44 @@ strict namespace IO
         return true;
     }
 
-    internal bool ParsePowerSpeedAttribute(int handle, str identifyingSymbol)
+    internal bool ParsePowerFactor(int handle, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, "speedmodifier")) return false;
+        // Determine the type.
+        Power::PowerFactorTypeT factorType;
+        switch(BCSUTILS::StrToLower(identifyingSymbol))
+        {
+            case "speedmodifier": factorType = Power::POWERTYPE_SPEED; break;
+            case "jumpmodifier": factorType = Power::POWERTYPE_JUMP; break;
+            case "damagefactor": factorType = Power::POWERTYPE_DAMAGEFACTOR; break;
+            case "damagemultiplier": factorType = Power::POWERTYPE_DAMAGEMULTIPLIER; break;
+
+            // Not a factor.
+            default: return false;
+        }
+
+        str name = Power::GetPowerFactorName(factorType);
         Tokenizer::Next(handle);
 
         Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
 
+        // Already parsed
+        if (context.Factors[factorType].Defined)
+        {
+            Tokenizer::SetErrored(handle, "Failed to parse power factor " + name + ": The factor was previously defined. You can only define each factor once, or make a new power.");
+            return false;
+        }
+
         if (!Tokenizer::TryParseFixedValue(handle))
         {
-            Tokenizer::SetErrored(handle, "Failed to parse power attribute: the given value for SpeedModifier is not a correct value. Expected a valid fixed value within bounds.");
+            Tokenizer::SetErrored(handle, "Failed to parse power factor " + name + ": the given value for the factor is not a correct value. Expected a valid fixed value within bounds.");
             return false;
         }
 
         fixed value = (fixed)Tokenizer::GetParsedValue();
-        context.SpeedModifier = value;
+        context.Factors[factorType].Factor = value;
+        context.Factors[factorType].Defined = true;
 
-        Logger::LogDebug(LOGSOURCE , "Parsed power speed modifier: \cd" + str(value) + "\cj.");
-        return true;
-    }
-
-    internal bool ParsePowerJumpAttribute(int handle, str identifyingSymbol)
-    {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, "jumpmodifier")) return false;
-        Tokenizer::Next(handle);
-
-        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
-
-        if (!Tokenizer::TryParseFixedValue(handle))
-        {
-            Tokenizer::SetErrored(handle, "Failed to parse jump attribute: the given value for JumpModifier is not a correct value. Expected a valid fixed value within bounds.");
-            return false;
-        }
-
-        fixed value = (fixed)Tokenizer::GetParsedValue();
-        context.JumpModifier = value;
-
-        Logger::LogDebug(LOGSOURCE , "Parsed power jump modifier: \cd" + str(value) + "\cj.");
-        return true;
-    }
-
-    internal bool ParsePowerDamageMultiplierAttribute(int handle, str identifyingSymbol)
-    {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, "damagemultiplier")) return false;
-        Tokenizer::Next(handle);
-
-        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
-
-        if (!Tokenizer::TryParseFixedValue(handle))
-        {
-            Tokenizer::SetErrored(handle, "Failed to parse damage multiplier attribute: the given value for DamageMultiplier is not a correct value. Expected a valid fixed value within bounds.");
-            return false;
-        }
-
-        fixed value = (fixed)Tokenizer::GetParsedValue();
-        context.DamageMultiplier = value;
-
-        Logger::LogDebug(LOGSOURCE , "Parsed power damage multiplier: \cd" + str(value) + "\cj.");
-        return true;
-    }
-
-    internal bool ParsePowerDamageFactorAttribute(int handle, str identifyingSymbol)
-    {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, "damagefactor")) return false;
-        Tokenizer::Next(handle);
-
-        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
-
-        if (!Tokenizer::TryParseFixedValue(handle))
-        {
-            Tokenizer::SetErrored(handle, "Failed to parse damage factor attribute: the given value for DamageFactor is not a correct value. Expected a valid fixed value within bounds.");
-            return false;
-        }
-
-        fixed value = (fixed)Tokenizer::GetParsedValue();
-        context.DamageFactor = value;
-
-        Logger::LogDebug(LOGSOURCE , "Parsed power damage factor: \cd" + str(value) + "\cj.");
+        Logger::LogDebug(LOGSOURCE , "Parsed power factor \cd" + name + "\cj: \cd" + str(value) + "\cj.");
         return true;
     }
 }
