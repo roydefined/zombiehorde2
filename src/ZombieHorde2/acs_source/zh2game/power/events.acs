@@ -81,12 +81,13 @@ strict namespace Power
 
             for(int j = 0; j < MAX_POWER_TYPES; ++j)
             {
-                // TODO: Reference properly instead of inline. It didn't work properly otherwise.
-                bool defined = ZH2Game::PersistingGameContext.PowerCollection.Collection[i].Factors[j].Defined;
-                if (!defined) continue;
+                // We only care about if the default is defined.
+                // From there we get whatever value. Overridden or default.
+                if (!GetPowerDefaultFactorDefined(i, j))
+                    continue;
 
                 // TODO: Reference properly instead of inline. It didn't work properly otherwise.
-                fixed factor = ZH2Game::PersistingGameContext.PowerCollection.Collection[i].Factors[j].Factor;
+                fixed factor = GetPowerFactorValue(i, j);
                 _buildFactors[j] *= factor;
                 _logFactors[j] += " * " + str(factor) + "\cj";
             }
