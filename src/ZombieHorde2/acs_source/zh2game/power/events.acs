@@ -97,7 +97,8 @@ strict namespace Power
         // Set the values and possible log the result.
         for(int i = 0; i < MAX_POWER_TYPES; ++i)
         {
-            SetActorProperty(tid, PowerFactorToProperty(i), _buildFactors[i]);
+            if (PowerFactorHasActorProperty(i))
+                SetActorProperty(tid, PowerFactorToActorProperty(i), _buildFactors[i]);
 
             // Check the new value. If it's the default don't log it.
             fixed defaultValue;
@@ -107,6 +108,9 @@ strict namespace Power
                 case POWERTYPE_JUMP: defaultValue = defaultJumpValue; break;
                 default: defaultValue = 1.0;
             }
+
+            // Store the calculated value on the player.
+            SetPlayerCalculatedPowerFactor(id, i, _buildFactors[i]);
 
             if (_buildFactors[i] == defaultValue)
                 continue;

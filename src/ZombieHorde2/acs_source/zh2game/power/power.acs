@@ -204,10 +204,30 @@ strict namespace Power
         return BCSUtils::StrReplace(POWER_ACTOR_BASE, "{0}", str(index));
     }
 
+    internal fixed GetCalculatedPowerFactor(int index)
+    {
+        return GetPlayerCalculatedPowerFactor(PlayerNumber(), index);
+    }
+
+    internal fixed GetPlayerCalculatedPowerFactor(int id, int index)
+    {
+        return ZH2Game::GameContext.Players[id].CalculatedPowerFactors[index];
+    }
+
+    internal fixed SetCalculatedPowerFactor(int index, fixed factor)
+    {
+        return SetPlayerCalculatedPowerFactor(PlayerNumber(), index, factor);
+    }
+
+    internal fixed SetPlayerCalculatedPowerFactor(int id, int index, fixed factor)
+    {
+        return ZH2Game::GameContext.Players[id].CalculatedPowerFactors[index] = factor;
+    }
+
     internal str GetPowerFactorName(int index)
     {
         static str collection[] = {
-            "Speed", "Jump", "Damage Factor", "Damage Multiplier"
+            "Speed", "Jump", "Damage Factor", "Damage Multiplier", "Knockback"
         };
 
         // Should not happen. The index should always point to a known type.
@@ -217,17 +237,26 @@ strict namespace Power
         return collection[index];
     }
 
-    internal int PowerFactorToProperty(int index)
+    internal int PowerFactorToActorProperty(int index)
     {
         static int collection[] = {
             APROP_SPEED, APROP_JUMPZ, APROP_DAMAGEFACTOR, APROP_DAMAGEMULTIPLIER
         };
 
         // Should not happen. The index should always point to a known type.
+        // Otherwise it should be checked beforehand.
         if (index < 0 || index >= lengthof(collection))
             return 0;
 
         return collection[index];
+    }
+
+    // Returns if a power can be set through actor properties.
+    // Only knockback isn't set using actor properties.
+    // If it's false then the factor is applied through code.
+    internal bool PowerFactorHasActorProperty(int index)
+    {
+        return index != POWERTYPE_KNOCKBACK;
     }
 }
 
