@@ -1,0 +1,64 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    // Each tic validate the modifiers are still the same value, or we must update it.
+    internal void ModifiersTic()
+    {
+        void CheckModifierState(ModifierTypeT modifier, bool enabled, fixed factor)
+        {
+            bool enabledUpdated = GetServerModifierEnabled(modifier) != enabled;
+            bool factorUpdated = GetServerModifierFactor(modifier) != factor;
+
+            if (!enabledUpdated && !factorUpdated)
+                return;
+
+            // TODO: update modifiers.
+            SetServerModifierEnabled(modifier, enabled);
+            SetServerModifierFactor(modifier, factor);
+
+            int powerIndex = ServerModifierToPower(modifier);
+            str name = Power::GetPowerName(powerIndex);
+            Logger::LogDebug(LOGSOURCE, "Server changed server modifier \cd" + name + "\cj. Enabled: \cd" + (enabled ? "true" : "false") + "\cj. Factor: \cd" + str(factor) +"\cj.");
+        }
+
+        CheckModifierState(MODIFIERTYPE_KNOCKBACK, ZH2Game::GetUseCustomKnockback(), ZH2Game::GetCustomKnockbackMultiplier());
+        CheckModifierState(MODIFIERTYPE_DAMAGE, ZH2Game::GetUseCustomDamage(), ZH2Game::GetCustomDamageMultiplier());
+    }
+
+    /* PROPERTIES */
+    internal bool GetServerModifierEnabled(ModifierTypeT modifier)
+    {
+        return ZH2Game::GameContext.ServerModifiers[modifier].Enabled;
+    }
+
+    internal void SetServerModifierEnabled(ModifierTypeT modifier, bool enabled)
+    {
+        ZH2Game::GameContext.ServerModifiers[modifier].Enabled = enabled;
+    }
+
+    internal fixed GetServerModifierFactor(ModifierTypeT modifier)
+    {
+        return ZH2Game::GameContext.ServerModifiers[modifier].Factor;
+    }
+
+    internal void SetServerModifierFactor(ModifierTypeT modifier, fixed factor)
+    {
+        ZH2Game::GameContext.ServerModifiers[modifier].Factor = factor;
+    }
+
+    internal int ServerModifierToPower(ModifierTypeT index)
+    {
+        static int collection[] = {
+            Power::POWERREWARDSERVERKNOCKBACKMULTIPLIER, Power::POWERREWARDSERVERDAMAGEMULTIPLIER
+        };
+
+        // Should not happen. The index should always point to a known type.
+        if (index < 0 || index >= lengthof(collection))
+            return 0;
+
+        return collection[index];
+    }
+}
