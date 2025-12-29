@@ -41,6 +41,9 @@ strict namespace Hud
             baseX + 100.0, baseY - 125.0, true);
         DrawCurrentOwnedItem();
 
+        PrepareHud(
+            baseX + 20.0, baseY - 140.0, true);
+        DrawServerModifiers();
 
         BCSUtils::HudSetVirtualSize(960.0 / scale, 720.0 / scale);
 
@@ -175,6 +178,46 @@ strict namespace Hud
             BCSUtils::HudDrawText(--_drawnHudId, str(inventoryCount));
             DebugDraw();
         }
+    }
+
+    internal void DrawServerModifiers()
+    {
+        fixed offsetY = 0.0;
+
+        if (ZH2Game::GetUseCustomKnockback())
+        {
+            fixed factor = ZH2Game::GetCustomKnockbackMultiplier();
+
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+            HudSetPointInternal();
+            BCSUtils::HudDrawImage(--_drawnHudId, MODIFIER_KNOCKBACK_GRAPHIC);
+            DebugDraw();
+
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+            HudSetPointInternal(10.0, 0.0);
+            BCSUtils::HudDrawText(--_drawnHudId, str(BCSUtils::Round(factor)) + "x");
+            DebugDraw();
+
+            offsetY += 20.0;
+        }
+
+        if (ZH2Game::GetUseCustomDamage())
+        {
+            fixed factor = ZH2Game::GetCustomDamageMultiplier();
+
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+            HudSetPointInternal(0.0, offsetY);
+            BCSUtils::HudDrawImage(--_drawnHudId, MODIFIER_DAMAGEMULTIPLIER_GRAPHIC);
+            DebugDraw();
+
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+            HudSetPointInternal(10.0, offsetY);
+            BCSUtils::HudDrawText(--_drawnHudId, str(BCSUtils::Round(factor)) + "x");
+            DebugDraw();
+        }
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
     }
 
     internal void DrawKeyList()
