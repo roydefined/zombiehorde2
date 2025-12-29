@@ -15,11 +15,38 @@ strict namespace Game
             if (!enabledUpdated && !factorUpdated)
                 return;
 
-            // TODO: update modifiers.
+            int powerIndex = ServerModifierToPower(modifier);
+
+            // Set the actual power factor to the new value.
+            // TODO: Knockback should get its own factor, probably.
+            if (factorUpdated)
+            {
+                switch(powerIndex)
+                {
+                    case Power::POWERREWARDSERVERDAMAGEMULTIPLIER:
+                        Power::SetPowerOverrideFactorValue(powerIndex, Power::POWERTYPE_DAMAGEMULTIPLIER, factor);
+                        Power::SetPowerOverrideFactorDefined(powerIndex, Power::POWERTYPE_DAMAGEMULTIPLIER, true);
+                        break;
+                }
+            }
+
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            {
+                if (!BCSUtils::ActorIsAlive(Identity::GetTid(i)))
+                    continue;
+
+                if (enabledUpdated)
+                {
+                    if (enabled) Power::GivePlayerPower(i, powerIndex);
+                    else Power::TakePlayerPower(i, powerIndex);
+                }
+
+                Power::RecalculatePlayerPowers(i);
+            }
+
             SetServerModifierEnabled(modifier, enabled);
             SetServerModifierFactor(modifier, factor);
 
-            int powerIndex = ServerModifierToPower(modifier);
             str name = Power::GetPowerName(powerIndex);
             Logger::LogDebug(LOGSOURCE, "Server changed server modifier \cd" + name + "\cj. Enabled: \cd" + (enabled ? "true" : "false") + "\cj. Factor: \cd" + str(factor) +"\cj.");
         }
