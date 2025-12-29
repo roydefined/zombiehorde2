@@ -176,7 +176,7 @@ strict namespace Power
         context.OverrideFactors[factorIndex].Defined = defined;
     }
 
-    // No setter for this one. Use the override one instead.
+    // No setter for these. Use the override one instead.
     internal fixed GetPowerFactorValue(int powerIndex, int factorIndex)
     {
         PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
@@ -187,6 +187,16 @@ strict namespace Power
         return context.OverrideFactors[factorIndex].Defined
             ? context.OverrideFactors[factorIndex].Factor
             : context.DefaultFactors[factorIndex].Factor;
+    }
+    internal bool GetPowerFactorDefined(int powerIndex, int factorIndex)
+    {
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        if (factorIndex < 0 || factorIndex >= MAX_POWER_TYPES)
+            return false;
+
+        // If we have overridden the factor, return that one instead.
+        return context.DefaultFactors[factorIndex].Defined
+            || context.OverrideFactors[factorIndex].Defined;
     }
 
     internal str GetItemName(int index)
