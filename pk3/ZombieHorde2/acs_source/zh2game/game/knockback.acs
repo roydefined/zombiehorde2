@@ -1,0 +1,32 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    internal void TriggerWeaponKickback(int sourceId, int targetId, str weaponName)
+    {
+        int index = Item::GetItemIndexByName(weaponName);
+        if (index == -1)
+        {
+            Logger::LogWarning(LOGSOURCE, "Failed to find kickback weapon with name " + weaponName + ".");
+            return;
+        }
+
+        if (Item::GetItemType(index) != Item::TYPE_WEAPON)
+        {
+            Logger::LogWarning(LOGSOURCE, "Failed kickback weapon with name " + weaponName + " and index " + str(index) + " is not a weapon.");
+            return;
+        }
+
+        int kickback = Item::GetItemKickback(index);
+        TriggerKickback(sourceId, targetId, kickback);
+    }
+
+    internal void TriggerKickback(int sourceId, int targetId, int kickback)
+    {
+        // No effect.
+        if (kickback == 0)
+            return;
+    }
+}
