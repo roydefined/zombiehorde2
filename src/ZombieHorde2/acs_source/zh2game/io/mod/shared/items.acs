@@ -83,6 +83,7 @@ strict namespace IO
                 || ParseItemDescription(handle, symbol)
                 || ParseItemBloodSeverity(handle, symbol)
                 || ParseItemBloodTics(handle, symbol)
+                || ParseItemKickback(handle, symbol)
                 || ParseItemTakeOnPanic(handle, symbol)
                 || ParseItemObituaryGraphic(handle, symbol)
                 || ParseItemObituaryGraphicWidth(handle, symbol))
@@ -262,6 +263,25 @@ strict namespace IO
         context.BloodTics = parsedValue;
 
         Logger::LogDebug(LOGSOURCE , "Parsed blood tics: \cd" + str(context.BloodTics) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseItemKickback(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "kickback")) return false;
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for kickback is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        context.Kickback = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE , "Parsed kickback: \cd" + str(context.Kickback) + "\cj.");
         return true;
     }
 
