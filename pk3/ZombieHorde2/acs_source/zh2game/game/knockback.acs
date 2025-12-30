@@ -58,12 +58,19 @@ strict namespace Game
         dirZ = BCSUtils::r3;
 
         fixed thrust = fixed(damage * kickback) / fixed(mass * 8);
+
+        // Include calculated knockback factor on the shooter.
+        fixed factor = Power::GetPlayerCalculatedPowerFactor(sourceId, Power::POWERTYPE_KNOCKBACK);
+        thrust *= factor;
+
+        printbold(f:factor);
+
         if (thrust <= fixed(0))
             return;
 
         fixed velX = dirX * thrust,
-            velY = dirY * thrust,
-            velZ = dirZ * thrust;
+              velY = dirY * thrust,
+              velZ = dirZ * thrust;
 
         SetActorVelocity(targetTid, velX, velY, velZ, true, false);
     }
