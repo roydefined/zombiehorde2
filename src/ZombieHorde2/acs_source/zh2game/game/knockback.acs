@@ -4,7 +4,7 @@
 
 strict namespace Game
 {
-    internal void TriggerWeaponKickback(int sourceId, int targetId, str weaponName)
+    internal void TriggerWeaponKickback(int sourceId, int targetId, int damage, str weaponName)
     {
         int index = Item::GetItemIndexByName(weaponName);
         if (index == -1)
@@ -20,13 +20,51 @@ strict namespace Game
         }
 
         int kickback = Item::GetItemKickback(index);
-        TriggerKickback(sourceId, targetId, kickback);
+        TriggerKickback(sourceId, targetId, damage, kickback);
     }
 
-    internal void TriggerKickback(int sourceId, int targetId, int kickback)
+    internal void TriggerKickback(int sourceId, int targetId, int damage, int kickback)
     {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+        VALIDATE_ID_VALID_FUNCTION(sourceId);
+        VALIDATE_ID_VALID_FUNCTION(targetId);
+
         // No effect.
-        if (kickback == 0)
+        if (kickback == 0 || damage <= 0)
             return;
+
+        int sourceTid = Identity::GetTid(sourceId);
+        int targetTid = Identity::GetTid(targetId);
+
+        int mass = GetActorProperty(targetTid, APROP_MASS);
+        if (mass <= 0)
+            return;
+
+        fixed sourceX = GetActorX(sourceTid),
+              sourceY = GetActorY(sourceTid),
+              sourceZ = GetActorZ(sourceTid);
+
+        fixed targetX = GetActorX(targetTid),
+              targetY = GetActorY(targetTid),
+              targetZ = GetActorZ(targetTid);
+
+        fixed dirX = targetX - sourceX,
+              dirY = targetY - sourceY,
+              dirZ = targetZ - sourceZ;
+
+        BCSUtils::Normalize3D(dirX, dirY, dirZ);
+        dirX = BCSUtils::r1;
+        dirY = BCSUtils::r2;
+        dirZ = BCSUtils::r3;
+
+        fixed thrust = fixed(damage * kickback) / fixed(mass * 8);
+        if (thrust <= fixed(0))
+            return;
+
+        fixed velX = dirX * thrust,
+            velY = dirY * thrust,
+            velZ = dirZ * thrust;
+
+        SetActorVelocity(targetTid, velX, velY, velZ, true, false);
     }
 }
