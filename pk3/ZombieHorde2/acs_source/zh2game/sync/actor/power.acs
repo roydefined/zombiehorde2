@@ -1,0 +1,65 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Sync
+{
+    #define SYNC_CATEGORY "POWER"
+
+    internal void SyncPowersActor()
+    {
+        int syncId = SYNC_POWER;
+
+        syncId = SyncWriteCalculatedFactors(syncId);
+
+        VERIFY_SYNCID(syncId, SYNC_POWER, SYNC_POWER_LENGTH);
+    }
+
+    internal void CallSyncPowersActorOnClients()
+    {
+        if (!ACS_NamedExecuteAlways("zh2_internal_sync_power_actor_clientside", 0))
+            Logger::LogError(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for powers."));
+    }
+
+    script "zh2_internal_sync_power_actor_clientside" clientside
+    {
+        SyncPowersActorClientside();
+    }
+
+    internal void SyncPowersActorClientside()
+    {
+        int syncId = SYNC_POWER;
+
+        syncId = SyncReadCalculatedFactors(syncId);
+
+        VERIFY_SYNCID(syncId, SYNC_POWER, SYNC_POWER_LENGTH);
+    }
+
+    internal int SyncWriteCalculatedFactors(int syncId)
+    {
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            for (int j = 0; j < MAX_POWER_TYPES; ++j)
+            {
+                fixed factor = Power::GetPlayerCalculatedPowerFactor(i, j);
+                BCSUtils::SyncVariable(--syncId, factor);
+            }
+        }
+        return syncId;
+    }
+
+    internal int SyncReadCalculatedFactors(int syncId)
+    {
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            for (int j = 0; j < MAX_POWER_TYPES; ++j)
+            {
+                fixed factor = BCSUtils::GetSyncVarDefault(--syncId, 1.0);
+                Power::SetPlayerCalculatedPowerFactor(i, j, factor);
+            }
+        }
+        return syncId;
+    }
+
+    #undef SYNC_CATEGORY
+}

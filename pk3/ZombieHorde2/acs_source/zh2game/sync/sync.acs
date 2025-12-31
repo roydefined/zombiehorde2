@@ -8,6 +8,7 @@
 #include "actor/timer.acs"
 #include "actor/resist.acs"
 #include "actor/round.acs"
+#include "actor/power.acs"
 #include "actor/admin.acs"
 #include "actor/game.acs"
 #include "actor/mapvoting.acs"
@@ -33,6 +34,7 @@ strict namespace Sync
         Sync::SyncTimers(callSyncOnClients);
         Sync::SyncResists(callSyncOnClients);
         Sync::SyncRoundState(callSyncOnClients);
+        Sync::SyncPowers(callSyncOnClients);
         Sync::SyncAdmins(callSyncOnClients);
         Sync::SyncGame(callSyncOnClients);
         Sync::SyncMapVoting(callSyncOnClients);
@@ -49,6 +51,7 @@ strict namespace Sync
         Sync::CallSyncTimersOnClients();
         Sync::CallSyncResistsOnClients();
         Sync::CallSyncRoundStateOnClients();
+        Sync::CallSyncPowersOnClients();
         Sync::CallSyncAdminsOnClients();
         Sync::CallSyncGameOnClients();
         Sync::CallSyncMapVotingOnClients();
@@ -65,6 +68,7 @@ strict namespace Sync
         Sync::SyncTimersClientside();
         Sync::SyncResistsClientside();
         Sync::SyncRoundStateClientside();
+        Sync::SyncPowersClientside();
         Sync::SyncAdminsClientside();
         Sync::SyncGameClientside();
         Sync::SyncMapVotingClientside();
@@ -210,6 +214,41 @@ strict namespace Sync
         SyncRoundStateActorClientside();
     }
 
+    /* POWERS */
+
+    internal void SyncPowers(bool callSyncOnClients = true)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        SyncPowersActor();
+
+        if (callSyncOnClients)
+            CallSyncPowersOnClients();
+    }
+
+    internal void CallSyncPowersOnClients()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        CallSyncPowersActorOnClients();
+    }
+
+    internal void SyncPowersClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        SyncPowersActorClientSide();
+    }
+
     /* ADMIN */
 
     internal void SyncAdmins(bool callSyncOnClients = true)
@@ -316,4 +355,4 @@ strict namespace Sync
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE
