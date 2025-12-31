@@ -43,7 +43,7 @@ strict namespace Hud
 
         PrepareHud(
             baseX + 20.0, baseY - 140.0, true);
-        DrawServerModifiers();
+        DrawCalculatedFactors();
 
         BCSUtils::HudSetVirtualSize(960.0 / scale, 720.0 / scale);
 
@@ -180,42 +180,43 @@ strict namespace Hud
         }
     }
 
-    // TODO: These would be better off displaying the power factors.
-    internal void DrawServerModifiers()
+    internal void DrawCalculatedFactors()
     {
-        fixed offsetY = 0.0;
+        // TODO: Make configurable from lumps
+        static str factorGraphics[] = { "FSPEED", "FJUMP", "FDAMFACT", "FDAMMULT", "FKNOCKBK" };
+        static int factorColors[] = { CR_WHITE, CR_WHITE, CR_WHITE, CR_RED, CR_WHITE };
 
-        if (ZH2Game::GetUseCustomKnockback())
+        fixed offsetY = 0.0;
+        for (int i = 0; i < MAX_POWER_TYPES; ++i)
         {
-            fixed factor = ZH2Game::GetCustomKnockbackMultiplier();
+            fixed factor = Power::GetPlayerCalculatedPowerFactor(ConsolePlayerNumber(), i);
+
+            // Check if factor changed.
+            // TODO: Provide a better way to do this.
+            bool changed;
+            switch(i)
+            {
+                case Power::POWERTYPE_SPEED: changed = factor != (Player::GetPlayerIsZombie(ConsolePlayerNumber()) ? 1.2 : 1.0); break;
+                case Power::POWERTYPE_JUMP: changed = factor != 8.0; break;
+                default: changed = factor != 1.0; break;
+            }
+
+            if (!changed)
+                continue;
 
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
 
-            HudSetPointInternal();
-            BCSUtils::HudDrawImage(--_drawnHudId, MODIFIER_KNOCKBACK_GRAPHIC);
+            HudSetPointInternal(0.0, offsetY);
+            BCSUtils::HudDrawImage(--_drawnHudId, factorGraphics[i]);
             DebugDraw();
 
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
-            HudSetPointInternal(10.0, 0.0);
-            BCSUtils::HudDrawText(--_drawnHudId, str(BCSUtils::Round(factor)) + "x");
+            BCSUtils::HudSetTextColor(factorColors[i]);
+            HudSetPointInternal(10.0, offsetY);
+            BCSUtils::HudDrawText(--_drawnHudId, str(factor) + "x");
             DebugDraw();
 
             offsetY += 20.0;
-        }
-
-        if (ZH2Game::GetUseCustomDamageFactor())
-        {
-            fixed factor = ZH2Game::GetCustomDamageFactorMultiplier();
-
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
-            HudSetPointInternal(0.0, offsetY);
-            BCSUtils::HudDrawImage(--_drawnHudId, MODIFIER_DAMAGEFACTOR_GRAPHIC);
-            DebugDraw();
-
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
-            HudSetPointInternal(10.0, offsetY);
-            BCSUtils::HudDrawText(--_drawnHudId, str(BCSUtils::Round(factor)) + "x");
-            DebugDraw();
         }
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
