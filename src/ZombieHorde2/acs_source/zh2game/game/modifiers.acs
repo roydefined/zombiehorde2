@@ -4,6 +4,19 @@
 
 strict namespace Game
 {
+    internal void InitializePlayerModifiers(int id)
+    {
+        // Make sure players are given this power when they start, and it's enabled.
+        for (int i = 0; i < MAX_SERVER_MODIFIERS; ++i)
+        {
+            ModifierTypeT modifier = GetServerModifierTypeByIndex(i);
+            int powerIndex = ServerModifierToPower(modifier);
+
+            if (GetServerModifierEnabled(modifier))
+                Power::GivePlayerPower(id, powerIndex);
+        }
+    }
+
     // Each tic validate the modifiers are still the same value, or we must update it.
     internal void ModifiersTic()
     {
@@ -53,7 +66,7 @@ strict namespace Game
             SetServerModifierFactor(modifier, factor);
 
             str name = Power::GetPowerName(powerIndex);
-            Logger::LogDebug(LOGSOURCE, "Server changed server modifier \cd" + name + "\cj. Enabled: \cd" + (enabled ? "true" : "false") + "\cj. Factor: \cd" + str(factor) +"\cj.");
+            Logger::LogDebug(LOGSOURCE, "Server changed server modifier \cd" + name + "\cj. Enabled updated: \cd" + (enabledUpdated ? "true" : "false") + "\cj. Enabled: \cd" + (enabled ? "true" : "false") + "\cj. Factor updated: \cd" + (factorUpdated ? "true" : "false") + "\cj. Factor: \cd" + str(factor) +"\cj.");
         }
 
         CheckModifierState(MODIFIERTYPE_KNOCKBACK, ZH2Game::GetUseCustomKnockback(), ZH2Game::GetCustomKnockbackMultiplier());
@@ -79,6 +92,20 @@ strict namespace Game
     internal void SetServerModifierFactor(ModifierTypeT modifier, fixed factor)
     {
         ZH2Game::GameContext.ServerModifiers[modifier].Factor = factor;
+    }
+
+    internal ModifierTypeT GetServerModifierTypeByIndex(int index)
+    {
+        static ModifierTypeT collection[] = {
+            MODIFIERTYPE_KNOCKBACK, MODIFIERTYPE_DAMAGEFACTOR
+        };
+
+        // Should not happen. The index should always point to a known type.
+        // TODO: Add unknown type for this.
+        if (index < 0 || index >= lengthof(collection))
+            return MODIFIERTYPE_KNOCKBACK;
+
+        return collection[index];
     }
 
     internal int ServerModifierToPower(ModifierTypeT index)
