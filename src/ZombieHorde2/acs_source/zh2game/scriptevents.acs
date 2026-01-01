@@ -235,9 +235,13 @@ strict namespace ZH2Game
         }
         Logger::LogDebug(LOGSOURCE, logMessage);
 
-        // Trigger knockback on this weapon if there was player-on-player damage.
-        if (sourceId != -1 && targetId != -1 && weapon != (str)0)
-            Game::TriggerWeaponKickback(sourceId, targetId, damage, weapon);
+        // Is custom knockback enabled?
+        if (Feature::GetCustomKnockbackFeatureEnabled())
+        {
+            // Trigger knockback on this weapon if there was player-on-player damage.
+            if (sourceId != -1 && targetId != -1 && weapon != (str)0)
+                Game::TriggerWeaponKickback(sourceId, targetId, damage, weapon);
+        }
 
         // Below is only for deaths of other players.
         if (!targetDied || targetIsMonster)

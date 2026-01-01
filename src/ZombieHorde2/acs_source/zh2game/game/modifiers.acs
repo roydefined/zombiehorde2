@@ -67,6 +67,15 @@ strict namespace Game
 
             str name = Power::GetPowerName(powerIndex);
             Logger::LogDebug(LOGSOURCE, "Server changed server modifier \cd" + name + "\cj. Enabled updated: \cd" + (enabledUpdated ? "true" : "false") + "\cj. Enabled: \cd" + (enabled ? "true" : "false") + "\cj. Factor updated: \cd" + (factorUpdated ? "true" : "false") + "\cj. Factor: \cd" + str(factor) +"\cj.");
+
+            // Special message when modifier is for knockback multiplier.
+            // If custom knockback is disabled, this won't do anything.
+            if (modifier == MODIFIERTYPE_KNOCKBACK && !ZH2Game::GetUseCustomKnockbackFeature())
+            {
+                // If we enabled it, or we changed the factor, log a message.
+                if ((enabledUpdated && enabled) || factorUpdated)
+                    Logger::LogDebug(LOGSOURCE, "Note custom knockback is disabled. Changes to the knockback modifier won't take effect until it's enabled.");
+            }
         }
 
         CheckModifierState(MODIFIERTYPE_KNOCKBACK, ZH2Game::GetUseCustomKnockbackModifier(), ZH2Game::GetCustomKnockbackModifierMultiplier());
