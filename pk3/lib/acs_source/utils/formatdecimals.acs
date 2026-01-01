@@ -1,0 +1,32 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Utils
+{
+    str FormatDecimals(fixed value, int decimalCount)
+    {
+        // Cast back and forth to remove decimals quickly.
+        if (decimalCount <= 0)
+            return str(int(value));
+
+        int intPart = int(value);
+        fixed scale = 1.0;
+        for (int i = 0; i < decimalCount; ++i)
+            scale *= 10.0;
+
+        int fracScaled = int((value - fixed(intPart)) * scale);
+        if (fracScaled < 0)
+            fracScaled = -fracScaled;
+
+        str fracStr = "";
+        for (int i = 0; i < decimalCount; ++i)
+        {
+            int digit = fracScaled % 10;
+            fracScaled /= 10;
+            fracStr = str(digit) + fracStr;
+        }
+
+        return str(intPart) + "." + fracStr;
+    }
+}
