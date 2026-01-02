@@ -4,6 +4,17 @@
 
 strict namespace Game
 {
+    // On specie change we want to provide active modifiers back to the player.
+    script "zh2_internal_modifier_specie_changed" (raw packetStr)
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerSpecieChanged(packet);
+        int id = Event::GetReceiveData(0);
+        InitializePlayerModifiers(id);
+
+        Sync::SyncPowers();
+    }
+
     internal void InitializePlayerModifiers(int id)
     {
         // Make sure players are given this power when they start, and it's enabled.
