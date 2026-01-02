@@ -1,0 +1,48 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Feature"
+
+strict namespace Feature
+{
+    internal void InitializePlayerCompatibility(int id)
+    {
+        // Custom knockback: provide the `+NODAMAGETHRUST` flag if the knockback system is enabled.
+        if (ZH2Game::GetUseCustomKnockbackFeature())
+            BCSUtils::ChangeActorFlag(Identity::GetTid(id), "NODAMAGETHRUST", true);
+    }
+
+    // Each tic validate the modifiers are still the same value, or we must update it.
+    internal void TicServer()
+    {
+        bool enabled = ZH2Game::GetUseCustomKnockbackFeature();
+        if (GetCustomKnockbackFeatureEnabled() == enabled)
+            return;
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int tid = Identity::GetTid(i);
+            if (!BCSUtils::ActorIsAlive(tid))
+                continue;
+
+            BCSUtils::ChangeActorFlag(tid, "NODAMAGETHRUST", enabled);
+        }
+
+        SetServerModifierEnabled(enabled);
+        Logger::LogDebug(LOGSOURCE, "The custom knockback system is now \cd" + (enabled ? "enabled" : "disabled") + "\cj.");
+    }
+
+    /* PROPERTIES */
+    internal bool GetCustomKnockbackFeatureEnabled()
+    {
+        return ZH2Game::GameContext.KnockbackFeatureEnabled;
+    }
+
+    internal void SetServerModifierEnabled(bool enabled)
+    {
+        ZH2Game::GameContext.KnockbackFeatureEnabled = enabled;
+    }
+}
+
+#undef LOGSOURCE

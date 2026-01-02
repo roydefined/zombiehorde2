@@ -32,6 +32,9 @@
 #define TEAM_INDICATOR_ENEMY_STATE "spawn.enemy"
 #define TEAM_INDICATOR_TID_BASE 5000
 
+// Modifiers
+#define MAX_SERVER_MODIFIERS 2
+
 strict namespace Game
 {
     internal enum WinningSpecieT : int
@@ -78,6 +81,14 @@ strict namespace Game
         ABILITY_SPIT = 1 << 1,
     };
 
+    // The available serverside modifiers the server can configure on players.
+    // Note, this indirectly also specifies the index of the modifier when used in functions.
+    internal enum ModifierTypeT : int
+    {
+        MODIFIERTYPE_KNOCKBACK,
+        MODIFIERTYPE_DAMAGEFACTOR,
+    };
+
     internal struct EndingTypeT
     {
         str WinMessagesTop[2],
@@ -92,6 +103,12 @@ strict namespace Game
     {
         str Collection[MAX_TIPS];
         int Count;
+    };
+
+    internal struct ServerModifierT
+    {
+        bool Enabled;
+        fixed Factor;
     };
 
     extern void KillUnsafePlayers();

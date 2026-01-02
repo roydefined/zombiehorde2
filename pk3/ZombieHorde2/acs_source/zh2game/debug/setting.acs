@@ -1,0 +1,46 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Debug
+{
+    // Serverside not supported, because this is a clientside feature.
+    script "zh2_action_debugrequestedclientsettings_clientside" net clientside
+    {
+        InternalDebugRequestedClientSettings();
+    }
+
+    internal void InternalDebugRequestedClientSettings()
+    {
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            Settings::UpdateCurrentClientSettings();
+            int count = ZH2Game::GameContext.RequestedClientSettingCount;
+            int persistingCount = ZH2Game::PersistingGameContext.RequestedClientSettingCount;
+            Append(s:"Total invalid settings: \cd" + str(count) + "\cj/\cd" + str(persistingCount) + "\cj.\n");
+
+            for (int i = 0; i < count; ++i)
+            {
+                str type = Settings::GetInvalidClientSettingType(i);
+                str name = Settings::GetInvalidClientSettingName(i);
+                int value = Settings::GetInvalidClientSettingValue(i);
+                //str label = Settings::GetInvalidClientSettingLabel(i);
+
+                Append(s:type + " ");
+                Append(s:"\cd" + name + "\cj ");
+
+                // For cvars we log the expected value, and the actual value.
+                if (type == "cvar")
+                    Append(s:"(\cd" + str(value) + "\cj, current: \cd" + str(GetCvar(name)) + "\cj) ");
+
+                // For keybinds we log if it should be bound or unbound.
+                else
+                    Append(s:"(must be \cd" + (value ? "bound" : "unbound") + "\cj) ");
+
+                Append(s:"\n");
+            }
+        }
+        Logger::LogActivator(logMessage);
+    }
+}

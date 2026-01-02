@@ -55,6 +55,16 @@ strict namespace Reward
 
         GivePlayerRewardByIndex(id, index);
         BroadcastGiveItem(id, index);
+
+        // A lot of rewards provide an update to powers, so we should sync them.
+        ACS_NamedExecuteAlways("zh2_internal_givereward_sync", 0);
+    }
+
+    // HACK: Required artificial delay to ensure the "callgive" reward property invokes first.
+    script "zh2_internal_givereward_sync"
+    {
+        Delay(const: 1);
+        Sync::SyncPowers();
     }
 
     internal bool GetCanGiveReward(int index)

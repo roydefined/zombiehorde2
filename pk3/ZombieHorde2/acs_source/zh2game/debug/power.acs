@@ -1,0 +1,141 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Debug
+{
+    // No serverside variant for this as these should match since it's items based.
+    script "zh2_action_debugpowers" net clientside
+    {
+        InternalDebugPowers();
+    }
+
+    internal void InternalDebugPowers()
+    {
+        // Track if we parsed at least one player. Otherwise show a different message.
+        bool parsedPlayer;
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            Append(s:"Current powers per player:");
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            {
+                int tid = Identity::GetTid(i);
+                if (!BCSUtils::ActorIsAlive(tid))
+                    continue;
+
+                // Track if we parsed at least one power. That way we know if we need to add a new line.
+                bool hasPower;
+
+                str logMessagePlayer;
+                buildmsg(logMessagePlayer = StrParam())
+                {
+                    Append(s:"\cjPlayer (\cd" + str(i) + "\cj) " + BCSUtils::PlayerName(i) + ":");
+
+                    for (int j = 0; j < ZH2Game::PersistingGameContext.PowerCollection.Size; ++j)
+                    {
+                        if (!Power::GetPlayerHasPower(i, j))
+                            continue;
+
+                        str name = Power::GetPowerName(j);
+                        int tics = Power::GetPlayerPowerTicsLeft(i, j);
+
+                        if (hasPower)
+                            Append(s:",");
+
+                        Append(s:" \cd" + name + "\cj");
+
+                        if (Power::GetPowerMaxTics(j) != 0)
+                            Append(s:" (\cd" + str(tics / 35) + "s\cj)");
+
+                        hasPower = true;
+                    }
+                }
+
+                if (hasPower)
+                {
+                    parsedPlayer = true;
+
+                    Append(s:"\n");
+                    Append(s:logMessagePlayer);
+                    Append(s:".");
+                }
+            }
+
+            if (!parsedPlayer)
+                Append(s:" \cjNo players found with powers.");
+        }
+
+        Logger::LogActivator(logMessage);
+    }
+
+    script "zh2_action_debugcalculatedfactors_serverside" net
+    {
+        InternalDebugCalculatedFactors();
+    }
+
+    script "zh2_action_debugcalculatedfactors_clientside" net clientside
+    {
+        InternalDebugCalculatedFactors();
+    }
+
+    internal void InternalDebugCalculatedFactors()
+    {
+        // Track if we parsed at least one player. Otherwise show a different message.
+        bool parsedPlayer;
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            Append(s:"Current factors per player:");
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            {
+                int tid = Identity::GetTid(i);
+                if (!BCSUtils::ActorIsAlive(tid))
+                    continue;
+
+                // Track if we parsed at least one power. That way we know if we need to add a new line.
+                bool hasFactor;
+
+                str logMessagePlayer;
+                buildmsg(logMessagePlayer = StrParam())
+                {
+                    Append(s:"\cjPlayer (\cd" + str(i) + "\cj) " + BCSUtils::PlayerName(i) + ":");
+
+                    for (int j = 0; j < MAX_POWER_TYPES; ++j)
+                    {
+                        fixed factor = Power::GetPlayerCalculatedPowerFactor(i, j);
+                        fixed defaultFactor = Power::GetPlayerPowerFactorDefaultValue(i, j);
+
+                        // Ignore defaults
+                        if (factor == defaultFactor)
+                            continue;
+
+                        str name = Power::GetPowerFactorName(j);
+
+                        if (hasFactor)
+                            Append(s:",");
+
+                        Append(s:" \cd" + name + "\cj: \cd" + str(factor) + "\cj");
+                        hasFactor = true;
+                    }
+                }
+
+                if (hasFactor)
+                {
+                    parsedPlayer = true;
+
+                    Append(s:"\n");
+                    Append(s:logMessagePlayer);
+                    Append(s:".");
+                }
+            }
+
+            if (!parsedPlayer)
+                Append(s:" \cjNo players found with factors.");
+        }
+
+        Logger::LogActivator(logMessage);
+    }
+}

@@ -5,12 +5,14 @@
 #include "preprocess.h.acs"
 #include "common.h.acs"
 
+#include "debug/debug.h.acs"
 #include "game/game.h.acs"
 #include "sync/sync.h.acs"
 #include "map/map.h.acs"
 #include "events/events.h.acs"
 #include "round/round.h.acs"
 #include "player/player.h.acs"
+#include "feature/feature.h.acs"
 #include "gameloop/gameloop.h.acs"
 #include "roundtimer/roundtimer.h.acs"
 #include "settings/settings.h.acs"
@@ -68,10 +70,10 @@ strict namespace ZH2Game
     {
         PlayerT Players[BCSUtils::MAX_PLAYERS];
 
-        // This boolean indicates if players should resync when a player joins the game.
-        // On map start we do not allow this as to avoid possible 64 players all syncing themselves.
+        // This boolean indicates if there should be a sync of certain things when a player joins the game.
+        // On map start we do not allow all things to sync to avoid possibly 64 players all syncing themselves.
         // We should instead do one big sync. After a moment it will be allowed.
-        bool SyncPlayerOnEnter;
+        bool DoSyncOnEnter;
 
         // Map details, either parsed from a lump or defined through ACS.
         IO::MapDetailedT MapDetails;
@@ -126,6 +128,14 @@ strict namespace ZH2Game
 
         // Clientside, represents the client's currently selected ability.
         int SelectedZombieAbilityIndex;
+
+        // Serverside, modifiers the server can define.
+        // This is a cached variant which is compared against the cvars.
+        // If the value is different we must update.
+        Game::ServerModifierT ServerModifiers[MAX_SERVER_MODIFIERS];
+
+        // Serverside, tracks enabled features.
+        bool KnockbackFeatureEnabled;
 
         // Clientside, not synchronized.
         // Used with the persisting items, indication what items the client owns.
@@ -283,6 +293,10 @@ strict namespace ZH2Game
 
         // Synched, tracks the map vote cooldown of a player.
         int MapVoteCooldown;
+
+        // This is the calculated factors that the player will play on.
+        // This is set each time powers are calculated.
+        fixed CalculatedPowerFactors[MAX_POWER_TYPES];
 
         // Serverside. Indicates the source of damage for the player.
         Player::DamageSourceT DamageSources[MAX_DAMAGE_SOURCES];

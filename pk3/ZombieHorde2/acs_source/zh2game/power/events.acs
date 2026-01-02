@@ -50,10 +50,13 @@ strict namespace Power
             Logger::LogDebug(LOGSOURCE, logMessage);
             RecalculatePowers();
 
-            // Send an event unless the round ended.
+            // Send an event and sync unless the round ended.
             // No need to send it in that case.
             if (Round::GetActiveKnownRoundState() < Round::STATEENDING)
+            {
                 Event::SendPowerExpired(id);
+                Sync::SyncPowers();
+            }
         }
     }
 
@@ -62,13 +65,7 @@ strict namespace Power
     {
         // Set initial factor values.
         for (int i = 0; i < MAX_POWER_TYPES; ++i)
-            _buildFactors[i] = 1.0;
-
-        // Special factor values.
-        fixed defaultSpeedValue = Player::GetPlayerIsZombie(id) ? 1.2 : 1.0;
-        fixed defaultJumpValue = 8.0;
-        _buildFactors[POWERTYPE_SPEED] = defaultSpeedValue;
-        _buildFactors[POWERTYPE_JUMP] = defaultJumpValue;
+            _buildFactors[i] = Power::GetPlayerPowerFactorDefaultValue(id, i);
 
         // Set initial log factor values
         for (int i = 0; i < MAX_POWER_TYPES; ++i)
@@ -81,12 +78,10 @@ strict namespace Power
 
             for(int j = 0; j < MAX_POWER_TYPES; ++j)
             {
-                // TODO: Reference properly instead of inline. It didn't work properly otherwise.
-                bool defined = ZH2Game::PersistingGameContext.PowerCollection.Collection[i].Factors[j].Defined;
-                if (!defined) continue;
+                if (!GetPowerFactorDefined(i, j))
+                    continue;
 
-                // TODO: Reference properly instead of inline. It didn't work properly otherwise.
-                fixed factor = ZH2Game::PersistingGameContext.PowerCollection.Collection[i].Factors[j].Factor;
+                fixed factor = GetPowerFactorValue(i, j);
                 _buildFactors[j] *= factor;
                 _logFactors[j] += " * " + str(factor) + "\cj";
             }
@@ -97,16 +92,14 @@ strict namespace Power
         // Set the values and possible log the result.
         for(int i = 0; i < MAX_POWER_TYPES; ++i)
         {
-            SetActorProperty(tid, PowerFactorToProperty(i), _buildFactors[i]);
+            if (PowerFactorHasActorProperty(i))
+                SetActorProperty(tid, PowerFactorToActorProperty(i), _buildFactors[i]);
 
             // Check the new value. If it's the default don't log it.
-            fixed defaultValue;
-            switch(i)
-            {
-                case POWERTYPE_SPEED: defaultValue = defaultSpeedValue; break;
-                case POWERTYPE_JUMP: defaultValue = defaultJumpValue; break;
-                default: defaultValue = 1.0;
-            }
+            fixed defaultValue = Power::GetPlayerPowerFactorDefaultValue(id, i);
+
+            // Store the calculated value on the player.
+            SetPlayerCalculatedPowerFactor(id, i, _buildFactors[i]);
 
             if (_buildFactors[i] == defaultValue)
                 continue;

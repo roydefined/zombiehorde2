@@ -41,6 +41,9 @@ strict namespace Hud
             baseX + 100.0, baseY - 125.0, true);
         DrawCurrentOwnedItem();
 
+        PrepareHud(
+            baseX + 150.0, baseY - 40.0, true);
+        DrawCalculatedFactors();
 
         BCSUtils::HudSetVirtualSize(960.0 / scale, 720.0 / scale);
 
@@ -175,6 +178,60 @@ strict namespace Hud
             BCSUtils::HudDrawText(--_drawnHudId, str(inventoryCount));
             DebugDraw();
         }
+    }
+
+    internal void DrawCalculatedFactors()
+    {
+        // TODO: Make configurable from lumps
+        static str factorGraphics[] = { "FSPEED", "FJUMP", "FDAMFACT", "FDAMMULT", "FKNOCKBK" };
+        static int factorColors[] = { CR_WHITE, CR_WHITE, CR_WHITE, CR_RED, CR_WHITE };
+
+        fixed offsetY = 0.0;
+        for (int i = 0; i < MAX_POWER_TYPES; ++i)
+        {
+            fixed factor = Power::GetPlayerCalculatedPowerFactor(ConsolePlayerNumber(), i);
+
+            // Do not draw if 0.0
+            // This will be the case for a brief moment in online games, until we synchronized.
+            if (factor == 0.0)
+                continue;
+
+            fixed defaultFactor = Power::GetPlayerPowerFactorDefaultValue(ConsolePlayerNumber(), i);
+
+            // Do not draw if the factor is the default.
+            if (factor == defaultFactor)
+                continue;
+
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+            HudSetPointInternal(0.0, offsetY);
+            BCSUtils::HudDrawImage(--_drawnHudId, factorGraphics[i]);
+            DebugDraw();
+
+            // Prefixed "x" symbol.
+            // TODO: Can this turn smaller?
+            BCSUtils::HudSetTextColor(factorColors[i]);
+            HudSetPointInternal(12.0, offsetY);
+            BCSUtils::HudDrawText(--_drawnHudId, "x");
+            DebugDraw();
+
+            // Calculate the actual difference.
+            // This improves how factors like jump (default 8.0) are drawn, should they be doubled (show 2.0 instead of 16.0)
+            fixed adjustedFactor = factor / defaultFactor;
+
+            // Only a single decimal is shown.
+            str formattedFactor = Utils::FormatDecimals(adjustedFactor, 1);
+
+            // Factor (also using the color as above).
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+            HudSetPointInternal(17.0, offsetY);
+            BCSUtils::HudDrawText(--_drawnHudId, formattedFactor);
+            DebugDraw();
+
+            offsetY -= 15.0;
+        }
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
     }
 
     internal void DrawKeyList()
