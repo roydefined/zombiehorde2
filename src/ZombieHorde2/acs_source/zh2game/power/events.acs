@@ -50,10 +50,13 @@ strict namespace Power
             Logger::LogDebug(LOGSOURCE , logMessage);
             RecalculatePowers();
 
-            // Send an event unless the round ended.
+            // Send an event and sync unless the round ended.
             // No need to send it in that case.
             if (Round::GetActiveKnownRoundState() < Round::STATEENDING)
+            {
                 Event::SendPowerExpired(id);
+                Sync::SyncPowers();
+            }
         }
     }
 
