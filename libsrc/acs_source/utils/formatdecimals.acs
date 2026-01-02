@@ -8,16 +8,24 @@ strict namespace Utils
     {
         // Cast back and forth to remove decimals quickly.
         if (decimalCount <= 0)
-            return str(int(value));
+            return str(BCSUtils::IRound(value));
 
-        int intPart = int(value);
-        fixed scale = 1.0;
+        int scaleInt = 1;
         for (int i = 0; i < decimalCount; ++i)
-            scale *= 10.0;
+            scaleInt *= 10;
 
-        int fracScaled = int((value - fixed(intPart)) * scale);
-        if (fracScaled < 0)
-            fracScaled = -fracScaled;
+        fixed scaled = value * fixed(scaleInt);
+        int scaledInt = BCSUtils::IRound(scaled);
+
+        int sign = 1;
+        if (scaledInt < 0)
+        {
+            sign = -1;
+            scaledInt = -scaledInt;
+        }
+
+        int intPart = scaledInt / scaleInt;
+        int fracScaled = scaledInt % scaleInt;
 
         str fracStr = "";
         for (int i = 0; i < decimalCount; ++i)
@@ -27,6 +35,10 @@ strict namespace Utils
             fracStr = str(digit) + fracStr;
         }
 
-        return str(intPart) + "." + fracStr;
+        str prefix = "";
+        if (sign < 0)
+            prefix = "-";
+
+        return prefix + str(intPart) + "." + fracStr;
     }
 }
