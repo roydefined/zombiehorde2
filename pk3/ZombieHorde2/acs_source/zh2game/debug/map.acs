@@ -1,0 +1,131 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Debug
+{
+    script "zh2_action_debugparsedmaps_serverside" net
+    {
+        InternalDebugParsedMaps();
+    }
+
+    script "zh2_action_debugparsedmaps_clientside" net clientside
+    {
+        InternalDebugParsedMaps();
+    }
+
+    internal void InternalDebugParsedMaps()
+    {
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int count = Map::GetMapCount();
+            Append(s:"Total maps: \cd" + str(count) + "\cj/\cd" + str(MAXMAPCOUNT) + "\cj.");
+            for (int i = 0; i < count; ++i)
+            {
+                Append(s:"\n");
+                Append(s:"\cf#" + str(i));
+                Append(s:"\cj Map: \cd" + Map::GetMapLump(i));
+
+                int rotationPosition = Map::GetParsedMapRotationPosition(i);
+                Append(s:"\cj Rotation position: \cd" + (rotationPosition != -1 ? str(rotationPosition) : "not found"));
+                if (rotationPosition != -1)
+                {
+                    int parsePosition = Map::GetParsedMapPosition(rotationPosition);
+                    Append(s:"\cj Parse position: \cd" + str(rotationPosition));
+
+                    Append(s:"\cj Name: \cd" + GetMapRotationInfo(rotationPosition, MAPROTATION_NAME));
+                    Append(s:"\cj Used: \cd" + (GetMapRotationInfo(rotationPosition, MAPROTATION_USED) ? "yes" : "no"));
+
+                    int min = GetMapRotationInfo(rotationPosition, MAPROTATION_MINPLAYERS);
+                    Append(s:"\cj Min players: \cd" + (min != 0 ? str(min) : "no limit"));
+
+                    int max = GetMapRotationInfo(rotationPosition, MAPROTATION_MAXPLAYERS);
+                    Append(s:"\cj Max players: \cd" + (min != 0 ? str(min) : "no limit"));
+                }
+
+                Append(s:"\cj Gamemode: \cd" + Map::GetMapGameMode(i));
+                Append(s:"\cj Label: \cd" + Map::GetMapLabel(i));
+                Append(s:"\cj Graphic: \cd" + Map::GetMapGraphic(i));
+                Append(s:"\cj Is new: \cd" + (Map::GetMapIsNew(i) ? "yes" : "no"));
+                Append(s:"\cj Is legacy map: \cd" + (Map::GetMapIsLegacyMap(i) ? "yes" : "no"));
+            }
+        }
+        Logger::LogActivator(logMessage);
+    }
+
+    script "zh2_action_debugmaprotation_serverside" net
+    {
+        InternalDebugMapRotation();
+    }
+
+    // The clientsided variant seems pointless for an internal set of functions but w/e.
+    script "zh2_action_debugmaprotation_clientside" net clientside
+    {
+        InternalDebugMapRotation();
+    }
+
+    internal void InternalDebugMapRotation()
+    {
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int count = GetMapRotationSize();
+            Append(s:"Total maps: \cd" + str(count) + "\cj.");
+            for (int i = 1; i <= count; ++i)
+            {
+                Append(s:"\n");
+                Append(s:"\cf#" + str(i));
+                Append(s:"\cj Map \cd" + (str)GetMapRotationInfo(i, MAPROTATION_LUMPNAME) + "\cj: \cd" + (str)GetMapRotationInfo(i, MAPROTATION_NAME));
+                Append(s:"\cj Used: \cd" + (GetMapRotationInfo(i, MAPROTATION_USED) ? "yes" : "no"));
+
+                int min = GetMapRotationInfo(i, MAPROTATION_MINPLAYERS);
+                Append(s:"\cj Min players: \cd" + (min != 0 ? str(min) : "no limit"));
+
+                int max = GetMapRotationInfo(i, MAPROTATION_MAXPLAYERS);
+                Append(s:"\cj Max players: \cd" + (min != 0 ? str(min) : "no limit"));
+
+                int parsePosition = Map::GetParsedMapPosition(i);
+                Append(s:"\cj Parse position: \cd" + (parsePosition != -1 ? str(parsePosition) : "not found"));
+                if (parsePosition != -1)
+                {
+                    Append(s:"\cj Gamemode: \cd" + Map::GetMapGameMode(parsePosition));
+                    Append(s:"\cj Label: \cd" + Map::GetMapLabel(parsePosition));
+                    Append(s:"\cj Graphic: \cd" + Map::GetMapGraphic(parsePosition));
+                    Append(s:"\cj Is new: \cd" + (Map::GetMapIsNew(parsePosition) ? "yes" : "no"));
+                    Append(s:"\cj Is legacy map: \cd" + (Map::GetMapIsLegacyMap(parsePosition) ? "yes" : "no"));
+                }
+            }
+        }
+        Logger::LogActivator(logMessage);
+    }
+
+    // Clientside not supported. Or at least doesn't make sense to do.
+    script "zh2_action_debugvotablemaps_serverside" net
+    {
+        InternalDebugVotableMaps();
+    }
+
+    internal void InternalDebugVotableMaps()
+    {
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            Shuffle::ShuffleVotableMaps(Shuffle::FLAGIGNORECURRENTMAP | Shuffle::FLAGIGNORENEXTMAP);
+            Append(s:"Total votable maps: \cd" + str(Shuffle::GetRelevantSize()) + "\cj.\n");
+
+            int currentMapPosition = GetMapPosition(MAPPOSITION_CURRENT);
+            Append(s:"Current map: \cd" + (str)GetMapRotationInfo(currentMapPosition, MAPROTATION_LUMPNAME) + "\cj: \cd" + (str)GetMapRotationInfo(currentMapPosition, MAPROTATION_NAME) + "\cj.\n");
+
+            int nextMapPosition = GetMapPosition(MAPPOSITION_NEXT);
+            Append(s:"Next map: \cd" + (str)GetMapRotationInfo(nextMapPosition, MAPROTATION_LUMPNAME) + "\cj: \cd" + (str)GetMapRotationInfo(nextMapPosition, MAPROTATION_NAME) + "\cj.\n");
+
+            for (int i = 0; i < Shuffle::GetRelevantSize(); ++i)
+            {
+                int value = Shuffle::GetIndexValue(i);
+                Append(s:"\cd#" + str(value) + "\cj: \cd" + (str)GetMapRotationInfo(value, MAPROTATION_LUMPNAME) + "\cj: \cd" + (str)GetMapRotationInfo(value, MAPROTATION_NAME) + "\cj.\n");
+            }
+        }
+        Logger::LogActivator(logMessage);
+    }
+}
