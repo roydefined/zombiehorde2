@@ -192,9 +192,9 @@ strict namespace Hud
             // Check if factor changed.
             fixed factor = Power::GetPlayerCalculatedPowerFactor(ConsolePlayerNumber(), i);
             fixed defaultFactor = Power::GetPlayerPowerFactorDefaultValue(ConsolePlayerNumber(), i);
-            bool changed = factor != defaultFactor;
 
-            if (!changed)
+            // Do not draw if the default.
+            if (factor == defaultFactor)
                 continue;
 
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
@@ -210,9 +210,14 @@ strict namespace Hud
             BCSUtils::HudDrawText(--_drawnHudId, "x");
             DebugDraw();
 
-            // Factor (also using the color as above).
+            // Calculate the actual difference.
+            // This improves how factors like jump (default 8.0) are drawn, should they be doubled (show 2.0 instead of 16.0)
+            fixed adjustedFactor = factor / defaultFactor;
+
             // Only a single decimal is shown.
-            str formattedFactor = Utils::FormatDecimals(factor, 1);
+            str formattedFactor = Utils::FormatDecimals(adjustedFactor, 1);
+
+            // Factor (also using the color as above).
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
             HudSetPointInternal(17.0, offsetY);
             BCSUtils::HudDrawText(--_drawnHudId, formattedFactor);
