@@ -44,8 +44,6 @@ strict namespace Game
                         Power::SetPowerOverrideFactorDefined(powerIndex, Power::POWERTYPE_KNOCKBACK, true);
                         break;
                 }
-
-                Sync::SyncPowers();
             }
 
             for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
@@ -64,6 +62,9 @@ strict namespace Game
 
             SetServerModifierEnabled(modifier, enabled);
             SetServerModifierFactor(modifier, factor);
+
+            // Inform clients of the change in modifiers.
+            Sync::SyncPowers();
 
             str name = Power::GetPowerName(powerIndex);
             Logger::LogDebug(LOGSOURCE, "Server changed server modifier \cd" + name + "\cj. Enabled updated: \cd" + (enabledUpdated ? "true" : "false") + "\cj. Enabled: \cd" + (enabled ? "true" : "false") + "\cj. Factor updated: \cd" + (factorUpdated ? "true" : "false") + "\cj. Factor: \cd" + str(factor) +"\cj.");
