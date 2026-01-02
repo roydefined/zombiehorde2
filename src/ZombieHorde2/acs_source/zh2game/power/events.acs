@@ -62,13 +62,7 @@ strict namespace Power
     {
         // Set initial factor values.
         for (int i = 0; i < MAX_POWER_TYPES; ++i)
-            _buildFactors[i] = 1.0;
-
-        // Special factor values.
-        fixed defaultSpeedValue = Player::GetPlayerIsZombie(id) ? 1.2 : 1.0;
-        fixed defaultJumpValue = 8.0;
-        _buildFactors[POWERTYPE_SPEED] = defaultSpeedValue;
-        _buildFactors[POWERTYPE_JUMP] = defaultJumpValue;
+            _buildFactors[i] = Power::GetPlayerPowerFactorDefaultValue(id, i);
 
         // Set initial log factor values
         for (int i = 0; i < MAX_POWER_TYPES; ++i)
@@ -99,13 +93,7 @@ strict namespace Power
                 SetActorProperty(tid, PowerFactorToActorProperty(i), _buildFactors[i]);
 
             // Check the new value. If it's the default don't log it.
-            fixed defaultValue;
-            switch(i)
-            {
-                case POWERTYPE_SPEED: defaultValue = defaultSpeedValue; break;
-                case POWERTYPE_JUMP: defaultValue = defaultJumpValue; break;
-                default: defaultValue = 1.0;
-            }
+            fixed defaultValue = Power::GetPlayerPowerFactorDefaultValue(id, i);
 
             // Store the calculated value on the player.
             SetPlayerCalculatedPowerFactor(id, i, _buildFactors[i]);
