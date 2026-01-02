@@ -142,6 +142,7 @@ strict namespace ZH2Game
         if (hasInflictor && SetActivator(0, AAPTR_DAMAGE_INFLICTOR))
             inflictorClass = GetActorClass(0);
 
+        str weapon = (str)0;
         int itemIndex = -1;
 
         // If damage type is internal fire or acid then the source is saved in memory.
@@ -176,7 +177,7 @@ strict namespace ZH2Game
             {
                 // If we can't determine it, or `GetWeapon()` returns "None", then default to 0.
                 // After that, determine the item's definition in the custom lumps for its index.
-                str weapon = GetWeapon();
+                weapon = GetWeapon();
                 if (BCSUtils::StrIEquals(weapon, "none"))
                     weapon = (str)0;
 
@@ -234,7 +235,15 @@ strict namespace ZH2Game
         }
         Logger::LogDebug(LOGSOURCE, logMessage);
 
-        // For now we don't handle non-death or deaths by monsters.
+        // Is custom knockback enabled?
+        if (Feature::GetCustomKnockbackFeatureEnabled())
+        {
+            // Trigger knockback on this weapon if there was player-on-player damage.
+            if (sourceId != -1 && targetId != -1 && weapon != (str)0)
+                Game::TriggerWeaponKickback(sourceId, targetId, damage, weapon);
+        }
+
+        // Below is only for deaths of other players.
         if (!targetDied || targetIsMonster)
             return;
 

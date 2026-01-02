@@ -61,10 +61,10 @@ strict namespace IO
         Tokenizer::Next(handle);
 
         // No more room for more powers. Log a warning and skip the remaining body.
-        int count = ZH2Game::PersistingGameContext.PowerCollection.Size;
-        if (count >= MAX_POWERS)
+        int index = ZH2Game::PersistingGameContext.PowerCollection.Size;
+        if (index >= MAX_POWERS)
         {
-            Logger::LogWarning(LOGSOURCE , "The maximum number of configurable powers was reached (" + str(count) + ").");
+            Logger::LogWarning(LOGSOURCE , "The maximum number of configurable powers was reached (" + str(index) + ").");
             Tokenizer::ParseRemainingBodyAsEmpty(handle);
             return true;
         }
@@ -75,7 +75,7 @@ strict namespace IO
             str symbol = Tokenizer::GetSymbol(handle);
             if (ParsePowerHudGraphicAttribute(handle, symbol)
                 || ParsePowerMaxTicsAttribute(handle, symbol)
-                || ParsePowerFactor(handle, symbol))
+                || ParsePowerDefaultFactor(handle, symbol))
             {
                 // Optional comma.
                 Tokenizer::Next(handle, false);
@@ -89,7 +89,7 @@ strict namespace IO
             return false;
         }
 
-        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
+        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[index];
 
         context.Name = name;
 
@@ -109,20 +109,20 @@ strict namespace IO
                 Append(s:" Hud graphic: \cd" + context.HudGraphic + "\cj.");
 
             // TODO: Reference properly instead of inline. It didn't work properly otherwise.
-            int maxTics = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size].MaxTics;
+            int maxTics = Power::GetPowerMaxTics(index);
             if (maxTics != 0)
                 Append(s:" Max tics: \cd" + str(maxTics) + "\cj.");
 
             for(int i = 0; i < MAX_POWER_TYPES; ++i)
             {
                 // TODO: Reference properly instead of inline. It didn't work properly otherwise.
-                bool defined = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size].Factors[i].Defined;
-                if (!defined) continue;
+                if (!Power::GetPowerDefaultFactorDefined(index, i))
+                    continue;
 
                 str name = Power::GetPowerFactorName(i);
 
                 // TODO: Reference properly instead of inline. It didn't work properly otherwise.
-                fixed factor = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size].Factors[i].Factor;
+                fixed factor = Power::GetPowerDefaultFactorValue(index, i);
                 Append(s:" Factor \cd" + name + "\cj: \cd" + str(factor) + "\cj.");
             }
         }
@@ -181,7 +181,7 @@ strict namespace IO
         return true;
     }
 
-    internal bool ParsePowerFactor(int handle, str identifyingSymbol)
+    internal bool ParsePowerDefaultFactor(int handle, str identifyingSymbol)
     {
         // Determine the type.
         Power::PowerFactorTypeT factorType;
@@ -191,6 +191,7 @@ strict namespace IO
             case "jumpmodifier": factorType = Power::POWERTYPE_JUMP; break;
             case "damagefactor": factorType = Power::POWERTYPE_DAMAGEFACTOR; break;
             case "damagemultiplier": factorType = Power::POWERTYPE_DAMAGEMULTIPLIER; break;
+            case "knockbackmodifier": factorType = Power::POWERTYPE_KNOCKBACK; break;
 
             // Not a factor.
             default: return false;
@@ -199,10 +200,10 @@ strict namespace IO
         str name = Power::GetPowerFactorName(factorType);
         Tokenizer::Next(handle);
 
-        Power::PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[ZH2Game::PersistingGameContext.PowerCollection.Size];
+        int index = ZH2Game::PersistingGameContext.PowerCollection.Size;
 
         // Already parsed
-        if (context.Factors[factorType].Defined)
+        if (Power::GetPowerDefaultFactorDefined(index, factorType))
         {
             Tokenizer::SetErrored(handle, "Failed to parse power factor " + name + ": The factor was previously defined. You can only define each factor once, or make a new power.");
             return false;
@@ -215,8 +216,8 @@ strict namespace IO
         }
 
         fixed value = (fixed)Tokenizer::GetParsedValue();
-        context.Factors[factorType].Factor = value;
-        context.Factors[factorType].Defined = true;
+        Power::SetPowerDefaultFactorValue(index, factorType, value);
+        Power::SetPowerDefaultFactorDefined(index, factorType, true);
 
         Logger::LogDebug(LOGSOURCE , "Parsed power factor \cd" + name + "\cj: \cd" + str(value) + "\cj.");
         return true;
