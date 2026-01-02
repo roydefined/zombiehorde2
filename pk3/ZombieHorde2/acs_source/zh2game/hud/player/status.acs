@@ -189,11 +189,16 @@ strict namespace Hud
         fixed offsetY = 0.0;
         for (int i = 0; i < MAX_POWER_TYPES; ++i)
         {
-            // Check if factor changed.
             fixed factor = Power::GetPlayerCalculatedPowerFactor(ConsolePlayerNumber(), i);
+
+            // Do not draw if 0.0
+            // This will be the case for a brief moment in online games, until we synchronized.
+            if (factor == 0.0)
+                continue;
+
             fixed defaultFactor = Power::GetPlayerPowerFactorDefaultValue(ConsolePlayerNumber(), i);
 
-            // Do not draw if the default.
+            // Do not draw if the factor is the default.
             if (factor == defaultFactor)
                 continue;
 

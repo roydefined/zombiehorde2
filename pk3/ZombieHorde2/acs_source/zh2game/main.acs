@@ -175,9 +175,6 @@ strict namespace ZH2Game
         Sync::SyncTimers();
         Sync::SyncResists();
 
-        // Send the default values to the client.
-        Sync::SyncPowers();
-
         // Required for the zombie abilities to be synched.
         Sync::SyncGame();
 
@@ -187,8 +184,11 @@ strict namespace ZH2Game
         // After a moment, sync all players and allow them to sync themselves on enter.
         Delay(const: 5);
 
-        ZH2Game::GameContext.SyncPlayerOnEnter = true;
+        ZH2Game::GameContext.DoSyncOnEnter = true;
         Sync::SyncPlayers();
+
+        // Send the default values to the client.
+        Sync::SyncPowers();
     }
 
     script "zh2_internal_open_client" open clientside
@@ -551,9 +551,15 @@ strict namespace ZH2Game
         Game::InitializePlayerModifiers(PlayerNumber());
         Feature::InitializePlayerCompatibility(PlayerNumber());
 
-        // Should we sync this player?
-        if (ZH2Game::GameContext.SyncPlayerOnEnter)
+        // Possible extra syncs depending on time.
+        // We only do these if the map has been playing for a bit to avoid 64 players calling it.
+        if (ZH2Game::GameContext.DoSyncOnEnter)
+        {
             Sync::SyncPlayers();
+
+            // Note we want to sync on enter as powers are inventory items and we also initialize stuff like modifiers above.
+            Sync::SyncPowers();
+        }
 
         // Set the player as an admin.
         // This is now removed and you can turn it on through the menu/rcon. Always works offline.
