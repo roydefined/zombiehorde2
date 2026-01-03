@@ -244,10 +244,14 @@ strict namespace Hud
 
     internal void DrawHudStates()
     {
-        static str graphics[MAX_HUD_STATES] = { "ST_SAFE" };
+        static str graphics[MAX_HUD_STATES] = { "ST_SAFE", "ST_CAFF", "ST_DAMFC", "ST_JUMP", "ST_SPEED" };
 
         // Update states before drawing.
         _hudStates[0] = Game::GetIsSafe();
+        _hudStates[1] = Power::GetHasPower(Power::POWERCAFFEINE);
+        _hudStates[2] = Power::GetHasPower(Power::POWERREWARDHUMANWEAPONUPGRADE);
+        _hudStates[3] = Power::GetHasPower(Power::POWERREWARDZOMBIEJUMP);
+        _hudStates[4] = Power::GetHasPower(Power::POWERREWARDHUMANSPEED) || Power::GetHasPower(Power::POWERREWARDZOMBIESPEED);
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
 
@@ -264,7 +268,7 @@ strict namespace Hud
             fixed y = Sin(angle) * HUD_STATES_RADIUS;
 
             HudSetPointInternal(x, y);
-            BCSUtils::HudDrawImage(--_drawnHudId, graphics[0]);
+            BCSUtils::HudDrawImage(--_drawnHudId, graphics[i]);
             DebugDraw();
 
             offset++;
