@@ -21,10 +21,10 @@ strict namespace Power
 
     internal int GetPowerSize() { return ZH2Game::PersistingGameContext.PowerCollection.Size; }
 
-    internal void GivePower(int powerIndex) { GivePlayerPower(PlayerNumber(), powerIndex); }
-    internal void GivePlayerPower(int id, int powerIndex) { SetPlayerPowerTics(id, powerIndex, BCSUtils::INT_MAX); }
+    internal void GivePower(int powerIndex, bool recalculatePowers = true) { GivePlayerPower(PlayerNumber(), powerIndex, recalculatePowers); }
+    internal void GivePlayerPower(int id, int powerIndex, bool recalculatePowers = true) { SetPlayerPowerTics(id, powerIndex, BCSUtils::INT_MAX, recalculatePowers); }
 
-    internal void TakePower(int powerIndex) { TakePlayerPower(PlayerNumber(), powerIndex); }
+    internal void TakePower(int powerIndex, bool recalculatePowers = true) { TakePlayerPower(PlayerNumber(), powerIndex, recalculatePowers); }
     internal void TakePlayerPower(int id, int powerIndex, bool recalculatePowers = true)
     {
         BCSUtils::SetActorInventory(Identity::GetTid(id), GetItemName(powerIndex), 0);
@@ -33,17 +33,15 @@ strict namespace Power
             RecalculatePlayerPowers(id);
     }
 
-    internal void AddPowerTics(int powerIndex, int tics) { AddPlayerPowerTics(PlayerNumber(), powerIndex, tics); }
+    internal void AddPowerTics(int powerIndex, int tics, bool recalculatePowers = true) { AddPlayerPowerTics(PlayerNumber(), powerIndex, tics, recalculatePowers); }
     internal void AddPlayerPowerTics(int id, int powerIndex, int tics, bool recalculatePowers = true)
     {
         int ticsLeft = GetPlayerPowerTicsLeft(id, powerIndex);
-
-        if (recalculatePowers)
-            SetPlayerPowerTics(id, powerIndex, ticsLeft + tics);
+        SetPlayerPowerTics(id, powerIndex, ticsLeft + tics, recalculatePowers);
     }
 
-    internal void SetPowerTics(int powerIndex, int tics) { SetPlayerPowerTics(PlayerNumber(), powerIndex, tics); }
-    internal void SetPlayerPowerTics(int id, int powerIndex, int tics)
+    internal void SetPowerTics(int powerIndex, int tics, bool recalculatePowers = true) { SetPlayerPowerTics(PlayerNumber(), powerIndex, tics, recalculatePowers); }
+    internal void SetPlayerPowerTics(int id, int powerIndex, int tics, bool recalculatePowers = true)
     {
         // Never set powers when the round ended.
         if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
@@ -65,7 +63,9 @@ strict namespace Power
 
         int timeStamp = timer + tics;
         BCSUtils::SetActorInventory(Identity::GetTid(id), GetItemName(powerIndex), timeStamp);
-        RecalculatePlayerPowers(id);
+
+        if (recalculatePowers)
+            RecalculatePlayerPowers(id);
 
         Logger::LogDebug(LOGSOURCE , "Power updated for player " + BCSUtils::PlayerName(id) + ". Power \cd" + GetPowerName(powerIndex) + "\cj now has \cd" + str(tics) + " \cjtics left.");
     }
