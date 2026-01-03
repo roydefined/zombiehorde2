@@ -6,6 +6,10 @@ strict namespace Hud
 {
     #define PLAYERID_KEYROWCOUNT 5
 
+    // Specifies which hud states should be drawn.
+    // These are all determined when we draw.
+    internal bool _hudStates[MAX_HUD_STATES];
+
     internal void DrawPlayerStatusHud()
     {
         // Hud scaling is done through `HudSetVirtualSize` as `HudSetScale` only applies scaling to the final sprite
@@ -44,6 +48,10 @@ strict namespace Hud
         PrepareHud(
             baseX + 150.0, baseY - 40.0, true);
         DrawCalculatedFactors();
+
+        PrepareHud(
+            baseX + HUD_STATES_RADIUS + 5.0, baseY - 75.0, true);
+        DrawHudStates();
 
         BCSUtils::HudSetVirtualSize(960.0 / scale, 720.0 / scale);
 
@@ -229,6 +237,44 @@ strict namespace Hud
             DebugDraw();
 
             offsetY -= 15.0;
+        }
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+    }
+
+    internal void DrawHudStates()
+    {
+        static str graphics[MAX_HUD_STATES] = { "ST_SAFE", "ST_CAFF", "ST_DAMFC", "ST_JUMP", "ST_SPEED", "ST_PANIC", "ST_CURE", "ST_HINV" };
+
+        // Update states before drawing.
+        _hudStates[0] = Game::GetIsSafe();
+        _hudStates[1] = Power::GetHasPower(Power::POWERCAFFEINE);
+        _hudStates[2] = Power::GetHasPower(Power::POWERREWARDHUMANWEAPONUPGRADE);
+        _hudStates[3] = Power::GetHasPower(Power::POWERREWARDZOMBIEJUMP);
+        _hudStates[4] = Power::GetHasPower(Power::POWERREWARDZOMBIESPEED);
+        _hudStates[5] = Power::GetHasPower(Power::POWERPANICKING);
+        _hudStates[6] = Power::GetHasPower(Power::POWERHUMANIMMUNITY);
+        _hudStates[7] = Power::GetHasPower(Power::POWERZOMBIEPROTECT);
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        int offset = 0;
+        for (int i = 0; i < MAX_HUD_STATES; ++i)
+        {
+            if (!_hudStates[i])
+                continue;
+
+            fixed angleDeg = 180.0 + fixed(offset) * HUD_STATES_ANGLE;
+            fixed angle    = angleDeg / 360.0;
+
+            fixed x = Cos(angle) * HUD_STATES_RADIUS;
+            fixed y = Sin(angle) * HUD_STATES_RADIUS;
+
+            HudSetPointInternal(x, y);
+            BCSUtils::HudDrawImage(--_drawnHudId, graphics[i]);
+            DebugDraw();
+
+            offset++;
         }
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
