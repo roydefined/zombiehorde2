@@ -23,6 +23,7 @@ strict namespace Game
 
     internal void CurePlayer(int id, CureSourceT source)
     {
+        int tid = Identity::GetTID(id);
         bool isZombie = Player::GetPlayerIsZombie(id);
 
         // If the player is a zombie, transform them back.
@@ -37,16 +38,16 @@ strict namespace Game
             Player::SetPlayerHumanSkin(id);
             Player::GivePlayerHumanInventory(id, false);
 
+            if (!SpawnForced("CureEffect", GetActorX(tid), GetActorY(tid), GetActorZ(tid)))
+                Logger::LogWarning(LOGSOURCE , "Failed to spawn cure effect for player " + str(id) + ".");
+
             // This not really needed if we take powers, because the recalculate is automatically called.
             //Power::RecalculatePlayerPowers(id);
 
             Event::SendPlayerSpecieChanged(id, Player::SPECIEHUMAN);
         }
 
-        int tid = Identity::GetTID(id);
-        if (!SpawnForced("CureEffect", GetActorX(tid), GetActorY(tid), GetActorZ(tid)))
-            Logger::LogWarning(LOGSOURCE , "Failed to spawn cure effect for player " + str(id) + ".");
-
+        PlaySound(tid, "specie/CURE", CHAN_AUTO);
         Event::SendPlayerCured(id, isZombie, source);
     }
 
