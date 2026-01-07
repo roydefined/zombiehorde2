@@ -323,26 +323,22 @@ strict namespace ZH2Game
         if (PlayerIsBot(PlayerNumber()))
             GameLoop::StartServerPlayerLoopById(PlayerNumber());
 
-        if (!ACS_NamedExecuteAlways("zh2_internal_enter_respawn", 0))
-            Logger::LogError(LOGSOURCE , "Failed to call general enter/respawn script for client serverside.");
+        ACS_NamedExecuteWithResult(SCRIPT_ENTER_RESPAWN_NAME, 0);
     }
 
     script "zh2_internal_enter_client" enter clientside
     {
-        if (!ACS_NamedExecuteAlways("zh2_internal_enter_respawn_clientside", 0))
-            Logger::LogError(LOGSOURCE , "Failed to call general enter/respawn script for client clientside.");
+        ACS_NamedExecuteWithResult(SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME, 0);
     }
 
     script "zh2_internal_respawn" respawn
     {
-        if (!ACS_NamedExecuteAlways("zh2_internal_enter_respawn", 0))
-            Logger::LogError(LOGSOURCE , "Failed to call general enter/respawn script for client serverside.");
+        ACS_NamedExecuteWithResult(SCRIPT_ENTER_RESPAWN_NAME, 0);
     }
 
     script "zh2_internal_respawn_client" respawn clientside
     {
-        if (!ACS_NamedExecuteAlways("zh2_internal_enter_respawn_clientside", 0))
-            Logger::LogError(LOGSOURCE , "Failed to call general enter/respawn script for client clientside.");
+        ACS_NamedExecuteWithResult(SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME, 0);
     }
 
     script "zh2_internal_unloading" unloading
@@ -472,11 +468,11 @@ strict namespace ZH2Game
         }
     }
 
-    script "zh2_internal_enter_respawn"
+    script SCRIPT_ENTER_RESPAWN_NAME
     {
-        Logger::LogDebug(LOGSOURCE , "Call script \"zh2_internal_enter_respawn\"");
+        Logger::LogDebug(LOGSOURCE , "Call script \"" + SCRIPT_ENTER_RESPAWN_NAME + "\"");
         WAIT_FOR_SCRIPT_OPEN_SERVER();
-        Logger::LogDebug(LOGSOURCE , "Call script \"zh2_internal_enter_respawn\" after awaiter");
+        Logger::LogDebug(LOGSOURCE , "Call script \"" + SCRIPT_ENTER_RESPAWN_NAME + "\" after awaiter");
 
         // Forced player cap is enabled so the player will be kicked if we reached the limit.
         if (DevelopmentPlayerCap() && !PlayerIsBot(PlayerNumber()) && PlayerCount() - Utils::PlayingBotCount() > DEV_PLAYERCAP_COUNT)
@@ -595,11 +591,11 @@ strict namespace ZH2Game
         Logger::LogError(LOGSOURCE , "Failed to set " + str(id) + " as spectator. KickFromGame failed.");
     }
 
-    script "zh2_internal_enter_respawn_clientside" clientside
+    script SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME clientside
     {
-        Logger::LogDebug(LOGSOURCE , "Call script \"zh2_internal_enter_respawn_clientside\"");
+        Logger::LogDebug(LOGSOURCE , "Call script \"" + SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME + "\"");
         WAIT_FOR_SCRIPT_OPEN_CLIENT();
-        Logger::LogDebug(LOGSOURCE , "Call script \"zh2_internal_enter_respawn_clientside\" after awaiter");
+        Logger::LogDebug(LOGSOURCE , "Call script \"" + SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME + "\" after awaiter");
 
         // The game is not in a state where players can join.
         if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
