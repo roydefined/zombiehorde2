@@ -33,16 +33,12 @@ def main():
                 continue
 
             # Include subfolders as well
-            for file_path in folder.rglob("*.*"):
+            for file_path in folder.rglob("*"):
                 if not file_path.is_file():
                     continue
 
-                name_no_ext = file_path.stem
-
-                if name_no_ext not in name_map:
-                    name_map[name_no_ext] = []
-
-                name_map[name_no_ext].append(file_path)
+                name_no_ext = file_path.stem.lower()
+                name_map.setdefault(name_no_ext, []).append(file_path)
 
         logging.info("")
 
