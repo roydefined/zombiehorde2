@@ -227,8 +227,17 @@ strict namespace IO
             return false;
         }
 
+        str scriptName = Tokenizer::GetSymbol(handle);
+
+        // Ensure this script exists.
+        if (!CheckScript(scriptName, true))
+        {
+            Tokenizer::SetErrored(handle, "Unknown script name when parsing reward restrict script: \"" + scriptName + "\".");
+            return false;
+        }
+
         Reward::RewardContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RewardCollection.Collection[ZH2Game::PersistingGameContext.RewardCollection.Count];
-        context.CallRestrict = Tokenizer::GetSymbol(handle);
+        context.CallRestrict = scriptName;
 
         Logger::LogDebug(LOGSOURCE, "Parsed reward call restrict: \cd" + context.CallRestrict + "\cj.");
         return true;
@@ -247,8 +256,17 @@ strict namespace IO
             return false;
         }
 
+        str scriptName = Tokenizer::GetSymbol(handle);
+
+        // Ensure this script exists.
+        if (!CheckScript(scriptName, true))
+        {
+            Tokenizer::SetErrored(handle, "Unknown script name when parsing reward give script: \"" + scriptName + "\".");
+            return false;
+        }
+
         Reward::RewardContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RewardCollection.Collection[ZH2Game::PersistingGameContext.RewardCollection.Count];
-        context.CallGive = Tokenizer::GetSymbol(handle);
+        context.CallGive = scriptName;
 
         Logger::LogDebug(LOGSOURCE, "Parsed reward call give: \cd" + context.CallGive + "\cj.");
         return true;
