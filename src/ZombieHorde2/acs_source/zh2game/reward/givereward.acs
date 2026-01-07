@@ -56,14 +56,6 @@ strict namespace Reward
         GivePlayerRewardByIndex(id, index);
         BroadcastGiveItem(id, index);
 
-        // A lot of rewards provide an update to powers, so we should sync them.
-        ACS_NamedExecuteAlways("zh2_internal_givereward_sync", 0);
-    }
-
-    // HACK: Required artificial delay to ensure the "callgive" reward property invokes first.
-    script "zh2_internal_givereward_sync"
-    {
-        Delay(const: 1);
         Sync::SyncPowers();
     }
 
@@ -88,6 +80,7 @@ strict namespace Reward
 
         // Check for restriction.
         // Restriction means there's some reason the item can't be given (restricted/duplicate/disabled/etc).
+        // TODO: We should error if the script does not exist.
         str callRestrict = GetRewardCallRestrict(index);
         if (callRestrict != (raw)0 && callRestrict != ""
             && ACS_NamedExecuteWithResult(callRestrict, id))
@@ -125,8 +118,9 @@ strict namespace Reward
 
         if ((raw)callGive != 0 && callGive != "")
         {
-            if (!ACS_NamedExecuteAlways(callGive, 0, id))
-                Logger::logError(LOGSOURCE , "Failed to call script \"" + callGive + "\" for reward index " + str(index) + ".");
+            // TODO: We should error if the script does not exist.
+            // Logger::logError(LOGSOURCE , "Failed to call script \"" + callGive + "\" for reward index " + str(index) + ".");
+            ACS_NamedExecuteWithResult(callGive, id);
         }
 
         if ((raw)give != 0 && give != "")
