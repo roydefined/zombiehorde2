@@ -119,6 +119,14 @@ strict namespace Event
 
     script "zh2_internal_event_playerleftround" (raw packetStr)
     {
+        // Ignore if the game ended.
+        if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
+            terminate;
+
+        // Do not overwrite existing end reasons.
+        if (Game::GetEndReason() != Game::REASONNONE)
+            terminate;
+
         str packet = (str)packetStr;
         Event::ReceivePlayerLeftRound(packet);
         int id = GetReceiveData(0);
