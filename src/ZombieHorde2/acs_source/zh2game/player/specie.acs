@@ -56,35 +56,6 @@ strict namespace Player
         SetResultValue(int(GetIsHuman()));
     }
 
-    internal int SpecieCount(PlayerSpecieT type, bool includeDead = false)
-    {
-        int count;
-        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-        {
-            // Count optionally allows for including dead players.
-            if (!includeDead
-                && (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(Identity::GetTID(i))))
-            {
-                continue;
-            }
-
-            if (GetPlayerSpecie(i) != type) continue;
-            count++;
-        }
-
-        return count;
-    }
-
-    int HumanCount(bool includeDead = false)
-    {
-        return SpecieCount(SPECIEHUMAN, includeDead);
-    }
-
-    int ZombieCount(bool includeDead = false)
-    {
-        return SpecieCount(SPECIEZOMBIE, includeDead);
-    }
-
     internal PlayerSpecieT GetSpecieTypeByIndex(int index)
     {
         if (index <= SPECIENONE || index > SPECIEZOMBIE)
