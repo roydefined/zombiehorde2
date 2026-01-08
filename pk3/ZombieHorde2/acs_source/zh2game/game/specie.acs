@@ -19,4 +19,33 @@ strict namespace Game
     internal void TakeSpecieInventory(Player::PlayerSpecieT type, str item, int amount) { ChangeSpecieInventory(type, item, -amount); }
     internal void TakeHumanInventory(str item, int amount)  { ChangeSpecieInventory(Player::SPECIEHUMAN, item, -amount); }
     internal void TakeZombieInventory(str item, int amount) { ChangeSpecieInventory(Player::SPECIEZOMBIE, item, -amount); }
+
+    internal int SpecieCount(Player::PlayerSpecieT type, bool includeDead = false)
+    {
+        int count;
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // Count optionally allows for including dead players.
+            if (!includeDead
+                && (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(Identity::GetTID(i))))
+            {
+                continue;
+            }
+
+            if (Player::GetPlayerSpecie(i) != type) continue;
+            count++;
+        }
+
+        return count;
+    }
+
+    int HumanCount(bool includeDead = false)
+    {
+        return SpecieCount(Player::SPECIEHUMAN, includeDead);
+    }
+
+    int ZombieCount(bool includeDead = false)
+    {
+        return SpecieCount(Player::SPECIEZOMBIE, includeDead);
+    }
 }
