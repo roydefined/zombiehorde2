@@ -26,4 +26,18 @@ strict namespace Debug
 
         Logger::LogActivator("You've been given start weapons.");
     }
+
+    script "zh2_action_debugsetsolid" (raw solidRaw) net
+    {
+        bool solid = (bool)solidRaw;
+
+        if (IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
+        {
+            Logger::LogActivator("You're not allowed to set yourself as solid/unsolid.");
+            terminate;
+        }
+
+        Player::SetSolid(solid);
+        Logger::LogActivator("You've been turned " + (solid ? "solid" : "unsolid") + ".");
+    }
 }

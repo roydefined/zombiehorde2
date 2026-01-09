@@ -1,0 +1,38 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    /* ACTOR PROPERTY */
+    internal void SetSolid(bool solid)
+    {
+        SetPlayerSolid(PlayerNumber(), solid);
+    }
+
+    internal void SetPlayerSolid(int id, bool solid)
+    {
+        BCSUtils::ChangeActorFlag(Identity::GetTid(id), "SOLID", solid);
+    }
+
+    /* PROPERTIES */
+    internal PlayerSolidStateT GetSolidState()
+    {
+        return GetPlayerSolidState(PlayerNumber());
+    }
+
+    internal PlayerSolidStateT GetPlayerSolidState(int id)
+    {
+        return ZH2Game::GameContext.Players[id].SolidState;
+    }
+
+    internal void SetSolidState(PlayerSolidStateT state)
+    {
+        SetPlayerSolidState(PlayerNumber(), state);
+    }
+
+    internal void SetPlayerSolidState(int id, PlayerSolidStateT state)
+    {
+        ZH2Game::GameContext.Players[id].SolidState = state;
+    }
+}
