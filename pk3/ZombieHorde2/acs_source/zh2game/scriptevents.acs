@@ -58,6 +58,17 @@ strict namespace ZH2Game
         if (damageType == DAMAGETYPE_SETONFIRE_NAME)
             Decorate::SetOnFire(attackerId, attackedId, (str)0, 350, 200);
 
+        // The attacked player should enable ThruActors if they get telefragged.
+        // Assuming the system is enabled. And we also undo any damage.
+        if ((damageType == "SpawnTelefrag" || damageType == "Telefrag") && GetEnableAntiTelefragSystem())
+        {
+            // We enable, then immediately disable this.
+            // The system will safely unset the player back when able.
+            Player::SetPlayerThruActors(attackedId, true);
+            Player::SetPlayerThruActors(attackedId, false);
+            return 0;
+        }
+
         // Premod only handles modifications to damage when a player caused them.
         if (attackerId == -1)
             return damage;
