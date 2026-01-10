@@ -13,8 +13,27 @@ strict namespace Player
     internal void SetPlayerThruActors(int id, bool enable)
     {
         int tid = Identity::GetTid(id);
-        BCSUtils::ChangeActorFlag(tid, "THRUACTORS", enable);
-        BCSUtils::SetActorInventory(tid, ITEM_ACTORISUNSOLID, (int)enable);
+        PlayerThruActorsStateT currentState = GetPlayerThruActorsState(id);
+
+        // Ensure we're not already in the correct state.
+        bool doContinue = enable
+            ? currentState != STATE_THRUACTORS
+            : currentState != STATE_DEFAULT;
+
+        if (!doContinue)
+            return;
+
+        // We only enable the flag. We never disable it.
+        // The tic function will take care of that as it needs to ensure there is space.
+        // Also, if we're on STATE_GOBACKDEFAULT we still have the flag.
+        if (enable && currentState == STATE_DEFAULT)
+            BCSUtils::ChangeActorFlag(tid, "THRUACTORS", true);
+
+        // If we unset the state, we want to request the state to turn back.
+        PlayerThruActorsStateT nextState = enable ? STATE_THRUACTORS : STATE_GOBACKDEFAULT;
+        SetPlayerThruActorsState(id, nextState);
+
+        Sync::SyncPlayers();
     }
 
     /* PROPERTIES */
@@ -36,5 +55,14 @@ strict namespace Player
     internal void SetPlayerThruActorsState(int id, PlayerThruActorsStateT state)
     {
         ZH2Game::GameContext.Players[id].ThruActorsState = state;
+    }
+
+    internal PlayerThruActorsStateT GetThruActorsStateByIndex(int index)
+    {
+        if (index <= STATE_DEFAULT || index > STATE_GOBACKDEFAULT)
+            return STATE_DEFAULT;
+
+        static PlayerThruActorsStateT collection[] = { STATE_DEFAULT, STATE_THRUACTORS, STATE_GOBACKDEFAULT };
+        return collection[index];
     }
 }
