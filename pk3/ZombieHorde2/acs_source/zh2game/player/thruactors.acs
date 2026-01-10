@@ -1,0 +1,40 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    /* ACTOR PROPERTY */
+    internal void SetThruActors(bool enable)
+    {
+        SetPlayerThruActors(PlayerNumber(), enable);
+    }
+
+    internal void SetPlayerThruActors(int id, bool enable)
+    {
+        int tid = Identity::GetTid(id);
+        BCSUtils::ChangeActorFlag(tid, "THRUACTORS", enable);
+        BCSUtils::SetActorInventory(tid, ITEM_ACTORISUNSOLID, (int)enable);
+    }
+
+    /* PROPERTIES */
+    internal PlayerThruActorsStateT GetThruActorsState()
+    {
+        return GetPlayerThruActorsState(PlayerNumber());
+    }
+
+    internal PlayerThruActorsStateT GetPlayerThruActorsState(int id)
+    {
+        return ZH2Game::GameContext.Players[id].ThruActorsState;
+    }
+
+    internal void SetThruActorsState(PlayerThruActorsStateT state)
+    {
+        SetPlayerThruActorsState(PlayerNumber(), state);
+    }
+
+    internal void SetPlayerThruActorsState(int id, PlayerThruActorsStateT state)
+    {
+        ZH2Game::GameContext.Players[id].ThruActorsState = state;
+    }
+}
