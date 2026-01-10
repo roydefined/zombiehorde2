@@ -8,9 +8,13 @@ strict namespace Feature
 {
     internal void InitializePlayerFeatures(int id)
     {
-        // Custom knockback: provide the `+DONTTHRUST` flag if the knockback system is enabled.
+        // Custom knockback feature requires weapon thrusting to not be applied.
         if (ZH2Game::GetUseCustomKnockbackFeature())
-            BCSUtils::ChangeActorFlag(Identity::GetTid(id), "DONTTHRUST", true);
+        {
+            // DONTTHRUST is not allowed on players, for some reason. Otherwise this would have been the better option.
+            //BCSUtils::ChangeActorFlag(Identity::GetTid(id), "DONTTHRUST", true);
+			BCSUtils::SetActorMass(Identity::GetTid(id), (raw)BCSUtils::SHORT_MAX);
+        }
     }
 
     // Each tic validate the modifiers are still the same value, or we must update it.
@@ -26,7 +30,12 @@ strict namespace Feature
             if (!BCSUtils::ActorIsAlive(tid))
                 continue;
 
-            BCSUtils::ChangeActorFlag(tid, "DONTTHRUST", enabled);
+            // DONTTHRUST is not allowed on players, for some reason. Otherwise this would have been the better option.
+            //BCSUtils::ChangeActorFlag(tid, "DONTTHRUST", enabled);
+
+            // 40 is the configured default for player mass.
+            int mass = enabled ? BCSUtils::SHORT_MAX : PLAYER_MASS;
+            BCSUtils::SetActorMass(tid, (raw)mass);
         }
 
         SetServerModifierEnabled(enabled);
