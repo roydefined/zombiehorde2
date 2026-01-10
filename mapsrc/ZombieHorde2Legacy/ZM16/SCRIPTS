@@ -1,20 +1,23 @@
-	
+#pragma raw include on
+#pragma raw define on
 
-    #import "ZMGAME.acs"
-    #include "zcommon.acs"
-     
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
     bool ArmoryOpen = FALSE;
     bool GeneratorActivated = FALSE;
     bool AManintheRoom = FALSE;
     bool CrazyWeatherPart3 = FALSE;
     bool CrazyWeatherPart1 = FALSE;
     bool CrazyWeatherPart0 = FALSE;
-    bool ArmoryAmmount = 0;    
-    bool SpeakingwithUboa = 0; 
+    bool ArmoryAmmount = 0;
+    bool SpeakingwithUboa = 0;
     bool SwitchesFound = 0;
-    int weather=0;
     int j;
-     
+
     Script 1 OPEN
     {
     Thing_DeActivate(144);
@@ -22,12 +25,12 @@
     HudMessage(s:"With the weather by blood.\nSpecial thanks to imb5155 for the try with rain script, \nand Mr.man who gave me the idea of crazy weather."; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.5, 0.20, 8.0, 4.0);
     Thing_Move(84,random(220,222),1);
     Thing_Move(85,random(223,225),1);
-    sector_setColor(40,0,0,255);              
+    sector_setColor(40,0,0,255);
     sector_setFade(40,0,0,255);
     delay(35*5);
     ACS_Execute(70,0,1);
     }
-    
+
     Script 2 (void) // Secret for Crazy weather part 2
     {
     CrazyWeatherPart3 = TRUE;
@@ -54,7 +57,7 @@
     {
         Print(s:"\crFourth switch activated !");
         SwitchesFound++;
-    } 
+    }
     if( SwitchesFound == 2 )
     {
         Print(s:"\crThird switch activated !");
@@ -72,27 +75,27 @@
     }
     }
     }
-    
+
     Script 4 (void) // Secret for Crazy weather part 4
     {
     PrintBold(s:"\cdOk we are doomed,");
     delay(35*2);
-    PrintBold(s:"\cdyou can say thanks to ",n:0,s:"\cd,"); 
-    delay(35*2);       
+    PrintBold(s:"\cdyou can say thanks to ",n:0,s:"\cd,");
+    delay(35*2);
     PrintBold(s:"\cdbecause he has activated the crazy weather,");
     delay(35*2);
     PrintBold(s:"\cdand so ...");
     delay(35*2);
     ACS_Execute(43,0,0,0,0);
     }
-     
+
     Script 6 (void) // Opening Lara's House
     {
     Floor_LowerByValue(82,150,128);
     delay(35*2);
     Floor_RaiseByValue(82,150,128);
     }
-     
+
     script 7 (int Typ)
     {
     if( Typ == 0) // Not accessible anymore
@@ -103,7 +106,7 @@
     }
     if( Typ == 1) // Speaking with Uboa ( 50 Speak == Secret for Crazy weather part 1 ).
     {
-    if( CrazyWeatherPart1 == TRUE) 
+    if( CrazyWeatherPart1 == TRUE)
     {
     switch(random(1,4))
      {
@@ -121,22 +124,22 @@
            break;
      }
      if( SpeakingwithUboa == 50)
-     {   
+     {
                 Print(s:"\cnIt looks like we became friends, so I will tell you something interresting.\n\cnReturn in the hotel, the key for lara's room has spawned at upstairs. \n\cnwhere humans like camping.");
                 SpawnSpot("Lararoomkey",47,466,0);
                 ACS_Execute(8,0,0,0,0);
-     } 
+     }
      SpeakingwithUboa++;
      delay(15);
     }
     }
-    if( CrazyWeatherPart1 == FALSE) 
+    if( CrazyWeatherPart1 == FALSE)
     {
                Print(s:"Nothing interesting here ...");
     }
     if( Typ == 2) // The rampage of the uboa ( it begins the crazy weather secret ).
     {
-    if( CrazyWeatherPart0 == FALSE) 
+    if( CrazyWeatherPart0 == FALSE)
     {
     ACS_Execute(83,0,0,0,0);
     CrazyWeatherPart0 = TRUE;
@@ -155,7 +158,7 @@
     if(CheckInventory("zombiemaker") == 1)
 	  {
     j = CheckInventory("Cell");
-    switch(j) 
+    switch(j)
     {
     case 0:
     Print(s:"How did you managed to come here ?");
@@ -169,30 +172,30 @@
     delay(35*2);
     Print(s:"This is the last warning, if you come again you will die !");
     Thing_Move(0,random(90,94),0);
-    GiveInventory("Cell", 1); 
-    break; 
+    GiveInventory("Cell", 1);
+    break;
     case 2:
     Print(s:"OK ...");
     delay(35*2);
     Print(s:"You Searched it !");
     DamageThing(0, 0);
-    break; 
+    break;
     }
     }
     }
     }
-    
+
     Script 8 (void) // Spawning Lara's House Key for other players
     {
     if(Thingcount(t_none,466) == 0 )
     {
                     SpawnSpot("Lararoomkey",47,466,0);
-    }                
+    }
     delay(35*2);
     restart;
     }
 
-     
+
     Script 9 (void) // Opening Armory
     {
     if(CheckInventory("RedSkull") == 0 &&  ArmoryOpen == FALSE )
@@ -213,7 +216,7 @@
     PrintBold(s:"Turn on generator to active the Teleporter.");
     }
     }
-     
+
     Script 10 (void) // Activing Generator
     {
     if(ArmoryOpen == FALSE )
@@ -234,7 +237,7 @@
     ACS_ExecuteAlways(11,0,0,0,0);
     }
     }
-     
+
     Script 11 (void) // Armory activated !
     {
     ArmoryAmmount = random(2,3);
@@ -245,7 +248,7 @@
     ACS_Execute(12,0,0,0,0);
     Floor_LowerbyValue(55,40,118);
     }
-     
+
     Script 12 (void)
     {
     if( ArmoryAmmount != 0 )
@@ -254,10 +257,10 @@
       HudMessageBold(s:"Armory's batteries left :\ch ",d:ArmoryAmmount,s:""; HUDMSG_FADEOUT, 78, CR_GOLD, 0.16, 0.16, 1.0, 1.0);
       Delay(25);
       restart;
-    }  
-    Delay(1); 
     }
-     
+    Delay(1);
+    }
+
     Script 13 (void)
     {
     if( ArmoryAmmount == 0 )
@@ -304,7 +307,7 @@
     }
     }
     }
-     
+
     Script 14 (void) // armory's room cooldown
     {
     ACS_Terminate(15,0);
@@ -315,7 +318,7 @@
     Thing_Move(0,random(90,94),0);
     AManintheRoom = FALSE;
     }
-     
+
     Script 15 (void) // Armory activated !
     {
     Print(s:"You have 15 Secondes to select your item !");
@@ -326,7 +329,7 @@
     Print(s:"Sorry but you are moved to don't block the armory's room");
     AManintheRoom = FALSE;
     }
-     
+
     Script 16 OPEN // Waiting for the weather ( Random delay ).
     {
     delay(35*random(90,300));
@@ -335,7 +338,7 @@
     delay(35*8);
     ACS_Execute(17,0,random(1,5),0,0);
     }
-     
+
     script 17 (int Typ) //weather
     {
     if( Typ == 1) //  mist
@@ -407,7 +410,7 @@
     Sector_setfade(104,127,127,127);
     Sector_setfade(107,127,127,127);
     Sector_setfade(106,127,127,127);
-    Sector_setfade(107,127,127,127); 
+    Sector_setfade(107,127,127,127);
     Sector_setfade(109,127,127,127);
     Sector_setfade(110,127,127,127);
     Sector_setfade(111,127,127,127);
@@ -415,8 +418,8 @@
     Sector_setfade(20,127,127,127);
     Sector_setfade(26,127,127,127);
     Sector_setfade(105,127,127,127);
-    Sector_setfade(106,127,127,127); 
-    Sector_setfade(114,127,127,127);    
+    Sector_setfade(106,127,127,127);
+    Sector_setfade(114,127,127,127);
     ACS_Execute(35,0,0,0,0);
     Thing_Remove(48);
     SetFont("BIGFONT");
@@ -526,12 +529,12 @@
     Sector_Setcolor(109,32,32,32);
     Sector_Setcolor(110,32,32,32);
     Sector_Setcolor(111,32,32,32);
-    Sector_Setcolor(112,32,32,32); 
+    Sector_Setcolor(112,32,32,32);
     Sector_Setcolor(20,32,32,32);
     Sector_Setcolor(57,32,32,32);
     Sector_Setcolor(330,32,32,32);
     Sector_Setcolor(52,32,32,32);
-    Sector_Setcolor(53,32,32,32);   
+    Sector_Setcolor(53,32,32,32);
     Sector_Setcolor(114,32,32,32);
     Thing_Remove(48);
     }
@@ -542,7 +545,7 @@
     ACS_Execute(41,0,0,0,0);
     }
     }
-     
+
     Script 20 (void) // Falling and taking damage
     {
     delay(1);
@@ -553,21 +556,21 @@
     }
     Thing_Move(0,random(90,94),1);
     }
-     
+
     str cometname[4] = {"kgRandomCometA", "kgRandomCometB", "kgRandomCometC", "kgRandomCometD"};
-     
+
     Script 30 (void) // Random meteor spawner
     {
        delay(35*random(2,15));
        SpawnComet(random(0,4));
        restart;
     }
-     
+
     function void SpawnComet(int num)
     {
         SpawnSpot(cometname[num], 951 + num);
     }
-     
+
     script 31 (void) // Random thunder spawner
     {
     SpawnSpotFacing("ThunderGeneratorWhite",random(970,980),0);
@@ -576,7 +579,7 @@
     delay(35*random(1,5));
     restart;
     }
-     
+
     script 32 (void) // The thunders have 20% of chance to break a window.
     {
     Delay(35*random(45,180));
@@ -597,9 +600,9 @@
            HudMessageBold(s:"\cnA thunder broke a windows."; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.2, 2.5, 0.5);
            AmbientSound("REVEAL",127);
            break;
-    }   
     }
-     
+    }
+
     script 33 (void) // The meteors have 10 % of chance to drop a fire crystal.
     {
     Delay(35*random(20,120));
@@ -613,7 +616,7 @@
     case 6:
     case 7:
     case 8:
-    case 9:  
+    case 9:
         break;
     case 10:
         SpawnSpotFacing("FireCrystalDrop",68,0);
@@ -623,7 +626,7 @@
         break;
     }
     }
-     
+
     script 34 (void) // Misty's Form
     {
     TakeActorInventory(69,"YouCanSeeMe",1);
@@ -632,7 +635,7 @@
     delay(35*random(20,40));
     restart;
     }
-     
+
     script 35 (void) // 75 % of chance for the Misty to come.
     {
     Delay(35*random(45,120));
@@ -658,9 +661,9 @@
         HudMessage(s:"Help : The misty can't go in buildings."; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.5, 0.24, 8.0, 4.0);
         break;
     case 4:break;
-    }       
     }
-     
+    }
+
     script 36 (void) // Kameleon has 80% of chance to come at night.
     {
     Delay(35*random(20,120));
@@ -682,9 +685,9 @@
            break;
     case 5:
            break;
-    }   
     }
-     
+    }
+
     script 37 (void) // Kameleon switching form
     {
     TakeActorInventory(75,"YouCanSeeMe",1);
@@ -693,7 +696,7 @@
     delay(35*random(20,40));
     restart;
     }
-     
+
     script 38 (void) // Kameleon Switching Color delay
     {
     ACS_Execute(39,0,0,0,0);
@@ -706,8 +709,8 @@
     delay(35*random(20,40));
     restart;
     }
-     
-     
+
+
     script 39 (int Typ) // Kameleon Switching Color
     {
     if( Typ == 0) // White
@@ -756,12 +759,12 @@
     Thing_SetTranslation (75,8);
     }
     }
-     
+
     Script 40 (void) // Kameleon's teleport
     {
     Thing_Move(0,random(90,94),0);
     }
-    
+
     script 41 (void) // // Kameleon has 33.3% of chance to come at day.
     {
     Delay(35*random(20,120));
@@ -781,14 +784,14 @@
     case 2:
     case 3:
            break;
-    }   
     }
-     
+    }
+
     Script 42 (void) // PICKUP CROSS
     {
     PrintBold(s:"\cgWATCH OUT\n",n:0, s:"\cj got the \cvCross !!!");
     }
-     
+
     script 43 (void) // Crazy Weather
     {
     setmusic("D_TTFTW");
@@ -816,7 +819,7 @@
     TakeActorInventory(1078,"YouCanSeeMe",1);
     Floor_LowerbyValue(73,10,125);
     }
-     
+
      script 44 (void) // Crazy Crazy Crazy !
     {
             SetHudSize(320, 200, 1);
@@ -857,7 +860,7 @@
             delay(17);
             restart;
     }
-     
+
      script 45 (void) // Crazy Crazy Crazy !
     {
             SetFont("BIGFONT");
@@ -916,7 +919,7 @@
             delay(17);
             restart;
     }
-     
+
      script 49 (void) // Crazy Crazy Crazy !
     {
     delay(35);
@@ -943,7 +946,7 @@
         }
         SetLineBlocking(iLine,BLOCK_NOTHING);
     }
-     
+
     script 80 (void) // Kameleon Switching Color delay
     {
     ACS_Execute(81,0,0,0,0);
@@ -956,8 +959,8 @@
     delay(35*random(20,40));
     restart;
     }
-     
-     
+
+
     script 81 (int Typ) // Kameleon Switching Color
     {
     if( Typ == 0) // White
@@ -1006,7 +1009,7 @@
     Thing_SetTranslation (0,8);
     }
     }
-     
+
     script 82 (void) // Kameleon switching form
     {
     TakeInventory("YouCanSeeMe",1);
@@ -1015,11 +1018,11 @@
     delay(35*random(20,40));
     restart;
     }
-    
+
     script 83 (void) // Spawning the friendly Uboa with who you have to speak for the secrets.
     {
     delay(35*random(10,40));
-    CrazyWeatherPart1 = TRUE;  
+    CrazyWeatherPart1 = TRUE;
     SpawnSpotFacing("Uboa",33,4603);
     Thing_Deactivate(4603);
-    }  
+    }
