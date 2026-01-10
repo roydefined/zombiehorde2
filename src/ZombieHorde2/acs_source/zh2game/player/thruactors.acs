@@ -4,6 +4,22 @@
 
 strict namespace Player
 {
+    internal void ThruActorsTics()
+    {
+        // Is the player in a state where they want to turn off ThruActors?
+        if (GetThruActorsState() != STATE_GOBACKDEFAULT)
+            return;
+
+        // Is there space to turn off ThruActors?
+        if (!GetHasSpace())
+            return;
+
+        BCSUtils::ChangeFlag("THRUACTORS", false);
+        SetThruActorsState(STATE_DEFAULT);
+
+        Sync::SyncPlayers();
+    }
+
     /* ACTOR PROPERTY */
     internal void SetThruActors(bool enable)
     {
@@ -64,5 +80,18 @@ strict namespace Player
 
         static PlayerThruActorsStateT collection[] = { STATE_DEFAULT, STATE_THRUACTORS, STATE_GOBACKDEFAULT };
         return collection[index];
+    }
+
+    /* SPACE CHECKER */
+
+    internal bool GetHasSpace()
+    {
+        return GetPlayerHasSpace(PlayerNumber());
+    }
+
+    internal bool GetPlayerHasSpace(int id)
+    {
+        // TODO
+        return false;
     }
 }
