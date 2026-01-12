@@ -1,0 +1,59 @@
+actor ZH2LegacyZM20HunterGuy : ZH2LegacyMonster
+{
+    Health 12000
+    Radius 40
+    Height 86
+    scale 2
+    Mass 600
+    Speed 13
+    PainChance 110
+    
+    // TODO: What sounds are this? Probably something from Skulltag given it's a Skulltag actor.
+    seesound "grunt/sight"
+    painsound "grunt/pain"
+    deathsound "grunt/death"
+    activesound "grunt/active"
+    AttackSound "ssgguy/attack"
+    
+    monster
+    
+    +QUICKTORETALIATE
+    +LOOKALLAROUND
+    +FLOORCLIP
+    
+    Obituary "%o was jacked by the hunter."
+    DropItem "ZH2WeaponDoubleShotgunSpawn"       
+    
+    States
+    {
+        Spawn:
+            GPS2 AB 10 A_Look
+            Loop
+            
+        See:
+            GPS2 A 1 A_JumpIfTargetInLos(2)
+            GPS2 A 1 A_ClearTarget
+            Goto Spawn
+            GPS2 AABBCCDD 3 A_Chase
+            Loop
+            
+        Missile:
+            GPS2 E 10 A_FaceTarget
+            GPS2 F 8 Bright A_CustomBulletAttack(8, 7, 7, 5, "ZH2WeaponBulletPuff")
+            GPS2 EEEEE 8 A_FaceTarget
+            Goto See
+            
+        Pain:
+            GPS2 G 3
+            GPS2 G 3 A_Pain
+            Goto See
+            
+        Death:
+            GPS2 H 5 A_GiveToTarget("ZH2LegacyZM20KilledHunter", 1)
+            GPS2 I 5 A_Scream
+            GPS2 J 5 A_NoBlocking
+            GPOS KLM 5
+            GPOS N -1
+            Stop
+    }
+}
