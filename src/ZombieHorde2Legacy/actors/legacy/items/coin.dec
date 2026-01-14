@@ -1,0 +1,33 @@
+actor ZH2LegacyCoin : ZH2LegacyCurrencyInventory
+{
+    Scale 0.5
+    Inventory.Amount 1
+    Inventory.MaxAmount 1
+    Inventory.PickupSound "item/coin"
+    inventory.pickupmessage "Picked up an old rusty coin"
+    +INVENTORY.HUBPOWER
+    States
+    {
+        Spawn:
+            MONI A -1
+            Stop
+        Pickup:
+            TNT1 A 0 A_JumpIfInventory("ZH2LegacyCoin", 1, "Ignore")
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == false, "Ignore")
+            TNT1 A 0 A_RailWait
+            Stop
+        Ignore:
+            MONI A 1
+            Stop
+    }
+}
+
+actor ZH2LegacyCoinMarker : MapMarker 21234
+{
+    States
+    {
+        Spawn:
+            MONI A -1
+            loop
+    }
+}
