@@ -1,7 +1,13 @@
-#Include "zcommon.acs"
-#import "ZEGAME.acs"
+#pragma raw include on
+#pragma raw define on
 
-int resist[5] = {0,0,0,0,0};
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+int resists[5] = {0,0,0,0,0};
 int secretSwitch = 0;
 int secretSwitch2 = 0;
 int elevator = 0;
@@ -12,23 +18,23 @@ script 1 OPEN
 	//Zombie spawn area
 	TranslucentLine(2, 75, 0);
 	Scroll_Texture_Both(2, 0, 0, 200, 0);
-	
+
 	//Chute
 	TranslucentLine(4, 75, 0);
-    
+
 	//Wind
 	Sector_SetWind(117,450,0,0);
-  
+
 	//Spawn Holycross
 	SpawnSpot("fakeholycross",3,6,0);
 	SetThingSpecial(6,226,30);
-    
+
 	//Beginning script
 	delay (10*35);
 	SetFont("CONFONT");
 	HudMessageBold(s:"\ccTest subject 29 is trying to escape."; HUDMSG_FADEOUT, 997, CR_RED, 0.05, 0.85, 10.0, 2.0);
 	delay(7*35);
-	
+
 	AmbientSound("WARNING", 127);
 	SetFont("BIGFONT");
 	HudMessageBold(s:"\ccTest subject 29 became uncontrollable !\nStarting self-destruction."; HUDMSG_FADEOUT | HUDMSG_LOG, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
@@ -41,16 +47,16 @@ script 1 OPEN
 
 script 2 (void) //Resist #1
 {
- if(!resist[1])
+ if(!resists[1])
  {
-  resist[1]++;  
-  
+  resists[1]++;
+
 	for (int m=10; m>0; m--) //Countdown
 	{
 		ResistMessage2_2(m,"The lift is arriving...", CR_PURPLE);
 		delay(35);
 	}
-	
+
 	Ceiling_RaiseByValue(10, 20, 124); //Open door
 	ThingSound(14, "DING", 127);
 	Polyobj_DoorSlide(1, 20, 0, 56, 35*5); //Open lift
@@ -85,18 +91,18 @@ script 22 (void) //Stairs
 
 script 3 (void) //Resist #2
 {
-	if (!resist[2])
-	{	
-		resist[2]++;    
-    
+	if (!resists[2])
+	{
+		resists[2]++;
+
 		for (int m=20; m>0; m--) //Countdown
 		{
 			ResistMessage2_2(m,"Opening exit...",CR_PURPLE);
 			delay(35);
 		}
-		
+
 		Ceiling_RaiseByValue(49, 20, 116); //Open Exit
-		
+
 		SetFont("BIGFONT");
 		HudMessageBold(s:"\ccThe exit is now opened"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 2.0, 0.5);
 	}
@@ -104,23 +110,23 @@ script 3 (void) //Resist #2
 
 Script 4 (void) //Resist #3
 {
-	if (!resist[3])
-	{	
-		 resist[3]++;
-    
+	if (!resists[3])
+	{
+		 resists[3]++;
+
     for (int m=20; m>0; m--) //Countdown
     {
         ResistMessage2_2(m,"The lift is arriving...", CR_PURPLE);
         delay(35);
     }
-        
+
     SetFont("BIGFONT");
     HudMessageBold(s:"\ccThe lift leaves in 5 seconds"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 2.0, 0.5);
     ThingSound(168, "DING", 127);
     Polyobj_DoorSlide(47, 20, 64, 56, 35*5); //Open lift #1
     Polyobj_DoorSlide(48, 20, 192, 56, 35*5); //Open lift #1
     delay(35*8);
-    resist[3]++; //Lift #1 arrived
+    resists[3]++; //Lift #1 arrived
     ACS_ExecuteAlways(41,0,0,0,0);
     }
 }
@@ -143,7 +149,7 @@ script 41 (void) //Lift
         Polyobj_Move(60, 20, 64, 56); //Open lift #1 (secret ending)
         Polyobj_Move(61, 20, 192, 56); //Open lift #1 (secret ending)
     }
-    
+
     ThingSound(170, "DING", 127);
     ThingSound(169, "DING", 127);
     Polyobj_Move(45, 20, 64, 56); //Open lift #2
@@ -154,9 +160,9 @@ script 41 (void) //Lift
 
 Script 5 (void) //Resist #4 - end
 {
-    if (!resist[4])
+    if (!resists[4])
     {
-        resist[4]++;
+        resists[4]++;
         SetMusic("NSMUS_37");
 
         for (int m=40; m>0; m--) //Countdown
@@ -164,7 +170,7 @@ Script 5 (void) //Resist #4 - end
             ResistMessage2_2(m,"The helicopter is arriving...", CR_PURPLE);
             delay(35);
         }
-        
+
         Thing_Activate(172);
         Floor_LowerByValue(81, 38, 816);
         Ceiling_LowerByValue(81, 38, 816);
@@ -188,14 +194,14 @@ Script 5 (void) //Resist #4 - end
         SetFont("BIGFONT");
         HudMessageBold(s:" "; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
         AmbientSound("NUKE",127);
-        EndZEGame();
-        
+		Game::KillUnsafePlayers();
+
         for(int n=600; n<=631; n++) //Kill players if their z<=500
         {
             if(GetActorZ(n)<=500.0)
                 Thing_Damage (n, 65535, 19);
         }
-        
+
         while(1)
         {
             for(int i=600; i<=631; i++) //Kill players if their z<=500
@@ -209,17 +215,17 @@ Script 5 (void) //Resist #4 - end
 
 Script 6 (void) //Resist #4 bis - secret end
 {
-    if (!resist[4])
+    if (!resists[4])
     {
-        resist[4]++;
+        resists[4]++;
         SetMusic("NSMUS_37");
-		
+
         for (int m=35; m>0; m--) //Countdown
         {
             ResistMessage2_2(m,"Sealing safe area...", CR_PURPLE);
             delay(35);
         }
-        
+
         SetFont("BIGFONT");
         HudMessageBold(s:"\clSealing room..."; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
         Ceiling_LowerAndCrush(105,4,65535);
@@ -238,20 +244,14 @@ Script 6 (void) //Resist #4 bis - secret end
         SetFont("BIGFONT");
         HudMessageBold(s:" "; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
         AmbientSound("NUKE",127);
-        EndZEGame();
-        resist[4]++;
+		Game::KillUnsafePlayers();
+        resists[4]++;
     }
 }
 
-Script 7 (int back) //Safe zone script
-{
- if(LineSide()== LINE_FRONT) Reached[PlayerNumber()] = 1;
- else if(LineSide()==LINE_BACK&&back) Reached[PlayerNumber()] = 0;
-}
-
 script 8 (void) //Secret Switch
-{ 
-    if (resist[3]<2) //Lift #1 hasn't reached the last resist
+{
+    if (resists[3]<2) //Lift #1 hasn't reached the last resist
     {
         secretSwitch++;
         SetFont("CONFONT");
@@ -291,21 +291,21 @@ script 10 (void) //Secret
         SetMusic("D_DARKER");
         SetFont("SMALLFONT");
         PrintBold(s: "Something bad happened...");
-        
-        while(resist[4]<2)
+
+        while(resists[4]<2)
         {
             delay(1);
-        }  
-        
+        }
+
         SetActivator(0);
         delay(5*35);
         AmbientSound("ULTIMA",127);
         Fadeto(100, 100, 100, 1.0, 6.0);
         delay(8*35);
-        
+
         int HumanSpot = 133;
         int ZombieSpot = 149;
-        
+
         for(int i=600; i<=631; i++)
         {
             if(PlayerInGame(i-600)) //There is a player
@@ -327,12 +327,12 @@ script 10 (void) //Secret
             }
             delay(1);
         }
-        
+
         TeleportOther(100,132,0); //Teleport _0_
-        
+
         Fadeto(100, 100, 100, 0.0, 1.0);
         delay(35);
-        SetMusic("FF9BOSS");      
+        SetMusic("FF9BOSS");
     }
     else
     {
@@ -362,7 +362,7 @@ script 12 (void) //Elevator #2
         Polyobj_Move(45, 20, 192, 56); //Close lift
         Polyobj_Move(46, 20, 64, 56); //Close lift
         delay(5*35);
-        
+
         if(!secretSwitch)
         {
             TeleportInSector(69,70,88,0,0);
@@ -383,7 +383,7 @@ script 12 (void) //Elevator #2
             delay(7*35);
             TeleportInSector(53,80,70,0,0);
         }
-        
+
         delay(35);
         ThingSound(169, "DING", 127);
         Polyobj_Move(45, 20, 64, 56); //Open lift #2
@@ -396,7 +396,7 @@ script 13 (void)
 {
     int rewardHumans=1;
     ACS_ExecuteAlways(15,0,0,0,0);
-    
+
     while(ThingCountName("_0_",100)) //_0_ is living
     {
         SetFont("SMALLFONT");
@@ -404,7 +404,7 @@ script 13 (void)
         delay(1);
         SetActivatorToTarget(100); //The last target will be the killer
     }
-        
+
     SetFont("BIGFONT");
     if (CheckInventory("zombiemaker")) //Killer is a zombie
     {
@@ -413,7 +413,7 @@ script 13 (void)
     }
     else //if killer is a human
         HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- have been defeated by ", n:0, s:".\nAll humans have been awarded with a bonus item !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
-        
+
     for(int j=600; j<=631; j++)
     {
         if(PlayerInGame(j-600)) //There is a player
@@ -452,11 +452,11 @@ script 14 (int KMessage) CLIENTSIDE
 script 15 (void)
 {
     int KMessage=0;
-    
+
     while(ThingCountName("_0_",100))  //_0_ is living
     {
         ACS_ExecuteAlways(14,0,KMessage,0,0); //Clientside script for the client to read the messages
-        
+
         switch(KMessage)
         {
             case 0:
@@ -485,7 +485,7 @@ script 15 (void)
                 Log(s:"\cmKorax\cd: Are you strong enough to face your own master ?");
                 AmbientSound("KoraxVoiceStrong",127);
                 Delay(70);
-                AmbientSound("KoraxVoiceFace",127); 
+                AmbientSound("KoraxVoiceFace",127);
                 break;
         }
         Delay(1000); //1000 ticks after the last message
@@ -514,4 +514,3 @@ function void ResistMessage2_2 (int restime, str whyresist, str color)
 	else
 		HudMessageBold(s:"Resist for \cJ", d:restime, s:" \c-second"; HUDMSG_FADEOUT, 999, color, 0.5, 0.2, 1.1, 0.5);
 }
-  
