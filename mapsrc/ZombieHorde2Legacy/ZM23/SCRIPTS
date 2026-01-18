@@ -11,8 +11,8 @@ int hiddenswitches;
 int GemsCollected = 0;
 Script 1 Enter
 {
-//GiveInventory("Flare", 1);
-SpawnSpot("DoomRadio", 32);
+//GiveInventory(FLARE_ITEM, 1);
+SpawnSpot(WEAPON_RADIO_SPAWN_NAME, 32);
 }
 
 script 2 OPEN
@@ -36,7 +36,7 @@ AmbientSound("world/toyopen",128);
 //Door_Open(58,100);
 SetLineBlocking(69, BLOCK_NOTHING);
 delay(35*3);
-//SetMusic("",0,0);
+//Music::SetMusic("", 0);
 //PrintBold(s:"\cJThe music system has been shut down!");
 }
 else
@@ -49,7 +49,7 @@ Print(s:"\cJ", d:p, s:" more switches to go!");
 script 6 (void)
 {
 PrintBold(n:0, s:"\cJ triggered the hidden music switch!");
-SetMusic("DOMAGIC",0,0);
+Music::SetMusic("DOMAGIC", 0);
 }
 
 Script 10 (void)
@@ -152,16 +152,16 @@ Bool TerminateFor = False;
                 }
             }
 
-        If(SetActorPosition(600+PlayerNumber(), x, y, z, Telefog) == True)
+        If(SetActorPosition(ActivatorTid(), x, y, z, Telefog) == True)
         {
             Tries = 0;
                 If(UseDestinationsAngle == True)
                 {
-                    SetActorAngle(600+PlayerNumber(), a);
+                    SetActorAngle(ActivatorTid(), a);
                 }
             TerminateFor = True;
         }
-        Else If(SetActorPosition(600+PlayerNumber(), x, y, z, Telefog) == False)
+        Else If(SetActorPosition(ActivatorTid(), x, y, z, Telefog) == False)
         {
             Tries ++;
             If(Tries >= 1000)

@@ -101,7 +101,7 @@
     if( Typ == 0) // Not accessible anymore
     {
     Print(s:"This door is locked.");
-    ActivatorSound("DRLOCK2", 127);
+    ActivatorSound("sound/locked2", 127);
     delay(15);
     }
     if( Typ == 1) // Speaking with Uboa ( 50 Speak == Secret for Crazy weather part 1 ).
@@ -150,12 +150,12 @@
     if( Typ == 3) // Not accessible anymore
     {
     Print(s:"This door is sealed.");
-    ActivatorSound("DRLOCK2", 127);
+    ActivatorSound("sound/locked2", 127);
     delay(15);
     }
     if( Typ == 4) // If you fall in the hole when you are a zombie
     {
-    if(CheckInventory("zombiemaker") == 1)
+    if(Player::GetIsZombie())
 	  {
     j = CheckInventory("Cell");
     switch(j)
@@ -178,7 +178,7 @@
     Print(s:"OK ...");
     delay(35*2);
     Print(s:"You Searched it !");
-    DamageThing(0, 0);
+    DamageThing(0, MOD_UNKNOWN);
     break;
     }
     }
@@ -286,20 +286,20 @@
     }
     if(CheckInventory("Wentinarmory") == 0 )
     {
-    if(CheckInventory("zombiemaker") == 1 )
+    if(Player::GetIsZombie())
     {
     SetFont("BIGFONT");
     HudMessage(s:"There are weapons in it, not brains !"; HUDMSG_FADEOUT, 640+PlayerNumber(), CR_GOLD, 5.5, 0.5, 2.0, 0.5);
     Thing_Move(0,63,0);
     }
-    if(CheckInventory("zombiemaker") == 0 )
+    if(!Player::GetIsZombie())
     {
     AManintheRoom = TRUE;
     GiveInventory("Wentinarmory",1);
     Thing_Move(0,61,0);
-    SpawnSpotfacing("FakeJacksGun",59,18444);
-    SpawnSpotfacing("FakeDoubleShotgun",58,18444);
-    SpawnSpotfacing("FakeProtectionVest",60,18444);
+    SpawnSpotfacing(WEAPON_JACKSGUN_SPAWN_NAME,59,18444);
+    SpawnSpotfacing(WEAPON_DOUBLESHOTGUN_SPAWN_NAME,58,18444);
+    SpawnSpotfacing(KEVLAR_ITEM,60,18444);
     Thing_SetSpecial(18444, 226, 14, 0, 0);
     ACS_Execute(15,0,0,0,0);
     }
@@ -549,15 +549,15 @@
     Script 20 (void) // Falling and taking damage
     {
     delay(1);
-    Thing_Damage(0,random(10,30),0);
-    if(CheckInventory("zombiemaker"))
+    Thing_Damage(0,random(10,30), MOD_FALLING);
+    if(Player::GetIsZombie())
     {
-    Thing_Damage(0,random(100,400),0);
+    Thing_Damage(0,random(100,400), MOD_FALLING);
     }
     Thing_Move(0,random(90,94),1);
     }
 
-    str cometname[4] = {"kgRandomCometA", "kgRandomCometB", "kgRandomCometC", "kgRandomCometD"};
+    str cometname[4] = {"ZH2LegacyZE20CometSpawnerA", "ZH2LegacyZE20CometSpawnerB", "ZH2LegacyZE20CometSpawnerC", "ZH2LegacyZE20CometSpawnerD"};
 
     Script 30 (void) // Random meteor spawner
     {
@@ -619,7 +619,7 @@
     case 9:
         break;
     case 10:
-        SpawnSpotFacing("FireCrystalDrop",68,0);
+        SpawnSpotFacing(CRYSTAL_ITEM,68,0);
         SetFont("BIGFONT");
         HudMessageBold(s:"A Meteor dropped something in the mine."; HUDMSG_FADEOUT, 998, CR_GOLD, 0.5, 0.2, 2.5, 0.5);
         AmbientSound("REVEAL",127);
@@ -655,7 +655,7 @@
             TakeActorInventory(1078,"ZH2LegacyZM18LabYouCanSeeMe",1);
         }
         Floor_LowerbyValue(73,10,125);
-        setmusic("D_MYST");
+        Music::SetMusic("D_MYST");
         delay(35*5);
         SETFONT("SmallFont");
         HudMessage(s:"Help : The misty can't go in buildings."; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.5, 0.24, 8.0, 4.0);
@@ -789,7 +789,7 @@
 
     script 43 (void) // Crazy Weather
     {
-    setmusic("D_TTFTW");
+    Music::SetMusic("D_TTFTW");
     ACS_Suspend(16,0);
     ACS_Suspend(32,0);
     ACS_Suspend(33,0);
@@ -928,7 +928,7 @@
     }
         script 56 (void)
     {
-        AmbientSound("NUKE", 64);
+        AmbientSound("world/nuke1", 64);
         Radius_Quake(9, 35, 0, 255, 0);
         delay(35);
         Radius_Quake(4, 16, 0, 255, 0);
