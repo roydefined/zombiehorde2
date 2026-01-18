@@ -15,7 +15,7 @@ function int GetPlayerRender(void) {return GetCVar ("vid_renderer");}
 
 script 1 open
 {
-giveinventory("flare",1);
+giveinventory(FLARE_ITEM,1);
  Scroll_Floor ( 28,  0,  -1000,  2 ) ;
  SetLineBlocking(2, BLOCK_CREATURES);
 SetLineBlocking(3, BLOCK_CREATURES);
@@ -55,12 +55,12 @@ Sector_ChangeFlags(36, SECF_NOFALLINGDAMAGE, 0);
 Sector_ChangeFlags(26, SECF_NOFALLINGDAMAGE, 0);
 delay(35*15);
 SetLineBlocking(1, OFF);
-setmusic("D_LUX", 0, 0);
+Music::SetMusic("D_LUX", 0);
 }
 
 Script 2 (void) /* Teleport to the mansion */
 {
-If(CheckInventory("zombiemaker")) Teleport_NoFog(49, 1, 0);
+If(Player::GetIsZombie()) Teleport_NoFog(49, 1, 0);
 Else Teleport_NoFog(100+PlayerNumber(), 1, 0);
 }
 
@@ -140,14 +140,17 @@ int time;
    tagwait(44);
    printbold(s:"The darkness is here");
 delay(35*5);
-   	for(int k = 0; k < 32; k++)
+   	for(int k = 0; k < BCSUtils::MAX_PLAYERS; k++)
 	{
 		if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
 		{
-			SetActivator(600+k);
+            int tid = Identity::GetTid(k);
+			SetActivator(tid);
 			FadeTo(1, 1, 1, 1.0, 1.0);
 		}
 	}
+    
+    SetActivator(-1);
     delay(35*5);
 {
 	Game::KillUnsafePlayers();
@@ -159,7 +162,7 @@ delay(35*5);
 
 Script 8 (void) // Checks if a human has reached the house
 {
-If(CheckInventory("humanmaker") && housereached == 0)
+If(Player::GetIsHuman() && housereached == 0)
     {
     housereached = 1;
     SetActivator(-1);
@@ -185,7 +188,7 @@ thing_move(120,130,"nofog");
 else
 {
 print(s:"YOU NEED THE KEY");
-ActivatorSound("DRLOCKED", 127);
+ActivatorSound("sound/locked1", 127);
 }
 
 }
