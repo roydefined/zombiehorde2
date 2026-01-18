@@ -1,0 +1,319 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+Int housereached = 0;
+Int flextime = 7;
+#define SOFTWARE_PLAYER 0
+
+function int GetPlayerRender(void) {return GetCVar ("vid_renderer");}
+
+script 1 open
+{
+giveinventory("flare",1);
+ Scroll_Floor ( 28,  0,  -1000,  2 ) ;
+ SetLineBlocking(2, BLOCK_CREATURES);
+SetLineBlocking(3, BLOCK_CREATURES);
+ SetLineBlocking(7, BLOCK_CREATURES);
+SetLineBlocking(13, BLOCK_CREATURES);
+
+sector_setcolor(2,0,0,255);
+sector_setcolor(27,0,0,255);
+sector_setcolor(34,0,0,255);
+sector_setcolor(32,0,0,255);
+sector_setcolor(33,0,255,0);
+sector_setcolor(53,2,130,12);
+sector_setcolor(38,2,130,12);
+sector_setcolor(36,2,130,12);
+
+sector_setcolor(37,2,130,12);
+sector_setcolor(40,2,130,12);
+
+sector_setcolor(69,2,130,12);
+sector_setcolor(76,2,130,12);
+sector_setcolor(78,2,130,12);
+sector_setcolor(81,2,130,12);
+sector_setcolor(83,2,130,12);
+
+sector_setcolor(84,2,130,12);
+sector_setcolor(85,2,130,12);
+sector_setcolor(86,2,130,12);
+sector_setcolor(87,2,130,12);
+sector_setcolor(88,2,130,12);
+sector_setcolor(89,2,130,12);
+
+
+
+SetLineBlocking(10, BLOCK_EVERYTHING);
+SetLineBlocking(1, BLOCK_CREATURES);
+Sector_ChangeFlags(36, SECF_NOFALLINGDAMAGE, 0);
+Sector_ChangeFlags(26, SECF_NOFALLINGDAMAGE, 0);
+delay(35*15);
+SetLineBlocking(1, OFF);
+setmusic("D_LUX", 0, 0);
+}
+
+Script 2 (void) /* Teleport to the mansion */
+{
+If(CheckInventory("zombiemaker")) Teleport_NoFog(49, 1, 0);
+Else Teleport_NoFog(100+PlayerNumber(), 1, 0);
+}
+
+Script 3 (void) // Opening door
+{
+SetActivator(-1);
+int time;
+    for(time=15;time>0;time--)
+{
+        SetFont("BIGFONT");
+        Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+        SetFont("SmallFont");
+        HudmessageBOLD(s:"\ciOldman: i'll try to open the door"; 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+
+        HudmessageBold(s:"Opening door..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+        delay(35);
+}
+thing_remove(120);
+thing_move(121,131);
+    Door_Open(19,15);
+    delay(35*5);
+    Floor_RaiseByValue(20,100,16);
+    Floor_RaiseByValue(21,100,40);
+    Floor_RaiseByValue(22,100,64);
+    Floor_RaiseByValue(23,100,80);
+    SetLineBlocking(3, OFF);
+}
+
+
+script 4 (void) //trees
+
+{
+SetActivator(-1);
+int time;
+    for(time=25;time>0;time--)
+
+{
+        SetFont("BIGFONT");
+        Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+        SetFont("SmallFont");
+        HudmessageBOLD(s:"\ciOldman: Take the axe and help me"; 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+
+        HudmessageBold(s:"Toppling trees..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+        delay(35);
+
+}
+SetLineBlocking(10, OFF);
+Thing_Remove(29);
+Thing_Remove(122);
+thing_move(123,133);
+}
+
+script 5 (void) //intro
+{
+    SetFont("BIGFONT"); //if there are two zombies, declare 2 experiments escaped.
+    HudmessageBOLD(s:"\cqWe need to \cifind the key!"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+
+
+
+}
+
+
+
+Script 6 (void) // final resist
+{
+SetActivator(-1);
+int time;
+    for(time=50;time>0;time--)
+{
+        SetFont("BIGFONT");
+        Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+        SetFont("SmallFont");
+        HudmessageBold(s:"The darkness is coming in..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+        delay(35);
+}
+   Generic_Ceiling(44, 6, 0, 5, 16);
+   tagwait(44);
+   printbold(s:"The darkness is here");
+delay(35*5);
+   	for(int k = 0; k < 32; k++)
+	{
+		if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
+		{
+			SetActivator(600+k);
+			FadeTo(1, 1, 1, 1.0, 1.0);
+		}
+	}
+    delay(35*5);
+{
+	Game::KillUnsafePlayers();
+}
+}
+
+
+
+
+Script 8 (void) // Checks if a human has reached the house
+{
+If(CheckInventory("humanmaker") && housereached == 0)
+    {
+    housereached = 1;
+    SetActivator(-1);
+	for(int i = flextime; i > 0; i--) {
+		SetFont("BIGFONT");
+		HudMessageBold(d:i; HUDMSG_PLAIN, 47, CR_YELLOW, 0.5, 0.7, 1.5);
+		Delay(35);
+		}
+	housereached = 2;
+	}
+}
+
+
+
+script 10 (void)
+{
+if(checkinventory("cavekey"))
+{
+Door_open(5,100);
+thing_remove(119);
+thing_move(120,130,"nofog");
+}
+else
+{
+print(s:"YOU NEED THE KEY");
+ActivatorSound("DRLOCKED", 127);
+}
+
+}
+
+
+script 11 (void)//move the box
+{
+
+
+SetFont("SmallFont");
+HudmessageBOLD(s:"\ciOldman: Help me to move the crate"; 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+        delay(35*10);
+
+floor_lowerbyvalue(65,1000,128);
+SetLineBlocking(7, OFF);
+thing_remove(121);
+thing_move(122,132);
+
+}
+
+
+
+script 12 (void) //wall resist
+{
+SetActivator(-1);
+int time;
+    for(time=30;time>0;time--)
+
+{
+        SetFont("BIGFONT");
+        Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+        SetFont("SmallFont");
+        HudmessageBOLD(s:"\ciOldman: Take the hammer and help me"; 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+
+        HudmessageBold(s:"tearing down the wall..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+        delay(35);
+
+}
+SetLineBlocking(13, OFF);
+SetLineTexture(13, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+thing_remove(126);
+thing_move(127,137,"nofog");
+
+}
+
+script 13 (void)
+{
+ceiling_raisebyvalue(96,50000,192);
+changeceiling(96,"F_SKY1");
+floor_raisebyvalue(96,50000,192);
+thing_remove(127);
+
+
+Light_RaiseByValue(96,34);
+Radius_Quake(50,35*1,0,50,97);
+SetLineTexture(15, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+thing_destroy(48);
+}
+
+script 14 (void)//oldman1
+{
+SetFont("SmallFont");
+HudmessageBOLD(s:"\ciOldMan: The darkness comes for us, follow me to the castle"; 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+
+delay(35*3);
+
+thing_remove(74);
+thing_move(119,80);
+
+}
+
+
+script 15 (void)//oldman1
+{
+SetFont("SmallFont");
+HudmessageBOLD(s:"\ciOldman: The key is in the big lake"; 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+Thing_Move(64, random(62,63), 1); //key
+
+}
+
+script 9 (void)
+{
+HudmessageBOLD(s:"\ciOldman: Hurry up!"; 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+delay(35*3);
+thing_remove(123);
+thing_move(124,134);
+}
+
+
+script 16 (void)
+{
+HudmessageBOLD(s:"\ciOldman: Jump into the water, i follow you"; 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+delay(35*3);
+thing_remove(124);
+thing_move(125,135);
+
+
+
+}
+
+
+script 17 (void)
+{
+HudmessageBOLD(s:"\ciOldman: Take the stairs!!"; 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+delay(35*3);
+thing_remove(125);
+thing_move(126,136);
+}
+
+
+
+script 18 (void)
+{
+HudmessageBOLD(s:"\ciOldman: This way! We are near the illuminated room"; 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+
+}
+
+
+script 19 OPEN clientside //software support
+{
+    if(getplayerrender()!=SOFTWARE_PLAYER) Terminate;
+    {
+        for(int area=0;area<=999;area++)
+        {
+            Light_fade(area,192,35);
+        }
+    }
+}
+
+
+

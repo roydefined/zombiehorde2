@@ -1,0 +1,65 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+#define SOFTWARE_PLAYER 0
+
+function int GetPlayerRender(void) {return GetCVar ("vid_renderer");}
+
+Script 1 OPEN
+{
+giveinventory("Allmap",1);
+takeinventory("SUICIDESHIT",1);
+takeinventory("LEAPSTONE",1);
+acs_execute(3,0,0,0,0);
+}
+
+script 2 OPEN CLIENTSIDE
+{
+Thing_DeActivate(7);
+Thing_DeActivate(8);
+Thing_DeActivate(9);
+Thing_DeActivate(10);
+Thing_DeActivate(11);
+}
+
+//software detection
+
+script 3 (int x) clientside{
+    if(getplayerrender()==SOFTWARE_PLAYER){
+        if (x==false){
+            SETFONT("CONFONT");
+            HudMessagebold(s:"Welcome to Minecraft.\n\It appears you are playing in Software mode.\n\As you can see, the map doesnt look very good, because the doom palette doesnt support it too well.\n\For optimal gameplay, please switch to OpenGL the next time you will play this map."; HUDMSG_FADEINOUT, 0, CR_Gray, 0.2, 0.2, 15.0);
+}}}
+
+//restone blocks
+/*NOTE: multiple scripts are used to make it possible for multiple
+blocks to be activated.*/
+
+script 4 (void) CLIENTSIDE{
+    Thing_Activate(7);
+delay(random(350,700));
+    Thing_DeActivate(7);}
+script 5 (void) CLIENTSIDE{
+    Thing_Activate(8);
+delay(random(350,700));
+    Thing_DeActivate(8);}
+script 6 (void) CLIENTSIDE{
+    Thing_Activate(9);
+delay(random(350,700));
+    Thing_DeActivate(9);}
+script 7 (void) CLIENTSIDE{
+    Thing_Activate(10);
+delay(random(350,700));
+    Thing_DeActivate(10);}
+script 8 (void) CLIENTSIDE{
+    Thing_Activate(11);
+delay(random(350,700));
+    Thing_DeActivate(11);}
+
+//-
