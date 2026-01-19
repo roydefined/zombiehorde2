@@ -1,10 +1,11 @@
-// TODO: This should be human-only. And also properly inherit a parent actor.
-actor ZH2LegacyBlueJewel : Health 12602
+actor ZH2LegacyHealingBlueJewel : ZH2LegacyCurrencyInventory 12602
 {
     Inventory.Amount 1
     Inventory.MaxAmount 125
     Inventory.PickupMessage ""
     Inventory.PickupSound "item/bluejewel"
+	
+	tag "Healing blue jewel"
 
     +COUNTITEM
     +INVENTORY.ALWAYSPICKUP
@@ -15,5 +16,13 @@ actor ZH2LegacyBlueJewel : Health 12602
         Spawn:
             JEWL ABCD 5 bright
             Loop
+        Pickup:
+            TNT1 A 0 A_JumpIfInventory("ZH2LegacyCoin", 1, "Ignore")
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == false, "Ignore")
+            TNT1 A 0 HealThing(1)
+            Stop
+        Ignore:
+            JEWL A 1
+            Stop
     }
 }
