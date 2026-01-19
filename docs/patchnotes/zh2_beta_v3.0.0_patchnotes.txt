@@ -1,6 +1,13 @@
 New features
 ------------------------------------------------
 
+ * * New maps! Newmappack map set support * *
+Zombie Horde 2 now has support for the newmappack maps!
+These have been implemented in map slots ZE20, ZE24, ZE28, ZE32, ZM12, ZM16, ZM20, ZM22, ZM23, ZM24, ZM26, ZM27 and ZM27B.
+The maps have been converted to support Zombie Horde 2, including all of its resources.
+Note that due to the size of Parkskolan (ZM10), the decision has been made to not add this map yet. The map has been moved to the archive, just like Abandoned Mines (ZM09).
+Additionally, Menouthis has _not_ been added as this map already exists.
+
  * * Event bus improvements and new packet-based system * *
 The event bus has existed for a very long time in Zombie Horde 2, and it has received a significant update to improve its behavior.
 The eventbus system is now packet-based, which gives space for as many parameters as needed (until the packet is full).
@@ -16,7 +23,7 @@ This is a massive feature which provides a visual list of events that occur in t
 The new obituary system is not just for listing deaths of players. The current system also displays players that are safe, initial zombies and more.
 You can configure how many obituaries to draw using `cl_zh2_shownobituaries` or by configuring it through the menu.
 
-In old versions, Zombie Horde 2 would show log messages for many of thes eobituaries. These are now all removed in favor of this new system.
+In old versions, Zombie Horde 2 would show log messages for many of these obituaries. These are now all removed in favor of this new system.
 However, you will be able to revert this through the game menu. Alternatively you can also set `cl_zh2_enableobituaries` to false.
 If you revert this, the "old" log-based system will be used.
 Old would be in quotes, because this system has also seen significant improvements.
@@ -95,6 +102,8 @@ These damage types have now been adjusted to correctly indicate damage related t
 
 Other changes:
 - [ZE06] / [ZE06M]: Players will now be pushed off the elevator's ledge when staying on them as the elevator moves down.
+- [ZE16]: Fixed an issue where the avalanche effect didn't work.
+- [ZE20B]: Fix dynamite not being placed when starting the final resist.
 - [ZE25]: The airstrike will now start earlier if a player reached the safezone through the secret exit.
 - [ZE22]: The announcement about the "experiment" escaping has been adjusted to correctly announce the number of zombies that spawned.
 - [ZM13]: The code has been adjusted to not involve keys for some of its checks.
@@ -137,7 +146,7 @@ The current list of events all have a receive function that can be used to parse
 - `void ReceiveTimerElapsed(str packet)`
 - `void ReceiveTimerSwitched(str packet)`
 - `void ReceivePowerExpired(str packet)`
-	
+
 Additionally, a function exists to then get the data from these packets.
 - `raw GetReceiveData(int index)`
 
@@ -149,6 +158,15 @@ Other changes:
 - Enum `SpecieTypeT` has its API changed to `PlayerSpecieT`
 - Enum `PanicStateT` has its API changed to `PlayerPanicStateT`
 - Externed `Game::HumanCount` and `Game::ZombieCount` for getting the number of humans/zombies.
+
+Texture breaking changes
+------------------------------------------------
+
+- The CRATOP4 texture has been renamed to CRATOP40. This wooden texture shared the same name as a texture in the Skulltag resources.
+  This caused a conflict when viewing the textures in Ultimate DoomBuilder and sometimes in game.
+  Please make sure your map is not affected.
+- The SUPPORT2 texture has been renamed to SUPPORT4. This silver beam texture that was added with ZM17 shared the same name as a texture in the Doom 2 and Skulltag resources.
+  Please make sure your map is not affected.
 
 CVars
 ------------------------------------------------
@@ -166,7 +184,6 @@ Other mod changes
 - Fix an issue where the shotgun did an animation when blocked and reloading.
 - Fix Doom keycards showing the wrong icon on the hud due to overlapping texture names.
 - Cvar `sv_zh2_voteincludeplayedmaps` is now `true` by default as it seems like the better choise to allow played maps to be replayed.
-- Textures `0522` & `0545` were defined twice and have now been removed.
 - CVar `compat_noobituaries` is now `false` by default as the new obituary system replaces the majority of these obituaries. Reenabling this will also turn off certain obituaries from the new system.
 - The mod def parsing has been changed to avoid possible runaway errors caused by too many instructions in the code.
 - Improved the code around player curing, and fixed an issue where the cure sparks did not show up correctly.
@@ -176,6 +193,8 @@ Other mod changes
 - The mod now references "Compatibility" parts as "Features" to better indicate they are actual features which are toggleable.
 - Fixed bad lighting in front of a few doors on ZE13.
 - Also fixed an issue on ZE13 where you could go out of the map due to missing impassable linedefs.
+- Strangeland 2's mapslot was changed to ZE20B to make room for Strangeland 1.
+- Over 140 duplicate textures have been removed from the project! These textures were all defined twice and had no reason to remain in the project.
 
 Repository changes
 ------------------------------------------------
