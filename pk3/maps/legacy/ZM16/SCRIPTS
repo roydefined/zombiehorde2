@@ -7,1022 +7,1027 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-    bool ArmoryOpen = FALSE;
-    bool GeneratorActivated = FALSE;
-    bool AManintheRoom = FALSE;
-    bool CrazyWeatherPart3 = FALSE;
-    bool CrazyWeatherPart1 = FALSE;
-    bool CrazyWeatherPart0 = FALSE;
-    bool ArmoryAmmount = 0;
-    bool SpeakingwithUboa = 0;
-    bool SwitchesFound = 0;
-    int j;
+bool ArmoryOpen = FALSE;
+bool GeneratorActivated = FALSE;
+bool AManintheRoom = FALSE;
+bool CrazyWeatherPart3 = FALSE;
+bool CrazyWeatherPart1 = FALSE;
+bool CrazyWeatherPart0 = FALSE;
+bool ArmoryAmmount = 0;
+bool SpeakingwithUboa = 0;
+bool SwitchesFound = 0;
+int j;
 
-    Script 1 OPEN
-    {
+str cometname[4] = {"ZH2LegacyZE20CometSpawnerA", "ZH2LegacyZE20CometSpawnerB", "ZH2LegacyZE20CometSpawnerC", "ZH2LegacyZE20CometSpawnerD"};
+
+Script 1 OPEN
+{
     Thing_DeActivate(144);
-    SETFONT("SmallFont");
+    SetFont("SmallFont");
     HudMessage(s:"With the weather by blood.\nSpecial thanks to imb5155 for the try with rain script, \nand Mr.man who gave me the idea of crazy weather."; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.5, 0.20, 8.0, 4.0);
-    Thing_Move(84,random(220,222),1);
-    Thing_Move(85,random(223,225),1);
-    sector_setColor(40,0,0,255);
-    sector_setFade(40,0,0,255);
+    Thing_Move(84, random(220, 222), 1);
+    Thing_Move(85, random(223, 225), 1);
+    sector_setColor(40, 0, 0, 255);
+    sector_setFade(40, 0, 0, 255);
     delay(35*5);
-    ACS_Execute(70,0,1);
-    }
+    ACS_Execute(70, 0, 1);
+}
 
-    Script 2 (void) // Secret for Crazy weather part 2
-    {
+Script 2 (void) // Secret for Crazy weather part 2
+{
     CrazyWeatherPart3 = TRUE;
     Print(s:"\cnFive switches are now availables somewhere in the map, you need found them all !");
-    Floor_RaiseByValue(112,5,63);
+    Floor_RaiseByValue(112, 5, 63);
     delay(35*8);
     SetFont("BIGFONT");
     HudMessageBold(s:"It looks like you are trying to active the crazy weather !\n Do you really want it ?"; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 8.0, 4.0);
-    }
+}
 
-    Script 3 (void) // Secret for Crazy weather part 3
+Script 3 (void) // Secret for Crazy weather part 3
+{
+    if(CrazyWeatherPart3)
     {
-    if( CrazyWeatherPart3 == TRUE )
-    {
-    if( SwitchesFound == 4 )
-    {
-        Print(s:"\crLast switch activated !");
-        SwitchesFound++;
-        delay(35*3);
-        Print(s:"\cnA new switch is available in the yellow room.");
-        Floor_LowerByValue(100,50,64);
+        if(SwitchesFound == 4)
+        {
+            Print(s:"\crLast switch activated !");
+            SwitchesFound++;
+            delay(35*3);
+            Print(s:"\cnA new switch is available in the yellow room.");
+            Floor_LowerByValue(100, 50, 64);
+        }
+        if(SwitchesFound == 3)
+        {
+            Print(s:"\crFourth switch activated !");
+            SwitchesFound++;
+        }
+        if(SwitchesFound == 2)
+        {
+            Print(s:"\crThird switch activated !");
+            SwitchesFound++;
+        }
+        if(SwitchesFound == 1)
+        {
+            Print(s:"\crSecond switch activated !");
+            SwitchesFound++;
+        }
+        if(SwitchesFound == 0)
+        {
+            Print(s:"\crFirst switch activated !");
+            SwitchesFound++;
+        }
     }
-    if( SwitchesFound == 3 )
-    {
-        Print(s:"\crFourth switch activated !");
-        SwitchesFound++;
-    }
-    if( SwitchesFound == 2 )
-    {
-        Print(s:"\crThird switch activated !");
-        SwitchesFound++;
-    }
-    if( SwitchesFound == 1 )
-    {
-        Print(s:"\crSecond switch activated !");
-        SwitchesFound++;
-    }
-    if( SwitchesFound == 0 )
-    {
-        Print(s:"\crFirst switch activated !");
-        SwitchesFound++;
-    }
-    }
-    }
+}
 
-    Script 4 (void) // Secret for Crazy weather part 4
-    {
-    PrintBold(s:"\cdOk we are doomed,");
+Script 4 (void) // Secret for Crazy weather part 4
+{
+    PrintBold(s:"\cdOk we are doomed, ");
     delay(35*2);
-    PrintBold(s:"\cdyou can say thanks to ",n:0,s:"\cd,");
+    PrintBold(s:"\cdyou can say thanks to ", n:0, s:"\cd, ");
     delay(35*2);
-    PrintBold(s:"\cdbecause he has activated the crazy weather,");
+    PrintBold(s:"\cdbecause he has activated the crazy weather, ");
     delay(35*2);
     PrintBold(s:"\cdand so ...");
     delay(35*2);
-    ACS_Execute(43,0,0,0,0);
-    }
+    ACS_Execute(43, 0, 0, 0, 0);
+}
 
-    Script 6 (void) // Opening Lara's House
-    {
-    Floor_LowerByValue(82,150,128);
+Script 6 (void) // Opening Lara's House
+{
+    Floor_LowerByValue(82, 150, 128);
     delay(35*2);
-    Floor_RaiseByValue(82,150,128);
-    }
+    Floor_RaiseByValue(82, 150, 128);
+}
 
-    script 7 (int Typ)
+script 7 (int Typ)
+{
+    if(Typ == 0) // Not accessible anymore
     {
-    if( Typ == 0) // Not accessible anymore
-    {
-    Print(s:"This door is locked.");
-    ActivatorSound("sound/locked2", 127);
-    delay(15);
+        Print(s:"This door is locked.");
+        ActivatorSound("sound/locked2", 127);
+        delay(15);
     }
-    if( Typ == 1) // Speaking with Uboa ( 50 Speak == Secret for Crazy weather part 1 ).
+    if(Typ == 1) // Speaking with Uboa ( 50 Speak == Secret for Crazy weather part 1 ).
     {
-    if( CrazyWeatherPart1 == TRUE)
-    {
-    switch(random(1,4))
-     {
-        case 1:
-           Print(s:"Oh yes, my food is back.");
-           break;
-        case 2:
-           Print(s:"Come in my house if you can I've a surprise for you.");
-           break;
-        case 3:
-           Print(s:"Hellow, it's me who ate all thats men, if you want be the next come in. ");
-           break;
-        case 4:
-           Print(s:"Hum, normally I don't speak with my food.");
-           break;
-     }
-     if( SpeakingwithUboa == 50)
-     {
+        if(CrazyWeatherPart1)
+        {
+            switch(random(1, 4))
+            {
+                case 1:
+                Print(s:"Oh yes, my food is back.");
+                break;
+                case 2:
+                Print(s:"Come in my house if you can I've a surprise for you.");
+                break;
+                case 3:
+                Print(s:"Hellow, it's me who ate all thats men, if you want be the next come in. ");
+                break;
+                case 4:
+                Print(s:"Hum, normally I don't speak with my food.");
+                break;
+            }
+            if(SpeakingwithUboa == 50)
+            {
                 Print(s:"\cnIt looks like we became friends, so I will tell you something interresting.\n\cnReturn in the hotel, the key for lara's room has spawned at upstairs. \n\cnwhere humans like camping.");
-                SpawnSpot("Lararoomkey",47,466,0);
-                ACS_Execute(8,0,0,0,0);
-     }
-     SpeakingwithUboa++;
-     delay(15);
+                SpawnSpot("Lararoomkey", 47, 466, 0);
+                ACS_Execute(8, 0, 0, 0, 0);
+            }
+            SpeakingwithUboa++;
+            delay(15);
+        }
     }
-    }
-    if( CrazyWeatherPart1 == FALSE)
+    if(!CrazyWeatherPart1)
     {
-               Print(s:"Nothing interesting here ...");
+        Print(s:"Nothing interesting here ...");
     }
-    if( Typ == 2) // The rampage of the uboa ( it begins the crazy weather secret ).
+    if(Typ == 2) // The rampage of the uboa ( it begins the crazy weather secret ).
     {
-    if( CrazyWeatherPart0 == FALSE)
+        if(!CrazyWeatherPart0)
+        {
+            ACS_Execute(83, 0, 0, 0, 0);
+            CrazyWeatherPart0 = true;
+        }
+        Print(s:"Damn it, there were a real rampage here.\n Who did that ?");
+        delay(15);
+    }
+    if(Typ == 3) // Not accessible anymore
     {
-    ACS_Execute(83,0,0,0,0);
-    CrazyWeatherPart0 = TRUE;
+        Print(s:"This door is sealed.");
+        ActivatorSound("sound/locked2", 127);
+        delay(15);
     }
-    Print(s:"Damn it, there were a real rampage here.\n Who did that ?");
-    delay(15);
-    }
-    if( Typ == 3) // Not accessible anymore
+    if(Typ == 4) // If you fall in the hole when you are a zombie
     {
-    Print(s:"This door is sealed.");
-    ActivatorSound("sound/locked2", 127);
-    delay(15);
+        if(Player::GetIsZombie())
+        {
+            j = CheckInventory("Cell");
+            switch(j)
+            {
+                case 0:
+                    Print(s:"How did you managed to come here ?");
+                    delay(35*2);
+                    Print(s:"I save your life for this time, but don't come here again !");
+                    Thing_Move(0, random(90, 94), 0);
+                    GiveInventory("Cell", 1);
+                    break;
+                case 1:
+                    Print(s:"You ? Again ?");
+                    delay(35*2);
+                    Print(s:"This is the last warning, if you come again you will die !");
+                    Thing_Move(0, random(90, 94), 0);
+                    GiveInventory("Cell", 1);
+                    break;
+                case 2:
+                    Print(s:"OK ...");
+                    delay(35*2);
+                    Print(s:"You Searched it !");
+                    DamageThing(0, MOD_UNKNOWN);
+                    break;
+            }
+        }
     }
-    if( Typ == 4) // If you fall in the hole when you are a zombie
-    {
-    if(Player::GetIsZombie())
-	  {
-    j = CheckInventory("Cell");
-    switch(j)
-    {
-    case 0:
-    Print(s:"How did you managed to come here ?");
-    delay(35*2);
-    Print(s:"I save your life for this time, but don't come here again !");
-    Thing_Move(0,random(90,94),0);
-    GiveInventory("Cell", 1);
-    break;
-    case 1:
-    Print(s:"You ? Again ?");
-    delay(35*2);
-    Print(s:"This is the last warning, if you come again you will die !");
-    Thing_Move(0,random(90,94),0);
-    GiveInventory("Cell", 1);
-    break;
-    case 2:
-    Print(s:"OK ...");
-    delay(35*2);
-    Print(s:"You Searched it !");
-    DamageThing(0, MOD_UNKNOWN);
-    break;
-    }
-    }
-    }
-    }
+}
 
-    Script 8 (void) // Spawning Lara's House Key for other players
+Script 8 (void) // Spawning Lara's House Key for other players
+{
+    if(Thingcount(t_none, 466) == 0 )
     {
-    if(Thingcount(t_none,466) == 0 )
-    {
-                    SpawnSpot("Lararoomkey",47,466,0);
+        SpawnSpot("Lararoomkey", 47, 466, 0);
     }
     delay(35*2);
     restart;
+}
+
+Script 9 (void) // Opening Armory
+{
+    if(CheckInventory("RedSkull") == 0 && !ArmoryOpen)
+    {
+        Print(s:"You don't have the red skull key to open the armory.");
     }
 
+    if(CheckInventory("RedSkull") == 1 && !ArmoryOpen)
+    {
+        ArmoryOpen = true;
+        Print(s:"Red skull key used, the armory is now open.");
+        Floor_LowerbyValue(23, 40, 118);
+        delay(35*2);
+        delay(35*3);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"The Armory is now open !"; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 2.0, 0.5);
+        AmbientSound("REVEAL", 127);
+        delay(35*5);
+        PrintBold(s:"Turn on generator to active the Teleporter.");
+    }
+}
 
-    Script 9 (void) // Opening Armory
+Script 10 (void) // Activing Generator
+{
+    if(!ArmoryOpen)
     {
-    if(CheckInventory("RedSkull") == 0 &&  ArmoryOpen == FALSE )
+        Print(s:"Open the armory at first.");
+    }
+    if(CheckInventory("RedSkull") == 0 && !GeneratorActivated && ArmoryOpen)
     {
-    Print(s:"You don't have the red skull key to open the armory.");
+        Print(s:"You don't have the red skull key to turn on generator.");
     }
-    if(CheckInventory("RedSkull") == 1 &&  ArmoryOpen == FALSE )
+    if(CheckInventory("RedSkull") == 1 && !GeneratorActivated && ArmoryOpen)
     {
-    ArmoryOpen = TRUE;
-    Print(s:"Red skull key used, the armory is now open.");
-    Floor_LowerbyValue(23,40,118);
-    delay(35*2);
-    delay(35*3);
-    SetFont("BIGFONT");
-    HudMessageBold(s:"The Armory is now open !"; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 2.0, 0.5);
-    AmbientSound("REVEAL",127);
-    delay(35*5);
-    PrintBold(s:"Turn on generator to active the Teleporter.");
+        GeneratorActivated = true;
+        Print(s:"Red skull key used, the generator is activated.");
+        Floor_LowerbyValue(23, 40, 118);
+        delay(35*2);
+        Thing_Move(0, 56, 0);
+        ACS_ExecuteAlways(11, 0, 0, 0, 0);
     }
-    }
+}
 
-    Script 10 (void) // Activing Generator
-    {
-    if(ArmoryOpen == FALSE )
-    {
-    Print(s:"Open the armory at first.");
-    }
-    if(CheckInventory("RedSkull") == 0 && GeneratorActivated == FALSE && ArmoryOpen == TRUE )
-    {
-    Print(s:"You don't have the red skull key to turn on generator.");
-    }
-    if(CheckInventory("RedSkull") == 1 &&  GeneratorActivated == FALSE && ArmoryOpen == TRUE )
-    {
-    GeneratorActivated = TRUE;
-    Print(s:"Red skull key used, the generator is activated.");
-    Floor_LowerbyValue(23,40,118);
-    delay(35*2);
-    Thing_Move(0,56,0);
-    ACS_ExecuteAlways(11,0,0,0,0);
-    }
-    }
-
-    Script 11 (void) // Armory activated !
-    {
-    ArmoryAmmount = random(2,3);
+Script 11 (void) // Armory activated !
+{
+    ArmoryAmmount = random(2, 3);
     delay(35*5);
     setfont("BIGFONT");
-    HudMessageBold(s:"\ciThe generator is On : \cg<\ci!\cg> \ciWarning \cg<\ci!\cg>\ci only \cc",d:ArmoryAmmount,s:" \ciplayers can take weapons from the armory !"; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 6.0, 0.5);
-    AmbientSound("REVEAL",127);
-    ACS_Execute(12,0,0,0,0);
-    Floor_LowerbyValue(55,40,118);
-    }
+    HudMessageBold(s:"\ciThe generator is On : \cg<\ci!\cg> \ciWarning \cg<\ci!\cg>\ci only \cc", d:ArmoryAmmount, s:" \ciplayers can take weapons from the armory !"; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 6.0, 0.5);
+    AmbientSound("REVEAL", 127);
+    ACS_Execute(12, 0, 0, 0, 0);
+    Floor_LowerbyValue(55, 40, 118);
+}
 
-    Script 12 (void)
-    {
+Script 12 (void)
+{
     if( ArmoryAmmount != 0 )
     {
-      SetFont ("CONFONT");
-      HudMessageBold(s:"Armory's batteries left :\ch ",d:ArmoryAmmount,s:""; HUDMSG_FADEOUT, 78, CR_GOLD, 0.16, 0.16, 1.0, 1.0);
-      Delay(25);
-      restart;
+        SetFont ("CONFONT");
+        HudMessageBold(s:"Armory's batteries left :\ch ", d:ArmoryAmmount, s:""; HUDMSG_FADEOUT, 78, CR_GOLD, 0.16, 0.16, 1.0, 1.0);
+        Delay(25);
+        restart;
     }
     Delay(1);
-    }
+}
 
-    Script 13 (void)
+Script 13 (void)
+{
+    if(ArmoryAmmount == 0)
     {
-    if( ArmoryAmmount == 0 )
+        SetFont("BIGFONT");
+        HudMessage(s:"The teleporter is off."; HUDMSG_FADEOUT, 640+PlayerNumber(), CR_GOLD, 5.5, 0.5, 2.0, 0.5);
+    }
+    if(ArmoryAmmount >= 1)
     {
-    SetFont("BIGFONT");
-    HudMessage(s:"The teleporter is off."; HUDMSG_FADEOUT, 640+PlayerNumber(), CR_GOLD, 5.5, 0.5, 2.0, 0.5);
+        if(AManintheRoom)
+        {
+            SetFont("BIGFONT");
+            HudMessage(s:"There is already someone in the armory's room ..."; HUDMSG_FADEOUT, 640+PlayerNumber(), CR_GOLD, 5.5, 0.5, 2.0, 0.5);
+            Thing_Move(0, 63, 0);
+        }
+        if(!AManintheRoom)
+        {
+            if(CheckInventory("ZH2LegacyZM16WentIntoArmory") == 1)
+            {
+                SetFont("BIGFONT");
+                HudMessage(s:"You already went into the armory's room !"; HUDMSG_FADEOUT, 640+PlayerNumber(), CR_GOLD, 5.5, 0.5, 2.0, 0.5);
+                Thing_Move(0, 63, 0);
+            }
+            if(CheckInventory("ZH2LegacyZM16WentIntoArmory") == 0)
+            {
+                if(Player::GetIsZombie())
+                {
+                    SetFont("BIGFONT");
+                    HudMessage(s:"There are weapons in it, not brains !"; HUDMSG_FADEOUT, 640+PlayerNumber(), CR_GOLD, 5.5, 0.5, 2.0, 0.5);
+                    Thing_Move(0, 63, 0);
+                }
+                if(!Player::GetIsZombie())
+                {
+                    AManintheRoom = true;
+                    GiveInventory("ZH2LegacyZM16WentIntoArmory", 1);
+                    Thing_Move(0, 61, 0);
+                    SpawnSpotfacing(WEAPON_JACKSGUN_SPAWN_NAME, 59, 18444);
+                    SpawnSpotfacing(WEAPON_DOUBLESHOTGUN_SPAWN_NAME, 58, 18444);
+                    SpawnSpotfacing(KEVLAR_ITEM, 60, 18444);
+                    Thing_SetSpecial(18444, 226, 14, 0, 0);
+                    ACS_Execute(15, 0, 0, 0, 0);
+                }
+            }
+        }
     }
-    if( ArmoryAmmount >= 1 )
-    {
-    if(AManintheRoom == TRUE )
-    {
-    SetFont("BIGFONT");
-    HudMessage(s:"There is already someone in the armory's room ..."; HUDMSG_FADEOUT, 640+PlayerNumber(), CR_GOLD, 5.5, 0.5, 2.0, 0.5);
-    Thing_Move(0,63,0);
-    }
-    if(AManintheRoom == FALSE )
-    {
-    if( CheckInventory("ZH2LegacyZM16WentIntoArmory") == 1 )
-    {
-    SetFont("BIGFONT");
-    HudMessage(s:"You already went into the armory's room !"; HUDMSG_FADEOUT, 640+PlayerNumber(), CR_GOLD, 5.5, 0.5, 2.0, 0.5);
-    Thing_Move(0,63,0);
-    }
-    if(CheckInventory("ZH2LegacyZM16WentIntoArmory") == 0 )
-    {
-    if(Player::GetIsZombie())
-    {
-    SetFont("BIGFONT");
-    HudMessage(s:"There are weapons in it, not brains !"; HUDMSG_FADEOUT, 640+PlayerNumber(), CR_GOLD, 5.5, 0.5, 2.0, 0.5);
-    Thing_Move(0,63,0);
-    }
-    if(!Player::GetIsZombie())
-    {
-    AManintheRoom = TRUE;
-    GiveInventory("ZH2LegacyZM16WentIntoArmory",1);
-    Thing_Move(0,61,0);
-    SpawnSpotfacing(WEAPON_JACKSGUN_SPAWN_NAME,59,18444);
-    SpawnSpotfacing(WEAPON_DOUBLESHOTGUN_SPAWN_NAME,58,18444);
-    SpawnSpotfacing(KEVLAR_ITEM,60,18444);
-    Thing_SetSpecial(18444, 226, 14, 0, 0);
-    ACS_Execute(15,0,0,0,0);
-    }
-    }
-    }
-    }
-    }
+}
 
-    Script 14 (void) // armory's room cooldown
-    {
-    ACS_Terminate(15,0);
+Script 14 (void) // armory's room cooldown
+{
+    ACS_Terminate(15, 0);
     Print(s:"Item selected, returning to the map ...");
     Thing_Remove(18444);
     delay(35);
     ArmoryAmmount--;
-    Thing_Move(0,random(90,94),0);
-    AManintheRoom = FALSE;
-    }
+    Thing_Move(0, random(90, 94), 0);
+    AManintheRoom = false;
+}
 
-    Script 15 (void) // Armory activated !
-    {
+Script 15 (void) // Armory activated !
+{
     Print(s:"You have 15 Secondes to select your item !");
     delay(35*15);
     Thing_Remove(18444);
-    Thing_Move(0,random(90,94),0);
+    Thing_Move(0, random(90, 94), 0);
     ArmoryAmmount--;
     Print(s:"Sorry but you are moved to don't block the armory's room");
-    AManintheRoom = FALSE;
-    }
+    AManintheRoom = false;
+}
 
-    Script 16 OPEN // Waiting for the weather ( Random delay ).
-    {
-    delay(35*random(90,300));
+Script 16 OPEN // Waiting for the weather ( Random delay ).
+{
+    delay(35*random(90, 300));
     SetFont("BIGFONT");
     HudMessageBold(s:"The Weather looks like strange, something will happen."; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 5.5, 0.5);
     delay(35*8);
-    ACS_Execute(17,0,random(1,5),0,0);
-    }
+    ACS_Execute(17, 0, random(1, 5), 0, 0);
+}
 
-    script 17 (int Typ) //weather
+script 17 (int Typ) // weather
+{
+    if(Typ == 1) // mist
     {
-    if( Typ == 1) //  mist
+        Thing_SetSpecial(1550, 0, 255, 0, 0);
+        changesky("ICESKY", "ICESKY");
+        Thing_Activate(62);
+        Sector_setfade(27, 127, 127, 127);
+        Sector_setfade(2, 127, 127, 127);
+        Sector_setfade(3, 127, 127, 127);
+        Sector_setfade(4, 127, 127, 127);
+        Sector_setfade(5, 127, 127, 127);
+        Sector_setfade(6, 127, 127, 127);
+        Sector_setfade(46, 127, 127, 127);
+        Sector_setfade(45, 127, 127, 127);
+        Sector_setfade(15, 127, 127, 127);
+        Sector_setfade(49, 127, 127, 127);
+        Sector_setfade(7, 127, 127, 127);
+        Sector_setfade(17, 127, 127, 127);
+        Sector_setfade(16, 127, 127, 127);
+        Sector_setfade(18, 127, 127, 127);
+        Sector_setfade(19, 127, 127, 127);
+        Sector_setfade(14, 127, 127, 127);
+        Sector_setfade(54, 127, 127, 127);
+        Sector_setfade(25, 127, 127, 127);
+        Sector_setfade(26, 127, 127, 127);
+        Sector_setfade(27, 127, 127, 127);
+        Sector_setfade(50, 127, 127, 127);
+        Sector_setfade(38, 127, 127, 127);
+        Sector_setfade(43, 127, 127, 127);
+        Sector_setfade(44, 127, 127, 127);
+        Sector_setfade(35, 127, 127, 127);
+        Sector_setfade(34, 127, 127, 127);
+        Sector_setfade(30, 127, 127, 127);
+        Sector_setfade(31, 127, 127, 127);
+        Sector_setfade(70, 127, 127, 127);
+        Sector_setfade(71, 127, 127, 127);
+        Sector_setfade(51, 127, 127, 127);
+        Sector_setfade(37, 127, 127, 127);
+        Sector_setfade(47, 127, 127, 127);
+        Sector_setfade(26, 127, 127, 127);
+        Sector_setfade(41, 127, 127, 127);
+        Sector_setfade(72, 127, 127, 127);
+        Sector_setfade(20, 127, 127, 127);
+        Sector_setfade(23, 127, 127, 127);
+        Sector_setfade(24, 127, 127, 127);
+        Sector_setfade(55, 127, 127, 127);
+        Sector_setfade(39, 127, 127, 127);
+        Sector_setfade(73, 127, 127, 127);
+        Sector_setfade(74, 127, 127, 127);
+        Sector_setfade(76, 127, 127, 127);
+        Sector_setfade(80, 127, 127, 127);
+        Sector_setfade(87, 127, 127, 127);
+        Sector_setfade(88, 127, 127, 127);
+        Sector_setfade(89, 127, 127, 127);
+        Sector_setfade(95, 127, 127, 127);
+        Sector_setfade(96, 127, 127, 127);
+        Sector_setfade(29, 127, 127, 127);
+        Sector_setfade(28, 127, 127, 127);
+        Sector_setfade(42, 127, 127, 127);
+        Sector_setfade(81, 127, 127, 127);
+        Sector_setfade(32, 127, 127, 127);
+        Sector_setfade(97, 127, 127, 127);
+        Sector_setfade(98, 127, 127, 127);
+        Sector_setfade(100, 127, 127, 127);
+        Sector_setfade(99, 127, 127, 127);
+        Sector_setfade(102, 127, 127, 127);
+        Sector_setfade(103, 127, 127, 127);
+        Sector_setfade(104, 127, 127, 127);
+        Sector_setfade(107, 127, 127, 127);
+        Sector_setfade(106, 127, 127, 127);
+        Sector_setfade(107, 127, 127, 127);
+        Sector_setfade(109, 127, 127, 127);
+        Sector_setfade(110, 127, 127, 127);
+        Sector_setfade(111, 127, 127, 127);
+        Sector_setfade(57, 127, 127, 127);
+        Sector_setfade(20, 127, 127, 127);
+        Sector_setfade(26, 127, 127, 127);
+        Sector_setfade(105, 127, 127, 127);
+        Sector_setfade(106, 127, 127, 127);
+        Sector_setfade(114, 127, 127, 127);
+        ACS_Execute(35, 0, 0, 0, 0);
+        Thing_Remove(48);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"Here comes some mist."; HUDMSG_FADEOUT, 998, CR_GREY, 5.5, 0.2, 5.5, 0.5);
+    }
+    if(Typ == 2) // thunder
     {
-    Thing_SetSpecial(1550, 0, 255, 0, 0);
-    changesky("ICESKY","ICESKY");
-    Thing_Activate(62);
-    Sector_setfade(27,127,127,127);
-    Sector_setfade(2,127,127,127);
-    Sector_setfade(3,127,127,127);
-    Sector_setfade(4,127,127,127);
-    Sector_setfade(5,127,127,127);
-    Sector_setfade(6,127,127,127);
-    Sector_setfade(46,127,127,127);
-    Sector_setfade(45,127,127,127);
-    Sector_setfade(15,127,127,127);
-    Sector_setfade(49,127,127,127);
-    Sector_setfade(7,127,127,127);
-    Sector_setfade(17,127,127,127);
-    Sector_setfade(16,127,127,127);
-    Sector_setfade(18,127,127,127);
-    Sector_setfade(19,127,127,127);
-    Sector_setfade(14,127,127,127);
-    Sector_setfade(54,127,127,127);
-    Sector_setfade(25,127,127,127);
-    Sector_setfade(26,127,127,127);
-    Sector_setfade(27,127,127,127);
-    Sector_setfade(50,127,127,127);
-    Sector_setfade(38,127,127,127);
-    Sector_setfade(43,127,127,127);
-    Sector_setfade(44,127,127,127);
-    Sector_setfade(35,127,127,127);
-    Sector_setfade(34,127,127,127);
-    Sector_setfade(30,127,127,127);
-    Sector_setfade(31,127,127,127);
-    Sector_setfade(70,127,127,127);
-    Sector_setfade(71,127,127,127);
-    Sector_setfade(51,127,127,127);
-    Sector_setfade(37,127,127,127);
-    Sector_setfade(47,127,127,127);
-    Sector_setfade(26,127,127,127);
-    Sector_setfade(41,127,127,127);
-    Sector_setfade(72,127,127,127);
-    Sector_setfade(20,127,127,127);
-    Sector_setfade(23,127,127,127);
-    Sector_setfade(24,127,127,127);
-    Sector_setfade(55,127,127,127);
-    Sector_setfade(39,127,127,127);
-    Sector_setfade(73,127,127,127);
-    Sector_setfade(74,127,127,127);
-    Sector_setfade(76,127,127,127);
-    Sector_setfade(80,127,127,127);
-    Sector_setfade(87,127,127,127);
-    Sector_setfade(88,127,127,127);
-    Sector_setfade(89,127,127,127);
-    Sector_setfade(95,127,127,127);
-    Sector_setfade(96,127,127,127);
-    Sector_setfade(29,127,127,127);
-    Sector_setfade(28,127,127,127);
-    Sector_setfade(42,127,127,127);
-    Sector_setfade(81,127,127,127);
-    Sector_setfade(32,127,127,127);
-    Sector_setfade(97,127,127,127);
-    Sector_setfade(98,127,127,127);
-    Sector_setfade(100,127,127,127);
-    Sector_setfade(99,127,127,127);
-    Sector_setfade(102,127,127,127);
-    Sector_setfade(103,127,127,127);
-    Sector_setfade(104,127,127,127);
-    Sector_setfade(107,127,127,127);
-    Sector_setfade(106,127,127,127);
-    Sector_setfade(107,127,127,127);
-    Sector_setfade(109,127,127,127);
-    Sector_setfade(110,127,127,127);
-    Sector_setfade(111,127,127,127);
-    Sector_setfade(57,127,127,127);
-    Sector_setfade(20,127,127,127);
-    Sector_setfade(26,127,127,127);
-    Sector_setfade(105,127,127,127);
-    Sector_setfade(106,127,127,127);
-    Sector_setfade(114,127,127,127);
-    ACS_Execute(35,0,0,0,0);
-    Thing_Remove(48);
-    SetFont("BIGFONT");
-    HudMessageBold(s:"Here comes some mist."; HUDMSG_FADEOUT, 998, CR_GREY, 5.5, 0.2, 5.5, 0.5);
+        Thing_SetSpecial(1550, 0, 255, 0, 0);
+        changesky("ICESKY", "ICESKY");
+        Thing_Activate(62);
+        ACS_Execute(31, 0, 0, 0, 0);
+        ACS_Execute(32, 0, 0, 0, 0);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"Here come thunders !"; HUDMSG_FADEOUT, 998, CR_BLUE, 5.5, 0.2, 5.5, 0.5);
+        Thing_Remove(48);
+        SpawnSpotFacing("ZH2LegacyZm25ThunderZone", 79, 0);
     }
-    if( Typ == 2) // thunder
+    if(Typ == 3) // cataclism
     {
-    Thing_SetSpecial(1550, 0, 255, 0, 0);
-    changesky("ICESKY","ICESKY");
-    Thing_Activate(62);
-    ACS_Execute(31,0,0,0,0);
-    ACS_Execute(32,0,0,0,0);
-    SetFont("BIGFONT");
-    HudMessageBold(s:"Here come thunders !"; HUDMSG_FADEOUT, 998, CR_BLUE, 5.5, 0.2, 5.5, 0.5);
-    Thing_Remove(48);
-    SpawnSpotFacing("ZH2LegacyZm25ThunderZone",79,0);
+        changesky("TSKYA", "TSKYA");
+        ACS_Execute(30, 0, 0, 0, 0);
+        ACS_Execute(33, 0, 0, 0, 0);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"Watchout, it's a cataclism !"; HUDMSG_FADEOUT, 998, CR_RED, 5.5, 0.2, 5.5, 0.5);
+        Thing_Remove(48);
     }
-    if( Typ == 3) // cataclism
+    if(Typ == 4) // night
     {
-    changesky("TSKYA","TSKYA");
-    ACS_Execute(30,0,0,0,0);
-    ACS_Execute(33,0,0,0,0);
-    SetFont("BIGFONT");
-    HudMessageBold(s:"Watchout, it's a cataclism !"; HUDMSG_FADEOUT, 998, CR_RED, 5.5, 0.2, 5.5, 0.5);
-    Thing_Remove(48);
+        changesky("STSKY8", "STSKY8");
+        Thing_Activate(65);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"\cmIt's already the night, no one came back alive after a night here D: !"; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 5.5, 0.5);
+        ACS_Execute(36, 0, 0, 0, 0);
+        Thing_Activate(354);
+        Sector_Setcolor(27, 32, 32, 32);
+        Sector_Setcolor(2, 32, 32, 32);
+        Sector_Setcolor(3, 32, 32, 32);
+        Sector_Setcolor(4, 32, 32, 32);
+        Sector_Setcolor(5, 32, 32, 32);
+        Sector_Setcolor(6, 32, 32, 32);
+        Sector_Setcolor(46, 32, 32, 32);
+        Sector_Setcolor(45, 32, 32, 32);
+        Sector_Setcolor(15, 32, 32, 32);
+        Sector_Setcolor(49, 32, 32, 32);
+        Sector_Setcolor(7, 32, 32, 32);
+        Sector_Setcolor(17, 32, 32, 32);
+        Sector_Setcolor(16, 32, 32, 32);
+        Sector_Setcolor(18, 32, 32, 32);
+        Sector_Setcolor(19, 32, 32, 32);
+        Sector_Setcolor(14, 32, 32, 32);
+        Sector_Setcolor(54, 32, 32, 32);
+        Sector_Setcolor(25, 32, 32, 32);
+        Sector_Setcolor(26, 32, 32, 32);
+        Sector_Setcolor(27, 32, 32, 32);
+        Sector_Setcolor(50, 32, 32, 32);
+        Sector_Setcolor(38, 32, 32, 32);
+        Sector_Setcolor(43, 32, 32, 32);
+        Sector_Setcolor(44, 32, 32, 32);
+        Sector_Setcolor(35, 32, 32, 32);
+        Sector_Setcolor(34, 32, 32, 32);
+        Sector_Setcolor(30, 32, 32, 32);
+        Sector_Setcolor(31, 32, 32, 32);
+        Sector_Setcolor(70, 32, 32, 32);
+        Sector_Setcolor(71, 32, 32, 32);
+        Sector_Setcolor(51, 32, 32, 32);
+        Sector_Setcolor(37, 32, 32, 32);
+        Sector_Setcolor(47, 32, 32, 32);
+        Sector_Setcolor(26, 32, 32, 32);
+        Sector_Setcolor(41, 32, 32, 32);
+        Sector_Setcolor(72, 32, 32, 32);
+        Sector_Setcolor(20, 32, 32, 32);
+        Sector_Setcolor(23, 32, 32, 32);
+        Sector_Setcolor(24, 32, 32, 32);
+        Sector_Setcolor(21, 32, 32, 32);
+        Sector_Setcolor(22, 32, 32, 32);
+        Sector_Setcolor(55, 32, 32, 32);
+        Sector_Setcolor(67, 32, 32, 32);
+        Sector_Setcolor(39, 32, 32, 32);
+        Sector_Setcolor(73, 32, 32, 32);
+        Sector_Setcolor(74, 32, 32, 32);
+        Sector_Setcolor(76, 32, 32, 32);
+        Sector_Setcolor(80, 32, 32, 32);
+        Sector_Setcolor(82, 32, 32, 32);
+        Sector_Setcolor(83, 32, 32, 32);
+        Sector_Setcolor(87, 32, 32, 32);
+        Sector_Setcolor(86, 32, 32, 32);
+        Sector_Setcolor(88, 32, 32, 32);
+        Sector_Setcolor(89, 32, 32, 32);
+        Sector_Setcolor(95, 32, 32, 32);
+        Sector_Setcolor(96, 32, 32, 32);
+        Sector_Setcolor(29, 32, 32, 32);
+        Sector_Setcolor(28, 32, 32, 32);
+        Sector_Setcolor(81, 32, 32, 32);
+        Sector_Setcolor(32, 32, 32, 32);
+        Sector_Setcolor(88, 32, 32, 32);
+        Sector_Setcolor(26, 32, 32, 32);
+        Sector_Setcolor(97, 32, 32, 32);
+        Sector_Setcolor(98, 32, 32, 32);
+        Sector_Setcolor(100, 32, 32, 32);
+        Sector_Setcolor(99, 32, 32, 32);
+        Sector_Setcolor(102, 32, 32, 32);
+        Sector_Setcolor(103, 32, 32, 32);
+        Sector_Setcolor(104, 32, 32, 32);
+        Sector_Setcolor(105, 32, 32, 32);
+        Sector_Setcolor(106, 32, 32, 32);
+        Sector_Setcolor(107, 32, 32, 32);
+        Sector_Setcolor(109, 32, 32, 32);
+        Sector_Setcolor(110, 32, 32, 32);
+        Sector_Setcolor(111, 32, 32, 32);
+        Sector_Setcolor(112, 32, 32, 32);
+        Sector_Setcolor(20, 32, 32, 32);
+        Sector_Setcolor(57, 32, 32, 32);
+        Sector_Setcolor(330, 32, 32, 32);
+        Sector_Setcolor(52, 32, 32, 32);
+        Sector_Setcolor(53, 32, 32, 32);
+        Sector_Setcolor(114, 32, 32, 32);
+        Thing_Remove(48);
     }
-    if( Typ == 4) // night
+    if(Typ == 5) // nothing
     {
-    changesky("STSKY8","STSKY8");
-    Thing_Activate(65);
-    SetFont("BIGFONT");
-    HudMessageBold(s:"\cmIt's already the night, no one came back alive after a night here D: !"; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 5.5, 0.5);
-    ACS_Execute(36,0,0,0,0);
-    Thing_Activate(354);
-        Sector_Setcolor(27,32,32,32);
-    Sector_Setcolor(2,32,32,32);
-    Sector_Setcolor(3,32,32,32);
-    Sector_Setcolor(4,32,32,32);
-    Sector_Setcolor(5,32,32,32);
-    Sector_Setcolor(6,32,32,32);
-    Sector_Setcolor(46,32,32,32);
-    Sector_Setcolor(45,32,32,32);
-    Sector_Setcolor(15,32,32,32);
-    Sector_Setcolor(49,32,32,32);
-    Sector_Setcolor(7,32,32,32);
-    Sector_Setcolor(17,32,32,32);
-    Sector_Setcolor(16,32,32,32);
-    Sector_Setcolor(18,32,32,32);
-    Sector_Setcolor(19,32,32,32);
-    Sector_Setcolor(14,32,32,32);
-    Sector_Setcolor(54,32,32,32);
-    Sector_Setcolor(25,32,32,32);
-    Sector_Setcolor(26,32,32,32);
-    Sector_Setcolor(27,32,32,32);
-    Sector_Setcolor(50,32,32,32);
-    Sector_Setcolor(38,32,32,32);
-    Sector_Setcolor(43,32,32,32);
-    Sector_Setcolor(44,32,32,32);
-    Sector_Setcolor(35,32,32,32);
-    Sector_Setcolor(34,32,32,32);
-    Sector_Setcolor(30,32,32,32);
-    Sector_Setcolor(31,32,32,32);
-    Sector_Setcolor(70,32,32,32);
-    Sector_Setcolor(71,32,32,32);
-    Sector_Setcolor(51,32,32,32);
-    Sector_Setcolor(37,32,32,32);
-    Sector_Setcolor(47,32,32,32);
-    Sector_Setcolor(26,32,32,32);
-    Sector_Setcolor(41,32,32,32);
-    Sector_Setcolor(72,32,32,32);
-    Sector_Setcolor(20,32,32,32);
-    Sector_Setcolor(23,32,32,32);
-    Sector_Setcolor(24,32,32,32);
-    Sector_Setcolor(21,32,32,32);
-    Sector_Setcolor(22,32,32,32);
-    Sector_Setcolor(55,32,32,32);
-    Sector_Setcolor(67,32,32,32);
-    Sector_Setcolor(39,32,32,32);
-    Sector_Setcolor(73,32,32,32);
-    Sector_Setcolor(74,32,32,32);
-    Sector_Setcolor(76,32,32,32);
-    Sector_Setcolor(80,32,32,32);
-    Sector_Setcolor(82,32,32,32);
-    Sector_Setcolor(83,32,32,32);
-    Sector_Setcolor(87,32,32,32);
-    Sector_Setcolor(86,32,32,32);
-    Sector_Setcolor(88,32,32,32);
-    Sector_Setcolor(89,32,32,32);
-    Sector_Setcolor(95,32,32,32);
-    Sector_Setcolor(96,32,32,32);
-    Sector_Setcolor(29,32,32,32);
-    Sector_Setcolor(28,32,32,32);
-    Sector_Setcolor(81,32,32,32);
-    Sector_Setcolor(32,32,32,32);
-    Sector_Setcolor(88,32,32,32);
-    Sector_Setcolor(26,32,32,32);
-    Sector_Setcolor(97,32,32,32);
-    Sector_Setcolor(98,32,32,32);
-    Sector_Setcolor(100,32,32,32);
-    Sector_Setcolor(99,32,32,32);
-    Sector_Setcolor(102,32,32,32);
-    Sector_Setcolor(103,32,32,32);
-    Sector_Setcolor(104,32,32,32);
-    Sector_Setcolor(105,32,32,32);
-    Sector_Setcolor(106,32,32,32);
-    Sector_Setcolor(107,32,32,32);
-    Sector_Setcolor(109,32,32,32);
-    Sector_Setcolor(110,32,32,32);
-    Sector_Setcolor(111,32,32,32);
-    Sector_Setcolor(112,32,32,32);
-    Sector_Setcolor(20,32,32,32);
-    Sector_Setcolor(57,32,32,32);
-    Sector_Setcolor(330,32,32,32);
-    Sector_Setcolor(52,32,32,32);
-    Sector_Setcolor(53,32,32,32);
-    Sector_Setcolor(114,32,32,32);
-    Thing_Remove(48);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"We said nothing, the weather stay calm."; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 5.5, 0.5);
+        ACS_Execute(41, 0, 0, 0, 0);
     }
-    if( Typ == 5) // nothing
-    {
-    SetFont("BIGFONT");
-    HudMessageBold(s:"We said nothing, the weather stay calm."; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 5.5, 0.5);
-    ACS_Execute(41,0,0,0,0);
-    }
-    }
+}
 
-    Script 20 (void) // Falling and taking damage
-    {
+Script 20 (void) // Falling and taking damage
+{
     delay(1);
-    Thing_Damage(0,random(10,30), MOD_FALLING);
+    Thing_Damage(0, random(10, 30), MOD_FALLING);
     if(Player::GetIsZombie())
     {
-    Thing_Damage(0,random(100,400), MOD_FALLING);
+        Thing_Damage(0, random(100, 400), MOD_FALLING);
     }
-    Thing_Move(0,random(90,94),1);
-    }
+    Thing_Move(0, random(90, 94), 1);
+}
 
-    str cometname[4] = {"ZH2LegacyZE20CometSpawnerA", "ZH2LegacyZE20CometSpawnerB", "ZH2LegacyZE20CometSpawnerC", "ZH2LegacyZE20CometSpawnerD"};
-
-    Script 30 (void) // Random meteor spawner
-    {
-       delay(35*random(2,15));
-       SpawnComet(random(0,4));
-       restart;
-    }
-
-    function void SpawnComet(int num)
-    {
-        SpawnSpot(cometname[num], 951 + num);
-    }
-
-    script 31 (void) // Random thunder spawner
-    {
-    SpawnSpotFacing("ZH2LegacyZM25ThunderWhite",random(970,980),0);
-    delay(35*random(1,5));
-    SpawnSpotFacing("ZH2LegacyZM25ThunderWhite",random(970,980),0);
-    delay(35*random(1,5));
+Script 30 (void) // Random meteor spawner
+{
+    delay(35*random(2, 15));
+    SpawnComet(random(0, 4));
     restart;
-    }
+}
 
-    script 32 (void) // The thunders have 20% of chance to break a window.
-    {
-    Delay(35*random(45,180));
-    switch(random(1,5))
-    {
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-           break;
-    case 5:
-           SpawnSpotFacing("ZH2LegacyZM25ThunderWhite",66,0);
-           Thing_Remove(62);
-           AmbientSound("sound/glassbreak2", 127);
-           ACS_Execute(70,0,5);
-           delay(35*3);
-           SetFont("BIGFONT");
-           HudMessageBold(s:"\cnA thunder broke a windows."; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.2, 2.5, 0.5);
-           AmbientSound("REVEAL",127);
-           break;
-    }
-    }
+function void SpawnComet(int num)
+{
+    SpawnSpot(cometname[num], 951 + num);
+}
 
-    script 33 (void) // The meteors have 10 % of chance to drop a fire crystal.
-    {
-    Delay(35*random(20,120));
-    switch(random(1,10))
-    {
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-    case 9:
-        break;
-    case 10:
-        SpawnSpotFacing(CRYSTAL_ITEM,68,0);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"A Meteor dropped something in the mine."; HUDMSG_FADEOUT, 998, CR_GOLD, 0.5, 0.2, 2.5, 0.5);
-        AmbientSound("REVEAL",127);
-        break;
-    }
-    }
-
-    script 34 (void) // Misty's Form
-    {
-    TakeActorInventory(69,"ZH2LegacyZM18LabYouCanSeeMe",1);
-    delay(35*random(20,40));
-    GiveActorInventory(69,"ZH2LegacyZM18LabYouCanSeeMe",1);
-    delay(35*random(20,40));
+script 31 (void) // Random thunder spawner
+{
+    SpawnSpotFacing("ZH2LegacyZM25ThunderWhite", random(970, 980), 0);
+    delay(35*random(1, 5));
+    SpawnSpotFacing("ZH2LegacyZM25ThunderWhite", random(970, 980), 0);
+    delay(35*random(1, 5));
     restart;
-    }
+}
 
-    script 35 (void) // 75 % of chance for the Misty to come.
+script 32 (void) // The thunders have 20% of chance to break a window.
+{
+    Delay(35*random(45, 180));
+    switch(random(1, 5))
     {
-    Delay(35*random(45,120));
-    switch(random(1,4))
-    {
-    case 1:
-    case 2:
-    case 3:
-        Thing_Activate(69);
-        ACS_Execute(34,0,0,0,0);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"The misty is now free !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.2, 2.5, 0.5);
-        if( Playercount() >= 15)
-        {
-            SpawnSpotFacing("ZH2LegacyZm25Misty",77,1077);
-            SpawnSpotFacing("ZH2LegacyZm25Misty",78,1078);
-            TakeActorInventory(1078,"ZH2LegacyZM18LabYouCanSeeMe",1);
-        }
-        Floor_LowerbyValue(73,10,125);
-        Music::SetMusic("D_MYST");
-        delay(35*5);
-        SETFONT("SmallFont");
-        HudMessage(s:"Help : The misty can't go in buildings."; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.5, 0.24, 8.0, 4.0);
-        break;
-    case 4:break;
-    }
-    }
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            break;
 
-    script 36 (void) // Kameleon has 80% of chance to come at night.
-    {
-    Delay(35*random(20,120));
-    switch(random(1,5))
-    {
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-           Thing_Activate(75);
-           ACS_Execute(37,0,0,0,0);
-           ACS_Execute(38,0,0,0,0);
-           SetFont("BIGFONT");
-           HudMessageBold(s:"The kamelion is now free D= !"; HUDMSG_FADEOUT, 998, CR_BLACK, 0.5, 0.2, 2.5, 0.5);
-           Floor_LowerbyValue(74,10,125);
-           delay(35*5);
-           SETFONT("SmallFont");
-           HudMessage(s:"Help : If you see human or zombie with a strange behavior, run for your live or fight."; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.5, 0.24, 8.0, 4.0);
-           break;
-    case 5:
-           break;
+        case 5:
+            SpawnSpotFacing("ZH2LegacyZM25ThunderWhite", 66, 0);
+            Thing_Remove(62);
+            AmbientSound("sound/glassbreak2", 127);
+            ACS_Execute(70, 0, 5);
+            delay(35*3);
+            SetFont("BIGFONT");
+            HudMessageBold(s:"\cnA thunder broke a windows."; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.2, 2.5, 0.5);
+            AmbientSound("REVEAL", 127);
+            break;
     }
-    }
+}
 
-    script 37 (void) // Kameleon switching form
+script 33 (void) // The meteors have 10 % of chance to drop a fire crystal.
+{
+    Delay(35*random(20, 120));
+    switch(random(1, 10))
     {
-    TakeActorInventory(75,"ZH2LegacyZM18LabYouCanSeeMe",1);
-    delay(35*random(20,40));
-    GiveActorInventory(75,"ZH2LegacyZM18LabYouCanSeeMe",1);
-    delay(35*random(20,40));
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+            break;
+
+        case 10:
+            SpawnSpotFacing(CRYSTAL_ITEM, 68, 0);
+            SetFont("BIGFONT");
+            HudMessageBold(s:"A Meteor dropped something in the mine."; HUDMSG_FADEOUT, 998, CR_GOLD, 0.5, 0.2, 2.5, 0.5);
+            AmbientSound("REVEAL", 127);
+            break;
+    }
+}
+
+script 34 (void) // Misty's Form
+{
+    TakeActorInventory(69, "ZH2LegacyZM18LabYouCanSeeMe", 1);
+    delay(35*random(20, 40));
+    GiveActorInventory(69, "ZH2LegacyZM18LabYouCanSeeMe", 1);
+    delay(35*random(20, 40));
     restart;
-    }
+}
 
-    script 38 (void) // Kameleon Switching Color delay
+script 35 (void) // 75 % of chance for the Misty to come.
+{
+    Delay(35*random(45, 120));
+    switch(random(1, 4))
     {
-    ACS_Execute(39,0,0,0,0);
+        case 1:
+        case 2:
+        case 3:
+            Thing_Activate(69);
+            ACS_Execute(34, 0, 0, 0, 0);
+            SetFont("BIGFONT");
+            HudMessageBold(s:"The misty is now free !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.2, 2.5, 0.5);
+            if(Playercount() >= 15)
+            {
+                SpawnSpotFacing("ZH2LegacyZm25Misty", 77, 1077);
+                SpawnSpotFacing("ZH2LegacyZm25Misty", 78, 1078);
+                TakeActorInventory(1078, "ZH2LegacyZM18LabYouCanSeeMe", 1);
+            }
+            Floor_LowerbyValue(73, 10, 125);
+            Music::SetMusic("D_MYST");
+            delay(35*5);
+            SETFONT("SmallFont");
+            HudMessage(s:"Help : The misty can't go in buildings."; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.5, 0.24, 8.0, 4.0);
+            break;
+        case 4:
+            break;
+    }
+}
+
+script 36 (void) // Kameleon has 80% of chance to come at night.
+{
+    Delay(35*random(20, 120));
+    switch(random(1, 5))
+    {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            Thing_Activate(75);
+            ACS_Execute(37, 0, 0, 0, 0);
+            ACS_Execute(38, 0, 0, 0, 0);
+            SetFont("BIGFONT");
+            HudMessageBold(s:"The kamelion is now free D= !"; HUDMSG_FADEOUT, 998, CR_BLACK, 0.5, 0.2, 2.5, 0.5);
+            Floor_LowerbyValue(74, 10, 125);
+            delay(35*5);
+            SETFONT("SmallFont");
+            HudMessage(s:"Help : If you see human or zombie with a strange behavior, run for your live or fight."; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.5, 0.24, 8.0, 4.0);
+            break;
+        case 5:
+            break;
+    }
+}
+
+script 37 (void) // Kameleon switching form
+{
+    TakeActorInventory(75, "ZH2LegacyZM18LabYouCanSeeMe", 1);
+    delay(35*random(20, 40));
+    GiveActorInventory(75, "ZH2LegacyZM18LabYouCanSeeMe", 1);
+    delay(35*random(20, 40));
+    restart;
+}
+
+script 38 (void) // Kameleon Switching Color delay
+{
+    ACS_Execute(39, 0, 0, 0, 0);
     delay(1);
-    ACS_Execute(39,0,random(1,8),0,0);
-    delay(35*random(10,20));
-    ACS_Execute(39,0,0,0,0);
+    ACS_Execute(39, 0, random(1, 8), 0, 0);
+    delay(35*random(10, 20));
+    ACS_Execute(39, 0, 0, 0, 0);
     delay(1);
-    ACS_Execute(39,0,random(1,8),0,0);
-    delay(35*random(20,40));
+    ACS_Execute(39, 0, random(1, 8), 0, 0);
+    delay(35*random(20, 40));
     restart;
-    }
+}
 
+script 39 (int Typ) // Kameleon Switching Color
+{
+    if(Typ == 0) // White
+    {
+        CreateTranslation (10, 0:247=2:247);
+        Thing_SetTranslation (75, 10);
+    }
+    if(Typ == 1) // White
+    {
+        CreateTranslation (1, 112:127=80:95);
+        Thing_SetTranslation (75, 1);
+    }
+    if(Typ == 2) // Grey
+    {
+        CreateTranslation (2, 112:127=96:111);
+        Thing_SetTranslation (75, 2);
+    }
+    if(Typ == 3) // Orange
+    {
+        CreateTranslation (3, 112:127=208:223);
+        Thing_SetTranslation (75, 3);
+    }
+    if(Typ == 4) // Yellow
+    {
+        CreateTranslation (4, 112:124=160:166, 125:127=167:167);
+        Thing_SetTranslation (75, 4);
+    }
+    if(Typ == 5) // Red
+    {
+        CreateTranslation (5, 112:127=176:191);
+        Thing_SetTranslation (75, 5);
+    }
+    if(Typ == 6) // Indigo
+    {
+        CreateTranslation (6, 112:114=240:240, 115:124=241:246, 125:127=0:0);
+        Thing_SetTranslation (75, 6);
+    }
+    if(Typ == 7) // Brown
+    {
+        CreateTranslation (7, 112:127=64:79);
+        Thing_SetTranslation (75, 7);
+    }
+    if(Typ == 8) // Blue
+    {
+        CreateTranslation (8, 112:127=192:207);
+        Thing_SetTranslation (75, 8);
+    }
+}
 
-    script 39 (int Typ) // Kameleon Switching Color
+script 41 (void) // // Kameleon has 33.3% of chance to come at day.
+{
+    Delay(35*random(20, 120));
+    switch(random(1, 3))
     {
-    if( Typ == 0) // White
-    {
-    CreateTranslation (10,0:247=2:247);
-    Thing_SetTranslation (75,10);
+        case 1:
+            Thing_Activate(75);
+            ACS_Execute(37, 0, 0, 0, 0);
+            ACS_Execute(38, 0, 0, 0, 0);
+            SetFont("BIGFONT");
+            HudMessageBold(s:"The kamelion is now free !"; HUDMSG_FADEOUT, 998, CR_GOLD, 0.5, 0.2, 2.5, 0.5);
+            Floor_LowerbyValue(74, 10, 125);
+            delay(35*5);
+            SETFONT("SmallFont");
+            HudMessage(s:"Help : If you see human or zombie with a strange behavior, run for your live or fight."; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.5, 0.24, 8.0, 4.0);
+            break;
+        case 2:
+        case 3:
+            break;
     }
-    if( Typ == 1) // White
-    {
-    CreateTranslation (1,112:127=80:95);
-    Thing_SetTranslation (75,1);
-    }
-    if( Typ == 2) // Grey
-    {
-    CreateTranslation (2,112:127=96:111);
-    Thing_SetTranslation (75,2);
-    }
-    if( Typ == 3) // Orange
-    {
-    CreateTranslation (3,112:127=208:223);
-    Thing_SetTranslation (75,3);
-    }
-    if( Typ == 4) // Yellow
-    {
-    CreateTranslation (4,112:124=160:166,125:127=167:167);
-    Thing_SetTranslation (75,4);
-    }
-    if( Typ == 5) // Red
-    {
-    CreateTranslation (5,112:127=176:191);
-    Thing_SetTranslation (75,5);
-    }
-    if( Typ == 6) // Indigo
-    {
-    CreateTranslation (6,112:114=240:240,115:124=241:246,125:127=0:0);
-    Thing_SetTranslation (75,6);
-    }
-    if( Typ == 7) // Brown
-    {
-    CreateTranslation (7,112:127=64:79);
-    Thing_SetTranslation (75,7);
-    }
-    if( Typ == 8) // Blue
-    {
-    CreateTranslation (8,112:127=192:207);
-    Thing_SetTranslation (75,8);
-    }
-    }
+}
 
-    script 41 (void) // // Kameleon has 33.3% of chance to come at day.
-    {
-    Delay(35*random(20,120));
-    switch(random(1,3))
-    {
-    case 1:
-           Thing_Activate(75);
-           ACS_Execute(37,0,0,0,0);
-           ACS_Execute(38,0,0,0,0);
-           SetFont("BIGFONT");
-           HudMessageBold(s:"The kamelion is now free !"; HUDMSG_FADEOUT, 998, CR_GOLD, 0.5, 0.2, 2.5, 0.5);
-           Floor_LowerbyValue(74,10,125);
-           delay(35*5);
-           SETFONT("SmallFont");
-           HudMessage(s:"Help : If you see human or zombie with a strange behavior, run for your live or fight."; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.5, 0.24, 8.0, 4.0);
-           break;
-    case 2:
-    case 3:
-           break;
-    }
-    }
+Script 42 (void) // PICKUP CROSS
+{
+    PrintBold(s:"\cgWATCH OUT\n", n:0, s:"\cj got the \cvCross !!!");
+}
 
-    Script 42 (void) // PICKUP CROSS
-    {
-    PrintBold(s:"\cgWATCH OUT\n",n:0, s:"\cj got the \cvCross !!!");
-    }
-
-    script 43 (void) // Crazy Weather
-    {
+script 43 (void) // Crazy Weather
+{
     Music::SetMusic("D_TTFTW");
-    ACS_Suspend(16,0);
-    ACS_Suspend(32,0);
-    ACS_Suspend(33,0);
-    ACS_Suspend(35,0);
-    ACS_Suspend(36,0);
-    ACS_Suspend(41,0);
-    ACS_Execute(31,0,0,0,0);
-    ACS_Execute(30,0,0,0,0);
-    ACS_Execute(34,0,0,0,0);
-    ACS_Execute(44,0,0,0,0);
-    ACS_Execute(45,0,0,0,0);
-    ACS_ExecuteAlways(49,0,0,0,0);
+    ACS_Suspend(16, 0);
+    ACS_Suspend(32, 0);
+    ACS_Suspend(33, 0);
+    ACS_Suspend(35, 0);
+    ACS_Suspend(36, 0);
+    ACS_Suspend(41, 0);
+    ACS_Execute(31, 0, 0, 0, 0);
+    ACS_Execute(30, 0, 0, 0, 0);
+    ACS_Execute(34, 0, 0, 0, 0);
+    ACS_Execute(44, 0, 0, 0, 0);
+    ACS_Execute(45, 0, 0, 0, 0);
+    ACS_ExecuteAlways(49, 0, 0, 0, 0);
     Thing_Remove(48);
     Thing_Activate(69);
     Thing_Activate(62);
     Thing_SetSpecial(1550, 0, 255, 0, 0);
-    SpawnSpotFacing("ZH2LegacyZm25Misty",77,1077);
-    SpawnSpotFacing("ZH2LegacyZm25Misty",78,1078);
-    SpawnSpotFacing("ZH2LegacyZm25DiscoThunderZone",101,0);
-    SpawnSpotFacing("ZH2LegacyZM18Kameleon2",101,0);
-    SpawnSpotFacing("ZH2LegacyZm25ThunderZone",79,0);
-    TakeActorInventory(1078,"ZH2LegacyZM18LabYouCanSeeMe",1);
-    Floor_LowerbyValue(73,10,125);
-    }
+    SpawnSpotFacing("ZH2LegacyZm25Misty", 77, 1077);
+    SpawnSpotFacing("ZH2LegacyZm25Misty", 78, 1078);
+    SpawnSpotFacing("ZH2LegacyZm25DiscoThunderZone", 101, 0);
+    SpawnSpotFacing("ZH2LegacyZM18Kameleon2", 101, 0);
+    SpawnSpotFacing("ZH2LegacyZm25ThunderZone", 79, 0);
+    TakeActorInventory(1078, "ZH2LegacyZM18LabYouCanSeeMe", 1);
+    Floor_LowerbyValue(73, 10, 125);
+}
 
-     script 44 (void) // Crazy Crazy Crazy !
-    {
-            SetHudSize(320, 200, 1);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_White,160.0, 10.1, 5.0, 0.25, 1.5);
-            delay(17);
-            SetHudSize(320, 200, 1);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Blue,160.0, 10.1, 5.0, 0.25, 1.5);
-            delay(17);
-            SetHudSize(320, 200, 1);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Yellow,160.0, 10.1, 5.0, 0.25, 1.5);
-            delay(17);
-            SetHudSize(320, 200, 1);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Gold,160.0, 10.1, 5.0, 0.25, 1.5);
-            delay(17);
-            SetHudSize(320, 200, 1);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Green,160.0, 10.1, 5.0, 0.25, 1.5);
-            delay(17);
-            SetHudSize(320, 200, 1);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Purple,160.0, 10.1, 5.0, 0.25, 1.5);
-            delay(17);
-            SetHudSize(320, 200, 1);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Red,160.0, 10.1, 5.0, 0.25, 1.5);
-            delay(17);
-            SetHudSize(320, 200, 1);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"\cnCrazy Weather !"; HUDMSG_FADEOUT, 99, CR_White,160.0, 10.1, 5.0, 0.25, 1.5);
-            delay(17);
-            SetHudSize(320, 200, 1);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Gold,160.0, 10.1, 5.0, 0.25, 1.5);
-            delay(17);
-            restart;
-    }
+script 44 (void) // Crazy Crazy Crazy !
+{
+    SetHudSize(320, 200, 1);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_White, 160.0, 10.1, 5.0, 0.25, 1.5);
+    delay(17);
+    SetHudSize(320, 200, 1);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Blue, 160.0, 10.1, 5.0, 0.25, 1.5);
+    delay(17);
+    SetHudSize(320, 200, 1);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Yellow, 160.0, 10.1, 5.0, 0.25, 1.5);
+    delay(17);
+    SetHudSize(320, 200, 1);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Gold, 160.0, 10.1, 5.0, 0.25, 1.5);
+    delay(17);
+    SetHudSize(320, 200, 1);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Green, 160.0, 10.1, 5.0, 0.25, 1.5);
+    delay(17);
+    SetHudSize(320, 200, 1);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Purple, 160.0, 10.1, 5.0, 0.25, 1.5);
+    delay(17);
+    SetHudSize(320, 200, 1);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Red, 160.0, 10.1, 5.0, 0.25, 1.5);
+    delay(17);
+    SetHudSize(320, 200, 1);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"\cnCrazy Weather !"; HUDMSG_FADEOUT, 99, CR_White, 160.0, 10.1, 5.0, 0.25, 1.5);
+    delay(17);
+    SetHudSize(320, 200, 1);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy Weather !"; HUDMSG_FADEOUT, 99, CR_Gold, 160.0, 10.1, 5.0, 0.25, 1.5);
+    delay(17);
+    restart;
+}
 
-     script 45 (void) // Crazy Crazy Crazy !
-    {
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_White, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Gold, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Blue, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Green, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            delay(17);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_White, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"\cnCrazy"; HUDMSG_FADEOUT, 101, CR_white, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Brown, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Grey, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            delay(17);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_Yellow, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Red, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Blue, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Gold, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            delay(17);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_Purple, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_White, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Green, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Red, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            delay(17);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_Green, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Gold, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Yellow, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Blue, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            delay(17);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_Purple, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Orange, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Gold, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Grey, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            delay(17);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_Red, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Yellow, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"\cnCrazy"; HUDMSG_FADEOUT, 102, CR_White, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_blue, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            delay(17);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"\cnCrazy"; HUDMSG_FADEOUT, 100, CR_White, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Red, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Blue, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Green, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            delay(17);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_Gold, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Orange, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Brown, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Grey, random(0.5,1.5), random(0.1,0.6), 4.5, 1.5);
-            delay(17);
-            restart;
-    }
+script 45 (void) // Crazy Crazy Crazy !
+{
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_White, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Gold, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Blue, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Green, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    delay(17);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_White, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"\cnCrazy"; HUDMSG_FADEOUT, 101, CR_white, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Brown, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Grey, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    delay(17);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_Yellow, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Red, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Blue, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Gold, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    delay(17);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_Purple, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_White, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Green, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Red, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    delay(17);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_Green, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Gold, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Yellow, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Blue, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    delay(17);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_Purple, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Orange, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Gold, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Grey, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    delay(17);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_Red, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Yellow, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"\cnCrazy"; HUDMSG_FADEOUT, 102, CR_White, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_blue, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    delay(17);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"\cnCrazy"; HUDMSG_FADEOUT, 100, CR_White, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Red, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Blue, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Green, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    delay(17);
+    SetFont("BIGFONT");
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 100, CR_Gold, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 101, CR_Orange, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 102, CR_Brown, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    HudmessageBold(s:"Crazy"; HUDMSG_FADEOUT, 103, CR_Grey, random(0.5, 1.5), random(0.1, 0.6), 4.5, 1.5);
+    delay(17);
+    restart;
+}
 
-     script 49 (void) // Crazy Crazy Crazy !
-    {
+script 49 (void) // Crazy Crazy Crazy !
+{
     delay(35);
-    changesky("STSKY8","STSKY8");
+    changesky("STSKY8", "STSKY8");
     delay(35);
-    changesky("TSKYA","TSKYA");
+    changesky("TSKYA", "TSKYA");
     delay(35);
-    changesky("ICESKY","ICESKY");
+    changesky("ICESKY", "ICESKY");
     delay(1);
     restart;
-    }
-        script 56 (void)
-    {
-        AmbientSound("world/nuke1", 64);
-        Radius_Quake(9, 35, 0, 255, 0);
-        delay(35);
-        Radius_Quake(4, 16, 0, 255, 0);
-    }
+}
 
-    Script 70 (int iLine) {
-        For(int i=100;i>=0;i-=5) {
-            TranslucentLine(iLine,i);
-            Delay(1);
-        }
-        SetLineBlocking(iLine,BLOCK_NOTHING);
-    }
+script 56 (void)
+{
+    AmbientSound("world/nuke1", 64);
+    Radius_Quake(9, 35, 0, 255, 0);
+    delay(35);
+    Radius_Quake(4, 16, 0, 255, 0);
+}
 
-    script 80 (void) // Kameleon Switching Color delay
+Script 70 (int iLine)
+{
+    For(int i = 100;i >= 0; i -= 5)
     {
-    ACS_Execute(81,0,0,0,0);
+        TranslucentLine(iLine, i);
+        Delay(1);
+    }
+    SetLineBlocking(iLine, BLOCK_NOTHING);
+}
+
+script 80 (void) // Kameleon Switching Color delay
+{
+    ACS_Execute(81, 0, 0, 0, 0);
     delay(1);
-    ACS_Execute(81,0,random(1,8),0,0);
-    delay(35*random(10,20));
-    ACS_Execute(81,0,0,0,0);
+    ACS_Execute(81, 0, random(1, 8), 0, 0);
+    delay(35*random(10, 20));
+    ACS_Execute(81, 0, 0, 0, 0);
     delay(1);
-    ACS_Execute(81,0,random(1,8),0,0);
-    delay(35*random(20,40));
+    ACS_Execute(81, 0, random(1, 8), 0, 0);
+    delay(35*random(20, 40));
     restart;
-    }
+}
 
 
-    script 81 (int Typ) // Kameleon Switching Color
+script 81 (int Typ) // Kameleon Switching Color
+{
+    if(Typ == 0) // White
     {
-    if( Typ == 0) // White
+        CreateTranslation (10, 0:247=2:247);
+        Thing_SetTranslation (0, 10);
+    }
+    if(Typ == 1) // White
     {
-    CreateTranslation (10,0:247=2:247);
-    Thing_SetTranslation (0,10);
+        CreateTranslation (1, 112:127=80:95);
+        Thing_SetTranslation (0, 1);
     }
-    if( Typ == 1) // White
+    if(Typ == 2) // Grey
     {
-    CreateTranslation (1,112:127=80:95);
-    Thing_SetTranslation (0,1);
+        CreateTranslation (2, 112:127=96:111);
+        Thing_SetTranslation (0, 2);
     }
-    if( Typ == 2) // Grey
+    if(Typ == 3) // Orange
     {
-    CreateTranslation (2,112:127=96:111);
-    Thing_SetTranslation (0,2);
+        CreateTranslation (3, 112:127=208:223);
+        Thing_SetTranslation (0, 3);
     }
-    if( Typ == 3) // Orange
+    if(Typ == 4) // Yellow
     {
-    CreateTranslation (3,112:127=208:223);
-    Thing_SetTranslation (0,3);
+        CreateTranslation (4, 112:124=160:166, 125:127=167:167);
+        Thing_SetTranslation (0, 4);
     }
-    if( Typ == 4) // Yellow
+    if(Typ == 5) // Red
     {
-    CreateTranslation (4,112:124=160:166,125:127=167:167);
-    Thing_SetTranslation (0,4);
+        CreateTranslation (5, 112:127=176:191);
+        Thing_SetTranslation (0, 5);
     }
-    if( Typ == 5) // Red
+    if(Typ == 6) // Indigo
     {
-    CreateTranslation (5,112:127=176:191);
-    Thing_SetTranslation (0,5);
+        CreateTranslation (6, 112:114=240:240, 115:124=241:246, 125:127=0:0);
+        Thing_SetTranslation (0, 6);
     }
-    if( Typ == 6) // Indigo
+    if(Typ == 7) // Brown
     {
-    CreateTranslation (6,112:114=240:240,115:124=241:246,125:127=0:0);
-    Thing_SetTranslation (0,6);
+        CreateTranslation (7, 112:127=64:79);
+        Thing_SetTranslation (0, 7);
     }
-    if( Typ == 7) // Brown
+    if(Typ == 8) // Blue
     {
-    CreateTranslation (7,112:127=64:79);
-    Thing_SetTranslation (0,7);
+        CreateTranslation (8, 112:127=192:207);
+        Thing_SetTranslation (0, 8);
     }
-    if( Typ == 8) // Blue
-    {
-    CreateTranslation (8,112:127=192:207);
-    Thing_SetTranslation (0,8);
-    }
-    }
+}
 
-    script 82 (void) // Kameleon switching form
-    {
-    TakeInventory("ZH2LegacyZM18LabYouCanSeeMe",1);
-    delay(35*random(20,40));
-    GiveInventory("ZH2LegacyZM18LabYouCanSeeMe",1);
-    delay(35*random(20,40));
+script 82 (void) // Kameleon switching form
+{
+    TakeInventory("ZH2LegacyZM18LabYouCanSeeMe", 1);
+    delay(35*random(20, 40));
+    GiveInventory("ZH2LegacyZM18LabYouCanSeeMe", 1);
+    delay(35*random(20, 40));
     restart;
-    }
+}
 
-    script 83 (void) // Spawning the friendly Uboa with who you have to speak for the secrets.
-    {
-    delay(35*random(10,40));
+script 83 (void) // Spawning the friendly Uboa with who you have to speak for the secrets.
+{
+    delay(35*random(10, 40));
     CrazyWeatherPart1 = TRUE;
-    SpawnSpotFacing("Uboa",33,4603);
+    SpawnSpotFacing("Uboa", 33, 4603);
     Thing_Deactivate(4603);
-    }
+}
 
-    Script 84 (void) // Kameleon's teleport
-    {
-    Thing_Move(0,random(90,94),0);
-    }
+Script 84 (void) // Kameleon's teleport
+{
+    Thing_Move(0, random(90, 94), 0);
+}
