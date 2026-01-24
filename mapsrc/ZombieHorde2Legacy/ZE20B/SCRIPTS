@@ -9,7 +9,6 @@
 
 int State = 0;
 int i, j;
-int ConsolePlayer = -1;
 int shield = 0;
 int ZombieIn[BCSUtils::MAX_PLAYERS];
 
@@ -112,7 +111,9 @@ script 4 (void)	// Generator script - first resist
 
 script 5 (void) CLIENTSIDE
 {
-	if(ConsolePlayer != PlayerNumber()) terminate;
+	if(ConsolePlayerNumber() != PlayerNumber())
+        terminate;
+
 	SetFont("CONFONT");
 	HudMessage(s:"Place \cgdynamyte\c- near explosive crate."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.04, 2.0, 1.0);
 	Thing_Activate(201); // power
@@ -361,16 +362,6 @@ script 98 ENTER
 	Delay(70);
 	SetFont("CONFONT");
 	HudMessageBold(s:"If you are lost, use the map and follow markers."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.47, 2.0, 1.0);
-}
-
-script 97 ENTER CLIENTSIDE
-{
-	ConsoleCommand("puke 96");
-}
-
-script 96 (void) NET CLIENTSIDE
-{
-	ConsolePlayer = PlayerNumber();
 }
 
 ////////---------------------------------------------------------------------------------------------
