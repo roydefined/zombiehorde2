@@ -1,0 +1,47 @@
+actor ZH2WeaponRiotgunSpawn : ZH2WeaponSpawn 25198
+{
+    inventory.PickupMessage "Riot Gun"
+    tag "Riot Gun"
+
+    states
+    {
+        Spawn:
+            WRGI A -1
+            stop
+
+        Pickup:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, "PickupSuccess")
+            stop
+        PickupSuccess:
+            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGun", 1)
+            stop
+    }
+}
+
+actor ZH2WeaponRiotGun : ZH2Weapon
+{
+    tag "Riot gun"
+
+    weapon.SlotNumber 4
+    weapon.KickBack 60
+
+    States
+    {
+        Ready:
+            WRGR A 1 nodelay A_WeaponReady(WRF_ALLOWRELOAD)
+            loop
+
+        Deselect:
+            TNT1 A 0 A_Lower
+            wait
+
+        Select:
+            TNT1 A 0 A_Raise
+            TNT1 A 0 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+            goto Ready
+
+        Fire:
+            TNT1 A 0
+            goto Ready
+    }
+}
