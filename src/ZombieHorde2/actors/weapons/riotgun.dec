@@ -7,7 +7,8 @@ actor ZH2WeaponRiotGunSpinDownToReload : Boolean {}
 
 Actor ZH2WeaponRiotGunAmmoTotal : Ammo
 {
-    inventory.MaxAmount 400
+    // Can hold 12 canisters total for now.
+    inventory.MaxAmount 12
 }
 
 Actor ZH2WeaponRiotGunAmmoCurrent : Ammo
@@ -27,7 +28,7 @@ actor ZH2WeaponRiotgunAmmoSpawn : ZH2WeaponSpawn 25197
             TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, 1)
             stop
         PickupSuccess:
-            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunAmmoTotal", 12)
+            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunAmmoTotal", 1)
             stop
     }
 }
@@ -48,10 +49,10 @@ actor ZH2WeaponRiotgunSpawn : ZH2WeaponSpawn 25198
             stop
             TNT1 A 0 A_JumpIfInventory("ZH2WeaponRiotGun", 1, "Ignore")
             TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGun", 1)
-            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunAmmoTotal", 12)
+            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunAmmoTotal", 1)
             TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunAmmoCurrent", 12)
             stop
-			
+
         Ignore:
             WRGI A 1
             goto Spawn
@@ -90,34 +91,35 @@ actor ZH2WeaponRiotGun : ZH2Weapon
             TNT1 A 0 A_PlaySound("weapons/riotgun/select", CHAN_WEAPON)
             WRGS GHIJK 2
             goto Ready
-		
-		Reload:
+
+        Reload:
             TNT1 A 0 A_JumpIfInventory("ZH2WeaponRiotGunAmmoCurrent", 12, "Ready")
             TNT1 A 0 A_TakeInventory("ZH2WeaponRiotGunSpinDownToReload", 1)
-			
-			// No more ammo to give.
+
+            // No more ammo to give.
             TNT1 A 0 A_JumpIfInventory("ZH2WeaponRiotGunAmmoTotal", 1, 1)
-			goto Ready
-			
-			WRGR ABCDEFGHIJKLM 3
-			WRGR NOPQ 5
-			WRGR RSTUV 3
-            TNT1 A 0 ACS_NamedExecuteAlways("zh2_internal_riotgun_topoff", 0)
-			WRGR KJIHGFEDCBA 3
+            goto Ready
+
+            WRGR ABCDEFGHIJKLM 3
+            WRGR NOPQ 5
+            WRGR RSTUV 3
+            TNT1 A 0 A_TakeInventory("ZH2WeaponRiotGunAmmoTotal", 1)
+            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunAmmoCurrent", 12)
+            WRGR KJIHGFEDCBA 3
             goto Ready
 
         Fire:
             // Check if we spun up. If not we should do that first.
             TNT1 A 0 A_JumpIfInventory("ZH2WeaponRiotGunSpinning", 1, "Fire.Main")
-			
+
             TNT1 A 0 A_JumpIfNoAmmo("Reload")
             TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
             goto Fire.SpinUp
-		
+
         Fire.Main:
             TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Fire.SpinDown")
             TNT1 A 0 A_JumpIfNoAmmo("Fire.Empty")
-			
+
             TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
             TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
 
@@ -129,50 +131,50 @@ actor ZH2WeaponRiotGun : ZH2Weapon
             TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 12, 5)
             TNT1 A 0 A_FireBullets(5.0, 5.0, 8, 25 + random(-1, 1) * 5, "ZH2WeaponBulletPuff", FBF_USEAMMO | FBF_NORANDOM)
 
-			TNT1 A 0 A_SetPitch(pitch - 2.0)
+            TNT1 A 0 A_SetPitch(pitch - 2.0)
             WRGF A 1
-			TNT1 A 0 A_SetPitch(pitch + 1.0)
-			WRGF BC 1 bright
+            TNT1 A 0 A_SetPitch(pitch + 1.0)
+            WRGF BC 1 bright
             WRGF DEFGH 1
 
             TNT1 A 0 A_Refire("Fire.Main")
             goto Fire.SpinDown
-		
-		Fire.Empty:
-            TNT1 A 0 A_PlaySound("weapons/riotgun/empty", CHAN_WEAPON)
-			WRGB BCDEFGH 1
-            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunSpinDownToReload", 1)
-			goto Fire.SpinDown
 
-		Fire.SpinUp:
+        Fire.Empty:
+            TNT1 A 0 A_PlaySound("weapons/riotgun/empty", CHAN_WEAPON)
+            WRGB BCDEFGH 1
+            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunSpinDownToReload", 1)
+            goto Fire.SpinDown
+
+        Fire.SpinUp:
             TNT1 A 0 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
             WRGB BC 5
             WRGB DE 4
             WRGB F 3
-			
-			// Brief moment where we can switch.
+
+            // Brief moment where we can switch.
             WRGB GH 2 A_WeaponReady(WRF_NOFIRE)
             WRGB A 1
-			
-			// Require refire or spin back down.
-			TNT1 A 0 A_Refire("Fire.Main")
-			goto Fire.SpinDown
-			
-		Fire.SpinDown:
-			TNT1 A 0 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+
+            // Require refire or spin back down.
+            TNT1 A 0 A_Refire("Fire.Main")
+            goto Fire.SpinDown
+
+        Fire.SpinDown:
+            TNT1 A 0 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
             WRGB BC 1
             WRGB DE 2
             WRGB F 3
             WRGB GH 4
-			
-			// Brief moment where we can switch.
+
+            // Brief moment where we can switch.
             WRGB A 5 A_WeaponReady(WRF_NOFIRE)
-			
-			// Move to reloading if we dry fired.
+
+            // Move to reloading if we dry fired.
             TNT1 A 0 A_JumpIfInventory("ZH2WeaponRiotGunSpinDownToReload", 1, "Reload")
-			
-			// On holding fire we spin back up.
-			TNT1 A 0 A_Refire("Fire.SpinUp")
-			goto Ready
+
+            // On holding fire we spin back up.
+            TNT1 A 0 A_Refire("Fire.SpinUp")
+            goto Ready
     }
 }
