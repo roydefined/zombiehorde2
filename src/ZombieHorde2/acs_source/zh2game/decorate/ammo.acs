@@ -1,0 +1,23 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Decorate
+{
+    script "zh2_internal_riotgun_topoff"
+    {
+        int current = CheckInventory(WEAPON_AMMO_RIOTGUN_CURRENT_NAME);
+        int total = CheckInventory(WEAPON_AMMO_RIOTGUN_TOTAL_NAME);
+
+        int space = WEAPON_AMMO_CLIP_RIOTGUN - current;
+        if (space == 0)
+            terminate;
+
+        int toLoad = BCSUtils::Min(space, total);
+        if (toLoad == 0)
+            terminate;
+
+        BCSUtils::SetInventory(WEAPON_AMMO_RIOTGUN_TOTAL_NAME, total - toLoad);
+        GiveInventory(WEAPON_AMMO_RIOTGUN_CURRENT_NAME, toLoad);
+    }
+}
