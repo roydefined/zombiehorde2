@@ -16,7 +16,9 @@ bool CrazyWeatherPart0 = FALSE;
 bool ArmoryAmmount = 0;
 bool SpeakingwithUboa = 0;
 bool SwitchesFound = 0;
-int j;
+
+// Tracks how often the player was informed not to "cheat".
+internal int _warnCount[BCSUtils::MAX_PLAYERS];
 
 str cometname[4] = {"ZH2LegacyZE20CometSpawnerA", "ZH2LegacyZE20CometSpawnerB", "ZH2LegacyZE20CometSpawnerC", "ZH2LegacyZE20CometSpawnerD"};
 
@@ -113,17 +115,17 @@ script 7 (int Typ)
             switch(random(1, 4))
             {
                 case 1:
-                Print(s:"Oh yes, my food is back.");
-                break;
+                    Print(s:"Oh yes, my food is back.");
+                    break;
                 case 2:
-                Print(s:"Come in my house if you can I've a surprise for you.");
-                break;
+                    Print(s:"Come in my house if you can I've a surprise for you.");
+                    break;
                 case 3:
-                Print(s:"Hellow, it's me who ate all thats men, if you want be the next come in. ");
-                break;
+                    Print(s:"Hellow, it's me who ate all thats men, if you want be the next come in. ");
+                    break;
                 case 4:
-                Print(s:"Hum, normally I don't speak with my food.");
-                break;
+                    Print(s:"Hum, normally I don't speak with my food.");
+                    break;
             }
             if(SpeakingwithUboa == 50)
             {
@@ -159,22 +161,19 @@ script 7 (int Typ)
     {
         if(Player::GetIsZombie())
         {
-            j = CheckInventory("Cell");
-            switch(j)
+		    switch(_warnCount[PlayerNumber()])
             {
                 case 0:
                     Print(s:"How did you managed to come here ?");
                     delay(35*2);
                     Print(s:"I save your life for this time, but don't come here again !");
                     Thing_Move(0, random(90, 94), 0);
-                    GiveInventory("Cell", 1);
                     break;
                 case 1:
                     Print(s:"You ? Again ?");
                     delay(35*2);
                     Print(s:"This is the last warning, if you come again you will die !");
                     Thing_Move(0, random(90, 94), 0);
-                    GiveInventory("Cell", 1);
                     break;
                 case 2:
                     Print(s:"OK ...");
@@ -183,6 +182,8 @@ script 7 (int Typ)
                     DamageThing(0, MOD_UNKNOWN);
                     break;
             }
+            
+		    _warnCount[PlayerNumber()]++;
         }
     }
 }
