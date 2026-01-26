@@ -8,9 +8,14 @@
 #include "acs_source/zh2game.h.acs"
 
 int State = 0;
-int i, j;
 int shield = 0;
 int ZombieIn[BCSUtils::MAX_PLAYERS];
+
+// Tracks how often the player was informed not to "cheat".
+internal int _warnCount[BCSUtils::MAX_PLAYERS];
+
+// Tracks who interacted with the dynamite to plant
+internal int _hasDynamite[BCSUtils::MAX_PLAYERS];
 
 str cometname[4] = {"ZH2LegacyZE20CometSpawnerA", "ZH2LegacyZE20CometSpawnerB", "ZH2LegacyZE20CometSpawnerC", "ZH2LegacyZE20CometSpawnerD"};
 
@@ -52,8 +57,7 @@ script 4 (void)	// Generator script - first resist
 	if(GetActorZ(0) > -40.0)
 	{
 		SetFont("CONFONT");
-		j = CheckInventory("Cell");
-		switch(j)
+		switch(_warnCount[PlayerNumber()])
 		{
 			case 0:
 				HudMessage(s:"No cheating!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.5, 1.0, 1.0);
@@ -72,7 +76,7 @@ script 4 (void)	// Generator script - first resist
 				DamageThing(0, MOD_UNKNOWN);
 				break;
 		}
-		GiveInventory("Cell", 1);
+		_warnCount[PlayerNumber()]++;
 		delay(70);
 		terminate;
 	}
@@ -82,11 +86,12 @@ script 4 (void)	// Generator script - first resist
 	SetLineTexture(10, SIDE_FRONT, TEXTURE_BOTTOM, "SW2GRAY");
 	SetFont("BIGFONT");
 	HudMessageBold(s:"Shutting down Power generator"; HUDMSG_PLAIN, 421, CR_BLUE, 0.5, 0.02, 0);
-	for(j = 25; j > 0; j--)
+	for(int i = 25; i > 0; i--)
 	{
-		if(!State) {
-			ResistMessageNew3(j, CR_BLUE);
-			if(j == 15) SpawnComet(random(0, 3));
+		if(!State)
+		{
+			ResistMessageNew3(i, CR_BLUE);
+			if(i == 15) SpawnComet(random(0, 3));
 		}
 		Delay(35);
 	}
@@ -96,7 +101,10 @@ script 4 (void)	// Generator script - first resist
 	Floor_RaiseByValue(24, 65535, 64);
 	Floor_RaiseByValue(25, 65535, 32);
 	Thing_Remove(7);
-	if(State) terminate;
+
+	if(State)
+		terminate;
+
 	Thing_Activate(201); // power
 	Thing_Deactivate(202); // dynamite
 		// Added ----------------------------------------------------------
@@ -124,16 +132,22 @@ script 5 (void) CLIENTSIDE
 // TODO: Use an array instead of QuestItem1.
 script 6 (void)
 {
-	if(CheckInventory("QuestItem1")) terminate;
-	GiveInventory("QuestItem1", 1);
+    if(_hasDynamite[PlayerNumber()])
+        terminate;
+
+    _hasDynamite[PlayerNumber()] = true;
 	ACS_Execute(5, 0, 0, 0);
 }
 
 
 script 7 (void)
 {
-	if(State > 1) terminate;
-	if(!CheckInventory("QuestItem1")) terminate;
+	if(State > 1)
+		terminate;
+
+    if(!_hasDynamite[PlayerNumber()])
+        terminate;
+
 	SetActivator(-1);
 	Thing_Activate(201); // power
 	Thing_Activate(202); // dynamite
@@ -143,7 +157,7 @@ script 7 (void)
 	HudMessageBold(s:"Dynamite set, prepare for explosion."; HUDMSG_FADEOUT, 421, CR_RED, 0.5, 0.02, 10.0, 1.0);
 	SpawnSpot("zh2legacydynamite", 8, 7);
 	SpawnComet(random(0, 3));
-	for(i = 10; i > 0; i--)
+	for(int i = 10; i > 0; i--)
 	{
 		ResistMessageNew3(i, CR_RED);
 		Delay(35);
@@ -261,11 +275,11 @@ script 53 (int check)
 	}
 	SetFont("BIGFONT");
 	HudMessageBold(n:0, s:"\c- activated anti-zombie shield."; HUDMSG_PLAIN, 500, CR_GREEN, 0.5, 0.2, 0);
-	for(j = 0; j < BCSUtils::MAX_PLAYERS; j++)
+	for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
 	{
-		if(ZombieIn[j])
+		if(ZombieIn[i])
 		{
-			SetActivator(Identity::GetTid(j));
+			SetActivator(Identity::GetTid(i));
 
 			if(Player::GetIsZombie())
 				DamageThing(0, MOD_UNKNOWN);
@@ -277,10 +291,10 @@ script 53 (int check)
 	SetLineTexture(11, SIDE_FRONT, TEXTURE_MIDDLE, "LASER1");
 	SetLineTexture(11, SIDE_BACK, TEXTURE_MIDDLE, "LASER1");
 	delay(35);
-	for(j = 25; j > 0; j--)
+	for(i = 25; i > 0; i--)
 	{
 		SetFont("CONFONT");
-		HudMessageBold(s:"\cdanti-zombie shield\c- collapse in ", d:j; HUDMSG_PLAIN, 500, CR_RED, 0.5, 0.15, 0);
+		HudMessageBold(s:"\cdanti-zombie shield\c- collapse in ", d:i; HUDMSG_PLAIN, 500, CR_RED, 0.5, 0.15, 0);
 		delay(35);
 	}
 	SetLineTexture(11, SIDE_FRONT, TEXTURE_MIDDLE, "-");
@@ -337,7 +351,9 @@ script 57 (void)
 
 script 100 OPEN
 {
-	for(i = 1; i < 6; i++) SetLineSpecial(i, 80, 99, 0, i); // glass lines
+	for(int i = 1; i < 6; i++)
+		SetLineSpecial(i, 80, 99, 0, i); // glass lines
+
 	SetLineSpecial(10, 80, 4, 0, 0);
 	Thing_Activate(202); // dynamite
 	Thing_Activate(203); // explosion
