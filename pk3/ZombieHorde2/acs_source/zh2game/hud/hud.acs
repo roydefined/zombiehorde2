@@ -37,12 +37,18 @@ strict namespace Hud
     internal fixed _hudX,
                    _hudY;
 
+    // Indicates if the client's camera is on its own body.
+    // This means we're not spectating anybody, nor are we on some camera.
+    internal bool _clientCameraOnBody;
+
     internal void Tic()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
         _debugHudId = HUDID_DEBUG_COORDINATES;
         _drawnHudId = HUDID_BASE;
+
+        _clientCameraOnBody = CheckPlayerCamera(ConsolePlayerNumber()) == ActivatorTid();
 
         UpdateHudShakeOffset();
 
@@ -146,6 +152,10 @@ strict namespace Hud
             return;
 
         if (!ZH2Game::GetEnableHudShaking())
+            return;
+
+        // Do not shake if the camera is not on the client.
+        if (!_clientCameraOnBody)
             return;
 
         int duration = ZH2Game::GetHudShakeDuration();
