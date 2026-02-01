@@ -542,6 +542,29 @@ Script 6 (void) // Buzz Kill NOT INCLUDED
     Sector_SetColor(11, 0, 48, 160);
 }
 
+// One sided bar door that can only be opened from the inside.
+script "bar_door_open"(int side)
+{
+	static bool opened;
+
+	if (!side && !opened)
+	{
+		HudMessage(s:"This door appears to be locked from the other side."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+		ActivatorSound("sound/locked1", 127);
+		terminate;
+	}
+
+	if (!opened)
+		HudMessage(s:"You've unlocked the bar's entrance."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+
+	opened = true;
+
+	Door_Open(42, 35, 0);
+	Delay(35 * 5);
+	Door_Close(42, 35, 0);
+	Tagwait(42);
+}
+
 Script 7 (void) // Grunt tel
 {
     delay(random(20, 240));
