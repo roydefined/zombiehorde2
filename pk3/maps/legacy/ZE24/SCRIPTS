@@ -281,6 +281,9 @@ script 10 (void) // Secret
         AmbientSound("sound/poweroff1", 127);
         Ceiling_MoveToValue(97, 12, 1, 1);
         Floor_MoveToValue(97, 12, 2, 1);
+
+        SetActivator(-1);
+
         delay(5*35);
         Light_ChangeToValue(58, 144);
         Light_ChangeToValue(96, 144);
@@ -402,22 +405,33 @@ script 13 (void)
     int rewardHumans=1;
     ACS_ExecuteAlways(15, 0, 0, 0, 0);
 
-    while(ThingCountName("ZH2LegacyZe24KoraxAndDsparil", 100)) // Korax and D'Sparil is living
+    int killerId = -1;
+    while(ThingCountName("ZH2LegacyZe24KoraxAndDsparil", 100)) // Korax and D'Sparil is alive
     {
         SetFont("SMALLFONT");
         HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- health: ", d:GetActorProperty(100, APROP_Health), s:""; HUDMSG_FADEOUT, 997, CR_WHITE, 0.05, 0.85, 10.0, 2.0); // Display health
+        
+        // The last target will be the killer.
+        if (SetActivatorToTarget(100))
+        {
+            killerId = PlayerNumber();
+            SetActivator(-1);
+        }
+
         delay(1);
-        SetActivatorToTarget(100); // The last target will be the killer
     }
 
+    if (killerId == -1)
+        terminate;
+
     SetFont("BIGFONT");
-    if (Player::GetIsZombie) // Killer is a zombie
+    if (Player::GetPlayerIsZombie(killerId)) // Killer is a zombie
     {
-        HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- have been defeated by ", n:0, s:".\nAll zombies have been awarded with a bonus item !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
+        HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- have been defeated by ", s:BCSUtils::PlayerName(killerId), s:".\nAll zombies have been awarded with a bonus item !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
         rewardHumans--; // Reward zombies
     }
     else // if killer is a human
-        HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- have been defeated by ", n:0, s:".\nAll humans have been awarded with a bonus item !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
+        HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- have been defeated by ", s:BCSUtils::PlayerName(killerId), s:".\nAll humans have been awarded with a bonus item !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
 
     for(int j = 0; j < BCSUtils::MAX_PLAYERS; j++)
     {
