@@ -106,7 +106,23 @@ strict namespace ZH2Game
         if (SetActivator(0, AAPTR_DAMAGE_INFLICTOR))
             Decorate::SpawnBloodFromBulletPuff(attackerId, attackedId);
 
+        // Possibly manipulated damage based on buffs/nerfs when a human shoots a zombie.
+        if (Player::GetPlayerIsZombie(attackedId) && Player::GetPlayerIsHuman(attackerId))
+            return MultiplyDamage(damage, attackedId, attackerId);
+
         return damage;
+    }
+
+    // Damage multiplication done for pre calculated damage based on any extra buffs/nerfs the attacker/attacked have.
+    // NOTE: I no longer use actor properties for damage multiplication as it seems APROP_DAMAGEMULTIPLIER has no effect.
+    // Just to keep it clear, all damage will now be done through this.
+    internal int MultiplyDamage(int damage, int attackedId, int attackerId)
+    {
+        // Get the factor from the attacked and the multiplier from the attacked.
+        // These will contribute to the damage.
+        fixed damageFactor = Power::GetPlayerCalculatedPowerFactor(attackedId, Power::POWERTYPE_DAMAGEFACTOR);
+        fixed damageMultiplier = Power::GetPlayerCalculatedPowerFactor(attackerId, Power::POWERTYPE_DAMAGEMULTIPLIER);
+        return int(fixed(damage) * damageFactor * damageMultiplier);
     }
 
     // Main damage handler.
