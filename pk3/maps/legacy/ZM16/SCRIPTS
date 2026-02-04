@@ -482,16 +482,11 @@ script 33 (void) // The meteors have 10 % of chance to drop a fire crystal.
 
 script 34 (void) // Misty's Form
 {
-    TakeActorInventory(69, "ZH2LegacyZM18LabYouCanSeeMe", 1);
-    delay(35*random(20, 40));
     GiveActorInventory(69, "ZH2LegacyZM18LabYouCanSeeMe", 1);
-    delay(35*random(20, 40));
-    restart;
 }
 
 script 35 (void) // 75 % of chance for Misty to come.
 {
-    Delay(35*random(45, 120));
     switch(random(1, 4))
     {
         case 1:
@@ -501,12 +496,27 @@ script 35 (void) // 75 % of chance for Misty to come.
             ACS_Execute(34, 0, 0, 0, 0);
             SetFont("BIGFONT");
             HudMessageBold(s:"Misty is now free!"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.2, 2.5, 0.5);
-            if(Playercount() >= 15)
+
+            // More spawn the more players there are.
+            if(Playercount() >= 8)
             {
                 SpawnSpotFacing("ZH2LegacyZm25Misty", 77, 1077);
+            }
+            if(Playercount() >= 15)
+            {
                 SpawnSpotFacing("ZH2LegacyZm25Misty", 78, 1078);
                 TakeActorInventory(1078, "ZH2LegacyZM18LabYouCanSeeMe", 1);
             }
+            if(Playercount() >= 28)
+            {
+                SpawnSpotFacing("ZH2LegacyZm25Misty", 80, 1079);
+            }
+            if(Playercount() >= 52)
+            {
+                SpawnSpotFacing("ZH2LegacyZm25Misty", 81, 1080);
+                TakeActorInventory(1080, "ZH2LegacyZM18LabYouCanSeeMe", 1);
+            }
+
             Floor_LowerbyValue(73, 10, 125);
             Music::SetMusic("D_MYST");
             delay(35*5);
