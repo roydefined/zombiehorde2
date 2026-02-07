@@ -232,13 +232,19 @@ strict namespace ZH2Game
             WAIT_FOR_SCRIPT_PARSE_CURRENT_MAP_DEFS();
 
         // We now iterate the resulting list of items, splitting them into three separate collections which makes iterating them much easier.
+        // TODO: This should be exported to its own function. Or perhaps be removed altogether.
         Item::ItemCollectionContextT global:PERSISTINGGAMECONTEXTINDEX& collection = ZH2Game::PersistingGameContext.ItemCollection;
-        for (int i = 0; i < collection.Size; ++i)
+        if (!collection.HasSplitItems)
         {
-            Item::ItemTypeT type = collection.Collection[i].Type;
-            if      (type == Item::TYPE_WEAPON)    collection.WeaponCollection[collection.WeaponCollectionSize++] = i;
-            else if (type == Item::TYPE_INVENTORY) collection.InventoryCollection[collection.InventoryCollectionSize++] = i;
-            else if (type == Item::TYPE_KEY)       collection.KeyCollection[collection.KeyCollectionSize++] = i;
+            for (int i = 0; i < collection.Size; ++i)
+            {
+                Item::ItemTypeT type = collection.Collection[i].Type;
+                if      (type == Item::TYPE_WEAPON)    collection.WeaponCollection[collection.WeaponCollectionSize++] = i;
+                else if (type == Item::TYPE_INVENTORY) collection.InventoryCollection[collection.InventoryCollectionSize++] = i;
+                else if (type == Item::TYPE_KEY)       collection.KeyCollection[collection.KeyCollectionSize++] = i;
+            }
+
+            collection.HasSplitItems = true;
         }
 
         // Set the current game mode if we have it set.
