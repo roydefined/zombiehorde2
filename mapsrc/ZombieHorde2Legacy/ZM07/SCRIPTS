@@ -1,0 +1,126 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+bool forcefield2 = false;
+bool forcefield3 = false;
+
+str realWorld[4] =
+{
+	"\cJYou are not allowed to go back to the real world.",
+	 "\cJThis is a game, where do you think you can go?",
+	 "\cJTurn the computer off now!!",
+	 "\cJDone playing ? I don't think so."
+};
+
+Script "ZM07_open" OPEN
+{
+    TranslucentLine(1, 0, 0);
+    TranslucentLine(2, 0, 0);
+	TranslucentLine(4, 96, 0);
+	SetLineBlocking(4, BLOCK_CREATURES);
+    Sector_SetRotation(67, 45, 0);
+    Sector_SetRotation(68, -45, 0);
+    Sector_SetRotation(69, 180, 0);
+
+	for(int i = 0; i < 120; i ++)
+		Sector_ChangeFlags(i, SECF_NOFALLINGDAMAGE, 0);
+
+	// Night mode (12.5 % chance)
+	if(random(0,255) < 32)
+	{
+        for(i = 0; i < 120; i++)
+			Light_LowerByValue(i, 128);
+
+		delay(35);
+		Music::SetMusic("SNEAKING");
+	}
+    else
+	{
+		delay(35);
+		Music::SetMusic("VARIETY");
+	}
+}
+
+Script "ZM07_open_client" OPEN CLIENTSIDE
+{
+    int i;
+    for(i=0; i<20; i++)
+	{
+        TranslucentLine(3, 10*i, 0);
+        Delay(1);
+	}
+    for(i=0; i<20; i++)
+	{
+        TranslucentLine(3, 200-10*i, 0);
+        Delay(1);
+	}
+    restart;    // loop!!!
+}
+
+Script 2 (void) // Forcefield
+{
+    if(!forcefield2)
+	{
+        SetLineBlocking(1, BLOCK_CREATURES);
+        TranslucentLine(1, 96, 0);
+        forcefield2 = 1;
+	}
+    else
+	{
+        SetLineBlocking(1, BLOCK_NOTHING);
+        TranslucentLine(1, 0, 0);
+        forcefield2 = 0;
+	}
+
+    delay(20);
+}
+
+Script 3 (void) // Forcefield 2
+{
+    if(!forcefield3)
+	{
+        SetLineBlocking(2, BLOCK_CREATURES);
+        TranslucentLine(2, 96, 0);
+        forcefield3 = 1;
+	}
+    else
+	{
+        SetLineBlocking(2, BLOCK_NOTHING);
+        TranslucentLine(2, 0, 0);
+        forcefield3 = 0;
+	}
+    delay(20);
+}
+
+Script 6 (void)
+{
+    ThrustThing(127, 10, 0, 0);
+    print(s:realWorld[random(0,3)]);
+}
+
+/*
+Script 7 (int where) {	// jail
+	if(where) {
+		if(Player::GetIsHuman()) {
+			TranslucentLine(4, 0, 0);
+			SetLineBlocking(4, BLOCK_NOTHING);
+			}
+		else {
+			TranslucentLine(4, 96, 0);
+			SetLineBlocking(4, BLOCK_CREATURES);
+			}
+	}
+	else {
+		if(Player::GetIsZombie()) {
+			TranslucentLine(4, 0, 0);
+			SetLineBlocking(4, BLOCK_NOTHING);
+			}
+	}
+}
+*/

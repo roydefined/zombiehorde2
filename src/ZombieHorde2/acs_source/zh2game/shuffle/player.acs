@@ -1,0 +1,54 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Shuffle
+{
+    script "zh2_internal_shuffle_comparenotowningitem" (int left, int _)
+    {
+        int tid = Identity::GetTid(left);
+        SetResultValue(
+            int(!CheckActorInventory(tid, (str)_sortArg)));
+    }
+
+    // Shuffling supports three types, which might be hardcoded by shuffle functions, or can be configured.
+    // SHUFFLEPLAYING: Slot must be STATEPLAYING.
+    // SHUFFLEASSIGNED: Slot is/has been assigned. We expect any set state except STATENONE.
+    // SHUFFLEDEAD: Slot must not be STATENONE/STATEPLAYING.
+    internal void PrepareBufferPlayers(ShufflePrepareTypeT shuffleType = SHUFFLEASSIGNED)
+    {
+        _context.BufferIteratorSize = 0;
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+        {
+            Player::PlayerStateT state = Player::GetPlayerState(i);
+            bool valid = shuffleType == SHUFFLEPLAYING
+                ? state == Player::STATEPLAYING
+                : shuffleType == SHUFFLEASSIGNED
+                    ? state != Player::STATENONE
+                    : state != Player::STATENONE && state != Player::STATEPLAYING;
+
+            If (valid)
+                _context.Buffer[_context.BufferIteratorSize++] = i;
+        }
+    }
+
+    internal bool ShuffleByNotOwningItemComparer(int id)
+    {
+        int tid = Identity::GetTID(id);
+        return !CheckActorInventory(tid, (str)_sortArg);
+    }
+
+    // Shuffles players based on whether or not they own the given item.
+    // A bit specific, could always be worked out more depending on use.
+    // Used for rewarding random players.
+    internal void ShuffleByNotOwningItem(str item)
+    {
+        // This function is explicitly used for living players (obviously).
+        PrepareBufferPlayers(SHUFFLEPLAYING);
+
+        _sortArg = item;
+        BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_comparenotowningitem", "zh2_internal_shuffle_swapbufferitems");
+        UpdateRelevantBufferSize(ShuffleByNotOwningItemComparer);
+        BCSUtils::ShuffleArray(0, _context.BufferRelevantSize, "zh2_internal_shuffle_swapbufferitems");
+    }
+}

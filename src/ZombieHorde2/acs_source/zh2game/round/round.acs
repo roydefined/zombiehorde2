@@ -4,17 +4,17 @@
 
 #define LOGSOURCE  "Round"
 
+#include "extensions.acs"
 #include "initialzombie.acs"
-#include "public.acs"
 
 strict namespace Round
 {
-    internal void DefineRoundByKnown(KnownRoundStateT roundType, bool allowJoin = false)
+    internal void DefineRoundByKnown(KnownRoundStateT roundType, bool denyJoin, bool isEnding)
     {
-        DefineRoundByIndex(GetIndexOfKnownRoundStateType(roundType), allowJoin);
+        DefineRoundByIndex(GetIndexOfKnownRoundStateType(roundType), denyJoin, isEnding);
     }
 
-    internal void DefineRoundByIndex(int index, bool allowJoin = false)
+    internal void DefineRoundByIndex(int index, bool denyJoin, bool isEnding)
     {
         if (index < 0 || index >= MAX_ROUNDSTATES)
         {
@@ -25,7 +25,8 @@ strict namespace Round
         // TODO: If we ever support reallocation we must add it here too.
 
         RoundStateContextT& state = GetRoundRefByindex(index);
-        state.AllowJoin = allowJoin;
+        state.DenyJoin = denyJoin;
+        state.IsEnding = isEnding;
         state.Defined = true;
     }
 
@@ -40,48 +41,45 @@ strict namespace Round
         Logger::LogDebug(LOGSOURCE , "Game state has switched to \cd" + GetRoundStateIndexAsString(index) + "\cj.");
 
         if (broadcast)
-            EventBus::CallEvent(EVENTROUNDSWITCHED, previousIndex, index);
+            Event::SendRoundSwitched(previousIndex, index);
     }
 
     internal RoundStateContextT& GetRoundRefCurrent() { return GetRoundRefByindex(GetActiveRoundStateIndex()); }
     internal RoundStateContextT& GetRoundRefByKnownRoundStateType(KnownRoundStateT stateType) { return GetRoundRefByindex(GetIndexOfKnownRoundStateType(stateType)); }
     internal RoundStateContextT& GetRoundRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Rounds[index]; }
 
-    internal bool GetRoundJoinable(int index) { return GetRoundRefByindex(index).AllowJoin; }
+    internal bool GetRoundJoinable(int index) { return !GetRoundRefByindex(index).DenyJoin; }
+    internal bool GetRoundIsEnding(int index) { return GetRoundRefByindex(index).IsEnding; }
     internal bool GetRoundDefined(int index) { return GetRoundRefByindex(index).Defined; }
-    
+
     /* Casting / Conversions */
 
     internal int GetIndexOfKnownRoundStateType(KnownRoundStateT stateType) { return (int)stateType; }
 
-    internal KnownRoundStateT GetKnownRoundStateTypeByIndex(int stateIndex)
+    // Returns STATENONE if the round timer is not known.
+    internal KnownRoundStateT GetKnownRoundStateTypeByIndex(int index)
     {
-        static KnownRoundStateT collection[] = { StateNone, StatePregame, StateStarting, StateCountdown, StatePlaying, StateEnding, STATEVOTING };
-        
-        // No known round state.
-        if (stateIndex < StatePregame && stateIndex > STATEVOTING)
-            return StateNone;
-        
-        return collection[stateIndex];
+        static KnownRoundStateT collection[] = { STATEPREGAME, STATESTARTING, STATECOUNTDOWN, STATEPLAYING, STATEENDING, STATEVOTING };
+        foreach(KnownRoundStateT item; collection)
+        {
+            if (index != item)
+                continue;
+
+            return item;
+        }
+
+        return STATENONE;
     }
 
-    internal str GetRoundStateIndexAsString(int stateIndex)
+    internal str GetRoundStateIndexAsString(int index)
     {
-        // No known round state, return custom and the index.
-        if (stateIndex < StatePregame || stateIndex > STATEVOTING)
-            return "Custom (" + str(stateIndex) + ")";
+        static str collection[] = { "Pregame", "Starting", "Countdown", "Playing", "Ending", "Voting" };
+        KnownRoundStateT knownRoundState = GetKnownRoundStateTypeByIndex(index);
+        if (knownRoundState != STATENONE)
+            return collection[index];
 
-        // No point returning StateNone when it's not supposed to be used.
-        return //stateIndex == StateNone ? "None" :
-            stateIndex == StatePregame ? "Pregame" :
-            stateIndex == StateStarting ? "Starting" :
-            stateIndex == StateCountdown ? "Countdown" :
-            stateIndex == StatePlaying ? "Playing" :
-            stateIndex == StateEnding ? "Ending" :
-            stateIndex == STATEVOTING ? "Voting" :
-            
-            // Should not be possible.
-            "Unknown";
+        // No known round state, return custom and the index.
+        return "Custom (" + str(index) + ")";
     }
 }
 

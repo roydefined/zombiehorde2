@@ -1,0 +1,36 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+script "Teste_map_start_resist_index" (int index)
+{
+	Resist::StartResistByIndex(index);
+}
+
+script "Teste_internal_event_resistelapsed" (raw packetRaw)
+{
+	Event::ReceiveTimerElapsed((str)packetRaw);
+	int index = Event::GetReceiveData(0);
+	
+	switch(index)
+	{
+		case 0:
+			Floor_RaiseByValue(2, 100, 136);
+			Ceiling_LowerByValue(2, 100, 136);
+			break;
+		case 1:
+			Floor_RaiseByValue(4, 100, 100);
+			Ceiling_LowerByValue(4, 100, 100);
+			break;
+		case 2:
+			Ceiling_LowerAndCrush(5, 5, 999);
+			Tagwait(5);
+			Game::KillUnsafePlayers();
+			break;
+	}
+}

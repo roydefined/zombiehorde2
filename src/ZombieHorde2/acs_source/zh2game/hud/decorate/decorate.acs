@@ -1,0 +1,46 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "sniper.acs"
+#include "radio.acs"
+
+strict namespace Hud
+{
+    // General weapon hud elements.
+    // Not to be confused with ammo counters. Those are handled separately.
+
+    internal void DrawWeaponsHud()
+    {
+        /* SNIPER */
+        fixed sniperScale = ZH2Game::GetHudWeaponSniperScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(960.0, 720.0);
+        BCSUtils::HudSetScale(sniperScale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        PrepareHud(
+            480.0,
+            360.0,
+            false);
+
+        DrawSniperHud();
+
+        /* RADIO */
+        fixed radioScale = ZH2Game::GetHudWeaponRadioScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(960.0, 720.0);
+        BCSUtils::HudSetScale(radioScale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_TOP);
+        BCSUtils::HudSetCenterText(false);
+
+        PrepareHud(
+            BCSUtils::HudLeft() + 80.0,
+            200.0,
+            false);
+
+        DrawRadioHud();
+    }
+}

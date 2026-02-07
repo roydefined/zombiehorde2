@@ -6,7 +6,7 @@ strict namespace Player
 {
     internal void PanicTic()
     {
-        PanicStateT state = GetPanicState();
+        PlayerPanicStateT state = GetPanicState();
 
         // Player did not panic or already finished panicking.
         if (state == PANICSTATENONE)
@@ -17,7 +17,7 @@ strict namespace Player
         {
             SetPanicState(PANICSTATECALMINGDOWN);
             IncrementPanicCount();
-            
+
             // TODO: Could use a better sound.
             ThingSound(ActivatorTID(), "*pain", 127);
             Power::TakePower(Power::POWERPANICKING);
@@ -46,7 +46,7 @@ strict namespace Player
     {
         if (!BCSUtils::IsAlive()) return;
 
-        PanicStateT state = GetPanicState();
+        PlayerPanicStateT state = GetPanicState();
         if (state == PANICSTATEPANICKING)
         {
             Logger::LogActivator("You are already panicking!");
@@ -85,7 +85,7 @@ strict namespace Player
 
         if (Power::GetHasPower(Power::POWERCAFFEINE))
         {
-            Logger::LogActivator("You are still under the influence of caffeine....");
+            Logger::LogActivator("You are still under the influence of caffeine...");
             return;
         }
 
@@ -96,7 +96,7 @@ strict namespace Player
         }
 
         Logger::LogDebug(LOGSOURCE , "Panic triggered for " + BCSUtils::PlayerName(PlayerNumber()) + ".");
-		Logger::LogBold(BCSUtils::PlayerName(PlayerNumber()) + " has panicked!");
+        Logger::LogBold(BCSUtils::PlayerName(PlayerNumber()) + " has panicked!");
 
         // Set up everything for a panic inventory.
         // After this the main sprint tic handles decrementing the sprint bar.
@@ -112,25 +112,25 @@ strict namespace Player
         Power::GivePower(Power::POWERPANICKING);
 
         // TODO: Could use a better sound.
-		ThingSound(ActivatorTID(), "*death", 127);
+        ThingSound(ActivatorTID(), "*death", 127);
     }
 
-    internal PanicStateT GetPanicState()
+    internal PlayerPanicStateT GetPanicState()
     {
         return GetPlayerPanicState(PlayerNumber());
     }
 
-    internal PanicStateT GetPlayerPanicState(int id)
+    internal PlayerPanicStateT GetPlayerPanicState(int id)
     {
         return ZH2Game::GameContext.Players[id].PanicState;
     }
 
-    internal void SetPanicState(PanicStateT state)
+    internal void SetPanicState(PlayerPanicStateT state)
     {
         SetPlayerPanicState(PlayerNumber(), state);
     }
 
-    internal void SetPlayerPanicState(int id, PanicStateT state)
+    internal void SetPlayerPanicState(int id, PlayerPanicStateT state)
     {
         ZH2Game::GameContext.Players[id].PanicState = state;
     }

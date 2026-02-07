@@ -1,0 +1,122 @@
+const int PYREFLAREHEIGHT = 34;
+
+actor ZH2PyreCone : ZH2LightSource 20221
+{
+    //$Sprite "SCONA0"
+
+    tag "Pyre cone"
+
+    Radius 10
+    Height 32
+
+    +FORCEYBILLBOARD
+    +SOLID
+    +SHOOTABLE
+    +NOBLOOD
+
+    States
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_PlaySound("decoration/PYREFLAME", CHAN_BODY, 0.4, TRUE, ATTN_STATIC)
+
+        Active.Rest:
+            TNT1 A 0 A_SpawnItemEx("ZH2PyreConeFlare", 0, 0, PYREFLAREHEIGHT)
+            SCON A 2 bright light("ZH2PyreConeLight") A_SpawnItem("ZH2PyreConeEffect")
+            TNT1 A 0 A_SpawnItemEx("ZH2PyreConeFlare", 0, 0, PYREFLAREHEIGHT)
+            SCON A 2 bright light("ZH2PyreConeLight") A_SpawnItem("ZH2PyreConeEffect")
+            TNT1 A 0 A_SpawnItemEx("ZH2PyreConeFlare", 0, 0, PYREFLAREHEIGHT)
+            SCON B 2 bright light("ZH2PyreConeLight") A_SpawnItem("ZH2PyreConeEffect")
+            TNT1 A 0 A_SpawnItemEx("ZH2PyreConeFlare", 0, 0, PYREFLAREHEIGHT)
+            SCON B 2 bright light("ZH2PyreConeLight") A_SpawnItem("ZH2PyreConeEffect")
+            TNT1 A 0 A_SpawnItemEx("ZH2PyreConeFlare", 0, 0, PYREFLAREHEIGHT)
+            SCON C 2 bright light("ZH2PyreConeLight") A_SpawnItem("ZH2PyreConeEffect")
+            TNT1 A 0 A_SpawnItemEx("ZH2PyreConeFlare", 0, 0, PYREFLAREHEIGHT)
+            SCON C 2 bright light("ZH2PyreConeLight") A_SpawnItem("ZH2PyreConeEffect")
+            TNT1 A 0 A_SpawnItemEx("ZH2PyreConeFlare", 0, 0, PYREFLAREHEIGHT)
+            SCON D 2 bright light("ZH2PyreConeLight") A_SpawnItem("ZH2PyreConeEffect")
+            TNT1 A 0 A_SpawnItemEx("ZH2PyreConeFlare", 0, 0, PYREFLAREHEIGHT)
+            SCON D 2 bright light("ZH2PyreConeLight") A_SpawnItem("ZH2PyreConeEffect")
+            TNT1 A 0 A_SpawnItemEx("ZH2PyreConeFlare", 0, 0, PYREFLAREHEIGHT)
+            SCON E 2 bright light("ZH2PyreConeLight") A_SpawnItem("ZH2PyreConeEffect")
+            TNT1 A 0 A_SpawnItemEx("ZH2PyreConeFlare", 0, 0, PYREFLAREHEIGHT)
+            SCON E 2 bright light("ZH2PyreConeLight") A_SpawnItem("ZH2PyreConeEffect")
+            loop
+    }
+}
+
+actor ZH2PyreConeFlare : ZH2LightSourceLensFlare
+{
+    Scale .8
+    Alpha .6
+
+    States
+    {
+        Spawn:
+            LFLR A 2 NoDelay Bright
+            stop
+    }
+}
+
+
+actor ZH2PyreConeEffect
+{
+    +NOINTERACTION
+    +CLIENTSIDEONLY
+    +NOTIMEFREEZE
+
+    states
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_Jump(120, 2)
+            TNT1 A 0 A_SpawnItemEx("ZH2PyreConeSpark", random(-8, 8), random(-8, 8), random(25, 30), Frandom(-0.2, 0.2), Frandom(-0.2, 0.2), Frandom(1.0, 2.0))
+            TNT1 A 0 A_Jump(160, 2)
+            TNT1 A 0 A_SpawnItemEx("ZH2PyreConeSmoke", random(-10, 10), random(-10, 10), random(30, 45), Frandom(-0.1, 0.1), Frandom(-0.1, 0.1), Frandom(0.6, 1.0))
+            TNT1 A 0
+            stop
+    }
+}
+
+actor ZH2PyreConeSpark
+{
+    +NOINTERACTION
+    +CLIENTSIDEONLY
+    +NOTIMEFREEZE
+    +FORCEXYBILLBOARD
+    +BRIGHT
+    +USEBOUNCESTATE
+
+    RenderStyle Add
+    alpha 0
+
+    States
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_SetScale(0.02, 0.02)
+            SPAK CCCCCCCCC 1 A_FadeIn(.05)
+        Spawn.Rest:
+            SPAK C 4 A_ChangeVelocity (Frandom(-0.2, 0.2), Frandom(-0.2, 0.2), 0, 0)
+            TNT1 A 0 A_FadeOut(.2)
+            loop
+    }
+}
+
+actor ZH2PyreConeSmoke
+{
+    +MISSILE
+    +NOINTERACTION
+    +CLIENTSIDEONLY
+    +NOTIMEFREEZE
+    +FORCEXYBILLBOARD
+    +THRUACTORS
+
+    Alpha 0
+
+    states
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_SetScale(Frandom(0.2, 0.4), Frandom(0.2, 0.4))
+            SMKD AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 2 A_FadeIn(0.01)
+            SMKD A 4 A_FadeOut(0.05)
+            wait
+    }
+}

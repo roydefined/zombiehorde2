@@ -108,14 +108,14 @@ strict namespace Game
 
     internal void AddZombieAbilityCooldownTicsByIndex(int index, int tics) { AddPlayerZombieAbilityCooldownTicsByIndex(PlayerNumber(), index, tics); }
     internal void AddPlayerZombieAbilityCooldownTicsByIndex(int id, int index, int tics)
-	{
+    {
         int ticsLeft = GetPlayerZombieAbilityCooldownTicsLeftByIndex(id, index);
         SetPlayerZombieAbilityCooldownTicsByIndex(id, index, ticsLeft + tics);
-	}
+    }
 
     internal void SetZombieAbilityCooldownTicsByIndex(int id, int index, int tics) { SetPlayerZombieAbilityCooldownTicsByIndex(PlayerNumber(), index, tics); }
     internal void SetPlayerZombieAbilityCooldownTicsByIndex(int id, int index, int tics)
-	{
+    {
         // Min / Max tics
         tics = BCSUtils::Clamp(tics, 0, GetZombieAbilityCooldownMaxTicsByIndex(index));
 
@@ -126,36 +126,36 @@ strict namespace Game
         int timeStamp = timer + tics;
         BCSUtils::SetActorInventory(Identity::GetTid(id), GetZombieAbilityCooldownTimestampNameByIndex(index), timeStamp);
         Logger::LogDebug(LOGSOURCE , "Zombie ability cooldown for player " + BCSUtils::PlayerName(id) + ". Power \cd" + str(index) + "\cj now has \cd" + str(tics) + " \cjtics until it can be used.");
-	}
-    
+    }
+
     internal int GetZombieAbilityCooldownTicsLeftByIndex(int index) { return GetPlayerZombieAbilityCooldownTicsLeftByIndex(PlayerNumber(), index); }
     internal int GetPlayerZombieAbilityCooldownTicsLeftByIndex(int id, int index)
-	{
+    {
         int timeStamp = CheckActorInventory(Identity::GetTid(id), GetZombieAbilityCooldownTimestampNameByIndex(index));
         int tics = BCSUtils::Max(timeStamp - Utils::GetSynchronizedTimer(), 0);
         return tics;
-	}
-    
+    }
+
     internal str GetZombieAbilityCooldownTimestampNameByIndex(int index)
     {
         return BCSUtils::StrReplace(ZOMBIEABILITY_TIMESTAMP_BASE, "{0}", str(index));
     }
 
-	internal ZombieAbilityTypeFlagsT GetZombieAbilityItemTypeByIndex(int index)
+    internal ZombieAbilityTypeFlagsT GetZombieAbilityItemTypeByIndex(int index)
     {
-		if (index <= ABILITY_NONE || index > BCSUtils::Flag2Index(ABILITY_SPIT) + 1)
-			return ABILITY_NONE;
+        if (index <= ABILITY_NONE || index > BCSUtils::Flag2Index(ABILITY_SPIT) + 1)
+            return ABILITY_NONE;
 
         static ZombieAbilityTypeFlagsT collection[] = { ABILITY_PUSH, ABILITY_SPIT };
         return collection[index - 1];
     }
-    
+
     // TODO: Configurable through a lump
     internal int GetZombieAbilityCooldownMaxTicsByIndex(int index)
     {
         // Fallback should not happen. If it does, a second indicates something is wrong.
-		if (index < 0 || index > BCSUtils::Flag2Index(ABILITY_SPIT))
-			return 35 * 1;
+        if (index < 0 || index > BCSUtils::Flag2Index(ABILITY_SPIT))
+            return 35 * 1;
 
         static int collection[] = { 35 * 10, 35 * 60 };
         return collection[index];

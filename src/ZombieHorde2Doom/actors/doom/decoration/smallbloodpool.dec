@@ -1,0 +1,42 @@
+actor ZH2DoomSmallBloodPool : ZH2DoomDecoration replaces SmallBloodPool
+{
+    //$Sprite BLDSA0
+
+    Radius 20
+    Height 1
+
+    States
+    {
+        Spawn:
+            TNT1 AAA 0 NoDelay A_SpawnItemEx("ZH2DoomBloodSpot", FRandom(8.0, 14.0), 0, 0, 0, 0, 0, Random(0, 360))
+            stop
+    }
+}
+
+// Copy of ZH2BloodSpot using just the model frames.
+actor ZH2DoomBloodSpot
+{
+    Radius 20
+    Height 1
+
+    Alpha 0.6
+    Scale .8
+
+    +NOBLOCKMAP
+    +MOVEWITHSECTOR
+
+    States
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_Jump(170, 1, 2)
+            Goto Spawn.Rest
+            TNT1 B 0
+            Goto Spawn.Rest
+            TNT1 C 0
+            Goto Spawn.Rest
+
+        Spawn.Rest:
+            BLDS "#" -1
+            stop
+    }
+}

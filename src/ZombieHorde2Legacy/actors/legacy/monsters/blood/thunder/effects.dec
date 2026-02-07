@@ -1,126 +1,128 @@
 // TODO: I believe only white and blue are used.
+// Note, white thunder is also used in ZM16
 
 actor ZH2LegacyZM25ThunderSpawn : CustomInventory
-{  
-	+INVENTORY.QUIET
-	+INVENTORY.UNDROPPABLE
-	+INVENTORY.ALWAYSPICKUP
-	+INVENTORY.AUTOACTIVATE       
-	+COUNTITEM
-	inventory.amount 1
-	inventory.maxamount 0
-	states
-	{
-		pickup:
-			NULL A 1 A_SpawnItemEx ("ZH2LegacyZM25ThunderBlue",random(-784,784),random(-784,784))  
-			stop
-	}
+{
+    +INVENTORY.QUIET
+    +INVENTORY.UNDROPPABLE
+    +INVENTORY.ALWAYSPICKUP
+    +INVENTORY.AUTOACTIVATE
+    +COUNTITEM
+    inventory.amount 1
+    inventory.maxamount 0
+    states
+    {
+        pickup:
+            NULL A 1 A_SpawnItemEx ("ZH2LegacyZM25ThunderBlue",random(-784,784),random(-784,784))
+            stop
+    }
 }
 
 actor ZH2LegacyZM25ThunderWhite : SwitchableDecoration
 {
-	+NoBlockMap
-	+NoGravity
-	+NoInteraction
-	+NoClip
-	-Solid
-	+CLIENTSIDEONLY
-	-COUNTKILL
-	+FRIENDLY
-	-SHOOTABLE
-	Obituary "%o seen the light with a light Thunder."
-	Renderstyle Add
-	Height 32
-	Radius 16
-	Alpha 0.2
-	Scale 4.0
-	states
-	{
-		Spawn:
-		Active:
-			TNT1 A 0 
-			TNT1 A 0 A_PlaySoundEx("world/thunder", "Voice", 0, 2) 
-			TNT1 A 0 A_Explode(12,512)
-			TNT1 A 0 A_Explode(256,450)
-			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 0 A_SpawnItemEx("ZH2LegacyZM25ThunderSpark", 0, 0, 0, random(1,10), 0, random(1,10), random(0,359), 129)
-			THND AAAA 2 Bright A_FadeIn(0.2)
-			THND AAAA 8 Bright A_FadeOut(0.2)
-			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1  Bright A_SpawnItemEx("ZH2LegacyZM25ThunderSmoke", 0, 0, 0, random(0,3), 0, random(2,3), random(0,359), 128)
-			Goto Inactive
-	   Inactive:
-			TNT1 A 1
-			Stop
-	}
+    +NoBlockMap
+    +NoGravity
+    +NoInteraction
+    +NoClip
+    -Solid
+    +CLIENTSIDEONLY
+    -COUNTKILL
+    +FRIENDLY
+    -SHOOTABLE
+    Obituary "%o seen the light with a light Thunder."
+    tag "Thunder"
+    Renderstyle Add
+    Height 32
+    Radius 16
+    Alpha 0.2
+    Scale 4.0
+    states
+    {
+        Spawn:
+        Active:
+            TNT1 A 0
+            TNT1 A 0 A_PlaySoundEx("world/thunder", "Voice", 0, 2)
+            TNT1 A 0 A_Explode(12,512)
+            TNT1 A 0 A_Explode(256,450)
+            TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 0 A_SpawnItemEx("ZH2LegacyZM25ThunderSpark", 0, 0, 0, random(1,10), 0, random(1,10), random(0,359), 129)
+            THND AAAA 2 Bright A_FadeIn(0.2)
+            THND AAAA 8 Bright A_FadeOut(0.2)
+            TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1  Bright A_SpawnItemEx("ZH2LegacyZM25ThunderSmoke", 0, 0, 0, random(0,3), 0, random(2,3), random(0,359), 128)
+            Goto Inactive
+       Inactive:
+            TNT1 A 1
+            Stop
+    }
 }
 
 actor ZH2LegacyZM25ThunderTan : ZH2LegacyZM25ThunderWhite
 {
-	translation "80:111=48:79"
+    translation "80:111=48:79"
 }
 
 actor ZH2LegacyZM25ThunderGreen : ZH2LegacyZM25ThunderWhite
 {
-	translation "80:111=112:127"
+    translation "80:111=112:127"
 }
 
 actor ZH2LegacyZM25ThunderRed : ZH2LegacyZM25ThunderWhite
 {
-	translation "80:111=171:191"
+    translation "80:111=171:191"
 }
 
 actor ZH2LegacyZM25ThunderBlue : ZH2LegacyZM25ThunderWhite
 {
-	translation "80:111=192:207"
+    translation "80:111=192:207"
 }
 
 actor ZH2LegacyZM25ThunderPink : ZH2LegacyZM25ThunderWhite
 {
-	translation "80:111=16:47"
+    translation "80:111=16:47"
 }
 
 Actor ZH2LegacyZM25ThunderSpark
 {
-	Speed 3
-	Height 2
-	Radius 1
-	Mass 0
-	+Missile +LowGravity
-	RenderStyle Add
-	Scale 0.4
-	States
-	{
-		Spawn:
-			TNT1 A 0
-			SPRK A 1 A_Jump(80, 4)              
-			SPRK A 1 A_Jump(80, 4)              
-			SPRK A 1 A_Jump(80, 4)              
-			SPRK A 32 Bright
-			SPRK A 32 Bright
-			SPRK A 32 Bright
-			SPRK A 32 Bright
-			SPRK ABCDEFGHHH 1 Bright A_FadeOut(0.1)
-			Stop
-		Death:
-			SPRK ABCDEFGHHH 1 Bright A_FadeOut(0.1)
-			Stop		
-	}
+    Speed 3
+    Height 2
+    Radius 1
+    Mass 0
+    +Missile +LowGravity
+    RenderStyle Add
+    Scale 0.4
+    States
+    {
+        Spawn:
+            TNT1 A 0
+            SPRK A 1 A_Jump(80, 4)
+            SPRK A 1 A_Jump(80, 4)
+            SPRK A 1 A_Jump(80, 4)
+            SPRK A 32 Bright
+            SPRK A 32 Bright
+            SPRK A 32 Bright
+            SPRK A 32 Bright
+            SPRK ABCDEFGHHH 1 Bright A_FadeOut(0.1)
+            Stop
+        Death:
+            SPRK ABCDEFGHHH 1 Bright A_FadeOut(0.1)
+            Stop
+    }
 }
 
 actor ZH2LegacyZM25ThunderSmoke
 {
-	Height 2
-	Radius 1
-	+Missile
-	+NoGravity
-	+NoInteraction
-	+NoBlockmap
-	RenderStyle Translucent
-	Alpha .5
-	Scale .65
-	States
-	{
-		Spawn:
-			SMK1 IHGFEEDDCCBBBBAAAAAA 2 A_FadeOut(0.05) 
-			Stop
-	}
+    Height 2
+    Radius 1
+    +Missile
+    +NoGravity
+    +NoInteraction
+    +NoBlockmap
+    RenderStyle Translucent
+    Alpha .5
+    Scale .65
+    States
+    {
+        Spawn:
+            SMK1 IHGFEEDDCCBBBBAAAAAA 2 A_FadeOut(0.05)
+            Stop
+    }
 }

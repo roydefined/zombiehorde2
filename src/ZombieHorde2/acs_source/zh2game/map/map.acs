@@ -26,7 +26,7 @@ strict namespace Map
 
     internal str GetCurrentMapGameMode() { return GetMapGameMode(GetCurrentMapHandle()); }
     internal str GetMapGameMode(int handle) { return ZH2Game::PersistingGameContext.MapBaseCollection.Collection[handle].Properties.GameMode; }
-    
+
     internal str GetCurrentMapLabel() { return GetMapLabel(GetCurrentMapHandle()); }
     internal str GetMapLabel(int handle) { return ZH2Game::PersistingGameContext.MapBaseCollection.Collection[handle].Properties.Label; }
 
@@ -42,17 +42,19 @@ strict namespace Map
     /* PLAYER VOTES */
 
     internal int GetVotedMapIndexSize() { return lengthof(ZH2Game::GameContext.VotedMapIndexes); }
-    
+
     internal int GetVotedMapIndex() { return GetPlayerVotedMapIndex(PlayerNumber()); }
     internal int GetPlayerVotedMapIndex(int id) { return ZH2Game::GameContext.VotedMapIndexes[id]; }
-    
+
     internal void SetVotedMapIndex(int index) { SetPlayerVotedMapIndex(PlayerNumber(), index); }
     internal void SetPlayerVotedMapIndex(int id, int index) { ZH2Game::GameContext.VotedMapIndexes[id] = index; }
-    
+
     internal bool HasVoted() { return HasPlayerVoted(PlayerNumber()); }
     internal bool HasPlayerVoted(int id) { return GetPlayerVotedMapIndex(id) != -1; }
 
-    /* MAP VOTES */
+    /* VOTE CONTEXT */
+    internal int GetFinalVotedMapIndex() { return ZH2Game::GameContext.FinalVotedMapIndex; }
+    internal void SetFinalVotedMapIndex(int index) { ZH2Game::GameContext.FinalVotedMapIndex = index; }
 
     internal int GetMapVoteCount(int i)
     {
@@ -74,7 +76,27 @@ strict namespace Map
 
     internal int GetPlayerPickCooldownTics(int id)
     {
-        return BCSUtils::Max(0, CheckActorInventory(Identity::GetTid(id), ITEM_PLAYERPICKTIMESTAMP) - Utils::GetSynchronizedTimer());
+        return BCSUtils::Max(0, GetPlayerCooldownTics(id) - Utils::GetSynchronizedTimer());
+    }
+
+    internal int GetCooldownTics()
+    {
+        return GetPlayerPickCooldownTics(PlayerNumber());
+    }
+
+    internal int GetPlayerCooldownTics(int id)
+    {
+        return ZH2Game::GameContext.Players[id].MapVoteCooldown;
+    }
+
+    internal void SetCooldownTics(int tics)
+    {
+        SetPlayerCooldownTics(PlayerNumber(), tics);
+    }
+
+    internal void SetPlayerCooldownTics(int id, int tics)
+    {
+        ZH2Game::GameContext.Players[id].MapVoteCooldown = tics;
     }
 
     internal void SetPickCooldown()
@@ -86,7 +108,7 @@ strict namespace Map
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
         int timestamp = Utils::GetSynchronizedTimer() + ZH2Game::GetPlayerCooldownTics();
-        BCSUtils::SetActorInventory(Identity::GetTid(id), ITEM_PLAYERPICKTIMESTAMP, timestamp);
+        SetPlayerCooldownTics(id, timestamp);
     }
 }
 

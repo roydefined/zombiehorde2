@@ -1,0 +1,56 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Debug"
+
+#include "admin.acs"
+#include "io.acs"
+#include "map.acs"
+#include "power.acs"
+#include "player.acs"
+#include "setting.acs"
+
+strict namespace Debug
+{
+    script "zh2_action_syncall" net
+    {
+        // Can't be called when not offline, not in development and we are not admin.
+        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
+        {
+            Logger::LogActivator("You're not allowed to call sync scripts.");
+            terminate;
+        }
+
+        Sync::SyncAll(false);
+        Logger::LogActivator("Sync all triggered.");
+    }
+
+    script "zh2_action_callclientsyncall" net
+    {
+        // Can't be called when not offline, not in development and we are not admin.
+        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
+        {
+            Logger::LogActivator("You're not allowed to call sync scripts.");
+            terminate;
+        }
+
+        Sync::CallClientSyncAll();
+        Logger::LogActivator("Call client sync all triggered.");
+    }
+
+    script "zh2_action_clientsyncall" net clientside
+    {
+        // Can't be called when not offline, not in development and we are not admin.
+        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
+        {
+            Logger::LogActivator("You're not allowed to call sync scripts.");
+            terminate;
+        }
+
+        Sync::SynAllClientside();
+        Logger::LogActivator("Sync all clientside triggered.");
+    }
+}
+
+#undef LOGSOURCE

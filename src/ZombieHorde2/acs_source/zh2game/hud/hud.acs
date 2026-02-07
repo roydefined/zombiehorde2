@@ -4,177 +4,125 @@
 
 #define LOGSOURCE  "Hud"
 
-#include "other.acs"
-#include "version.acs"
-#include "statshud.acs"
-#include "roundhud.acs"
-#include "resistshud.acs"
-#include "gamehud.acs"
+#include "cursor.acs"
+#include "draw.acs"
+
+#include "game/game.acs"
 #include "player/player.acs"
 #include "ending/ending.acs"
-#include "summary/summary.acs"
+#include "voting/voting.acs"
+#include "obituary/obituary.acs"
 #include "separate/separate.acs"
-#include "clientsettings/clientsettings.acs"
-#include "fullserver/fullserver.acs"
-#include "weapons/weapons.acs"
+#include "decorate/decorate.acs"
+#include "round/round.acs"
 #include "admin/admin.acs"
+
+#include "other/cursor.acs"
+#include "other/version.acs"
+#include "other/debug.acs"
 
 strict namespace Hud
 {
     internal AdminMenuT _currentAdminMenu;
-    internal bool _cursorEnabled;
+
     internal int _debugHudId;
+    internal int _drawnHudId;
 
     // For shaking of the HUD.
     internal fixed _firingSeedAngle = 0.0;
     internal fixed _xShakeOffset = 0.0;
     internal fixed _yShakeOffset = 0.0;
 
+    // The main positioning and scale used when drawing elements.
+    internal fixed _hudX,
+                   _hudY;
+
+    // Indicates if the client's camera is on its own body.
+    // This means we're not spectating anybody, nor are we on some camera.
+    internal bool _clientCameraOnBody;
+
     internal void Tic()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        _debugHudId = HUD_DEBUG;
+        _debugHudId = HUDID_DEBUG_COORDINATES;
+        _drawnHudId = HUDID_BASE;
+
+        _clientCameraOnBody = CheckPlayerCamera(ConsolePlayerNumber()) == ActivatorTid();
 
         UpdateHudShakeOffset();
 
-        // Alongside checking individual categories, this boolean indicates if we draw the hud as a whole.
-        bool drawHud = ZH2Game::GetDrawHud();
-
-        if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
-            DrawFullServerHud();
-
-        if (drawHud && ZH2Game::GetDrawVersionHud())
-            DrawVersion();
-            
-        if (drawHud && ZH2Game::GetDrawRoundHud())
-            DrawRoundHud();
-        
-        // All of this is strictly during the playing game.
-        if (Round::GetActiveKnownRoundState() < Round::STATEENDING)
-        {
-            if (drawHud && ZH2Game::GetDrawResistsHud())
-                DrawResistsHud();
-
-            if (drawHud && ZH2Game::GetDrawStatsHud())
-                DrawStatsHud();
-                
-            // NOTE: We do NOT allow drawing of the admin hud during the voting, because it is also clickable.
-            if (ZH2Game::GameContext.HasAdminHudOpen)
-                DrawAdminHud();
-
-            // Same as the admin hud
-            if (ZH2Game::GameContext.HasClientSettingsHudOpen)
-                DrawClientSettingsHud();
-
-            if (Decorate::IsOnFire())
-                DrawClientSeparateHudFire(FIRETYPENORMAL);
-
-            if (Decorate::IsOnFire() && Timer() % 10 == 0)
-                DrawClientSeparateHudFireBlur();
-            
-            if (Decorate::IsOnAcid() && Timer() % 10 == 0)
-                DrawClientSeparateHudAcidBlur();
-        }
-
-        // Same as above, but a state later.
-        if (Round::GetActiveKnownRoundState() < Round::STATEVOTING)
-        {
-            if (drawHud)
-            {
-                DrawWeaponsHud();
-                DrawPlayerHud();
-            }
-
-            if (drawHud && ZH2Game::GetDrawGameHud())
-                DrawGameHud();
-        }
-
-        // Game must be ending and we must have a winning specie in order to draw the ending hud.
-        if (Round::GetActiveKnownRoundState() == Round::STATEENDING)
-            DrawEndingHud();
-
-        // Game must be ending and we must have a winning specie in order to draw the ending hud.
-        if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
-            DrawSummaryHud();
-
-        if (_cursorEnabled)
-            DrawCursor();
+        DrawHud();
     }
 
-    internal void SetCursorEnabled(bool enabled)
+    internal void PrepareHud(fixed x, fixed y, bool addShake)
     {
-        _cursorEnabled = enabled;
+        _hudX = x;
+        _hudY = y;
+
+        if (addShake)
+        {
+            _hudX += _xShakeOffset;
+            _hudY += _yShakeOffset;
+        }
     }
 
-    internal void DebugDraw(int color = CR_WHITE)
+    internal fixed GetHudX()
     {
-        if (!ZH2Game::GetDrawDebugHud()) return;
+        return _hudX;
+    }
+
+    internal fixed GetHudY()
+    {
+        return _hudY;
+    }
+
+    // Helper method to set the hud point based on possible scaling.
+    internal void HudSetPointInternal(fixed addX = 0.0, fixed addY = 0.0)
+    {
+        BCSUtils::HudSetPoint(_hudX + addX, _hudY + addY);
+    }
+
+    internal void DebugDraw(fixed x = 0.0, fixed y = 0.0, int color = CR_WHITE)
+    {
+        if (!ZH2Game::GetDrawDebugCoordinatesHud()) return;
 
         BCSUtils::HudPushState();
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetTextColor(color);
+
+        if (x != 0.0 && y != 0.0)
+            BCSUtils::HudSetPoint(x, y);
+
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudDrawText(_debugHudId--, "*");
         BCSUtils::HudPopState();
     }
 
-    internal void DebugDrawXY(fixed x, fixed y, int color = CR_WHITE)
-    {
-        if (!ZH2Game::GetDrawDebugHud()) return;
-
-        BCSUtils::HudPushState();
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
-        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-        BCSUtils::HudSetTextColor(color);
-        BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudSetFont("SmallFont");
-        BCSUtils::HudDrawText(_debugHudId--, "*");
-        BCSUtils::HudPopState();
-    }
-
-    // This uses HudSetScale because the positioning will be better.
-    internal void DrawCursor()
-    {
-        fixed scale = ZH2Game::GetCursorScale();
-
-        BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0, 480.0);
-        BCSUtils::HudSetScale(scale);
-        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
-
-        BCSUtils::UpdateCursor();
-        BCSUtils::HudSetTextColor(CR_WHITE);
-
-        // Note the cursor pointer is on the top left, so because of this we draw it slightly offset.
-        // 17.0 is the sweet spot.
-        BCSUtils::HudSetPoint(BCSUtils::Floor(BCSUtils::CursorX()) + 17.0 * scale, BCSUtils::Floor(BCSUtils::CursorY()));
-        BCSUtils::HudDrawImage(HUD_CURSOR, "CURSOR");
-
-        // Debug points for the cursor where it actually points.
-        DebugDrawXY(BCSUtils::Floor(BCSUtils::CursorX()), BCSUtils::Floor(BCSUtils::CursorY()), CR_CYAN);
-    }
-
-    internal bool DrawClickableTextConditional(bool clickable, int id, fixed x, fixed y, fixed width, fixed height, str text)
+    internal bool DrawClickableTextConditional(bool clickable, int id, fixed addX, fixed addY, fixed width, fixed height, str text)
     {
         if (!clickable)
         {
             BCSUtils::HudSetTextColor(CR_DARKGRAY);
-            BCSUtils::HudSetPoint(x, y);
+
+            HudSetPointInternal(addX, addY);
             BCSUtils::HudDrawText(id, text);
+
             return false;
         }
 
-        return DrawClickableText(id, x, y, width, height, text);
+        return DrawClickableText(id, addX, addY, width, height, text);
     }
 
-    internal bool DrawClickableText(int id, fixed x, fixed y, fixed width, fixed height, str text)
+    internal bool DrawClickableText(int id, fixed addX, fixed addY, fixed width, fixed height, str text)
     {
         fixed mouseScale = ZH2Game::GetCursorScale();
         fixed cursorX = BCSUTILS::Floor(BCSUTILS::CursorX()),
               cursorY = BCSUTILS::Floor(BCSUTILS::CursorY());
+
+        fixed x = GetHudX() + addX,
+              y = GetHudY() + addY;
 
         // Determine if this text is currently being selected.
         bool isOver =
@@ -182,14 +130,15 @@ strict namespace Hud
             && cursorY > y && cursorY < y + height;
 
         BCSUtils::HudSetTextColor(isOver ? CR_RED : CR_WHITE);
-        BCSUtils::HudSetPoint(x, y);
+
+        HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawText(id, text);
-        
+
         // Draw the bounds of the screen.
-        DebugDrawXY(x, y, CR_GRAY);
-        DebugDrawXY(x + width, y, CR_GRAY);
-        DebugDrawXY(x, y + height, CR_GRAY);
-        DebugDrawXY(x + width, y + height, CR_GRAY);
+        DebugDraw(x, y, CR_GRAY);
+        DebugDraw(x + width, y, CR_GRAY);
+        DebugDraw(x, y + height, CR_GRAY);
+        DebugDraw(x + width, y + height, CR_GRAY);
 
         return isOver && BCSUTILS::KeyPressed(BT_ATTACK);
     }
@@ -203,6 +152,10 @@ strict namespace Hud
             return;
 
         if (!ZH2Game::GetEnableHudShaking())
+            return;
+
+        // Do not shake if the camera is not on the client.
+        if (!_clientCameraOnBody)
             return;
 
         int duration = ZH2Game::GetHudShakeDuration();
@@ -234,11 +187,11 @@ strict namespace Hud
 
     internal void ResetHud()
     {
-        OpenAdminMenu(MENU_START);
+        OpenAdminMenu(ADMINMENU_START);
         _menuPlayerTargetId = -1;
-        _menuPlayerSubMenu = MENU_NONE;
+        menuPlayerTarget = MENUTARGET_NONE;
         _filteredSpecie = Player::SPECIENONE;
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE

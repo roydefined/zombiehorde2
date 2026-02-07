@@ -4,84 +4,85 @@
 
 strict namespace Game
 {
-    internal void Infect(InfectTypeT type)
+    // All of these items will be taken on infect.
+    internal str _takeOnInfectItems[] = {
+        WEAPON_CHAINGUN_HEAT_NAME, WEAPON_FIREGRENADE_THROWPOWER_NAME, WEAPON_JACKSGUN_SMOKE_COUNT_NAME,
+        WEAPON_SNIPER_SHOULDEJECTCASE_NAME, WEAPON_SNIPER_ZOOM_LEVEL_NAME, WEAPON_SNIPER_IS_ZOOMED_NAME,
+        WEAPON_SNIPER_BOLTING_NAME, WEAPON_SHOTGUN_MUST_PUMP_NAME, WEAPON_DOUBLESHOTGUN_EJECT_SHELLS_NAME,
+    };
+
+    internal void Infect(InfectTypeT type, InfectSourceT source)
     {
-        InfectPlayer(PlayerNumber(), type);
+        InfectPlayer(PlayerNumber(), type, source);
     }
 
-    internal void Cure()
+    internal void Cure(CureSourceT source)
     {
-        CurePlayer(PlayerNumber());
+        CurePlayer(PlayerNumber(), source);
     }
 
-    internal void CurePlayer(int id)
+    internal void CurePlayer(int id, CureSourceT source)
     {
-        // Ensure all zombie weapons are taken.
-        Player::TakePlayerZombieWeapons(id);
-
-        Player::SetPlayerHuman(id);
-        Player::MorphPlayerToHuman(id);
-        Player::SetPlayerHumanTeam(id);
-        Player::SetPlayerHumanSkin(id);
-        Player::GivePlayerHumanInventory(id, false);
-
-        // Full reset of powers on specie change.
-        Power::ResetPlayerPowers(id);
-
-        // This not really needed if we take powers, because the recalculate is automatically called.
-        //Power::RecalculatePlayerPowers(id);
-
         int tid = Identity::GetTID(id);
-        if (!SpawnForced("CureEffect", GetActorX(tid), GetActorY(tid), GetActorZ(tid)))
-            Logger::LogWarning(LOGSOURCE , "Failed to spawn cure effect for player " + str(id) + ".");
+        bool isZombie = Player::GetPlayerIsZombie(id);
 
-        EventBus::CallEvent(EVENTCURED, id);
+        // If the player is a zombie, transform them back.
+        if (isZombie)
+        {
+            // Ensure all zombie weapons are taken.
+            Player::TakePlayerZombieWeapons(id);
+
+            Player::SetPlayerHuman(id);
+            Player::MorphPlayerToHuman(id);
+            Player::SetPlayerHumanTeam(id);
+            Player::SetPlayerHumanSkin(id);
+            Player::GivePlayerHumanInventory(id, false);
+
+            if (!SpawnForced("ZH2CureEffect", GetActorX(tid), GetActorY(tid), GetActorZ(tid)))
+                Logger::LogWarning(LOGSOURCE , "Failed to spawn cure effect for player " + str(id) + ".");
+
+            // This not really needed if we take powers, because the recalculate is automatically called.
+            //Power::RecalculatePlayerPowers(id);
+
+            Event::SendPlayerSpecieChanged(id, Player::SPECIEHUMAN);
+        }
+
+        PlaySound(tid, "specie/CURE", CHAN_AUTO);
+        Event::SendPlayerCured(id, isZombie, source);
     }
-    
-    internal void InfectPlayer(int infectedId, InfectTypeT type)
+
+    internal void InfectPlayer(int infectedId, InfectTypeT type, InfectSourceT source)
     {
         int tid = Identity::GetTID(infectedId);
 
-        // Drop fire grenade if the player owns one.
-        if (CheckActorInventory(tid, WEAPON_AMMO_FIREGRENADE_NAME) > 0)
-            Spawn(WEAPON_FIREGRENADE_SPAWN_NAME, GetActorX(tid), GetActorY(tid), GetActorFloorZ(tid) + 8.0);
+        DropFireGrenade(tid, type, source);
 
         // Ensure all human weapons are taken.
         Player::TakePlayerHumanWeapons(infectedId);
 
         // Determine skin.
-        // When playing a legacy map or getting infected by an admin, always use old zombies.
-        // Otherwise pick initial/subsequent based on the passed type.
-        str skin = SKIN_ZOMBIEOLD;
-        if (!Map::GetCurrentMapIsLegacyMap())
+        Player::ZombieSkinTypeT skinType = Player::GetZombieSkinType(type == INFECT_INITIAL);
+        str skin;
+        switch(skinType)
         {
-            switch(type)
-            {
-                case INFECT_REGULAR:
-                    skin = SKIN_ZOMBIEREGULAR;
-                    break;
-                case INFECT_INITIAL:
-                    skin = SKIN_ZOMBIEINITIAL;
-                    break;
-            }
+            case Player::ZOMBIESKIN_REGULAR: skin = SKIN_ZOMBIEREGULAR; break;
+            case Player::ZOMBIESKIN_INITIAL: skin = SKIN_ZOMBIEINITIAL; break;
+            default: skin = SKIN_ZOMBIEOLD;
         }
 
-        // Override skin behaviour
-        switch (ZH2Game::GetZombieSkinBehaviour())
+        // Determine health to give based on current player health.
+        // Zombie health is based on the player's health.
+        int spawnHealth;
+        int health;
+        switch(type)
         {
-            case ZH2Game::BEHAVIOUR_FORCEOLDSKIN:
-                skin = SKIN_ZOMBIEOLD;
+            case INFECT_REGULAR:
+                spawnHealth = Game::GetRegularZombieMaxHealth();
+                health = Game::DetermineHealthToGivePlayerRegularZombie(infectedId);
                 break;
-            case ZH2Game::BEHAVIOUR_FORCENEWSKIN:
-                switch(type)
-                {
-                    case INFECT_REGULAR:
-                        skin = SKIN_ZOMBIEREGULAR;
-                        break;
-                    case INFECT_INITIAL:
-                        skin = SKIN_ZOMBIEINITIAL;
-                        break;
-                }
+            case INFECT_INITIAL:
+                spawnHealth = Game::GetInitialZombieMaxHealth();
+                health = Game::DetermineHealthToGivePlayerInitialZombie(infectedId);
                 break;
         }
 
@@ -91,6 +92,11 @@ strict namespace Game
         Player::SetPlayerZombieTeam(infectedId);
         Player::SetPlayerZombieSkin(infectedId, skin);
         Player::GivePlayerZombieInventory(infectedId);
+        Player::SetPlayerNextZombieTauntTic(infectedId);
+
+        // Now also set health.
+        BCSUtils::SetActorSpawnHealth(tid, spawnHealth);
+        BCSUtils::SetActorHealth(tid, health);
 
         // Initials get abilities
         if (type == INFECT_INITIAL)
@@ -106,26 +112,13 @@ strict namespace Game
             }
         }
 
-        // Admin health is static, otherwise it's determined based on health.
-        switch(type)
-        {
-            case INFECT_REGULAR:
-                BCSUtils::SetActorSpawnHealth(tid, Game::GetRegularZombieMaxHealth());
-                BCSUtils::SetActorHealth(tid, Game::DetermineHealthToGivePlayerRegularZombie(infectedId));
-                break;
-            case INFECT_INITIAL:
-                BCSUtils::SetActorSpawnHealth(tid, Game::GetInitialZombieMaxHealth());
-                BCSUtils::SetActorHealth(tid, Game::DetermineHealthToGivePlayerInitialZombie(infectedId));
-                break;
-            case INFECT_ADMIN:
-                BCSUtils::SetActorSpawnHealth(tid, 2000);
-                BCSUtils::SetActorHealth(tid, 2000);
-                break;
-        }
+        // Additional hardcoded items that must be taken, related to weaponry that otherwise causes weird behavior.
+        foreach(str item; _takeOnInfectItems)
+            BCSUtils::TakeMaxActorInventory(tid, item);
 
         if (!SpawnForced("ZH2InfectionFireEffect", GetActorX(tid), GetActorY(tid), GetActorZ(tid)))
             Logger::LogWarning(LOGSOURCE , "Failed to spawn infection effect for player " + str(infectedId) + ".");
-       
+
         if (!PlayerIsBot(infectedId))
         {
             if (!NamedExecuteClientScript("zh2_internal_player_infected_client", infectedId))
@@ -134,13 +127,33 @@ strict namespace Game
 
         PlaySound(tid, "zombie/WAKE", CHAN_AUTO);
 
-        // Full reset of powers on specie change.
-        Power::ResetPlayerPowers(infectedId);
-
         // Remove panic state
         Player::SetPlayerPanicState(infectedId, Player::PANICSTATENONE);
 
-        EventBus::CallEvent(EVENTINFECTED, infectedId);
+        Event::SendPlayerInfected(infectedId, type, source);
+        Event::SendPlayerSpecieChanged(infectedId, Player::SPECIEZOMBIE);
+    }
+
+    // Drop fire grenade if the player owns one and is eligible to drop one depending on specie and configuration.
+    internal void DropFireGrenade(int tid, InfectTypeT type, InfectSourceT source)
+    {
+        if (CheckActorInventory(tid, WEAPON_AMMO_FIREGRENADE_NAME) == 0)
+            return;
+
+        // Never drop when the source is an admin.
+        if (source == INFECTSOURCE_ADMIN)
+            return;
+
+        ZH2Game::DropGrenadeOnInfectT dropBehaviour = ZH2Game::GetDropGrenadeOnInfect();
+
+        if (dropBehaviour == ZH2Game::DROPBEHAVIOUR_NEVER)
+            return;
+
+        // Only regular zombies should drop a grenade.
+        if (dropBehaviour == ZH2Game::DROPBEHAVIOUR_ONLY_REGULAR_ZOMBIES && type != INFECT_REGULAR)
+            return;
+
+        Spawn(WEAPON_FIREGRENADE_SPAWN_NAME, GetActorX(tid), GetActorY(tid), GetActorFloorZ(tid) + 8.0);
     }
 
     script "zh2_internal_player_infected_client" clientside
@@ -150,7 +163,7 @@ strict namespace Game
         {
             for (int j = 0; j < 6; ++j)
                 Hud::DrawClientSeparateHudFire(Hud::FIRETYPEINFECT);
-            
+
             Delay(const: 1);
         }
     }

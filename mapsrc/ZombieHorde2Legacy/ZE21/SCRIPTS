@@ -1,0 +1,595 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+Int Block1on = false;
+Int Block2on = false;
+Int Block3on = false;
+Int Block4on = false;
+
+//prevent multiple activations
+bool resist2done=false;
+bool resist3done=false;
+
+bool colhere = true;
+
+//Oxygen level specific
+#define OXYGEN_DECREASETICS 21
+#define OXYGEN_INCREASETICS 4
+#define OXYGEN_DAMAGETICS 21
+#define OXYGEN_NOZOMBIE TRUE
+Int OxygenLevel[BCSUtils::MAX_PLAYERS];
+Bool InSpace[BCSUtils::MAX_PLAYERS];
+Bool ContinueScript[BCSUtils::MAX_PLAYERS];
+Bool MsgConsistent[BCSUtils::MAX_PLAYERS];
+
+// ZH2: Added for the resists to work.
+function void ResistMessage3 (int restime, str whyresist) // RED
+{
+	SetFont("BIGFONT");
+	HudMessageBold(s:"\cGResist for \cJ", d:restime, s:" \cGseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+	SetFont("SMALLFONT");
+	HudMessageBold(s:whyresist; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 1.5, 0.5);
+}
+
+function void blockzombies(int setangle){
+    if(Player::GetIsZombie()){
+        //acs_execute(158, 0, 0, 0, 0);    // TODO: burn zombie
+        thrustthing(setangle, 25, 1, 0); // Push back
+    }
+}
+
+function int GetPlayerRender(void) {return GetCVar ("vid_renderer");}
+
+#define SOFTWARE_PLAYER 0
+
+script 30 OPEN clientside //software support
+{
+    if(getplayerrender()!=SOFTWARE_PLAYER) Terminate;
+    {
+        for(int area=0;area<=999;area++) //random tag because i'm too damn lazy to check how many tags are used...
+        {
+            Light_fade(area,192,0);
+        }
+    }
+}
+
+script 1 OPEN //startups
+{
+    //Setting up oxygen levels.
+    For(Int p = 0; p < BCSUtils::MAX_PLAYERS; p++)
+    {
+        OxygenLevel[p] = 101;
+    }
+
+    Scroll_Texture_Both(-68, 0, 0, 100, 0);
+    floor_waggle(39,250,50,50,0);
+    floor_waggle(40,250,50,40,0);
+    floor_waggle(41,250,40,50,0);
+    floor_waggle(42,250,40,40,0);
+    SetCameraToTexture(38, "CAMTX128", 75 );
+    sector_setgravity(11,0,0.0004);
+    sector_setgravity(17,0,0.0004);
+    sector_setgravity(13,0,0.0004);
+    sector_setgravity(69,0,0.0004);
+    sector_setgravity(70,0,0.0004);
+    sector_setgravity(71,0,0.0004);
+    sector_setgravity(72,0,0.0004);
+    sector_setgravity(93,0,0.0004);
+    sector_setgravity(92,0,0.0004);
+    sector_setgravity(95,0,0.0004);
+    sector_setgravity(101,0,0.0004);
+    sector_setgravity(109,0,0.0004);
+    delay(140);
+    door_open(8, 15, 0);
+    delay(140);
+    for(int i=20; i>0; i--)
+    {
+        if(i == 14){
+        SetLineBlocking(61, BLOCK_NOTHING);
+        SetLineTexture(61, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+        SetLineTexture(61, SIDE_BACK, TEXTURE_MIDDLE, "-");
+        thingsound(66, "sound/ventbreak", 255);
+        spawnspotfacing("ZH2LegacyZe21MetalShardSpawn", 66, 0);}
+
+        ResistMessage3 (i, "\cdOpening the exit Doors");
+        delay(35);
+    }
+    Polyobj_RotateRight(1, 3, 64);
+    Polyobj_RotateLeft(2, 3, 64);
+    delay(35);
+    sector_setgravity(22,0,0.0004);
+    sector_setgravity(23,0,0.0004);
+    sector_setgravity(12,0,0.0004);
+    sector_setgravity(2,0,0.0004);
+    sector_setgravity(3,0,0.0004);
+    sector_setgravity(4,0,0.0004);
+    sector_setgravity(8,0,0.0004);
+    sector_setgravity(7,0,0.0004);
+    sector_setgravity(6,0,0.0004);
+    sector_setgravity(5,0,0.0004);  //the whole spawn point loses its gravity
+    sector_setgravity(14,0,0.0004);
+    sector_setgravity(15,0,0.0004);
+    sector_setgravity(108,0,0.0004);
+    delay(18);
+
+     // oxygen meter starts
+     for(i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+    {
+        If(PlayerInGame(i))
+        {
+            SetActivator(Identity::GetTid(i));
+            InSpace[i] = True;
+            CheckPlayerOxygenLevel(True);
+        }
+    }
+}
+
+script 2 (void) //blockpoint 1
+{
+    SetActivator(-1);
+    thing_activate(20);
+    SetLineBlocking(18, BLOCK_NOTHING);
+    SetLineTexture(18, SIDE_FRONT, TEXTURE_MIDDLE, "BLUEFLOR");
+    SetLineTexture(18, SIDE_BACK, TEXTURE_MIDDLE, "BLUEFLOR");
+    delay(18);
+
+    Block1on = true;
+    SetLineTexture(18, SIDE_FRONT, TEXTURE_MIDDLE, "FIREBLU1");
+    SetLineTexture(18, SIDE_BACK, TEXTURE_MIDDLE, "FIREBLU1");
+    spawnspotfacing("ZH2LegacyZe21SparkSpawn", 55, 0);
+    thingsound(55, "sound/sparkon", 100);
+
+    delay(20);
+
+    thing_activate(56);
+
+    delay(35*14);
+    Block1on = false;
+    SetLineTexture(18, SIDE_FRONT, TEXTURE_MIDDLE, "BLUEFLOR");
+    SetLineTexture(18, SIDE_BACK, TEXTURE_MIDDLE, "BLUEFLOR");
+    thing_deactivate(56);
+}
+
+script 3 (void) //blocker 1
+{
+    If(Block1on == True)
+    blockzombies(128);
+}
+
+script 4 (void) //resist 2
+{
+    if(!resist2done)
+    {
+        resist2done=true;
+        SetActivator(-1);
+        for(int i=15; i>0; i--)
+        {
+            ResistMessage3 (i, "\ckpressurising main teleport room");
+            delay(35);
+        }
+        floor_lowerbyvalue(35,10,100);
+        tagwait(35);
+        Polyobj_Move(3, 10, 64, 200);
+        spawnspot("ZH2LegacyReplacedBigSteamSpawner",1,4657,0);
+        delay(35*4);
+        delay(25);
+        thing_remove(4657);
+    }
+}
+
+script 6 (void) //resist 3
+{
+    if(!resist3done)
+    {
+        resist3done=true;
+
+        SetActivator(-1);
+
+        for(int i=15; i>0; i--)
+        {
+                ResistMessage3 (i, "\cfforcing emergency doors");
+                delay(35);
+        }
+        floor_lowerbyvalue(48, 10, 60);
+        floor_lowerbyvalue(49, 15, 160);
+
+        delay(35);
+
+        SetLineTexture(50, SIDE_FRONT, TEXTURE_MIDDLE, "FIREBLU1");
+        SetLineTexture(50, SIDE_BACK, TEXTURE_MIDDLE, "FIREBLU1");
+
+        spawnspotfacing("ZH2LegacyZe21SparkSpawn", 51, 0);
+        thingsound(51, "sound/sparkon", 100);
+
+        delay(20);
+
+        thing_activate(58);
+
+        Block3on = true;
+        delay(35*9);
+        block3on = false;
+
+        SetLineTexture(50, SIDE_FRONT, TEXTURE_MIDDLE, "BLUEFLOR");
+        SetLineTexture(50, SIDE_BACK, TEXTURE_MIDDLE, "BLUEFLOR");
+        thing_deactivate(58);
+    }
+}
+
+script 7 (void) //block point 4
+{
+    SetActivator(-1);
+
+    Block4on = true;
+
+    SetLineTexture(57, SIDE_FRONT, TEXTURE_MIDDLE, "FIREBLU1");
+    SetLineTexture(57, SIDE_BACK, TEXTURE_MIDDLE, "FIREBLU1");
+
+    spawnspotfacing("ZH2LegacyZe21SparkSpawn", 9, 0);
+    thingsound(9, "sound/sparkon", 100);
+
+    delay(20);
+
+    thing_activate(10);
+
+    delay(35*20);
+
+    Block4on = false;
+    SetLineTexture(57, SIDE_FRONT, TEXTURE_MIDDLE, "BLUEFLOR");
+    SetLineTexture(57, SIDE_BACK, TEXTURE_MIDDLE, "BLUEFLOR");
+    thing_deactivate(10);
+}
+
+script 9 (void) //some doors that lower
+{
+    spawnspot("ZH2LegacyReplacedSteamSpawner", 73, 800, 0);
+    Floor_lowerbyvalue(69,10,175);
+
+    delay(35*2);
+
+    Floor_lowerbyvalue(70,10,175);
+
+    delay(35*2);
+
+    Floor_lowerbyvalue(71,10,175);
+
+    delay(35*2);
+
+    Floor_lowerbyvalue(72,10,175);
+
+    tagwait(72);
+
+    thing_remove(800);
+}
+
+script 10 (void) //Door & Final resist
+{
+    SetActivator(-1);
+    spawnspotfacing("ZH2LegacyZE15SteamSpawner",76,1999);
+    Floor_lowerbyvalue(74,10,128);
+    ceiling_raisebyvalue(75,10,128);
+    tagwait(74);
+    thing_remove(1999);
+
+    for(int i=40; i>0; i--)
+    {
+        ResistMessage3 (i, "\ccReach the \cfSeekNight");
+        delay(35);
+
+        if (i==6)
+        {Floor_raisebyvalue(83,10,124);}
+    }
+
+    floor_raiseandcrush(67, 10, 20, 2); //ZH2 [AQW] crushmode hexen; dmg to 20
+    ceiling_lowerandcrush(67, 10, 20, 2); //ZH2 [AQW] crushmode hexen; dmg to 20
+
+    tagwait(67);
+
+    floor_raisebyvalue(67, 10, 4);
+    ceiling_lowerbyvalue(67, 10, 4);
+
+    delay(35*3);
+
+    //multiple because it increased volume.
+    for(i=0; i < 3; i++)
+		ambientsound("sound/bigexplosion", 255);
+
+    delay(80);
+
+    colhere = false;
+	Game::KillUnsafePlayers();
+
+    for(i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+        {
+            if(PlayerInGame(i) && !Game::GetPlayerIsSafe(i))
+            {
+                SetActivator(Identity::GetTid(i));
+                fadeto(255, 0, 0, 1.0, 0.2);
+            }
+        }
+
+    delay(35);
+
+    for(i=0; i < BCSUtils::MAX_PLAYERS; i++)
+    {
+        SetActivator(Identity::GetTid(i));
+        fadeto(0, 0, 0, 0.0, 3.0);
+    }
+}
+
+script 13 (void) //falls at Seeknight
+{
+teleport(random(85,87),84,0);
+}
+
+script 14 (void)//colossus closes in
+{               //it needs 2 textures because of the skybox having to me massive
+    SetLineTexture(46, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+    SetLineTexture(47, SIDE_FRONT, TEXTURE_MIDDLE, "COLbig");
+    spawnspotfacing("ZH2LegacyZe21SpaceDebrisSpawn", 45, 0);
+
+    while(colhere)
+    {
+        delay(35*random(5, 10));
+        for(int p=0; p < BCSUtils::MAX_PLAYERS; p++)
+        {
+			radius_quake(random(2, 5), random(50, 140), 0, 1, identity::GetTid(p));
+		}
+    }
+}
+
+script 18 (void) //blocker 2
+{
+    If(Block2on == True)
+        blockzombies(128);
+}
+
+script 19 (void) //blocker 4
+{
+    If(Block4on == True)
+        blockzombies(128);
+}
+
+script 22 (void) //blocker 3
+{
+    If(Block3on == True)
+        blockzombies(192);
+}
+
+script 23 (void) //blockpoint 2
+{
+    SetActivator(-1);
+    Block2on = true;
+
+    SetLineTexture(33, SIDE_FRONT, TEXTURE_MIDDLE, "FIREBLU1");
+    SetLineTexture(33, SIDE_BACK, TEXTURE_MIDDLE, "FIREBLU1");
+
+    spawnspotfacing("ZH2LegacyZe21SparkSpawn", 59, 0);
+    thingsound(59, "sound/sparkon", 100);
+
+    delay(20);
+
+    thing_activate(60);
+
+    delay(35*15);
+
+    Block2on = false;
+    SetLineTexture(33, SIDE_FRONT, TEXTURE_MIDDLE, "BLUEFLOR");
+    SetLineTexture(33, SIDE_BACK, TEXTURE_MIDDLE, "BLUEFLOR");
+    thing_deactivate(60);
+}
+
+
+
+/* --------- START OF OXYGEN ACS --------- */
+
+//improved localambientsound function
+Function void PlayLocalSound(Int PlayerID, Str Sound, Int Volume)
+{
+    SetActivator(Identity::GetTid(PlayerID));
+    LocalAmbientSound(Sound, Volume);
+}
+
+Function Bool CheckZombie(Int PlayerID)
+{
+    Bool IsZombie = False;
+    If(OXYGEN_NOZOMBIE == True)
+    {
+        If(Player::GetPlayerIsZombie(PlayerID))
+        {
+            OxygenLevel[PlayerID] = 100;
+            IsZombie = True;
+        }
+    }
+
+    Return IsZombie;
+}
+
+Function void CheckPlayerOxygenLevel(Int Line)
+{
+    If(!CheckZombie(PlayerNumber()))
+    {
+        If(Line)
+        {
+            InSpace[PlayerNumber()] = True;
+        }
+        Else
+        {
+            InSpace[PlayerNumber()] = False;
+        }
+
+        ACS_ExecuteAlways(500, 0, 1, 0, 0);
+    }
+}
+
+Function void DisplayOxygenMessage(void)
+{
+        MsgConsistent[PlayerNumber()] = False;
+        Int o = OxygenLevel[PlayerNumber()];
+        Str CurColor = "\cQ";
+        Int DisplayTime = 1.0;
+        If(o >= 80)
+        {
+            CurColor = "\cQ";
+        }
+        Else If(o < 80 && o >= 60)
+        {
+            CurColor = "\cD";
+        }
+        Else If(o < 60 && o >= 40)
+        {
+            CurColor = "\cF";
+        }
+        Else If(o < 40 && o >= 20)
+        {
+            CurColor = "\cI";
+        }
+        Else If(o < 20)
+        {
+            CurColor = "\cG";
+        }
+
+        If(o < 20)
+        {
+            DisplayTime = 0.2;
+        }
+
+        SetFont("CONFONT");
+        HudMessage(s:"\cJOxygen left: ", s:CurColor, d:o, s:"%"; HUDMSG_FADEOUT, 4554, CR_WHITE, 0.1, 0.95, DisplayTime);
+}
+
+Function void ToggleOxygenMessage(void)
+{
+        If(CheckZombie(PlayerNumber()) == False)
+        {
+            If(MsgConsistent[PlayerNumber()] == False)
+            {
+                MsgConsistent[PlayerNumber()] = True;
+            }
+            Else If(MsgConsistent[PlayerNumber()] == True)
+            {
+                MsgConsistent[PlayerNumber()] = False;
+            }
+
+
+            Int o = OxygenLevel[PlayerNumber()];
+            If(o > 100)
+            {
+                o = 100;
+            }
+
+            Str CurColor = "\cQ";
+            Int DisplayTime = 0.0;
+            If(o >= 80)
+            {
+                CurColor = "\cQ";
+            }
+            Else If(o < 80 && o >= 60)
+            {
+                CurColor = "\cD";
+            }
+            Else If(o < 60 && o >= 40)
+            {
+                CurColor = "\cF";
+            }
+            Else If(o < 40 && o >= 20)
+            {
+                CurColor = "\cI";
+            }
+            Else If(o < 20)
+            {
+                CurColor = "\cG";
+            }
+
+            Int HudOptions;
+
+            If(MsgConsistent[PlayerNumber()] == False)
+            {
+                DisplayTime = 0.2;
+                HudOptions = HUDMSG_FADEOUT;
+            }
+            Else If(MsgConsistent[PlayerNumber()] == True)
+            {
+                DisplayTime = 0.0;
+                HudOptions = HUDMSG_PLAIN;
+            }
+
+            SetFont("CONFONT");
+            HudMessage(s:"\cJOxygen left: ", s:CurColor, d:o, s:"%"; HudOptions, 4554, CR_WHITE, 0.1, 0.95, DisplayTime);
+        }
+}
+
+Script 500 (Int x, Int y)
+{
+    Switch(x)
+    {
+        Case 0:
+            CheckPlayerOxygenLevel(LineSide());
+        Break;
+
+        Case 1:
+                If(InSpace[PlayerNumber()] == True)
+                {
+                    If(OxygenLevel[PlayerNumber()] >= 101)
+                    {
+                        OxygenLevel[PlayerNumber()] = 100;
+                    }
+
+                    For(OxygenLevel[PlayerNumber()] = OxygenLevel[PlayerNumber()]; OxygenLevel[PlayerNumber()]>=0 && InSpace[PlayerNumber()] == True && CheckZombie(PlayerNumber()) == False; OxygenLevel[PlayerNumber()]--)
+                    {
+                        Int o = OxygenLevel[PlayerNumber()];
+                        DisplayOxygenMessage();
+
+                        If(o < 20)
+                        {
+                            PlayLocalSound(PlayerNumber(), "sound/airdeplete", 127);
+                        }
+
+                        If(o == 0)
+                        {
+                            Int totaldelay = 0;
+                            While(OxygenLevel[PlayerNUmber()] <= 0 && InSpace[PlayerNumber()] == True && GetActorProperty(ActivatorTid(), APROP_Health) > 0)
+                            {
+                                If(totaldelay >= OXYGEN_DECREASETICS)
+                                {
+                                    totaldelay = 0;
+                                    PlayLocalSound(PlayerNumber(), "sound/airdeplete", 127);
+                                }
+                                DisplayOxygenMessage();
+                                Thing_Damage(ActivatorTid(), 3, MOD_UNKNOWN);
+                                Delay(OXYGEN_DAMAGETICS);
+                                totaldelay += OXYGEN_DAMAGETICS;
+                            }
+                        }
+
+                        Delay(OXYGEN_DECREASETICS);
+                    }
+
+                }
+                Else
+                {
+                    Bool LevelChanged = False;
+                    For(OxygenLevel[PlayerNumber()] = OxygenLevel[PlayerNumber()]; OxygenLevel[PlayerNumber()]<101 && InSpace[PlayerNumber()] == False && CheckZombie(PlayerNumber()) == False; OxygenLevel[PlayerNumber()]++)
+                    {
+                        If(OxygenLevel[PlayerNumber()] >= 100) { LevelChanged = True; }
+
+                        Int o2 = OxygenLevel[PlayerNumber()];
+                        DisplayOxygenMessage();
+
+                        Delay(OXYGEN_INCREASETICS);
+                    }
+
+                    If(LevelChanged == True)
+                    {
+                        PlayLocalSound(PlayerNumber(), "sound/airback", 127);
+                    }
+
+                }
+        Break;
+    }
+}

@@ -1,0 +1,42 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal void ZombieTauntTic()
+    {
+        if (!GetIsZombie())
+            return;
+
+        if (!GetCanZombieTaunt())
+            return;
+
+        // Check if taunting is allowed and if the match hasn't ended.
+        // Otherwise ignore this cycle and try later.
+        if (ZH2Game::GetAllowRandomZombieTaunts() && Round::GetActiveKnownRoundState() < Round::STATEENDING)
+            ActivatorSound("zombie/idle", 100);
+
+        SetNextZombieTauntTic();
+    }
+
+    internal void SetNextZombieTauntTic()
+    {
+        SetPlayerNextZombieTauntTic(PlayerNumber());
+    }
+
+    internal void SetPlayerNextZombieTauntTic(int id)
+    {
+        ZH2Game::GameContext.Players[id].ZombieTauntTic = Timer() + Random(30, 60) * 35;
+    }
+
+    internal bool GetCanZombieTaunt()
+    {
+        return GetPlayerCanZombieTaunt(PlayerNumber());
+    }
+
+    internal bool GetPlayerCanZombieTaunt(int id)
+    {
+        return ZH2Game::GameContext.Players[id].ZombieTauntTic < Timer();
+    }
+}

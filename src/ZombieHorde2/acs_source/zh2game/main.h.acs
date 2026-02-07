@@ -5,11 +5,14 @@
 #include "preprocess.h.acs"
 #include "common.h.acs"
 
+#include "debug/debug.h.acs"
 #include "game/game.h.acs"
 #include "sync/sync.h.acs"
 #include "map/map.h.acs"
+#include "events/events.h.acs"
 #include "round/round.h.acs"
 #include "player/player.h.acs"
+#include "feature/feature.h.acs"
 #include "gameloop/gameloop.h.acs"
 #include "roundtimer/roundtimer.h.acs"
 #include "settings/settings.h.acs"
@@ -17,6 +20,7 @@
 #include "music/music.h.acs"
 #include "reward/reward.h.acs"
 #include "weight/weight.h.acs"
+#include "obituary/obituary.h.acs"
 #include "decorate/decorate.h.acs"
 #include "resist/resist.h.acs"
 #include "power/power.h.acs"
@@ -28,7 +32,17 @@
 strict namespace ZH2Game
 {
     #define PERSISTINGGAMECONTEXTINDEX 1
-    
+
+    #define SCRIPT_ENTER_RESPAWN_NAME "zh2_internal_enter_respawn"
+    #define SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME "zh2_internal_enter_respawn_clientside"
+
+    internal enum TranslucentAlliesT : int
+    {
+        TRANSLUCENT_ALLIES_OFF,
+        TRANSLUCENT_ALLIES_ON_WITH_REQUIRED_CVARS,
+        TRANSLUCENT_ALLIES_ON,
+    };
+
     internal enum ZombieSkinBehaviourT : int
     {
         BEHAVIOUR_DEFAULT,
@@ -36,19 +50,33 @@ strict namespace ZH2Game
         BEHAVIOUR_FORCENEWSKIN,
     };
 
-    internal enum KillTypeT : int
+    internal enum DropGrenadeOnInfectT : int
     {
-        KILL_TYPE_NONE,
-        KILL_TYPE_HUMAN_TO_HUMAN,
-        KILL_TYPE_HUMAN_TO_ZOMBIE,
-        KILL_TYPE_ZOMBIE_TO_ZOMBIE,
-        KILL_TYPE_ZOMBIE_TO_HUMAN,
+        DROPBEHAVIOUR_ALWAYS,
+        DROPBEHAVIOUR_ONLY_REGULAR_ZOMBIES,
+        DROPBEHAVIOUR_NEVER,
+    };
+
+    internal enum PlayerDeathTypeT : int
+    {
+        DEATHTYPE_UNKNOWN,
+        DEATHTYPE_SUICIDE,
+        DEATHTYPE_FALLING,
+        DEATHTYPE_DROWNING,
+        DEATHTYPE_CRUSHING,
+        DEATHTYPE_TELEFRAG,
+        DEATHTYPE_UNSAFE,
     };
 
     // General game info. Non-persisting between rounds.
     internal struct GameContextT
     {
         PlayerT Players[BCSUtils::MAX_PLAYERS];
+
+        // This boolean indicates if there should be a sync of certain things when a player joins the game.
+        // On map start we do not allow all things to sync to avoid possibly 64 players all syncing themselves.
+        // We should instead do one big sync. After a moment it will be allowed.
+        bool DoSyncOnEnter;
 
         // Map details, either parsed from a lump or defined through ACS.
         IO::MapDetailedT MapDetails;
@@ -58,13 +86,20 @@ strict namespace ZH2Game
         // (which can be found in the persisting game context)
         int MapIndex;
 
-        // The tic when the match started and ended.
+        // The tic when the match started, ended, and started voting.
         // Synchronized with clients. Used for rendering and generally indicating the length of things.
         int MatchStartTic;
         int MatchEndingTic;
+        int MatchVotingTic;
 
         // Serverside. If `true`, the join prevention depeding on round state is ignored.
         bool AlwaysAllowJoin;
+
+        // Clientside. If `true`, the game locks the player's angle and pitch.
+        // The added angle and pitch values are then enforces.
+        bool LockMovement;
+        fixed LockedAngle;
+        fixed LockedPitch;
 
         // Synced when a match ends to indicate what specie won the round.
         Game::WinningSpecieT WinningSpecie;
@@ -97,6 +132,14 @@ strict namespace ZH2Game
         // Clientside, represents the client's currently selected ability.
         int SelectedZombieAbilityIndex;
 
+        // Serverside, modifiers the server can define.
+        // This is a cached variant which is compared against the cvars.
+        // If the value is different we must update.
+        Game::ServerModifierT ServerModifiers[MAX_SERVER_MODIFIERS];
+
+        // Serverside, tracks enabled features.
+        bool KnockbackFeatureEnabled;
+
         // Clientside, not synchronized.
         // Used with the persisting items, indication what items the client owns.
         int OwnedItems[MAX_ITEMS];
@@ -107,6 +150,13 @@ strict namespace ZH2Game
         int OwnedKeyCount;
         int OwnedWeaponItems[MAX_ITEMS];
         int OwnedWeaponCount;
+
+        // Clientside and serverside handled. Not synched.
+        // Stores received data from events, which has been unpacked.
+        Event::EventReceiveContextT EventReceiveContext;
+
+        // Clientside, not synchronized.
+        Obituary::ObituaryCollectionContextT ObituaryCollectionContext;
 
         // Clientside, not synchronized.
         // Relevant for the radio as it will track what the client's radio index is and also what they currently play.
@@ -147,6 +197,7 @@ strict namespace ZH2Game
         int FinalVotedMapIndex;
 
         // Clientside, set during the ending state.
+        str WinGraphic;
         str WinMessageTop;
         str WinMessageBottom;
 
@@ -158,13 +209,18 @@ strict namespace ZH2Game
         int HumanKillsOrderedCount;
         int ZombieKillsOrderedCount;
         int InfectsOrderedCount;
-        
+
         int SurvivorsShuffled[BCSUtils::MAX_PLAYERS]; // Shuffled collection of players that survived.
         int HordeShuffled[BCSUtils::MAX_PLAYERS]; // Shuffled collection of players that got infected and are alive.
         int DeadShuffled[BCSUtils::MAX_PLAYERS]; // Shuffled collection of players that died.
         int SurvivorsShuffledCount;
         int HordeShuffledCount;
         int DeadShuffledCount;
+
+        // Clientside, these booleans tracks if we are working with translucent allies and team indicators.
+        // Required in order to properly unset the state back to making allies opaque and hiding indicators when disabled.
+        bool TranslucentAlliesEnabled;
+        bool TeamIndicatorsEnabled;
     };
 
     // General game info. Persisting between rounds.
@@ -187,6 +243,9 @@ strict namespace ZH2Game
         Settings::RequestedClientSettingT RequestedClientSettings[SETTINGS_CLIENTMAX];
         int RequestedClientSettingCount;
 
+        // Clientside, this tracks when we notify the player again.
+        int NotifyClientConsolidateMapCount;
+
         IO::MapBaseCollectionT MapBaseCollection;
         Power::PowerCollectionContextT PowerCollection;
         Item::ItemCollectionContextT ItemCollection;
@@ -198,17 +257,24 @@ strict namespace ZH2Game
     // General player info. Non-persisting between rounds.
     internal struct PlayerT
     {
+        // Stored name and name with tripped colors.
         str Name;
+        str StrippedName;
+
         Player::PlayerStateT State;
-        Player::SpecieTypeT SpecieType;
+        Player::PlayerSpecieT SpecieType;
         bool IsInitialZombie;
+
+        // Safe is synched. Indicates if a player reached the safezone.
+        // FirstTimeSafe is serverside and indicates if the player has reached safety before.
         bool Safe;
+        bool FirstTimeSafe;
 
         // Serverside. If `true`, the join prevention depeding on round state is ignored on this player specifically.
         bool AlwaysAllowJoin;
 
         // TODO: Sync this state, maybe make use of it.
-        Player::PanicStateT PanicState;
+        Player::PlayerPanicStateT PanicState;
         int PanicCount;
 
         // Not synched.
@@ -224,6 +290,23 @@ strict namespace ZH2Game
 
         // Not synched, called on both sides from DECORATE code instead.
         int FiringTic;
+
+        // Indicates the tic that a new taunt should play.
+        int ZombieTauntTic;
+
+        // Synched, tracks the map vote cooldown of a player.
+        int MapVoteCooldown;
+
+        // This is the calculated factors that the player will play on.
+        // This is set each time powers are calculated.
+        fixed CalculatedPowerFactors[MAX_POWER_TYPES];
+
+        // Serverside. Indicates the source of damage for the player.
+        Player::DamageSourceT DamageSources[MAX_DAMAGE_SOURCES];
+
+        // Serverside. Indicates if the player is explicitly allowed to walk through other actors.
+        // A tertiary state exists for returning to default.
+        Player::PlayerThruActorsStateT ThruActorsState;
     };
 
     // General player info. Persisting between rounds.

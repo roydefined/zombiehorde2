@@ -18,7 +18,9 @@ strict namespace IO
 
     // Note unlike the other scripts this is transient and will be done between maps.
     // Therefore no explicit initialization is checked.
-    script SCRIPT_PARSE_CURRENT_MAP_DEFS
+
+    // NOTE: This script is `BUSY` and will not trigger a runaway error.
+    script SCRIPT_PARSE_CURRENT_MAP_DEFS BUSY
     {
         if (ZH2Game::GameContext.ParsedMapDetails) terminate;
 
@@ -61,7 +63,7 @@ strict namespace IO
         // Get the specific buffer chunk that contains our map data.
         str buffer = StrMid(LumpReadString(lumpIndex, 0), startOffset, endOffset - startOffset);
         Logger::LogDebug(LOGSOURCE , "Found map buffer chunk for \cd" + MAPDEFLUMPNAME + "\cj map \cd" + mapLump + "\cj, start parsing.");
-        
+
         ParseMapLumpDetails(mapLump, buffer);
         LumpClose(lumpIndex);
 
@@ -78,10 +80,10 @@ strict namespace IO
 
             return i;
         }
-        
+
         return -1;
     }
-    
+
     internal void ParseMapLumpDetails(str mapLump, str buffer)
     {
         int handle = Tokenizer::RentTokenizer(buffer);
@@ -90,7 +92,7 @@ strict namespace IO
         int braceLevel = Tokenizer::GetBraceLevel(handle);
         if (!Tokenizer::ExpectNextChar(handle, '{'))
             return;
-        
+
         Tokenizer::Next(handle);
 
         // While the brace level does not match the end level, we keep parsing.
@@ -108,7 +110,7 @@ strict namespace IO
                 Tokenizer::Next(handle, false);
                 if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
                     Tokenizer::Next(handle, false);
-                    
+
                 continue;
             }
 

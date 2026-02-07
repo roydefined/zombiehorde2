@@ -1,0 +1,173 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE  "Obituary"
+
+#include "scripts.acs"
+#include "queue.acs"
+#include "log.acs"
+
+strict namespace Obituary
+{
+    internal void SetSurvivalDefaultsClient()
+    {
+        Logger::LogDebug(LOGSOURCE , "Setting survival gamemode profile for obituaries clientside.");
+
+        EventBus::AddCallbackByScriptName(EVENTINITIALSCHOSEN, "zh2_internal_obituary_initialschosen_client");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSAFE, "zh2_internal_obituary_playersafe_client");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSCRATCHED, "zh2_internal_obituary_playerscratched");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERINFECTED, "zh2_internal_obituary_playerinfected");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERCURED, "zh2_internal_obituary_playercured");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERDIED, "zh2_internal_obituary_playerdied");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERKILLEDBYPLAYER, "zh2_internal_obituary_playerkilledbyplayer");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERKILLEDBYMONSTER, "zh2_internal_obituary_playerkilledByMonster");
+    }
+
+    internal void SetEscapeDefaultsClient()
+    {
+        Logger::LogDebug(LOGSOURCE , "Setting escape gamemode profile for obituaries clientside.");
+
+        EventBus::AddCallbackByScriptName(EVENTINITIALSCHOSEN, "zh2_internal_obituary_initialschosen_client");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSAFE, "zh2_internal_obituary_playersafe_client");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSCRATCHED, "zh2_internal_obituary_playerscratched");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERINFECTED, "zh2_internal_obituary_playerinfected");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERCURED, "zh2_internal_obituary_playercured");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERDIED, "zh2_internal_obituary_playerdied");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERKILLEDBYPLAYER, "zh2_internal_obituary_playerkilledbyplayer");
+        EventBus::AddCallbackByScriptName(EVENTPLAYERKILLEDBYMONSTER, "zh2_internal_obituary_playerkilledByMonster");
+    }
+
+    internal int GetLowIndex()
+    {
+        return ZH2Game::GameContext.ObituaryCollectionContext.LowIndex;
+    }
+
+    internal int GetHighIndex()
+    {
+        return ZH2Game::GameContext.ObituaryCollectionContext.HighIndex;
+    }
+
+    internal int GetShownObituaryCount()
+    {
+        int count = 0;
+        int lowIndex = GetLowIndex();
+        int highIndex = GetHighIndex();
+        while (lowIndex != highIndex)
+        {
+            lowIndex++;
+            lowIndex %= OBITUARY_COLLECTION_MAX_SIZE;
+            count++;
+        }
+
+        return count;
+    }
+
+    // Returns the next index to queue on. Ensures indexes are shiften correctly.
+    internal int GetNextQueueIndex()
+    {
+        ZH2Game::GameContext.ObituaryCollectionContext.HighIndex++;
+        ZH2Game::GameContext.ObituaryCollectionContext.HighIndex %= OBITUARY_COLLECTION_MAX_SIZE;
+
+        // Move low index up to fit configured obituary count.
+        int count = ZH2Game::GetShownObituaries(ConsolePlayerNumber());
+        while (GetShownObituaryCount() > count && GetLowIndex() != GetHighIndex())
+        {
+            ZH2Game::GameContext.ObituaryCollectionContext.LowIndex++;
+            ZH2Game::GameContext.ObituaryCollectionContext.LowIndex %= OBITUARY_COLLECTION_MAX_SIZE;
+        }
+
+        // Replace lowest index.
+        if (ZH2Game::GameContext.ObituaryCollectionContext.LowIndex == ZH2Game::GameContext.ObituaryCollectionContext.HighIndex)
+        {
+            ZH2Game::GameContext.ObituaryCollectionContext.LowIndex++;
+            ZH2Game::GameContext.ObituaryCollectionContext.LowIndex %= OBITUARY_COLLECTION_MAX_SIZE;
+        }
+
+        ZH2Game::GameContext.ObituaryCollectionContext.Collection[ZH2Game::GameContext.ObituaryCollectionContext.HighIndex].Timestamp = Timer();
+        return ZH2Game::GameContext.ObituaryCollectionContext.HighIndex;
+    }
+
+    internal bool ValidateQueueIndex(str functionName, int queueIndex)
+    {
+        if (queueIndex >= OBITUARY_COLLECTION_MAX_SIZE)
+        {
+            Logger::LogError(LOGSOURCE , functionName + " queue index " + str(queueIndex) + " is out of bounds (0 - " + str(OBITUARY_COLLECTION_MAX_SIZE - 1) + ")!");
+            return false;
+        }
+
+        return true;
+    }
+
+    internal bool ValidateIndex(str functionName, int index)
+    {
+        if (index >= OBITUARY_DATA_MAX_SIZE)
+        {
+            Logger::LogError(LOGSOURCE , functionName + " index " + str(index) + " is out of bounds (0 - " + str(OBITUARY_DATA_MAX_SIZE - 1) + ")!");
+            return false;
+        }
+
+        return true;
+    }
+
+    internal void SetQueueType(int queueIndex, ObituaryTypeT type)
+    {
+        if (!ValidateQueueIndex(__FUNCTION__, queueIndex))
+            return;
+
+        ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].Type = type;
+    }
+
+    internal ObituaryTypeT GetQueueType(int queueIndex)
+    {
+        if (!ValidateQueueIndex(__FUNCTION__, queueIndex))
+            return OBITUARY_UNKNOWN;
+
+        return ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].Type;
+    }
+
+    internal void SetQueueData(int queueIndex, int index, raw data)
+    {
+        if (!ValidateQueueIndex(__FUNCTION__, queueIndex) || !ValidateIndex(__FUNCTION__, index))
+            return;
+
+        ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].ReceiveData[index] = data;
+    }
+
+    internal raw GetQueueData(int queueIndex, int index)
+    {
+        if (!ValidateQueueIndex(__FUNCTION__, queueIndex) || !ValidateIndex(__FUNCTION__, index))
+            return 0;
+
+        return ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].ReceiveData[index];
+    }
+
+    internal int GetQueueElapsedDuration(int queueIndex)
+    {
+        if (!ValidateQueueIndex(__FUNCTION__, queueIndex))
+            return 0;
+
+        return Timer() - ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].Timestamp;
+    }
+
+    internal ObituarySpecieTypeT GetPlayerObituarySpecieType(int id)
+    {
+        if (Player::GetPlayerIsHuman(id))
+            return OBITUARYSPECIE_HUMAN;
+
+        Player::ZombieSkinTypeT skinType = Player::GetZombieSkinType(Player::GetPlayerInitialZombie(id));
+        switch(skinType)
+        {
+            case Player::ZOMBIESKIN_INITIAL:
+                return OBITUARYSPECIE_ZOMBIE_INITIAL;
+            case Player::ZOMBIESKIN_REGULAR:
+                return OBITUARYSPECIE_ZOMBIE_REGULAR;
+            case Player::ZOMBIESKIN_OLD:
+                return OBITUARYSPECIE_ZOMBIE_OLD;
+        }
+
+        return OBITUARYSPECIE_UNKNOWN;
+    }
+}
+
+#undef LOGSOURCE

@@ -27,36 +27,28 @@ strict namespace Settings
         str menuName = index == 0 ? "CustomizeControls"
             : index == 1 ? "ZH2OptionsMenu"
             : "UnknownMenu";
-            
+
         if (!OpenMenu(menuName))
             Logger::LogWarning(LOGSOURCE , "Could not open menu " + menuName + ".");
     }
 
     internal void OpenClientSettingsMenu()
     {
+        // Ignore if the game ended.
+        // The ending has a lot of HUD elements and clickable buttons which would interfere.
+        if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
+            return;
+
         ZH2Game::GameContext.HasClientSettingsHudOpen = true;
         ZH2Game::GameContext.HasAdminHudOpen = false; // Also make sure the admin hud is disabled.
         Hud::SetCursorEnabled(true);
-
-        if (!NamedRequestScriptPuke("zh2_internal_menu_clientsettings_request_set_frozen", int(true)))
-            Logger::LogError(LOGSOURCE , "Failed to set frozen state on player for settings hud.");
+        Player::LockMovement(true);
     }
 
     internal void CloseClientSettingsMenu()
     {
         ZH2Game::GameContext.HasClientSettingsHudOpen = false;
         Hud::SetCursorEnabled(false);
-
-        if (!NamedRequestScriptPuke("zh2_internal_menu_clientsettings_request_set_frozen", int(false)))
-            Logger::LogError(LOGSOURCE , "Failed to unset frozen state on player for settings hud.");
-    }
-
-    
-    // Called from the client to set/unset freeze.
-    script "zh2_internal_menu_clientsettings_request_set_frozen" (int set) net
-    {
-        if (set && TrackedProperties::AddProperty((int)TrackedProperties::TRACKED_TOTALLYFROZEN)
-            || !set && TrackedProperties::RemoveProperty((int)TrackedProperties::TRACKED_TOTALLYFROZEN))
-            SetPlayerProperty(0, set, PROP_TOTALLYFROZEN);
+        Player::LockMovement(false);
     }
 }

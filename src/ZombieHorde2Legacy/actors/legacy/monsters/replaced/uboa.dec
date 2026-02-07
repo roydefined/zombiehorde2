@@ -2,38 +2,43 @@
 
 actor ZH2LegacyUboa : ZH2LegacyReplacedMonsters 20210
 {
-	Monster
-	Health 0x7fffffff
-	Mass 0x7fffffff
-	
-	Radius 16
-	Height 56
-	scale .75
-	Speed 20
-	
-	PainChance 180
-	meleedamage 9999
-	meleerange 64
-	
-	Obituary "%o was scared to death by Uboa."
-	+FLOORCLIP
-	+FASTER
-	+FASTMELEE
+    Monster
+    Health 0x7fffffff
+    Mass 0x7fffffff
 
-	States
-	{
-		Spawn:
-			UBOA A 10 bright A_Look
-			Loop
-		See:
-			UBOA A 1 bright A_Chase
-			Loop
-		Melee:
-			UBOA B 1 bright A_FaceTarget
-			UBOA B 2 bright A_MeleeAttack
-			Goto See
-		Pain:
-			UBOA B 4 bright A_Pain
-			Goto See
-	}
+    Radius 16
+    Height 56
+    scale .75
+    Speed 20
+
+    PainChance 180
+    meleedamage 9999
+    meleerange 64
+
+    Obituary "%o was scared to death by Uboa."
+    tag "Uboa"
+
+    +FLOORCLIP
+    +FASTER
+    +FASTMELEE
+
+    States
+    {
+        Spawn:
+            UBOA A 10 bright
+        Spawn.Rest:
+            UBOA A 10 bright A_Look
+            Loop
+        See:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_gettargetiszombie") == true, "Spawn")
+            UBOA A 1 bright A_Chase
+            Loop
+        Melee:
+            UBOA B 1 bright A_FaceTarget
+            UBOA B 2 bright A_MeleeAttack
+            Goto See
+        Pain:
+            UBOA B 4 bright A_Pain
+            Goto See
+    }
 }

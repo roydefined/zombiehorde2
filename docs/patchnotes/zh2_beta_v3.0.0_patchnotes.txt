@@ -1,0 +1,267 @@
+New features
+------------------------------------------------
+
+ * * New maps! Newmappack map set support * *
+Zombie Horde 2 now has support for the newmappack maps!
+These have been implemented in map slots ZE20, ZE24, ZE28, ZE32, ZM12, ZM16, ZM20, ZM22, ZM23, ZM24, ZM26, ZM27 and ZM27B.
+The maps have been converted to support Zombie Horde 2, including all of its resources.
+Note that due to the size of Parkskolan (ZM10), the decision has been made to not add this map yet. The map has been moved to the archive, just like Abandoned Mines (ZM09).
+Additionally, Menouthis has _not_ been added as this map already exists.
+
+ * * New weapon! The riot gun * *
+A new weapon has been added, called the riot gun.
+This gun serves as an automatic shotgun, and it can be found on ZM12. It replaces the original riot gun found on that map.
+The riot gun fires faster than the shotgun, though its drawback is that it can fire twelve shots before needing to be reloaded.
+The gun also has a limited ammo capacity, meaning you must be careful with shooting the weapon as you can deplete it.
+Lastly, the weapon is slower than others. The fact it fires faster does mean you must take good care when using it.
+The riot gun can now be rewarded as a very rare reward when using a minor or major reward orb.
+
+ * * Event bus improvements and new packet-based system * *
+The event bus has existed for a very long time in Zombie Horde 2, and it has received a significant update to improve its behavior.
+The eventbus system is now packet-based, which gives space for as many parameters as needed (until the packet is full).
+When Zandronum 3.3 releases I will further extend this system with better checks for scripts to ensure callbacks are valid.
+The eventbus will now also send events to clients using this new system. This means clients will now also be able to hook onto events.
+This improves the previous system where it was technically also possible, but this logic relied on a serverside event to also be available.
+If this was not the case the eventbus would not invoke the script as it assumed none existed.
+Lastly, he eventbus now also longer waits 1 extra tic when invoking events, and now handles instantly.
+
+ * * New obituary system * *
+Zombie Horde 2 now support a new obituary system!
+This is a massive feature which provides a visual list of events that occur in the mod.
+The new obituary system is not just for listing deaths of players. The current system also displays players that are safe, initial zombies and more.
+You can configure how many obituaries to draw using `cl_zh2_shownobituaries` or by configuring it through the menu.
+
+In old versions, Zombie Horde 2 would show log messages for many of these obituaries. These are now all removed in favor of this new system.
+However, you will be able to revert this through the game menu. Alternatively you can also set `cl_zh2_enableobituaries` to false.
+If you revert this, the "old" log-based system will be used.
+Old would be in quotes, because this system has also seen significant improvements.
+Just like with the icon-based obituaries, this log system is fully clientside.
+It has also been improved with more complex sentences and information based on how the event occured, so there's always something interesting to read.
+
+Full list of supported obituaries:
+- Initials chosen. This indicates who has been picked as an initial. In the event more than 1 player is chosen, this obituary will also indicate the order of picks.
+- Player safe. This indicates a player that reached a safe zone. Note that this only triggers for the first time a player reaches safety.
+- Player scratched. This indicates when a player was scratched and infected by another zombie.
+- Player infected. This indicates other types of infection not tied to another player.
+- Player cured. This indicates a player that gets cured and turned back into a human.
+- Player died. This indicates various ways that a player dies. Note the obituary system will only show this if it was not caused by another player.
+  There are multiple ways a player can die and all of them have their own icon:
+    - Unknown, when no specific death was recorded.
+	- Suicide, for when the player killed themselves. For example, with the `kill` comment, or the suicide bomb.
+	- Falling, self explanatory.
+	- Drowning, self explanatory.
+	- Crushing, self explanatory.
+	- Telefrag, which is caused when a player teleports in another player. This includes when you get telefragged by a spawning player.
+	- Unsafe, which is a death caused when the player dies by game-ending features. For example, when you didn't make the safezone.
+- Player killed by player. This indicates a player died by another player. The obituary system will also show the means-of-death, such as a weapon or item.
+- Player killed by monster. This indicates a player died by a monster. The obituary will also provide the name of the monster.
+
+Additionally, the obituary system supports showing extra status effects that contributed to deaths.
+Did a player die by another player whilst being on fire? Then the obituary will show a fire graphic next to the means-of-death.
+The same will happen with acid, though this one is much more niche.
+Should the means-of-death be unclear, then a generic skull is shown.
+Additionally the system might skip the means-of-death altogether and just show the status effect if it contributed to the death.
+
+Last but not least, the means-of-death can be configured through the custom Zombie Horde 2 lumps.
+Weapons and items can define their own obituary graphic and width, which will then be shown on the HUD.
+
+All in all, the obituary system is a huge new feature and it will be build upon in later versions.
+There are so many different ways to die, and my goal is to make sure all of this will be available.
+
+ * * New damage source tracking for fire and acid damage * *
+As part of the new obituary system, a new system has been added which allows for tracking damage sources.
+Specifically this system was added for instances where a player would get ignited by fire, or covered in acid.
+These are special types of damage that occur in an interval, such as when a fire grenade ignites a zombie.
+Previously, this ignition would occur and any data related to who ignited the zombie and how they ignited the zombie was lost.
+This possible deaths would not reward the actual player that caused this to happen.
+All of this data is now tracked, and ignition will now retain its origin correctly.
+This is both beneficial for the obituary system to properly show the inflictor and owner, and it will now reward those players.
+
+ * * Custom knockback system * *
+Zombie Horde 2 now supports its own knockback (also referred to as kickback) system.
+This system replaces the existing system that Zandronum has build in and can be enabled through a CVar (by default it is enabled).
+The system uses a similar approach to calculating knockback to how Zandronum works, taking mass and damage into account.
+It won't do too much yet, but the intention for this is to later introduce more features related to knockback.
+This is only possible with having a custom system. More about this is in the next topic below.
+
+ * * Power factor improvements * *
+Zombie Horde 2 has a system called the "power" system and it applies various properties on players based on the calculated sum of these powers.
+This system has been improved to now allow custom properties outside of what Zandronum has build in with its own actor property system.
+For this first update the "knockback" factor has been added. This, as its name suggests, handles the knockback of players that are shot.
+To support this the new knockback system must be used.
+
+ * * New server modifiers * *
+To add to the factor changes, the server can now apply its own modifier for Damage Multiplier and Knockback multiplier.
+These will be applied to all players. It's more a fun feature than having an actual use, though the ability to modify these
+will become more useful in the future when balance improvements are going to be added.
+
+ * * New power factor visualization * *
+To support the new systems and factor changes, the client will now be able to see what factors are being applied to them.
+This information is drawn on the HUD using new icons. The value will be a relative multiplier over the base damage.
+For the sake of simplicity, the HUD will only draw actual changes to these factors.
+
+MAP changes
+------------------------------------------------
+
+ * * Damage type changes * *
+As part of the new obituary system, a collection of maps have had their damage types changed for various instances where they would damage the player.
+These maps often did not implement a fitting damage type, which would cause issues with the new obituary system as deaths would not be correct.
+These damage types have now been adjusted to correctly indicate damage related to falling, drowning, lava, or another type.
+
+Other changes:
+- [ZE05]: Zombies that fall off in the final area off the map are now teleported into a newly connected room not requiring them to use the lift again.
+- [ZE06] / [ZE06M]: Players will now be pushed off the elevator's ledge when staying on them as the elevator moves down.
+- [ZE11]:
+	- The frozen script now fully freezes the player instead of only locking their position.
+	- The map now ensures any frozen players are unfrozen on map change.
+	- Fixed an issue where the player's configured translation would no longer work when unfrozen.
+- [ZE13]:
+	- Fixed bad lighting in front of a few doors.
+	- Fixed an issue where you could go out of the map due to missing impassable linedefs.
+- [ZE16]: Fixed an issue where the avalanche effect didn't work.
+- [ZE20B]:
+	- Strangeland 2's mapslot was changed from ZE20 to ZE20B to make room for Strangeland 1.
+	- Replaced a ConsoleCommand call with a proper function.
+	- Fix dynamite not being placed when starting the final resist.
+- [ZE22]: The announcement about the "experiment" escaping has been adjusted to correctly announce the number of zombies that spawned.
+- [ZE25]: The airstrike will now start earlier if a player reached the safezone through the secret exit.
+- [ZE27]: Removed ZE27's broken fade in.
+- [ZM13]: The code has been adjusted to not involve keys for some of its checks.
+- [ZE11]: The safezone has been increased to allow more players to fit inside.
+- [ZE23]: The nacho libre secret ending will no longer crush the first safezone.
+- [ZM05]: Fixed bad offsetting of the Lara Croft painting.
+- [ZM07]: The night mode skybox no longer uses fake contract, which caused a visual bug. The night mode music not playing has also been fixed.
+- [ZM19]: Fixed some HOMs.
+- [ZM25]:
+    - Fixed some HOMs.
+	- Added roofs to various houses.
+	- Made the map's events brighter.
+- Improved the grammar on various maps.
+
+API changes (Could contain breaking changes for mappers. Make sure to check this list for migrations)
+------------------------------------------------
+
+ * * New events * *
+New events have been added. These mostly have been added for the new obituary system.
+Events:
+- `initialschosen`, which indicates the initials that have been chosen.
+- `playerkilledbyplayer`, which indicates the death of a player by another player.
+- `playerkilledbymonster`, which indicates the death of a player by a zombie.
+- `playersafe`, which indicates if a player entered or leaves a safezone.
+- `powerexpired`, which indicates if a power has expired.
+
+As part of the eventbus refactor, a lot of new functions have been added to help mappers with handling the new packet-based events.
+The current list of events all have a receive function that can be used to parse the packet.
+- `void ReceiveInitialsChosen(str packet)`
+- `void ReceivePlayerLeftRound(str packet)`
+- `void ReceivePlayerDied(str packet)`
+- `void ReceivePlayerKilledByPlayer(str packet)`
+- `void ReceivePlayerKilledByMonster(str packet)`
+- `void ReceivePlayerScratched(str packet)`
+- `void ReceivePlayerCured(str packet)`
+- `void ReceivePlayerInfected(str packet)`
+- `void ReceivePlayerSpecieChanged(str packet)`
+- `void ReceivePlayerSafe(str packet)`
+- `void ReceiveResistStarted(str packet)`
+- `void ReceiveResistElapsed(str packet)`
+- `void ReceiveResistStopped(str packet)`
+- `void ReceiveRoundSwitched(str packet)`
+- `void ReceiveTimerStarted(str packet)`
+- `void ReceiveTimerStopped(str packet)`
+- `void ReceiveTimerPaused(str packet)`
+- `void ReceiveTimerResumed(str packet)`
+- `void ReceiveTimerElapsed(str packet)`
+- `void ReceiveTimerSwitched(str packet)`
+- `void ReceivePowerExpired(str packet)`
+
+Additionally, a function exists to then get the data from these packets.
+- `raw GetReceiveData(int index)`
+
+For more info on this new system, make sure to read the wiki for more information on how to use this system.
+
+Other changes:
+- `Logger::LogTo` has its API changed. The id parameter must now be passed first instead of second.
+- `Logger::LogExcept` has its API changed. The id parameter must now be passed first instead of second.
+- Enum `SpecieTypeT` has its API changed to `PlayerSpecieT`
+- Enum `PanicStateT` has its API changed to `PlayerPanicStateT`
+- Externed `Game::HumanCount` and `Game::ZombieCount` for getting the number of humans/zombies.
+
+Decorate breaking changes
+------------------------------------------------
+
+- Flares no longer use arg 1 to indicate they are depleted. Use Thing_Deactivate and Thing_Deactivate to turn flares on and off.
+  Arg 2 for indicating a flare has infinite duration has been moved to Arg 1.
+
+Texture breaking changes
+------------------------------------------------
+
+- The CRATOP4 texture has been renamed to CRATOP40. This wooden texture shared the same name as a texture in the Skulltag resources.
+  This caused a conflict when viewing the textures in Ultimate DoomBuilder and sometimes in game.
+  Please make sure your map is not affected.
+- The SUPPORT2 texture has been renamed to SUPPORT4. This silver beam texture that was added with ZM17 shared the same name as a texture in the Doom 2 and Skulltag resources.
+  Please make sure your map is not affected.
+
+CVars
+------------------------------------------------
+
+Some CVars have been renamed to better fit the other CVars:
+- `sv_zh2_usedeadspectators` has been renamed to `sv_zh2_usedeadspectatorsfeature`.
+- `sv_zh2_usemapresets` has been renamed to `sv_zh2_usemapresetsfeature`.
+
+Other mod changes
+------------------------------------------------
+
+- Game ending functions now use the MOD_EXIT / "exit" damage type. Most maps already did this for similar functions and now it has been added to the internal code to damage unsafe players.
+- The damage caused by being fire or covered in acid now has its own damage type. They will use 'ZH2Fire' and 'ZH2Acid' when a zombie or human gets damaged.
+- The mod now forces `sv_noidentifytarget` to always be disabled. This feature does not work well with the mod, and instead the build in identification should be used.
+- Fix an issue where the shotgun did an animation when blocked and reloading.
+- Fix Doom keycards showing the wrong icon on the hud due to overlapping texture names.
+- Cvar `sv_zh2_voteincludeplayedmaps` is now `true` by default as it seems like the better choise to allow played maps to be replayed.
+- CVar `compat_noobituaries` is now `false` by default as the new obituary system replaces the majority of these obituaries. Reenabling this will also turn off certain obituaries from the new system.
+- The mod def parsing has been changed to avoid possible runaway errors caused by too many instructions in the code.
+- Improved the code around player curing, and fixed an issue where the cure sparks did not show up correctly.
+- Curing has also been changed, and the cure sparks only show if a zombie transitions to a human.
+- The "Press x to spectate" message will now only be shown when using the death cam.
+- Fixed an issue where `zh2_internal_event_playerleftround` could overwrite the end reason and also spam ambient sounds if `removebots` is used.
+- The mod now references "Compatibility" parts as "Features" to better indicate they are actual features which are toggleable.
+- Over 140 duplicate textures have been removed from the project! These textures were all defined twice and had no reason to remain in the project.
+- Menouthis' cash can now only be picked up by humans.
+- Removed the behavior of actors where they would turn idle if nobody looked at it. It didn't work with spectators and generally didn't look well regardless.
+- Weapon tracers now work for actors with a thing id that use it.
+- Changed the HUD logic to no longer draw certain parts when the client spectates other cameras.
+- The radio can now be rewarded as a very rare reward when using a minor or major reward orb.
+- Flares have been partially reworked to fix a bug where clients joining after a flare spawned didn't see it active.
+  This was an issue particularly with flares placed on maps which would activate before the client could load in, making them all "inactive".
+  As an additional bonus the flare now uses Thing_Deactivate to turn itself off after a while instead of using arguments, which means code can now more easily activate it again if needed.
+- Various monsters have had their behavior updated to no longer attack zombies. These monsters only attack humans.
+- Zombie claw damage has been increased from 1 -> 3. This slight increase improves damage against things like barrels and pottery which now reacts more quickly to damage.
+  Note this damage does NOT relate to damage towards humans. The damage to humans is done differently and is not affected.
+- Fixed an issue where clients would duplicate items each time a new map started. This was purely a clientsided issue so no real duplication happened.
+
+Radio changes
+------------------------------------------------
+
+New music is now available by by Rady-MIDI, a.k.a. Proxy-MIDI!
+This 9-track pk3 consists of tracks created by them. You can download this pack separately from the mod.
+On loading these tracks, the radio will be able to play them alongside the existing radio tracks that are provided by default.
+Note that tracks only work if other players have also downloaded the tracks.
+You can find the radio music by searching for RadyRadio. You can also download all radio music at the same location where Zombie Horde 2's files are officially provided.
+
+Repository changes
+------------------------------------------------
+
+The Zombie Horde 2 repository has changed how its tooling works. This tooling has been migrated from the original `.bat` files to Python files. These are both faster and more readable.
+This change should improve how the tooling is handled in the mod so more can be added if needed.
+
+Additionally, a new script has been added for finding duplicate texture names.
+
+Wiki changes
+------------------------------------------------
+
+The Zombie Horde 2 wiki has been migrated and is now part of Wiki.gg! This change provides a great number of benefits as this migration provides us a genuine wiki framework to work with.
+A lot has already been set up with this initial version and you should definitely take a look at it when you have the chance.
+The wiki is open for contributions. It is encouraged that you contribute by creating new articles or expanding existing ones with information.
+
+You can find the wiki over at https://zombiehorde.wiki.gg/
+Please note that like with everything else, this wiki is also very much a work in progress and subject to changes.
+

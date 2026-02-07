@@ -1,0 +1,629 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+int Redgenerator=0;
+int Bluegenerator=0;
+int Yellowgenerator=0;
+int Neutralgenerator=0;
+Bool Switches = 0;
+Bool DontDoThat = 0;
+
+script "zm18_open" open
+{
+	Redgenerator=random(0,100);
+	Bluegenerator=random(0,100);
+	Yellowgenerator=random(0,100);
+	Neutralgenerator=random(0,100);
+	Thing_Move(45,random(240,242),1);
+	Thing_Move(46,random(250,252),1);
+	Thing_Move(47,random(260,262),1);
+	Scroll_Texture_Both(15, 0, 0, 75, 0);
+	delay(35*random(54,236));
+	SetFont("BIGFONT");
+	HudmessageBold(s:"A door has been opened !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 3.0, 2.5);
+	Door_Open(random(65,66),75);
+	AmbientSound("world/reveal1",127);
+}
+
+Script 2 (void) // Opening Outside Door
+{
+	Floor_LowerbyValue(24,35,240);
+	delay(35*2);
+	delay(35);
+	SetFont("BIGFONT");
+	HudmessageBold(n:0, s:" \cchas opened the outside gate !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 3.0, 2.5);
+}
+
+Script 3 (void) // Activing secrets switches, and opening some secrets rooms
+{
+	If( Switches == 4 )
+	{
+		PrintBold(s:"Fifth switch activated !");
+		Switches++;
+		delay(35*3);
+		PrintBold(s:"All switches are activated !");
+		delay(35*2);
+		switch(random(1,3))
+		{
+			case 1:
+			case 2:
+				SetFont("BIGFONT");
+				HudmessageBold(s:"A door has been opened !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 3.0, 2.5);
+				Door_Open(random(75,77),75);
+				AmbientSound("world/reveal1",127);
+				break;
+			case 3:
+				SetFont("BIGFONT");
+				HudmessageBold(s:"All yellow doors have been opened !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 3.0, 2.5);
+				Door_Open(65,75);
+				Door_Open(66,75);
+				Door_Open(75,75);
+				Door_Open(76,75);
+				Door_Open(77,75);
+				AmbientSound("world/reveal1",127);
+				break;
+		}
+	}
+	If( Switches == 3 )
+	{
+		PrintBold(s:"Fourth switch activated, 1 left.");
+		Switches++;
+	}
+	If( Switches == 2 )
+	{
+		PrintBold(s:"Third switch activated, 2 left.");
+		Switches++;
+	}
+	If( Switches == 1 )
+	{
+		PrintBold(s:"Second switch activated, 3 left.");
+		Switches++;
+	}
+	If( Switches == 0 )
+	{
+		PrintBold(s:"First switch activated, 4 left.");
+		Switches++;
+	}
+}
+
+Script 4 OPEN // Adding music
+{
+	delay(35*random(90,210));
+	Music::SetMusic("D_FLOOD");
+	SetFont("BIGFONT");
+	HudmessageBold(s:"\cg<\ci!\cg> \ciWarning \cg<\ci!\cg>\ci specimens C833-57GHED escaped from their jails !"; HUDMSG_FADEOUT, 1, CR_RED, 0.5, 0.1, 3.0, 2.5);
+	delay(35*9);
+	SetFont("BIGFONT");
+	HudmessageBold(s:"\cg<\ci!\cg> \ciWarning \cg<\ci!\cg>\ci the area 6 is invaded !"; HUDMSG_FADEOUT, 1, CR_RED, 0.5, 0.1, 3.0, 2.5);
+	delay(35*10);
+	ACS_Execute(30,0,0,0,0);
+}
+
+Script 10 (void) // Activing Red generator
+{
+	SetFont("BIGFONT");
+	HudmessageBold(s:"\cgRED \ccgenerator activated !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 6.0, 3.5);
+	SpawnSpotFacing("ZH2LegacyZM18Generator",70,4555);
+	delay(35*2);
+	PrintBold(s:"What will it spawn ?");
+	delay(35*9);
+	if( Redgenerator <= 80)
+	{
+		Delay(1);
+		switch(random(1,3))
+		{
+			case 1:
+				SpawnSpotFacing(WEAPON_FIREGRENADE_SPAWN_NAME, 70, 0);
+				PrintBold(s:"it dropped a fire grenade !");
+				break;
+				case 2:
+				SpawnSpotFacing(MEDIKIT_ITEM, 70, 0);
+				PrintBold(s:"it dropped a medikit !");
+				break;
+				case 3:
+				SpawnSpotFacing(FLAREBOX_ITEM, 70, 0);
+				PrintBold(s:"it dropped some flares !");
+				break;
+		}
+	}
+	if( Redgenerator <= 95 && Redgenerator > 80 )
+	{
+		Delay(1);
+		switch(random(1,2))
+		{
+			case 1:
+				SpawnSpotFacing(WEAPON_JACKSGUN_NAME, 70, 0);
+				PrintBold(s:"it dropped a Jacksgun !");
+				break;
+			case 2:
+				SpawnSpotFacing(WEAPON_DOUBLESHOTGUN_NAME, 70, 0);
+				PrintBold(s:"it dropped a doubleshotgun !");
+				break;
+
+			// TODO: Support
+			case 3:
+				//SpawnSpotFacing("ZombieShit", 70, 0);
+				PrintBold(s:"it dropped a bonus item !");
+				break;
+		}
+	}
+	if( Redgenerator <= 100 && Redgenerator > 95 )
+	{
+		Delay(1);
+		switch(random(1,2))
+		{
+			case 1:
+				SpawnSpotFacing(CRYSTAL_ITEM, 70, 0);
+				PrintBold(s:"it dropped a Fire Crystal !");
+				break;
+			case 2:
+				SpawnSpotFacing(HOLYCROSS_ITEM, 70, 0);
+				PrintBold(s:"it dropped an Holy Cross !");
+				break;
+		}
+	}
+	ACS_Execute(55,0,30,0,0);
+	Thing_Remove(70);
+	Thing_Remove(4555);
+}
+
+Script 11 (void) // Activing Blue generator
+{
+	SetFont("BIGFONT");
+	HudmessageBold(s:"\chBLUE \ccgenerator activated !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 6.0, 3.5);
+	SpawnSpotFacing("ZH2LegacyZM18Generator",71,4556);
+	delay(35*2);
+	PrintBold(s:"What will it spawn ?");
+	delay(35*9);
+	if( Bluegenerator <= 80)
+	{
+		Delay(1);
+		switch(random(1,3))
+		{
+			case 1:
+				SpawnSpotFacing(WEAPON_FIREGRENADE_SPAWN_NAME, 71, 0);
+				PrintBold(s:"it dropped a fire grenade !");
+				break;
+			case 2:
+				SpawnSpotFacing(MEDIKIT_ITEM, 71, 0);
+				PrintBold(s:"it dropped a medikit !");
+				break;
+			case 3:
+				SpawnSpotFacing(FLAREBOX_ITEM, 71, 0);
+				PrintBold(s:"it dropped some flares !");
+				break;
+		}
+	}
+	if( Bluegenerator <= 95 && Bluegenerator > 80 )
+	{
+		Delay(1);
+		switch(random(1,2))
+		{
+			case 1:
+				SpawnSpotFacing(WEAPON_JACKSGUN_NAME, 71, 0);
+				PrintBold(s:"it dropped a Jacksgun !");
+				break;
+			case 2:
+				SpawnSpotFacing(WEAPON_DOUBLESHOTGUN_NAME, 71, 0);
+				PrintBold(s:"it dropped a doubleshotgun !");
+				break;
+
+			// TODO: Support
+			case 3:
+				//SpawnSpotFacing("ZombieShit", 71, 0);
+				PrintBold(s:"it dropped a bonus item !");
+				break;
+		}
+	}
+	if( Bluegenerator <= 100 && Bluegenerator > 95 )
+	{
+		Delay(1);
+		switch(random(1,2))
+		{
+			case 1:
+				SpawnSpotFacing(CRYSTAL_ITEM, 71, 0);
+				PrintBold(s:"it dropped a Fire Crystal !");
+				break;
+			case 2:
+				SpawnSpotFacing(HOLYCROSS_ITEM, 71, 0);
+				PrintBold(s:"it dropped an Holy Cross !");
+				break;
+		}
+	}
+	ACS_Execute(55,0,31,0,0);
+	Thing_Remove(71);
+	Thing_Remove(4556);
+}
+
+Script 12 (void) // Activing Yellow generator
+{
+	SetFont("BIGFONT");
+	HudmessageBold(s:"YELLOW \ccgenerator activated !"; HUDMSG_FADEOUT, 1, CR_YELLOW, 0.5, 0.1, 6.0, 3.5);
+	SpawnSpotFacing("ZH2LegacyZM18Generator",72,4557);
+	delay(35*2);
+	PrintBold(s:"What will it spawn ?");
+	delay(35*9);
+	if( Yellowgenerator <= 80)
+	{
+		Delay(1);
+		switch(random(1,3))
+		{
+			case 1:
+				SpawnSpotFacing(WEAPON_FIREGRENADE_SPAWN_NAME, 72, 0);
+				PrintBold(s:"it dropped a fire grenade !");
+				break;
+			case 2:
+				SpawnSpotFacing(MEDIKIT_ITEM, 72, 0);
+				PrintBold(s:"it dropped a medikit !");
+				break;
+			case 3:
+				SpawnSpotFacing(FLAREBOX_ITEM, 72, 0);
+				PrintBold(s:"it dropped some flares !");
+				break;
+		}
+	}
+	if( Yellowgenerator <= 95 && Yellowgenerator > 80 )
+	{
+		Delay(1);
+		switch(random(1,2))
+		{
+			case 1:
+				SpawnSpotFacing(WEAPON_JACKSGUN_NAME, 72, 0);
+				PrintBold(s:"it dropped a Jacksgun !");
+				break;
+			case 2:
+				SpawnSpotFacing(WEAPON_DOUBLESHOTGUN_NAME, 72, 0);
+				PrintBold(s:"it dropped a doubleshotgun !");
+				break;
+
+			// TODO: Support
+			case 3:
+				//SpawnSpotFacing("ZombieShit", 72, 0);
+				PrintBold(s:"it dropped a bonus item !");
+				break;
+		}
+	}
+	if( Yellowgenerator <= 100 && Yellowgenerator > 95 )
+	{
+
+		Delay(1);
+		switch(random(1,2))
+		{
+			case 1:
+				SpawnSpotFacing(CRYSTAL_ITEM, 72, 0);
+				PrintBold(s:"it dropped a Fire Crystal !");
+				break;
+			case 2:
+				SpawnSpotFacing(HOLYCROSS_ITEM, 72, 0);
+				PrintBold(s:"it dropped an Holy Cross !");
+				break;
+		}
+	}
+	ACS_Execute(55,0,32,0,0);
+	Thing_Remove(72);
+	Thing_Remove(4557);
+}
+
+Script 13 (void) // Activing Neutral generator
+{
+	SetFont("BIGFONT");
+	HudmessageBold(s:"NEUTRAL generator activated !"; HUDMSG_FADEOUT, 1, CR_WHITE, 0.5, 0.1, 6.0, 3.5);
+	SpawnSpotFacing("ZH2LegacyZM18Generator",73,4558);
+	delay(35*2);
+	PrintBold(s:"What will it spawn ?");
+	delay(35*9);
+	if( Neutralgenerator <= 80)
+	{
+		Delay(1);
+		switch(random(1,3))
+		{
+			case 1:
+				SpawnSpotFacing(WEAPON_FIREGRENADE_SPAWN_NAME, 73, 0);
+				PrintBold(s:"it dropped a fire grenade !");
+				break;
+			case 2:
+				SpawnSpotFacing(MEDIKIT_ITEM, 73, 0);
+				PrintBold(s:"it dropped a medikit !");
+				break;
+			case 3:
+				SpawnSpotFacing(FLAREBOX_ITEM, 73, 0);
+				PrintBold(s:"it dropped some flares !");
+				break;
+		}
+	}
+	if( Neutralgenerator <= 95 && Neutralgenerator > 80 )
+	{
+		Delay(1);
+		switch(random(1,2))
+		{
+			case 1:
+				SpawnSpotFacing(WEAPON_JACKSGUN_NAME, 73, 0);
+				PrintBold(s:"it dropped a Jacksgun !");
+				break;
+			case 2:
+				SpawnSpotFacing(WEAPON_DOUBLESHOTGUN_NAME, 73, 0);
+				PrintBold(s:"it dropped a doubleshotgun !");
+				break;
+
+			// TODO: Support
+			case 3:
+				//SpawnSpotFacing("ZombieShit", 73, 0);
+				PrintBold(s:"it dropped a bonus item !");
+				break;
+		}
+	}
+	if( Neutralgenerator <= 100 && Neutralgenerator > 95 )
+	{
+		Delay(1);
+		switch(random(1,2))
+		{
+			case 1:
+				SpawnSpotFacing(CRYSTAL_ITEM, 73, 0);
+				PrintBold(s:"it dropped a Fire Crystal !");
+				break;
+			case 2:
+				SpawnSpotFacing(HOLYCROSS_ITEM, 73, 0);
+				PrintBold(s:"it dropped an Holy Cross !");
+				break;
+		}
+	}
+	ACS_Execute(55,0,33,0,0);
+	Thing_Remove(73);
+	Thing_Remove(4558);
+}
+
+// Experience
+// ZH2: Due to the inclusion of the zombieman, I am temporarily disabling this script until I have a fitting replacement.
+Script 14 (void)
+{
+    Print(s:"Experience CZR-332 is out of order.");
+	terminate;
+
+    Print(s:"Begining experience CZR-332 !");
+    //SpawnSpotFacing("ZombieMan",37,14030); // TODO: Rename
+    //SpawnSpotFacing("Uboa",38,14031);  // TODO: Rename
+    SetActorProperty(14030, APROP_Friendly, 1);
+    delay(35*1);
+    Floor_LowerbyValue(39,10,118);
+    tagwait(39);
+    Thing_SetGoal(14030,41,0,1);
+    delay(35*7);
+    Floor_LowerbyValue(40,10,118);
+    tagwait(40);
+    Thing_Hate(14031,14030,6);
+    while (thingcount(t_none, 14030)) delay(1);
+    delay(35*3);
+    SpawnSpotFacing("TeleportFog",14030,0);
+    SpawnSpotFacing("TeleportFog",14031,0);
+    Thing_Remove(14030);
+    Thing_Remove(14031);
+    delay(35*4);
+    Floor_RaisebyValue(40,10,118);
+    Floor_RaisebyValue(39,10,118);
+    tagwait(39);
+    delay(35*2);
+    Print(s:"The experience CZR-332 is finished !");
+}
+
+Script 25 OPEN // Message for zimba and the begining for
+{
+	delay(35*30);
+	SetFont("BIGFONT");
+	HudmessageBold(s:"\cg<\ci!\cg> \ciWarning \cg<\ci!\cg>\ci specimen B785-49ZEBJ escaped from his jail !"; HUDMSG_FADEOUT, 1, CR_RED, 0.5, 0.1, 3.0, 2.5);
+}
+
+Script 30 (void) // Bugged Door
+{
+	Delay(35*random(3,8));
+	Door_Open(44,128);
+	Delay(35*random(3,8));
+	Door_Close(44,128);
+	delay(1);
+	restart;
+}
+
+Script 31 (void) // Searching the dangerous secrets of the labs.
+{
+	If( DontDoThat == 3 )
+	{
+		Door_Open(53,50);
+	}
+	else If( DontDoThat == 2 )
+	{
+		DontDoThat++;
+		Floor_LowerByValue(52,25,64);
+	}
+	else If( DontDoThat == 1 )
+	{
+		DontDoThat++;
+		Floor_LowerByValue(49,5,120);
+	}
+	else If( DontDoThat == 0 )
+	{
+		DontDoThat++;
+		Door_Open(48,12);
+	}
+}
+
+Script 32 (void) // Marcus speaking about experiment
+{
+}
+
+Script 33 (void) // Freeing the Kameleon
+{
+	ACS_Execute(34,0,0,0,0);
+	delay(35*random(10,25));
+	Thing_Remove(54);
+	Thing_Remove(55);
+	Thing_Activate(60);
+	ACS_Execute(55,0,1,0,0);
+	delay(35*random(3,8));
+	SetFont("BIGFONT");
+	HudmessageBold(s:"\cg<\ci!\cg> \ciWarning \cg<\ci!\cg>\ci the area 8 is invaded !"; HUDMSG_FADEOUT, 1, CR_RED, 0.5, 0.1, 3.0, 2.5);
+}
+
+Script 34 (void) // Freeing the Kameleon
+{
+	Thing_Activate(54);
+}
+
+Script 49 (void) // Taking syringe
+{
+    PrintBold(n:0, s:"\cf got the \cnsyringe\cf !");
+}
+
+Script 50 (void) // Not accessible anymore
+{
+	Print(s:"\cgAcces denied !");
+	Localambientsound("sound/deny1",170);
+	delay(15);
+}
+
+Script 55 (int iLine)
+{
+	For(int i=100;i>=0;i-=5)
+	{
+		TranslucentLine(iLine,i);
+		Delay(1);
+	}
+	SetLineBlocking(iLine, BLOCK_NOTHING);
+}
+
+script 80 (void) // Kameleon Switching Color delay
+{
+    ACS_Execute(81,0,0,0,0);
+    delay(1);
+    ACS_Execute(81,0,random(1,8),0,0);
+    delay(35*random(10,20));
+    ACS_Execute(81,0,0,0,0);
+    delay(1);
+    ACS_Execute(81,0,random(1,8),0,0);
+    delay(35*random(20,40));
+    restart;
+}
+
+
+script 81 (int Typ) // Kameleon Switching Color
+{
+    if( Typ == 0) // White
+    {
+		CreateTranslation (10,0:247=2:247);
+		Thing_SetTranslation (0,10);
+    }
+    if( Typ == 1) // White
+    {
+		CreateTranslation (1,112:127=80:95);
+		Thing_SetTranslation (0,1);
+    }
+    if( Typ == 2) // Grey
+    {
+		CreateTranslation (2,112:127=96:111);
+		Thing_SetTranslation (0,2);
+    }
+    if( Typ == 3) // Orange
+    {
+		CreateTranslation (3,112:127=208:223);
+		Thing_SetTranslation (0,3);
+    }
+    if( Typ == 4) // Yellow
+    {
+		CreateTranslation (4,112:124=160:166,125:127=167:167);
+		Thing_SetTranslation (0,4);
+    }
+    if( Typ == 5) // Red
+    {
+		CreateTranslation (5,112:127=176:191);
+		Thing_SetTranslation (0,5);
+    }
+    if( Typ == 6) // Indigo
+    {
+		CreateTranslation (6,112:114=240:240,115:124=241:246,125:127=0:0);
+		Thing_SetTranslation (0,6);
+    }
+    if( Typ == 7) // Brown
+    {
+		CreateTranslation (7,112:127=64:79);
+		Thing_SetTranslation (0,7);
+    }
+    if( Typ == 8) // Blue
+    {
+		CreateTranslation (8,112:127=192:207);
+		Thing_SetTranslation (0,8);
+    }
+}
+
+script 82 (void) // Kameleon switching form
+{
+    TakeInventory("ZH2LegacyZM18LabYouCanSeeMe",1);
+    delay(35*random(20,40));
+    GiveInventory("ZH2LegacyZM18LabYouCanSeeMe",1);
+    delay(35*random(20,40));
+    restart;
+}
+
+script 83 (void) // Kameleon's teleport
+{
+    switch(random(1,20))
+    {
+		case 1:
+			Thing_Move(0,random(90,94),0);
+			break;
+		case 2:
+		case 3:
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+		case 8:
+		case 9:
+		case 10:
+		case 11:
+		case 12:
+		case 13:
+		case 14:
+		case 15:
+		case 16:
+		case 17:
+		case 18:
+		case 19:
+		case 20:
+		   break;
+    }
+}
+
+Script 84 (void) // Kameleon's teleport
+{
+	Thing_Move(0,random(90,94),0);
+}
+
+Script 85 (int Typ) clientside
+{
+	AmbientSound("misc/chat",127);
+	if(Typ == 1)Log(s:"\ccMarcus\cd: That seems not good at all ! ");
+	else if(Typ == 2)Log(s:"\ccMarcus\cd: But don't worry we are far away from the area 6.");
+	else if(Typ == 3)Log(s:"\ccMarcus\cd: So the chance for them to come here are very low.");
+	else if(Typ == 4)Log(s:"\ccMarcus\cd: Hellow, Welcome in the Area 8 of the laboratory A-75.");
+	else if(Typ == 5)Log(s:"\ccMarcus\cd: I'm \ccMarcus\cd, let me explain what can be helpful in this place.");
+	else if(Typ == 6)Log(s:"\ccMarcus\cd: A key gives you acces to a generator that'll make an item for you.");
+	else if(Typ == 7)Log(s:"\ccMarcus\cd: A generator 15% has to spawn something good and 5% for a thing very useful.");
+	else if(Typ == 8)Log(s:"\ccMarcus\cd: Red doors can't be open and yellow doors need something special to be activated.");
+	else if(Typ == 9)Log(s:"\ccMarcus\cd: There are 5 switches hidden, if you find them all...");
+	else if(Typ == 10)Log(s:"\ccMarcus\cd: Sometimes, a key can be in the secret rooms.");
+	else if(Typ == 11)Log(s:"\ccMarcus\cd: Zombies like brainzzz, I hope you already know that !");
+	else if(Typ == 12)Log(s:"\ccMarcus\cd: It's an hide and seek this place is very huge.");
+	else if(Typ == 13)Log(s:"\ccMarcus\cd: Do you think I'm helpful ? If yes, I'll give you a surprise later.");
+	else if(Typ == 14)Log(s:"\ccMarcus\cd: The Kameleon's room is now available ...");
+	else if(Typ == 15)Log(s:"\ccMarcus\cd: Has you wish, but don't say after that I didn't prevent you.");
+	else if(Typ == 16)Log(s:"\ccMarcus\cd: If I was you ",n:0,s:"\cd, I would stop looking for things that I won't understand.");
+	else if(Typ == 17)Log(s:"\ccMarcus\cd: This lab got dangerous secrets that should never be revealed.");
+	else if(Typ == 18)Log(s:"\ccMarcus\cd: These things as you can see are called \cgExperiments\cd, better to let them sleeping.");
+	else if(Typ == 19)Log(s:"\ccMarcus\cd: Waking up Specimens D632-96UFRG ...");
+	else if(Typ == 20)Log(s:"\ccMarcus\cd: They are now free, be suspicious about everyone.");
+	else if(Typ == 21)Log(s:"\ccMarcus\cd: Hey ! Don't play with that \cnsyringe\cd, it's dangerous !");
+}

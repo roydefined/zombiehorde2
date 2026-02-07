@@ -19,21 +19,17 @@ strict namespace Shuffle
             CheckClientSettingValid(left)));
     }
 
+    internal bool SortClientSettingsByRequiredComparer(int index)
+    {
+        return !CheckClientSettingValid(index);
+    }
+
     internal void SortClientSettingsByRequired()
     {
         PrepareRequestedClientSettings();
 
         BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_compareincludeclientsetting", "zh2_internal_shuffle_swapbufferitems");
-
-        _context.BufferRelevantSize = 0;
-        while (_context.BufferRelevantSize < _context.BufferIteratorSize)
-        {
-            int index = _context.Buffer[_context.BufferRelevantSize];
-            if(CheckClientSettingValid(index))
-                break;
-
-            _context.BufferRelevantSize++;
-        }
+        UpdateRelevantBufferSize(SortClientSettingsByRequiredComparer);
     }
 
     // Check if we either have the cvar set to the requested value, or we have the key bound.

@@ -4,210 +4,216 @@
 // 2 Means none have been shot.
 Actor ZH2WeaponDoubleShotgunShell : Ammo
 {
-	//Inventory.Icon "SHELA0"
-	Inventory.MaxAmount 2
+    //Inventory.Icon "SHELA0"
+    Inventory.MaxAmount 2
 }
 
 // This determines what shells to eject.
 Actor ZH2WeaponDoubleShotgunEjectShells : Boolean
 {
-	Inventory.MaxAmount 2
+    Inventory.MaxAmount 2
 }
 
 Actor ZH2WeaponDoubleShotgunSpawn : ZH2WeaponSpawn 1335
 {
-	Scale 0.8
-	radius 20
-	height 16
-  
-	inventory.pickupmessage "Double barreled shotgun"
-	tag "Double barreled shotgun"
-	
-	States
-	{
-		Spawn:
-			SG2P A -1
-			
-		Pickup:
-			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, 1)
-			stop
-			TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgun", 1, 2)
-			TNT1 A 0 A_GiveInventory("ZH2WeaponDoubleShotgun", 1)
-			TNT1 A 0
-			stop
-	}
+    Scale 0.8
+    radius 20
+    height 16
+
+    inventory.pickupmessage "Double barreled shotgun"
+    tag "Double barreled shotgun"
+
+    States
+    {
+        Spawn:
+            SG2P A -1
+
+        Pickup:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, 1)
+            stop
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgun", 1, 2)
+            TNT1 A 0 A_GiveInventory("ZH2WeaponDoubleShotgun", 1)
+            TNT1 A 0
+            stop
+    }
 }
 
 Actor ZH2WeaponDoubleShotgun : ZH2Weapon
 {
-	tag "Double barreled shotgun"
-	Weapon.PreferredSkin "Doubleshotgun"
-	
-	Weapon.SlotNumber 3
-	Weapon.Kickback 110
-	
-	Weapon.AmmoUse 1
-	Weapon.AmmoUse2 1
-	weapon.AmmoGive 2
-	Weapon.AmmoGive2 0
-	Weapon.AmmoType "ZH2WeaponDoubleShotgunShell"
-	Weapon.AmmoType2 "ZH2WeaponDoubleShotgunShell"
+    tag "Double barreled shotgun"
+    Weapon.PreferredSkin "Doubleshotgun"
 
-	States
-	{
-		Ready:
-			TNT1 A 0 A_JumpIfNoAmmo("Reload")
-			SG2I A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-			wait
-		
-		Deselect:
-			SG2D ABCD 1
-			TNT1 A 0 A_Lower
-			wait
-			
-		Select:
-			TNT1 A 0 A_Raise
-			TNT1 A 0 A_WeaponReady
-			SG2S A 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			TNT1 A 0 A_PlaySoundEx("weapons/doubleshotgun/CLOSE", "SoundSlot6")
-			SG2S BCDEF 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			SG2S G 2 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			SG2S HIJ 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			goto Ready
-		
-		// It should not be possible to fire when the shotgun has both pellets shot.
-		// Either way a check has been implemented.
-		Fire:
-			TNT1 A 0 A_JumpIfNoAmmo("Reload")
-			TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgunShell", 2, "Fire.Rest")
-			goto Altfire
-			
-		Fire.Rest:
-			TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
-			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
-			
-			TNT1 A 0 A_TakeInventory("ZH2WeaponDoubleShotgunShell", 2)
-			TNT1 A 0 A_PlaySound("weapons/doubleshotgun/DOUBLE", CHAN_WEAPON)
-			TNT1 A 0 A_GiveInventory("ZH2WeaponDoubleShotgunEjectShells", 2)
-			SG2I Z 2 bright A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			TNT1 A 0 Radius_Quake(4, 6, 0, 1, 0)
-			TNT1 A 0 A_FireCustomMissile("ZH2WeaponDoubleShotgunSmoke", 0, false, 0)
-			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
-			TNT1 A 0 A_FireBullets(11.0, 7.0, 20, 5, "ZH2WeaponBulletPuff", 0)
-			TNT1 A 0 A_AlertMonsters
-			TNT1 A 0 A_SetPitch(pitch-18.0)
-			TNT1 A 0 A_SetAngle(angle+random(-5,5))
-			TNT1 A 0 A_Recoil(8.0)
-			SG2I Z 1 bright A_SetPitch(pitch+3.0)
-			SG2I D 1 A_SetPitch(pitch+3.0)
-			SG2I EE 1 Offset(0,34) A_SetPitch(pitch+2.0)
-			SG2I F 1 Offset(0,40) A_SetPitch(pitch+2.0)
-			SG2I F 1 Offset(0,39) A_SetPitch(pitch+2.0)
-			SG2I F 1 Offset(0,38) A_SetPitch(pitch+1.0)
-			SG2I F 1 Offset(0,35) A_SetPitch(pitch+1.0)
-			SG2I GG 1 A_SetPitch(pitch+1.0)
-			SG2I H 1
-			
-			TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
-			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
-			goto Ready
+    Weapon.SlotNumber 3
+    Weapon.Kickback 60
 
-		// It should not be possible to altfire when the shotgun has both pellets shot.
-		// Either way a check has been implemented.
-		AltFire:
-			TNT1 A 0 A_JumpIfNoAmmo("Reload")
-			
-			TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
-			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
-			
-			TNT1 A 0 A_PlaySound ("weapons/doubleshotgun/SINGLE", CHAN_WEAPON)
-			TNT1 A 0 A_GiveInventory("ZH2WeaponDoubleShotgunEjectShells", 1)
-			TNT1 A 0 Radius_Quake(2, 6, 0, 1, 0)
-			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
-			TNT1 A 0 A_FireCustomMissile("ZH2WeaponDoubleShotgunSmokeSingle", 0, false, 0)
-			TNT1 A 0 A_FireBullets(4.0, 4.0, 10, 5, "ZH2WeaponBulletPuff", 0)
-			TNT1 A 0 A_AlertMonsters
-			TNT1 A 0 A_Recoil(2.0)
-			TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgunShell", 2, "AltFire.Left")
-		AltFire.Right:
-			SG2I C 1 bright A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			goto AltFire.Rest
-		AltFire.Left:
-			SG2I B 1 bright A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-		AltFire.Rest:
-			TNT1 A 0 A_TakeInventory("ZH2WeaponDoubleShotgunShell", 1)
-			TNT1 A 0 A_SetPitch(pitch-5.0)
-			SG2I D 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			SG2I E 2 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			TNT1 A 0 A_SetPitch(pitch+2.0)
-			SG2I F 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			TNT1 A 0 A_SetPitch(pitch+2.0)
-			SG2I F 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			TNT1 A 0 A_SetPitch(pitch+1.0)
-			SG2I F 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			SG2I G 2 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			SG2I H 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			
-			TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
-			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
-			goto Ready
+    Weapon.AmmoUse 1
+    Weapon.AmmoUse2 1
+    weapon.AmmoGive 2
+    Weapon.AmmoGive2 0
+    Weapon.AmmoType "ZH2WeaponDoubleShotgunShell"
+    Weapon.AmmoType2 "ZH2WeaponDoubleShotgunShell"
 
-		Reload:
-			TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgunShell", 2, "Ready")
-			SG2R IJ 1 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			SG2R K 2 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			SG2R L 4 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			SG2R M 2 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			SG2R N 1 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			TNT1 A 0 A_PlaySoundEx("weapons/doubleshotgun/OPEN", "SoundSlot6")
-			TNT1 A 0 A_JumpIfNoAmmo("Reload.Both")
-		
-		// Fallthrough state for when 1 shot was fired.
-		Reload.One:
-			SG2Q PR 1 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			goto Reload.DetermineEject
-		
-		// When two shots were fired.
-		Reload.Both:
-			SG2R PQ 1 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-		
-		// This starts after the shotgun has been opened.
-		// This ejects the shells. After that the same ammo check is done to continue reloading.
-		Reload.DetermineEject:
-			TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgunEjectShells", 1, "Reload.DoEject")
-			TNT1 A 0 A_JumpIfNoAmmo("Reload.InsertLeft")
-			goto Reload.InsertRight
-		
-		Reload.DoEject:
-			TNT1 A 0 A_FireCustomMissile("ZH2DoubleShotgunCase", 5, false, -4, -12)
-			TNT1 A 0 A_TakeInventory("ZH2WeaponDoubleShotgunEjectShells", 1)
-			goto Reload.DetermineEject
-			
-		Reload.InsertLeft:
-			SG2R Q 2 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			SG2R RST 1 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			TNT1 A 0 A_PlaySoundEx("weapons/doubleshotgun/INSERT", "SoundSlot6")
-			TNT1 A 0 A_GiveInventory("ZH2WeaponDoubleShotgunShell", 1)
-			SG2R U 2 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			SG2R VWXYZ 1 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			Goto Reload.InsertRight
-			
-		Reload.InsertRight:
-			SG2Q A 2 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			SG2Q BCDEF 1 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			TNT1 A 0 A_PlaySoundEx("weapons/doubleshotgun/INSERT", "SoundSlot6")
-			TNT1 A 0 A_GiveInventory("ZH2WeaponDoubleShotgunShell", 1)
-			SG2Q G 2 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			SG2Q HIJKL 1 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			Goto Reload.End
-			
-		Reload.End:
-			SG2Q MN 1 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			SG2R O 0 A_PlaySoundEx("weapons/doubleshotgun/CLOSE", "SoundSlot6")
-			SG2R N 1 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			SG2R M 2 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			SG2R L 3 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			SG2R KJI 1 A_WeaponReady(WRF_NOBOB|WRF_NOFIRE)
-			goto Ready
-	}
+    States
+    {
+        Ready:
+            TNT1 A 0 A_JumpIfNoAmmo("Reload")
+            SG2I A 1 A_WeaponReady(WRF_ALLOWRELOAD)
+            wait
+
+        Deselect:
+            SG2D ABCD 1
+            TNT1 A 0 A_Lower
+            wait
+
+        Select:
+            TNT1 A 0 A_Raise
+            TNT1 A 0 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+            TNT1 A 0 A_PlaySoundEx("weapons/doubleshotgun/CLOSE", "SoundSlot6")
+            SG2S BCDEF 1
+            SG2S G 2
+            SG2S HIJ 1
+            goto Ready
+
+        // It should not be possible to fire when the shotgun has both pellets shot.
+        // Either way a check has been implemented.
+        Fire:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+
+            TNT1 A 0 A_JumpIfNoAmmo("Reload")
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgunShell", 2, "Fire.Rest")
+            goto Altfire
+
+        Fire.Rest:
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
+            TNT1 A 0
+
+            TNT1 A 0 A_TakeInventory("ZH2WeaponDoubleShotgunShell", 2)
+            TNT1 A 0 A_PlaySound("weapons/doubleshotgun/DOUBLE", CHAN_WEAPON)
+            TNT1 A 0 A_GiveInventory("ZH2WeaponDoubleShotgunEjectShells", 2)
+            SG2I Z 2 bright
+            TNT1 A 0 Radius_Quake(4, 6, 0, 1, 0)
+            TNT1 A 0 A_FireCustomMissile("ZH2WeaponDoubleShotgunSmoke", 0, false, 0)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
+            TNT1 A 0 A_FireBullets(11.0, 7.0, 16, 25 + random(-1, 1) * 5, "ZH2WeaponBulletPuff", FBF_NORANDOM)
+            TNT1 A 0 A_AlertMonsters
+            TNT1 A 0 A_SetPitch(pitch-18.0)
+            TNT1 A 0 A_SetAngle(angle+random(-5,5))
+            TNT1 A 0 A_Recoil(8.0)
+            SG2I Z 1 bright A_SetPitch(pitch+3.0)
+            SG2I D 1 A_SetPitch(pitch+3.0)
+            SG2I EE 1 Offset(0,34) A_SetPitch(pitch+2.0)
+            SG2I F 1 Offset(0,40) A_SetPitch(pitch+2.0)
+            SG2I F 1 Offset(0,39) A_SetPitch(pitch+2.0)
+            SG2I F 1 Offset(0,38) A_SetPitch(pitch+1.0)
+            SG2I F 1 Offset(0,35) A_SetPitch(pitch+1.0)
+            SG2I GG 1 A_SetPitch(pitch+1.0)
+            SG2I H 1
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
+            goto Ready
+
+        // It should not be possible to altfire when the shotgun has both pellets shot.
+        // Either way a check has been implemented.
+        AltFire:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+
+            TNT1 A 0 A_JumpIfNoAmmo("Reload")
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
+
+            TNT1 A 0 A_PlaySound("weapons/doubleshotgun/SINGLE", CHAN_WEAPON)
+            TNT1 A 0 A_GiveInventory("ZH2WeaponDoubleShotgunEjectShells", 1)
+            TNT1 A 0 Radius_Quake(2, 6, 0, 1, 0)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
+            TNT1 A 0 A_FireCustomMissile("ZH2WeaponDoubleShotgunSmokeSingle", 0, false, 0)
+
+            // Half damage since it's only one shell
+            TNT1 A 0 A_FireBullets(4.0, 4.0, 8, 25 + random(-1, 1) * 5, "ZH2WeaponBulletPuff", FBF_NORANDOM)
+
+            TNT1 A 0 A_AlertMonsters
+            TNT1 A 0 A_Recoil(2.0)
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgunShell", 2, "AltFire.Left")
+        AltFire.Right:
+            SG2I C 1 bright
+            goto AltFire.Rest
+        AltFire.Left:
+            SG2I B 1 bright
+        AltFire.Rest:
+            TNT1 A 0 A_TakeInventory("ZH2WeaponDoubleShotgunShell", 1)
+            SG2I D 1 A_SetPitch(pitch-5.0)
+            SG2I E 2
+            SG2I F 1 A_SetPitch(pitch + 2.0)
+            SG2I F 1 A_SetPitch(pitch + 2.0)
+            SG2I F 1 A_SetPitch(pitch + 1.0)
+            SG2I G 2
+            SG2I H 1
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
+            goto Ready
+
+        Reload:
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgunShell", 2, "Ready")
+
+            // Brief moment where you can switch the weapon away.
+            SG2R IJ 1 A_WeaponReady(WRF_NOFIRE)
+            SG2R K 2 A_WeaponReady(WRF_NOFIRE)
+            SG2R L 4 A_WeaponReady(WRF_NOFIRE)
+            SG2R M 2 A_WeaponReady(WRF_NOFIRE)
+            SG2R N 1 A_WeaponReady(WRF_NOFIRE)
+
+            TNT1 A 0 A_PlaySoundEx("weapons/doubleshotgun/OPEN", "SoundSlot6")
+            TNT1 A 0 A_JumpIfNoAmmo("Reload.Both")
+
+        // Fallthrough state for when 1 shot was fired.
+        Reload.One:
+            SG2Q PR 1
+            goto Reload.DetermineEject
+
+        // When two shots were fired.
+        Reload.Both:
+            SG2R PQ 1
+
+        // This starts after the shotgun has been opened.
+        // This ejects the shells. After that the same ammo check is done to continue reloading.
+        Reload.DetermineEject:
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgunEjectShells", 1, "Reload.DoEject")
+            TNT1 A 0 A_JumpIfNoAmmo("Reload.InsertLeft")
+            goto Reload.InsertRight
+
+        Reload.DoEject:
+            TNT1 A 0 A_FireCustomMissile("ZH2DoubleShotgunCase", 5, false, -4, -12)
+            TNT1 A 0 A_TakeInventory("ZH2WeaponDoubleShotgunEjectShells", 1)
+            goto Reload.DetermineEject
+
+        Reload.InsertLeft:
+            SG2R Q 2
+            SG2R RST 1
+            TNT1 A 0 A_PlaySoundEx("weapons/doubleshotgun/INSERT", "SoundSlot6")
+            TNT1 A 0 A_GiveInventory("ZH2WeaponDoubleShotgunShell", 1)
+            SG2R U 2
+            SG2R VWXYZ 1
+            Goto Reload.InsertRight
+
+        Reload.InsertRight:
+            SG2Q A 2
+            SG2Q BCDEF 1
+            TNT1 A 0 A_PlaySoundEx("weapons/doubleshotgun/INSERT", "SoundSlot6")
+            TNT1 A 0 A_GiveInventory("ZH2WeaponDoubleShotgunShell", 1)
+            SG2Q G 2
+            SG2Q HIJKL 1
+            Goto Reload.End
+
+        Reload.End:
+            SG2Q MN 1
+            SG2R O 0 A_PlaySoundEx("weapons/doubleshotgun/CLOSE", "SoundSlot6")
+            SG2R N 1
+            SG2R M 2
+            SG2R L 3
+            SG2R KJI 1
+            goto Ready
+    }
 }

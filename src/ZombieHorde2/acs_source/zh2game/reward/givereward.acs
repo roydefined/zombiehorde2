@@ -1,99 +1,146 @@
 #ifdef __IMPORTED__
-	#error This file must be #included.
+    #error This file must be #included.
 #endif
 
 strict namespace Reward
 {
-	internal void GiveReward(RewardItemTypeFlagsT type)
-	{
-		GivePlayerReward(PlayerNumber(), type);
-	}
-	
-	internal void GivePlayerReward(int id, RewardItemTypeFlagsT type)
-	{
-		VALIDATE_ID_VALID_FUNCTION(id);
-		int tid = Identity::GetTid(id);
+    internal void GiveReward(RewardItemTypeFlagsT type)
+    {
+        GivePlayerReward(PlayerNumber(), type);
+    }
 
-		Player::SpecieTypeT specie = Player::GetPlayerSpecie(id);
-		Weight::PrepareWeightsByReward(type, specie);
+    internal void GivePlayerReward(int id, RewardItemTypeFlagsT type)
+    {
+        VALIDATE_ID_VALID_FUNCTION(id);
+        int tid = Identity::GetTid(id);
 
-		int index = -1;
-		while(true)
-		{
-			index = Weight::Next(index);
+        Weight::PrepareWeightsByReward(id, type);
 
-			// No reward to give.
-			// It is possible we can't give a reward when none were defined.
-			// Also because we can loop when an item was being restricted (like the cure).
-			if (index == -1)
-			{
-				Logger::LogTo("No reward could be given at this time. Try again later.", id);
-				return;
-			}
-
-			// Check for restriction.
-			// If so, call with the player's id and check against restriction.
-			str callRestrict = GetRewardCallRestrict(index);
-			if (callRestrict != (raw)0 && callRestrict != ""
-				&& ACS_NamedExecuteWithResult(callRestrict, id))
-			{
-                Logger::LogDebug(LOGSOURCE , "Skipping call. Restricted by script \"" + callRestrict + "\".");
-                continue;
-            }
-			
-			break;
-		}
-		
-		// Determine and take the user's item.
-		// This is done loosely in case this function is called internally and the player won't have the item.
-		str itemName = ContainerTypeToItemName(type);
-		if ((raw)itemName != 0 && itemName != "" && CheckActorInventory(tid, itemName) > 0)
-			TakeActorInventory(tid, itemName, 1);
-
-		GivePlayerRewardByIndex(id, index, true);
-	}
-
-	internal void GiveRewardByIndex(int index, bool broadcast)
-	{
-		GivePlayerRewardByIndex(PlayerNumber(), index, broadcast);
-	}
-
-	internal void GivePlayerRewardByIndex(int id, int index, bool broadcast)
-	{
-		VALIDATE_ID_VALID_FUNCTION(id);
-		int tid = Identity::GetTid(id);
-
-		str name = GetRewardName(index),
-            callGive = GetRewardCallGive(index),
-			give = GetRewardGive(index),
-			sound = GetRewardSound(index),
-			localMessage = GetRewardLocalMessage(index),
-			message = GetRewardMessage(index);
-
-		if ((raw)callGive != 0 && callGive != "")
-		{
-            if (!ACS_NamedExecuteAlways(callGive, 0))
-                Logger::logError(LOGSOURCE , "Failed to call script \"" + callGive + "\" for reward index " + str(index) + ".");
+        // No weights means the player has all rewards already.
+        if (!Weight::HasWeights())
+        {
+            Logger::LogTo(id, "You have all the rewards! Use some before receiving new ones.");
+            return;
         }
 
-		if ((raw)give != 0 && give != "")
-			GiveActorInventory(tid, give, 1);
-			
-		if ((raw)sound != 0 && sound != "")
-			PlaySound(tid, sound, CHAN_ITEM, 1.0);
+        int index = -1;
+        while(true)
+        {
+            index = Weight::Next(index);
 
-		if (!broadcast)
-			return;
+            // This should not happen.
+            // We have weights, and we already filtered non-applicable items.
+            // We should ALWAYS get a valid weight.
+            if (index == -1)
+            {
+                Logger::LogWarning(LOGSOURCE , "No more weights exist when attempting to give an item to player " + str(id) + ".");
+                continue;
+            }
 
-		if ((raw)localMessage != 0 && localMessage != "")
-			Logger::LogTo(localMessage, id);
+            // We already checked this when preparing the weights, it should not happen.
+            if (!GetCanGivePlayerReward(id, index))
+            {
+                Logger::LogWarning(LOGSOURCE , "Unexpected item index " + str(index) + " can't be given when attempting to give an item to player " + str(id) + ".");
+                continue;
+            }
 
-		if ((raw)message != 0 && message != "")
-		{
-			if (BCSUtils::StrContains(message, REWARD_PLAYER_TOKEN))
-				message = BCSUtils::StrReplace(message, REWARD_PLAYER_TOKEN, BCSUtils::PlayerName(id));
+            break;
+        }
 
-			Logger::LogExcept(message, id);
-		}
-	}
+        // Determine and take the user's item.
+        // This is done loosely in case this function is called internally and the player won't have the item.
+        str itemName = ContainerTypeToItemName(type);
+        if ((raw)itemName != 0 && itemName != "" && CheckActorInventory(tid, itemName) > 0)
+            TakeActorInventory(tid, itemName, 1);
+
+        GivePlayerRewardByIndex(id, index);
+        BroadcastGiveItem(id, index);
+
+        Sync::SyncPowers();
+    }
+
+    internal bool GetCanGiveReward(int index)
+    {
+        return GetCanGivePlayerReward(PlayerNumber(), index);
+    }
+
+    internal bool GetCanGivePlayerReward(int id, int index)
+    {
+        Player::PlayerSpecieT specie = Player::GetPlayerSpecie(id);
+
+        // Conditionally check for specie.
+        // Both instances must be specie specific.
+        // If one doesn't provide it we assume the reward can be for any specie.
+        if (specie != Player::SPECIENONE)
+        {
+            Player::PlayerSpecieT rewardSpecie = Reward::GetRewardSpecieSpecific(index);
+            if (rewardSpecie != Player::SPECIENONE && specie != rewardSpecie)
+                return false;
+        }
+
+        // Check for restriction.
+        // Restriction means there's some reason the item can't be given (restricted/duplicate/disabled/etc).
+        str callRestrict = GetRewardCallRestrict(index);
+        if (callRestrict != (raw)0 && callRestrict != ""
+            && ACS_NamedExecuteWithResult(callRestrict, id))
+        {
+            Logger::LogDebug(LOGSOURCE , "Can't give reward, restrict script \cd\"" + callRestrict + "\"\cj returned 'true'.");
+            return false;
+        }
+
+        // Check for duplicates, skip if the user already has the item.
+        str give = GetRewardGive(index);
+        if ((raw)give != 0 && give != ""
+            && CheckActorInventory(Identity::GetTid(id), give) > 0)
+        {
+            Logger::LogDebug(LOGSOURCE , "Can't give reward, the user already has item \cd\"" + give + "\"\cj.");
+            return false;
+        }
+
+        return true;
+    }
+
+    internal void GiveRewardByIndex(int index)
+    {
+        GivePlayerRewardByIndex(PlayerNumber(), index);
+    }
+
+    internal void GivePlayerRewardByIndex(int id, int index)
+    {
+        VALIDATE_ID_VALID_FUNCTION(id);
+        int tid = Identity::GetTid(id);
+
+        str name = GetRewardName(index),
+            callGive = GetRewardCallGive(index),
+            give = GetRewardGive(index),
+            sound = GetRewardSound(index);
+
+        if ((raw)callGive != 0 && callGive != "")
+        {
+            ACS_NamedExecuteWithResult(callGive, id);
+        }
+
+        if ((raw)give != 0 && give != "")
+            GiveActorInventory(tid, give, 1);
+
+        if ((raw)sound != 0 && sound != "")
+            PlaySound(tid, sound, CHAN_ITEM, 1.0);
+    }
+
+    internal void BroadcastGiveItem(int id, int index)
+    {
+        str localMessage = GetRewardLocalMessage(index),
+            message = GetRewardMessage(index);
+
+        if ((raw)localMessage != 0 && localMessage != "")
+            Logger::LogTo(id, localMessage);
+
+        if ((raw)message != 0 && message != "")
+        {
+            if (BCSUtils::StrContains(message, REWARD_PLAYER_TOKEN))
+                message = BCSUtils::StrReplace(message, REWARD_PLAYER_TOKEN, BCSUtils::PlayerName(id));
+
+            Logger::LogExcept(id, message);
+        }
+    }
 }

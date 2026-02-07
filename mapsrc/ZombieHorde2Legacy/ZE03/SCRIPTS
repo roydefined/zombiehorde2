@@ -1,0 +1,128 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+Int housereached = 0;
+Int pearlreached = 0;
+
+/* RESIST EVENT */
+script "ze03_internal_event_resistelapsed" (raw packetRaw)
+{
+	Event::ReceiveTimerElapsed((str)packetRaw);
+	int index = Event::GetReceiveData(0);
+	
+	switch(index)
+	{
+		case 0:
+			SetLineBlocking(2, BLOCK_NOTHING);
+			TranslucentLine(2, 0, 0);
+			SetFont("SMALLFONT");
+			PrintBold(s:"The prison will open itself in 5 seconds.");
+			Delay(35*5);
+			SetLineBlocking(1, BLOCK_NOTHING);
+			Floor_LowerByValue(12, 64, 120);
+			break;
+		case 1:
+			Floor_LowerByValue(21, 16, 120);
+			break;
+		case 2:
+			Floor_LowerByValue(11, 32, 112);
+			SetLineBlocking(3, BLOCK_NOTHING);
+			break;
+	}
+}
+
+Script 1 (void) // Picking up Jack's Pistol
+{
+	PrintBold(n:0, s:" \cFHas picked up Jack Sparrow's pistol!");
+}
+
+Script 2 (void) // Music 1
+{
+	SetActivator(-1);
+	Music::SetMusic("ROUTE1");
+	Delay(35*50);
+	Music::SetMusic("D_NULL");
+}
+
+Script 4 OPEN // Setups
+{
+	SetLineBlocking(1, BLOCK_EVERYTHING);
+	SetLineBlocking(2, BLOCK_CREATURES);
+	SetLineBlocking(3, BLOCK_CREATURES);
+	Scroll_Texture_Both(2, 0, 0, 0, 200);
+	Scroll_Texture_Both(-2, 0, 0, 0, 200);
+	TranslucentLine(2, 96, 0);
+	Floor_Waggle(13, 8, 128, 16, 0);
+	Floor_Waggle(14, 8, 128, 16, 0);
+	Floor_Waggle(15, 8, 128, 16, 0);
+	Ceiling_Waggle(15, 8, 128, 16, 0);
+	Floor_Waggle(16, 8, 128, 16, 0);
+
+	// Boathouse sub-resist.
+	// Made more clear in ZH2.
+	TranslucentLine(24, 0);
+	Scroll_Texture_Both(-24, 0, 0, 0, 200);
+	Scroll_Texture_Both(24, 0, 0, 0, 200);
+}
+
+
+Script 6 (void) // Checks if a human has reached the house
+{
+	If(Player::GetIsHuman() && housereached == 0)
+	{
+		housereached = 1;
+		SetActivator(-1);
+
+		// Made more clear in ZH2.
+		TranslucentLine(24, 96, 0);
+
+		Delay(Resist::StartResistByIndex(3));
+
+		TranslucentLine(24, 0, 0);
+		housereached = 2;
+	}
+}
+
+Script 7 (void) // Will hold back zombies
+{
+	If(Player::GetIsZombie() && housereached == 1)
+		ThrustThing(64, 20, 0, 0);
+}
+
+Script 9 (void) // Music 2
+{
+	SetActivator(-1);
+	Music::SetMusic("ROUTE2");
+	Delay(35*83);
+	Music::SetMusic("D_NULL");
+}
+
+Script 10 (void) // Pearl reached
+{
+	If(pearlreached==0)
+    {
+		SetFont("CONFONT");
+		HudMessageBold(n:0, s:" has reached the \cMBlack Pearl!\n\cCLoad artillery before the infected come!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+		pearlreached++;
+		Acs_execute(11, 0, 0, 0, 0);
+    }
+}
+
+Script 11 (void)
+{
+	SetActivator(-1);
+	Delay(Resist::StartResistByIndex(4));
+	Delay(35*1);
+	SetFont("BIGFONT");
+	HudMessageBold(s:"\cGWarning : \cKCannons Loaded!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+	Delay(35*5);
+	AmbientSound("world/nuke1", 127);
+	Game::KillUnsafePlayers();
+	Sector_SetDamage(23, 10000, 12);
+}

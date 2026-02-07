@@ -1,28 +1,42 @@
 actor ZH2LegacyMapSpecificDolletFire: ZH2LegacySwitchableFireClient 20908
 {
-	//$Category "Decoration/Legacy/Map specific"
-	//$Sprite FFLGM0
-	//$NotAngled
-	
-	-CLIENTSIDEONLY
-	
-	tag "Dollet fire (map specific)"
-	
-	states
-	{
-		active:
-			TNT1 A 0 A_Jump(256, "activeloop")
-			stop
-	}
+    //$Category "Decoration/Legacy/Map specific"
+    //$Sprite FFLGM0
+    //$NotAngled
+
+    -CLIENTSIDEONLY
+
+    tag "Dollet fire (map specific)"
 }
 
 actor ZH2LegacyMapSpecificDolletFireHuge : ZH2LegacyMapSpecificDolletFire 20909
 {
-	//$Category "Decoration/Legacy/Map specific"
-	//$Sprite FFLGM0
-	//$NotAngled
-	
-	tag "Dollet fire (huge) (map specific)"
-	
-	scale 3.5
+    //$Category "Decoration/Legacy/Map specific"
+    //$Sprite FFLGM0
+    //$NotAngled
+
+    tag "Dollet fire (huge) (map specific)"
+
+    scale 3.5
+
+    // This fire only misses the fire sound compared to the inherited fire.
+    // It defines all states because it didn't work online for some reason.
+    states
+    {
+        spawn:
+        active:
+            FFLG F 1
+        activeloop:
+            FFLG FGHIJKLMNOPQ 3
+            TNT1 A 0 A_Jump(20, "Random")
+            loop
+
+        random:
+            FFLG F 3
+            goto activeloop
+
+        inactive:
+            TNT1 A 1
+            loop
+    }
 }

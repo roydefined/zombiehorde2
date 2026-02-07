@@ -1,0 +1,562 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+//Creating variables
+
+Int resist1 = 22; // 22 seconds
+Int resist2 = 30; // 30 seconds
+Int resist3 = 20; // 20 seconds
+Int resist4 = 35; // 35 seconds
+Int resist5 = 10; // 30 seconds
+Int DiscoButtonUsed = 0;
+Int SpecialRoomOpen;
+Int AnotherEnd;
+Int LiftFloor = 5;
+bool InTram[BCSUtils::MAX_PLAYERS];
+Int Coordinates = 0;
+Int BoatX = 7328.0;
+Int BoatY = -4.0;
+Int BoatZ = 0.0;
+
+
+//Creating resist message function
+
+function void ResistMessage1 (int restime, str todo)
+{
+	SetFont("BIGFONT");
+	HudMessageBold(s:todo, d:restime, s:" seconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+}
+
+//Start up script, sector color changings... watercolor, start message etc...
+
+script 99 open
+{
+	SetLineSpecial(244,acs_execute,37,0);
+	Resist1 = Random(11,25);
+	Resist2 = Random(21,35);
+	Resist3 = Random(13,25);
+	Resist4 = Random(30,50);
+	sector_setcolor(13,10,10,200);
+	sector_setcolor(208,0,100,0);
+	sector_setcolor(102,100,0,0);
+	sector_setcolor(103,100,0,0);
+	sector_setcolor(104,100,0,0);
+	sector_setcolor(189,100,0,0);
+	delay(350);
+	SetFont("CONFONT");
+	HudMessageBold(s:" \cfSomebody found a nuke on the island! Get on the boat before it explodes!"; HUDMSG_FADEOUT, 0, CR_WHITE, 0.05, 0.85, 3.0, 2.0);
+	SetLineBlocking(10,BLOCK_EVERYTHING);
+	SetLineBlocking(113,BLOCK_EVERYTHING);
+}
+
+Script 93 open
+{
+	Delay(35*15);
+	Floor_LowerToLowest(201,5);
+	Floor_RaiseByValue(239,10,80);
+	Ceiling_RaiseByValue(239,10,80);
+	//FloorAndCeiling_RaiseByValue(239,10,80);
+}
+
+Script 78 (void)
+{
+	if(Player::GetIsZombie())
+    {
+    	Teleport(0,228,0);
+    }
+	else
+    {
+    	Teleport(0,219,0);
+    }
+}
+
+Script 79 (void)
+{
+	if(Player::GetIsZombie())
+    {
+    	Teleport(0,229,0);
+    }
+	else
+    {
+    	Teleport(0,220,0);
+    }
+}
+
+
+//Polyscript
+
+Script 37 (void)
+{
+	ClearLineSpecial();
+	SetActivator(-1);
+	Ceiling_LowerAndCrush(242,255,200,2); //ZH2 [AQW] crushmode hexen, dmg to 200.
+	TagWait(242);
+	Ceiling_LowerByValueTimes8(242,16,1); //ZH2 [AQW]
+	Delay(35);
+	PolyObj_Move(1,50,64,584);
+	PolyWait(1);
+	Delay(35);
+	Door_open(243,255);
+	Delay(35*3);
+	SetLineSpecial(245,acs_execute,38,0);
+}
+
+Script 38 (void)
+{
+	ClearLineSpecial();
+	SetActivator(-1);
+	Ceiling_LowerAndCrush(243,255,200,2); //ZH2 [AQW] crushmode hexen, dmg to 200.
+	Door_Close(243,255);
+	TagWait(243);
+	Ceiling_LowerByValueTimes8(243,16,1); //ZH2 [AQW]
+	Delay(35);
+	PolyObj_Move(1,50,192,584);
+	PolyWait(1);
+	Delay(35);
+	Door_open(242,255);
+	Delay(35*3);
+	SetLineSpecial(244,acs_execute,37,0);
+}
+
+
+Script 39 (void)
+{
+	if (CheckInventory(KEY_YELLOW_KEYCARD))
+	{
+		Floor_Lowertolowest(246,255);
+	}
+	else
+	{
+		Print(s:"You need a yellow keycard");
+	}
+}
+
+
+//First resist door
+
+Script 1 (void)
+{
+	SetActivator(-1);
+	for(int i = resist1; i > 0; i--)
+	{
+		ResistMessage1(i,"\cgDoor \cfopens in... ");
+		Delay(35);
+	}
+	Floor_LowerByValue(198,255,120);
+	SetLineBlocking(113,BLOCK_NOTHING);
+	Thing_destroy(62,no);
+	floor_lowertolowest(6,7);
+	floor_lowerbyvalue(7,7,48);
+}
+
+//2th resist for tram
+
+Script 2 (void)
+{
+	SetActivator(-1);
+	for(int i = resist2; i > 0; i--)
+	{
+		ResistMessage1(i,"\chTram \cfopens in... ");
+		Delay(35);
+	}
+	floor_lowertolowest(28,255);
+	delay(35*5);
+	//Floor_raiseAndCrush(167,255,255555555555555555555555555555);
+	ceiling_lowertoFloor(26,100);
+	ceiling_lowertoFloor(27,100);
+	floor_raisebyvalue(28,100,96);
+	Door_open(111,255);
+	Acs_terminate(12,0);
+	Acs_Execute(91,0);
+	SetLineSpecial(154,ThrustThing,64,255,0,0);
+	TagWait(28);
+
+	for(int j = 0;j <= BCSUtils::MAX_PLAYERS; j++)
+	{
+		int tid = Identity::GetTid(j);
+		if(InTram[j])
+			SetActorPosition(tid,GetActorX(tid)+3424.0,GetActorY(tid)-8.0,GetActorZ(tid)+8.0,0);
+	}
+	delay(70);
+	for(i = 20;i < 1280;i+=20)
+	{
+		Scroll_Ceiling(29,-i/2,-10,0);
+		Scroll_Texture_Both(29,i,0,0,0);
+		delay(5);
+	}
+	delay(70);
+	for(i = 1260;i > 20;i-=10)
+	{
+		Scroll_Ceiling(29,-i/2,-10,0);
+		Scroll_Texture_Both(29,i,0,0,0);
+		delay(5);
+	}
+	Scroll_Ceiling(29,0,0,0);
+	Scroll_Texture_Both(29,0,0,0,0);
+	delay(70);
+	SetLineSpecial(154,ThrustThing,0,0,0,0);
+	floor_lowertolowest(35,100);
+	Acs_Terminate(91,0);
+	PrintBold(s:"The tram has arrived");
+	delay(35*20);
+	printbold(s:" \cfSewer doors opened!");
+	Door_open(224,255);
+	}
+
+Script 92 (void)
+{
+	printbold(s:" \cfSewer doors opened!");
+	Door_open(224,255);
+}
+
+Script 91 (void)
+{
+	SectorDamage(28,5,"ice",0,DAMAGE_PLAYERS|DAMAGE_IN_AIR);
+	SectorDamage(167,5,"ice",0,DAMAGE_PLAYERS|DAMAGE_IN_AIR);
+	Delay(1);
+	Restart;
+}
+
+
+
+
+//Baricade script... closing the door
+
+script 3 (void)
+{
+	floor_raisebyvalue(56,50,112);
+	floor_raisebyvalue(58,50,112);
+	printbold(n:0, s:" \cJhas raised the door!\nIt will open in 20 seconds!");
+	SetActivator(-1);
+	delay(700);
+	floor_lowertolowest(56,25);
+	floor_lowertolowest(58,25);
+}
+
+//3th resist, the pillars
+
+Script 4 (void) //3th timer
+{
+	SetActivator(-1);
+	for(int i = resist3; i > 0; i--)
+	{
+		ResistMessage1(i,"\cjPillars \cflower in... ");
+		Delay(35);
+	}
+	SetLineBlocking(10,0);
+	floor_lowerbyvalue(65,7,116);
+	floor_lowerbyvalue(116,7,80);
+	Delay(35*5);
+	floor_lowertolowest(56,25);
+	floor_lowertolowest(58,25);
+}
+
+
+
+
+//4th resist, when boat leaves
+
+script 5 (void)
+{
+	Thing_Remove(48);
+	Floor_Lowertolowest(128,2);
+	Floor_Lowertolowest(94,2);
+	activatorsound("STIFFT04",127);
+	SetFont("CONFONT");
+	HudMessageBold(n:0, s:" \cfhas reached the \cgboat! \cfGet on it before the nuke \cgexplode!!!"; HUDMSG_FADEOUT, 0, CR_WHITE, 0.05, 0.85, 3.0, 2.0);
+	SetActivator(-1);
+	delay(175);
+	{
+		for(int i = resist4; i > 0; i--)
+		{
+			ResistMessage1(i,"\cgNuke\cf in... ");
+			Delay(35);
+		}
+		SetFont("BIGFONT");
+		printbold(s:"\cgNUKE!!!");
+		delay(35);
+		//SetActivator(-1);
+		Delay(70);
+		Game::KillUnsafePlayers();
+		Ceiling_LowerToFloor(170, 99999);
+		Radius_quake(255,100,0,255, no);
+		ActivatorSound("world/nuke1",127);
+		{
+			for(Int g = 0; g <= BCSUtils::MAX_PLAYERS; g++)
+			{
+				int tid = Identity::GetTid(g);
+				if(Game::GetPlayerIsSafe(g))
+					SetActorPosition(tid, GetActorX(tid)+ BoatX ,GetActorY(tid)+ BoatY ,GetActorZ(tid)+ BoatZ ,0);
+			}
+			Acs_executeAlways(44,0);
+		}
+	}
+}
+
+
+
+
+
+
+//Fade'ing script when boat leaves
+
+Script 44 (void)
+{
+	Fadeto (255, 25, 25, 1.0, 0);
+	delay(105);
+	Fadeto (0, 0, 0, 0, 6.0);
+	floor_lowerbyvalue(80,50,9999);
+	ceiling_lowerbyvalue(80,50,9999);
+}
+
+
+
+
+//Change'ing coordinates of the boat destination... it will go to another island
+
+Script 45 (void)
+{
+	printbold(n:0, s:" \cJhas changed the destination of the boat!");
+	BoatX = -0.0;
+	BoatY = 2304.0;
+	BoatZ = 128.0;
+}
+
+
+
+
+//Inside tram check... if inside > teleported to other tram, if not > than not
+
+script 22 (void)
+{
+	if(LineSide() == LINE_FRONT) InTram[PlayerNumber()] = 1;
+	else InTram[PlayerNumber()] = 0;
+}
+
+
+
+
+//Battery door opening script
+
+script 6 (void)
+{
+	if (CheckInventory(KEY_BATTERY) )
+	{
+		floor_raisebyvalue(73,255,8);
+		floor_lowertolowest(74,255);
+		SetLineSpecial(4,0,0,0,0,0,0);
+		TakeInventory(KEY_BATTERY,1);
+	}
+}
+
+//Turning on radioscript
+
+script 8 (void)
+{
+	if(DiscoButtonUsed == 0)
+	{
+		printbold(n:0, s:" \cfhas Turned on the \ctRADIO!!!");
+		Music::SetMusic("D_YEABOI");
+		DiscoButtonUsed++;
+	}
+}
+
+//Trap after first resist
+
+script 9 (void)
+{
+	printbold(n:0, s:" \cfhas been trapped!");
+	floor_raisebyvalue(102,255,64);
+	SetActivator(-1);
+	delay(350);
+	floor_lowertolowest(102,255);
+	Teleport(102,133,0);
+}
+
+
+//Trap door openingschanche
+
+script 10 OPEN
+{
+	specialroomopen = random(1, 3);
+
+	switch(specialroomopen) {
+
+		case 1:
+		{
+			floor_lowertolowest(106,255);
+			break;
+		}
+		case 2:
+		{
+			FloorAndCeiling_lowerbyvalue(197,50,999);
+			break;
+		}
+	}
+}
+
+//Pillars baricade script
+
+script 12 (void)
+{
+	Floor_LowerByValue(225,100,128);
+	printbold(n:0, s:" \cfhas lowered the hedge");
+	SetActivator(-1);
+	TagWait(225);
+	delay(475);
+	printbold(s:" \cfspecial door opened!");
+	door_open(111,25);
+}
+
+//Red keycard check for door
+
+script 14 (void)
+{
+	if(KEY_RED_KEYCARD)
+	{
+		Floor_lowertolowest(135,10);
+		Print(s:"\cgA Door Has Been Opened");
+	}
+	else
+	{
+		Print(s:"\cgYou dont have the key for this door!");
+	}
+}
+
+//AntiZombie force
+
+script 18 (void)
+{
+	if(Player::GetIsZombie())
+	{
+		ThrustThing(192,255,0,0);
+	}
+}
+
+//EndingRoom Checks
+// ZH2, disabled. I don't think this was being used.
+
+//Script 50 (void) // Secure room entered
+//{
+//	Reached[PlayerNumber()] = True;
+//}
+
+//Script 51 (void) // Secure room left
+//{
+//	Reached[PlayerNumber()] = False;
+//}
+
+
+
+
+//BeginBarrikade
+
+script 20 (void)
+{
+	SetActivator(-1);
+	Floor_RaiseByValue(115,10,128);
+  tagwait(115);
+	Delay(35*10);
+	Floor_LowerByValue(115,10,128);
+}
+
+//Another resist on special island
+
+Script 30 (void)
+{
+
+	SetActivator(-1);
+	for(int i = resist5; i > 0; i--)
+	{
+		ResistMessage1(i,"\chWater \cfraises in... ");
+		Delay(35);
+	}
+	Acs_executeAlways(31,0);
+
+}
+
+//Special island ending
+
+Script 31 (void)
+{
+	SetActivator(-1);
+	Ceiling_RaiseByValue(101,10,768);
+	Floor_RaiseByValue(213,10,760);
+	Tagwait(101);
+	Music::SetMusic("D_stiffo");
+	Acs_terminate(32,0);
+}
+
+//change'ings
+
+script 61 open
+{
+AnotherEnd = random(1, 15);
+switch(AnotherEnd)
+{
+    case 1:
+    case 2:
+    {
+        Floor_RaiseByValue(143,255,112);
+        Door_Open(147,255);
+        Floor_Lowerbyvalue(169,255,32);
+        Thing_remove(174);
+        ChangeFloor(169,"NUKAGE1");
+        FloorAndCeiling_RaiseByValue(178,255,64);
+        break;
+    }
+    case 3:
+    case 4:
+    {
+        Door_open(149,255);
+        Door_Close(153,255);
+        break;
+    }
+    case 5:
+    case 6:
+    {
+        Door_open(149,255);
+        Door_Close(153,255);
+        Floor_RaiseByValue(143,255,112);
+        Door_Open(147,255);
+        Floor_Lowerbyvalue(169,255,32);
+        Thing_remove(174);
+        ChangeFloor(169,"NUKAGE1");
+        FloorAndCeiling_RaiseByValue(178,255,64);
+        break;
+    }
+    case 15:
+    {
+        Door_open(77,25);
+        Floor_LowerbyValue(124,255,112);
+        Floor_RaiseByValue(114,255,112);
+		break;
+    }
+}
+}
+
+
+//ThrustThing
+
+Script 72 (void)
+{
+	ThrustThing(64,4096,0,0);
+}
+
+/*
+Script 35 UNLOADING
+{
+	for(int i=0; i<BCSUtils::MAX_PLAYERS; i++)
+    {
+        int tid = Identity::GetTid(i);
+		if(CheckActorInventory(tid, "AutomaticRifle"))
+			TakeActorInventory(tid, "AutomaticRifle", 999);
+    }
+}
+*/

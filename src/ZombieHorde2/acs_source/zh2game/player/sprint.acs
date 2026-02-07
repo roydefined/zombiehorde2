@@ -19,7 +19,7 @@ strict namespace Player
         if (GetSprinting())
         {
             int decrement = BCSUtils::Max(int(BCSUtils::GetActorXYVelocity(ActivatorTID()) / 4.0), 1);
-			TakeInventory(SPRINT_ITEM, decrement);
+            TakeInventory(SPRINT_ITEM, decrement);
 
             // Out of sprint, remove power.
             if (GetSprintLeft() == 0)
@@ -43,42 +43,48 @@ strict namespace Player
         if (!sprinting)
         {
             Power::TakePlayerPower(id, Power::POWERSPRINTING);
+            Sync::SyncPowers();
             return;
         }
 
+        // Do not allow enabling sprinting when dead.
+        if (!BCSUtils::ActorIsAlive(Identity::GetTid(id)))
+            return;
+
         if (!ZH2Game::GetAllowSprinting())
         {
-            Logger::LogTo("Sprinting is disabled on this server.", id);
+            Logger::LogTo(id, "Sprinting is disabled on this server.");
             return;
         }
 
         if (Player::GetPlayerIsZombie(id))
         {
-            Logger::LogTo("Zombies don't sprint!", id);
+            Logger::LogTo(id, "Zombies don't sprint!");
             return;
         }
 
-        PanicStateT state = GetPlayerPanicState(id);
+        PlayerPanicStateT state = GetPlayerPanicState(id);
         if (state == PANICSTATEPANICKING)
         {
-            Logger::LogTo("You are panicking!", id);
+            Logger::LogTo(id, "You are panicking!");
             return;
         }
 
         if (state == PANICSTATECALMINGDOWN)
         {
-            Logger::LogTo("You just panicked. Wait a moment.", id);
+            Logger::LogTo(id, "You just panicked. Wait a moment.");
             return;
         }
 
         if (Player::GetPlayerSprintLeft(id) < ZH2Game::GetMinimumSprintAmount())
         {
-            Logger::LogTo("Wait a moment before sprinting.", id);
+            Logger::LogTo(id, "Wait a moment before sprinting.");
             return;
         }
 
         // Note: Considering the sprint is able to decrement faster/slower, it is not reliable to set actual tics here
         Power::GivePlayerPower(id, Power::POWERSPRINTING);
+        Sync::SyncPowers();
     }
 
 

@@ -1,0 +1,73 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Reward
+{
+    /* GENERIC POWER RESTRICTIONS */
+
+    script "zh2_internal_reward_restrictfatigue"(raw idRaw)
+    {
+        int id = (int)idRaw;
+        SetResultValue(
+            (int)Power::GetPlayerHasPower(id, Power::POWERREWARDHUMANSPEED));
+    }
+
+    script "zh2_internal_reward_restrictvulnerability"(raw idRaw)
+    {
+        int id = (int)idRaw;
+        SetResultValue(
+            (int)Power::GetPlayerHasPower(id, Power::POWERREWARDZOMBIEVULNERABILITY));
+    }
+
+    script "zh2_internal_reward_restrictweaponsupgrade"(raw idRaw)
+    {
+        int id = (int)idRaw;
+        SetResultValue(
+            (int)Power::GetPlayerHasPower(id, Power::POWERREWARDHUMANWEAPONUPGRADE));
+    }
+
+    script "zh2_internal_reward_restrictspeedincrease"(raw idRaw)
+    {
+        int id = (int)idRaw;
+        SetResultValue(
+            (int)Power::GetPlayerHasPower(id, Power::POWERREWARDZOMBIESPEED));
+    }
+
+    script "zh2_internal_reward_restricthighjump"(raw idRaw)
+    {
+        int id = (int)idRaw;
+        SetResultValue(
+            (int)Power::GetPlayerHasPower(id, Power::POWERREWARDZOMBIEJUMP));
+    }
+
+    /* SPECIAL CASES */
+
+    // Riot gun: Since we don't use the generic "give" flow (as we also give canisters too), we should check if we have the riot gun specifically.
+    script "zh2_internal_reward_restrictriotgun"(raw idRaw)
+    {
+        int id = (int)idRaw;
+        int tid = Identity::GetTid(id);
+        SetResultValue(
+            (int)(CheckActorInventory(tid, WEAPON_RIOTGUN_NAME) > 0));
+    }
+
+    // Cure: Can't be used by initial zombies.
+    script "zh2_internal_reward_restrictcure"(raw idRaw)
+    {
+        int id = (int)idRaw;
+        SetResultValue(
+            (int)Player::GetPlayerInitialZombie(id));
+    }
+
+    // Zombie secondary: Can't be used if the zombie has all secondary attacks that would be given.
+    script "zh2_internal_reward_restrictzombiesecondary"(raw idRaw)
+    {
+        int id = (int)idRaw;
+        int current = Game::GetPlayerZombieAbilityFlags(id);
+        int given = Game::GetDefaultZombieAbilityFlags();
+        bool hasAll = (current & given) == given;
+
+        SetResultValue((int)hasAll);
+    }
+}

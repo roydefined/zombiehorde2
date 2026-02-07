@@ -1,0 +1,1076 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+//overall definers
+#define SOFTWARE_PLAYER 0
+
+Int TELE1 = 52;
+Int TELE2 = 62;
+Int TELE3 = 145;
+Int TELE4 = 147;
+
+//resist definers
+int resist1 = 20;
+int resist2 = 15;
+int resist3 = 10;
+int resist4 = 15;
+int resist5 = 10;
+int resist6 = 10;
+
+//bools to check if scripts are used
+bool script3_executed=false;
+bool script4_executed=false;
+bool script5_executed=false;
+bool script6_executed=false;
+bool script7_executed=false;
+bool script8_executed=false;
+bool script16_executed=false;
+bool script17_executed=false;
+bool script18_executed=false;
+
+//experiment
+bool Experiment_reached[BCSUtils::MAX_PLAYERS];
+bool Experiment_bunkerclosed=false;
+bool Experiment_activated=false;
+bool Experiment_camera=false;
+
+script 1 OPEN
+{ //startups
+	spawnspot("ZH2LegacyFlareWhite",6,0,0);
+	SetCameraToTexture(41, "CAMTX128", 75 );
+	Sector_SetPlaneReflection(149,100,0);
+	Sector_SetPlaneReflection(266,100,0);
+	scroll_floor(181,128,100,0);
+	scroll_ceiling(181,-128,-100,0);
+
+	spawnspot("ZH2LegacyZe29KeycardWhite",random(248,251),0,0);
+	spawnspot("ZH2LegacyZe29KeycardRed",random(252,255),0,0);
+	spawnspot("ZH2LegacyZe29KeycardGreen",random(256,259),0,0);
+	spawnspot("ZH2LegacyZe29KeycardBlue",random(260,263),0,0);
+
+	delay(70);
+
+	//dialogue
+	SETFONT("SMALLFONT");
+	HudMessageBold(s:"The canyon entrance has completely collapsed!\n\Follow the canyon road down to \cdsafety\cc!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 0.05, 0.85, 6.0);
+
+	delay(35*14);
+	floor_lowertolowest(112,2);
+}
+
+//decontermination exit door
+script 2 (void)
+{
+	if(script6_executed==true)terminate;
+	else  script6_executed=true;
+	ceiling_raisebyvalue(43,8,100);
+	changefloor(42,"BROWN12");
+	HudMessagebold(n:0, s:" Opened the decontermination exit doors."; HUDMSG_FADEINOUT, 0, CR_White, 0.5, 0.5, 5.0);
+}
+
+//the big ass fan
+Script 6 open clientside
+{
+	for(int tag=46;tag<=50;tag++)
+	{
+		changefloor(tag,"SHAWN2");
+		delay(2);
+		changefloor(tag,"BLACK");
+	}
+	restart;
+}
+
+script 7 (int x){ //advanced teleport system
+	Switch(x)
+	{
+
+		Case 1: //big fan
+			If(TELE1 == 52)
+			{
+				TELE1++;
+				teleport_nofog(TELE1,0,0);
+				Terminate;
+			}
+			else
+			{
+				TELE1=52;
+				teleport_nofog(TELE1,0,0);
+				Break;
+			}
+
+		Case 2: //collapsing room
+			If(TELE2 == 62)
+			{
+				TELE2++;
+				teleport_nofog(TELE2,0,0);
+				Terminate;
+			}
+			else
+			{
+				TELE2=62;
+				teleport_nofog(TELE2,0,0);
+				Break;
+			}
+
+		Case 3: //second lava area + hole after it
+			If(TELE3 == 145)
+			{
+				TELE3++;
+				teleport_nofog(TELE3,0,0);
+				Terminate;
+			}
+			else
+			{
+				TELE3=145;
+				teleport_nofog(TELE3,0,0);
+				Break;
+			}
+
+		Case 4: //hole in canyon road
+		If(TELE4 == 147)
+		{
+			TELE4++;
+			teleport_nofog(TELE4,0,0);
+			Terminate;
+		}
+		else
+		{
+			TELE4=147;
+			teleport_nofog(TELE4,0,0);
+			Break;
+		}
+	}
+}
+
+//fan sound (because ambient doesnt work somehow...)
+script 9 OPEN
+{
+	thingsound(61,"sound/bigfan",255);
+	delay(1);
+	restart;
+}
+
+script 10 (void) //camera for experiment
+{
+    {
+        if (Experiment_Camera==true)
+        ChangeCamera(180, 1, 0);
+        else
+        terminate;
+    }
+
+    delay(1);
+
+    restart;
+}
+
+//clientsided stuff removal
+script 11 (int x) CLIENTSIDE
+{
+	Switch(x)
+	{
+		Case 1:
+			Thing_remove(23);
+			Break;
+
+		Case 2:
+			Thing_remove(68);
+			delay(18);
+			Thing_remove(73);
+			Break;
+
+		Case 3:
+			Thing_remove(132);
+			Break;
+
+		Case 4:
+			Thing_remove(172);
+			Break;
+	}
+}
+
+script 14 (void) //experiment breathing
+{
+    ambientsound("world/monstergrowl",255);
+
+    delay(700);
+
+    ambientsound("world/monsterbreath",255);
+
+    delay(700);
+
+    restart;
+}
+
+script 15 (void) CLIENTSIDE //experiment speech
+{
+    AmbientSound("misc/chat",127);
+    Log(s:"\clExperiment\cd: Big mistake...");
+}
+
+script 18 (void) //zombie leaves spawn sound (this sound is unused in zh for some reason, it was in the past though)
+{
+    if(Player::GetIsZombie())
+    {
+        if(script18_executed==true)terminate;
+        else  script18_executed=true;
+        activatorsound("sound/zombiewake",255);
+    }
+}
+
+script 19 (void)
+{ //locked door
+	HudMessage(s:"Something is blocking this door from the other side..."; HUDMSG_FADEOUT, 0, CR_GRAY, 0.5, 0.8, 2.0);
+	thingsound(116,"sound/open",100);
+	delay(35);
+}
+
+Script 20 open clientside{ //the smaller but still big ass fans
+	for(int tag=121;tag<=126;tag++)
+	{
+		changefloor(tag,"SHAWN2");
+		delay(2);
+		changefloor(tag,"BLACK");
+	}
+	restart;
+}
+
+//bulletproof window (experiment)
+script 21 (void)
+{
+	HudMessage(s:"This window appears to be bulletproof."; HUDMSG_FADEOUT, 0, CR_GRAY, 0.5, 0.8, 2.0);
+	delay(35);
+}
+
+
+script 24 (int x) //Safety
+{
+    Switch(x)
+    {
+		// ZH2: Unused
+        Case 1: //normal ending
+        //if(LineSide()== LINE_FRONT) Reached[PlayerNumber()] = 1;
+        //else Reached[PlayerNumber()] = 0;
+        Break;
+
+        Case 2: //experiment
+        if(Experiment_bunkerclosed==true)terminate;
+        else if(LineSide()== LINE_FRONT) Experiment_reached[PlayerNumber()] = 1;
+        else Experiment_reached[PlayerNumber()] = 0;
+        Break;
+    }
+}
+
+
+
+/*    --------------------    MINI RESISTS    --------------------    */
+
+
+//Cargolift
+Script 16 (void)
+{
+	if(script16_executed==true)terminate;
+	else  script16_executed=true;
+	SetActivator(-1);
+	Polyobj_Move(1, 7, 192, 70);
+	Polyobj_Move(3, 7, 192, 70);
+	Polyobj_Move(2, 20, 192, 198);
+	Polyobj_Move(5, 20, 64, 198);
+	Polyobj_Move(4, 7, 64, 70);
+	Polyobj_Move(6, 7, 64, 70);
+	delay(35*2);
+	for(int lift=10; lift>0; lift--)
+	{
+		SetFont("BIGFONT");
+		HudMessagebold(s:"The cargolifts will leave in ",d:lift,s:" seconds..."; HUDMSG_FADEINOUT, 0, CR_RED, 0.5, 0.2, 0.4);
+		delay(35);
+	}
+	Polyobj_Move(2, 20, 64, 198);
+	Polyobj_Move(1, 7, 64, 70);
+	Polyobj_Move(3, 7, 64, 70);
+	Polyobj_Move(4, 7, 192, 70);
+	Polyobj_Move(6, 7, 192, 70);
+	Polyobj_Move(5, 20, 192, 198);
+	delay(35*3);
+	thingsound(95,"sound/bigliftsequence",255);
+	delay(35);
+	Ceiling_LowerAndCrush(120,1,5,2); //ceiling lowers a bit to prevent people from blocking the lift. //ZH2 Fix[AQW] crusher hexen mode & dmg to 5.
+	for(int spd=2;spd<=25;spd++)
+	{
+		floorandceiling_raisebyvalue(94,spd,spd);
+		tagwait(94);
+	}
+	floorandceiling_raisebyvalue(94,25,200);
+	tagwait(94);
+	for(int spd2=25;spd2>=2;spd2--)
+	{
+		floorandceiling_raisebyvalue(94,spd2,spd2);
+		tagwait(94);
+	}
+	SETFONT("SMALLFONT");
+	HudMessagebold(s:"Vent paths have opened..."; HUDMSG_FADEOUT, 0, CR_GRAY, 0.5, 0.2, 2.0);
+	SetLineTexture(117, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+	floor_lowertolowest(118,15);
+	delay(70);
+	Polyobj_Move(7, 7, 192, 70);
+	Polyobj_Move(9, 7, 192, 70);
+	Polyobj_Move(8, 20, 192, 198);
+	Polyobj_Move(11, 20, 64, 198);
+	Polyobj_Move(10, 7, 64, 70);
+	Polyobj_Move(12, 7, 64, 70);
+}
+
+//minecart road cave-in
+script 17 (void)
+{
+	if(script17_executed==true)terminate;
+	else  script17_executed=true;
+	floorandceiling_lowerbyvalue(105,50,138);
+	tagwait(105);
+	radius_quake(5,105,0,20,102);
+	floorandceiling_lowerbyvalue(106,50,158);
+	floorandceiling_lowerbyvalue(105,20,20);
+	floor_lowerbyvalue(96,20,20);
+	floor_lowerbyvalue(97,20,20);
+	floor_lowerbyvalue(99,20,20);
+	floor_lowerbyvalue(103,20,20);
+	floor_lowerbyvalue(104,20,20);
+	tagwait(106);
+	SetLineBlocking(107, BLOCK_NOTHING);
+	floorandceiling_lowerbyvalue(106,20,150);
+	floorandceiling_lowerbyvalue(105,20,150);
+	floor_lowerbyvalue(96,20,150);
+	floor_lowerbyvalue(97,20,150);
+	floor_lowerbyvalue(99,20,150);
+	floor_lowerbyvalue(103,20,150);
+	floor_lowerbyvalue(104,20,150);
+	floor_lowerbyvalue(98,4,25);
+	floor_lowerbyvalue(100,4,25);
+	floor_lowerbyvalue(101,4,25);
+	tagwait(98);
+	floor_lowerbyvalue(98,20,100);
+	floor_lowerbyvalue(100,20,100);
+	floor_lowerbyvalue(101,20,100);
+}
+
+script 25 (int x) //Experiment
+{
+	Switch(x)
+	{
+
+
+		Case 1:
+			If(CheckInventory("ZH2LegacyZe29KeycardWhite") && CheckInventory("ZH2LegacyZe29KeycardRed") && CheckInventory("ZH2LegacyZe29KeycardBlue") && CheckInventory("ZH2LegacyZe29KeycardGreen"))
+			{
+				activatorsound("sound/machinestart1",255);
+				floorandceiling_raisebyvalue(152,10,256);
+				SetLineBlocking(165, BLOCK_NOTHING);
+				tagwait(152);
+				delay(35*3);
+				floorandceiling_lowerbyvalue(152,10,256);
+				tagwait(152);
+			}
+			else
+			{
+				activatorsound("sound/denied1",255);
+			}
+			Break;
+
+
+		Case 2:
+			Experiment_activated = true;
+			Music::SetMusic("D_NULL");
+			floor_lowertolowest(171,1);
+
+			delay(35);
+
+			acs_execute(11,0,4,0,0);
+			thing_activate(173);
+			SetLineTexture(174, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+			SetLineTexture(174, SIDE_BACK, TEXTURE_MIDDLE, "-");
+			ambientsound("world/purgealarm",255);
+			setfont("BIGFONT");
+			HudMessagebold(n:0, s:" released experiment SC01.\n\prepare for emergency teleportation."; HUDMSG_FADEINOUT, 0, CR_RED, 0.5, 0.2, 8.0);
+			SetActivator(-1);
+
+			delay(35*3);
+
+			thing_activate(175);
+			SetLineTexture(176, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+			SetLineBlocking(176, BLOCK_NOTHING);
+
+			delay(35*2);
+
+			ambientsound("world/purgealarm",255);
+
+			delay(35*3);
+
+			fadeto(0,0,0,1.0,1.0);
+
+			delay(35*2);
+
+			fadeto(255,0,0,1.0,1.0/3);
+
+			delay(35/3);
+
+			fadeto(0,0,0,0,0.5);
+			Experiment_camera=true;
+			acs_execute(10,0,0,0,0);
+			ambientsound("world/bloodytele",255);
+			radius_quake(8,35*5,0,5,180);
+
+			delay(35*2);
+
+			SetLineTexture(177, SIDE_FRONT, TEXTURE_MIDDLE, "PRPLSKY");
+			changefloor(178,"CREEPZ");
+			scroll_floor(178,0,0,0);
+			changeceiling(7,"BLACK");
+			changeceiling(8,"BLACK");
+			changefloor(179,"BLACK");
+
+			delay(35/2+35);
+
+			fadeto(255,0,0,1.0,1.0/3);
+
+			delay(35/3);
+
+			fadeto(0,0,0,0,0.5);
+
+
+			for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+			{
+				int tid = Identity::GetTid(i);
+				if(Player::GetPlayerIsZombie(i))
+				{
+					Teleportother(tid, 183+i, 0);
+				}
+				else
+				{
+					Teleportother(tid, 215+i, 0);
+				}
+			}
+
+			Experiment_camera=false;
+			ChangeCamera(0, 1, 0);
+
+			delay(35*2);
+
+			HudMessagebold(s:"Emergency teleportation failed.\n\Warning, experiment SC01 is loose."; HUDMSG_FADEINOUT, 0, CR_RED, 0.5, 0.2, 5.0);
+			acs_execute(14,0,0);
+
+			delay(35*4);
+
+			ambientsound("sound/deepbell",255);
+			spawnspot("ZH2LegacyZe29Experiment",182,100,0);
+			//acs_execute(12,0,random(0,1));
+			acs_execute(15,0,0,0,0);
+			Break;
+	}
+}
+
+
+
+/*    ------------------------    RESISTS    ------------------------    */
+
+
+//First resist
+Script 3 (void)
+{
+	if(script3_executed==true)terminate;
+	else  script3_executed=true;
+	delay(70);
+	SETFONT("SMALLFONT");
+	HudMessageBold(s:"\ciMoving the rocks"; HUDMSG_TYPEON, 0, CR_WHITE, 0.5, 0.17, 1.0);
+	delay(70);
+	SetActivator(-1);
+	for(resist1 = resist1; resist1 > 0; resist1--)
+	{
+		MrResist(resist1, "\ciMoving the rocks", CR_WHITE);
+		Delay(35);
+	}
+	floor_lowertolowest(4,999);
+	SetLineBlocking(5, BLOCK_NOTHING);
+	changefloor(4,"FSDROCK3");
+}
+
+//Second resist
+Script 4 (void)
+{
+	if(script4_executed==true)terminate;
+	else  script4_executed=true;
+	acs_execute(11,0,1,0,0);
+	SETFONT("SMALLFONT");
+	HudMessageBold(s:"\ciArming dynamite"; HUDMSG_TYPEON, 0, CR_WHITE, 0.5, 0.17, 1.0);
+	delay(70);
+	SetActivator(-1);
+	for(resist2 = resist2; resist2 > 0; resist2--)
+	{
+		MrResist(resist2, "\ciArming dynamite", CR_WHITE);
+		Delay(35);
+	}
+	floor_lowerbyvalue(11,1,15);
+	floorandceiling_lowerbyvalue(12,1,15);
+	delay(18);
+	spawnspot("ZH2LegacyZE29Explosion",13,0,0);
+	thing_remove(13);
+	delay(5);
+	spawnspot("ZH2LegacyZE29Explosion",14,0,0);
+	thing_remove(14);
+	radius_quake(5,150,0,20,22);
+	delay(5);
+	spawnspot("ZH2LegacyZE29Explosion",15,0,0);
+	thing_remove(15);
+	delay(5);
+	spawnspot("ZH2LegacyZE29Explosion",16,0,0);
+	thing_remove(16);
+	delay(5);
+	spawnspot("ZH2LegacyZE29Explosion",17,0,0);
+	thing_remove(17);
+	delay(5);
+	spawnspot("ZH2LegacyZE29Explosion",18,0,0);
+	thing_remove(18);
+	delay(5);
+	spawnspot("ZH2LegacyZE29Explosion",19,0,0);
+	thing_remove(19);
+	delay(5);
+	spawnspot("ZH2LegacyZE29Explosion",20,0,0);
+	thing_remove(20);
+	delay(5);
+	spawnspot("ZH2LegacyZE29Explosion",21,0,0);
+	thing_remove(21);
+	delay(5/2);
+	floor_lowerbyvalue(25,24,416);
+	delay(35/2);
+	floor_lowerbyvalue(27,24,400);
+	floor_lowerbyvalue(30,24,408);
+	delay(9);
+	floor_lowerbyvalue(24,28,384);
+	floor_lowerbyvalue(26,28,432);
+	delay(35/2);
+	floor_lowerbyvalue(28,32,424);
+	floor_lowerbyvalue(29,32,392);
+	delay(5);
+	floor_lowerbyvalue(31,36,376);
+}
+
+//Thirth resist
+Script 5 (void)
+{
+	if(script5_executed==true)terminate;
+	else  script5_executed=true;
+	SETFONT("SMALLFONT");
+	HudMessageBold(s:"\ciOverriding strange doors"; HUDMSG_TYPEON, 0, CR_WHITE, 0.5, 0.17, 1.0);
+	delay(70);
+	SetActivator(-1);
+	for(resist3 = resist3; resist3 > 0; resist3--)
+	{
+		MrResist(resist3, "\ciOverriding strange doors", CR_WHITE);
+		Delay(35);
+	}
+	ceiling_raisebyvalue(37,8,100);
+	ceiling_raisebyvalue(38,5,20);
+	tagwait(38);
+	spawnspot("ZH2LegacyZE29Explosion",39,0,0);
+}
+
+//fourth resist
+script 8 (void)
+{
+	if(script8_executed==true)terminate;
+	else  script8_executed=true;
+	acs_execute(11,0,2,0,0);
+	thing_activate(69);
+	SetLineTexture(70, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+	SetLineTexture(70, SIDE_BACK, TEXTURE_MIDDLE, "-");
+	thingsound(60,"sound/bigcrash1",255);
+	radius_quake(5,70,0,20,60);
+	Light_ChangeToValue(67,128);
+	delay(18);
+	thing_activate(74);
+	SetLineTexture(72, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+	SetLineTexture(72, SIDE_BACK, TEXTURE_MIDDLE, "-");
+	Light_ChangeToValue(71,128);
+	delay(18);
+	floor_lowerbyvalue(59,15,90);
+	floor_lowerbyvalue(64,15,90);
+	floor_lowerbyvalue(65,15,90);
+	floor_lowerbyvalue(66,15,90);
+	delay(35);
+	SetLineBlocking(163, BLOCK_NOTHING);
+	delay(70);
+	SETFONT("SMALLFONT");
+	HudMessageBold(s:"\ciBreaking through the far wall"; HUDMSG_TYPEON, 0, CR_WHITE, 0.5, 0.17, 1.0);
+	delay(70);
+	SetActivator(-1);
+	for(resist4 = resist4; resist4 > 0; resist4--)
+	{
+		MrResist(resist4, "\ciBreaking through the far wall", CR_WHITE);
+		Delay(35);
+	}
+	floor_lowerbyvalue(75,5,40);
+	floor_lowerbyvalue(76,5,53);
+	floor_lowerbyvalue(77,5,48);
+	floor_lowerbyvalue(78,5,57);
+	floor_lowerbyvalue(79,6,65);
+	floor_lowerbyvalue(80,6,75);
+	floor_lowerbyvalue(81,6,70);
+	delay(35);
+	floor_raisebyvalue(82,4,32);
+	floor_raisebyvalue(83,2,16);
+	floor_raisebyvalue(84,1,8);
+	floor_raisebyvalue(85,3,24);
+	changefloor(82,"FLAT5_8");
+	changefloor(83,"FLAT5_8");
+	changefloor(84,"FLAT5_8");
+	changefloor(85,"FLAT5_8");
+}
+
+script 22 (void) //final resist
+{
+
+int activatorid = PlayerNumber();
+SetActivator(-1);
+
+    acs_execute(11,0,3,0,0);
+    SETFONT("SMALLFONT");
+    HudMessageBold(s:"\ciBlowing up the final wall"; HUDMSG_TYPEON, 0, CR_WHITE, 0.5, 0.17, 1.0);
+
+    delay(70);
+
+	for(resist5 = resist5; resist5 > 0 && resist5!=3; resist5--)
+	{
+		MrResist(resist5, "\ciBlowing up the final wall", CR_WHITE);
+		Delay(35);
+	}
+
+    setfont("BIGFONT");
+    HudMessagebold(s:"Fuse interrupted"; HUDMSG_FADEINOUT, 0, CR_RED, 0.5, 0.2, 1.0);
+    Music::SetMusic("D_NULL");
+
+    delay(18);
+
+    ambientsound("ambient/warning1",255);
+
+    delay(35*3+18);
+
+    ambientsound("world/announcevoice",255);
+
+    SETFONT("BIGFONT");
+    HudMessagebold(s:"Warning: \cjunknown bio lifeform detected in the mines. Self descruction in..."; HUDMSG_FADEINOUT, 0, CR_RED, 0.5, 0.2, 13.0);
+
+    delay(35*4);
+
+    SETFONT("BIGFONT");
+    HudMessagebold(s:"5"; HUDMSG_FADEINOUT, 0, CR_RED, 0.5, 0.23, 0.6);
+
+    delay(35+25);
+
+    SETFONT("BIGFONT");
+    HudMessagebold(s:"4"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.23, 0.6);
+
+    delay(35);
+
+    SETFONT("BIGFONT");
+    HudMessagebold(s:"3"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.23, 0.6);
+
+    delay(35);
+
+    SETFONT("BIGFONT");
+    HudMessagebold(s:"2"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.23, 0.6);
+
+    delay(35);
+
+    SETFONT("BIGFONT");
+    HudMessagebold(s:"1"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.23, 0.6);
+
+    delay(35);
+
+    SETFONT("BIGFONT");
+    HudMessagebold(s:"0"; HUDMSG_FADEINOUT, 0, CR_RED, 0.5, 0.23, 5.0);
+    radius_quake(5,350,0,20,600);
+    spawnspot("ZH2LegacyZE29Explosion",133,0,0);
+    thing_remove(133);
+    floor_lowerbyvalue(134,2,30);
+    floor_lowerbyvalue(135,4,60);
+    floor_lowerbyvalue(136,8,120);
+
+    delay(18);
+
+    Music::SetMusic("D_TUROK");
+
+    delay(35*3);
+
+    SETFONT("SMALLFONT");
+    HudMessagebold(s:"\clThe explosions caused the canyon and cave area's to slowly collapse!\n\You have little time to get out before the place comes down!"; HUDMSG_FADEINOUT, 0, CR_YELLOW, 0.5, 0.5, 5.0);
+
+    delay(35*4);
+
+    acs_execute(23,0,1,29,0);
+
+    delay(35*2);
+
+    spawnspot("ZH2LegacyZE29Explosion",137,0,0);
+    thing_remove(137);
+    floor_lowerbyvalue(138,999,30);
+    floor_lowerbyvalue(139,999,25);
+    floor_lowerbyvalue(140,999,20);
+    floor_lowerbyvalue(141,999,30);
+    floor_lowerbyvalue(142,999,20);
+    ceiling_raisebyvalue(138,999,50);
+    ceiling_raisebyvalue(139,999,45);
+    ceiling_raisebyvalue(140,999,40);
+    ceiling_raisebyvalue(141,999,35);
+    ceiling_raisebyvalue(142,999,25);
+    Light_ChangeToValue(143,128);
+
+    delay(35*3);
+
+    ambientsound("world/nuke1",50);
+    radius_quake(2,210,0,5,600);
+
+    delay(350);
+
+    ambientsound("world/nuke1",250);
+    radius_quake(5,210,0,5,600);
+
+    delay(350);
+
+    ambientsound("world/nuke1",50);
+    radius_quake(3,315,0,5,600);
+
+    delay(700);
+
+    ambientsound("world/nuke1",50);
+    radius_quake(3,420,0,5,600);
+
+    delay(210);
+
+    ambientsound("world/nuke1",250);
+    radius_quake(5,420,0,5,600);
+
+    delay(700);
+
+    ambientsound("world/nuke1",250);
+    radius_quake(5,35,0,5,600);
+
+    delay(35);
+
+    ambientsound("world/nuke1",250);
+    radius_quake(8,350,0,5,600);
+
+    delay(35*13);
+
+    floor_raiseandcrush(32,15,99999); //the wall that raises at the panic room (experiment)
+    floor_raiseandcrush(33,15,99999);
+
+    delay(35*5);
+
+    Experiment_bunkerclosed = true;
+    ACS_TERMINATE(23,0);
+    SetFont("BIGFONT");
+    HudMessageBold(s:"00 : 00 : 00"; HUDMSG_FADEOUT, 450, CR_RED, 0.5, 0.2, 3.0);
+    SetFont("DOOMFONT");
+    HudMessageBold(s:"Canyon + cave system collapsion!"; HUDMSG_FADEOUT, 451, CR_RED, 0.5, 0.17, 3.0);
+    Ceiling_LowerAndCrush(158,15,10,2); //ZH2 [AQW] crusher to hexen mode & dmg to 10.
+	TagWait(158);
+	Ceiling_LowerByValueTimes8(158,16,1);
+    ambientsound("world/nuke1",255);
+    fadeto(100,100,100,0.5,5.0);
+    radius_quake(8,350,0,20,600);
+    floor_lowerbyvalue(161,5,112);
+    delay(35*3);
+
+    EndZEGameCanyonRun();
+
+    tagwait(158);
+
+    fadeto(0,0,0,0.0,2.0);
+
+	//experiment
+
+    SetLineTexture(34, SIDE_FRONT, TEXTURE_MIDDLE, "VADOOR2"); //cheap way to make it look like the door is closed
+    SetLineBlocking(34, BLOCK_EVERYTHING);
+    SetLineTexture(169, SIDE_FRONT, TEXTURE_MIDDLE, "-"); //wall that broke
+    SetLineBlocking(169, BLOCK_NOTHING);
+    floorandceiling_RaiseByValue(166,999,64);
+    changefloor(166,"NTECHDMG");
+    ChangeCeiling(166,"NTECHDMG");
+    spawnspot("ZH2LegacySwitchableFireHugeClient",167,0,0);
+
+    delay(35*5);
+
+    floor_movetovalue(33,5,-368,0);
+
+    delay(20);
+
+    floor_movetovalue(32,5,-352,0);
+
+//experiment resist
+
+    delay(35*5);
+
+    SETFONT("SMALLFONT");
+    HudMessageBold(s:"\ciReleasing gasses inside the control room"; HUDMSG_TYPEON, 0, CR_WHITE, 0.5, 0.17, 1.0);
+
+    delay(105);
+
+    for(resist6 = resist6; resist6 > 0; resist6--)
+    {
+        MrResist(resist6, "\ciReleasing gasses inside the control room", CR_WHITE);
+        Delay(35);
+        if(Experiment_activated==true)
+        {
+            terminate;
+        }
+    }
+    {
+        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+        {
+			int tid = Identity::GetTid(i);
+            if(Experiment_reached[i])
+            {
+				Thing_Damage(tid, 10000, MOD_EXIT);
+				thingsound(tid, "world/gas1", 255);
+            }
+
+            //fadeto is a bitch because it doesnt use TIDs
+            if(PlayerInGame(i) && Experiment_reached[i])
+            {
+                SetActivator(tid);
+                fadeto(0, 100, 0, 1.0, 2.0);
+            }
+        }
+    }
+}
+
+//-------------------------------------------------------
+
+script 27 OPEN clientside //software support
+{
+    if(getplayerrender()!=SOFTWARE_PLAYER) Terminate;
+    {
+        Log(s:"Software mode has been detected.");
+        Log(s:"Map brightness increased and all water textures + colors have been improved to support software rendering.");
+
+        delay(35*3);
+
+        //due to the greenish color my new water has in software, i change it when people use software rendering.
+        changefloor(149,"FWATER1");
+
+        changefloor(247,"FWATER1");
+        changeceiling(247,"FWATER1");
+        sector_setcolor(247,100,100,255);
+        SetLineTexture(267, SIDE_FRONT, TEXTURE_MIDDLE, "FWATER1");
+
+        SetLineTexture(269, SIDE_FRONT, TEXTURE_MIDDLE, "WFALL1");
+        SetLineTexture(271, SIDE_FRONT, TEXTURE_MIDDLE, "WFALL1");
+
+        for(int area=0;area<=999;area++) //random tag because i'm too damn lazy to check how many tags are used...
+        {
+            Light_fade(area,192,35);
+        }
+    }
+}
+
+//-------------- custom stuff --------------
+
+function int GetPlayerRender(void) {return GetCVar ("vid_renderer");}
+
+function int sqrt2 (int x){
+	int r;
+	x = x + 1 >> 1;
+	while (x > r)
+		x -= r++;
+	return r;
+}
+
+function int ibm_distance (int tid1, int tid2){
+	int x, y, z, d;
+	x = (GetActorX(tid1) - GetActorX(tid2))/65536;
+	y = (GetActorY(tid1) - GetActorY(tid2))/65536;
+	z = (GetActorZ(tid1) - GetActorZ(tid2))/65536;
+	d = sqrt2( x*x + y*y + z*z );
+	return d;
+}
+
+// ZH2: Not supported for now, because it's a mess. The only issue for now is that this will cause experiment to target zombies.
+/*
+script 12 (int who, int code){ // Monster ai (given by ibm)
+	int safe_tid=ActivatorTID();
+	int wface_hatee=0;//Code 1414325 was removed, it would release whiteface and call script 35
+	int i=0,j=0;
+	int shorter_distance;
+	int farest_distance=0;
+  int ghoul_target=0;
+  int ghoul_target_distance=0;
+	while(humancounter()>=1){
+		i=0;
+		wface_hatee=0;
+		farest_distance=0;
+		shorter_distance=2147483647;
+		while(i<BCSUtils::MAX_PLAYERS){
+			if(thingcount(t_none,i+600)==1){
+				if(Player::GetPlayerHuman(i)){
+					 if(i+600!=safe_tid || humancounter()==1){
+						j=ibm_distance (100,i+600);
+						if(who==1){
+							//RAVISHING
+							if(j<shorter_distance){
+								shorter_distance=j;
+								wface_hatee=i+600;
+							}
+						}else{ //WHITE FACE
+							if(j>farest_distance){
+								farest_distance=j;
+								wface_hatee=i+600;
+							}
+						}
+					}
+				}
+			}
+			i++;
+			delay(1);
+		}
+		ghoul_target=wface_hatee;
+		if(shorter_distance==2147483647)
+			ghoul_target_distance=wface_hatee;
+		else
+			ghoul_target_distance=shorter_distance;
+		Thing_Hate(100,wface_hatee,6);
+		while(thingcount(T_NONE,wface_hatee)==1){
+			if(Player::GetPlayerZombie(wface_hatee))
+			break;
+			delay(35);
+		}
+		delay(1);
+	}
+}*/
+
+Script 23 (int Minutes, int Seconds) //timer for final resist
+{
+        Int NewMinutes = Minutes;
+        Int NewSeconds = Seconds;
+        Int Milliseconds = 35;
+        Bool CounterDone = False;
+        Str StrMin;
+        Str StrSec;
+        Str StrMil;
+        Str Reason1 = "Canyon + cave system collapsion!";
+
+                For(Milliseconds=35; CounterDone == False; Milliseconds--)
+                {
+                            If(NewMinutes <= 0)
+                            {
+                                If(NewSeconds <= 0)
+                                {
+                                    If(Milliseconds <= 0)
+                                    {
+                                        CounterDone = True;
+                                        NewMinutes = 0;
+                                        NewSeconds = 0;
+                                        Milliseconds = 0;
+                                        StrMin = "00";
+                                        StrSec = "00";
+
+                                        Str ReturnValue2;
+
+                                        ReturnValue2 = StrParam(s:StrMin, s:" : ", s:StrSec, s:" : 0", d:(Milliseconds*29)/10);
+                                        ResistMSG(ReturnValue2, Reason1);
+                                        Terminate;
+                                    }
+                                }
+                            }
+
+                    If(Milliseconds <= 0)
+                    {
+                        NewSeconds --;
+                            If(NewSeconds < 0)
+                            {
+                                NewSeconds = 59;
+                                NewMinutes --;
+                            }
+
+                        Milliseconds = 35;
+                    }
+
+
+                            If(NewMinutes < 10)
+                            {
+                                StrMin = StrParam(s:"0", d:NewMinutes);
+                            }
+                            Else
+                            {
+                                StrMin = StrParam(d:NewMinutes);
+                            }
+
+                        If(NewSeconds < 10)
+                        {
+                            StrSec = StrParam(s:"0", d:NewSeconds);
+                        }
+                        Else
+                        {
+                            StrSec = StrParam(d:NewSeconds);
+                        }
+
+                        If((Milliseconds*29)/10 < 10)
+                        {
+                            StrMil = StrParam(s:"0", d:(Milliseconds*29)/10);
+                        }
+                        Else
+                        {
+                            StrMil = StrParam(d:(Milliseconds*29)/10);
+                        }
+
+                    Str ReturnValue;
+
+                    ReturnValue = StrParam(s:StrMin, s:" : ", s:StrSec, s:" : ", s:StrMil);
+                    ResistMSG(ReturnValue, Reason1);
+                    Delay(1);
+                }
+}
+
+function void EndZEGameCanyonRun (void) //modified endzegame()
+{
+    for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+	{
+		if(!game::GetPlayerIsSafe(i) && !Experiment_reached[i])
+			Thing_Damage(Identity::GetTid(i), 10000, MOD_EXIT);
+	}
+}
+
+function void MrResist (int restime, str whyresist, str color){ //custom resist
+SetFont("BIGFONT");
+if (restime < 31){
+HudMessageBold(s:"Resist for \cj", d:restime, s:"\cd seconds"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 0.5, 0.5);
+}
+if (restime < 20){
+HudMessageBold(s:"Resist for \cq", d:restime, s:"\cd seconds"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 0.5, 0.5);
+}
+if (restime < 15){
+HudMessageBold(s:"Resist for \ck", d:restime, s:"\cd seconds"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 0.5, 0.5);
+}
+if (restime < 10){
+HudMessageBold(s:"Resist for \ci", d:restime, s:"\cd seconds"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 0.5, 0.5);
+}
+if (restime < 5){
+HudMessageBold(s:"Resist for \cg", d:restime, s:"\cd seconds"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 0.5, 0.5);
+}
+if (restime < 2){
+HudMessageBold(s:"Resist for \cm", d:restime, s:"\cd second"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 1.0, 1.0); //this is prettier
+}
+SetFont("SMALLFONT");
+HudMessageBold(s:whyresist; HUDMSG_FADEOUT, 998, color, 0.5, 0.17, 1.5, 0.5);}
+
+Function void ResistMSG(Str Time, Str smallmsg)
+{
+	SetFont("BIGFONT");
+	HudMessageBold(s:Time; HUDMSG_PLAIN, 450, CR_GRAY, 0.5, 0.2, 0.0);
+	SetFont("DOOMFONT");
+	HudMessageBold(s:smallmsg; HUDMSG_PLAIN, 451, CR_RED, 0.5, 0.17, 0.0);
+}

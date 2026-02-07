@@ -6,11 +6,16 @@ strict namespace Game
 {
     // Note these hardcode to always return 200 in case the value is unset.
     // Should never happen, but at least it prevents questionable deaths on infect which makes it clear it's unconfigured.
-    internal int GetInitialZombieMaxHealth() { return ZH2Game::GameContext.InitialZombieMaxHealth != 0 ? ZH2Game::GameContext.InitialZombieMaxHealth : 200; }
-    internal int GetInitialZombieMinHealth() { return ZH2Game::GameContext.InitialZombieMinHealth != 0 ? ZH2Game::GameContext.InitialZombieMinHealth : 200; }
-    internal int GetRegularZombieMaxHealth() { return ZH2Game::GameContext.RegularZombieMaxHealth != 0 ? ZH2Game::GameContext.RegularZombieMaxHealth : 200; }
-    internal int GetRegularZombieMinHealth() { return ZH2Game::GameContext.RegularZombieMaxHealth != 0 ? ZH2Game::GameContext.RegularZombieMaxHealth : 200; }
+    internal int GetInitialZombieMaxHealth() { return GetZombieHealthOrDefault(ZH2Game::GameContext.InitialZombieMaxHealth); }
+    internal int GetInitialZombieMinHealth() { return GetZombieHealthOrDefault(ZH2Game::GameContext.InitialZombieMinHealth); }
+    internal int GetRegularZombieMaxHealth() { return GetZombieHealthOrDefault(ZH2Game::GameContext.RegularZombieMaxHealth); }
+    internal int GetRegularZombieMinHealth() { return GetZombieHealthOrDefault(ZH2Game::GameContext.RegularZombieMinHealth); }
+    internal int GetZombieHealthOrDefault(int health)
+    {
+        return health != 0 ? health : 200;
+    }
 
+    // Helper function that sets zombie health values on map start.
     internal void SetZombieHealthValues(bool initial, int max, int min)
     {
         if (initial)
@@ -30,7 +35,7 @@ strict namespace Game
     {
         int max = GetInitialZombieMaxHealth();
         int min = GetInitialZombieMinHealth();
-        return min + GetPlayerHPFactor(id) * (max - min);
+        return DetermineHealthCore(id, min, max);
     }
 
     // Determines what health to provide to the given player if they were to become a regular zombie.
@@ -38,13 +43,19 @@ strict namespace Game
     {
         int max = GetRegularZombieMaxHealth();
         int min = GetRegularZombieMinHealth();
-        return min + GetPlayerHPFactor(id) * (max - min);
+        return DetermineHealthCore(id, min, max);
     }
 
-    internal int GetPlayerHPFactor(int id)
+    internal int DetermineHealthCore(int id, int min, int max)
+    {
+        fixed ratio = GetPlayerHPFactor(id);
+        return min + int(ratio * fixed(max - min));
+    }
+
+    internal fixed GetPlayerHPFactor(int id)
     {
         int tid = Identity::GetTid(id);
         return BCSUtils::Clamp(
-            fixed(BCSUtils::GetActorHealth(tid) / BCSUtils::GetActorSpawnHealth(tid)), 0.0, 1.0);
+            fixed(BCSUtils::GetActorHealth(tid)) / fixed(BCSUtils::GetActorSpawnHealth(tid)), 0.0, 1.0);
     }
 }

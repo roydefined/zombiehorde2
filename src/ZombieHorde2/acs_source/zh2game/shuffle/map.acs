@@ -4,11 +4,33 @@
 
 strict namespace Shuffle
 {
+    internal void PrepareVotableMaps(int flags)
+    {
+        _context.BufferIteratorSize = 0;
+
+        int currentMapPosition = GetMapPosition(MAPPOSITION_CURRENT);
+        int nextMapPosition = GetMapPosition(MAPPOSITION_NEXT);
+
+        for (int i = 1; i <= GetMapRotationSize(); i++)
+        {
+            if ((flags & FLAGIGNORECURRENTMAP) && i == currentMapPosition)
+                continue;
+
+            if ((flags & FLAGIGNORENEXTMAP) && i == nextMapPosition)
+                continue;
+
+            if ((flags & FLAGIGNOREPLAYEDMAP) && GetMapRotationInfo(i, MAPROTATION_USED))
+                continue;
+
+            _context.Buffer[_context.BufferIteratorSize++] = i;
+        }
+    }
+
     // Votable maps have a few additional steps to ensure a valid list.
     // - We make sure not to include the current map.
     // - We make sure not to include the next map.
     // - We make sure not to include a map that was played already IF the cvar is set.
-    internal void ShuffleVotableMaps(int flags = FLAGIGNORECURRENTMAP | FLAGIGNORENEXTMAP)
+    internal void ShuffleVotableMaps(int flags)
     {
         if (!ZH2Game::GetVoteIncludePlayedMaps())
             flags |= FLAGIGNOREPLAYEDMAP;

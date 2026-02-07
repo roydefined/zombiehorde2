@@ -14,36 +14,68 @@ strict namespace Game
         {
             { "\ciMission failed!", "\ciFission mailed!" },
             { "\ckHow did you manage to do this?", "\ckWhat the...?!" },
-            (raw)0,
+            { "NWIN" },
+
+            1,
+            { "D_WINN" }
         },
         {
             { "\chHumans \cjwin!", "\chHumans \cjVictory!" },
             { "\cjHumanity is safe... for now!", "\cjDon't mess with humans, bro!" },
-            "D_WINHUM",
+            { "HWIN_OLD", "HWIN_NEW" },
+
+            4,
+            { "D_WINH1", "D_WINH2", "D_WINH3", "D_WINH4" },
         },
         {
             { "\cgZombies \cjwin!", "\cgZombies \cjVictory!" },
             { "\cgBring bigger guns next time!", "\cgEarth is their new home now!" },
-            "D_WINZOM",
+            { "ZWIN_OLD", "ZWIN_NEW" },
+
+            6,
+            { "D_WINZ1", "D_WINZ2", "D_WINZ3", "D_WINZ4", "D_WINZ5", "D_WINZ6" },
         },
     };
+
+    // HACK
+    // I don't have a proper fix for this yet, but this will prevent the final music track restarting when `ClientBuildEnding` is called multiple times.
+    internal bool _hasStartedEndMusic;
 
     // Called clientside to build up the ending screen.
     internal void ClientBuildEnding()
     {
-        // Set a random top and bottom message.
-        int index = (int)Game::GetWinningSpecie() - 1;
+        WinningSpecieT winningSpecie = Game::GetWinningSpecie();
+
+        // Nobody won yet.
+        if (winningSpecie == Game::SPECIENONE)
+            return;
+
+        int index = (int)winningSpecie - 1;
         EndingTypeT& ending = _endingTypes[index];
+
+        // The graphic needs a separate check for zombies as this one has two graphics.
+        // TODO: This does not account for when the skin is overridden
+        ZH2Game::GameContext.WinGraphic = winningSpecie == Game::SPECIETIE
+            ? ending.WinGraphics[0]
+            : ending.WinGraphics[(int)!Map::GetCurrentMapIsLegacyMap()];
+
+        // Messages
         ZH2Game::GameContext.WinMessageTop = ending.WinMessagesTop[Random(0, lengthof(ending.WinMessagesTop) - 1)];
         ZH2Game::GameContext.WinMessageBottom = ending.WinMessagesBottom[Random(0, lengthof(ending.WinMessagesBottom) - 1)];
 
         // Play a track for the winning type.
-        str track = ending.track;
-        if (track != (raw)0 && track != "")
-            Music::SetMusic(track);
+        if (ending.TrackCount != 0 && !_hasStartedEndMusic)
+        {
+            int index = Random(0, ending.TrackCount - 1);
+            str track = ending.Tracks[index];
+            if (track != (raw)0 && track != "")
+                SetMusic(track);
+
+            _hasStartedEndMusic = true;
+        }
 
         // Set the ordered lists indicating the final stats.
-        
+
         Shuffle::SortByHumanKills();
         ZH2Game::GameContext.HumanKillsOrderedCount = Shuffle::GetRelevantSize();
         for (int i = 0; i < ZH2Game::GameContext.HumanKillsOrderedCount; ++i)
@@ -79,7 +111,7 @@ strict namespace Game
     {
         ZH2Game::GameContext.EndReason = reason;
     }
-    
+
     internal EndReasonT GetEndReason()
     {
         return ZH2Game::GameContext.EndReason;
