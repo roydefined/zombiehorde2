@@ -6,7 +6,7 @@ strict namespace Decorate
 {
     script "zh2_dec_checkautousekevlar"
     {
-        if (ZH2Game::GetAutoUseConsumableItems(PlayerNumber()))
+        if (ZH2Game::GetAutoUseKevlars(PlayerNumber()))
             UseKevlar();
     }
 
@@ -32,7 +32,7 @@ strict namespace Decorate
 
     script "zh2_dec_checkautouseenergy"
     {
-        if (ZH2Game::GetAutoUseConsumableItems(PlayerNumber()))
+        if (ZH2Game::GetAutoUseEnergyDrinks(PlayerNumber()))
             UseEnergy();
     }
 
@@ -41,7 +41,7 @@ strict namespace Decorate
         if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
         if (CheckInventory(ENERGY_ITEM) == 0) terminate;
 
-        Player::PanicStateT state = Player::GetPanicState();
+        Player::PlayerPanicStateT state = Player::GetPanicState();
         if (state == Player::PANICSTATEPANICKING)
         {
             Logger::LogActivator("You can't use this whilst panicking!");
@@ -68,7 +68,7 @@ strict namespace Decorate
 
     script "zh2_dec_checkautousemedikit"
     {
-        if (ZH2Game::GetAutoUseConsumableItems(PlayerNumber()))
+        if (ZH2Game::GetAutoUseMedikits(PlayerNumber()))
             UseMedikit();
     }
 
@@ -77,7 +77,7 @@ strict namespace Decorate
         if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
         if (CheckInventory(MEDIKIT_ITEM) == 0) terminate;
 
-        Player::PanicStateT state = Player::GetPanicState();
+        Player::PlayerPanicStateT state = Player::GetPanicState();
         if (state == Player::PANICSTATEPANICKING)
         {
             Logger::LogActivator("You can't use this whilst panicking!");
@@ -96,11 +96,11 @@ strict namespace Decorate
     {
         if (BCSUtils::GetActorHealth(0) == 100)
             return;
-            
+
         TakeInventory(MEDIKIT_ITEM, 1);
         HealThing(40);
     }
-    
+
     script "zh2_dec_useflarebox"
     {
         if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
@@ -123,27 +123,8 @@ strict namespace Decorate
         }
 
         TakeInventory(CURE_ITEM, 1);
-
-        // A zombie also gets cured.
-        str messagePart = "";
-        if (!Player::GetPlayerIsHuman(PlayerNumber()))
-        {
-            int genderInt = GetPlayerInfo(PlayerNumber(), PLAYERINFO_GENDER);
-            str gender = genderInt == 0 ? "himself"
-                : genderInt == 1 ? "herself"
-                : genderInt == 2 ? "themself"
-                : "itself";
-
-            messagePart = "has cured " + gender + " and ";
-            Game::CurePlayer(PlayerNumber());
-        }
-
-        Logger::LogBold("\cf" + BCSUTILS::PlayerName(PlayerNumber()) + "\cj " + messagePart + "is now immune against the virus!");
+        Game::CurePlayer(PlayerNumber(), Game::CURESOURCE_ITEM);
         Sync::SyncPlayers();
-
-        // As curing calls an event that removes powers, we must make sure to give this power AFTER so the reset does not affect it.
-        // TODO: Remove when we change events to call instantly.
-        Delay(const: 1);
 
         Power::GivePower(Power::POWERHUMANIMMUNITY);
     }
@@ -164,14 +145,14 @@ strict namespace Decorate
     {
         if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
         if (CheckInventory(SUICIDE_BOMB_ITEM) == 0) terminate;
-        
+
         // Check for confirmation.
         // If we want confirmation, don't use it yet.
         // Otherwise we can.
         if (CheckInventory(SUICIDE_BOMB_ITEM_CONFIRM_TIMESTAMP) < Timer())
         {
             Hud::ShowSuicideBombHud();
-            
+
             GiveInventory(SUICIDE_BOMB_ITEM_CONFIRM_TIMESTAMP, Timer() + SUICIDE_BOMB_ITEM_CONFIRM_TIMESTAMP_MAX_TICS);
             SetResultValue((int)false);
             terminate;

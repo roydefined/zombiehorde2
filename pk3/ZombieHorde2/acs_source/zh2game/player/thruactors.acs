@@ -1,0 +1,158 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    // This holds the relative positions of the spots where we check for space when we want to turn off ThruActors on a player.
+    // Center + 4 bottom corners + 4 top corners.
+    internal fixed _mapspotRelativeCoordinates[9][3];
+
+    internal void ThruActorsTics()
+    {
+        // Is the player in a state where they want to turn off ThruActors?
+        if (GetThruActorsState() != STATE_GOBACKDEFAULT)
+            return;
+
+        // Is there space to turn off ThruActors?
+        if (!GetHasSpace())
+            return;
+
+        BCSUtils::ChangeFlag("THRUACTORS", false);
+        SetThruActorsState(STATE_DEFAULT);
+
+        Sync::SyncPlayers();
+    }
+
+    /* ACTOR PROPERTY */
+    internal void SetThruActors(bool enable)
+    {
+        SetPlayerThruActors(PlayerNumber(), enable);
+    }
+
+    internal void SetPlayerThruActors(int id, bool enable)
+    {
+        int tid = Identity::GetTid(id);
+        PlayerThruActorsStateT currentState = GetPlayerThruActorsState(id);
+
+        // Ensure we're not already in the correct state.
+        bool doContinue = enable
+            ? currentState != STATE_THRUACTORS
+            : currentState != STATE_DEFAULT;
+
+        if (!doContinue)
+            return;
+
+        // We only enable the flag. We never disable it.
+        // The tic function will take care of that as it needs to ensure there is space.
+        // Also, if we're on STATE_GOBACKDEFAULT we still have the flag.
+        if (enable && currentState == STATE_DEFAULT)
+            BCSUtils::ChangeActorFlag(tid, "THRUACTORS", true);
+
+        // If we unset the state, we want to request the state to turn back.
+        PlayerThruActorsStateT nextState = enable ? STATE_THRUACTORS : STATE_GOBACKDEFAULT;
+        SetPlayerThruActorsState(id, nextState);
+
+        Sync::SyncPlayers();
+    }
+
+    /* PROPERTIES */
+    internal PlayerThruActorsStateT GetThruActorsState()
+    {
+        return GetPlayerThruActorsState(PlayerNumber());
+    }
+
+    internal PlayerThruActorsStateT GetPlayerThruActorsState(int id)
+    {
+        return ZH2Game::GameContext.Players[id].ThruActorsState;
+    }
+
+    internal void SetThruActorsState(PlayerThruActorsStateT state)
+    {
+        SetPlayerThruActorsState(PlayerNumber(), state);
+    }
+
+    internal void SetPlayerThruActorsState(int id, PlayerThruActorsStateT state)
+    {
+        ZH2Game::GameContext.Players[id].ThruActorsState = state;
+    }
+
+    internal PlayerThruActorsStateT GetThruActorsStateByIndex(int index)
+    {
+        if (index <= STATE_DEFAULT || index > STATE_GOBACKDEFAULT)
+            return STATE_DEFAULT;
+
+        static PlayerThruActorsStateT collection[] = { STATE_DEFAULT, STATE_THRUACTORS, STATE_GOBACKDEFAULT };
+        return collection[index];
+    }
+
+    /* SPACE CHECKER */
+
+    internal bool GetHasSpace()
+    {
+        return GetPlayerHasSpace(PlayerNumber());
+    }
+
+    internal bool GetPlayerHasSpace(int id)
+    {
+        int tid = Identity::GetTid(id);
+        fixed height = GetActorProperty(tid, APROP_HEIGHT);
+        fixed radius = GetActorProperty(tid, APROP_RADIUS);
+        fixed x = GetActorX(tid),
+              y = GetActorY(tid),
+              z = GetActorZ(tid);
+
+        // Center
+        _mapspotRelativeCoordinates[0][0] = 0.0;
+        _mapspotRelativeCoordinates[0][1] = 0.0;
+        _mapspotRelativeCoordinates[0][2] = height * 0.5;
+
+        // Bottom corners
+        _mapspotRelativeCoordinates[1][0] = radius;
+        _mapspotRelativeCoordinates[1][1] = radius;
+        _mapspotRelativeCoordinates[1][2] = 0.0;
+
+        _mapspotRelativeCoordinates[2][0] = -radius;
+        _mapspotRelativeCoordinates[2][1] = radius;
+        _mapspotRelativeCoordinates[2][2] = 0.0;
+
+        _mapspotRelativeCoordinates[3][0] = -radius;
+        _mapspotRelativeCoordinates[3][1] = -radius;
+        _mapspotRelativeCoordinates[3][2] = 0.0;
+
+        _mapspotRelativeCoordinates[4][0] = radius;
+        _mapspotRelativeCoordinates[4][1] = -radius;
+        _mapspotRelativeCoordinates[4][2] = 0.0;
+
+        // Top corners
+        _mapspotRelativeCoordinates[5][0] = radius;
+        _mapspotRelativeCoordinates[5][1] = radius;
+        _mapspotRelativeCoordinates[5][2] = height;
+
+        _mapspotRelativeCoordinates[6][0] = -radius;
+        _mapspotRelativeCoordinates[6][1] = radius;
+        _mapspotRelativeCoordinates[6][2] = height;
+
+        _mapspotRelativeCoordinates[7][0] = -radius;
+        _mapspotRelativeCoordinates[7][1] = -radius;
+        _mapspotRelativeCoordinates[7][2] = height;
+
+        _mapspotRelativeCoordinates[8][0] = radius;
+        _mapspotRelativeCoordinates[8][1] = -radius;
+        _mapspotRelativeCoordinates[8][2] = height;
+
+        for (int i = 0; i < lengthof(_mapspotRelativeCoordinates); ++i)
+        {
+            fixed relativeX = x + _mapspotRelativeCoordinates[i][0],
+                  relativeY = y + _mapspotRelativeCoordinates[i][1],
+                  relativeZ = z + _mapspotRelativeCoordinates[i][2];
+
+            if (!Spawn(THRUACTORS_CHECKSPOT_NAME, relativeX, relativeY, relativeZ, THRUACTORS_CHECKSPOT_TID, 0))
+                return false;
+
+            Thing_Remove(THRUACTORS_CHECKSPOT_TID);
+        }
+
+        return true;
+    }
+}

@@ -1,5 +1,5 @@
 #ifdef __IMPORTED__
-	#error This file must be #included.
+    #error This file must be #included.
 #endif
 
 strict namespace Reward
@@ -16,28 +16,28 @@ strict namespace Reward
 
         // Check if we don't have the container already.
         str itemName = ContainerTypeToItemName(type);
-		if (CheckInventory(itemName) != 0)
+        if (CheckInventory(itemName) != 0)
             terminate;
 
         Reward::GiveContainer(type);
         SetResultValue((int)true);
     }
 
-	internal void GiveContainer(RewardItemTypeFlagsT type)
-	{
-		GivePlayerContainer(PlayerNumber(), type);
-	}
-	
-	internal void GivePlayerContainer(int id, RewardItemTypeFlagsT type)
-	{
+    internal void GiveContainer(RewardItemTypeFlagsT type)
+    {
+        GivePlayerContainer(PlayerNumber(), type);
+    }
+
+    internal void GivePlayerContainer(int id, RewardItemTypeFlagsT type)
+    {
         VALIDATE_ID_VALID_FUNCTION(id);
 
-		if (PlayerIsBot(id))
-			return;
+        if (PlayerIsBot(id))
+            return;
 
-		int tid = Identity::GetTid(id);
-		if (!BCSUtils::ActorIsAlive(tid))
-			return;
+        int tid = Identity::GetTid(id);
+        if (!BCSUtils::ActorIsAlive(tid))
+            return;
 
         str itemName = Reward::ContainerTypeToItemName(type);
         if ((raw)itemName == 0 || itemName == "")
@@ -50,30 +50,30 @@ strict namespace Reward
         if (CheckActorInventory(tid, itemName) > 0)
         {
             str name = ContainerTypeToReadableString(type);
-            Logger::LogTo("You received \cd" + name + "\cj but it appears you already have one! You must use containers before receiving new ones.", id);
+            Logger::LogTo(id, "You received \cd" + name + "\cj but it appears you already have one! You must use containers before receiving new ones.");
             return;
         }
 
-		GiveActorInventory(tid, itemName, 1);
+        GiveActorInventory(tid, itemName, 1);
         InformPlayerContainerReceived(id, type);
-	}
+    }
 
     internal void InformPlayerContainerReceived(int id, RewardItemTypeFlagsT type)
     {
         if (!NamedExecuteClientScript("zh2_internal_reward_informcontainerreceived", id, type))
-			Logger::LogError(LOGSOURCE, "Failed to execute zh2_internal_reward_informcontainerreceived for player (" + str(id) + ") " + BCSUtils::PlayerName(id) + ".");
+            Logger::LogError(LOGSOURCE, "Failed to execute zh2_internal_reward_informcontainerreceived for player (" + str(id) + ") " + BCSUtils::PlayerName(id) + ".");
     }
 
-	script "zh2_internal_reward_informcontainerreceived"(raw typeRaw) clientside
-	{
+    script "zh2_internal_reward_informcontainerreceived"(raw typeRaw) clientside
+    {
         int typeInt = (int)typeRaw;
         int index = BCSUtils::Flag2Index(typeInt) + 1;
 
-		RewardItemTypeFlagsT type = GetRewardItemTypeByIndex(index);
-		str name = ContainerTypeToReadableString(type);
+        RewardItemTypeFlagsT type = GetRewardItemTypeByIndex(index);
+        str name = ContainerTypeToReadableString(type);
 
         str sound = ContainerIndexToSound(index);
         AmbientSound(sound, 127);
         Logger::LogActivator("You received \cd" + name + "\cj.");
-	}
+    }
 }

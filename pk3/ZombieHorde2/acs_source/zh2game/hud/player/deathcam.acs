@@ -1,0 +1,51 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal bool GetIsUseKeyKeyBound() { return BCSUtils::KeyBound("+use"); }
+    internal str GetUseKey() { return StrParam(k:"+use"); }
+
+    internal void DrawDeathCamHud()
+    {
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
+
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        PrepareHud(
+            320.0,
+            BCSUtils::HudTop() + 50.0,
+            false);
+
+        DrawDeathCamMessage();
+    }
+
+    internal void DrawDeathCamMessage()
+    {
+        int id = HUDID_DEATHCAM;
+
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudSetDisappearTime(0.5);
+
+        HudSetPointInternal();
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_RED);
+        BCSUtils::HudDrawText(--id, "You are dead");
+        DebugDraw();
+
+        str message = GetIsUseKeyKeyBound()
+            ? "Press " + GetUseKey() + " to spectate"
+            : "Please bind a key for \"use\" in order to spectate";
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+
+        HudSetPointInternal(0.0, 8.0);
+        BCSUtils::HudDrawText(--id, message);
+        DebugDraw();
+    }
+}

@@ -1,22 +1,31 @@
 #ifdef __IMPORTED__
-	#error This file must be #included.
+    #error This file must be #included.
 #endif
 
 strict namespace EventBus
 {
-	// Defines an event for the event bus to use.
-	internal struct EventBusEventContextT
-	{
-		str EventKey;
-		str ScriptNameCallbacks[20];
-		int ScriptNumberCallbacks[20];
-		
-		// Tracks the number of callbacks registered so we can determine if more can be added.
-		int ScriptNameCallbackCount,
-			ScriptNumberCallbackCount;
-	};
+    #define EVENTBUS_MAX_EVENT_COUNT 20
+    #define EVENTBUS_MAX_EVENT_CALLBACK_COUNT 20
 
-	extern void AddEventBusCallbackByScriptName(str eventKey, str scriptName);
-    extern void AddEventBusCallbackByScriptNumber(str eventKey, int scriptNumber);
-    extern void CallEvent(str eventKey, raw arg1 = 0, raw arg2 = 0, raw arg3 = 0);
+    struct EventBusCollectionT
+    {
+        EventBusEventContextT Collection[EVENTBUS_MAX_EVENT_COUNT];
+        int Count;
+    };
+
+    // Defines an event for the event bus to use.
+    struct EventBusEventContextT
+    {
+        str EventKey;
+        str ScriptNameCallbacks[EVENTBUS_MAX_EVENT_CALLBACK_COUNT];
+        int ScriptNumberCallbacks[EVENTBUS_MAX_EVENT_CALLBACK_COUNT];
+
+        // Tracks the number of callbacks registered so we can determine if more can be added.
+        int ScriptNameCallbackCount,
+            ScriptNumberCallbackCount;
+    };
+
+    extern void AddCallbackByScriptName(str eventKey, str scriptName);
+    extern void AddCallbackByScriptNumber(str eventKey, int scriptNumber);
+    extern void CallEvent(str packet);
 }

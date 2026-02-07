@@ -1,0 +1,60 @@
+#Library "PARKACS"
+#Include "zcommon.acs"
+
+script 370 (Int x)
+{
+    Switch(x)
+    {
+        Case 0:
+            HudMessageBold(n:0, s:"\cJ's stamina will run out in \cG8 \cJseconds..."; 0, 460, 6, 32768, 0, 196608);
+        Break;
+
+        Case 1:
+            GiveInventory(Random("StrangeBoxStamina", Random("StrangeBox2Flares", "StrangeBox2Crystal")), 1);
+        Break;
+    }
+}
+
+script 371 (void)
+{
+    int local0;
+    int goto_block;
+    switch (goto_block) {
+    case 0:
+        local0 = 0;
+        goto_block = 2; restart;
+
+    case 2:
+        if (!(local0 <= 28)) {
+            Terminate;
+        }
+        SpawnProjectile(0, "BurningFire", 0, 0, 0, 0, 0);
+        Thing_Damage(0, 10, 0);
+        Delay(20);
+        local0++;
+        goto_block = 2; restart;
+
+    }
+}
+
+/*script 372 (void)
+{
+    GiveInventory(Random("StrangeBoxStamina", Random("StrangeBox2Flares", "StrangeBox2Crystal")), 1);
+    Terminate;
+}*/
+
+Script 373 ENTER CLIENTSIDE
+{
+Delay(1);
+    If(CheckInventory("Humanmaker"))
+    {
+        TakeInventory("ZombieImmune2", 1);
+        GiveInventory("HumanImmune2", 1);
+    }
+    Else If(CheckInventory("Zombiemaker"))
+    {
+        TakeInventory("HumanImmune2", 1);
+        GiveInventory("ZombieImmune2", 1);
+    }
+Restart;
+}

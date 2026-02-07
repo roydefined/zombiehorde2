@@ -44,7 +44,7 @@ Script 1 OPEN
         spawnspot("ZH2LegacyZE17Head", 81, 561, 0);
         jumpscare2 = True;
     }
-    else spawnspot("FireCrystalDrop", 81,0,0);*/
+    else spawnspot(CRYSTAL_ITEM, 81,0,0);*/
 
     //temp untill finished
     spawnspot("ZH2LegacyReplacedShopguy", 65,0,0);
@@ -80,7 +80,7 @@ Script 1 OPEN
     delay(35*3);
 
     SetFont("CONFONT");
-    HudMessageBold(s:"The criminal group found your hiding place.\nYou need to find an other place where to hide.";HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 5.0, 2.0);
+    HudMessageBold(s:"The criminal group found your hiding place.\nYou need to find another place to hide.";HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 5.0, 2.0);
 
     Music::SetMusic("D_GBU1");
 
@@ -109,7 +109,9 @@ script 4 (void) // Closing the exit Cave
     PrintBold(n:0, s:" has sealed the cave !");
     SetActivator(-1);
     Radius_Quake(2, 70, 0, 10, 15);
-    Ceiling_LowerAndCrush(7,64,10000);
+    Ceiling_LowerAndCrush(7,64,5,2); //ZH2 [AQW] Put dmg to 5, and hexen mode.
+	TagWait(7); //ZH2 [AQW]
+	Ceiling_LowerByValueTimes8(7,16,1); //ZH2 [AQW]
 
     delay(35*6);
 
@@ -190,26 +192,28 @@ Radius_Quake(2, 17, 0, 10, 35);
 delay(35);
 }
 Radius_Quake(2, 105, 0, 10, 35);
-Floor_RaiseAndCrush(24,60,10000);
+Floor_RaiseAndCrush(24,60,10,2); //ZH2 [AQW] But yeah, WTF is this script? This raise a random floor to the sky just before the 1st resist. ????
+TagWait(24); //ZH2 [AQW]
+Floor_RaiseByValueTimes8(24,16,1); //ZH2 [AQW]
 }
 
 Script 9 (void) // Falling and taking damage
 {
 	if(Player::GetIsHuman())
 	{
-		Thing_Damage(0,random(5,15),0);
+		Thing_Damage(0, random(5,15), MOD_FALLING);
 		Thing_Move(0,3,1);
 	}
 	else
 	{
-		Thing_Damage(0,random(50,75),0);
+		Thing_Damage(0, random(50,75), MOD_FALLING);
 		Thing_Move(0,4,1);
 	}
 }
 
 Script 10 (void) // Falling and taking damage
 {
- Thing_Damage(0,random(0,0),0);
+ Thing_Damage(0, random(0,0), MOD_FALLING);
  Teleport(0,5,0);
 }
 
@@ -228,9 +232,9 @@ Script 11 (void) // Calling to maya's force
 script 12 (int x) //For those that fall in the water at the canyon part
 {
    if(Player::GetIsHuman())
-	   Thing_Damage(0,random(5,15),0);
+	   Thing_Damage(0, random(5,15), MOD_FALLING);
    else
-	   Thing_Damage(0,random(50,75),0);
+	   Thing_Damage(0, random(50,75), MOD_FALLING);
 
 	Switch(x)
 	{
@@ -398,7 +402,9 @@ script 16 (void) // Final resists
     }
 
     ACS_Suspend(28,0);
-    floor_raiseandcrush(101, 10, 9999999, 0);
+    floor_raiseandcrush(101, 10, 50, 2); //ZH2 [AQW] dmg to 50 because its the ending, hexen mode...
+	TagWait(101); //ZH2 [AQW]
+	Floor_RaiseByValueTimes8(101,16,1);//ZH2 [AQW]
     CriminalsHere = TRUE;
     SetFont("BIGFONT");
     HudmessageBold(s:"\ckThe criminals are here !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 2.5, 0.5);
@@ -608,7 +614,7 @@ Script 24 (int iLine) CLIENTSIDE
 
     delay(35*3);
 
-    spawnspot("FakeJacksGun",48,0,0);
+    spawnspot(WEAPON_JACKSGUN_SPAWN_NAME,48,0,0);
     spawnspot("teleportfog",48,0,0);
 
     delay(35*3);
@@ -664,7 +670,7 @@ script 27 (void) //shooting criminals for final resist
 			{
 				int tid = Identity::GetTid(i);
 				thingsound(tid, "sound/cowboyshot", 255);
-				Thing_Damage(tid, random(5,15), 0);
+				Thing_Damage(tid, random(5,15), MOD_UNKNOWN);
 			}
 		}
         delay(35);
@@ -691,7 +697,7 @@ script 27 (void) //shooting criminals for final resist
 
         SetFont("SCARYFCE");
         HudMessage(s:"A"; HUDMSG_FADEOUT, 0, CR_White, 0.0, 0.0, 0.1);
-        spawnspot("FireCrystalDrop", 81,0,0);
+        spawnspot(CRYSTAL_ITEM, 81,0,0);
         thing_remove(561);
 
         Light_fade(80,192,35);

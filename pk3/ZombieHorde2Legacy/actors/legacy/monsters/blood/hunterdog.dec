@@ -1,0 +1,85 @@
+actor ZH2LegacyZM20HunterDog : ZH2LegacyMonster
+{
+    Health 300
+    PainChance 200
+    Speed 10
+    Radius 20
+    Height 32
+    Mass 75
+    Meleedamage 3
+    Meleerange 40
+    Meleesound "dog/attack"
+    Maxtargetrange 192
+    Meleethreshold 96
+    Monster
+    +QUICKTORETALIATE
+    +LOOKALLAROUND
+    +FLOORCLIP
+    +FASTER
+    +FASTMELEE
+    //SeeSound "monster/dog/see"
+    PainSound "monster/dog/pain"
+    DeathSound "monster/dog/death"
+    ActiveSound "monster/dog/active"
+    AttackSound "monster/dog/attack"
+
+    Obituary "%o was mauled by the hunter's dog."
+    tag "Hunter's Dog"
+
+    States
+    {
+        Spawn:
+            ROTI A 10
+        Spawn.Rest:
+            ROTI A 10 A_Look
+            Loop
+
+        See:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_gettargetiszombie") == true, "Spawn")
+            ROTD A 1 A_JumpIfTargetInLos(2)
+            ROTD A 1 A_ClearTarget
+        Goto Spawn
+
+            TNT1 A 0 A_PlaySound("monster/dog/see")
+        ChaseTarget:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_gettargetiszombie") == true, "Spawn")
+            ROTD AABBCCDD 2 A_Chase
+            Loop
+
+        Missile:
+            ROTD A 2 A_FaceTarget
+            ROTD A 0 A_PlaySound("dog/attack")
+            ROTD A 0 ThrustThingZ(0, 24, 0, 0)
+            ROTD A 0 ThrustThing(angle*256/360, 12, 0, 0)
+
+        JumpUp:
+            ROTD B 8
+
+        JumpDown:
+            ROTD C 1 A_CheckFloor("Land")
+            loop
+
+        Land:
+            ROTD D 2 A_Stop
+            goto ChaseTarget
+
+        Melee:
+            ROTD EF 4 A_FaceTarget
+            ROTD G 4 A_CustomMeleeAttack(random(3, 4), "monster/dog/attack")
+            ROTD FE 4 A_FaceTarget
+            Goto ChaseTarget
+
+        Pain:
+            ROTD A 2
+            ROTD A 2 A_Pain
+            Goto ChaseTarget
+
+        Death:
+            ROTD H 1 A_GiveToTarget("ZH2LegacyZM20KilledDog", 1)
+            ROTD H 4 A_Scream
+            ROTD I 4 A_NoBlocking
+            ROTD J 4
+            ROTD K -1
+            Stop
+    }
+}

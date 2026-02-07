@@ -9,11 +9,12 @@ strict namespace Sync
     internal void SyncPlayersActor()
     {
         int syncId = SYNC_PLAYERS;
-        
+
         syncId = SyncWritePlayerNames(syncId);
         syncId = SyncWriteState(syncId);
         syncId = SyncWriteSafe(syncId);
         syncId = SyncWriteSpecies(syncId);
+        syncId = SyncWriteThruActors(syncId);
         syncId = SyncWritePreviouslyInitialZombies(syncId);
         syncId = SyncWriteInitialZombies(syncId);
         syncId = SyncWriteZombieInfections(syncId);
@@ -42,6 +43,7 @@ strict namespace Sync
         syncId = SyncReadState(syncId);
         syncId = SyncReadSafe(syncId);
         syncId = SyncReadSpecies(syncId);
+        syncId = SyncReadThruActors(syncId);
         syncId = SyncReadPreviouslyInitialZombies(syncId);
         syncId = SyncReadInitialZombies(syncId);
         syncId = SyncReadZombieInfections(syncId);
@@ -214,6 +216,61 @@ strict namespace Sync
         }
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing specie packs to client."));
+        return syncId;
+    }
+
+    internal int SyncWriteThruActors(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing thru actors packs through actors. Sync id: " + str(syncId) + "."));
+
+        // Each player takes 2 bits, 64 players = 128 bits = 4x 32-bit integers.
+        // Note value 3 is not yet used since we only use up to value 2 for the state.
+        // Who knows, maybe I can add a fourth one?
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // We have to make sure to split the state value over two bits.
+            int state = Player::GetPlayerThruActorsState(i);
+            bool leastSignificantBit = (state & 1) != 0;
+            bool mostSignificantBit  = (state & 2) != 0;
+            BitMath::SetBit128(BitMath::GetBitPack1(), BitMath::GetBitPack2(), BitMath::GetBitPack3(), BitMath::GetBitPack4(), i * 2, leastSignificantBit);
+            BitMath::SetBit128(BitMath::GetBitPack1(), BitMath::GetBitPack2(), BitMath::GetBitPack3(), BitMath::GetBitPack4(), i * 2 + 1, mostSignificantBit);
+
+            if (PlayerInGame(i))
+                Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Player (\cd" + str(i) + "\cj) " + BCSUTILS::PlayerName(i) + " state: \cd" + (state ? "true" : "false") + "\cj. Bits: \cd" + str(int(mostSignificantBit)) + str(int(leastSignificantBit)) + "\cj."));
+        }
+
+        // Store back for syncing
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack2());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack3());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack4());
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing thru actors packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj, pack3 \cd" + str(BitMath::GetBitPack3()) + "\cj, pack4 \cd" + str(BitMath::GetBitPack4())));
+        return syncId;
+    }
+
+    internal int SyncReadThruActors(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading thru actors packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        int pack1 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack3 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack4 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int leastSignificantBit = BitMath::GetBit128(pack1, pack2, pack3, pack4, i * 2);
+            int mostSignificantBit = BitMath::GetBit128(pack1, pack2, pack3, pack4, i * 2 + 1);
+            int state = (mostSignificantBit << 1) | leastSignificantBit;
+
+            Player::SetPlayerThruActorsState(i, Player::GetThruActorsStateByIndex(state));
+
+            if (PlayerInGame(i))
+                Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Client - Player \cd" + str(i) + "\cj: \cd" + (state ? "true" : "false") + "\cj. Bits: \cd" + str(int(mostSignificantBit)) + str(int(leastSignificantBit)) + "\cj."));
+        }
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing thru actors packs to client."));
         return syncId;
     }
 

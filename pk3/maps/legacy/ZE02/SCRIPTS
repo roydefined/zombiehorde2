@@ -13,8 +13,11 @@ script "ze02_open" open
 }
 
 /* RESIST EVENT */
-script "ze02_internal_event_resistelapsed" (int index)
+script "ze02_internal_event_resistelapsed" (raw packetRaw)
 {
+	Event::ReceiveTimerElapsed((str)packetRaw);
+	int index = Event::GetReceiveData(0);
+	
 	switch(index)
 	{
 		case 0:
@@ -52,7 +55,10 @@ Script 7 (void)  // Volcanic erruption
 
 	Delay(Resist::StartResistByIndex(2));
 
-	Generic_Ceiling(14, 2, 64, 5, 16);
+	//Generic_Ceiling(14, 2, 64, 5, 16); //ZH2 [AQW]
+	Ceiling_LowerAndCrush(14,2,50,2); //ZH2 [AQW]
+	TagWait(14); //ZH2 [AQW]
+	Ceiling_LowerByValueTimes8(14,16,1); //ZH2 [AQW]
 	Radius_Quake(9, 35*15, 0, 50, 15);
 
 	Delay(35*8);

@@ -35,7 +35,7 @@ bool script17_executed=false;
 bool script18_executed=false;
 
 //experiment
-bool Experiment_reached[32];
+bool Experiment_reached[BCSUtils::MAX_PLAYERS];
 bool Experiment_bunkerclosed=false;
 bool Experiment_activated=false;
 bool Experiment_camera=false;
@@ -300,7 +300,7 @@ Script 16 (void)
 	delay(35*3);
 	thingsound(95,"sound/bigliftsequence",255);
 	delay(35);
-	Ceiling_LowerAndCrush(120,1,9999); //ceiling lowers a bit to prevent people from blocking the lift.
+	Ceiling_LowerAndCrush(120,1,5,2); //ceiling lowers a bit to prevent people from blocking the lift. //ZH2 Fix[AQW] crusher hexen mode & dmg to 5.
 	for(int spd=2;spd<=25;spd++)
 	{
 		floorandceiling_raisebyvalue(94,spd,spd);
@@ -651,7 +651,7 @@ SetActivator(-1);
 
     setfont("BIGFONT");
     HudMessagebold(s:"Fuse interrupted"; HUDMSG_FADEINOUT, 0, CR_RED, 0.5, 0.2, 1.0);
-    Music_Change("D_NULL",255);
+    Music::SetMusic("D_NULL");
 
     delay(18);
 
@@ -702,7 +702,7 @@ SetActivator(-1);
 
     delay(18);
 
-    Music_Change("D_TUROK",255);
+    Music::SetMusic("D_TUROK");
 
     delay(35*3);
 
@@ -777,7 +777,9 @@ SetActivator(-1);
     HudMessageBold(s:"00 : 00 : 00"; HUDMSG_FADEOUT, 450, CR_RED, 0.5, 0.2, 3.0);
     SetFont("DOOMFONT");
     HudMessageBold(s:"Canyon + cave system collapsion!"; HUDMSG_FADEOUT, 451, CR_RED, 0.5, 0.17, 3.0);
-    Ceiling_LowerAndCrush(158,15,99999);
+    Ceiling_LowerAndCrush(158,15,10,2); //ZH2 [AQW] crusher to hexen mode & dmg to 10.
+	TagWait(158);
+	Ceiling_LowerByValueTimes8(158,16,1);
     ambientsound("world/nuke1",255);
     fadeto(100,100,100,0.5,5.0);
     radius_quake(8,350,0,20,600);
@@ -833,7 +835,7 @@ SetActivator(-1);
 			int tid = Identity::GetTid(i);
             if(Experiment_reached[i])
             {
-				Thing_Damage(tid, 10000, 20);
+				Thing_Damage(tid, 10000, MOD_EXIT);
 				thingsound(tid, "world/gas1", 255);
             }
 
@@ -912,7 +914,7 @@ script 12 (int who, int code){ // Monster ai (given by ibm)
 		wface_hatee=0;
 		farest_distance=0;
 		shorter_distance=2147483647;
-		while(i<32){
+		while(i<BCSUtils::MAX_PLAYERS){
 			if(thingcount(t_none,i+600)==1){
 				if(Player::GetPlayerHuman(i)){
 					 if(i+600!=safe_tid || humancounter()==1){
@@ -1035,10 +1037,10 @@ Script 23 (int Minutes, int Seconds) //timer for final resist
 
 function void EndZEGameCanyonRun (void) //modified endzegame()
 {
-    for(int i = 0; i < 32; i++)
+    for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
 	{
 		if(!game::GetPlayerIsSafe(i) && !Experiment_reached[i])
-			Thing_Damage(Identity::GetTid(i), 10000, 20);
+			Thing_Damage(Identity::GetTid(i), 10000, MOD_EXIT);
 	}
 }
 

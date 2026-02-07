@@ -11,8 +11,6 @@ bool pyr_scpt_exec = false;
 
 script "ze12_open" OPEN	// Level setups
 {
-    Music::SetMusic("egypt", 0);
-
     // north active by default
     floor_raisebyvalue(5,8,128);
     SetLineTexture(2, SIDE_FRONT, TEXTURE_MIDDLE, "LGTBEAM2");
@@ -25,8 +23,11 @@ script "ze12_open" OPEN	// Level setups
 }
 
 /* RESIST EVENT */
-script "ze12_internal_event_resistelapsed" (int index)
+script "ze12_internal_event_resistelapsed" (raw packetRaw)
 {
+	Event::ReceiveTimerElapsed((str)packetRaw);
+	int index = Event::GetReceiveData(0);
+	
 	switch(index)
 	{
 		case 0:
@@ -69,7 +70,10 @@ Script 14 (void) // final
 	Delay(Resist::StartResistByIndex(3));
 
     Delay(70);
-    Generic_Ceiling(31, 16, 128, 5, 16);
+    //Generic_Ceiling(31, 16, 128, 5, 16); //ZH2 [AQW]
+	Ceiling_LowerAndCrush(31,16,50,2); //ZH2 [AQW]
+	TagWait(31);
+	Ceiling_LowerByValueTimes8(31,16,1);
     Delay(35*4);
 
 	Game::KillUnsafePlayers();

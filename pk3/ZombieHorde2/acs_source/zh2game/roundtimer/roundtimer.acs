@@ -24,14 +24,14 @@ strict namespace RoundTimer
         if (GetTimerDefined(index) && GetTimerActive(index) && timeLeft == 0)
         {
             StopTimer(index);
-            EventBus::CallEvent(EVENTTIMERELAPSED, index);
+            Event::SendTimerElapsed(index);
         }
     }
-    
+
     internal void TicClient()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
-        
+
         // Countdown timer.
         // The actual end sound is not tied to the timer, but rather plays when the play round ends from the server.
         int index = GetActiveTimerIndex();
@@ -63,7 +63,7 @@ strict namespace RoundTimer
             return;
         }
 
-        
+
         // Reallocate the timer to support the given index.
         // NOTE: Commented and unused until we get to allocating these again.
         // RoundTimerContextT[]? timers = ZH2Game::GameContext.MapDetails.Timers;
@@ -99,7 +99,7 @@ strict namespace RoundTimer
         Logger::LogDebug(LOGSOURCE, "Timer has switched to \cd" + GetTimerIndexAsString(index) + "\cj.");
 
         if (broadcast)
-            EventBus::CallEvent(EVENTTIMERSWITCHED, previousIndex, index);
+            Event::SendTimerSwitched(previousIndex, index);
     }
     internal void SetActiveTimerByKnownType(KnownRoundTimerT timerType, bool broadcast = true) { SetActiveTimerByIndex(GetIndexOfKnownType(timerType), broadcast); }
     internal void DisableTimer(bool broadcast = true) { SetActiveTimerByIndex(0, broadcast); }
@@ -161,7 +161,7 @@ strict namespace RoundTimer
         GetTimerRefByindex(index).PauseTic = Timer();
 
         if (broadcast)
-            EventBus::CallEvent(EVENTTIMERPAUSED, index);
+            Event::SendTimerPaused(index);
     }
 
     internal void ResumeTimer(int index, bool broadcast = true)
@@ -176,7 +176,7 @@ strict namespace RoundTimer
         timerContext.EndingTic = Timer() + diff;
 
         if (broadcast)
-            EventBus::CallEvent(EVENTTIMERRESUMED, index);
+            Event::SendTimerResumed(index);
     }
 
     internal void ResetTimer(int index)
@@ -199,7 +199,7 @@ strict namespace RoundTimer
         ResumeTimer(index);
 
         if (broadcast)
-            EventBus::CallEvent(EVENTTIMERSTARTED, index);
+            Event::SendTimerStarted(index);
     }
 
     internal void StopTimer(int index, bool broadcast = true)
@@ -207,7 +207,7 @@ strict namespace RoundTimer
         GetTimerRefByindex(index).EndingTic = -1;
 
         if (broadcast)
-            EventBus::CallEvent(EVENTTIMERSTOPPED, index);
+            Event::SendTimerStopped(index);
     }
 
     internal void ShowTimer(int index) { GetTimerRefByindex(index).Flags &= ~TIMERHIDDEN; }
@@ -230,7 +230,7 @@ strict namespace RoundTimer
         {
             if (index != item)
                 continue;
-            
+
             return item;
         }
 
@@ -243,7 +243,7 @@ strict namespace RoundTimer
         KnownRoundTimerT knownTimer = GetKnownTypeOfIndex(index);
         if (knownTimer != TIMERNONE)
             return collection[index];
-            
+
         // No known timer, return custom and the index.
         return "Custom (" + str(index) + ")";
     }

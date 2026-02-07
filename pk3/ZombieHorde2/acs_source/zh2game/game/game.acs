@@ -13,6 +13,8 @@
 #include "health.acs"
 #include "specie.acs"
 #include "playtime.acs"
+#include "knockback.acs"
+#include "modifiers.acs"
 #include "roundtime.acs"
 #include "secondary.acs"
 #include "infectcure.acs"
@@ -28,7 +30,9 @@ strict namespace Game
     internal void SetSurvivalDefaults()
     {
         Logger::LogDebug(LOGSOURCE, "Setting survival gamemode profile for game.");
-        
+
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_modifier_specie_changed");
+
         SetZombieHealthValues(true, 4000, 3000);
         SetZombieHealthValues(false, 2000, 1000);
 
@@ -38,12 +42,14 @@ strict namespace Game
     internal void SetEscapeDefaults()
     {
         Logger::LogDebug(LOGSOURCE, "Setting survival gamemode profile for game.");
-        
+
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_modifier_specie_changed");
+
         SetZombieHealthValues(true, 5000, 4000);
         SetZombieHealthValues(false, 1500, 750);
-        
+
         Game::SetDefaultZombieAbilityFlags(ABILITY_PUSH);
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE

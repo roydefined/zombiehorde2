@@ -5,18 +5,22 @@
 // Note, included from zh2lib.
 #include "validation.acs"
 
+#include "debug/debug.acs"
 #include "game/game.acs"
 #include "sync/sync.acs"
 #include "map/map.acs"
+#include "events/events.acs"
 #include "round/round.acs"
 #include "roundtimer/roundtimer.acs"
 #include "player/player.acs"
+#include "feature/feature.acs"
 #include "gameloop/gameloop.acs"
 #include "settings/settings.acs"
 #include "shuffle/shuffle.acs"
 #include "music/music.acs"
 #include "reward/reward.acs"
 #include "weight/weight.acs"
+#include "obituary/obituary.acs"
 #include "decorate/decorate.acs"
 #include "resist/resist.acs"
 #include "power/power.acs"
@@ -27,7 +31,7 @@
 
 #define LOGSOURCE "Main"
 
-#include "events.acs"
+#include "scriptevents.acs"
 #include "cvars.acs"
 #include "binds.acs"
 #include "wait.acs"
@@ -40,7 +44,7 @@ strict namespace ZH2Game
     // This is used for joining players/bots to force them to a specific specie.
     // This is specifically used for the admin to add bots of specific species.
     // If not set, we default to humans.
-    internal Player::SpecieTypeT _forceSpecie;
+    internal Player::PlayerSpecieT _forceSpecie;
 
     script "zh2_internal_open" open
     {
@@ -60,7 +64,7 @@ strict namespace ZH2Game
             {
                 if (!BCSUtils::PlayerIsConnected(i))
                     continue;
-                
+
                 GameLoop::StartServerPlayerLoopById(i);
                 Utils::InitializeSynchronizedTimerForPlayer(i);
             }
@@ -68,13 +72,14 @@ strict namespace ZH2Game
 
         // Verify gamemode.
         // The single tic delay is for the logger to pass to clients.
-        if (BCSUtils::StrToLower(GetCurrentGameMode()) != REQUIREDGAMEMODE)
+        // No longer required in Zandronum 3.3 as it is now possible to lock the gamemode through mapinfo.
+        /*if (BCSUtils::StrToLower(GetCurrentGameMode()) != REQUIREDGAMEMODE)
         {
             Logger::LogWarning(LOGSOURCE, "Zombie Horde was build for the " + REQUIREDGAMEMODE + " gamemode. Updating game type...");
             Delay(const: 1);
             if (!SetCurrentGameMode(REQUIREDGAMEMODE)) Logger::LogError(LOGSOURCE, "Failed to set the current gamemode to " + REQUIREDGAMEMODE + ".");
             terminate;
-        }
+        }*/
 
         str awaiter = GetServersideAwaiter();
         Logger::LogDebug(LOGSOURCE, "Start awaiter \"" + awaiter + "\".");
@@ -91,7 +96,7 @@ strict namespace ZH2Game
         LibIO::ParseLoggerDefServerside();
         IO::ParseModDefLumpsServerside();
         IO::ParseMapDefLumps();
-        
+
         // Wait for the persisting data to be parsed.
         WAIT_FOR_SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_SERVERSIDE();
         WAIT_FOR_SCRIPT_PARSE_PERSISTING_MOD_DEFS_SERVERSIDE();
@@ -111,12 +116,12 @@ strict namespace ZH2Game
         str gameMode = Map::GetCurrentMapGameMode();
         if (((raw)gameMode) != 0 && gameMode != "")
         {
-            Logger::LogDebug(LOGSOURCE, "Setting up game mode: \cd" + gameMode + "\cj.");
+            Logger::LogDebug(LOGSOURCE, "Setting up serverside game mode: \cd" + gameMode + "\cj.");
 
             switch (BCSUtils::StrToLower(gameMode))
             {
                 case "survival":
-                    ZH2Game::SetSurvivalDefaults();
+                    Event::SetSurvivalDefaultsServer();
                     Player::SetSurvivalDefaults();
                     Game::SetSurvivalDefaults();
                     Round::SetSurvivalDefaults();
@@ -124,13 +129,13 @@ strict namespace ZH2Game
                     break;
 
                 case "escape":
-                    ZH2Game::SetEscapeDefaults();
+                    Event::SetEscapeDefaultsServer();
                     Player::SetEscapeDefaults();
                     Game::SetEscapeDefaults();
                     Round::SetEscapeDefaults();
                     RoundTimer::SetEscapeDefaults();
                     break;
-                
+
                 default:
                     Logger::LogWarning(LOGSOURCE, "The given game mode profile does not exist: " + gamemode + ".");
                     break;
@@ -176,6 +181,15 @@ strict namespace ZH2Game
 
         // Resync admin list
         Sync::SyncAdmins();
+
+        // After a moment, sync all players and allow them to sync themselves on enter.
+        Delay(const: 5);
+
+        ZH2Game::GameContext.DoSyncOnEnter = true;
+        Sync::SyncPlayers();
+
+        // Send the default values to the client.
+        Sync::SyncPowers();
     }
 
     script "zh2_internal_open_client" open clientside
@@ -199,7 +213,7 @@ strict namespace ZH2Game
             LibIO::ParseLoggerDefClientside();
             IO::ParseMapDefLumps();
         }
-        
+
         // Wait for the persisting data to be parsed.
         Logger::LogDebug(LOGSOURCE, "Start parsing non-persisting data (client).");
         WAIT_FOR_SCRIPT_PARSE_PERSISTING_FOOTSTEP_DEFS();
@@ -219,15 +233,49 @@ strict namespace ZH2Game
             WAIT_FOR_SCRIPT_PARSE_CURRENT_MAP_DEFS();
 
         // We now iterate the resulting list of items, splitting them into three separate collections which makes iterating them much easier.
+        // TODO: This should be exported to its own function. Or perhaps be removed altogether.
         Item::ItemCollectionContextT global:PERSISTINGGAMECONTEXTINDEX& collection = ZH2Game::PersistingGameContext.ItemCollection;
-        for (int i = 0; i < collection.Size; ++i)
+        if (!collection.HasSplitItems)
         {
-            Item::ItemTypeT type = collection.Collection[i].Type;
-            if      (type == Item::TYPE_WEAPON)    collection.WeaponCollection[collection.WeaponCollectionSize++] = i;
-            else if (type == Item::TYPE_INVENTORY) collection.InventoryCollection[collection.InventoryCollectionSize++] = i;
-            else if (type == Item::TYPE_KEY)       collection.KeyCollection[collection.KeyCollectionSize++] = i;
+            for (int i = 0; i < collection.Size; ++i)
+            {
+                Item::ItemTypeT type = collection.Collection[i].Type;
+                if      (type == Item::TYPE_WEAPON)    collection.WeaponCollection[collection.WeaponCollectionSize++] = i;
+                else if (type == Item::TYPE_INVENTORY) collection.InventoryCollection[collection.InventoryCollectionSize++] = i;
+                else if (type == Item::TYPE_KEY)       collection.KeyCollection[collection.KeyCollectionSize++] = i;
+            }
+
+            collection.HasSplitItems = true;
         }
-        
+
+        // Set the current game mode if we have it set.
+        str gameMode = Map::GetCurrentMapGameMode();
+        if (((raw)gameMode) != 0 && gameMode != "")
+        {
+            Logger::LogDebug(LOGSOURCE, "Setting up clientside game mode: \cd" + gameMode + "\cj.");
+
+            switch (BCSUtils::StrToLower(gameMode))
+            {
+                case "survival":
+                    Event::SetSurvivalDefaultsClient();
+                    Obituary::SetSurvivalDefaultsClient();
+                    break;
+
+                case "escape":
+                    Event::SetEscapeDefaultsClient();
+                    Obituary::SetEscapeDefaultsClient();
+                    break;
+
+                default:
+                    Logger::LogWarning(LOGSOURCE, "The given game mode profile does not exist: " + gamemode + ".");
+                    break;
+            }
+        }
+        else
+        {
+            Logger::LogDebug(LOGSOURCE, "Map has no game mode defined.");
+        }
+
         // Now the loop starts because we have loaded everything.
         GameLoop::StartClientPlayerLoopActivator();
 
@@ -239,7 +287,10 @@ strict namespace ZH2Game
         // Voting is active, so the client needs a mouse.
         // TODO: Move this when adding the sync callback system.
         if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
+        {
             Hud::SetCursorEnabled(true);
+            Player::LockMovement(true);
+        }
 
         // Initialize team indicators for all existing players.
         // This does not have to run offline as the enter script works fine.
@@ -257,14 +308,14 @@ strict namespace ZH2Game
                 int tid = Identity::GetTID(i);
                 if (!BCSUTILS::ActorIsAlive(tid))
                     continue;
-                    
+
                 Game::SpawnPlayerTeamIndicator(i);
             }
         }
 
         // Inform the client to play the current default music.
         Music::PlayDefaultMusic();
-        
+
         // Everything below requires the client to be the activator.
         // TODO: Improve so this is not required.
         if (!SetActivatorToPlayer(ConsolePlayerNumber()))
@@ -279,40 +330,34 @@ strict namespace ZH2Game
         if (PlayerIsBot(PlayerNumber()))
             GameLoop::StartServerPlayerLoopById(PlayerNumber());
 
-        if (!ACS_NamedExecuteAlways("zh2_internal_enter_respawn", 0))
-            Logger::LogError(LOGSOURCE, "Failed to call general enter/respawn script for client serverside.");
+        ACS_NamedExecuteWithResult(SCRIPT_ENTER_RESPAWN_NAME, 0);
     }
 
     script "zh2_internal_enter_client" enter clientside
     {
-        if (!ACS_NamedExecuteAlways("zh2_internal_enter_respawn_clientside", 0))
-            Logger::LogError(LOGSOURCE, "Failed to call general enter/respawn script for client clientside.");
+        ACS_NamedExecuteWithResult(SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME, 0);
     }
-    
+
     script "zh2_internal_respawn" respawn
     {
-        if (!ACS_NamedExecuteAlways("zh2_internal_enter_respawn", 0))
-            Logger::LogError(LOGSOURCE, "Failed to call general enter/respawn script for client serverside.");
+        ACS_NamedExecuteWithResult(SCRIPT_ENTER_RESPAWN_NAME, 0);
     }
-    
+
     script "zh2_internal_respawn_client" respawn clientside
     {
-        if (!ACS_NamedExecuteAlways("zh2_internal_enter_respawn_clientside", 0))
-            Logger::LogError(LOGSOURCE, "Failed to call general enter/respawn script for client clientside.");
+        ACS_NamedExecuteWithResult(SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME, 0);
     }
 
     script "zh2_internal_unloading" unloading
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_unloading\"");
 
-        // Regardless of what the game does, we always unfreeze players.
-        // Specifically this could be the case with admin players and when the game ends.
-        SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
+        Power::Unload();
 
         // Reset the default music, or the music will move to the next map.
         Music::SetDefaultMusic("");
     }
-    
+
     script "zh2_internal_disconnect" (int id) disconnect
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_disconnect\"");
@@ -328,7 +373,7 @@ strict namespace ZH2Game
             terminate;
 
         // Player always plays the game, so no explicit check for a playing player exists here.
-        
+
         // Only run if player was playing in the round.
         if (Player::GetPlayerState(id) == Player::STATEPLAYING)
         {
@@ -339,7 +384,7 @@ strict namespace ZH2Game
             {
                 Logger::LogDebug(LOGSOURCE, "Playing player has spectated: (\cd" + str(id) + "\cj)" + BCSUTILS::PlayerName(id) + ".");
                 Player::SetPlayerState(id, Player::STATEGONE);
-                EventBus::CallEvent(EVENTPLAYERLEFTROUND, id);
+                Event::SendPlayerLeftRound(id);
             }
 
             // Check if the round was still joinable.
@@ -352,7 +397,7 @@ strict namespace ZH2Game
 
             Sync::SyncPlayers();
         }
-        
+
         // Always reset the lib context of the player.
         ZH2Lib::ResetPlayerLibContext(id);
     }
@@ -363,7 +408,7 @@ strict namespace ZH2Game
         if (id != ConsolePlayerNumber())
             Game::DisposePlayerTeamIndicator(id);
     }
-    
+
     script "zh2_internal_death" death
     {
         int killedId = PlayerNumber();
@@ -375,6 +420,7 @@ strict namespace ZH2Game
             terminate;
 
         // Get the killer.
+        // The killer might not exist for deaths, which means that the id remains -1.
         int killerId = -1;
         if (SetActivatorToTarget(0))
             killerId = PlayerNumber();
@@ -392,12 +438,6 @@ strict namespace ZH2Game
 
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_death\" for player " + str(killedId) + " killed by player " + str(killerId) + ".");
 
-        EventBus::CallEvent(EVENTPLAYERDIED, killedId, killerId);
-
-        // We must delay a tic before resetting the context to ensure events have time to process the death properly.
-        // TODO: Remove when events are made instant.
-        Delay(const: 1);
-
         // Reset transient context if still in a joinable state.
         // Otherwise set as dead.
         if (Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()))
@@ -405,9 +445,10 @@ strict namespace ZH2Game
         else
             Player::SetPlayerState(killedId, Player::STATEDEAD);
 
+        Identity::DisposeTID(Identity::GetTid(killedId));
         Sync::SyncPlayers();
     }
-    
+
     script "zh2_internal_death_client" death clientside
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_death_client\" for player " + str(PlayerNumber()) + ".");
@@ -419,7 +460,7 @@ strict namespace ZH2Game
         // Only run the rest on the dying client.
         if (ConsolePlayerNumber() != PlayerNumber())
             terminate;
-        
+
         Settings::CloseClientSettingsMenu();
         Admin::DisableAdminHud();
 
@@ -427,186 +468,18 @@ strict namespace ZH2Game
         if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()) && Player::GetPlayerState(PlayerNumber()) == Player::STATEPLAYING)
         {
             Game::InitializeClientDeathCamera();
-        
+
             // Death cam needs a tic to initialize online, or it won't work.
             delay(const: 1);
             Game::StartClientDeathCamera();
         }
     }
-    
-    script "zh2_internal_event" (raw type, raw arg1, raw arg2) event
+
+    script SCRIPT_ENTER_RESPAWN_NAME
     {
-        // This does not trigger offline so the OPEN script is used for that instead.
-        // IsNetworkGame is therefore not needed, but added in case the behaviour does end up changing somehow.
-        if (IsNetworkGame() && type == GAMEEVENT_PLAYERCONNECT)
-        {
-            Logger::LogDebug(LOGSOURCE, "Call event \cdGAMEEVENT_PLAYERCONNECT\cj.");
-
-            VALIDATE_ID_VALID_SCRIPT((int)arg1);
-
-            /*ZH2Lib::ResetPlayerLibContext(arg1);
-            ResetPlayerPersistingContext(arg1);
-            ResetPlayerContext(arg1);*/
-
-            GameLoop::StartServerPlayerLoopById(arg1);
-            Utils::InitializeSynchronizedTimerForPlayer(arg1);
-            terminate;
-        }
-
-        // New in 3.3: player attempts to join the game.
-        if (type == GAMEEVENT_PLAYERJOINS)
-        {
-            // Forced player cap is enabled and the player must join within the cap.
-            if (!GetPlayerIsWithinPlayerCap(arg1))
-            {
-                Logger::LogTo("This development build enforces a maximum player cap of " + str(DEV_PLAYERCAP_COUNT) + ". Please use a compatible, non-development version of Zombie Horde 2 to lift this limit.", arg1);
-                terminate;
-            }
-            
-            // The game must be in a state where players can join.
-            if (!GetPlayerCanJoin(arg1))
-            {
-                Logger::LogTo("You will join the next map.", arg1);
-            }
-            
-            bool canJoin = canJoinPlayercap && canJoinJoinable;
-            Logger::LogDebug(LOGSOURCE, "Can player \cd" + str((int)arg1) + "\cj join: \cd" + (canJoin ? "true" : "false") + "\cj.");
-
-            SetResultValue((int)canJoin);
-            terminate;
-        }
-
-        // Damage to player without any armor affecting it.
-        if (type == GAMEEVENT_ACTOR_DAMAGED_PREMOD)
-        {
-            // Disable damaging entirely if the round ended.
-            if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
-            {
-                SetResultValue(0);
-                terminate;
-            }
-            
-            Logger::LogDebug(LOGSOURCE, "Call event \cdGAMEEVENT_ACTOR_DAMAGED_PREMOD\cj.");
-            
-            // Check for infect.
-            int attackedId = PlayerNumber();
-            VALIDATE_ID_VALID_SCRIPT(attackedId);
-
-            // The attacked player is to be set on fire with this damagetype.
-            if ((str)arg2 == DAMAGETYPE_SETONFIRE_NAME)
-                Decorate::SetOnFire(-1, attackedId, 350, 200);
-
-            // Everything below is for player on player contact.
-            if (!SetActivator(0, AAPTR_DAMAGE_SOURCE)) terminate;
-
-            // If -1, not a player.
-            int attackerId = PlayerNumber();
-            if (attackerId == -1)
-                terminate;
-
-            // Zombie attacked a human.
-            if (Player::GetPlayerIsHuman(attackedId) && Player::GetPlayerIsZombie(attackerId))
-            {
-                // The damage type must be the type given by claws here, or it wasn't a scratch.
-                // This fixes damage in general, and also prevents infinite loops (which happends when the human is immune).
-                if ((str)arg2 == DAMAGETYPE_ZOMBIESCRATCH_NAME)
-                {
-                    EventBus::CallEvent(EVENTSCRATCHED, attackedId, attackerId);
-                
-                    // We always set the damage to 0.
-                    SetResultValue(0);
-                }
-
-                // Alternatively, the zombie pushed the human with the barrel push ability.
-                // To avoid complete annihilation of the human we want to set the damage to 0
-                else if ((str)arg2 == DAMAGETYPE_ZOMBIEPUSH_NAME)
-                    SetResultValue(0);
-            }
-
-            // Human attacked human
-            if (Player::GetPlayerIsHuman(attackedId) && Player::GetPlayerIsHuman(attackerId))
-            {
-                // If we shot somebody, nullify the damage (telefragging is still possible).
-                if ((str)arg2 == DAMAGETYPE_HUMANDEFAULT_NAME)
-                    SetResultValue(0);
-            }
-
-            // Spawn blood on the attacked from the bulletpuff.
-            if (!SetActivator(0, AAPTR_DAMAGE_INFLICTOR)) terminate;
-            Decorate::SpawnBloodFromBulletPuff(attackerId, attackedId);
-            terminate;
-        }
-
-        // Player fully left server.
-        if (type == GAMEEVENT_PLAYERLEAVESSERVER)
-        {
-            Logger::LogDebug(LOGSOURCE, "Call event \cdGAMEEVENT_PLAYERLEAVESSERVER\cj.");
-
-            VALIDATE_ID_VALID_SCRIPT((int)arg1);
-
-            int activeRoundIndex = Round::GetActiveRoundStateIndex();
-
-            // Only run if player was playing in the round.
-            if (Player::GetPlayerState(arg1) == Player::STATEPLAYING)
-            {
-                // The round was being played. We must not reset the player context.
-                // Otherwise another player can take the spot, so we clean up the context.
-                if (!Round::GetRoundJoinable(activeRoundIndex))
-                {
-                    Logger::LogDebug(LOGSOURCE, "Playing player has disconnected: (\cd" + str((int)arg1) + "\cj)" + BCSUTILS::PlayerName((int)arg1) + ". Reason: \cd" + str((int)arg2) + "\cj.");
-                    Player::SetPlayerState(arg1, Player::STATEGONE);
-
-                    // Finally, if the round was the playing round, call the event.
-                    if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
-                        EventBus::CallEvent(EVENTPLAYERLEFTROUND, arg1);
-                }
-                else
-                {
-                    Logger::LogDebug(LOGSOURCE, "Playing player has disconnected (not a playing round): (\cd" + str((int)arg1) + "\cj)" + BCSUTILS::PlayerName((int)arg1) + ".");
-                    ResetPlayerContext(arg1);
-                }
-
-                Sync::SyncPlayers();
-            }
-
-            // If we are currently voting, then we want to make sure this player no longer contributes to voting.
-            if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
-            {
-                Map::SetPlayerVotedMapIndex(arg1, -1);
-                Map::CheckMapVoteFinished();
-                Sync::SyncMapVoting();
-            }
-
-            // The persisting context is always reset. This might still have data for the spectating player.
-            // NOTE: This does not contain data required for anything specific. This should be revisited if it does.
-            // We'd have to do this in unloading or something.
-            ResetPlayerPersistingContext(arg1);
-        
-            // Always reset the lib context of the player.
-            ZH2Lib::ResetPlayerLibContext(arg1);
-            terminate;
-        }
-
-        // Track initial spawn spots and zombie teleport spots.
-        // The arg must be 1 here, or we do something weird with random spawners which I won't support.
-        if (type == GAMEEVENT_ACTOR_SPAWNED && arg1 == 1)
-        {
-            Logger::LogDebug(LOGSOURCE, "Call event \cdGAMEEVENT_ACTOR_SPAWNED\cj.");
-
-            str class = GetActorClass(0);
-            if (class == ACTOR_INITIALSPAWNSPOT_NAME) Game::TrackInitialSpawnSpot();
-            else if (class == ACTOR_ZOMBIETELEPORTSPOT_NAME) Game::TrackZombieTeleportSpot();
-        }
-
-        if (type == GAMEEVENT_CHAT && arg1 != -1)
-            SetResultValue((int)Game::HandlePlayerChatMessage(arg1, GetChatMessage(arg1, 0)));
-    }
-
-    script "zh2_internal_enter_respawn"
-    {
-        Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_enter_respawn\"");
+        Logger::LogDebug(LOGSOURCE, "Call script \"" + SCRIPT_ENTER_RESPAWN_NAME + "\"");
         WAIT_FOR_SCRIPT_OPEN_SERVER();
-        Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_enter_respawn\" after awaiter");
+        Logger::LogDebug(LOGSOURCE, "Call script \"" + SCRIPT_ENTER_RESPAWN_NAME + "\" after awaiter");
 
         Identity::InitializeActivator();
 
@@ -614,7 +487,7 @@ strict namespace ZH2Game
         // SPECIENONE defaults to SPECIEHUMAN.
         if (_forceSpecie == Player::SPECIENONE)
             _forceSpecie = Player::SPECIEHUMAN;
-        
+
         // TODO: Abstract into a repurposable functions
         if (_forceSpecie == Player::SPECIEHUMAN)
         {
@@ -662,14 +535,24 @@ strict namespace ZH2Game
         // Set initial name. The player's loop will then track possible changes.
         Player::SetName(BCSUtils::PlayerName(PlayerNumber()));
 
-        // TODO: This is something worth looking into by maybe checking if the timer passed a single tic? Otherwise we call this a lot.
-        Sync::SyncPlayers();
+        Game::InitializePlayerModifiers(PlayerNumber());
+        Feature::InitializePlayerFeatures(PlayerNumber());
+
+        // Possible extra syncs depending on time.
+        // We only do these if the map has been playing for a bit to avoid 64 players calling it.
+        if (ZH2Game::GameContext.DoSyncOnEnter)
+        {
+            Sync::SyncPlayers();
+
+            // Note we want to sync on enter as powers are inventory items and we also initialize stuff like modifiers above.
+            Sync::SyncPowers();
+        }
 
         // Set the player as an admin.
         // This is now removed and you can turn it on through the menu/rcon. Always works offline.
-        // if (!Admin::GetAdmin())
+        // if (!Admin::GetIsAdmin())
         // {
-        //     Admin::SetAdmin(true);
+        //     Admin::SetIsAdmin(true);
         //     Sync::SyncAdmins();
         // }
     }
@@ -683,9 +566,9 @@ strict namespace ZH2Game
             return;
         }
 
-        Logger::LogTo(message, id);
+        Logger::LogTo(id, message);
 
-        if (GetUseDeadSpectators())
+        if (GetUseDeadSpectatorsFeature())
         {
             if (SetDeadSpectator(id, true))
                 return;
@@ -695,15 +578,15 @@ strict namespace ZH2Game
 
         if (KickFromGame(id, message))
             return;
-        
+
         Logger::LogError(LOGSOURCE, "Failed to set " + str(id) + " as spectator. KickFromGame failed.");
     }
 
-    script "zh2_internal_enter_respawn_clientside" clientside
+    script SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME clientside
     {
-        Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_enter_respawn_clientside\"");
+        Logger::LogDebug(LOGSOURCE, "Call script \"" + SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME + "\"");
         WAIT_FOR_SCRIPT_OPEN_CLIENT();
-        Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_enter_respawn_clientside\" after awaiter");
+        Logger::LogDebug(LOGSOURCE, "Call script \"" + SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME + "\" after awaiter");
 
         // Same as on the serverside, check if we can join the game at all or if we are capped/restricted.
         if (!GetPlayerIsWithinPlayerCap(PlayerNumber()) || !GetPlayerCanJoin(PlayerNumber()))
@@ -724,7 +607,7 @@ strict namespace ZH2Game
     // Returns `true` if the player is within the player cap, assuming it's enabled.
     internal bool GetPlayerIsWithinPlayerCap(int id)
     {
-        return !DevelopmentPlayerCap() || PlayerIsBot(id) || PlayerCount() - BCSUtils::BotCount() <= DEV_PLAYERCAP_COUNT;
+        return !DevelopmentPlayerCap() || PlayerIsBot(id) || PlayerCount() - Utils::PlayingBotCount() <= DEV_PLAYERCAP_COUNT;
     }
 
     // Returns `true` if the player canJoin.
@@ -754,4 +637,4 @@ strict namespace ZH2Game
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE

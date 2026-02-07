@@ -14,6 +14,9 @@ int s = 6;
 int t = 1;
 int v = 0;
 
+// Nacho Libre safezone
+int SecretSafezoneReached[BCSUtils::MAX_PLAYERS];
+
 // 5.75 base (all resists + z)
 // Z, R, T, R, T, R, R, S
 // 1, 2, 3, 4, 5, 6, 7, 8
@@ -209,7 +212,10 @@ Script 16 (void) // final resist, endgame
 		HudmessageBold(s:"The dam is being destroyed"; HUDMSG_FADEOUT, 998, CR_white, 0.5, 0.17, 1.5, 0.5);
 		delay(35);
 	}
-	Generic_Ceiling(65, 12, 96, 0, 16);
+	//Generic_Ceiling(65, 12, 96, 0, 16); //ZH2 [AQW]
+	Ceiling_LowerAndCrush(65,12,20,2); //ZH2 [AQW]
+	TagWait(65); //ZH2 [AQW]
+	Ceiling_LowerByValueTimes8(65,16,1); //ZH2 [AQW]
 	delay(146); // =35*5 - 29
 	SetFont("BIGFONT");
 	HudMessageBold(s:"\crT-minus 3 seconds!!!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 3.0, 2.0);
@@ -350,7 +356,10 @@ Script 22 (void) // secret end
 		Teleport(106);
 		ACS_terminate(16, 0);
 		ACS_terminate(17, 0);
-		Generic_Ceiling(152, 255, 128, 0, 16);
+		//Generic_Ceiling(152, 255, 128, 0, 16); //ZH2 [AQW] crusher fix
+		Ceiling_LowerAndCrush(152,255,50,2); //ZH2 [AQW]
+		TagWait(152); //ZH2 [AQW]
+		Ceiling_LowerByValueTimes8(152,16,1); //ZH2 [AQW]
 		Generic_Ceiling(151, 12, 152, 0, 8);
 		Generic_Ceiling(148, 222, 152, 0, 8);
 		Generic_Floor(148, 222, 144, 0, 8);
@@ -359,11 +368,10 @@ Script 22 (void) // secret end
 		spawnspot("ZH2LegacyFlareDisco", 145, 0, 0);
 		f--;
 		delay(35);
-		Music::SetMusic ("NK_NACHO", 0);
+		Music::SetMusic("NK_NACHO", 0);
 		SetFont("BIGFONT");
 		HudmessageBold(s:"\cnHOLA NACHO!!!"; HUDMSG_PLAIN, 699, CR_white, 0.5, 0.35, 2.0);
 		delay(35*5);
-		Generic_Ceiling(10, 12, 136, 0, 16);
 		SetActivator(-1);
 		for(int time=40;time>0;time--)
 		{
@@ -373,14 +381,26 @@ Script 22 (void) // secret end
 			HudmessageBold(s:"Everyone meet at the party"; HUDMSG_FADEOUT, 998, CR_white, 0.5, 0.17, 1.5, 0.5);
 			delay(35);
 		}
-		Generic_Ceiling(151, 12, 152, 0, 16);
+		//Generic_Ceiling(151, 12, 152, 0, 16); //ZH2 [AQW]
+		Ceiling_LowerAndCrush(151,12,50,2); //ZH2 [AQW]
+		TagWait(151); //ZH2 [AQW]
+		Ceiling_LowerByValueTimes8(151,12,1); //ZH2 [AQW]
 		delay(35*4);
 		SetFont("BIGFONT");
 		HudMessageBold(s:"\crRamses doesn't like your singing!!!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 3.0, 2.0);
 		delay(155); // =35*5 - 20
 		AmbientSound("world/nuke1", 111);
 		Music::SetMusic("D_NULL", 0);
-		Game::KillUnsafePlayers();
+
+		for(int i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
+		{
+			if(!SecretSafezoneReached[i])
+			{
+				int tid = Identity::GetTid(i);
+				Thing_Damage(tid, 10000, MOD_EXIT);
+			}
+		}
+
 		ACS_execute(23, 0, 0, 0, 0);
 		delay (35*9);
 		Generic_Ceiling(172, 69, 8, 0, 8);
@@ -394,6 +414,11 @@ Script 22 (void) // secret end
 		delay (35*3);
 		f++;
     }
+}
+
+script "ze23_nacho_safezone"
+{
+	SecretSafezoneReached[PlayerNumber()] = LineSide() == LINE_FRONT;
 }
 
 Script 23 (void) // RSOD

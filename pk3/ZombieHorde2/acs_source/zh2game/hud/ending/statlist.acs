@@ -1,0 +1,69 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    #define HUD_ENGINE_TRUNCATE_LENGTH 14
+
+    // Main list drawer. Returns the count of items drawn.
+    internal int DrawList(fixed addX, fixed addY, str header, int size, int maxShown, int[]& collection, int function(int)? counter)
+    {
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_TOP);
+
+        // Header
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_GREEN);
+
+        HudSetPointInternal(addX, addY);
+        BCSUtils::HudDrawText(--_drawnHudId, header);
+        DebugDraw();
+
+        addY += 25.0;
+
+        // Limit number of shown players based on how many we can show + how many actually infected.
+        int count = BCSUtils::Min(maxShown, size);
+
+        // Names
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        for (int i = 0; i < count; ++i)
+        {
+            str truncatedName = Utils::TruncateString(
+                Player::GetStrippedPlayerName(collection[i]), HUD_ENGINE_TRUNCATE_LENGTH);
+
+            BCSUtils::HudSetTextColor(CR_WHITE);
+
+            HudSetPointInternal(addX, addY + fixed(15 * i));
+            BCSUtils::HudDrawText(--_drawnHudId, truncatedName);
+
+            if (counter != null)
+            {
+                BCSUtils::HudSetTextColor(CR_UNTRANSLATED);
+
+                HudSetPointInternal(addX + 110.0, addY + fixed(15 * i));
+                BCSUtils::HudDrawText(--_drawnHudId, str(counter(collection[i])));
+            }
+
+            DebugDraw();
+        }
+
+        // `... And x more!`
+        // But only if we don't have 1 more entry, because `... And 1 more!` looks dumb.
+        // Also, not drawn if we have counters. This is more because the list have either one, I should make this a separate option.
+        if (counter != null)
+            return count;
+
+        int left = size - count;
+        if (left <= 1)
+            return count;
+
+        BCSUtils::HudSetTextColor(CR_WHITE);
+
+        HudSetPointInternal(addX, addY + fixed(15 * count));
+        BCSUtils::HudDrawText(--_drawnHudId, "... And " + str(left) + " more!");
+
+        // Plus one for the text
+        return count + 1;
+    }
+}
