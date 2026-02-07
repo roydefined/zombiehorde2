@@ -41,7 +41,7 @@ strict namespace Decorate
         if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
         if (CheckInventory(ENERGY_ITEM) == 0) terminate;
 
-        Player::PanicStateT state = Player::GetPanicState();
+        Player::PlayerPanicStateT state = Player::GetPanicState();
         if (state == Player::PANICSTATEPANICKING)
         {
             Logger::LogActivator("You can't use this whilst panicking!");
@@ -77,7 +77,7 @@ strict namespace Decorate
         if (!Player::GetPlayerIsHuman(PlayerNumber())) terminate;
         if (CheckInventory(MEDIKIT_ITEM) == 0) terminate;
 
-        Player::PanicStateT state = Player::GetPanicState();
+        Player::PlayerPanicStateT state = Player::GetPanicState();
         if (state == Player::PANICSTATEPANICKING)
         {
             Logger::LogActivator("You can't use this whilst panicking!");
@@ -123,27 +123,8 @@ strict namespace Decorate
         }
 
         TakeInventory(CURE_ITEM, 1);
-
-        // A zombie also gets cured.
-        str messagePart = "";
-        if (!Player::GetPlayerIsHuman(PlayerNumber()))
-        {
-            int genderInt = GetPlayerInfo(PlayerNumber(), PLAYERINFO_GENDER);
-            str gender = genderInt == 0 ? "himself"
-                : genderInt == 1 ? "herself"
-                : genderInt == 2 ? "themself"
-                : "itself";
-
-            messagePart = "has cured " + gender + " and ";
-            Game::CurePlayer(PlayerNumber());
-        }
-
-        Logger::LogBold("\cf" + BCSUTILS::PlayerName(PlayerNumber()) + "\cj " + messagePart + "is now immune against the virus!");
+        Game::CurePlayer(PlayerNumber(), Game::CURESOURCE_ITEM);
         Sync::SyncPlayers();
-
-        // As curing calls an event that removes powers, we must make sure to give this power AFTER so the reset does not affect it.
-        // TODO: Remove when we change events to call instantly.
-        Delay(const: 1);
 
         Power::GivePower(Power::POWERHUMANIMMUNITY);
     }

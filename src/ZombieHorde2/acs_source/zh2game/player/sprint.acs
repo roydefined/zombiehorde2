@@ -43,6 +43,7 @@ strict namespace Player
         if (!sprinting)
         {
             Power::TakePlayerPower(id, Power::POWERSPRINTING);
+            Sync::SyncPowers();
             return;
         }
 
@@ -62,7 +63,7 @@ strict namespace Player
             return;
         }
 
-        PanicStateT state = GetPlayerPanicState(id);
+        PlayerPanicStateT state = GetPlayerPanicState(id);
         if (state == PANICSTATEPANICKING)
         {
             Logger::LogTo(id, "You are panicking!");
@@ -83,6 +84,7 @@ strict namespace Player
 
         // Note: Considering the sprint is able to decrement faster/slower, it is not reliable to set actual tics here
         Power::GivePlayerPower(id, Power::POWERSPRINTING);
+        Sync::SyncPowers();
     }
 
 

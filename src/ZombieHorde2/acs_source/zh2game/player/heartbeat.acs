@@ -51,8 +51,17 @@ strict namespace Player
         }
     }
 
+    internal void LastHeartbeatTicClient()
+    {
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (PlayerInGame(i))
+                LastHeartbeatTicPlayerClient(i);
+        }
+    }
+
     // Called from the client's loop for each ingame player index.
-    internal void HeartbeatTicPlayerClient(int id)
+    internal void LastHeartbeatTicPlayerClient(int id)
     {
         // The final heartbeat is not triggered locally when the console player is the final human and we are playing a hurt heartbeat.
         if (id == ConsolePlayerNumber() && ZH2Game::GetEnableHurtHeartbeat() && _heartbeatType != 0)
@@ -64,7 +73,7 @@ strict namespace Player
         if (!ZH2Game::GetEnableFinalHeartbeat())
             return;
 
-        if (HumanCount() != 1)
+        if (Game::HumanCount() != 1)
             return;
 
         // Map is not configured to play a heartbeat.

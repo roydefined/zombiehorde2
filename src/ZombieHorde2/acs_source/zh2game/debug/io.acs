@@ -1,0 +1,144 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Debug
+{
+    script "zh2_action_debugmoddefinitions_items_serverside" net
+    {
+        InternalDebugModDefinitionsItems();
+    }
+
+    script "zh2_action_debugmoddefinitions_items_clientside" net clientside
+    {
+        InternalDebugModDefinitionsItems();
+    }
+
+    internal void InternalDebugModDefinitionsItems()
+    {
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            void WriteItem(int i)
+            {
+                str name = Item::GetItemName(i);
+
+                bool humanOwned = Item::GetItemHumanOwned(i);
+                bool zombieOwned = Item::GetItemZombieOwned(i);
+                int giveOnSpawn = Item::GetItemGiveOnSpawnCount(i);
+                int giveOnHumanCount = Item::GetItemGiveOnHumanCount(i);
+                int giveOnZombieCount = Item::GetItemGiveOnZombieCount(i);
+
+                str graphic = Item::GetItemGraphic(i);
+                str label = Item::GetItemLabel(i);
+                str description = Item::GetItemDescription(i);
+
+                int bloodSeverity = Item::GetItemBloodSeverity(i);
+                int bloodTics = Item::GetItemBloodTics(i);
+
+                bool takeOnPanic = Item::GetItemTakeOnPanic(i);
+
+                // The name is always set.
+                Append(s:" \cd" + name);
+
+                if (humanOwned) Append(s:"\cj, \cdhuman owned");
+                if (zombieOwned) Append(s:"\cj, \cdzombie owned");
+                if (giveOnSpawn > 0) Append(s:"\cj, give on spawn: \cd" + str(giveOnSpawn));
+                if (giveOnHumanCount > 0) Append(s:"\cj, give on human: \cd" + str(giveOnHumanCount));
+                if (giveOnZombieCount > 0) Append(s:"\cj, give on zombie: \cd" + str(giveOnZombieCount));
+                if (graphic != (raw)0 && graphic != "") Append(s:"\cj, graphic: \cd" + graphic);
+
+                // Lengthy, turned off for now
+                //if (label != (raw)0 && label != "") Append(s:"\cj, label: \cd" + label);
+                //if (description != (raw)0 && description != "") Append(s:"\cj, description: \cd" + description);
+
+                if (bloodSeverity > 0) Append(s:"\cj, blood severity: \cd" + str(bloodSeverity));
+                if (bloodTics > 0) Append(s:"\cj, blood tics: \cd" + str(bloodTics));
+
+                if (takeOnPanic) Append(s:"\cj, take on panic: \cdtrue");
+            }
+
+            int totalSize = Item::GetItemCollectionSize();
+
+            int size = Item::GetWeaponCollectionSize();
+            Append(s:"\cjWeapons \cd" + str(size) + "\cj/\cd" + str(totalSize));
+            for (int i = 0; i < size; ++i)
+            {
+                Append(s:"\n");
+                Append(s:"\cf#" + str(i));
+                WriteItem(Item::GetWeaponIndex(i));
+            }
+
+            size = Item::GetInventoryCollectionSize();
+            Append(s:"\n");
+            Append(s:"\cjInventory \cd" + str(size) + "\cj/\cd" + str(totalSize));
+            for (int i = 0; i < size; ++i)
+            {
+                Append(s:"\n");
+                Append(s:"\cf#" + str(i));
+                WriteItem(Item::GetInventoryIndex(i));
+            }
+
+            size = Item::GetKeyCollectionSize();
+            Append(s:"\n");
+            Append(s:"\cjKeys \cd" + str(size) + "\cj/\cd" + str(totalSize));
+            for (int i = 0; i < size; ++i)
+            {
+                Append(s:"\n");
+                Append(s:"\cf#" + str(i));
+                WriteItem(Item::GetKeyIndex(i));
+            }
+        }
+        Logger::LogActivator(logMessage);
+    }
+
+    script "zh2_action_debugmoddefinitions_rewards_serverside" net
+    {
+        InternalDebugModDefinitionsRewards();
+    }
+
+    internal void InternalDebugModDefinitionsRewards()
+    {
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            Settings::UpdateCurrentClientSettings();
+            int count = Reward::GetRewardCollectionSize();
+            int persistingCount = ZH2Game::PersistingGameContext.RequestedClientSettingCount;
+            Append(s:"Total rewards: \cd" + str(count) + "\cj.");
+
+            for (int i = 0; i < count; ++i)
+            {
+                // TODO: Could look if we can list the containers by name it make it more clear, instead of the flag?
+                int containerFlags = Reward::GetRewardFlags(i);
+
+                str name = Reward::GetRewardName(i);
+                int weight = Reward::GetRewardWeight(i);
+
+                Player::PlayerSpecieT specie = Reward::GetRewardSpecieSpecific(i);
+
+                str give = Reward::GetRewardGive(i);
+                str sound = Reward::GetRewardSound(i);
+
+                str localMessage = Reward::GetRewardLocalMessage(i);
+                str message = Reward::GetRewardMessage(i);
+
+                Append(s:"\n");
+                Append(s:"\cf#" + str(i));
+
+                // Name and weight are required and always set.
+                Append(s:"\cj Item \cd" + name);
+                Append(s:"\cj (\cd" + str(weight) + "\cj)");
+
+                if (specie != Player::SPECIENONE) Append(s:"\cj, restrict to specie \cd" + Player::GetSpecieIndexAsString(specie));
+                if (give != (raw)0 && give != "") Append(s:"\cj, give \cd" + give);
+                if (sound != (raw)0 && sound != "") Append(s:"\cj, sound \cd" + sound);
+
+                // Lengthy, turned off for now
+                //if (localMessage != (raw)0 && localMessage != "") Append(s:"\cj, local message \cd" + localMessage);
+                //if (message != (raw)0 && message != "") Append(s:"\cj, message \cd" + message);
+            }
+        }
+        Logger::LogActivator(logMessage);
+    }
+}

@@ -11,7 +11,8 @@ actor ZH2LegacyZm25Misty : ZH2LegacyMonster 27856
     Activesound "monster/misty/active"
     scale 0.15
     mass 0x7fffffff
-    Obituary "%o saw the misty."
+    Obituary "%o saw the Misty."
+    tag "Misty"
     MONSTER
     bloodcolor gray
     +FLOORCLIP
@@ -28,9 +29,12 @@ actor ZH2LegacyZm25Misty : ZH2LegacyMonster 27856
     States
     {
         Spawn:
+            MIST AAAAAAAAAA 1
+        Spawn.rest:
             MIST A 1 A_Look
             loop
         See:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_gettargetiszombie") == true, "Spawn")
             MIST A 1 A_JumpIfInventory("ZH2LegacyZM18LabYouCanSeeMe",1,"See2")
             MIST A 1 A_Chase
             loop

@@ -1,0 +1,87 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "draw.acs"
+
+strict namespace Hud
+{
+    internal void DrawObituaryHud()
+    {
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        PrepareHud(
+            BCSUtils::HudRight() - 140.0 + ZH2Game::GetHudObituaryOffsetX(),
+            BCSUtils::HudTop() + 10.0 + ZH2Game::GetHudObituaryOffsetY(),
+            false);
+
+        DrawObituaries();
+    }
+
+    internal void DrawObituaries()
+    {
+        // Obituaries are drawn from highest index to lowest.
+        int lowIndex = Obituary::GetLowIndex();
+        int highIndex = Obituary::GetHighIndex();
+        fixed offset = 0.0;
+        while (highIndex != lowIndex)
+        {
+            BCSUtils::HudSetFont("KILFONT");
+            BCSUtils::HudSetTextColor(CR_WHITE);
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
+
+            int elapsedTics = Obituary::GetQueueElapsedDuration(highIndex);
+
+            // Determine alpha based on elapsed time.
+            fixed alpha;
+            if (elapsedTics < OBITUARY_FADEIN_TICS)
+                alpha = fixed(elapsedTics) / fixed(OBITUARY_FADEIN_TICS);
+            else if (elapsedTics < OBITUARY_FADEIN_TICS + OBITUARY_DURATION_TICS)
+                alpha = 1.0;
+            else if (elapsedTics < OBITUARY_FADEIN_TICS + OBITUARY_DURATION_TICS + OBITUARY_FADEOUT_TICS)
+                alpha = fixed(OBITUARY_FADEIN_TICS + OBITUARY_DURATION_TICS + OBITUARY_FADEOUT_TICS - elapsedTics) / fixed(OBITUARY_FADEOUT_TICS);
+            else
+                alpha = 0.0;
+            BCSUtils::HudSetAlpha(alpha);
+
+            // The height factor gradually increases on fadein to give the obituary an additional offset.
+            fixed heightFactor = elapsedTics < OBITUARY_FADEIN_TICS ? alpha : fixed(1.0);
+
+            Obituary::ObituaryTypeT type = Obituary::GetQueueType(highIndex);
+            switch(type)
+            {
+                case Obituary::OBITUARY_INITIAL: DrawInitialChosen(highIndex, offset); break;
+                case Obituary::OBITUARY_SAFE: DrawPlayerSafe(highIndex, offset); break;
+                case Obituary::OBITUARY_PLAYER_SCRATCHED: DrawPlayerScratched(highIndex, offset, alpha); break;
+                case Obituary::OBITUARY_PLAYER_INFECTED: DrawPlayerInfected(highIndex, offset, alpha); break;
+                case Obituary::OBITUARY_PLAYER_CURED: DrawPlayerCured(highIndex, offset); break;
+                case Obituary::OBITUARY_PLAYER_DIED: DrawPlayerDied(highIndex, offset); break;
+                case Obituary::OBITUARY_PLAYER_KILLEDBYPLAYER: DrawPlayerKilledByPlayer(highIndex, offset, alpha); break;
+                case Obituary::OBITUARY_PLAYER_KILLEDBYMONSTER: DrawPlayerKilledByMonster(highIndex, offset); break;
+                default: break;
+            }
+
+            // Go upwards, make sure to loop around.
+            highIndex--;
+            if (highIndex == -1)
+                highIndex = OBITUARY_COLLECTION_MAX_SIZE - 1;
+
+            offset += 18.0 * heightFactor;
+        }
+    }
+
+    internal str TranslateSpecieGraphic(int type)
+    {
+        switch(type)
+        {
+            case Obituary::OBITUARYSPECIE_HUMAN: return HUD_OBITUARY_HUMAN;
+            case Obituary::OBITUARYSPECIE_ZOMBIE_INITIAL: return HUD_OBITUARY_ZOMBIE_INITIAL;
+            case Obituary::OBITUARYSPECIE_ZOMBIE_REGULAR: return HUD_OBITUARY_ZOMBIE_REGULAR;
+            case Obituary::OBITUARYSPECIE_ZOMBIE_OLD: return HUD_OBITUARY_ZOMBIE_OLD;
+        }
+
+        return (str)0;
+    }
+}

@@ -1,0 +1,49 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Obituary
+{
+    #define OBITUARY_COLLECTION_MAX_SIZE 32
+    #define OBITUARY_DATA_MAX_SIZE 8
+
+    internal struct ObituaryCollectionContextT
+    {
+        ObituaryContextT Collection[OBITUARY_COLLECTION_MAX_SIZE];
+
+        // Instead of a count, the obituary system has a low/high index.
+        // These constantly shift based on what indexes are visual on the player's screen.
+        // This way we know where we have space for new entries.
+        int LowIndex;
+        int HighIndex;
+    };
+
+    internal struct ObituaryContextT
+    {
+        int Timestamp;
+        ObituaryTypeT Type;
+        raw ReceiveData[OBITUARY_DATA_MAX_SIZE];
+    };
+
+    internal enum ObituaryTypeT : int
+    {
+        OBITUARY_UNKNOWN,
+        OBITUARY_INITIAL,
+        OBITUARY_SAFE,
+        OBITUARY_PLAYER_SCRATCHED,
+        OBITUARY_PLAYER_INFECTED,
+        OBITUARY_PLAYER_CURED,
+        OBITUARY_PLAYER_DIED,
+        OBITUARY_PLAYER_KILLEDBYPLAYER,
+        OBITUARY_PLAYER_KILLEDBYMONSTER,
+    };
+
+    internal enum ObituarySpecieTypeT : int
+    {
+        OBITUARYSPECIE_UNKNOWN,
+        OBITUARYSPECIE_HUMAN,
+        OBITUARYSPECIE_ZOMBIE_INITIAL,
+        OBITUARYSPECIE_ZOMBIE_REGULAR,
+        OBITUARYSPECIE_ZOMBIE_OLD,
+    };
+}

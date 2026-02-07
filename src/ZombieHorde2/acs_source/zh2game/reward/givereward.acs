@@ -55,6 +55,8 @@ strict namespace Reward
 
         GivePlayerRewardByIndex(id, index);
         BroadcastGiveItem(id, index);
+
+        Sync::SyncPowers();
     }
 
     internal bool GetCanGiveReward(int index)
@@ -64,20 +66,21 @@ strict namespace Reward
 
     internal bool GetCanGivePlayerReward(int id, int index)
     {
-        Player::SpecieTypeT specie = Player::GetPlayerSpecie(id);
+        Player::PlayerSpecieT specie = Player::GetPlayerSpecie(id);
 
         // Conditionally check for specie.
         // Both instances must be specie specific.
         // If one doesn't provide it we assume the reward can be for any specie.
         if (specie != Player::SPECIENONE)
         {
-            Player::SpecieTypeT rewardSpecie = Reward::GetRewardSpecieSpecific(index);
+            Player::PlayerSpecieT rewardSpecie = Reward::GetRewardSpecieSpecific(index);
             if (rewardSpecie != Player::SPECIENONE && specie != rewardSpecie)
                 return false;
         }
 
         // Check for restriction.
         // Restriction means there's some reason the item can't be given (restricted/duplicate/disabled/etc).
+        // TODO: We should error if the script does not exist.
         str callRestrict = GetRewardCallRestrict(index);
         if (callRestrict != (raw)0 && callRestrict != ""
             && ACS_NamedExecuteWithResult(callRestrict, id))
@@ -115,8 +118,9 @@ strict namespace Reward
 
         if ((raw)callGive != 0 && callGive != "")
         {
-            if (!ACS_NamedExecuteAlways(callGive, 0, id))
-                Logger::logError(LOGSOURCE , "Failed to call script \"" + callGive + "\" for reward index " + str(index) + ".");
+            // TODO: We should error if the script does not exist.
+            // Logger::logError(LOGSOURCE , "Failed to call script \"" + callGive + "\" for reward index " + str(index) + ".");
+            ACS_NamedExecuteWithResult(callGive, id);
         }
 
         if ((raw)give != 0 && give != "")

@@ -54,23 +54,27 @@ Script 1 OPEN // Level setups
 	Radius_Quake(9, 35, 0, 500, 38);
 	ambientsound("sound/farexplosion", 50);
 
-	// TODO: Support
-	//spawnspot("FSDEXPLOSION",77,0,0);
+	// Borrowed ZE25's explosion.
+	spawnspot("ZH2LegacyZE25Explosion",77,0,0);
 
 	floor_movetovalue(32, 50, 0, 0);
 
 	delay(18);
 
-	if(numberofplayers>=18)
+	SetFont("BIGFONT");
+	str message;
+	buildmsg(message = StrParam())
 	{
-		SetFont("BIGFONT"); //if there are two zombies, declare 2 experiments escaped.
-		HudmessageBOLD(s:"\cqThe explosion released the \ciexperiment Z and x"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+		Append(s:"\cqThe explosion released \ci");
+		switch(Game::ZombieCount())
+		{
+			case 1: Append(s:"experiment Z"); break;
+			case 2: Append(s:"experiment Z and X"); break;
+			default: Append(s:"multiple experiments"); break;
+		}
+		Append(s:"\cq!");
 	}
-	else
-	{
-		SetFont("BIGFONT");
-		HudmessageBOLD(s:"\cqThe explosion released the \ciexperiment Z"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
-	}
+	HudmessageBold(s:message; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
 
 	delay(18);
 	Music::SetMusic("D_SCAPE");
@@ -232,13 +236,13 @@ script 8 (void) //falling in water
 {
     if(Player::GetIsHuman())
     {
-        Thing_Damage(0, 10, 0);
-        Acs_execute(9,0,3,0,0);
+        Thing_Damage(0, 10, MOD_FALLING);
+        Acs_execute(9, 0, 3, 0, 0);
     }
     else
     {
-        Thing_Damage(0, 150, 0);
-        Acs_execute(9,0,4,0,0);
+        Thing_Damage(0, 150, MOD_FALLING);
+        Acs_execute(9, 0, 4, 0, 0);
     }
 }
 

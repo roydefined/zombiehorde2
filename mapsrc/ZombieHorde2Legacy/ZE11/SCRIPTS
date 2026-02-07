@@ -9,6 +9,8 @@
 
 #define FROZEN_TIME  5
 
+#define LOGSOURCE "ZE11"
+
 bool forcefield_active = false;
 
 Script "ze11_open" OPEN
@@ -70,9 +72,17 @@ Script "ze11_open_client2" OPEN CLIENTSIDE
 	restart;    // loop!!!
 }
 
-/* RESIST EVENT */
-script "ze11_internal_event_resistelapsed" (int index)
+script "ze11_unload" unloading
 {
+    SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
+}
+
+/* RESIST EVENT */
+script "ze11_internal_event_resistelapsed" (raw packetRaw)
+{
+	Event::ReceiveTimerElapsed((str)packetRaw);
+	int index = Event::GetReceiveData(0);
+
 	switch(index)
 	{
 		case 0:
@@ -140,18 +150,40 @@ Script 3 (void)
         terminate;
 
     // Freeze
-    SetPlayerProperty(0, 1, PROP_FROZEN);
+    SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN);
+
+	// Mapspot will hold the player's translation so we can set the special translation.
+	int translationHolderTid = UniqueTid();
+	if (!SpawnForced("mapspot", 0.0, 0.0, 0.0, translationHolderTid))
+	{
+		Logger::LogError(LOGSOURCE, "Failed to spawn translation mapspot.");
+		terminate;
+	}
+
+	Thing_SetTranslation(translationHolderTid, -1);
+
     // Colors
     Thing_SetTranslation(0, 1);
     FadeTo(127, 127, 255, 0.5, 0.0);
+
     // Play a sound
     ActivatorSound("world/frozen", 127);
 
-    delay(35*FROZEN_TIME);
+    delay(35 * FROZEN_TIME);
 
-    // unfreeze him
-    SetPlayerProperty(0, 0, PROP_FROZEN);
-    Thing_SetTranslation(0, 0);
+	// Set activator to the spawned mapspot holding the translation and transfer the translation back.
+	int tid = ActivatorTID();
+	if (!SetActivator(translationHolderTid))
+		terminate;
+
+	Thing_SetTranslation(tid, -1);
+	Thing_Remove(translationHolderTid);
+
+	if (!SetActivator(tid))
+		terminate;
+
+    // Unfreeze the player
+    SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN);
     FadeTo(127, 127, 255, 0.0, 1.0);
 
 }
@@ -195,5 +227,6 @@ Script 10 (void)
 
     if(Player::GetIsZombie())
         ThrustThing(128, 30, 0, 0);
-
 }
+
+#undef LOGSOURCE

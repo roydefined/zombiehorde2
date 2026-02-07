@@ -14,6 +14,9 @@ int s = 6;
 int t = 1;
 int v = 0;
 
+// Nacho Libre safezone
+int SecretSafezoneReached[BCSUtils::MAX_PLAYERS];
+
 // 5.75 base (all resists + z)
 // Z, R, T, R, T, R, R, S
 // 1, 2, 3, 4, 5, 6, 7, 8
@@ -365,14 +368,10 @@ Script 22 (void) // secret end
 		spawnspot("ZH2LegacyFlareDisco", 145, 0, 0);
 		f--;
 		delay(35);
-		Music::SetMusic ("NK_NACHO", 0);
+		Music::SetMusic("NK_NACHO", 0);
 		SetFont("BIGFONT");
 		HudmessageBold(s:"\cnHOLA NACHO!!!"; HUDMSG_PLAIN, 699, CR_white, 0.5, 0.35, 2.0);
 		delay(35*5);
-		//Generic_Ceiling(10, 12, 136, 0, 16); //ZH2 [AQW]
-		Ceiling_LowerAndCrush(10,12,50,2); //ZH2 [AQW]
-		TagWait(10); //ZH2 [AQW]
-		Ceiling_LowerByValueTimes8(10,12,1); //ZH2 [AQW]
 		SetActivator(-1);
 		for(int time=40;time>0;time--)
 		{
@@ -392,7 +391,16 @@ Script 22 (void) // secret end
 		delay(155); // =35*5 - 20
 		AmbientSound("world/nuke1", 111);
 		Music::SetMusic("D_NULL", 0);
-		Game::KillUnsafePlayers();
+
+		for(int i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
+		{
+			if(!SecretSafezoneReached[i])
+			{
+				int tid = Identity::GetTid(i);
+				Thing_Damage(tid, 10000, MOD_EXIT);
+			}
+		}
+
 		ACS_execute(23, 0, 0, 0, 0);
 		delay (35*9);
 		Generic_Ceiling(172, 69, 8, 0, 8);
@@ -406,6 +414,11 @@ Script 22 (void) // secret end
 		delay (35*3);
 		f++;
     }
+}
+
+script "ze23_nacho_safezone"
+{
+	SecretSafezoneReached[PlayerNumber()] = LineSide() == LINE_FRONT;
 }
 
 Script 23 (void) // RSOD

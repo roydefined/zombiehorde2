@@ -6,22 +6,37 @@ strict namespace Decorate
 {
     script "zh2_dec_setfire_area" (raw area, raw initialDamageTics, raw subsequentDamageTics)
     {
-        AreaSetOnFireAtTid(
-            -1, (int)area, (int)initialDamageTics, (int)subsequentDamageTics);
-    }
+        // Will just be -1 if we passed nobody.
+        int ownerId = Identity::GetId(GetActorProperty(0, APROP_TARGETTID));
 
-    script "zh2_dec_setfire_area_targetsource" (raw area, raw initialDamageTics, raw subsequentDamageTics)
-    {
-        AreaSetOnFireAtTid(
-            GetActorProperty(0, APROP_TARGETTID), (int)area, (int)initialDamageTics, (int)subsequentDamageTics);
+        str inflictorClass = GetActorClass(0);
+
+        // Map fire actor to known actor.
+        // TODO: Make configurable
+        static str itemMap[][] =
+        {
+            { "ZH2WeaponFireGrenadeDeathFX", WEAPON_FIREGRENADE_NAME },
+            { "ZH2FireCrystal", CRYSTAL_ITEM },
+            { "ZH2ItemFireMineThrown", FIREMINE_ITEM },
+            { "ZH2CirculatorFireBall", CIRCULATOR_ITEM },
+            { "ZH2ItemSuicideBombDeathFX", SUICIDE_BOMB_ITEM },
+        };
+
+        foreach(auto item; itemMap)
+        {
+            if (item[0] == inflictorClass)
+            {
+                inflictorClass = item[1];
+                break;
+            }
+        }
+
+        AreaSetOnFireAtTid(ownerId, inflictorClass, (int)area, (int)initialDamageTics, (int)subsequentDamageTics);
     }
 
     // Sets the area on fire at the given tid.
-    internal void AreaSetOnFireAtTid(int sourceTid, int area, int initialDamageTics, int subsequentDamageTics)
+    internal void AreaSetOnFireAtTid(int ownerId, str inflictorClass, int area, int initialDamageTics, int subsequentDamageTics)
     {
-        // Will just be -1 if we passed nobody.
-        int sourceId = Identity::GetId(sourceTid);
-
         bool hasHit = false;
         str logMessage;
         BuildMsg(logMessage = StrParam())
@@ -41,10 +56,10 @@ strict namespace Decorate
 
                 hasHit = true;
                 Append(s:BCSUtils::PlayerName(i));
-                SetOnFire(sourceId, i, initialDamageTics, subsequentDamageTics);
+                SetOnFire(ownerId, i, inflictorClass, initialDamageTics, subsequentDamageTics);
             }
 
-            if (sourceId != -1) Append(s:". Source player: " + BCSUtils::PlayerName(sourceId) + ".");
+            if (ownerId != -1) Append(s:". Source player: " + BCSUtils::PlayerName(ownerId) + ". Inflictor: " + inflictorClass + ".");
             else Append(s:".");
         }
 
@@ -52,7 +67,7 @@ strict namespace Decorate
             Logger::LogDebug(LOGSOURCE , logMessage);
     }
 
-    internal void SetOnFire(int sourceId, int targetId, int initialBurningDamageTics, int subsequentBurningDamageTics)
+    internal void SetOnFire(int ownerId, int targetId, str inflictorClass, int initialBurningDamageTics, int subsequentBurningDamageTics)
     {
         // Zombie-only.
         if (!Player::GetPlayerIsZombie(targetId))
@@ -64,18 +79,9 @@ strict namespace Decorate
             subsequentBurningDamageTics :
             initialBurningDamageTics;
 
-        // TODO: Set source as igniter. We don't have the source feature yet so this info is lost.
+        // Set up the source of the fire.
+        Player::SetPlayerDamageSourceActive(targetId, ownerId, inflictorClass, Player::SOURCE_FIRE);
 
         Power::AddPlayerPowerTics(targetId, Power::POWERFIREBURNING, tics);
-    }
-
-    internal bool IsOnFire()
-    {
-        return PlayerIsOnFire(PlayerNumber());
-    }
-
-    internal bool PlayerIsOnFire(int id)
-    {
-        return Power::GetPlayerHasPower(id, Power::POWERFIREBURNING);
     }
 }
