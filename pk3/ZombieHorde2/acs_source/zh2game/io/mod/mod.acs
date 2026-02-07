@@ -29,7 +29,8 @@ strict namespace IO
         }
     }
 
-    script SCRIPT_PARSE_PERSISTING_MOD_DEFS_SERVERSIDE
+    // NOTE: This script is `BUSY` and will not trigger a runaway error.
+    script SCRIPT_PARSE_PERSISTING_MOD_DEFS_SERVERSIDE BUSY
     {
         if (ZH2Game::PersistingGameContext.ParsedModDefServerside)
             terminate;
@@ -38,17 +39,15 @@ strict namespace IO
 
         int startIndex = 0;
         while(startIndex != -1)
-        {
             startIndex = DoParseModDefLumps(startIndex, true);
-            Delay(const: 1);
-        }
 
         Logger::LogDebug(LOGSOURCE, "Finished parsing mod def lumps serverside.");
 
         ZH2Game::PersistingGameContext.ParsedModDefServerside = true;
     }
 
-    script SCRIPT_PARSE_PERSISTING_MOD_DEFS_CLIENTSIDE
+    // NOTE: This script is `BUSY` and will not trigger a runaway error.
+    script SCRIPT_PARSE_PERSISTING_MOD_DEFS_CLIENTSIDE BUSY
     {
         if (ZH2Game::PersistingGameContext.ParsedModDefclientside)
             terminate;
@@ -57,10 +56,7 @@ strict namespace IO
 
         int startIndex = 0;
         while(startIndex != -1)
-        {
             startIndex = DoParseModDefLumps(startIndex, false);
-            Delay(const: 1);
-        }
 
         Logger::LogDebug(LOGSOURCE, "Finished parsing mod def lumps clientside.");
         ZH2Game::PersistingGameContext.ParsedModDefclientside = true;
