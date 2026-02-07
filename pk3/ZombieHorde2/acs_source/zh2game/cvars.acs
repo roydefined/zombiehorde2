@@ -27,8 +27,19 @@ strict namespace ZH2Game
     internal int GetEndOfRoundRewardCount() { return BCSUTILS::Clamp(GetCvar("sv_zh2_endofroundrewardcount"), 0, 64); }
     internal bool GetEndOfRoundRewardSafePlayers() { return (bool)GetCvar("sv_zh2_endofroundrewardsafeplayers"); }
 
+    // Game - Obituary
+    internal bool GetSvEnableObituaries() { return (bool)GetCvar("sv_zh2_enableobituaries"); }
+    internal bool GetClEnableObituaries(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_enableobituaries"); }
+    internal int GetShownObituaries(int playerId) { return BCSUTILS::Clamp(GetUserCvar(playerId, "cl_zh2_shownobituaries"), 1, OBITUARY_COLLECTION_MAX_SIZE); }
+
     // Game - Settings
     internal bool GetInformClientOfCVars() { return (bool)GetCvar("cl_zh2_informclientofcvars"); }
+
+    // Game - Modifiers
+    internal bool GetUseCustomKnockbackModifier() { return (bool)GetCvar("sv_zh2_usecustomknockbackmodifier"); }
+    internal fixed GetCustomKnockbackModifierMultiplier() { return BCSUTILS::Clamp((fixed)GetCvar("sv_zh2_customknockbackmodifiermultiplier"), 0.1, 10.0); }
+    internal bool GetUseCustomDamageFactorModifier() { return (bool)GetCvar("sv_zh2_usecustomdamagefactormodifier"); }
+    internal fixed GetCustomDamageFactorModifierMultiplier() { return BCSUTILS::Clamp((fixed)GetCvar("sv_zh2_customdamagefactormodifiermultiplier"), 0.1, 10.0); }
 
     // Game - Voting
     internal bool GetAllowMapVoting() { return (bool)GetCvar("sv_zh2_AllowMapVoting"); }
@@ -38,9 +49,10 @@ strict namespace ZH2Game
     internal int GetPlayerVotePercentage() { return BCSUTILS::Clamp(GetCvar("sv_zh2_PlayerVotePercentage"), 1, 100); }
     internal int GetPlayerCooldownTics() { return BCSUTILS::Clamp(GetCvar("sv_zh2_PlayerPickCooldownTics"), 0, 350); }
 
-    // Game - Compatibility
-    internal bool GetUseMapResets() { return (bool)GetCvar("sv_zh2_usemapresets"); }
-    internal bool GetUseDeadSpectators() { return (bool)GetCvar("sv_zh2_usedeadspectators"); }
+    // Game - Features
+    internal bool GetUseMapResetsFeature() { return (bool)GetCvar("sv_zh2_usemapresetsfeature"); }
+    internal bool GetUseDeadSpectatorsFeature() { return (bool)GetCvar("sv_zh2_usedeadspectatorsfeature"); }
+    internal bool GetUseCustomKnockbackFeature() { return (bool)GetCvar("sv_zh2_usecustomknockbackfeature"); }
 
     // Player
     internal int GetShownInventoryItems() { return BCSUTILS::Clamp(GetCvar("cl_zh2_showninventoryitems"), 1, 11); }
@@ -72,6 +84,8 @@ strict namespace ZH2Game
     internal bool GetClTeamIndicators() { return (bool)GetCvar("cl_zh2_teamindicators"); }
     internal int GetTeamIndicatorDistance() { return BCSUTILS::Clamp(GetCvar("cl_zh2_teamindicatordistance"), 128, 1000); }
     internal bool GetShowTargetTeamIndicator() { return (bool)GetCvar("cl_zh2_showtargetteamindicator"); }
+
+    internal bool GetEnableAntiTelefragSystem() { return (bool)GetCvar("cl_zh2_enableantitelefragsystem"); }
 
     // Player - Music
     internal bool GetIgnoreRadioMusic() { return (bool)GetCvar("cl_zh2_ignoreradiomusic"); }
@@ -149,6 +163,9 @@ strict namespace ZH2Game
     internal bool GetDrawGameHud() { return (bool)GetCvar("cl_zh2_DrawGameHud"); }
     internal fixed GetHudGameScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudGameScale"), 0.05, 2.0)*/; }
 
+    internal fixed GetHudObituaryOffsetX() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_hudobituaryoffsetx"), -200.0, 200.0); }
+    internal fixed GetHudObituaryOffsetY() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_hudobituaryoffsety"), 0.0, 40.0); }
+
     internal bool GetDrawDebugHud() { return (bool)GetCvar("cl_zh2_DrawDebugHud"); }
     internal fixed GetHudDebugOffsetX() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudDebugOffsetX"), 0.0, 200.0); }
     internal fixed GetHudDebugOffsetY() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudDebugOffsetY"), 0.0, 40.0); }
@@ -172,4 +189,5 @@ strict namespace ZH2Game
     internal bool GetUnblockAllies() { return (bool)GetCvar("sv_unblockallies"); }
     internal bool GetProtectCVars() { return (bool)GetCvar("cl_protectcvars"); }
     internal int GetMaxPlayers() { return BCSUTILS::Clamp(GetCvar("sv_maxplayers"), 1, 64); }
+    internal bool GetCompatNoObituaries() { return (bool)GetCvar("compat_noobituaries"); }
 }

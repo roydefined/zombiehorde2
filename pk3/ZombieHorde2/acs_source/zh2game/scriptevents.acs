@@ -1,0 +1,387 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace ZH2Game
+{
+    script "zh2_internal_event" (raw type, raw arg1, raw arg2) event
+    {
+        switch(type)
+        {
+            case GAMEEVENT_PLAYERCONNECT: OnPlayerConnect(arg1); terminate;
+            case GAMEEVENT_ACTOR_DAMAGED_PREMOD: SetResultValue(OnActorPreModifiedDamage(arg1, arg2)); terminate;
+            case GAMEEVENT_ACTOR_DAMAGED: OnActorDamaged(arg1, arg2); terminate;
+            case GAMEEVENT_PLAYERLEAVESSERVER: OnPlayerLeavesServer(arg1, arg2); terminate;
+            case GAMEEVENT_ACTOR_SPAWNED: OnActorSpawned(arg1); terminate;
+            case GAMEEVENT_CHAT: SetResultValue((int)OnChat(arg1)); terminate;
+        }
+    }
+
+    internal void OnPlayerConnect(int id)
+    {
+        // This does not trigger offline so the OPEN script is used for that instead.
+        // IsNetworkGame is therefore not needed, but added in case the behaviour does end up changing somehow.
+        if (!IsNetworkGame())
+            return;
+
+        Logger::LogDebug(LOGSOURCE, "Call event \cdGAMEEVENT_PLAYERCONNECT\cj.");
+
+        VALIDATE_ID_VALID_FUNCTION(id);
+
+        /*ZH2Lib::ResetPlayerLibContext(id);
+        ResetPlayerPersistingContext(id);
+        ResetPlayerContext(id);*/
+
+        GameLoop::StartServerPlayerLoopById(id);
+        Utils::InitializeSynchronizedTimerForPlayer(id);
+    }
+
+    // Damage to player without any modifications.
+    internal int OnActorPreModifiedDamage(int damage, str damageType)
+    {
+        // Disable damaging entirely if the round ended.
+        if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
+            return 0;
+
+        // We only handle damage to a player here.
+        int attackedId = PlayerNumber();
+        if (attackedId == -1)
+            return damage;
+
+        int attackerId = -1;
+
+        if (SetActivator(0, AAPTR_DAMAGE_SOURCE))
+            attackerId = PlayerNumber();
+
+        // The attacked player is to be set on fire with this damagetype.
+        // The source is optional.
+        if (damageType == DAMAGETYPE_SETONFIRE_NAME)
+            Decorate::SetOnFire(attackerId, attackedId, (str)0, 350, 200);
+
+        // The attacked player should enable ThruActors if they get telefragged.
+        // Assuming the system is enabled. And we also undo any damage.
+        if ((damageType == "SpawnTelefrag" || damageType == "Telefrag") && GetEnableAntiTelefragSystem())
+        {
+            // We enable, then immediately disable this.
+            // The system will safely unset the player back when able.
+            Player::SetPlayerThruActors(attackedId, true);
+            Player::SetPlayerThruActors(attackedId, false);
+            return 0;
+        }
+
+        // Premod only handles modifications to damage when a player caused them.
+        if (attackerId == -1)
+            return damage;
+
+        // Zombie attacked a human.
+        if (Player::GetPlayerIsHuman(attackedId) && Player::GetPlayerIsZombie(attackerId))
+        {
+            // The damage type must be the type given by claws here, or it wasn't a scratch.
+            // This fixes damage in general, and also prevents infinite loops (which happends when the human is immune).
+            if (damageType == DAMAGETYPE_ZOMBIESCRATCH_NAME)
+            {
+                Event::SendPlayerPreScratched(attackedId, attackerId);
+
+                // We always set the damage to 0.
+                return 0;
+            }
+
+            // Alternatively, the zombie pushed the human with the barrel push ability.
+            // To avoid complete annihilation of the human we want to set the damage to 0
+            else if (damageType == DAMAGETYPE_ZOMBIEPUSH_NAME)
+            {
+                return 0;
+            }
+        }
+
+        // Human attacked human
+        if (Player::GetPlayerIsHuman(attackedId) && Player::GetPlayerIsHuman(attackerId))
+        {
+            // If we shot somebody, nullify the damage (telefragging is still possible).
+            if (damageType == DAMAGETYPE_HUMANDEFAULT_NAME)
+                return 0;
+        }
+
+        // Spawn blood on the attacked from the bulletpuff.
+        if (SetActivator(0, AAPTR_DAMAGE_INFLICTOR))
+            Decorate::SpawnBloodFromBulletPuff(attackerId, attackedId);
+
+        // Possibly manipulated damage based on buffs/nerfs when a human shoots a zombie.
+        if (Player::GetPlayerIsZombie(attackedId) && Player::GetPlayerIsHuman(attackerId))
+            return MultiplyDamage(damage, attackedId, attackerId);
+
+        return damage;
+    }
+
+    // Damage multiplication done for pre calculated damage based on any extra buffs/nerfs the attacker/attacked have.
+    // NOTE: I no longer use actor properties for damage multiplication as it seems APROP_DAMAGEMULTIPLIER has no effect.
+    // Just to keep it clear, all damage will now be done through this.
+    internal int MultiplyDamage(int damage, int attackedId, int attackerId)
+    {
+        // Get the factor from the attacked and the multiplier from the attacked.
+        // These will contribute to the damage.
+        fixed damageFactor = Power::GetPlayerCalculatedPowerFactor(attackedId, Power::POWERTYPE_DAMAGEFACTOR);
+        fixed damageMultiplier = Power::GetPlayerCalculatedPowerFactor(attackerId, Power::POWERTYPE_DAMAGEMULTIPLIER);
+        return int(fixed(damage) * damageFactor * damageMultiplier);
+    }
+
+    // Main damage handler.
+    // This is currently used for the obituary system.
+    internal void OnActorDamaged(int damage, str damageType)
+    {
+        int targetId = PlayerNumber();
+        bool targetIsMonster = (ClassifyActor(0) & ACTOR_MONSTER) != 0;
+
+        int targetHealth = BCSUtils::GetActorHealth(0);
+        bool targetDied = targetHealth - damage <= 0;
+
+        str targetName;
+        if (targetId != -1)
+        {
+            targetName = BCSUtils::PlayerName(targetId);
+        }
+        else
+        {
+            targetName = GetActorProperty(0, APROP_NAMETAG);
+            if (targetName == (str)0 || targetName == "")
+                targetName = GetActorClass(0);
+        }
+
+        // Determine source info
+        int sourceId;
+        bool sourceIsMonster;
+        str sourceName;
+        bool hasSource = !IsPointerEqual(AAPTR_DAMAGE_SOURCE, AAPTR_NULL);
+        if (hasSource && SetActivator(0, AAPTR_DAMAGE_SOURCE))
+        {
+            sourceId = PlayerNumber();
+            sourceIsMonster = (ClassifyActor(0) & ACTOR_MONSTER) != 0;
+
+            sourceName = GetActorProperty(0, APROP_NAMETAG);
+            if (sourceName == (str)0 || sourceName == "")
+                sourceName = GetActorClass(0);
+        }
+
+        // Determine inflictor info.
+        str inflictorName;
+        str inflictorClass;
+        bool hasInflictor = !IsPointerEqual(AAPTR_DAMAGE_INFLICTOR, AAPTR_NULL);
+        if (hasInflictor && SetActivator(0, AAPTR_DAMAGE_INFLICTOR))
+            inflictorClass = GetActorClass(0);
+
+        str weapon = (str)0;
+        int itemIndex = -1;
+
+        // If damage type is internal fire or acid then the source is saved in memory.
+        if (targetId != -1 && (damageType == DAMAGETYPE_FIRE || damageType == DAMAGETYPE_ACID))
+        {
+            Player::DamageSourceTypeT sourceType = damageType == DAMAGETYPE_FIRE
+                ? Player::SOURCE_FIRE : Player::SOURCE_ACID;
+
+            // The damage source should exist.
+            if (!Player::GetPlayerDamageSourceActive(targetId, sourceType))
+            {
+                Logger::LogWarning(LOGSOURCE, "Expected a valid damage source for player " + str(targetId) + ". Source type: " + str(sourceType) + ".");
+            }
+            else
+            {
+                hasInflictor = true;
+                inflictorClass = Player::GetPlayerDamageSourceSourceActor(targetId, sourceType);
+                sourceId = Player::GetPlayerDamageSourceOwnerId(targetId, sourceType);
+                sourceName = BCSutils::PlayerName(sourceId);
+                sourceIsMonster = false;
+
+                itemIndex = Item::GetItemIndexByName(inflictorClass);
+            }
+        }
+
+        // Determine inflictor item type.
+        // Either a weapon, item, or something unknown.
+        else if (hasInflictor)
+        {
+            // Inflictor is a bulletpuff, meaning a weapon was used.
+            if (inflictorClass == HUMAN_BULLETPUFF && SetActivator(0, AAPTR_DAMAGE_SOURCE))
+            {
+                // If we can't determine it, or `GetWeapon()` returns "None", then default to 0.
+                // After that, determine the item's definition in the custom lumps for its index.
+                weapon = GetWeapon();
+                if (BCSUtils::StrIEquals(weapon, "none"))
+                    weapon = (str)0;
+
+                itemIndex = Item::GetItemIndexByName(weapon);
+            }
+
+            // Check if the inflictor is an item.
+            // This uses a map to map the damaging actor back to the source item.
+            else
+            {
+                // TODO: Make this configurable.
+                static str itemMap[][] =
+                {
+                    { "ZH2HolyCrossLight", HOLYCROSS_ITEM },
+                    { "ZH2CirculatorFireBall", CIRCULATOR_ITEM },
+                };
+
+                foreach(auto item; itemMap)
+                {
+                    if (item[0] == inflictorClass)
+                    {
+                        itemIndex = Item::GetItemIndexByName(item[1]);
+                        break;
+                    }
+                }
+            }
+        }
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int count = GetMapRotationSize();
+            if (targetId != -1) Append(s:"Player");
+            else if (targetIsMonster) Append(s:"Monster");
+            else Append(s:"Actor");
+
+            Append(s:" \cf" + targetName + " \cjwas damaged for \cf" + str(damage) + "\cj using damage type \cf" + damageType + "\cj. Died: \cf" + (targetDied ? "true" : "false")+ "\cj.");
+
+            if (hasSource || hasInflictor) Append(s:" From ");
+
+            if (hasSource)
+            {
+                if (sourceId != -1) Append(s:"player");
+                else if (sourceIsMonster) Append(s:"monster");
+                else Append(s:"actor");
+
+                Append(s:" \cf" + targetName + "\cj");
+
+                if (hasInflictor) Append(s:" using ");
+                else Append(s:".");
+            }
+
+            if (hasInflictor)
+                Append(s:inflictorClass + ".");
+        }
+        Logger::LogDebug(LOGSOURCE, logMessage);
+
+        // Is custom knockback enabled?
+        if (Feature::GetCustomKnockbackFeatureEnabled())
+        {
+            // Trigger knockback on this weapon if there was player-on-player damage.
+            if (sourceId != -1 && targetId != -1 && weapon != (str)0)
+                Game::TriggerWeaponKickback(sourceId, targetId, damage, weapon);
+        }
+
+        // Below is only for deaths of other players.
+        if (!targetDied || targetIsMonster)
+            return;
+
+        // Expect a dead player.
+        if (targetId != -1)
+        {
+            // Handle special damage types
+            switch(damageType)
+            {
+                case "Suicide": Event::SendPlayerDied(targetId, DEATHTYPE_SUICIDE); return;
+                case "Falling": Event::SendPlayerDied(targetId, DEATHTYPE_FALLING); return;
+                case "Drowning": Event::SendPlayerDied(targetId, DEATHTYPE_DROWNING); return;
+                case "Crush": Event::SendPlayerDied(targetId, DEATHTYPE_CRUSHING); return;
+                case "Telefrag": Event::SendPlayerDied(targetId, DEATHTYPE_TELEFRAG); return;
+                case "SpawnTelefrag": Event::SendPlayerDied(targetId, DEATHTYPE_TELEFRAG); return;
+                case "Exit": Event::SendPlayerDied(targetId, DEATHTYPE_UNSAFE); return;
+                default:
+                {
+                    // Player killed by player
+                    if (sourceId != -1)
+                    {
+                        // Additional info about the player to draw with the obituary.
+                        // I have to send this data from the server as the client might no longer have it due to the death.
+                        bool addFireEffect = Player::GetPlayerIsZombie(targetId) && Player::GetPlayerOnFire(targetId);
+                        bool addAcidEffect = Player::GetPlayerIsHuman(targetId) && Player::GetPlayerOnAcid(targetId);
+                        Event::SendPlayerKilledByPlayer(targetId, sourceId, itemIndex, addFireEffect, addAcidEffect);
+                    }
+
+                    // Player killed by monster
+                    else if (sourceIsMonster)
+                        Event::SendPlayerKilledByMonster(targetId, sourceName);
+
+                    // Unknown
+                    else
+                        Event::SendPlayerDied(targetId, DEATHTYPE_UNKNOWN);
+
+                    return;
+                }
+            }
+        }
+    }
+
+    // Player fully left server.
+    internal void OnPlayerLeavesServer(int id, int reason)
+    {
+        Logger::LogDebug(LOGSOURCE, "Call event \cdGAMEEVENT_PLAYERLEAVESSERVER\cj.");
+
+        VALIDATE_ID_VALID_FUNCTION(id);
+
+        int activeRoundIndex = Round::GetActiveRoundStateIndex();
+
+        // Only run if player was playing in the round.
+        if (Player::GetPlayerState(id) == Player::STATEPLAYING)
+        {
+            // The round was being played. We must not reset the player context.
+            // Otherwise another player can take the spot, so we clean up the context.
+            if (!Round::GetRoundJoinable(activeRoundIndex))
+            {
+                Logger::LogDebug(LOGSOURCE, "Playing player has disconnected: (\cd" + str(id) + "\cj)" + BCSUTILS::PlayerName(id) + ". Reason: \cd" + str(reason) + "\cj.");
+                Player::SetPlayerState(id, Player::STATEGONE);
+
+                // Finally, if the round was the playing round, call the event.
+                if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
+                    Event::SendPlayerLeftRound(id);
+            }
+            else
+            {
+                Logger::LogDebug(LOGSOURCE, "Playing player has disconnected (not a playing round): (\cd" + str(id) + "\cj)" + BCSUTILS::PlayerName(id) + ".");
+                ResetPlayerContext(id);
+            }
+
+            Sync::SyncPlayers();
+        }
+
+        // If we are currently voting, then we want to make sure this player no longer contributes to voting.
+        if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
+        {
+            Map::SetPlayerVotedMapIndex(id, -1);
+            Map::CheckMapVoteFinished();
+            Sync::SyncMapVoting();
+        }
+
+        // The persisting context is always reset. This might still have data for the spectating player.
+        // NOTE: This does not contain data required for anything specific. This should be revisited if it does.
+        // We'd have to do this in unloading or something.
+        ResetPlayerPersistingContext(id);
+
+        // Always reset the lib context of the player.
+        ZH2Lib::ResetPlayerLibContext(id);
+    }
+
+    // Track initial spawn spots and zombie teleport spots.
+    internal void OnActorSpawned(int spawnBits)
+    {
+        // The spawnBits must be 1 here, or we do something weird with random spawners which I won't support.
+        if (spawnBits != GAMEEVENT_SPAWN_LEVELSPAWNED)
+            return;
+
+        Logger::LogDebug(LOGSOURCE, "Call event \cdGAMEEVENT_ACTOR_SPAWNED\cj.");
+
+        str class = GetActorClass(0);
+        if (class == ACTOR_INITIALSPAWNSPOT_NAME) Game::TrackInitialSpawnSpot();
+        else if (class == ACTOR_ZOMBIETELEPORTSPOT_NAME) Game::TrackZombieTeleportSpot();
+    }
+
+    internal bool OnChat(int id)
+    {
+        // Ignore if the server send the message.
+        if (id == -1)
+            return true;
+
+        return Game::HandlePlayerChatMessage(id, GetChatMessage(id, 0));
+    }
+}

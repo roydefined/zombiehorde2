@@ -21,7 +21,7 @@ strict namespace Player
             SetTranslucentAlliesEnabled(translucentAlliesEnabled);
 
             if (!translucentAlliesEnabled)
-                DisableTranslucentAlliesProperties(translucentAlliesEnabled);
+                DisableTranslucentAlliesProperties();
         }
 
         if (translucentAlliesEnabled)
@@ -39,9 +39,8 @@ strict namespace Player
     }
 
     // Handles setting actors back to being opaque.
-    internal void DisableTranslucentAlliesProperties(bool enabled)
+    internal void DisableTranslucentAlliesProperties()
     {
-        int style = enabled ? STYLE_TRANSLUCENT : STYLE_NORMAL;
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             if (!PlayerInGame(i))
@@ -59,7 +58,7 @@ strict namespace Player
     // Handles actually setting the alpha values on all actors.
     internal void UpdateTranslucentAlliesAlpha()
     {
-        Player::SpecieTypeT specie = Player::GetSpecie();
+        Player::PlayerSpecieT specie = Player::GetSpecie();
         fixed translucentAlliesDistance = fixed(ZH2Game::GetTranslucentAlliesDistance());
 
         // Base configured translucency value on players.

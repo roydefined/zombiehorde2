@@ -1,0 +1,103 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Obituary
+{
+    internal void QueueInitialsChosen()
+    {
+        // NOTE: We split up the initials to their own obituary.
+
+        int count = Event::GetReceiveData(0);
+        bool multiple = count != 1;
+        int index = 0;
+
+        while (count--)
+        {
+            int queueIndex = GetNextQueueIndex();
+            SetQueueType(queueIndex, OBITUARY_INITIAL);
+            SetQueueData(queueIndex, 0, index);
+            SetQueueData(queueIndex, 1, Event::GetReceiveData(index + 1));
+
+            // We also pass if this is the only zombie.
+            // This way we tell clients if an index should be shown.
+            SetQueueData(queueIndex, 2, multiple);
+            index++;
+        }
+    }
+
+    internal void QueuePlayerSafe()
+    {
+        int id = Event::GetReceiveData(0);
+        int queueIndex = GetNextQueueIndex();
+        SetQueueType(queueIndex, OBITUARY_SAFE);
+        SetQueueData(queueIndex, 0, id);
+        SetQueueData(queueIndex, 1, GetPlayerObituarySpecieType(id));
+    }
+
+    internal void QueuePlayerScratched()
+    {
+        // No need to get specie of the infected because they are always human.
+        int infectedId = Event::GetReceiveData(0);
+        int infectorId = Event::GetReceiveData(1);
+        int queueIndex = GetNextQueueIndex();
+        SetQueueType(queueIndex, OBITUARY_PLAYER_SCRATCHED);
+        SetQueueData(queueIndex, 0, infectedId);
+        SetQueueData(queueIndex, 1, infectorId);
+        SetQueueData(queueIndex, 2, GetPlayerObituarySpecieType(infectorId));
+    }
+
+    internal void QueuePlayerInfected()
+    {
+        int id = Event::GetReceiveData(0);
+        int queueIndex = GetNextQueueIndex();
+        SetQueueType(queueIndex, OBITUARY_PLAYER_INFECTED);
+        SetQueueData(queueIndex, 0, id);
+    }
+
+    internal void QueuePlayerCured()
+    {
+        int id = Event::GetReceiveData(0);
+        int transformed = Event::GetReceiveData(1);
+        int source = Event::GetReceiveData(2);
+        int queueIndex = GetNextQueueIndex();
+        SetQueueType(queueIndex, OBITUARY_PLAYER_CURED);
+        SetQueueData(queueIndex, 0, id);
+        SetQueueData(queueIndex, 1, transformed);
+        SetQueueData(queueIndex, 2, source);
+    }
+
+    internal void QueuePlayerDied()
+    {
+        int id = Event::GetReceiveData(0);
+        int type = Event::GetReceiveData(1);
+
+        int queueIndex = GetNextQueueIndex();
+        SetQueueType(queueIndex, OBITUARY_PLAYER_DIED);
+        SetQueueData(queueIndex, 0, id);
+        SetQueueData(queueIndex, 1, GetPlayerObituarySpecieType(id));
+        SetQueueData(queueIndex, 2, type);
+    }
+
+    internal void QueuePlayerKilledByPlayer(int killedId, int killerId, int itemIndex, bool addFireEffect, bool addAcidEffect)
+    {
+        int queueIndex = GetNextQueueIndex();
+        SetQueueType(queueIndex, OBITUARY_PLAYER_KILLEDBYPLAYER);
+        SetQueueData(queueIndex, 0, killedId);
+        SetQueueData(queueIndex, 1, killerId);
+        SetQueueData(queueIndex, 2, GetPlayerObituarySpecieType(killedId));
+        SetQueueData(queueIndex, 3, GetPlayerObituarySpecieType(killerId));
+        SetQueueData(queueIndex, 4, itemIndex);
+        SetQueueData(queueIndex, 5, addFireEffect);
+        SetQueueData(queueIndex, 6, addAcidEffect);
+    }
+
+    internal void QueuePlayerKilledByMonster(int id, str monsterName)
+    {
+        int queueIndex = GetNextQueueIndex();
+        SetQueueType(queueIndex, OBITUARY_PLAYER_KILLEDBYMONSTER);
+        SetQueueData(queueIndex, 0, id);
+        SetQueueData(queueIndex, 1, GetPlayerObituarySpecieType(id));
+        SetQueueData(queueIndex, 2, monsterName);
+    }
+}

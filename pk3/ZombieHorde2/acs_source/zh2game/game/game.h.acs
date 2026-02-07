@@ -32,6 +32,9 @@
 #define TEAM_INDICATOR_ENEMY_STATE "spawn.enemy"
 #define TEAM_INDICATOR_TID_BASE 5000
 
+// Modifiers
+#define MAX_SERVER_MODIFIERS 2
+
 strict namespace Game
 {
     internal enum WinningSpecieT : int
@@ -56,7 +59,19 @@ strict namespace Game
     {
         INFECT_INITIAL,
         INFECT_REGULAR,
-        INFECT_ADMIN,
+    };
+
+    internal enum InfectSourceT : int
+    {
+        INFECTSOURCE_ADMIN,
+        INFECTSOURCE_PLAYER,
+        INFECTSOURCE_ROUND,
+    };
+
+    internal enum CureSourceT : int
+    {
+        CURESOURCE_ADMIN,
+        CURESOURCE_ITEM,
     };
 
     enum ZombieAbilityTypeFlagsT : int
@@ -64,6 +79,14 @@ strict namespace Game
         ABILITY_NONE,
         ABILITY_PUSH = 1 << 0,
         ABILITY_SPIT = 1 << 1,
+    };
+
+    // The available serverside modifiers the server can configure on players.
+    // Note, this indirectly also specifies the index of the modifier when used in functions.
+    internal enum ModifierTypeT : int
+    {
+        MODIFIERTYPE_KNOCKBACK,
+        MODIFIERTYPE_DAMAGEFACTOR,
     };
 
     internal struct EndingTypeT
@@ -82,10 +105,19 @@ strict namespace Game
         int Count;
     };
 
+    internal struct ServerModifierT
+    {
+        bool Enabled;
+        fixed Factor;
+    };
+
     extern void KillUnsafePlayers();
 
     extern void SetIsSafe(bool safe);
     extern void SetPlayerIsSafe(int id, bool safe, bool broadcast = true);
     extern bool GetIsSafe();
     extern bool GetPlayerIsSafe(int id);
+
+    extern int HumanCount(bool includeDead = false);
+    extern int ZombieCount(bool includeDead = false);
 }

@@ -1,0 +1,57 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Feature"
+
+strict namespace Feature
+{
+    internal void InitializePlayerFeatures(int id)
+    {
+        // Custom knockback feature requires weapon thrusting to not be applied.
+        if (ZH2Game::GetUseCustomKnockbackFeature())
+        {
+            // DONTTHRUST is not allowed on players, for some reason. Otherwise this would have been the better option.
+            //BCSUtils::ChangeActorFlag(Identity::GetTid(id), "DONTTHRUST", true);
+			BCSUtils::SetActorMass(Identity::GetTid(id), (raw)BCSUtils::SHORT_MAX);
+        }
+    }
+
+    // Each tic validate the modifiers are still the same value, or we must update it.
+    internal void TicServer()
+    {
+        bool enabled = ZH2Game::GetUseCustomKnockbackFeature();
+        if (GetCustomKnockbackFeatureEnabled() == enabled)
+            return;
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int tid = Identity::GetTid(i);
+            if (!BCSUtils::ActorIsAlive(tid))
+                continue;
+
+            // DONTTHRUST is not allowed on players, for some reason. Otherwise this would have been the better option.
+            //BCSUtils::ChangeActorFlag(tid, "DONTTHRUST", enabled);
+
+            // 40 is the configured default for player mass.
+            int mass = enabled ? BCSUtils::SHORT_MAX : PLAYER_MASS;
+            BCSUtils::SetActorMass(tid, (raw)mass);
+        }
+
+        SetServerModifierEnabled(enabled);
+        Logger::LogDebug(LOGSOURCE, "The custom knockback system is now \cd" + (enabled ? "enabled" : "disabled") + "\cj.");
+    }
+
+    /* PROPERTIES */
+    internal bool GetCustomKnockbackFeatureEnabled()
+    {
+        return ZH2Game::GameContext.KnockbackFeatureEnabled;
+    }
+
+    internal void SetServerModifierEnabled(bool enabled)
+    {
+        ZH2Game::GameContext.KnockbackFeatureEnabled = enabled;
+    }
+}
+
+#undef LOGSOURCE

@@ -1,0 +1,122 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Obituary
+{
+    script "zh2_internal_obituary_initialschosen_client" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceiveInitialsChosen(packet);
+
+        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
+            QueueInitialsChosen();
+        else
+            LogInitialsChosen();
+    }
+
+    script "zh2_internal_obituary_playersafe_client" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerSafe(packet);
+
+        bool safe = Event::GetReceiveData(1);
+        bool firstTime = Event::GetReceiveData(2);
+
+        // We only handle if players entered the safezone, not left.
+        // We also only handle first time safety.
+        if (!safe || !firstTime)
+            terminate;
+
+        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
+            QueuePlayerSafe();
+        else
+            LogPlayerSafe();
+    }
+
+    script "zh2_internal_obituary_playerscratched" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerScratched(packet);
+
+        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
+            QueuePlayerScratched();
+        else
+            LogPlayerScratched();
+    }
+
+    script "zh2_internal_obituary_playerinfected" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerInfected(packet);
+
+        int type = Event::GetReceiveData(1);
+        int source = Event::GetReceiveData(2);
+
+        // Initial infection is not handled, there is a separate event (initialschosen).
+        if (type == Game::INFECT_INITIAL)
+            terminate;
+
+        // Source being another player is not handled, there is a separate event (playerscratched).
+        if (source == Game::INFECTSOURCE_PLAYER)
+            terminate;
+
+        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
+            QueuePlayerInfected();
+        else
+            LogPlayerInfected();
+    }
+
+    script "zh2_internal_obituary_playercured" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerCured(packet);
+
+        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
+            QueuePlayerCured();
+        else
+            LogPlayerCured();
+    }
+
+    script "zh2_internal_obituary_playerdied" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerDied(packet);
+
+        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
+            QueuePlayerDied();
+        else
+            LogPlayerDied();
+    }
+
+    script "zh2_internal_obituary_playerkilledByPlayer" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerKilledByPlayer(packet);
+
+        int killedId = Event::GetReceiveData(0);
+        int killerId = Event::GetReceiveData(1);
+        int itemIndex = Event::GetReceiveData(2);
+        bool addFireEffect = Event::GetReceiveData(3);
+        bool addAcidEffect = Event::GetReceiveData(4);
+
+        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
+            QueuePlayerKilledByPlayer(killedId, killerId, itemIndex, addFireEffect, addAcidEffect);
+        else
+            LogPlayerKilledByPlayer(killedId, killerId, itemIndex);
+    }
+
+    script "zh2_internal_obituary_playerkilledByMonster" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerKilledByMonster(packet);
+
+        int id = Event::GetReceiveData(0);
+        str monsterName = Event::GetReceiveData(1);
+
+        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
+            QueuePlayerKilledByMonster(id, monsterName);
+        else
+            LogPlayerKilledByMonster(id, monsterName);
+    }
+}

@@ -1,0 +1,77 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    // Called when a power expired.
+    // Used to unset the sources of players.
+    script "zh2_internal_event_player_power_expired" (raw packetStr)
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePowerExpired(packet);
+
+        int id = Event::GetReceiveData(0);
+
+        if (!GetPlayerOnFire(id) && GetPlayerDamageSourceActive(id, SOURCE_FIRE))
+            SetPlayerDamageSourceInActive(id, SOURCE_FIRE);
+
+        if (!GetPlayerOnAcid(id) && GetPlayerDamageSourceActive(id, SOURCE_ACID))
+            SetPlayerDamageSourceInActive(id, SOURCE_ACID);
+    }
+
+    internal void SetDamageSourceActive(int ownerId, str sourceActor, Player::DamageSourceTypeT sourceType)
+    {
+        SetPlayerDamageSourceActive(PlayerNumber(), ownerId, sourceActor, sourceType);
+    }
+
+    internal void SetDamageSourceInActive(Player::DamageSourceTypeT sourceType)
+    {
+        SetPlayerDamageSourceInActive(PlayerNumber(), sourceType);
+    }
+
+    internal void SetPlayerDamageSourceActive(int id, int ownerId, str sourceActor, Player::DamageSourceTypeT sourceType)
+    {
+        Logger::LogDebug(LOGSOURCE, "Activating damage source " + str(sourceType) + " of player " + str(id) + ".");
+
+        ZH2Game::GameContext.Players[id].DamageSources[sourceType].Active = true;
+        ZH2Game::GameContext.Players[id].DamageSources[sourceType].SourceActor = sourceActor;
+        ZH2Game::GameContext.Players[id].DamageSources[sourceType].OwnerId = ownerId;
+    }
+
+    internal void SetPlayerDamageSourceInActive(int id, Player::DamageSourceTypeT sourceType)
+    {
+        Logger::LogDebug(LOGSOURCE, "Deactivating damage source " + str(sourceType) + " of player " + str(id) + ".");
+        ZH2Game::GameContext.Players[id].DamageSources[sourceType].Active = false;
+    }
+
+    internal bool GetDamageSourceActive(Player::DamageSourceTypeT sourceType)
+    {
+        return GetPlayerDamageSourceActive(PlayerNumber(), sourceType);
+    }
+
+    internal bool GetPlayerDamageSourceActive(int id, Player::DamageSourceTypeT sourceType)
+    {
+        return ZH2Game::GameContext.Players[id].DamageSources[sourceType].Active;
+    }
+
+    internal str GetDamageSourceSourceActor(Player::DamageSourceTypeT sourceType)
+    {
+        return GetPlayerDamageSourceSourceActor(PlayerNumber(), sourceType);
+    }
+
+    internal str GetPlayerDamageSourceSourceActor(int id, Player::DamageSourceTypeT sourceType)
+    {
+        return ZH2Game::GameContext.Players[id].DamageSources[sourceType].SourceActor;
+    }
+
+    internal int GetDamageSourceOwnerId(Player::DamageSourceTypeT sourceType)
+    {
+        return GetPlayerDamageSourceOwnerId(PlayerNumber(), sourceType);
+    }
+
+    internal int GetPlayerDamageSourceOwnerId(int id, Player::DamageSourceTypeT sourceType)
+    {
+        return ZH2Game::GameContext.Players[id].DamageSources[sourceType].OwnerId;
+    }
+}

@@ -21,6 +21,7 @@ strict namespace GameLoop
             Player::PanicTic();
             Player::ZombieTauntTic();
             Player::NameTic();
+            Player::ThruActorsTics();
             Game::TicActivatorZombieTeleport();
             Delay(const: 1);
         }
@@ -50,25 +51,14 @@ strict namespace GameLoop
             Game::FullServerTicClient();
             Player::LockTic();
             Player::HeartbeatTicClient();
+            Player::LastHeartbeatTicClient();
             Player::TranslucentAlliesTicClient();
             Game::ClientDeathCamTic();
             Game::TeamIndicatorTicClient();
-
-            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-            {
-                if (PlayerInGame(i))
-                    PlayerTicClient(i);
-            }
+            Footstep::FootstepTicClient();
 
             Delay(const: 1);
         }
         Logger::LogDebug(LOGSOURCE, "Clientside player loop ended for id \cd" + str(ConsolePlayerNumber()) + "\cj.");
-    }
-
-    // Specific to a playing client, called clientside.
-    internal void PlayerTicClient(int id)
-    {
-        Player::HeartbeatTicPlayerClient(id);
-        Footstep::FootstepTicPlayerClient(id);
     }
 }
