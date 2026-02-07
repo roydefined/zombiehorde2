@@ -18,7 +18,7 @@ Int DiscoButtonUsed = 0;
 Int SpecialRoomOpen;
 Int AnotherEnd;
 Int LiftFloor = 5;
-bool InTram[32];
+bool InTram[BCSUtils::MAX_PLAYERS];
 Int Coordinates = 0;
 Int BoatX = 7328.0;
 Int BoatY = -4.0;
@@ -95,8 +95,9 @@ Script 37 (void)
 {
 	ClearLineSpecial();
 	SetActivator(-1);
-	Ceiling_LowerAndCrush(242,255,99999);
+	Ceiling_LowerAndCrush(242,255,200,2); //ZH2 [AQW] crushmode hexen, dmg to 200.
 	TagWait(242);
+	Ceiling_LowerByValueTimes8(242,16,1); //ZH2 [AQW]
 	Delay(35);
 	PolyObj_Move(1,50,64,584);
 	PolyWait(1);
@@ -110,9 +111,10 @@ Script 38 (void)
 {
 	ClearLineSpecial();
 	SetActivator(-1);
-	Ceiling_LowerAndCrush(243,255,99999);
+	Ceiling_LowerAndCrush(243,255,200,2); //ZH2 [AQW] crushmode hexen, dmg to 200.
 	Door_Close(243,255);
 	TagWait(243);
+	Ceiling_LowerByValueTimes8(243,16,1); //ZH2 [AQW]
 	Delay(35);
 	PolyObj_Move(1,50,192,584);
 	PolyWait(1);
@@ -360,7 +362,7 @@ script 8 (void)
 	if(DiscoButtonUsed == 0)
 	{
 		printbold(n:0, s:" \cfhas Turned on the \ctRADIO!!!");
-		music_change("D_YEABOI",127);
+		Music::SetMusic("D_YEABOI");
 		DiscoButtonUsed++;
 	}
 }
@@ -487,7 +489,7 @@ Script 31 (void)
 	Ceiling_RaiseByValue(101,10,768);
 	Floor_RaiseByValue(213,10,760);
 	Tagwait(101);
-	Music_Change("D_stiffo",127);
+	Music::SetMusic("D_stiffo");
 	Acs_terminate(32,0);
 }
 
@@ -550,8 +552,11 @@ Script 72 (void)
 /*
 Script 35 UNLOADING
 {
-	for(int i=0; i<32; i++)
-		if(CheckActorInventory(600+i, "AutomaticRifle"))
-			TakeActorInventory(600+i, "AutomaticRifle", 999);
+	for(int i=0; i<BCSUtils::MAX_PLAYERS; i++)
+    {
+        int tid = Identity::GetTid(i);
+		if(CheckActorInventory(tid, "AutomaticRifle"))
+			TakeActorInventory(tid, "AutomaticRifle", 999);
+    }
 }
 */

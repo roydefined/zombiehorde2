@@ -23,13 +23,24 @@ strict namespace ZH2Game
                 return BEHAVIOUR_DEFAULT;
         }
     }
-    
+
     internal int GetEndOfRoundRewardCount() { return BCSUTILS::Clamp(GetCvar("sv_zh2_endofroundrewardcount"), 0, 64); }
     internal bool GetEndOfRoundRewardSafePlayers() { return (bool)GetCvar("sv_zh2_endofroundrewardsafeplayers"); }
 
+    // Game - Obituary
+    internal bool GetSvEnableObituaries() { return (bool)GetCvar("sv_zh2_enableobituaries"); }
+    internal bool GetClEnableObituaries(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_enableobituaries"); }
+    internal int GetShownObituaries(int playerId) { return BCSUTILS::Clamp(GetUserCvar(playerId, "cl_zh2_shownobituaries"), 1, OBITUARY_COLLECTION_MAX_SIZE); }
+
     // Game - Settings
     internal bool GetInformClientOfCVars() { return (bool)GetCvar("cl_zh2_informclientofcvars"); }
-    
+
+    // Game - Modifiers
+    internal bool GetUseCustomKnockbackModifier() { return (bool)GetCvar("sv_zh2_usecustomknockbackmodifier"); }
+    internal fixed GetCustomKnockbackModifierMultiplier() { return BCSUTILS::Clamp((fixed)GetCvar("sv_zh2_customknockbackmodifiermultiplier"), 0.1, 10.0); }
+    internal bool GetUseCustomDamageFactorModifier() { return (bool)GetCvar("sv_zh2_usecustomdamagefactormodifier"); }
+    internal fixed GetCustomDamageFactorModifierMultiplier() { return BCSUTILS::Clamp((fixed)GetCvar("sv_zh2_customdamagefactormodifiermultiplier"), 0.1, 10.0); }
+
     // Game - Voting
     internal bool GetAllowMapVoting() { return (bool)GetCvar("sv_zh2_AllowMapVoting"); }
     internal bool GetVoteIncludePlayedMaps() { return (bool)GetCvar("sv_zh2_voteincludeplayedmaps"); }
@@ -38,15 +49,19 @@ strict namespace ZH2Game
     internal int GetPlayerVotePercentage() { return BCSUTILS::Clamp(GetCvar("sv_zh2_PlayerVotePercentage"), 1, 100); }
     internal int GetPlayerCooldownTics() { return BCSUTILS::Clamp(GetCvar("sv_zh2_PlayerPickCooldownTics"), 0, 350); }
 
-    // Game - Compatibility
-    internal bool GetUseMapResets() { return (bool)GetCvar("sv_zh2_usemapresets"); }
-    internal bool GetUseDeadSpectators() { return (bool)GetCvar("sv_zh2_usedeadspectators"); }
+    // Game - Features
+    internal bool GetUseMapResetsFeature() { return (bool)GetCvar("sv_zh2_usemapresetsfeature"); }
+    internal bool GetUseDeadSpectatorsFeature() { return (bool)GetCvar("sv_zh2_usedeadspectatorsfeature"); }
+    internal bool GetUseCustomKnockbackFeature() { return (bool)GetCvar("sv_zh2_usecustomknockbackfeature"); }
 
     // Player
     internal int GetShownInventoryItems() { return BCSUTILS::Clamp(GetCvar("cl_zh2_showninventoryitems"), 1, 11); }
     internal bool GetWrapInventoryItems() { return (bool)GetCvar("cl_zh2_wrapinventoryitems"); }
-    internal bool GetAutoUseConsumableItems(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_autouseconsumableitems"); }
     internal bool GetIdentifyPlayers() { return (bool)GetCvar("cl_zh2_identifyplayers"); }
+
+    internal bool GetAutoUseMedikits(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_autousemedikits"); }
+    internal bool GetAutoUseKevlars(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_autousekevlars"); }
+    internal bool GetAutoUseEnergyDrinks(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_autouseenergydrinks"); }
 
     internal bool GetSvTranslucentAllies() { return (bool)GetCvar("sv_zh2_translucentallies"); }
     internal int GetTranslucentAlliesDistance() { return BCSUTILS::Clamp(GetCvar("cl_zh2_translucentalliesdistance"), 100, 1000); }
@@ -69,6 +84,8 @@ strict namespace ZH2Game
     internal bool GetClTeamIndicators() { return (bool)GetCvar("cl_zh2_teamindicators"); }
     internal int GetTeamIndicatorDistance() { return BCSUTILS::Clamp(GetCvar("cl_zh2_teamindicatordistance"), 128, 1000); }
     internal bool GetShowTargetTeamIndicator() { return (bool)GetCvar("cl_zh2_showtargetteamindicator"); }
+
+    internal bool GetEnableAntiTelefragSystem() { return (bool)GetCvar("cl_zh2_enableantitelefragsystem"); }
 
     // Player - Music
     internal bool GetIgnoreRadioMusic() { return (bool)GetCvar("cl_zh2_ignoreradiomusic"); }
@@ -114,54 +131,57 @@ strict namespace ZH2Game
     internal bool GetDrawDebugCoordinatesHud() { return (bool)GetCvar("cl_zh2_DrawDebugCoordinatesHud"); }
 
     internal bool GetEnableHudShaking() { return (bool)GetCvar("cl_zh2_ShakeHud"); }
-    internal fixed GetHudShakeIntensityMultiplier() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudShakeIntensityMultiplier"), 0.1, 5.0); }
-    internal fixed GetHudShakeFrequencyMultiplier() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudShakeFrequencyMultiplier"), 0.1, 5.0); }
-    internal int GetHudShakeDuration() { return BCSUTILS::Clamp(GetCvar("cl_zh2_HudShakeDurationTics"), 1, 20); }
+    internal fixed GetHudShakeIntensityMultiplier() { return 1.1/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudShakeIntensityMultiplier"), 0.1, 5.0)*/; }
+    internal fixed GetHudShakeFrequencyMultiplier() { return 1.1/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudShakeFrequencyMultiplier"), 0.1, 5.0)*/; }
+    internal int GetHudShakeDuration() { return 4/*BCSUTILS::Clamp(GetCvar("cl_zh2_HudShakeDurationTics"), 1, 20)*/; }
 
-    internal fixed GetCursorScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_CursorScale"), 0.05, 2.0); }
+    internal fixed GetCursorScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_CursorScale"), 0.05, 2.0)*/; }
 
     internal bool GetDrawVersionHud() { return (bool)GetCvar("cl_zh2_DrawVersionHud"); }
-    internal fixed GetHudVersionScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudVersionScale"), 0.05, 2.0); }
+    internal fixed GetHudVersionScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudVersionScale"), 0.05, 2.0)*/; }
 
     internal bool GetDrawPlayerStatusHud() { return (bool)GetCvar("cl_zh2_DrawPlayerStatusHud"); }
     internal fixed GetHudPlayerStatusOffsetX() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudPlayerStatusOffsetX"), 0.0, 200.0); }
     internal fixed GetHudPlayerStatusOffsetY() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudPlayerStatusOffsetY"), 0.0, 40.0); }
-    internal fixed GetHudPlayerStatusScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudPlayerStatusScale"), 0.05, 2.0); }
+    internal fixed GetHudPlayerStatusScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudPlayerStatusScale"), 0.05, 2.0)*/; }
 
     internal bool GetDrawPlayerPowersHud() { return (bool)GetCvar("cl_zh2_DrawPlayerPowersHud"); }
     internal fixed GetHudPlayerPowersOffsetX() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudPlayerPowersOffsetX"), -200.0, 200.0); }
     internal fixed GetHudPlayerPowersOffsetY() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudPlayerPowersOffsetY"), -40.0, 40.0); }
-    internal fixed GetHudPlayerPowersScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudPlayerPowersScale"), 0.05, 2.0); }
+    internal fixed GetHudPlayerPowersScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudPlayerPowersScale"), 0.05, 2.0)*/; }
 
     internal bool GetDrawPlayerBarsHud() { return (bool)GetCvar("cl_zh2_DrawPlayerBarsHud"); }
     internal fixed GetHudPlayerBarsOffsetX() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudPlayerBarsOffsetX"), -200.0, 200.0); }
     internal fixed GetHudPlayerBarsOffsetY() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudPlayerBarsOffsetY"), -40.0, 40.0); }
-    internal fixed GetHudPlayerBarsScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudPlayerBarsScale"), 0.05, 2.0); }
+    internal fixed GetHudPlayerBarsScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudPlayerBarsScale"), 0.05, 2.0)*/; }
 
     internal bool GetDrawRoundHud() { return (bool)GetCvar("cl_zh2_DrawRoundHud"); }
     internal fixed GetHudRoundOffsetX() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudRoundOffsetX"), -200.0, 200.0); }
     internal fixed GetHudRoundOffsetY() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudRoundOffsetY"), 0.0, 40.0); }
-    internal fixed GetHudRoundScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudRoundScale"), 0.05, 2.0); }
+    internal fixed GetHudRoundScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudRoundScale"), 0.05, 2.0)*/; }
 
     internal bool GetDrawGameHud() { return (bool)GetCvar("cl_zh2_DrawGameHud"); }
-    internal fixed GetHudGameScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudGameScale"), 0.05, 2.0); }
+    internal fixed GetHudGameScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudGameScale"), 0.05, 2.0)*/; }
+
+    internal fixed GetHudObituaryOffsetX() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_hudobituaryoffsetx"), -200.0, 200.0); }
+    internal fixed GetHudObituaryOffsetY() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_hudobituaryoffsety"), 0.0, 40.0); }
 
     internal bool GetDrawDebugHud() { return (bool)GetCvar("cl_zh2_DrawDebugHud"); }
     internal fixed GetHudDebugOffsetX() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudDebugOffsetX"), 0.0, 200.0); }
     internal fixed GetHudDebugOffsetY() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudDebugOffsetY"), 0.0, 40.0); }
-    internal fixed GetHudDebugScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudDebugScale"), 0.05, 2.0); }
+    internal fixed GetHudDebugScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudDebugScale"), 0.05, 2.0)*/; }
 
     internal bool GetDrawResistsHud() { return (bool)GetCvar("cl_zh2_DrawResistsHud"); }
-    internal fixed GetHudResistsScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudResistsScale"), 0.05, 2.0); }
+    internal fixed GetHudResistsScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudResistsScale"), 0.05, 2.0)*/; }
 
-    internal fixed GetHudAdminScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudAdminScale"), 0.05, 2.0); }
-    internal fixed GetHudEndingScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudEndingScale"), 0.05, 2.0); }
-    internal fixed GetHudSummaryScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudSummaryScale"), 0.05, 2.0); }
-    internal fixed GetHudClientSettingsScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudClientSettingsScale"), 0.05, 2.0); }
-    internal fixed GetHudWeaponSniperScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudWeaponSniperScale"), 0.05, 2.0); }
-    internal fixed GetHudWeaponRadioScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudWeaponRadioScale"), 0.05, 2.0); }
-    internal fixed GetHudFullServerScale() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudFullServerScale"), 0.05, 2.0); }
-    
+    internal fixed GetHudAdminScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudAdminScale"), 0.05, 2.0)*/; }
+    internal fixed GetHudEndingScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudEndingScale"), 0.05, 2.0)*/; }
+    internal fixed GetHudSummaryScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudSummaryScale"), 0.05, 2.0)*/; }
+    internal fixed GetHudClientSettingsScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudClientSettingsScale"), 0.05, 2.0)*/; }
+    internal fixed GetHudWeaponSniperScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudWeaponSniperScale"), 0.05, 2.0)*/; }
+    internal fixed GetHudWeaponRadioScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudWeaponRadioScale"), 0.05, 2.0)*/; }
+    internal fixed GetHudFullServerScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudFullServerScale"), 0.05, 2.0)*/; }
+
     // Zandronum specific
     internal bool GetNoRespawnInvul() { return (bool)GetCvar("sv_norespawninvul"); }
     internal bool GetSvCheats() { return (bool)GetCvar("sv_cheats"); }
@@ -169,4 +189,5 @@ strict namespace ZH2Game
     internal bool GetUnblockAllies() { return (bool)GetCvar("sv_unblockallies"); }
     internal bool GetProtectCVars() { return (bool)GetCvar("cl_protectcvars"); }
     internal int GetMaxPlayers() { return BCSUTILS::Clamp(GetCvar("sv_maxplayers"), 1, 64); }
+    internal bool GetCompatNoObituaries() { return (bool)GetCvar("compat_noobituaries"); }
 }

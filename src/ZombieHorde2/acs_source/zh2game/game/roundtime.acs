@@ -13,14 +13,14 @@ strict namespace Game
             return;
 
         // Game will end, so the visual is skipped.
-        if (Player::HumanCount() == 0)
+        if (Game::HumanCount() == 0)
             return;
 
         if (!ZH2Game::GetInfectTimeIncrease())
             return;
 
         // Get the total number of zombies that have been infected thus far.
-        int count = Player::ZombieCount(true) - Player::InitialZombieCount(true);
+        int count = Game::ZombieCount(true) - Player::InitialZombieCount(true);
         int tics = BCSUtils::Max(0, 90 - 15 * count) + 10 * BCSUtils::Clamp(count / 6, 0, 1);
 
         int ticDiff = RoundTimer::IncrementTimer(RoundTimer::GetActiveTimerIndex(), tics * 35);
@@ -66,7 +66,7 @@ strict namespace Game
         BCSUtils::HudSetAlpha(0.8);
         BCSUtils::HudSetStayTime(1.0);
         BCSUtils::HudSetDisappearTime(1.0);
-        
+
         BCSUtils::HudSetTextColor(ticDiff < 0 ? CR_RED : CR_GREEN);
 
         // Add a '+' to the label for positive. '-' is added automatically.

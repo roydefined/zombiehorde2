@@ -1,0 +1,70 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawEndingHeader()
+    {
+        BCSUtils::HudSetCenterText(true);
+
+        // Graphic
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawImage(--_drawnHudId, ZH2Game::GameContext.WinGraphic);
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
+
+        // Top
+        BCSUtils::HudSetFont("BigFont");
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawText(--_drawnHudId, ZH2Game::GameContext.WinMessageTop);
+        DebugDraw();
+
+        // Bottom
+        BCSUtils::HudSetFont("SmallFont");
+
+        HudSetPointInternal(0.0, 15.0);
+        BCSUtils::HudDrawText(--_drawnHudId, ZH2Game::GameContext.WinMessageBottom);
+        DebugDraw();
+
+        // End reason, if not just a specie winning.
+        Game::EndReasonT reason = Game::GetEndReason();
+        if (reason != Game::REASONNONE && reason != Game::REASONSPECIEWON)
+        {
+            BCSUtils::HudSetFont("SmallFont");
+
+            HudSetPointInternal(0.0, 25.0);
+
+            if (reason == Game::REASONHUMANLEFT)
+            {
+                BCSUtils::HudSetTextColor(CR_BLUE);
+                BCSUtils::HudDrawText(--_drawnHudId, "The last human got scared and left the game.");
+            }
+            else if (reason == Game::REASONZOMBIELEFT)
+            {
+                BCSUtils::HudSetTextColor(CR_RED);
+                BCSUtils::HudDrawText(--_drawnHudId, "The last zombie ragequits.");
+            }
+            else if (reason == Game::REASONADMINENDED)
+            {
+                BCSUtils::HudSetTextColor(CR_YELLOW);
+                BCSUtils::HudDrawText(--_drawnHudId, "Admin ended game.");
+            }
+
+            BCSUtils::HudSetTextColor(CR_WHITE);
+            DebugDraw();
+        }
+
+        // Elapsed time
+        str timerFormatted = Utils::FormatTics(Game::GetPlayTime(), true);
+        BCSUtils::HudSetFont("SmallFont");
+
+        HudSetPointInternal(0.0, 35.0);
+        BCSUtils::HudDrawText(--_drawnHudId, "Play time: " + timerFormatted);
+        DebugDraw();
+    }
+}

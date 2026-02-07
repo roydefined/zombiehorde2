@@ -8,6 +8,7 @@
 #include "actor/timer.acs"
 #include "actor/resist.acs"
 #include "actor/round.acs"
+#include "actor/power.acs"
 #include "actor/admin.acs"
 #include "actor/game.acs"
 #include "actor/mapvoting.acs"
@@ -33,6 +34,7 @@ strict namespace Sync
         Sync::SyncTimers(callSyncOnClients);
         Sync::SyncResists(callSyncOnClients);
         Sync::SyncRoundState(callSyncOnClients);
+        Sync::SyncPowers(callSyncOnClients);
         Sync::SyncAdmins(callSyncOnClients);
         Sync::SyncGame(callSyncOnClients);
         Sync::SyncMapVoting(callSyncOnClients);
@@ -49,6 +51,7 @@ strict namespace Sync
         Sync::CallSyncTimersOnClients();
         Sync::CallSyncResistsOnClients();
         Sync::CallSyncRoundStateOnClients();
+        Sync::CallSyncPowersOnClients();
         Sync::CallSyncAdminsOnClients();
         Sync::CallSyncGameOnClients();
         Sync::CallSyncMapVotingOnClients();
@@ -65,6 +68,7 @@ strict namespace Sync
         Sync::SyncTimersClientside();
         Sync::SyncResistsClientside();
         Sync::SyncRoundStateClientside();
+        Sync::SyncPowersClientside();
         Sync::SyncAdminsClientside();
         Sync::SyncGameClientside();
         Sync::SyncMapVotingClientside();
@@ -78,7 +82,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncPlayersActor();
 
         if (callSyncOnClients)
@@ -91,7 +95,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         CallSyncPlayersActorOnClients();
     }
 
@@ -101,7 +105,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncPlayersActorClientSide();
     }
 
@@ -113,7 +117,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncTimersActor();
 
         if (callSyncOnClients)
@@ -126,7 +130,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         CallSyncTimersActorOnClients();
     }
 
@@ -136,7 +140,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncTimersActorClientside();
     }
 
@@ -148,7 +152,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncResistsActor();
 
         if (callSyncOnClients)
@@ -161,7 +165,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         CallSyncResistsActorOnClients();
     }
 
@@ -171,7 +175,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncResistsActorClientside();
     }
 
@@ -183,7 +187,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncRoundStateActor();
 
         if (callSyncOnClients)
@@ -196,7 +200,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         CallSyncRoundStateActorOnClients();
     }
 
@@ -206,8 +210,43 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncRoundStateActorClientside();
+    }
+
+    /* POWERS */
+
+    internal void SyncPowers(bool callSyncOnClients = true)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        SyncPowersActor();
+
+        if (callSyncOnClients)
+            CallSyncPowersOnClients();
+    }
+
+    internal void CallSyncPowersOnClients()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        CallSyncPowersActorOnClients();
+    }
+
+    internal void SyncPowersClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        SyncPowersActorClientSide();
     }
 
     /* ADMIN */
@@ -218,7 +257,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncAdminsActor();
 
         if (callSyncOnClients)
@@ -231,7 +270,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         CallSyncAdminsActorOnClients();
     }
 
@@ -241,7 +280,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncAdminsActorClientside();
     }
 
@@ -253,7 +292,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncGameActor();
 
         if (callSyncOnClients)
@@ -266,7 +305,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         CallSyncGameActorOnClients();
     }
 
@@ -276,7 +315,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncGameActorClientside();
     }
 
@@ -288,7 +327,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncMapVotingActor();
 
         if (callSyncOnClients)
@@ -301,7 +340,7 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         CallSyncMapVotingActorOnClients();
     }
 
@@ -311,9 +350,9 @@ strict namespace Sync
 
         if (!IsNetworkGame())
             return;
-        
+
         SyncMapVotingActorClientside();
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE

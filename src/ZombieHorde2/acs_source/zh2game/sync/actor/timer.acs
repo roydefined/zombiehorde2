@@ -9,7 +9,7 @@ strict namespace Sync
     internal void SyncTimersActor()
     {
         int syncId = SYNC_ROUNDTIMERS;
-        
+
         syncId = SyncWriteTimerStates(syncId);
 
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Finished writing round timer packs through actors."));
@@ -33,7 +33,7 @@ strict namespace Sync
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Start reading round timer packs on client through actors. Sync id: " + str(syncId) + "."));
 
         syncId = SyncReadTimerStates(syncId);
-        
+
         Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Synced timers to client."));
         VERIFY_SYNCID(syncId, SYNC_ROUNDTIMERS, SYNC_ROUNDTIMERS_LENGTH);
     }
@@ -88,7 +88,7 @@ strict namespace Sync
     {
         RoundTimer::RoundTimerContextT[]& timers = ZH2Game::GameContext.MapDetails.Timers;
         int collectionLength = BCSUtils::GetSyncVarDefault(--syncId, 0);
-        
+
         int index = BCSUtils::GetSyncVarDefault(--syncId, 0);
         ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex = index;
 
@@ -102,7 +102,7 @@ strict namespace Sync
         //     Logger::LogDebug(LOGSOURCE , FormatLog(SYNC_CATEGORY, "Reallocating to size of \cd" + str(collectionLength) + "\cj from sync packet."));
         //     ZH2Game::GameContext.MapDetails.Timers = BCS::ArrResize(timers, collectionLength, lengthof(lengthdef));
         // }
-        
+
         // For logging
         int time = Utils::GetSynchronizedTimer();
 

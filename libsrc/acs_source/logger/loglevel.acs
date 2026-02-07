@@ -1,5 +1,5 @@
 #ifdef __IMPORTED__
-	#error This file must be #included.
+    #error This file must be #included.
 #endif
 
 strict namespace Logger
@@ -28,7 +28,7 @@ strict namespace Logger
     {
         LogMessageLevel(source, Logger::LEVELFATAL, message);
     }
-	  
+
     void LogMessageLevel(str source, LogLevelT logLevel, str message)
     {
         // Check if global override has disabled this log message.
@@ -39,27 +39,27 @@ strict namespace Logger
                         : BCSUtils::IsServerOnly() ? OWNERSERVER
                         : OWNERNONE;
 
-	    str messagePacket = Packet::Packet_New();
-	    messagePacket = Packet::Packet_AppendStr(messagePacket, source);
-	    messagePacket = Packet::Packet_Append(messagePacket, (int)logLevel, Packet::PACKET_WORD);
-	    messagePacket = Packet::Packet_Append(messagePacket, (int)owner, Packet::PACKET_WORD);
-	    messagePacket = Packet::Packet_AppendStr(messagePacket, message);
+        str messagePacket = Packet::Packet_New();
+        messagePacket = Packet::Packet_AppendStr(messagePacket, source);
+        messagePacket = Packet::Packet_Append(messagePacket, (int)logLevel, Packet::PACKET_WORD);
+        messagePacket = Packet::Packet_Append(messagePacket, (int)owner, Packet::PACKET_WORD);
+        messagePacket = Packet::Packet_AppendStr(messagePacket, message);
 
         // When logged serverside, we also want to perform buffering and logging through rcon.
         if (BCSUtils::IsServerOnly())
             AddPacketLogToBuffer(messagePacket);
-        
+
         // Now send the log to clients.
-		// Already clientside, so we do not need to do networking.
-		if (BCSUtils::IsClient())
-		{
-			if (!ACS_NamedExecuteAlways("LoggerLib_LogPacketOnClientString", 0, messagePacket))
-				PrintError("Failed to invoke LoggerLib_LogPacketOnClientString. Message packet: '" + messagePacket + "'.");
-			return;
-		}
-		
-		if(!NamedSendNetworkString("LoggerLib_LogPacketOnClientInt", messagePacket))
-			PrintError("Failed to invoke LoggerLib_LogPacketOnClientInt. Message packet: '" + messagePacket + "'.");
+        // Already clientside, so we do not need to do networking.
+        if (BCSUtils::IsClient())
+        {
+            if (!ACS_NamedExecuteAlways("LoggerLib_LogPacketOnClientString", 0, messagePacket))
+                PrintError("Failed to invoke LoggerLib_LogPacketOnClientString. Message packet: '" + messagePacket + "'.");
+            return;
+        }
+
+        if(!NamedSendNetworkString("LoggerLib_LogPacketOnClientInt", messagePacket))
+            PrintError("Failed to invoke LoggerLib_LogPacketOnClientInt. Message packet: '" + messagePacket + "'.");
     }
 
     // Returns `true` if the given source-level combination is configured to be logged.
@@ -72,7 +72,7 @@ strict namespace Logger
             severity = GetLogLevelByIndex(ZH2Lib::GetServerOverwriteLogSeverity());
         else
             severity = GetLogLevelByIndex(ZH2Lib::GetClientOverwriteLogSeverity());
-        
+
         if (severity != LEVELNONE)
             return severity <= level;
 
@@ -82,7 +82,7 @@ strict namespace Logger
             LogOverrideT global:PERSISTINGLIBCONTEXTINDEX& override = ZH2Lib::PersistingLibContext.LogContext.Overrides[i];
             if (!BCSUtils::StrIEquals(override.Source, source))
                 continue;
-            
+
             return override.Level <= level;
         }
 
@@ -96,7 +96,7 @@ strict namespace Logger
         int severity = GetLogLevelByIndex(ZH2Lib::GetGlobalOverwriteLogSeverity());
         return severity == LEVELNONE || severity <= level;
     }
-    
+
     internal LogOwnerT GetLogOwnerByIndex(int index)
     {
         if (index <= OWNERNONE || index > OWNERSERVER)
@@ -109,9 +109,9 @@ strict namespace Logger
     internal str GetLogOwnerAsString(LogOwnerT owner)
     {
         return owner == OWNERCLIENT ? "client" :
-			owner == OWNERSERVER ? "server" :
-			owner == OWNERNONE ? "neither" :
-			"???";	
+            owner == OWNERSERVER ? "server" :
+            owner == OWNERNONE ? "neither" :
+            "???";
     }
 
     internal LogLevelT GetLogLevelByIndex(int index)
@@ -131,21 +131,21 @@ strict namespace Logger
             case "dbg":
             case "debug":
                 return LEVELDEBUG;
-            
+
             case "inf":
             case "info":
             case "information":
                 return LEVELINFO;
-            
+
             case "wrn":
             case "warn":
             case "warning":
                 return LEVELWARN;
-            
+
             case "err":
             case "error":
                 return LEVELERROR;
-            
+
             case "ftl":
             case "fatal":
                 return LEVELFATAL;
@@ -158,30 +158,30 @@ strict namespace Logger
     internal str GetLogLevelAsString(LogLevelT logLevel)
     {
         return logLevel == LEVELDEBUG ? "debug" :
-			logLevel == LEVELINFO ? "information" :
-			logLevel == LEVELWARN ? "warning" :
-			logLevel == LEVELERROR ? "error" :
-			logLevel == LEVELFATAL ? "fatal" :
-			"???";	
+            logLevel == LEVELINFO ? "information" :
+            logLevel == LEVELWARN ? "warning" :
+            logLevel == LEVELERROR ? "error" :
+            logLevel == LEVELFATAL ? "fatal" :
+            "???";
     }
 
     internal str GetLogLevelShortenedAsString(LogLevelT logLevel)
     {
         return logLevel == LEVELDEBUG ? "dbg" :
-			logLevel == LEVELINFO ? "inf" :
-			logLevel == LEVELWARN ? "wrn" :
-			logLevel == LEVELERROR ? "err" :
-			logLevel == LEVELFATAL ? "ftl" :
-			"???";
+            logLevel == LEVELINFO ? "inf" :
+            logLevel == LEVELWARN ? "wrn" :
+            logLevel == LEVELERROR ? "err" :
+            logLevel == LEVELFATAL ? "ftl" :
+            "???";
     }
 
     internal str GetLogLevelColorAsString(LogLevelT logLevel)
     {
         return logLevel == LEVELDEBUG ? "j" :
-			logLevel == LEVELINFO ? "n" :
-			logLevel == LEVELWARN ? "k" :
-			logLevel == LEVELERROR ? "g" :
-			logLevel == LEVELFATAL ? "g" :
-			"j";	
+            logLevel == LEVELINFO ? "n" :
+            logLevel == LEVELWARN ? "k" :
+            logLevel == LEVELERROR ? "g" :
+            logLevel == LEVELFATAL ? "g" :
+            "j";
     }
 }

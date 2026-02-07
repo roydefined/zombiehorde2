@@ -1,5 +1,5 @@
 #ifdef __IMPORTED__
-	#error This file must be #included.
+    #error This file must be #included.
 #endif
 
 #define LOGSOURCE  "Reward"
@@ -13,64 +13,64 @@
 
 strict namespace Reward
 {
-	internal int GetRewardCollectionSize() { return ZH2Game::PersistingGameContext.RewardCollection.Count; }
+    internal int GetRewardCollectionSize() { return ZH2Game::PersistingGameContext.RewardCollection.Count; }
     internal int GetRewardFlags(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].ContainerFlags; }
     internal str GetRewardName(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].Name; }
-	internal int GetRewardWeight(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].Weight; }
-	internal Player::SpecieTypeT GetRewardSpecieSpecific(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].SpecieSpecific; }
-	internal str GetRewardCallRestrict(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].CallRestrict; }
+    internal int GetRewardWeight(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].Weight; }
+    internal Player::PlayerSpecieT GetRewardSpecieSpecific(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].SpecieSpecific; }
+    internal str GetRewardCallRestrict(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].CallRestrict; }
     internal str GetRewardCallGive(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].CallGive; }
-	internal str GetRewardGive(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].Give; }
-	internal str GetRewardSound(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].Sound; }
-	internal str GetRewardLocalMessage(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].LocalMessage; }
-	internal str GetRewardMessage(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].Message; }
+    internal str GetRewardGive(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].Give; }
+    internal str GetRewardSound(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].Sound; }
+    internal str GetRewardLocalMessage(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].LocalMessage; }
+    internal str GetRewardMessage(int index) { return ZH2Game::PersistingGameContext.RewardCollection.Collection[index].Message; }
 
-	internal bool RewardMatchesContainerType(int index, RewardItemTypeFlagsT type)
-	{
-    	return (GetRewardFlags(index) & type) != 0;
-	}
-
-	internal str ContainerTypeToItemName(RewardItemTypeFlagsT flag)
-	{
-		switch(flag)
-		{
-			case REWARDORBMINOR: return "ZH2ItemRewardOrbMinor";
-			case REWARDORBMAJOR: return "ZH2ItemRewardOrbMajor";
-			default: return (raw)0;
-		}
-	}
-
-	internal str ContainerTypeToReadableString(RewardItemTypeFlagsT flag)
-	{
-		switch(flag)
-		{
-			case REWARDNONE: return "no reward";
-			case REWARDORBMINOR: return "minor reward orb";
-			case REWARDORBMAJOR: return "major reward orb";
-			default: return "unknown reward";
-		}
-	}
-
-	internal str ContainerTypeToShortReadableString(RewardItemTypeFlagsT flag)
-	{
-		switch(flag)
-		{
-			case REWARDNONE: return "none";
-			case REWARDORBMINOR: return "minor orb";
-			case REWARDORBMAJOR: return "major orb";
-			default: return "unknown";
-		}
-	}
-
-	internal str ContainerIndexToSound(int index)
-	{
-        return index % 2 == 0 ? "world/BONUSMAJOR" : "world/BONUSMINOR";
-	}
-
-	internal RewardItemTypeFlagsT GetRewardItemTypeByIndex(int index)
+    internal bool RewardMatchesContainerType(int index, RewardItemTypeFlagsT type)
     {
-		if (index <= REWARDNONE || index > BCSUtils::Flag2Index(REWARDORBMAJOR) + 1)
-			return REWARDNONE;
+        return (GetRewardFlags(index) & type) != 0;
+    }
+
+    internal str ContainerTypeToItemName(RewardItemTypeFlagsT flag)
+    {
+        switch(flag)
+        {
+            case REWARDORBMINOR: return "ZH2ItemRewardOrbMinor";
+            case REWARDORBMAJOR: return "ZH2ItemRewardOrbMajor";
+            default: return (raw)0;
+        }
+    }
+
+    internal str ContainerTypeToReadableString(RewardItemTypeFlagsT flag)
+    {
+        switch(flag)
+        {
+            case REWARDNONE: return "no reward";
+            case REWARDORBMINOR: return "minor reward orb";
+            case REWARDORBMAJOR: return "major reward orb";
+            default: return "unknown reward";
+        }
+    }
+
+    internal str ContainerTypeToShortReadableString(RewardItemTypeFlagsT flag)
+    {
+        switch(flag)
+        {
+            case REWARDNONE: return "none";
+            case REWARDORBMINOR: return "minor orb";
+            case REWARDORBMAJOR: return "major orb";
+            default: return "unknown";
+        }
+    }
+
+    internal str ContainerIndexToSound(int index)
+    {
+        return index % 2 == 0 ? "world/BONUSMAJOR" : "world/BONUSMINOR";
+    }
+
+    internal RewardItemTypeFlagsT GetRewardItemTypeByIndex(int index)
+    {
+        if (index <= REWARDNONE || index > BCSUtils::Flag2Index(REWARDORBMAJOR) + 1)
+            return REWARDNONE;
 
         static RewardItemTypeFlagsT collection[] = { REWARDORBMINOR, REWARDORBMAJOR };
         return collection[index - 1];

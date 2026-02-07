@@ -2,81 +2,91 @@
 
 actor ZH2LegacyZE14Explosion
 {
-	states
-	{
-		spawn:
-			EXP2 ABCDEFGHIJKLMN 2
-			stop
-	}
+    states
+    {
+        spawn:
+            EXP2 ABCDEFGHIJKLMN 2
+            stop
+    }
 }
 
 actor ZH2LegacyWeaponDisplay1 : ZH2LegacyDecoration 22110
 {
-	States
-	{
-		Spawn:
-			SI01 A -1
-			Stop
-	}
+    States
+    {
+        Spawn:
+            SI01 A -1
+            Stop
+    }
 }
 
 actor ZH2LegacyWeaponDisplay2 : ZH2LegacyDecoration 22111
 {
-	States
-	{
-		Spawn:
-			SI02 A -1
-			Stop
-	}
+    States
+    {
+        Spawn:
+            SI02 A -1
+            Stop
+    }
 }
 
 actor ZH2LegacyWeaponDisplay3 : ZH2LegacyDecoration 22112
 {
-	States
-	{
-		Spawn:
-			SI03 A -1
-			Stop
-	}
+    States
+    {
+        Spawn:
+            SI03 A -1
+            Stop
+    }
 }
 
 actor ZH2LegacyWeaponDisplay4 : ZH2LegacyDecoration 22113
 {
-	States
-	{
-		Spawn:
-			SI04 A -1
-			Stop
-	}
+    States
+    {
+        Spawn:
+            SI04 A -1
+            Stop
+    }
 }
 
 actor ZH2LegacyWeaponDisplay5 : ZH2LegacyDecoration 22114
 {
-	States
-	{
-		Spawn:
-			SI05 A -1
-			Stop
-	}
+    States
+    {
+        Spawn:
+            SI05 A -1
+            Stop
+    }
 }
 
 actor ZH2LegacyWeaponDisplay6 : ZH2LegacyDecoration 22115
 {
-	States
-	{
-		Spawn:
-			SI06 A -1
-			Stop
-	}
+    States
+    {
+        Spawn:
+            SI06 A -1
+            Stop
+    }
 }
 
-// TODO: Give a pistol?
-actor ZH2LegacyFakePistol : ZH2LegacyDecoration 24419
+actor ZH2LegacyFakePistol : ZH2WeaponSpawn 24419
 {
-	States
-	{
-		Spawn:
-			SI07 A -1
-			Stop
-	}
+    inventory.pickupmessage "Handgun"
+    tag "Handgun"
+
+    States
+    {
+        Spawn:
+            SI07 A -1
+            Stop
+
+        // Give the main handgun (for now)
+        Pickup:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, "PickupSuccess")
+            stop
+        PickupSuccess:
+            TNT1 A 0 A_GiveInventory("ZH2WeaponHandgun", 1)
+            stop
+    }
 }

@@ -100,7 +100,9 @@ script 5 (void) //Elevator
 			delay(35);
 		}
 		Door_close(10,20);
-		ceiling_lowerandcrush(12,21,10000);
+		ceiling_lowerandcrush(12,21,100,2); //ZH2 [AQW] hexen crushmode
+		TagWait(12);
+		Ceiling_LowerByValueTimes8(12,16,1);
 		FloorAndCeiling_LowerByValue(11,20,8*25);
 		FloorAndCeiling_LowerByValue(43,24,8*99);
 		tagwait(11);
@@ -199,22 +201,27 @@ Script 12 (void)//The door seal.
     Delay(35*3);
     AmbientSound("world/avalance1", 127);
     Radius_Quake(41, 255, 0, 12,34);
-    ceiling_LowerAndCrush(40,16,10000);
+    ceiling_LowerAndCrush(40,16,10,2); //ZH2 [AQW] crushmode hexen
+	TagWait(40);
+	Ceiling_LowerByValueTimes8(40,16,1);
     Delay(35*2);
     SetFont("BIGFONT");
     HudmessageBold(s:"\cgWARNING: \cjAvalanche!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
     delay(65);
 
 	// Light effect
-	for(int k = 0; k < 32; k++)
+	for(int k = 0; k < BCSUtils::MAX_PLAYERS; k++)
 	{
 		if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
 		{
-			SetActivator(600+k);
+            int tid = Identity::GetTid(k);
+			SetActivator(tid);
 			FadeTo(1.0, 1.0, 1.0, 1.0, 1.0);
 		}
 	}
 
+    SetActivator(-1);
+    
 	Delay(70);
 	Game::KillUnsafePlayers();
 }

@@ -29,7 +29,7 @@ strict namespace Game
             DisposeClientDeathCamera();
             return;
         }
-        
+
         // Automatically dispose of the death cam when too far away.
         fixed diffX = GetActorX(DEATH_CAM_TID) - playerDeathPosX,
               diffY = GetActorY(DEATH_CAM_TID) - playerDeathPosY,
@@ -37,7 +37,7 @@ strict namespace Game
 
         fixed horizontalDistance = VectorLength(diffX, diffY);
         fixed verticalDistance = BCSUtils::Abs(diffZ);
-        
+
         if (horizontalDistance > DEATH_CAM_MAX_HORIZONTAL_DISTANCE || verticalDistance > DEATH_CAM_MAX_VERTICAL_DISTANCE)
             DisposeClientDeathCamera();
     }
@@ -95,5 +95,10 @@ strict namespace Game
     internal bool ClientDeathCameraEnabled()
     {
         return ThingCountName(DEATH_CAM_ACTOR, DEATH_CAM_TID) > 0;
+    }
+
+    internal bool GetViewingDeathCamera()
+    {
+        return CheckPlayerCamera(ConsolePlayerNumber()) == DEATH_CAM_TID;
     }
 }

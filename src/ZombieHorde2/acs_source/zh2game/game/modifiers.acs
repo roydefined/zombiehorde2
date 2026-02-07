@@ -1,0 +1,144 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    // On specie change we want to provide active modifiers back to the player.
+    script "zh2_internal_modifier_specie_changed" (raw packetStr)
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerSpecieChanged(packet);
+        int id = Event::GetReceiveData(0);
+        InitializePlayerModifiers(id);
+
+        Sync::SyncPowers();
+    }
+
+    internal void InitializePlayerModifiers(int id)
+    {
+        // Make sure players are given this power when they start, and it's enabled.
+        for (int i = 0; i < MAX_SERVER_MODIFIERS; ++i)
+        {
+            ModifierTypeT modifier = GetServerModifierTypeByIndex(i);
+            int powerIndex = ServerModifierToPower(modifier);
+
+            if (GetServerModifierEnabled(modifier))
+                Power::GivePlayerPower(id, powerIndex);
+        }
+    }
+
+    // Each tic validate the modifiers are still the same value, or we must update it.
+    internal void ModifiersTic()
+    {
+        void CheckModifierState(ModifierTypeT modifier, bool enabled, fixed factor)
+        {
+            bool enabledUpdated = GetServerModifierEnabled(modifier) != enabled;
+            bool factorUpdated = GetServerModifierFactor(modifier) != factor;
+
+            if (!enabledUpdated && !factorUpdated)
+                return;
+
+            int powerIndex = ServerModifierToPower(modifier);
+
+            // Set the actual power factor to the new value.
+            if (factorUpdated)
+            {
+                switch(powerIndex)
+                {
+                    case Power::POWERREWARDSERVERDAMAGEFACTOR:
+                        Power::SetPowerOverrideFactorValue(powerIndex, Power::POWERTYPE_DAMAGEFACTOR, factor);
+                        Power::SetPowerOverrideFactorDefined(powerIndex, Power::POWERTYPE_DAMAGEFACTOR, true);
+                        break;
+                    case Power::POWERREWARDSERVERKNOCKBACKMULTIPLIER:
+                        Power::SetPowerOverrideFactorValue(powerIndex, Power::POWERTYPE_KNOCKBACK, factor);
+                        Power::SetPowerOverrideFactorDefined(powerIndex, Power::POWERTYPE_KNOCKBACK, true);
+                        break;
+                }
+            }
+
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            {
+                if (!BCSUtils::ActorIsAlive(Identity::GetTid(i)))
+                    continue;
+
+                if (enabledUpdated)
+                {
+                    if (enabled) Power::GivePlayerPower(i, powerIndex);
+                    else Power::TakePlayerPower(i, powerIndex);
+                }
+
+                Power::RecalculatePlayerPowers(i);
+            }
+
+            SetServerModifierEnabled(modifier, enabled);
+            SetServerModifierFactor(modifier, factor);
+
+            // Inform clients of the change in modifiers.
+            Sync::SyncPowers();
+
+            str name = Power::GetPowerName(powerIndex);
+            Logger::LogDebug(LOGSOURCE, "Server changed server modifier \cd" + name + "\cj. Enabled updated: \cd" + (enabledUpdated ? "true" : "false") + "\cj. Enabled: \cd" + (enabled ? "true" : "false") + "\cj. Factor updated: \cd" + (factorUpdated ? "true" : "false") + "\cj. Factor: \cd" + str(factor) +"\cj.");
+
+            // Special message when modifier is for knockback multiplier.
+            // If custom knockback is disabled, this won't do anything.
+            if (modifier == MODIFIERTYPE_KNOCKBACK && !ZH2Game::GetUseCustomKnockbackFeature())
+            {
+                // If we enabled it, or we changed the factor, log a message.
+                if ((enabledUpdated && enabled) || factorUpdated)
+                    Logger::LogDebug(LOGSOURCE, "Note custom knockback is disabled. Changes to the knockback modifier won't take effect until it's enabled.");
+            }
+        }
+
+        CheckModifierState(MODIFIERTYPE_KNOCKBACK, ZH2Game::GetUseCustomKnockbackModifier(), ZH2Game::GetCustomKnockbackModifierMultiplier());
+        CheckModifierState(MODIFIERTYPE_DAMAGEFACTOR, ZH2Game::GetUseCustomDamageFactorModifier(), ZH2Game::GetCustomDamageFactorModifierMultiplier());
+    }
+
+    /* PROPERTIES */
+    internal bool GetServerModifierEnabled(ModifierTypeT modifier)
+    {
+        return ZH2Game::GameContext.ServerModifiers[modifier].Enabled;
+    }
+
+    internal void SetServerModifierEnabled(ModifierTypeT modifier, bool enabled)
+    {
+        ZH2Game::GameContext.ServerModifiers[modifier].Enabled = enabled;
+    }
+
+    internal fixed GetServerModifierFactor(ModifierTypeT modifier)
+    {
+        return ZH2Game::GameContext.ServerModifiers[modifier].Factor;
+    }
+
+    internal void SetServerModifierFactor(ModifierTypeT modifier, fixed factor)
+    {
+        ZH2Game::GameContext.ServerModifiers[modifier].Factor = factor;
+    }
+
+    internal ModifierTypeT GetServerModifierTypeByIndex(int index)
+    {
+        static ModifierTypeT collection[] = {
+            MODIFIERTYPE_KNOCKBACK, MODIFIERTYPE_DAMAGEFACTOR
+        };
+
+        // Should not happen. The index should always point to a known type.
+        // TODO: Add unknown type for this.
+        if (index < 0 || index >= lengthof(collection))
+            return MODIFIERTYPE_KNOCKBACK;
+
+        return collection[index];
+    }
+
+    internal int ServerModifierToPower(ModifierTypeT index)
+    {
+        static int collection[] = {
+            Power::POWERREWARDSERVERKNOCKBACKMULTIPLIER, Power::POWERREWARDSERVERDAMAGEFACTOR
+        };
+
+        // Should not happen. The index should always point to a known type.
+        if (index < 0 || index >= lengthof(collection))
+            return 0;
+
+        return collection[index];
+    }
+}

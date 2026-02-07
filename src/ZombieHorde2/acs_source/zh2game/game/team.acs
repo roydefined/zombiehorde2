@@ -28,7 +28,7 @@ strict namespace Game
     {
         ZH2Game::GameContext.TeamIndicatorsEnabled = enabled;
     }
-    
+
     internal bool GetTeamIndicatorsEnabled()
     {
         return ZH2Game::GameContext.TeamIndicatorsEnabled;
@@ -52,17 +52,17 @@ strict namespace Game
 
             int indicatorTid = GetPlayerTeamIndicatorTid(i);
             SetActorProperty(indicatorTid, APROP_ALPHA, 0.0);
-			SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
+            SetActorProperty(indicatorTid, APROP_RENDERSTYLE, STYLE_TRANSLUCENT);
         }
     }
 
     // Handles actually setting the alpha values on all team indicators and warping them.
     internal void UpdateTeamIndicators()
     {
-        Player::SpecieTypeT specie = Player::GetSpecie();
+        Player::PlayerSpecieT specie = Player::GetSpecie();
         int consolePlayerTid = Identity::GetTid(ConsolePlayerNumber());
         fixed translucentTeamIndicatorsDistance = fixed(ZH2Game::GetTeamIndicatorDistance());
-        
+
         int targetTid = 0;
 
         // Do we want to show team indicators only for those we target?
@@ -95,7 +95,7 @@ strict namespace Game
                 continue;
 
             fixed zOffset = GetActorProperty(tid, APROP_VIEWHEIGHT) + 16.0;
-            Player::SpecieTypeT playerSpecie = Player::GetPlayerSpecie(i);
+            Player::PlayerSpecieT playerSpecie = Player::GetPlayerSpecie(i);
 
             // Zombies are taller than their view height.
             if (playerSpecie == Player::SPECIEZOMBIE)
@@ -119,14 +119,14 @@ strict namespace Game
                 HideTeamIndicator();
                 continue;
             }
-            
+
             // If we picked an actor, then this team indicator must be from them.
             if (getShowTargetTeamIndicator && tid != targetTid)
             {
                 HideTeamIndicator();
                 continue;
             }
-            
+
             // Do not show when the player has any status, except chatting because it does not overlap.
             int status = GetPlayerStatus(i);
             if (status != PLAYERSTATUS_CHATTING && status != 0)
@@ -142,8 +142,8 @@ strict namespace Game
             fixed fadeFactor = 1.0 - (distance - end) / TEAM_INDICATOR_FADE_RANGE;
             fixed alpha = (fixed)BCSUtils::Clamp(fadeFactor, 0.0, 1.0);
 
-			SetActorProperty(indicatorTid, APROP_ALPHA, alpha);
-			SetActorProperty(indicatorTid, APROP_RENDERSTYLE, alpha != 1.0 ? STYLE_TRANSLUCENT : STYLE_NORMAL);
+            SetActorProperty(indicatorTid, APROP_ALPHA, alpha);
+            SetActorProperty(indicatorTid, APROP_RENDERSTYLE, alpha != 1.0 ? STYLE_TRANSLUCENT : STYLE_NORMAL);
 
             // Update indicator state.
             // No need to update when it's not visible.
@@ -173,7 +173,7 @@ strict namespace Game
 
     internal void SpawnPlayerTeamIndicator(int id)
     {
-		VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
         VALIDATE_ID_VALID_FUNCTION(id);
 
         int indicatorTid = GetPlayerTeamIndicatorTid(id);
@@ -198,7 +198,7 @@ strict namespace Game
 
     internal void DisposePlayerTeamIndicator(int id)
     {
-		VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
         VALIDATE_ID_VALID_FUNCTION(id);
 
         int indicatorTid = GetPlayerTeamIndicatorTid(id);

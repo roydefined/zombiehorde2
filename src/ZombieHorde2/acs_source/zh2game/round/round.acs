@@ -41,7 +41,7 @@ strict namespace Round
         Logger::LogDebug(LOGSOURCE , "Game state has switched to \cd" + GetRoundStateIndexAsString(index) + "\cj.");
 
         if (broadcast)
-            EventBus::CallEvent(EVENTROUNDSWITCHED, previousIndex, index);
+            Event::SendRoundSwitched(previousIndex, index);
     }
 
     internal RoundStateContextT& GetRoundRefCurrent() { return GetRoundRefByindex(GetActiveRoundStateIndex()); }
@@ -51,7 +51,7 @@ strict namespace Round
     internal bool GetRoundJoinable(int index) { return !GetRoundRefByindex(index).DenyJoin; }
     internal bool GetRoundIsEnding(int index) { return GetRoundRefByindex(index).IsEnding; }
     internal bool GetRoundDefined(int index) { return GetRoundRefByindex(index).Defined; }
-    
+
     /* Casting / Conversions */
 
     internal int GetIndexOfKnownRoundStateType(KnownRoundStateT stateType) { return (int)stateType; }
@@ -64,7 +64,7 @@ strict namespace Round
         {
             if (index != item)
                 continue;
-            
+
             return item;
         }
 
@@ -77,7 +77,7 @@ strict namespace Round
         KnownRoundStateT knownRoundState = GetKnownRoundStateTypeByIndex(index);
         if (knownRoundState != STATENONE)
             return collection[index];
-            
+
         // No known round state, return custom and the index.
         return "Custom (" + str(index) + ")";
     }

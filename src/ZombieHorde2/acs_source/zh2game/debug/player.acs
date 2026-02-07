@@ -1,0 +1,44 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Debug
+{
+    script "zh2_action_unlockplayer" net clientside
+    {
+        Player::LockMovement(false);
+    }
+
+    script "zh2_action_debuggivestartweapons" net
+    {
+        // Can't be called online when not in development and we are not admin.
+        if (IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
+        {
+            Logger::LogActivator("You're not allowed to give yourself start weapons.");
+            terminate;
+        }
+
+        Player::PlayerSpecieT specie = Player::GetSpecie();
+        ClearInventory();
+
+        if (specie == Player::SPECIEHUMAN) Player::GiveHumanInventory(true);
+        else if (specie == Player::SPECIEZOMBIE) Player::GiveZombieInventory();
+
+        Logger::LogActivator("You've been given start weapons.");
+    }
+
+    script "zh2_action_debugsetthruactors" (raw enableRaw) net
+    {
+        bool enable = (bool)enableRaw;
+
+        // Can't be called online when not in development and we are not admin.
+        if (IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
+        {
+            Logger::LogActivator("You're not allowed to set thruactors on yourself.");
+            terminate;
+        }
+
+        Player::SetThruActors(enable);
+        Logger::LogActivator("You can " + (enable ? "now" : "no longer") + " walk through actors.");
+    }
+}
