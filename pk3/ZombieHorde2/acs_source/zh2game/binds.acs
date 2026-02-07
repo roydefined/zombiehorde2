@@ -9,24 +9,19 @@ strict namespace ZH2Game
 
     script "zh2_action_requestgamestart" net
     {
-        // In development this script additionally has the ability to skip a round.
-        // If not, it must be in pregame.
-        if (!IsDevelopment() && Round::GetActiveKnownRoundState() != Round::STATEPREGAME)
-        {
-            Logger::LogActivator("The game is already starting or has already started.");
-            terminate;
-        }
-
-        // Set the timer to be 1 second left if a timer is active and the user is an admin.
-        if (RoundTimer::GetAnyTimerActive() && Admin::GetAdmin())
+        // Set the timer to be 1 second left if a timer is active and we either play offline, or the user is an admin.
+        // Do not check for development, for now.
+        if (/*IsDevelopment() &&*/ RoundTimer::GetAnyTimerActive() && (!IsNetworkGame() || Admin::GetIsAdmin()))
         {
             int index = RoundTimer::GetActiveTimerIndex();
 
             if (!RoundTimer::GetTimerDefined(index)) terminate;
             if (RoundTimer::GetTimerTicsLeft(index) < 1 * 35) terminate;
-            RoundTimer::SetTimerTicsLeft(index, 1 * 35);
+
+            // Removing 1 tic prevents the countdown ambient from playing every tic if it's the play timer.
+            RoundTimer::SetTimerTicsLeft(index, 1 * 35 - 1);
             Logger::LogBold(BCSUTILS::PlayerName(PlayerNumber()) + " has sped up the timer.");
-          
+
             Sync::SyncTimers();
             terminate;
         }
@@ -55,21 +50,22 @@ strict namespace ZH2Game
             RoundTimer::SetActiveTimerByKnownType(RoundTimer::TIMERPREGAMECOUNTDOWN);
             RoundTimer::StartTimer(index);
             Logger::LogBold(BCSUtils::PlayerName(PlayerNumber()) + " has requested to start the game.");
-          
+
             Sync::SyncTimers();
             terminate;
         }
+
+        // Nothing triggered, so log a message instead.
+        Logger::LogActivator("The game is already starting or has already started.");
     }
 
     script "zh2_action_sprint" (raw doSprint) net
     {
-        if (!PlayerInGame(PlayerNumber())) terminate;
         Player::SetSprinting((bool)doSprint);
     }
 
     script "zh2_action_panic" net
     {
-        if (!PlayerInGame(PlayerNumber())) terminate;
         Player::StartPanic();
     }
 
@@ -78,35 +74,10 @@ strict namespace ZH2Game
         Game::CallZombieTeleport();
     }
 
+    // Note: Can be called whilst dead. This works fine.
     script "zh2_action_toggleadminhud" net clientside
     {
-        // Ignore if we are in the voting state.
-        // The voting state has cickable buttons itself and it's messy if we allow this.
-        if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
-            terminate;
-
-        // TODO: Ignore if dead.
-
-        // Do not allow enabling the hud if not admin.
-        if (!ZH2Game::GameContext.HasAdminHudOpen && !Admin::GetAdmin())
-        {
-            Logger::LogActivator("You must be an admin for this operation.");
-            terminate;
-        }
-
-        ZH2Game::GameContext.HasAdminHudOpen = !ZH2Game::GameContext.HasAdminHudOpen;
-        Hud::SetCursorEnabled(ZH2Game::GameContext.HasAdminHudOpen);
-        if (!NamedRequestScriptPuke("zh2_internal_menu_admin_request_set_frozen", int(ZH2Game::GameContext.HasAdminHudOpen)))
-            Logger::LogError(LOGSOURCE, "Failed to set frozen state on player for admin hud.");
-
-        // If we disable the admin menu, we want to make sure to go back to the start menu.
-        // Also reset the target player id if we had somebody.
-        if (!ZH2Game::GameContext.HasAdminHudOpen)
-            Hud::ResetHud();
-        
-        // If we enable it, make sure the settings hud is disabled.
-        else
-            ZH2Game::GameContext.HasClientSettingsHudOpen = false;
+        Admin::ToggleAdminHud();
     }
 
     script "zh2_action_consolidateclientsettings" net clientside
@@ -117,18 +88,17 @@ strict namespace ZH2Game
 
     script "zh2_action_enableclientsettingshud" net clientside
     {
-        // Ignore if we are in the voting state.
-        // The voting state has cickable buttons itself and it's messy if we allow this.
-        if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
-            terminate;
-
-        // TODO: Ignore if dead.
-        
         Settings::OpenClientSettingsMenu();
     }
 
     script "zh2_action_iteratezombieability" (raw directionRaw) net clientside
     {
+        if (!BCSUtils::IsAlive())
+            terminate;
+
+        if (!Player::GetIsZombie())
+            terminate;
+
         int direction = (int)directionRaw;
         int current = Game::GetSelectedAbilityIndex();
         int last = current;
@@ -161,377 +131,6 @@ strict namespace ZH2Game
         Music::PlayDefaultMusic();
     }
 
-    /* DEBUG - ADMIN */
-
-    script "zh2_action_enableadmin" net
-    {
-        // Can't be called when not offline, not in development and we do not have sv_cheats enabled.
-        if (!IsNetworkGame() && !IsDevelopment() && !ZH2Game::GetSvCheats())
-            terminate;
-        
-        Admin::RconSetPlayerAdmin(PlayerNumber(), true);
-    }
-
-    script "zh2_action_disableadmin" net
-    {
-        // Can't be called when not offline, not in development and we do not have sv_cheats enabled.
-        if (!IsNetworkGame() && !IsDevelopment() && !ZH2Game::GetSvCheats())
-            terminate;
-
-        Admin::RconSetPlayerAdmin(PlayerNumber(), false);
-    }
-
-    /* DEBUG - GENERAL */
-
-    script "zh2_action_debuggivestartweapons" net
-    {
-        // Can't be called when not offline, not in development and we are not admin.
-        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
-            terminate;
-
-        Player::SpecieTypeT specie = Player::GetSpecie();
-        ClearInventory();
-        
-        if (specie == Player::SPECIEHUMAN) Player::GiveHumanInventory(true);
-        else if (specie == Player::SPECIEZOMBIE) Player::GiveZombieInventory();
-    }
-
-    /* DEBUG - STATE LOGGING */
-
-    script "zh2_action_debugparsedmaps_serverside" net
-    {
-        InternalDebugParsedMaps();
-    }
-
-    script "zh2_action_debugparsedmaps_clientside" net clientside
-    {
-        InternalDebugParsedMaps();
-    }
-
-    internal void InternalDebugParsedMaps()
-    {
-        str logMessage;
-        buildmsg(logMessage = StrParam())
-        {
-            int count = Map::GetMapCount();
-            Append(s:"Total maps: \cd" + str(count) + "\cj/\cd" + str(MAXMAPCOUNT) + "\cj.");
-            for (int i = 0; i < count; ++i)
-            {
-                Append(s:"\n");
-                Append(s:"\cf#" + str(i));
-                Append(s:"\cj Map: \cd" + Map::GetMapLump(i));
-
-                int rotationPosition = Map::GetParsedMapRotationPosition(i);
-                Append(s:"\cj Rotation position: \cd" + (rotationPosition != -1 ? str(rotationPosition) : "not found"));
-                if (rotationPosition != -1)
-                {
-                    int parsePosition = Map::GetParsedMapPosition(rotationPosition);
-                    Append(s:"\cj Parse position: \cd" + str(rotationPosition));
-                    
-                    Append(s:"\cj Name: \cd" + GetMapRotationInfo(rotationPosition, MAPROTATION_NAME));
-                    Append(s:"\cj Used: \cd" + (GetMapRotationInfo(rotationPosition, MAPROTATION_USED) ? "yes" : "no"));
-
-                    int min = GetMapRotationInfo(rotationPosition, MAPROTATION_MINPLAYERS);
-                    Append(s:"\cj Min players: \cd" + (min != 0 ? str(min) : "no limit"));
-
-                    int max = GetMapRotationInfo(rotationPosition, MAPROTATION_MAXPLAYERS);
-                    Append(s:"\cj Max players: \cd" + (min != 0 ? str(min) : "no limit"));
-                }
-
-                Append(s:"\cj Gamemode: \cd" + Map::GetMapGameMode(i));
-                Append(s:"\cj Label: \cd" + Map::GetMapLabel(i));
-                Append(s:"\cj Graphic: \cd" + Map::GetMapGraphic(i));
-                Append(s:"\cj Is new: \cd" + (Map::GetMapIsNew(i) ? "yes" : "no"));
-                Append(s:"\cj Is legacy map: \cd" + (Map::GetMapIsLegacyMap(i) ? "yes" : "no"));
-            }
-        }
-        Logger::LogActivator(logMessage);
-    }
-    
-    script "zh2_action_debugmaprotation_serverside" net
-    {
-        InternalDebugMapRotation();
-    }
-    
-    // The clientsided variant seems pointless for an internal set of functions but w/e.
-    script "zh2_action_debugmaprotation_clientside" net clientside
-    {
-        InternalDebugMapRotation();
-    }
-
-    internal void InternalDebugMapRotation()
-    {
-        str logMessage;
-        buildmsg(logMessage = StrParam())
-        {
-            int count = GetMapRotationSize();
-            Append(s:"Total maps: \cd" + str(count) + "\cj.");
-            for (int i = 1; i <= count; ++i)
-            {
-                Append(s:"\n");
-                Append(s:"\cf#" + str(i));
-                Append(s:"\cj Map \cd" + (str)GetMapRotationInfo(i, MAPROTATION_LUMPNAME) + "\cj: \cd" + (str)GetMapRotationInfo(i, MAPROTATION_NAME));
-                Append(s:"\cj Used: \cd" + (GetMapRotationInfo(i, MAPROTATION_USED) ? "yes" : "no"));
-
-                int min = GetMapRotationInfo(i, MAPROTATION_MINPLAYERS);
-                Append(s:"\cj Min players: \cd" + (min != 0 ? str(min) : "no limit"));
-
-                int max = GetMapRotationInfo(i, MAPROTATION_MAXPLAYERS);
-                Append(s:"\cj Max players: \cd" + (min != 0 ? str(min) : "no limit"));
-
-                int parsePosition = Map::GetParsedMapPosition(i);
-                Append(s:"\cj Parse position: \cd" + (parsePosition != -1 ? str(parsePosition) : "not found"));
-                if (parsePosition != -1)
-                {
-                    Append(s:"\cj Gamemode: \cd" + Map::GetMapGameMode(parsePosition));
-                    Append(s:"\cj Label: \cd" + Map::GetMapLabel(parsePosition));
-                    Append(s:"\cj Graphic: \cd" + Map::GetMapGraphic(parsePosition));
-                    Append(s:"\cj Is new: \cd" + (Map::GetMapIsNew(parsePosition) ? "yes" : "no"));
-                    Append(s:"\cj Is legacy map: \cd" + (Map::GetMapIsLegacyMap(parsePosition) ? "yes" : "no"));
-                }
-            }
-        }
-        Logger::LogActivator(logMessage);
-    }
-    
-    // Clientside not supported. Or at least doesn't make sense to do.
-    script "zh2_action_debugvotablemaps_serverside" net
-    {
-        InternalDebugVotableMaps();
-    }
-
-    internal void InternalDebugVotableMaps()
-    {
-        str logMessage;
-        buildmsg(logMessage = StrParam())
-        {
-            Shuffle::ShuffleVotableMaps();
-            Append(s:"Total votable maps: \cd" + str(Shuffle::GetRelevantSize()) + "\cj.\n");
-
-            int currentMapPosition = GetMapPosition(MAPPOSITION_CURRENT);
-            Append(s:"Current map: \cd" + (str)GetMapRotationInfo(currentMapPosition, MAPROTATION_LUMPNAME) + "\cj: \cd" + (str)GetMapRotationInfo(currentMapPosition, MAPROTATION_NAME) + "\cj.\n");
-
-            int nextMapPosition = GetMapPosition(MAPPOSITION_NEXT);
-            Append(s:"Next map: \cd" + (str)GetMapRotationInfo(nextMapPosition, MAPROTATION_LUMPNAME) + "\cj: \cd" + (str)GetMapRotationInfo(nextMapPosition, MAPROTATION_NAME) + "\cj.\n");
-            
-            for (int i = 0; i < Shuffle::GetRelevantSize(); ++i)
-            {
-                int value = Shuffle::GetIndexValue(i);
-                Append(s:"\cd#" + str(value) + "\cj: \cd" + (str)GetMapRotationInfo(value, MAPROTATION_LUMPNAME) + "\cj: \cd" + (str)GetMapRotationInfo(value, MAPROTATION_NAME) + "\cj.\n");
-            }
-        }
-        Logger::LogActivator(logMessage);
-    }
-    
-    // Serverside not supported, because this is a clientside feature.
-    script "zh2_action_debugrequestedclientsettings_clientside" net clientside
-    {
-        InternalDebugRequestedClientSettings();
-    }
-
-    internal void InternalDebugRequestedClientSettings()
-    {
-        str logMessage;
-        buildmsg(logMessage = StrParam())
-        {
-            Settings::UpdateCurrentClientSettings();
-            int count = ZH2Game::GameContext.RequestedClientSettingCount;
-            int persistingCount = ZH2Game::PersistingGameContext.RequestedClientSettingCount;
-            Append(s:"Total invalid settings: \cd" + str(count) + "\cj/\cd" + str(persistingCount) + "\cj.\n");
-
-            for (int i = 0; i < count; ++i)
-            {
-                str type = Settings::GetInvalidClientSettingType(i);
-                str name = Settings::GetInvalidClientSettingName(i);
-                int value = Settings::GetInvalidClientSettingValue(i);
-                //str label = Settings::GetInvalidClientSettingLabel(i);
-
-                Append(s:type + " ");
-                Append(s:"\cd" + name + "\cj ");
-
-                // For cvars we log the expected value, and the actual value.
-                if (type == "cvar")
-                    Append(s:"(\cd" + str(value) + "\cj, current: \cd" + str(GetCvar(name)) + "\cj) ");
-                
-                // For keybinds we log if it should be bound or unbound.
-                else
-                    Append(s:"(must be \cd" + (value ? "bound" : "unbound") + "\cj) ");
-
-                Append(s:"\n");
-            }
-        }
-        Logger::LogActivator(logMessage);
-    }
-
-    /* DEBUG - STATE LOGGING - MOD DEFINITIONS */
-
-    script "zh2_action_debugmoddefinitions_items_serverside" net
-    {
-        InternalDebugModDefinitionsItems();
-    }
-
-    script "zh2_action_debugmoddefinitions_items_clientside" net clientside
-    {
-        InternalDebugModDefinitionsItems();
-    }
-
-    internal void InternalDebugModDefinitionsItems()
-    {
-        str logMessage;
-        buildmsg(logMessage = StrParam())
-        {
-            void WriteItem(int i)
-            {
-                str name = Item::GetItemName(i);
-
-                bool humanOwned = Item::GetItemHumanOwned(i);
-                bool zombieOwned = Item::GetItemZombieOwned(i);
-                int giveOnSpawn = Item::GetItemGiveOnSpawnCount(i);
-                int giveOnHumanCount = Item::GetItemGiveOnHumanCount(i);
-                int giveOnZombieCount = Item::GetItemGiveOnZombieCount(i);
-
-                str graphic = Item::GetItemGraphic(i);
-                str label = Item::GetItemLabel(i);
-                str description = Item::GetItemDescription(i);
-
-                int bloodSeverity = Item::GetItemBloodSeverity(i);
-                int bloodTics = Item::GetItemBloodTics(i);
-
-                bool takeOnPanic = Item::GetItemTakeOnPanic(i);
-
-                // The name is always set.
-                Append(s:" \cd" + name);
-
-                if (humanOwned) Append(s:"\cj, \cdhuman owned");
-                if (zombieOwned) Append(s:"\cj, \cdzombie owned");
-                if (giveOnSpawn > 0) Append(s:"\cj, give on spawn: \cd" + str(giveOnSpawn));
-                if (giveOnHumanCount > 0) Append(s:"\cj, give on human: \cd" + str(giveOnHumanCount));
-                if (giveOnZombieCount > 0) Append(s:"\cj, give on zombie: \cd" + str(giveOnZombieCount));
-                if (graphic != (raw)0 && graphic != "") Append(s:"\cj, graphic: \cd" + graphic);
-
-                // Lengthy, turned off for now
-                //if (label != (raw)0 && label != "") Append(s:"\cj, label: \cd" + label);
-                //if (description != (raw)0 && description != "") Append(s:"\cj, description: \cd" + description);
-
-                if (bloodSeverity > 0) Append(s:"\cj, blood severity: \cd" + str(bloodSeverity));
-                if (bloodTics > 0) Append(s:"\cj, blood tics: \cd" + str(bloodTics));
-
-                if (takeOnPanic) Append(s:"\cj, take on panic: \cdtrue");
-            }
-
-            int totalSize = Item::GetItemCollectionSize();
-
-            int size = Item::GetWeaponCollectionSize();
-            Append(s:"\cjWeapons \cd" + str(size) + "\cj/\cd" + str(totalSize));
-            for (int i = 0; i < size; ++i)
-            {
-                Append(s:"\n");
-                Append(s:"\cf#" + str(i));
-                WriteItem(Item::GetWeaponIndex(i));
-            }
-            
-            size = Item::GetInventoryCollectionSize();
-            Append(s:"\n");
-            Append(s:"\cjInventory \cd" + str(size) + "\cj/\cd" + str(totalSize));
-            for (int i = 0; i < size; ++i)
-            {
-                Append(s:"\n");
-                Append(s:"\cf#" + str(i));
-                WriteItem(Item::GetInventoryIndex(i));
-            }
-            
-            size = Item::GetKeyCollectionSize();
-            Append(s:"\n");
-            Append(s:"\cjKeys \cd" + str(size) + "\cj/\cd" + str(totalSize));
-            for (int i = 0; i < size; ++i)
-            {
-                Append(s:"\n");
-                Append(s:"\cf#" + str(i));
-                WriteItem(Item::GetKeyIndex(i));
-            }
-        }
-        Logger::LogActivator(logMessage);
-    }
-
-    script "zh2_action_debugmoddefinitions_rewards_serverside" net
-    {
-        InternalDebugModDefinitionsRewards();
-    }
-
-    internal void InternalDebugModDefinitionsRewards()
-    {
-        str logMessage;
-        buildmsg(logMessage = StrParam())
-        {
-            Settings::UpdateCurrentClientSettings();
-            int count = Reward::GetRewardCollectionSize();
-            int persistingCount = ZH2Game::PersistingGameContext.RequestedClientSettingCount;
-            Append(s:"Total rewards: \cd" + str(count) + "\cj.");
-
-            for (int i = 0; i < count; ++i)
-            {
-                // TODO: Could look if we can list the containers by name it make it more clear, instead of the flag?
-                int containerFlags = Reward::GetRewardFlags(i);
-
-                str name = Reward::GetRewardName(i);
-                int weight = Reward::GetRewardWeight(i);
-
-                Player::SpecieTypeT specie = Reward::GetRewardSpecieSpecific(i);
-
-                str give = Reward::GetRewardGive(i);
-                str sound = Reward::GetRewardSound(i);
-
-                str localMessage = Reward::GetRewardLocalMessage(i);
-                str message = Reward::GetRewardMessage(i);
-
-                Append(s:"\n");
-                Append(s:"\cf#" + str(i));
-
-                // Name and weight are required and always set.
-                Append(s:"\cj Item \cd" + name);
-                Append(s:"\cj (\cd" + str(weight) + "\cj)");
-
-                if (specie != Player::SPECIENONE) Append(s:"\cj, restrict to specie \cd" + Player::GetSpecieIndexAsString(specie));
-                if (give != (raw)0 && give != "") Append(s:"\cj, give \cd" + give);
-                if (sound != (raw)0 && sound != "") Append(s:"\cj, sound \cd" + sound);
-
-                // Lengthy, turned off for now
-                //if (localMessage != (raw)0 && localMessage != "") Append(s:"\cj, local message \cd" + localMessage);
-                //if (message != (raw)0 && message != "") Append(s:"\cj, message \cd" + message);
-            }
-        }
-        Logger::LogActivator(logMessage);
-    }
-
-    /* SYNC DEBUG */
-
-    script "zh2_action_syncall" net
-    {
-        // Can't be called when not offline, not in development and we are not admin.
-        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
-            terminate;
-
-        Sync::SyncAll(false);
-    }
-
-    script "zh2_action_callclientsyncall" net
-    {
-        // Can't be called when not offline, not in development and we are not admin.
-        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
-            terminate;
-
-        Sync::CallClientSyncAll();
-    }
-
-    script "zh2_action_clientsyncall" net clientside
-    {
-        // Can't be called when not offline, not in development and we are not admin.
-        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetAdmin())
-            terminate;
-            
-        Sync::SynAllClientside();
-    }
-
     /* INVENTORY */
 
     script "zh2_action_nextinventory" (raw direction) net clientside
@@ -543,6 +142,4 @@ strict namespace ZH2Game
     {
         Item::InvokeCurrentInventoryItem();
     }
-
-    /* END OF INVENTORY */
 }

@@ -4,22 +4,31 @@
 
 strict namespace Hud
 {
-    internal void DrawEndingHeader(fixed x, fixed y)
+    internal void DrawEndingHeader()
     {
-        int id = HUD_ENDINGHEADER;
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
         BCSUtils::HudSetCenterText(true);
+
+        // Graphic
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawImage(--_drawnHudId, ZH2Game::GameContext.WinGraphic);
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
 
         // Top
         BCSUtils::HudSetFont("BigFont");
-        BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawText(id--, ZH2Game::GameContext.WinMessageTop);
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawText(--_drawnHudId, ZH2Game::GameContext.WinMessageTop);
         DebugDraw();
 
         // Bottom
         BCSUtils::HudSetFont("SmallFont");
-        BCSUtils::HudSetPoint(x, y + 15.0);
-        BCSUtils::HudDrawText(id--, ZH2Game::GameContext.WinMessageBottom);
+
+        HudSetPointInternal(0.0, 15.0);
+        BCSUtils::HudDrawText(--_drawnHudId, ZH2Game::GameContext.WinMessageBottom);
         DebugDraw();
 
         // End reason, if not just a specie winning.
@@ -27,22 +36,23 @@ strict namespace Hud
         if (reason != Game::REASONNONE && reason != Game::REASONSPECIEWON)
         {
             BCSUtils::HudSetFont("SmallFont");
-            BCSUtils::HudSetPoint(x, y + 25.0);
-            
+
+            HudSetPointInternal(0.0, 25.0);
+
             if (reason == Game::REASONHUMANLEFT)
             {
                 BCSUtils::HudSetTextColor(CR_BLUE);
-                BCSUtils::HudDrawText(id--, "The last human got scared and left the game.");
+                BCSUtils::HudDrawText(--_drawnHudId, "The last human got scared and left the game.");
             }
             else if (reason == Game::REASONZOMBIELEFT)
             {
                 BCSUtils::HudSetTextColor(CR_RED);
-                BCSUtils::HudDrawText(id--, "The last zombie ragequits.");
+                BCSUtils::HudDrawText(--_drawnHudId, "The last zombie ragequits.");
             }
             else if (reason == Game::REASONADMINENDED)
             {
                 BCSUtils::HudSetTextColor(CR_YELLOW);
-                BCSUtils::HudDrawText(id--, "Admin ended game.");
+                BCSUtils::HudDrawText(--_drawnHudId, "Admin ended game.");
             }
 
             BCSUtils::HudSetTextColor(CR_WHITE);
@@ -52,8 +62,9 @@ strict namespace Hud
         // Elapsed time
         str timerFormatted = Utils::FormatTics(Game::GetPlayTime(), true);
         BCSUtils::HudSetFont("SmallFont");
-        BCSUtils::HudSetPoint(x, y + 35.0);
-        BCSUtils::HudDrawText(id--, "Play time: " + timerFormatted);
+
+        HudSetPointInternal(0.0, 35.0);
+        BCSUtils::HudDrawText(--_drawnHudId, "Play time: " + timerFormatted);
         DebugDraw();
     }
 }

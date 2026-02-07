@@ -4,32 +4,26 @@
 
 strict namespace Weight
 {
-    internal void PrepareWeightsByReward(Reward::RewardItemTypeFlagsT type, Player::SpecieTypeT specie = Player::SPECIENONE)
+    internal void PrepareWeightsByReward(int id, Reward::RewardItemTypeFlagsT type)
     {
         PrepareWeights();
 
         int count = Reward::GetRewardCollectionSize();
         if (count == 0)
-		{
+        {
             Logger::LogWarning(LOGSOURCE, "Failed to set up reward weights. No rewards are defined.");
             return;
-		}
+        }
 
         for (int i = 0; i < count; ++i)
         {
             // Reward does not match the type we need.
             if (!Reward::RewardMatchesContainerType(i, type))
                 continue;
-            
-            // Conditionally check for specie.
-            // Both instances must be specie specific.
-            // If one doesn't provide it we assume the reward can be for any specie.
-            if (specie != Player::SPECIENONE)
-            {
-                Player::SpecieTypeT rewardSpecie = Reward::GetRewardSpecieSpecific(i);
-                if (rewardSpecie != Player::SPECIENONE && specie != rewardSpecie)
-                    continue;
-            }
+
+            // Check if the reward has a restriction of sorts.
+            if (!Reward::GetCanGivePlayerReward(id, i))
+                continue;
 
             AddWeight(i, Reward::GetRewardWeight(i));
         }

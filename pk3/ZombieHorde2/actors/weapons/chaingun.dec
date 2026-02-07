@@ -5,274 +5,279 @@ Actor ZH2ChaingunSpinning : Boolean {}
 // Reaching the maximum starts a cooldown state.
 Actor ZH2Chaingunheat : Ammo
 {
-	//Inventory.Icon "CLIPA0"
-	Inventory.MaxAmount 50
+    //Inventory.Icon "CLIPA0"
+    Inventory.MaxAmount 50
 }
 
 Actor ZH2ChaingunSpawn : ZH2WeaponSpawn 11004
 {
-	Inventory.pickupmessage "Chaingun"
-	Tag "Chaingun"
-	
-	Scale 0.8
-	
-	states
-	{
-		Spawn:
-			CGGS A -1
-			stop
-		
-		Pickup:
-			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, "PickupSuccess")
-			stop
-		PickupSuccess:
-			TNT1 A 0 A_GiveInventory("ZH2WeaponChaingun", 1)
-			stop
-	}
+    Inventory.pickupmessage "Chaingun"
+    Tag "Chaingun"
+
+    Scale 0.8
+
+    states
+    {
+        Spawn:
+            CGGS A -1
+            stop
+
+        Pickup:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, "PickupSuccess")
+            stop
+        PickupSuccess:
+            TNT1 A 0 A_GiveInventory("ZH2WeaponChaingun", 1)
+            stop
+    }
 }
 
 Actor ZH2WeaponChaingun : ZH2Weapon
 {
-	Tag "Chaingun"
-	Weapon.PreferredSkin "Chaingun"
-	
-	Scale 0.8
-	Weapon.SlotNumber 4
-	Weapon.KickBack 250
-	
-	// This is for default huds
-	Weapon.AmmoUse 0
-	Weapon.AmmoGive 0
-	Weapon.AmmoType "ZH2Chaingunheat"
-   
-	States
-	{
-		// The ready state determines the sprite based on the chaingun's heat.
-		Ready:
-			TNT1 A 0 A_JumpIfInventory("ZH2ChaingunSpinning", 1, "Ready.Spinning")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "Ready.Heat5")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "Ready.Heat4")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "Ready.Heat3")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "Ready.Heat2")
-		Ready.Heat1:
-			CGS1 A 0
-			Goto Ready.Rest
-		Ready.Heat2:
-			CGS2 A 0
-			Goto Ready.Rest
-		Ready.Heat3:
-			CGS3 A 0
-			Goto Ready.Rest
-		Ready.Heat4:
-			CGS4 A 0
-			Goto Ready.Rest
-		Ready.Heat5:
-			CGS5 A 0
-		Ready.Rest:
-			"####" A 1 A_WeaponReady
-			Goto Ready
-			
-		// The select state determines the sprite based on the chaingun's heat.
-		Select:
-			TNT1 A 0 A_Raise
-			TNT1 A 0 A_WeaponReady
-			TNT1 A 0 A_PlaySound("weapons/chaingun/DEPLOY", CHAN_WEAPON)
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "Select.Heat5")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "Select.Heat4")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "Select.Heat3")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "Select.Heat2")
-		Select.Heat1:
-			CGG1 A 0
-			Goto Select.Rest
-		Select.Heat2:
-			CGG2 A 0
-			Goto Select.Rest
-		Select.Heat3:
-			CGG3 A 0
-			Goto Select.Rest
-		Select.Heat4:
-			CGG4 A 0
-			Goto Select.Rest
-		Select.Heat5:
-			CGG5 A 0
-		Select.Rest:
-			"####" ABCDEFG 1 A_WeaponReady(WRF_NOFIRE)
-			TNT1 A 0 A_PlaySound("weapons/chaingun/TURN", CHAN_WEAPON)
-			Goto Ready
-		
-		// The deselect state determines the sprite based on the chaingun's heat.
-		Deselect:
-			TNT1 A 0 A_TakeInventory("ZH2ChaingunSpinning", 1)
-			TNT1 A 0 A_StopSound(CHAN_WEAPON)
-			TNT1 A 0 A_PlaySound("weapons/chaingun/DESELECT", CHAN_WEAPON)
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "Deselect.Heat5")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "Deselect.Heat4")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "Deselect.Heat3")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "Deselect.Heat2")
-		Deselect.Heat1:
-			CGG1 A 0
-			Goto Deselect.Rest
-		Deselect.Heat2:
-			CGG2 A 0
-			Goto Deselect.Rest
-		Deselect.Heat3:
-			CGG3 A 0
-			Goto Deselect.Rest
-		Deselect.Heat4:
-			CGG4 A 0
-			Goto Deselect.Rest
-		Deselect.Heat5:
-			CGG5 A 0
-		Deselect.Rest:
-			"####" GFEDCBA 1
-			TNT1 A 0 A_Lower
-			wait
-		
-		// Ready state, but the chaingun is spinning.
-		// The state determines the sprite based on the chaingun's heat.
-		// We show all four frames before we determine the state based on heat again.
-		Ready.Spinning:
-			TNT1 A 0 A_PlaySound("weapons/chaingun/WINDLOOP", CHAN_WEAPON, 1.0, true)
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "Ready.SpinningHeat5")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "Ready.SpinningHeat4")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "Ready.SpinningHeat3")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "Ready.SpinningHeat2")
-		Ready.SpinningHeat1:
-			CGS1 A 0
-			Goto Ready.SpinningRest
-		Ready.SpinningHeat2:
-			CGS2 A 0
-			Goto Ready.SpinningRest
-		Ready.SpinningHeat3:
-			CGS3 A 0
-			Goto Ready.SpinningRest
-		Ready.SpinningHeat4:
-			CGS4 A 0
-			Goto Ready.SpinningRest
-		Ready.SpinningHeat5:
-			CGS5 A 0
-		Ready.SpinningRest:
-			"####" ABCD 1 A_WeaponReady
-			Goto Ready.Spinning
-			
-		// Chaingun wind up.
-		// The state determines the sprite based on the chaingun's heat.
-		WindUp:
-			TNT1 A 0 A_GiveInventory("ZH2ChaingunSpinning", 1)
-			TNT1 A 0 A_PlaySound("weapons/chaingun/WINDUP", CHAN_WEAPON)
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "WindUp.Heat5")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "WindUp.Heat4")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "WindUp.Heat3")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "WindUp.Heat2")
-		WindUp.Heat1:
-			CGS1 A 0
-			Goto WindUp.Rest
-		WindUp.Heat2:
-			CGS2 A 0
-			Goto WindUp.Rest
-		WindUp.Heat3:
-			CGS3 A 0
-			Goto WindUp.Rest
-		WindUp.Heat4:
-			CGS4 A 0
-			Goto WindUp.Rest
-		WindUp.Heat5:
-			CGS5 A 0
-		WindUp.Rest:
-			"####" B 1 A_WeaponReady(WRF_NOFIRE)
-			"####" CD 4 A_WeaponReady(WRF_NOFIRE)
-			"####" AB 3 A_WeaponReady(WRF_NOFIRE)
-			"####" CD 2 A_WeaponReady(WRF_NOFIRE)
-			Goto Ready
-		
-		// Chaingun wind down.
-		// The state determines the sprite based on the chaingun's heat.
-		WindDown:
-			TNT1 A 0 A_TakeInventory("ZH2ChaingunSpinning", 1)
-			TNT1 A 0 A_PlaySound("weapons/chaingun/WINDDOWN", CHAN_WEAPON)
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "WindDown.Heat5")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "WindDown.Heat4")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "WindDown.Heat3")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "WindDown.Heat2")
-		WindDown.Heat1:
-			CGS1 A 0
-			Goto WindDown.Rest
-		WindDown.Heat2:
-			CGS2 A 0
-			Goto WindDown.Rest
-		WindDown.Heat3:
-			CGS3 A 0
-			Goto WindDown.Rest
-		WindDown.Heat4:
-			CGS4 A 0
-			Goto WindDown.Rest
-		WindDown.Heat5:
-			CGS5 A 0
-		WindDown.Rest:
-			"####" ABCD 2 A_WeaponReady(WRF_NOSWITCH|WRF_NOFIRE)
-			"####" AB 3 A_WeaponReady(WRF_NOSWITCH|WRF_NOFIRE)
-			"####" CD 4 A_WeaponReady(WRF_NOSWITCH|WRF_NOFIRE)
-			Goto Ready
-		
-		Fire:
-			TNT1 A 0 A_JumpIfInventory("ZH2ChaingunSpinning", 1, "Fire.Start")
-			Goto WindUp
-		Fire.Start:
-		Fire.Concurrent:
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 50, "Fire.Overheated")
-			
-		// The state determines the sprite based on the chaingun's heat.
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 50, "WindDown")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "Fire.Heat5")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "Fire.Heat4")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "Fire.Heat3")
-			TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "Fire.Heat2")
-		Fire.Heat1:
-			CGS1 A 0
-			Goto Fire.Rest
-		Fire.Heat2:
-			CGS2 A 0
-			Goto Fire.Rest
-		Fire.Heat3:
-			CGS3 A 0
-			Goto Fire.Rest
-		Fire.Heat4:
-			CGS4 A 0
-			Goto Fire.Rest
-		Fire.Heat5:
-			CGS5 A 0
-		Fire.Rest:
-			"####" A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
-			"####" A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
-			
-			"####" A 0 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			"####" A 0 A_GiveInventory("ZH2Chaingunheat", 1)
-			"####" A 0 A_PlaySound("weapons/chaingun/FIRE", CHAN_AUTO)
-			"####" A 0 Radius_Quake(1, 6, 0, 1, 0)
-			"####" A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
-			"####" A 0 A_FireCustomMissile("ZH2WeaponChaingunSmoke", 0, false, 0)
-			"####" A 0 A_FireBullets (6.0, 3.5, -1, 5, "ZH2WeaponBulletPuff", FBF_NORANDOM)
-			"####" A 0 A_FireCustomMissile("ZH2ChaingunCase", 5, 0, 5, -7)
-			"####" A 0 A_AlertMonsters
-			"####" A 0 A_SetPitch(pitch-1.0)
-			"####" E 1 bright A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			"####" A 0 A_SetPitch(pitch+0.5)
-			"####" BC 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			"####" D 1 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-			TNT1 A 0 A_SetPitch(pitch+0.5)
-			TNT1 A 0 A_ReFire("Fire.Concurrent")
-			TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
-			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
-			Goto Ready.Spinning
-		
-		// Called when the weapon overheated during firing.
-		Fire.Overheated:
-			TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
-			TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
-			Goto WindDown
+    Tag "Chaingun"
+    Weapon.PreferredSkin "Chaingun"
 
-		AltFire:
-			TNT1 A 0 A_JumpIfInventory("ZH2ChaingunSpinning", 1, "WindDown")
-			Goto WindUp
+    Scale 0.8
+    Weapon.SlotNumber 4
+    Weapon.KickBack 120
+
+    // This is for default huds
+    Weapon.AmmoUse 0
+    Weapon.AmmoGive 0
+    Weapon.AmmoType "ZH2Chaingunheat"
+
+    States
+    {
+        // The ready state determines the sprite based on the chaingun's heat.
+        Ready:
+            TNT1 A 0 A_JumpIfInventory("ZH2ChaingunSpinning", 1, "Ready.Spinning")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "Ready.Heat5")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "Ready.Heat4")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "Ready.Heat3")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "Ready.Heat2")
+        Ready.Heat1:
+            CGS1 A 0
+            Goto Ready.Rest
+        Ready.Heat2:
+            CGS2 A 0
+            Goto Ready.Rest
+        Ready.Heat3:
+            CGS3 A 0
+            Goto Ready.Rest
+        Ready.Heat4:
+            CGS4 A 0
+            Goto Ready.Rest
+        Ready.Heat5:
+            CGS5 A 0
+        Ready.Rest:
+            "####" A 1 A_WeaponReady
+            Goto Ready
+
+        // The select state determines the sprite based on the chaingun's heat.
+        Select:
+            TNT1 A 0 A_Raise
+            TNT1 A 0 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+            TNT1 A 0 A_PlaySound("weapons/chaingun/DEPLOY", CHAN_WEAPON)
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "Select.Heat5")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "Select.Heat4")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "Select.Heat3")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "Select.Heat2")
+        Select.Heat1:
+            CGG1 A 0
+            Goto Select.Rest
+        Select.Heat2:
+            CGG2 A 0
+            Goto Select.Rest
+        Select.Heat3:
+            CGG3 A 0
+            Goto Select.Rest
+        Select.Heat4:
+            CGG4 A 0
+            Goto Select.Rest
+        Select.Heat5:
+            CGG5 A 0
+        Select.Rest:
+            "####" ABCDEFG 1
+            TNT1 A 0 A_PlaySound("weapons/chaingun/TURN", CHAN_WEAPON)
+            Goto Ready
+
+        // The deselect state determines the sprite based on the chaingun's heat.
+        Deselect:
+            TNT1 A 0 A_TakeInventory("ZH2ChaingunSpinning", 1)
+            TNT1 A 0 A_StopSound(CHAN_WEAPON)
+            TNT1 A 0 A_PlaySound("weapons/chaingun/DESELECT", CHAN_WEAPON)
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "Deselect.Heat5")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "Deselect.Heat4")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "Deselect.Heat3")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "Deselect.Heat2")
+        Deselect.Heat1:
+            CGG1 A 0
+            Goto Deselect.Rest
+        Deselect.Heat2:
+            CGG2 A 0
+            Goto Deselect.Rest
+        Deselect.Heat3:
+            CGG3 A 0
+            Goto Deselect.Rest
+        Deselect.Heat4:
+            CGG4 A 0
+            Goto Deselect.Rest
+        Deselect.Heat5:
+            CGG5 A 0
+        Deselect.Rest:
+            "####" GFEDCBA 1
+            TNT1 A 0 A_Lower
+            wait
+
+        // Ready state, but the chaingun is spinning.
+        // The state determines the sprite based on the chaingun's heat.
+        // We show all four frames before we determine the state based on heat again.
+        Ready.Spinning:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "WindDown")
+
+            TNT1 A 0 A_PlaySound("weapons/chaingun/WINDLOOP", CHAN_WEAPON, 1.0, true)
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "Ready.SpinningHeat5")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "Ready.SpinningHeat4")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "Ready.SpinningHeat3")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "Ready.SpinningHeat2")
+        Ready.SpinningHeat1:
+            CGS1 A 0
+            Goto Ready.SpinningRest
+        Ready.SpinningHeat2:
+            CGS2 A 0
+            Goto Ready.SpinningRest
+        Ready.SpinningHeat3:
+            CGS3 A 0
+            Goto Ready.SpinningRest
+        Ready.SpinningHeat4:
+            CGS4 A 0
+            Goto Ready.SpinningRest
+        Ready.SpinningHeat5:
+            CGS5 A 0
+        Ready.SpinningRest:
+            "####" ABCD 1 A_WeaponReady
+            Goto Ready.Spinning
+
+        // Chaingun wind up.
+        // The state determines the sprite based on the chaingun's heat.
+        WindUp:
+            TNT1 A 0 A_GiveInventory("ZH2ChaingunSpinning", 1)
+            TNT1 A 0 A_PlaySound("weapons/chaingun/WINDUP", CHAN_WEAPON)
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "WindUp.Heat5")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "WindUp.Heat4")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "WindUp.Heat3")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "WindUp.Heat2")
+        WindUp.Heat1:
+            CGS1 A 0
+            Goto WindUp.Rest
+        WindUp.Heat2:
+            CGS2 A 0
+            Goto WindUp.Rest
+        WindUp.Heat3:
+            CGS3 A 0
+            Goto WindUp.Rest
+        WindUp.Heat4:
+            CGS4 A 0
+            Goto WindUp.Rest
+        WindUp.Heat5:
+            CGS5 A 0
+        WindUp.Rest:
+            "####" B 1 A_WeaponReady(WRF_NOFIRE)
+            "####" CD 4 A_WeaponReady(WRF_NOFIRE)
+            "####" AB 3 A_WeaponReady(WRF_NOFIRE)
+            "####" CD 2 A_WeaponReady(WRF_NOFIRE)
+            Goto Ready
+
+        // Chaingun wind down.
+        // The state determines the sprite based on the chaingun's heat.
+        WindDown:
+            TNT1 A 0 A_TakeInventory("ZH2ChaingunSpinning", 1)
+            TNT1 A 0 A_PlaySound("weapons/chaingun/WINDDOWN", CHAN_WEAPON)
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "WindDown.Heat5")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "WindDown.Heat4")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "WindDown.Heat3")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "WindDown.Heat2")
+        WindDown.Heat1:
+            CGS1 A 0
+            Goto WindDown.Rest
+        WindDown.Heat2:
+            CGS2 A 0
+            Goto WindDown.Rest
+        WindDown.Heat3:
+            CGS3 A 0
+            Goto WindDown.Rest
+        WindDown.Heat4:
+            CGS4 A 0
+            Goto WindDown.Rest
+        WindDown.Heat5:
+            CGS5 A 0
+        WindDown.Rest:
+            "####" ABCD 2 A_WeaponReady(WRF_NOFIRE)
+            "####" AB 3 A_WeaponReady(WRF_NOFIRE)
+            "####" CD 4 A_WeaponReady(WRF_NOFIRE)
+            Goto Ready
+
+        Fire:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+
+            TNT1 A 0 A_JumpIfInventory("ZH2ChaingunSpinning", 1, "Fire.Start")
+            Goto WindUp
+        Fire.Start:
+        Fire.Concurrent:
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 50, "Fire.Overheated")
+
+        // The state determines the sprite based on the chaingun's heat.
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 50, "WindDown")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 40, "Fire.Heat5")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 30, "Fire.Heat4")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 20, "Fire.Heat3")
+            TNT1 A 0 A_JumpIfInventory("ZH2Chaingunheat", 10, "Fire.Heat2")
+        Fire.Heat1:
+            CGS1 A 0
+            Goto Fire.Rest
+        Fire.Heat2:
+            CGS2 A 0
+            Goto Fire.Rest
+        Fire.Heat3:
+            CGS3 A 0
+            Goto Fire.Rest
+        Fire.Heat4:
+            CGS4 A 0
+            Goto Fire.Rest
+        Fire.Heat5:
+            CGS5 A 0
+        Fire.Rest:
+            "####" A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
+            "####" A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
+
+            "####" A 0
+            "####" A 0 A_GiveInventory("ZH2Chaingunheat", 1)
+            "####" A 0 A_PlaySound("weapons/chaingun/FIRE", CHAN_AUTO)
+            "####" A 0 Radius_Quake(1, 6, 0, 1, 0)
+            "####" A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
+            "####" A 0 A_FireCustomMissile("ZH2WeaponChaingunSmoke", 0, false, 0)
+            "####" A 0 A_FireBullets (4.0, 4.0, -1, 10 + random(-1, 1) * 2, "ZH2WeaponBulletPuff", FBF_NORANDOM)
+            "####" A 0 A_FireCustomMissile("ZH2ChaingunCase", 5, 0, 5, -7)
+            "####" A 0 A_AlertMonsters
+            "####" A 0 A_SetPitch(pitch-1.0)
+            "####" E 1 bright
+            "####" A 0 A_SetPitch(pitch+0.5)
+            "####" BC 1
+            "####" D 1
+            TNT1 A 0 A_SetPitch(pitch+0.5)
+            TNT1 A 0 A_ReFire("Fire.Concurrent")
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
+            Goto Ready.Spinning
+
+        // Called when the weapon overheated during firing.
+        Fire.Overheated:
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
+            Goto WindDown
+
+        AltFire:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+            TNT1 A 0 A_JumpIfInventory("ZH2ChaingunSpinning", 1, "WindDown")
+            Goto WindUp
    }
 }

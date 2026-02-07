@@ -1,69 +1,73 @@
 actor ZH2LegacyZm25Misty : ZH2LegacyMonster 27856
 {
-	Health 0x7fffffff
-	radius 32
-	height 64
-	Speed 30
-	RENDERSTYLE TRANSLUCENT
-	Alpha 0.10
-	Painsound "monster/misty/pain"
-	//Deathsound "Misty/death" // Sound does not exist.
-	Activesound "monster/misty/active"
-	scale 0.15
-	mass 0x7fffffff
-	Obituary "%o saw the misty."
-	MONSTER
-	bloodcolor gray
-	+FLOORCLIP 
-	+FASTER 
-	+FASTMELEE
-	+QUICKTORETALIATE
-	+LOOKALLAROUND
-	+NOINFIGHTING
-	+NOGRAVITY
-	+FLOAT
-	meleedamage 8
-	meleerange 98
-	PainChance 255
-	States
-	{
-		Spawn:
-			MIST A 1 A_Look
-			loop
-		See:
-			MIST A 1 A_JumpIfInventory("ZH2LegacyZM18LabYouCanSeeMe",1,"See2")
-			MIST A 1 A_Chase
-			loop  
-		See2:
-			MIST A 0 A_LoopActiveSound
-			MIST A 3 A_Chase
-			MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistSpawner",0,0,0,0,0,0,0,16)
-			MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistTrail", random(32, -32), random(32, -32), 0,0,0,0,0,128)
-			MIST A 3 A_Chase
-			MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistSpawner",0,0,0,0,0,0,0,16)
-			MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistTrail", random(32, -32), random(32, -32), 0,0,0,0,0,128)
-			MIST A 3 A_Chase
-			MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistSpawner",0,0,0,0,0,0,0,16)
-			MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistTrail", random(32, -32), random(32, -32), 0,0,0,0,0,128)
-			MIST A 3 A_Chase
-			MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistSpawner",0,0,0,0,0,0,0,16)
-			MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistTrail", random(32, -32), random(32, -32), 0,0,0,0,0,128)
-			loop
-		Melee:
-			MIST A 0 A_PlaySound("monster/misty/melee")
-			MIST A 17 A_MeleeAttack
-			goto see
-		Pain:
-			MIST A 0 A_Pain
-			MIST A 1 A_FaceTarget
-			MIST A 0 A_SkullAttack
-			MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistSpawner",0,0,0,0,0,0,0,16)
-			MIST A 100 ThrustThing(random(0,255), 30, 0)
-			goto see
-		Death:
-			MIST A 1 A_Stopsound
-			MIST A 1 A_Fall
-			MIST A 1 A_Scream
-			stop
-	}
+    Health 0x7fffffff
+    radius 32
+    height 64
+    Speed 30
+    RENDERSTYLE TRANSLUCENT
+    Alpha 0.10
+    Painsound "monster/misty/pain"
+    //Deathsound "Misty/death" // Sound does not exist.
+    Activesound "monster/misty/active"
+    scale 0.15
+    mass 0x7fffffff
+    Obituary "%o saw the Misty."
+    tag "Misty"
+    MONSTER
+    bloodcolor gray
+    +FLOORCLIP
+    +FASTER
+    +FASTMELEE
+    +QUICKTORETALIATE
+    +LOOKALLAROUND
+    +NOINFIGHTING
+    +NOGRAVITY
+    +FLOAT
+    meleedamage 8
+    meleerange 98
+    PainChance 255
+    States
+    {
+        Spawn:
+            MIST AAAAAAAAAA 1
+        Spawn.rest:
+            MIST A 1 A_Look
+            loop
+        See:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_gettargetiszombie") == true, "Spawn")
+            MIST A 1 A_JumpIfInventory("ZH2LegacyZM18LabYouCanSeeMe",1,"See2")
+            MIST A 1 A_Chase
+            loop
+        See2:
+            MIST A 0 A_LoopActiveSound
+            MIST A 3 A_Chase
+            MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistSpawner",0,0,0,0,0,0,0,16)
+            MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistTrail", random(32, -32), random(32, -32), 0,0,0,0,0,128)
+            MIST A 3 A_Chase
+            MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistSpawner",0,0,0,0,0,0,0,16)
+            MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistTrail", random(32, -32), random(32, -32), 0,0,0,0,0,128)
+            MIST A 3 A_Chase
+            MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistSpawner",0,0,0,0,0,0,0,16)
+            MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistTrail", random(32, -32), random(32, -32), 0,0,0,0,0,128)
+            MIST A 3 A_Chase
+            MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistSpawner",0,0,0,0,0,0,0,16)
+            MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistTrail", random(32, -32), random(32, -32), 0,0,0,0,0,128)
+            loop
+        Melee:
+            MIST A 0 A_PlaySound("monster/misty/melee")
+            MIST A 17 A_MeleeAttack
+            goto see
+        Pain:
+            MIST A 0 A_Pain
+            MIST A 1 A_FaceTarget
+            MIST A 0 A_SkullAttack
+            MIST A 0 A_SpawnItemEx("ZH2LegacyZm25MistSpawner",0,0,0,0,0,0,0,16)
+            MIST A 100 ThrustThing(random(0,255), 30, 0)
+            goto see
+        Death:
+            MIST A 1 A_Stopsound
+            MIST A 1 A_Fall
+            MIST A 1 A_Scream
+            stop
+    }
 }

@@ -4,8 +4,22 @@
 
 strict namespace Decorate
 {
-	script "zh2_dec_triggerreward"(raw indexRaw)
-	{
+    script "zh2_dec_triggerreward"(raw indexRaw)
+    {
+        // Do not allow items to be used if the round isn't playing.
+        // However, an exception is made if the round is the pregame as the player will be reset anyway.
+        Round::KnownRoundStateT state = Round::GetActiveKnownRoundState();
+        if (state != Round::STATEPREGAME && state != Round::STATESTARTING && Round::GetCurrentRoundJoinable())
+        {
+            Logger::LogActivator("Wait for a zombie to be chosen before getting your reward.");
+            terminate;
+        }
+        if (Round::GetCurrentRoundIsEnding())
+        {
+            Logger::LogActivator("The round has ended. You may not get a reward now.");
+            terminate;
+        }
+
         int index = (int)indexRaw;
 
         // Verify the user has the item.
@@ -25,5 +39,5 @@ strict namespace Decorate
         }
 
         Reward::GiveReward(type);
-	}
+    }
 }

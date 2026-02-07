@@ -19,6 +19,18 @@ strict namespace Settings
     // Tell the client he has some settings he should consolidate.
     internal void BroadcastClientConsolidateSettings(bool broadcastWhenNone)
     {
+        // Do not broadcast when the user doesn't want it.
+        // This will also prevent the button from working.
+        if (!ZH2Game::GetInformClientOfCVars())
+            return;
+
+        // Should we show the notification or should we wait another map?
+        if (ZH2Game::PersistingGameContext.NotifyClientConsolidateMapCount != 0)
+        {
+            ZH2Game::PersistingGameContext.NotifyClientConsolidateMapCount--;
+            return;
+        }
+
         int count = ZH2Game::GameContext.RequestedClientSettingCount;
         if (count == 0)
         {
@@ -28,18 +40,20 @@ strict namespace Settings
             return;
         }
 
-        Logger::LogActivator("\cfNotice:\cj " + str(count) + " setting" + (count > 1 ? "" : "s") + " require consolidation. Please consider opening the menu for this through the Zombie Horde 2 settings menu.");
+        // Notify, then update the count to wait some maps before notifying again..
+        Logger::LogActivator("\cfNotice:\cj You have " + str(count) + " setting" + (count > 1 ? "" : "s") + " that can be improved for a better experience. Consider opening the \"client consolidation\" menu for this through the Zombie Horde 2 game settings menu.");
+        ZH2Game::PersistingGameContext.NotifyClientConsolidateMapCount = SETTINGS_INFORMEVERYMAPCOUNT - 1;
     }
 
     // NOTE: Everything below takes a handle, which is what we have determined to be an invalid setting.
     // It points to the index in the game context's list of indexes, which in turn points to the index in the persisting game context.
-    
+
     internal str GetInvalidClientSettingType(int handle)
     {
         int index = ZH2Game::GameContext.RequestedClientSettings[handle];
         return ZH2Game::PersistingGameContext.RequestedClientSettings[index].Type;
     }
-    
+
     internal str GetInvalidClientSettingName(int handle)
     {
         int index = ZH2Game::GameContext.RequestedClientSettings[handle];
@@ -51,7 +65,7 @@ strict namespace Settings
         int index = ZH2Game::GameContext.RequestedClientSettings[handle];
         return ZH2Game::PersistingGameContext.RequestedClientSettings[index].Value;
     }
-    
+
     internal str GetInvalidClientSettingLabel(int handle)
     {
         int index = ZH2Game::GameContext.RequestedClientSettings[handle];

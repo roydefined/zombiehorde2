@@ -4,57 +4,18 @@
 
 #define LOGSOURCE "Shuffle"
 
-#include "shuffledstats.acs"
 #include "clientsettings.acs"
-#include "stats.acs"
+#include "player.acs"
+#include "ending.acs"
+#include "round.acs"
 #include "map.acs"
 
 strict namespace Shuffle
 {
     internal BufferContextT _context;
 
-    // Shuffling supports three types, which might be hardcoded by shuffle functions, or can be configured.
-    // SHUFFLEPLAYING: Slot must be STATEPLAYING.
-    // SHUFFLEASSIGNED: Slot is/has been assigned. We expect any set state except STATENONE.
-    // SHUFFLEDEAD: Slot must not be STATENONE/STATEPLAYING.
-    internal void PrepareBufferPlayers(ShufflePrepareTypeT shuffleType = SHUFFLEASSIGNED)
-    {
-        _context.BufferIteratorSize = 0;
-        for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-        {
-            Player::PlayerStateT state = Player::GetPlayerState(i);
-            bool valid = shuffleType == SHUFFLEPLAYING
-                ? state == Player::STATEPLAYING
-                : shuffleType == SHUFFLEASSIGNED
-                    ? state != Player::STATENONE
-                    : state != Player::STATENONE && state != Player::STATEPLAYING;
-
-            If (valid)
-                _context.Buffer[_context.BufferIteratorSize++] = i;
-        }
-    }
-
-    internal void PrepareVotableMaps(int flags)
-    {
-        _context.BufferIteratorSize = 0;
-
-        int currentMapPosition = GetMapPosition(MAPPOSITION_CURRENT);
-        int nextMapPosition = GetMapPosition(MAPPOSITION_NEXT);
-
-        for (int i = 0; i < GetMapRotationSize(); i++)
-        {
-            if ((flags & FLAGIGNORECURRENTMAP) && i == currentMapPosition)
-                continue;
-
-            if ((flags & FLAGIGNORENEXTMAP) && i == nextMapPosition)
-                continue;
-
-            if ((flags & FLAGIGNOREPLAYEDMAP) && GetMapRotationInfo(i, MAPROTATION_USED))
-                continue;
-
-            _context.Buffer[_context.BufferIteratorSize++] = i;
-        }
-    }
+    // Optional argument to provide for sort functions that depend on extra data to sort.
+    internal raw _sortArg;
 
     internal int GetIndexValue(int index)
     {
@@ -71,6 +32,20 @@ strict namespace Shuffle
         BCSUtils::Swap(_context.Buffer[left], _context.Buffer[right]);
         _context.Buffer[left] = BCSUtils::r1;
         _context.Buffer[right] = BCSUtils::r2;
+    }
+
+    // Helper method that calculates the relevant size of the buffer after preparing it.
+    // The comparer is used to determine when to break out. Return `true` if the item is still relevant
+    internal void UpdateRelevantBufferSize(bool function(int)& comparer)
+    {
+        _context.BufferRelevantSize = 0;
+        while (_context.BufferRelevantSize < _context.BufferIteratorSize)
+        {
+            if(!comparer(_context.Buffer[_context.BufferRelevantSize]))
+                break;
+
+            _context.BufferRelevantSize++;
+        }
     }
 }
 

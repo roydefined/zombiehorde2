@@ -4,58 +4,54 @@
 
 strict namespace Hud
 {
-    internal void DrawRoundMenuHud(int id, fixed x, fixed y, fixed scale)
+    internal void DrawRoundMenuHud()
     {
-        BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudDrawText(id--, "\cfRound");
 
-        y += 10.0 * scale;
-        if (DrawClickableText(id--, x, y, 100.0 * scale, 10.0 * scale, "Back to start"))
-            OpenAdminMenu(MENU_START);
-        
-        y += 20.0 * scale;
+        HudSetPointInternal();
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfRound");
 
-        BCSUtils::HudSetPoint(x, y);
+        if (DrawClickableText(--_drawnHudId, 0.0, 10.0, 100.0, 10.0, "Back to start"))
+            OpenAdminMenu(ADMINMENU_START);
+
         if (DrawClickableTextConditional(
-            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, id--, x, y, 60.0 * scale, 10.0 * scale, "End game"))
+            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 0.0, 30.0, 60.0, 10.0, "End game"))
         {
             Admin::AdminEndGameClientside();
         }
 
-        y += 10.0 * scale;
-
         // Kill unsafe players
         if (DrawClickableTextConditional(
-            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, id--, x, y, 80.0 * scale, 10.0 * scale, "Kill unsafe players"))
+            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 0.0, 40.0, 80.0, 10.0, "Kill unsafe players"))
         {
             Admin::AdminKillUnsafePlayersClientSide();
         }
 
-        y += 20.0 * scale;
-        BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudDrawText(id--, "\cfSet round state");
 
-        y += 10.0 * scale;
+        HudSetPointInternal(0.0, 60.0);
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfSet round state");
 
         // Explicit button for disabling the current round state.
-        BCSUtils::HudSetPoint(x, y);
         if (DrawClickableTextConditional(
-            Round::GetActiveRoundStateIndex() != 0, id--, x, y, 80.0 * scale, 10.0 * scale, "Disable round state"))
+            Round::GetActiveRoundStateIndex() != 0, --_drawnHudId, 0.0, 70.0, 80.0, 10.0, "Disable round state"))
         {
             Admin::AdminSetRoundStateClientside(0);
         }
 
-        y += 10.0 * scale;
+        // Last value used is then used to set the next offset.
+        fixed addY = 0.0;
+
         int rows = 0;
         Round::RoundStateContextT[]& rounds = ZH2Game::GameContext.MapDetails.Rounds;
         for (int index = 0; index < lengthof(rounds); ++index)
         {
             if (!Round::GetRoundDefined(index)) continue;
 
+            addY = 80.0 + fixed(10 * rows);
+
             if (DrawClickableTextConditional(
-                Round::GetActiveRoundStateIndex() != index, id--, x, (y + fixed(10 * rows) * scale), 80.0 * scale, 10.0 * scale, Round::GetRoundStateIndexAsString(index)))
+                Round::GetActiveRoundStateIndex() != index, --_drawnHudId, 0.0, addY, 80.0, 10.0, Round::GetRoundStateIndexAsString(index)))
             {
                 Admin::AdminSetRoundStateClientside(index);
             }
@@ -63,22 +59,19 @@ strict namespace Hud
             rows++;
         }
 
-        y += (20.0 + fixed(10 * rows)) * scale;
-        BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudSetTextColor(CR_WHITE);
-        BCSUtils::HudDrawText(id--, "\cfSet round timer");
+        addY += 20.0;
 
-        y += 10.0 * scale;
+        BCSUtils::HudSetTextColor(CR_WHITE);
+
+        HudSetPointInternal(0.0, addY);
+        BCSUtils::HudDrawText(--_drawnHudId, "\cfSet round timer");
 
         // Explicit button for disabling the current timer.
-        BCSUtils::HudSetPoint(x, y);
         if (DrawClickableTextConditional(
-            RoundTimer::GetActiveTimerIndex() != 0, id--, x, y, 80.0 * scale, 10.0 * scale, "Disable timer"))
+            RoundTimer::GetActiveTimerIndex() != 0, --_drawnHudId, 0.0, addY + 10.0, 80.0, 10.0, "Disable timer"))
         {
             Admin::AdminSetRoundTimerClientside(0);
         }
-
-        y += 10.0 * scale;
 
         rows = 0;
         RoundTimer::RoundTimerContextT[]& roundTimers = ZH2Game::GameContext.MapDetails.Timers;
@@ -86,8 +79,10 @@ strict namespace Hud
         {
             if (!RoundTimer::GetTimerDefined(index)) continue;
 
+            fixed addY2 = addY + 20.0 + fixed(10 * rows);
+
             if (DrawClickableTextConditional(
-                RoundTimer::GetActiveTimerIndex() != index, id--, x, (y + fixed(10 * rows)), 80.0 * scale, 10.0 * scale, RoundTimer::GetTimerIndexAsString(index)))
+                RoundTimer::GetActiveTimerIndex() != index, --_drawnHudId, 0.0, addY2, 80.0, 10.0, RoundTimer::GetTimerIndexAsString(index)))
             {
                 Admin::AdminSetRoundTimerClientside(index);
             }

@@ -1,0 +1,225 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+Int liftposition = 0;
+Int AlertStopped = 0;
+Int resist1 = 10;
+Int resist2 = 25;
+Int resist4 = 20;
+Int timeleft = 35;
+Int bombplanted = 0;
+Int firstActivation = 0; //Lift message
+bool shieldactive = false;
+bool final_lift_pos = false;
+
+Script "ze05_open" OPEN // Level setups
+{
+    Sector_SetCeilingScale2(111, 2.0, 2.0);
+    Sector_SetRotation(4, 90, 0);
+    Sector_SetRotation(19, 180, 0);
+    Sector_SetCeilingPanning(15, 8, 0, 8, 0);
+    Sector_SetRotation(79, 90, 90);
+    SetLineBlocking(1, BLOCK_CREATURES);
+    TranslucentLine(1, 96, 0);
+    Scroll_Texture_Both(1, 0, 0, 200, 0);
+    Scroll_Texture_Both(-1, 0, 0, 200, 0);
+    SetLineBlocking(2, BLOCK_CREATURES);
+    TranslucentLine(2, 96, 0);
+    Scroll_Texture_Both(2, 0, 0, 200, 0);
+    Scroll_Texture_Both(-2, 0, 0, 200, 0);
+    SetLineBlocking(3, BLOCK_NOTHING);
+    TranslucentLine(3, 0, 0);
+    Scroll_Texture_Both(3, 0, 0, 200, 0);
+    Scroll_Texture_Both(-3, 0, 0, 200, 0);
+    SetLineBlocking(4, BLOCK_CREATURES);
+    TranslucentLine(4, 96, 0);
+    Scroll_Texture_Both(4, 0, 0, 200, 0);
+    Scroll_Texture_Both(-4, 0, 0, 200, 0);
+    TranslucentLine(9, 0, 0);
+    Scroll_Texture_Both(9, 0, 0, 200, 0);
+    Scroll_Texture_Both(-9, 0, 0, 200, 0);
+
+    TranslucentLine(15, 96, 0);
+}
+
+/* RESIST EVENT */
+script "ze05_internal_event_resistelapsed" (raw packetRaw)
+{
+	Event::ReceiveTimerElapsed((str)packetRaw);
+	int index = Event::GetReceiveData(0);
+
+	switch(index)
+	{
+		case 0:
+			Floor_LowerByValue(107, 21, 88);
+			break;
+		case 1:
+			SetLineBlocking(2, BLOCK_NOTHING);
+			TranslucentLine(2, 0, 0);
+			break;
+	}
+}
+
+Script 2 (void) // Lift
+{
+	SetActivator(-1);
+	if(liftposition==0)
+	{
+		ThingSound(20, "sound/ding1", 127);
+		if(firstActivation==0)
+		{
+			SetFont("BIGFONT");
+			HudMessageBold(s:"The lift is leaving in 10 seconds"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 2.0, 1.0);
+			Polyobj_DoorSlide(2, 20, 128, 56, 350);
+			delay(405);
+			firstActivation=1;
+		}
+		else
+		{
+			Polyobj_DoorSlide(2, 20, 128, 56, 140);
+			delay(195);
+		}
+		TeleportInSector(22, 23, 22, 0, 0);
+		delay(5);
+		ThingSound(21, "sound/lift1", 127);
+		delay(35*4);
+		Polyobj_DoorSlide(4, 20, 128, 56, 140);
+		ThingSound(22, "sound/ding1", 127);
+		liftposition = 1;
+	}
+	else
+	{
+		ThingSound(24, "sound/ding1", 127);
+		Polyobj_DoorSlide(4, 20, 128, 56, 140);
+		delay(195);
+		TeleportInSector(23, 22, 23, 0, 0);
+		delay(5);
+		ThingSound(21, "sound/lift1", 127);
+		delay(35*4);
+		Polyobj_DoorSlide(2, 20, 128, 56, 140);
+		ThingSound(20, "sound/ding1", 127);
+		liftposition = 0;
+	}
+}
+
+Script 3 (void) // ALERT sound
+{
+	while(AlertStopped==0)
+    {
+		AmbientSound("sound/alert1", 127);
+		delay(36);
+		restart;
+    }
+}
+
+Script 6 (void) // Anti zombie shield
+{
+    PrintBold(n:0, s:" \cFhas activated the shield.\nIt will shut down in 10 seconds.");
+    SetActivator(-1);
+    TranslucentLine(3, 96, 0);
+    shieldactive = true;
+    delay(35*10);
+    shieldactive = false;
+    TranslucentLine(3, 0, 0);
+}
+
+Script 7 (void) // Bomb has been planted
+{
+	SetActivator(-1);
+	Delay(Resist::StartResistByIndex(2));
+	SetLineBlocking(4, BLOCK_NOTHING);
+	TranslucentLine(4, 0, 0);
+	Delay(35);
+	Acs_Execute(3, 0, 0, 0, 0);
+	Polyobj_DoorSlide(6, 20, 128, 56, 35 * timeleft);
+	bombplanted++;
+	Delay(35);
+	SetFont("CONFONT");
+	HudMessageBold(s:"The bomb has been planted!\nGet out of here before it blows up!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.05, 0.85, 3.0, 2.0);
+
+	Delay(Resist::StartResistByIndex(3));
+
+	AlertStopped = 1;
+	Delay(40);
+
+	AmbientSound("world/nuke1", 127);
+	Radius_Quake(10, 500, 0, 200, 110);
+
+	Game::KillUnsafePlayers();
+}
+
+/*
+Script 9 (void) // Forcefield at start
+{
+    PrintBold(n:0, s:" \cFhas raised the wall.\nIt will lower in 5 seconds.");
+    SetActivator(-1);
+    Floor_RaiseByValue(109, 16, 88);
+    TagWait(109);
+    delay(35*5);
+    Floor_LowerByValue(109, 16, 88);
+}
+*/
+Script 10 (void)    // Shield script
+{
+    if(!shieldactive)
+        terminate;
+
+    if(Player::GetIsZombie())
+        ThrustThing(192, 20, 0, 0);
+}
+
+Script 11 (void)    // Bomb area lift
+{
+	SetActivator(-1);
+    delay(70);
+
+    if(!final_lift_pos)
+	{
+        final_lift_pos = true;
+        SetLineBlocking(9, BLOCK_CREATURES);
+        TranslucentLine(9, 96, 0);
+        Floor_LowerByValue(115, 36, 676);
+        Ceiling_LowerByValue(115, 36, 676);
+        ThingSound(116, "sound/lift1", 127);
+        TagWait(115);
+    }
+    else
+	{
+        final_lift_pos = false;
+        Floor_RaiseByValue(115, 36, 676);
+        Ceiling_RaiseByValue(115, 36, 676);
+        ThingSound(116, "sound/lift1", 127);
+        TagWait(115);
+        SetLineBlocking(9, BLOCK_NOTHING);
+        TranslucentLine(9, 0, 0);
+    }
+}
+
+Script 12 (void)  // Falling too far
+{
+    if(Player::GetIsHuman())
+        Thing_Damage2(0, 10, "Falling");
+    else
+        Thing_Damage2(0, 100, "Falling");
+
+	Teleport(8, 0, true);
+}
+
+Script 13 (void)  // Falling in slime
+{
+    if(Player::GetIsHuman()){
+        Thing_Damage2(0, 10, "Slime");
+		Teleport(106, 0, true);
+    }else{
+        Thing_Damage2(0, 100, "Slime");
+		Teleport(109, 0, true);
+	}
+
+
+}

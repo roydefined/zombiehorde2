@@ -23,6 +23,18 @@
 
 #define ABILITY_COUNT 2
 
+#define MAX_END_TRACKS 6
+
+// Team indicators
+#define TEAM_INDICATOR_NAME "ZH2TeamIndicator"
+#define TEAM_INDICATOR_UNKNOWN_STATE "spawn.unknown"
+#define TEAM_INDICATOR_ALLY_STATE "spawn.ally"
+#define TEAM_INDICATOR_ENEMY_STATE "spawn.enemy"
+#define TEAM_INDICATOR_TID_BASE 5000
+
+// Modifiers
+#define MAX_SERVER_MODIFIERS 2
+
 strict namespace Game
 {
     internal enum WinningSpecieT : int
@@ -47,21 +59,44 @@ strict namespace Game
     {
         INFECT_INITIAL,
         INFECT_REGULAR,
-        INFECT_ADMIN,
     };
 
-	enum ZombieAbilityTypeFlagsT : int
+    internal enum InfectSourceT : int
     {
-		ABILITY_NONE,
+        INFECTSOURCE_ADMIN,
+        INFECTSOURCE_PLAYER,
+        INFECTSOURCE_ROUND,
+    };
+
+    internal enum CureSourceT : int
+    {
+        CURESOURCE_ADMIN,
+        CURESOURCE_ITEM,
+    };
+
+    enum ZombieAbilityTypeFlagsT : int
+    {
+        ABILITY_NONE,
         ABILITY_PUSH = 1 << 0,
         ABILITY_SPIT = 1 << 1,
+    };
+
+    // The available serverside modifiers the server can configure on players.
+    // Note, this indirectly also specifies the index of the modifier when used in functions.
+    internal enum ModifierTypeT : int
+    {
+        MODIFIERTYPE_KNOCKBACK,
+        MODIFIERTYPE_DAMAGEFACTOR,
     };
 
     internal struct EndingTypeT
     {
         str WinMessagesTop[2],
-            WinMessagesBottom[2];
-        str Track;
+            WinMessagesBottom[2],
+            WinGraphics[2];
+
+        int TrackCount;
+        str Tracks[MAX_END_TRACKS];
     };
 
     struct TipCollectionContextT
@@ -69,11 +104,20 @@ strict namespace Game
         str Collection[MAX_TIPS];
         int Count;
     };
-    
+
+    internal struct ServerModifierT
+    {
+        bool Enabled;
+        fixed Factor;
+    };
+
     extern void KillUnsafePlayers();
 
     extern void SetIsSafe(bool safe);
     extern void SetPlayerIsSafe(int id, bool safe, bool broadcast = true);
     extern bool GetIsSafe();
     extern bool GetPlayerIsSafe(int id);
+
+    extern int HumanCount(bool includeDead = false);
+    extern int ZombieCount(bool includeDead = false);
 }

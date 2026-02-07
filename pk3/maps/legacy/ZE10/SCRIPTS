@@ -1,0 +1,121 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+bool CruiseReached = false;
+
+script "ze10_open" open // Level Setups
+{
+
+	Sector_SetRotation(13, -45, 0);
+	Sector_SetRotation(14, 45, 0);
+	SetLineBlocking(1, BLOCK_CREATURES);
+	TranslucentLine(1, 96, 0);
+	Scroll_Texture_Both(3, 0, 0, 0, 200);
+	Scroll_Texture_Both(-3, 0, 0, 0, 200);
+	TranslucentLine(3, 96, 0);
+    SetLineSpecial(66, 128, 0, 20, 0, 0, 0);
+}
+
+/* RESIST EVENT */
+script "ze10_internal_event_resistelapsed" (raw packetRaw)
+{
+	Event::ReceiveTimerElapsed((str)packetRaw);
+	int index = Event::GetReceiveData(0);
+	
+	switch(index)
+	{
+		case 0:
+			SetLineBlocking(1, BLOCK_NOTHING);
+			TranslucentLine(1, 0, 0);
+			break;
+		case 1:
+			Thing_Deactivate(40);
+			Acs_Execute(13, 0);
+			SetLineBlocking(2, BLOCK_NOTHING);
+			break;
+		case 2:
+			SetLineBlocking(3, BLOCK_NOTHING);
+			TranslucentLine(3, 0, 0);
+			break;
+	}
+}
+
+// Cruise is reached
+Script 2 (void)
+{
+	if(!CruiseReached)
+	{
+		Acs_Execute(9, 0);
+		CruiseReached = true;
+	}
+}
+
+Script 4 (void) // Second resist
+{
+	SetActivator(-1);
+	Radius_Quake(8, 30, 0, 6, 42);
+	Thing_Destroy(43);
+	Delay(20);
+	Thing_Activate(40);
+	Acs_Execute(12, 0);
+	Delay(50);
+	Resist::StartResistByIndex(1);
+}
+
+Script 6 (void) // Lowering the gate
+{
+	printbold(n:0, s:" \cJhas lowered the gate!\nIt will open in 15 seconds!");
+	SetActivator(-1);
+	Floor_LowerByvalue(44, 8, 96);
+	TagWait(44);
+	Delay(35*15);
+	Floor_RaiseByvalue(44, 8, 96);
+}
+
+Script 9 (void) // Last resist
+{
+    SetFont("CONFONT");
+    HudMessageBold(n:0, s:"\cJ has reached the \cKAircraft Carrier\cJ!\nDefend it until the \cDUltima \cJspell is casted!"; HUDMSG_FADEOUT, 0, CR_WHITE, 0.05, 0.85, 3.0, 2.0);
+    SetActivator(-1);
+
+    Delay(35*5);
+	Delay(Resist::StartResistByIndex(3));
+    Delay(35);
+
+    SetFont("BIGFONT");
+    HudMessageBold(s:"Ultima!"; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.1, 1.0, 1.0);
+    AmbientSound("world/ULTIMA1", 127);
+
+	Delay(35);
+
+	Fadeto (64, 255, 64, 1.0, 6.0);
+
+	Delay(35*6);
+
+	Game::KillUnsafePlayers();
+	SetLineBlocking(66, BLOCK_CREATURES);	// You're not going anywhere
+	Delay(35*4);
+	Fadeto (64, 255, 64, 0.0, 1.0);
+
+}
+
+Script 11 OPEN // Music changer
+{
+	Delay(35*10);
+	Music::SetMusic("ROUTE6");
+	Delay(35*110);
+	Music::SetMusic("*");
+}
+
+Script 12 (void) CLIENTSIDE { // Fire light has to be clientsided to work properly
+	Thing_Activate(45);
+}
+Script 13 (void) CLIENTSIDE { // Fire light has to be clientsided to work properly
+	Thing_DeActivate(45);
+}

@@ -4,27 +4,65 @@
 
 strict namespace Game
 {
+    internal int GetGameStartTic()
+    {
+        return ZH2Game::GameContext.MatchStartTic;
+    }
+
     internal void SetGameStartTicNow()
     {
-        ZH2Game::GameContext.MatchStartTic = Utils::GetSynchronizedTimer();
+        SetGameStartTic(Utils::GetSynchronizedTimer());
+    }
+
+    internal void SetGameStartTic(int tic)
+    {
+        ZH2Game::GameContext.MatchStartTic = tic;
+    }
+
+    internal int GetGameEndingTic()
+    {
+        return ZH2Game::GameContext.MatchEndingTic;
     }
 
     internal void SetGameEndingTicNow()
     {
-        ZH2Game::GameContext.MatchEndingTic = Utils::GetSynchronizedTimer();
+        SetGameEndingTic(Utils::GetSynchronizedTimer());
+    }
+
+    internal void SetGameEndingTic(int tic)
+    {
+        ZH2Game::GameContext.MatchEndingTic = tic;
+    }
+
+    internal int GetGameVotingTic()
+    {
+        return ZH2Game::GameContext.MatchVotingTic;
+    }
+
+    internal void SetGameVotingTicNow()
+    {
+        SetGameVotingTic(Utils::GetSynchronizedTimer());
+    }
+
+    internal void SetGameVotingTic(int tic)
+    {
+        ZH2Game::GameContext.MatchVotingTic = tic;
     }
 
     internal int GetPlayTime()
     {
+        int start = GetGameStartTic();
+        int end = GetGameEndingTic();
+
         // Tic was not set.
-        if (ZH2Game::GameContext.MatchStartTic == 0)
+        if (start == 0)
             return 0;
 
         // If the ending tic is set, we must return the diff between that and the start tic.
         // Otherwise the match is ongoing and we diff the current timer tic.
-        if (ZH2Game::GameContext.MatchEndingTic != 0)
-            return ZH2Game::GameContext.MatchEndingTic - ZH2Game::GameContext.MatchStartTic;
+        if (end != 0)
+            return end - start;
 
-        return Utils::GetSynchronizedTimer() - ZH2Game::GameContext.MatchStartTic;
+        return Utils::GetSynchronizedTimer() - start;
     }
 }

@@ -58,7 +58,7 @@ strict namespace IO
 
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TLBRACE)) return false;
         int braceLevel = Tokenizer::GetBraceLevel(handle);
-        
+
         Tokenizer::Next(handle);
 
         // No more room for more items. Log a warning and skip the remaining body.
@@ -83,7 +83,10 @@ strict namespace IO
                 || ParseItemDescription(handle, symbol)
                 || ParseItemBloodSeverity(handle, symbol)
                 || ParseItemBloodTics(handle, symbol)
-                || ParseItemTakeOnPanic(handle, symbol))
+                || ParseItemKickback(handle, symbol)
+                || ParseItemTakeOnPanic(handle, symbol)
+                || ParseItemObituaryGraphic(handle, symbol)
+                || ParseItemObituaryGraphicWidth(handle, symbol))
             {
                 // Optional comma.
                 Tokenizer::Next(handle, false);
@@ -115,7 +118,7 @@ strict namespace IO
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "humanowned")
             && !BCSUTILS::StrIEquals(identifyingSymbol, "zombieowned")) return false;
-            
+
         str specie = Tokenizer::GetSymbol(handle);
         Tokenizer::Next(handle);
 
@@ -141,11 +144,9 @@ strict namespace IO
         }
 
         Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
-        
+
         int parsedValue = (int)Tokenizer::GetParsedValue();
         context.GiveOnSpawnCount = parsedValue;
-
-        Tokenizer::Next(handle);
 
         Logger::LogDebug(LOGSOURCE, "Parsed item give on spawn. Amount: \cd" + str(parsedValue) + "\cj.");
         return true;
@@ -166,12 +167,10 @@ strict namespace IO
         }
 
         Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
-        
+
         int parsedValue = (int)Tokenizer::GetParsedValue();
         if (BCSUTILS::StrIEquals(specie, "giveonhuman")) context.GiveOnHumanCount = parsedValue;
         else context.GiveOnZombieCount = parsedValue;
-
-        Tokenizer::Next(handle);
 
         Logger::LogDebug(LOGSOURCE, "Parsed item give on specie. Specie symbol: \cd" + specie + "\cj. Amount: \cd" + str(parsedValue) + "\cj.");
         return true;
@@ -182,8 +181,6 @@ strict namespace IO
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "isweaponitem")
             && !BCSUTILS::StrIEquals(identifyingSymbol, "isinventoryitem")
             && !BCSUTILS::StrIEquals(identifyingSymbol, "iskeyitem")) return false;
-            
-        Tokenizer::Next(handle);
 
         Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
         context.Type = BCSUTILS::StrIEquals(identifyingSymbol, "isweaponitem") ? Item::TYPE_WEAPON
@@ -203,8 +200,6 @@ strict namespace IO
         Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
         context.Graphic = Tokenizer::GetSymbol(handle);
 
-        Tokenizer::Next(handle);
-
         Logger::LogDebug(LOGSOURCE, "Parsed item graphic: \cd" + context.Graphic + "\cj.");
         return true;
     }
@@ -217,8 +212,6 @@ strict namespace IO
         Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
         context.Label = Tokenizer::GetSymbol(handle);
 
-        Tokenizer::Next(handle);
-
         Logger::LogDebug(LOGSOURCE, "Parsed item label: \cd" + context.Label + "\cj.");
         return true;
     }
@@ -230,8 +223,6 @@ strict namespace IO
 
         Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
         context.Description = Tokenizer::GetSymbol(handle);
-
-        Tokenizer::Next(handle);
 
         Logger::LogDebug(LOGSOURCE, "Parsed item description: \cd" + context.Description + "\cj.");
         return true;
@@ -252,8 +243,6 @@ strict namespace IO
         Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
         context.BloodSeverity = parsedValue;
 
-        Tokenizer::Next(handle);
-
         Logger::LogDebug(LOGSOURCE, "Parsed blood severity: \cd" + str(context.BloodSeverity) + "\cj.");
         return true;
     }
@@ -273,20 +262,68 @@ strict namespace IO
         Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
         context.BloodTics = parsedValue;
 
+        Logger::LogDebug(LOGSOURCE, "Parsed blood tics: \cd" + str(context.BloodTics) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseItemKickback(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "kickback")) return false;
         Tokenizer::Next(handle);
 
-        Logger::LogDebug(LOGSOURCE, "Parsed blood tics: \cd" + str(context.BloodTics) + "\cj.");
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for kickback is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        context.Kickback = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed kickback: \cd" + str(context.Kickback) + "\cj.");
         return true;
     }
 
     internal bool ParseItemTakeOnPanic(int handle, str identifyingSymbol)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "takeonpanic")) return false;
-            
+
         Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
         context.TakeOnPanic = true;
 
         Logger::LogDebug(LOGSOURCE, "Parsed item take on panic.");
+        return true;
+    }
+
+    internal bool ParseItemObituaryGraphic(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "obituarygraphic")) return false;
+        Tokenizer::Next(handle);
+
+        Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        context.ObituaryGraphic = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed item obituary graphic: \cd" + context.ObituaryGraphic + "\cj.");
+        return true;
+    }
+
+    internal bool ParseItemObituaryGraphicWidth(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "obituarygraphicwidth")) return false;
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for obituary graphic width is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        context.ObituaryGraphicWidth = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed item obituary graphic width: \cd" + str(context.ObituaryGraphicWidth) + "\cj.");
         return true;
     }
 }

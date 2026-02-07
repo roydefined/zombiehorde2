@@ -6,19 +6,22 @@
 
 strict namespace Music
 {
-    internal void SetMusic(str track, int order = 0)
+    void SetMusic(str track, int order = 0)
     {
+        // Do not change if the round ended.
+        if (Round::GetCurrentRoundIsEnding())
+            return;
+
         upmost::SetMusic(track, order);
     }
 
-    internal void SetDefaultMusic(str track, int order = 0)
+    void SetDefaultMusic(str track, int order = 0)
     {
-        SetMusic(track, order);
         SetCVarString(CVAR_SYNC_RADIO_NAME, track);
         SetCVar(CVAR_SYNC_RADIO_ORDER, order);
     }
 
-    internal void PlayDefaultMusic()
+    void PlayDefaultMusic()
     {
         SetMusic(GetDefaultMusicTrack(), GetDefaultMusicOrder());
     }
@@ -28,7 +31,7 @@ strict namespace Music
         str track = GetCVarString(CVAR_SYNC_RADIO_NAME);
         if (track == "")
             return "*";
-        
+
         return track;
     }
 

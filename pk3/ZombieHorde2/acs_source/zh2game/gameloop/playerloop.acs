@@ -19,16 +19,19 @@ strict namespace GameLoop
             Power::Tic();
             Player::SprintTic();
             Player::PanicTic();
+            Player::ZombieTauntTic();
+            Player::NameTic();
+            Player::ThruActorsTics();
             Game::TicActivatorZombieTeleport();
             Delay(const: 1);
         }
         Logger::LogDebug(LOGSOURCE, "Player loop ended for id \cd" + str(id) + "\cj.");
     }
-    
+
     script "zh2_internal_playerloop_client" clientside
     {
         Logger::LogDebug(LOGSOURCE, "Clientside player loop started for id \cd" + str(ConsolePlayerNumber()) + "\cj.");
-        
+
         while(true)
         {
             // Note, must be in the loop, or it will fail online.
@@ -46,23 +49,16 @@ strict namespace GameLoop
             Weather::TicClient();
             RoundTimer::TicClient();
             Game::FullServerTicClient();
+            Player::LockTic();
             Player::HeartbeatTicClient();
-
-            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-			{
-				if (PlayerInGame(i))
-				    PlayerTicClient(i);
-			}
+            Player::LastHeartbeatTicClient();
+            Player::TranslucentAlliesTicClient();
+            Game::ClientDeathCamTic();
+            Game::TeamIndicatorTicClient();
+            Footstep::FootstepTicClient();
 
             Delay(const: 1);
         }
         Logger::LogDebug(LOGSOURCE, "Clientside player loop ended for id \cd" + str(ConsolePlayerNumber()) + "\cj.");
-    }
-
-    // Specific to a playing client, called clientside.
-    internal void PlayerTicClient(int id)
-    {
-        Player::HeartbeatTicPlayerClient(id);
-        Footstep::FootstepTicPlayerClient(id);
     }
 }

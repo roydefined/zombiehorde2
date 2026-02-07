@@ -1,0 +1,31 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawZombieTeleportTime()
+    {
+        if (!Game::GetIsZombieTeleporting())
+            return;
+
+        int id = HUDID_ZTELE;
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetCenterText(true);
+
+        BCSUtils::HudSetDisappearTime(0.5);
+
+        int tics = Game::GetZombieTeleportTics();
+        str formattedTics = Utils::FormatTics(tics, true);
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawText(--id, "Teleporting in " + formattedTics);
+        DebugDraw();
+
+        HudSetPointInternal(0.0, 8.0);
+        BCSUtils::HudDrawText(--id, "Do not move");
+        DebugDraw();
+    }
+}

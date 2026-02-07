@@ -1,0 +1,550 @@
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+//Zombieladder script
+
+Script 55 (int onOff) NET CLIENTSIDE //Force lightning
+{
+	If(onOff == 0)
+	{
+		Thing_DeActivate(223);
+		Thing_DeActivate(32);
+		Thing_DeActivate(33);
+		Thing_DeActivate(170);
+		Log(s:"492 Map Dynamic Lights Deactivated, Type 'PUKE 55 1' to re-activate them!");
+	}
+	else
+	{
+		Thing_Activate(223);
+		Log(s:"486 Map Dynamic Lights Activated");
+	}
+}
+
+Script 67 (Int TID) CLIENTSIDE { Thing_remove(TID); }
+
+/*
+Script 91 open {
+Int A = 600;
+Int B = 900;
+
+While(A<=631)
+    {
+    Thing_ChangeTID(A,B);
+    thing_changetid(
+    A++;
+    B++;
+    Delay(1);
+    }
+}
+*/
+
+Script 1 OPEN
+{
+	Sector_SetGravity(219, 0, 8);
+	Ceiling_LowerByValue(218,5,255);
+	Delay(35*5);
+	SpawnSpot("ZH2LegacyZE14Explosion",169,0,0);
+	Floor_LowerByValue(69,255,80);
+	Floor_LowerByValue(70,255,96);
+	Delay(35*13);
+	Print(s:"Follow the arrows on the floor and everything will be alright");
+	Floor_LowerToLowest(168,5);
+	Ceiling_RaiseByValue(168,5,32);
+	Delay(35*5);
+	Print(s:"Bad framerate? Type 'PUKE 55 0' in console to remove a big part of the dynamic lights!");
+}
+
+Script 2 (void)
+{
+	If(Player::GetIsZombie())
+		ThrustThingZ(0,3,0,0);
+	else
+		ThrustThingZ(0,15,0,0);
+}
+
+
+//Closing door
+
+Script 3 (void)
+{
+	Teleport(0,171,0);
+	ThrustThing(128,64,64,0);
+	SetLineSpecial(30,Acs_Executealways,5);
+	Acs_Executealways(4,0);
+	Acs_Executealways(67,0,32);
+	Print(n:0,s:" closed the emergencydoor!");
+	Setactivator(-1);
+	Floor_RaiseByValue(27,25,96);
+	Door_close(26,25);
+}
+
+script 38 (void)
+{
+	Print(n:0,s:" raised the box, it will automatically lower in 25 seconds!");
+	Setactivator(-1);
+	SetLineBlocking(217,BLOCK_EVERYTHING);
+	Floor_raisebyvalue(216,25,56);
+	Floor_raisebyvalue(215,25,56);
+	Tagwait(215);
+	Delay(35*25);
+	SetLineBlocking(217,BLOCK_NOTHING);
+	Floor_lowerbyvalue(216,25,56);
+	Floor_lowerbyvalue(215,25,56);
+	Tagwait(215);
+	Print(s:"Box lowered");
+}
+
+Script 5 (void)
+{
+	Print(s:"Emergencydoor already closed");
+}
+
+Script 9 (void)
+{
+	Acs_Executealways(67,0,99);
+	Print(n:0,s:" \cgraised the lava!");
+	FloorAndCeiling_RaiseByValue(98,5,128);
+}
+
+//Explosions and stuff
+
+Script 4 (void)
+{
+	Delay(35*15);
+	SetLineTexture(28,SIDE_FRONT,TEXTURE_MIDDLE,"");
+	SetLineTexture(28,SIDE_BACK,TEXTURE_MIDDLE,"");
+	SpawnSpot("ZH2LegacyZE14Explosion",31,0,0);
+}
+
+
+Script 6 (void)
+{
+	SpawnSpot("ZH2LegacyZE14Explosion",35,0,0);
+	SetLineTexture(34,SIDE_FRONT,TEXTURE_MIDDLE,"");
+	SetLineTexture(34,SIDE_BACK,TEXTURE_MIDDLE,"");
+	FloorAndCeiling_RaiseByValue(37,255,16);
+	Acs_Executealways(67,0,33);
+}
+
+Script 7 (void)
+{
+	SpawnSpot("ZH2LegacyZE14Explosion",42,0,0);
+	SetLineTexture(40,SIDE_FRONT,TEXTURE_MIDDLE,"");
+	SetLineTexture(40,SIDE_BACK,TEXTURE_MIDDLE,"");
+}
+
+Script 8 (void)
+{
+	Delay(35);
+	SpawnSpot("ZH2LegacyZE14Explosion",63,0,0);
+	SetLineTexture(62,SIDE_FRONT,TEXTURE_MIDDLE,"");
+	SetLineTexture(62,SIDE_BACK,TEXTURE_MIDDLE,"");
+	//78>92
+	Int x = 78;
+	While(x<=93)
+	{
+		Delay(3);
+		SpawnSpot("ZH2LegacyZE14Explosion",x,0,0);
+		x++;
+	}
+	SetLineTexture(93,SIDE_FRONT,TEXTURE_MIDDLE,"");
+	SetLineTexture(93,SIDE_BACK,TEXTURE_MIDDLE,"");
+	Door_Open(73,255);
+}
+
+Script 10 (int angle)
+{
+	If(Player::GetIsZombie())
+	{
+		Thing_Damage(0, 375, MOD_UNKNOWN);
+		ThrustThing(angle, 50,50,0);
+	}
+	else
+	{
+		Thing_Damage(0, 25, MOD_UNKNOWN);
+		ThrustThing(angle, 10,10,0);
+	}
+}
+
+Bool Teleporter[BCSUtils::MAX_PLAYERS];
+Script 12 (void)
+{
+	If(Player::GetIsHuman())
+	{
+		/*Teleporter[PlayerNumber()] = 1;
+		for(int x = 0;x < BCSUtils::MAX_PLAYERS; x++)
+		{
+			if(Teleporter[x])
+			SetActorPosition(PLAYER_TID+x,GetActorX(PLAYER_TID+x)+0.0,GetActorY(PLAYER_TID+x)+6080.0,GetActorZ(PLAYER_TID+x)-64.0,0);
+			ThrustThingz(0,25,1,0);
+		}
+		*/
+		SetActorPosition(0,GetActorX(0)+0.0,GetActorY(0)+6080.0,GetActorZ(0)-64.0,0);
+	}
+	else
+	{
+		/*
+		Teleporter[PlayerNumber()] = 1;
+		for(int y = 0; y < BCSUtils::MAX_PLAYERS; y++)
+		{
+			if(Teleporter[y])
+			SetActorPosition(PLAYER_TID+y,GetActorX(PLAYER_TID+y)+0.0,GetActorY(PLAYER_TID+y)+6688.0,GetActorZ(PLAYER_TID+y)-64.0,0);
+			ThrustThingz(0,25,1,0);
+		}
+		*/
+		SetActorPosition(0,GetActorX(0)+0.0,GetActorY(0)+6688.0,GetActorZ(0)-64.0,0);
+	}
+}
+
+Bool Teleporter2[BCSUtils::MAX_PLAYERS];
+Script 13 (void)
+{
+    /*
+    Teleporter2[PlayerNumber()] = 1;
+    for(int x = 0; x < BCSUtils::MAX_PLAYERS; x++)
+	{
+        if(Teleporter2[x])
+        SetActorPosition(PLAYER_TID+x,GetActorX(PLAYER_TID+x)+0.0,GetActorY(PLAYER_TID+x)+862.0,GetActorZ(PLAYER_TID+x)-64.0,0);
+        ThrustThingz(0,25,1,0);
+	}
+	*/
+	SetActorPosition(0,GetActorX(0)+0.0,GetActorY(0)+862.0,GetActorZ(0)-64.0,0);
+}
+
+Script 14 (void)
+{
+	ThrustThingZ(0,64,0,0);
+	ThrustThing(0,96,96,0);
+}
+
+bool Teleporter3[BCSUtils::MAX_PLAYERS];
+Script 15 (void)
+{
+    /*
+    Teleporter3[PlayerNumber()] = 1;
+    for(int x = 0; x < BCSUtils::MAX_PLAYERS; x++)
+	{
+        if(Teleporter3[x])
+        SetActorPosition(PLAYER_TID+x,GetActorX(PLAYER_TID+x)+5120.0,GetActorY(PLAYER_TID+x)+0.0,GetActorZ(PLAYER_TID+x)-64.0,0);
+        ThrustThingz(0,25,1,0);
+	}
+	*/
+	SetActorPosition(0,GetActorX(0)+5120.0,GetActorY(0)+0.0,GetActorZ(0)-64.0,0);
+}
+
+/*
+bool Teleporter4[BCSUtils::MAX_PLAYERS];
+
+Script 16 (void) CLIENTSIDE
+{
+	ThrustThingZ(0,128,0,0);
+	Delay(60);
+	Teleporter4[PlayerNumber()] = 1;
+	for(int x = 0; x < BCSUtils::MAX_PLAYERS; x++)
+	{
+        if(Teleporter4[x])
+        SetActorPosition(PLAYER_TID+x,GetActorX(PLAYER_TID+x)+0.0,GetActorY(PLAYER_TID+x)+6720.0,GetActorZ(PLAYER_TID+x)+6000.0,0);
+        ThrustThingz(0,25,1,0);
+	}
+}
+*/
+
+Script 18 (void)
+{
+	Delay(35*4);
+	FloorAndCeiling_LowerByValue(94,100,1760);
+}
+
+Script 19 (int angle)
+{
+	If(Player::GetIsZombie())
+		ThrustThing(angle, 50, 50, 0);
+}
+
+Script 20 (void)
+{
+	SetLineSpecial(190,0);
+	Door_Close(189,15);
+	Ceiling_LowerByValue(191,15,32);
+}
+
+//ENV
+
+Script 57 (void)
+{
+	Radius_Quake(1,1,0,1,0);
+	Delay(35*12);
+	Restart;
+}
+
+
+
+
+//STIFF :D
+
+
+
+
+/*
+
+Script 88 (Int FloorTAG, Int LineTAG)
+{
+	SetLineBlocking(LINETAG,Block_everything);
+	SetLineTexture(LINETAG,SIDE_FRONT,TEXTURE_MIDDLE,"64grate");
+	SetLineTexture(LINETAG,SIDE_BACK,TEXTURE_MIDDLE,"64grate");
+	Delay(35);
+	Floor_LowerToLowest(FLOORTAG,255);
+}
+
+Script 89 (Int LineTAG)
+{
+	SetLineBlocking(LINETAG,Block_nothing);
+	SetLineTexture(LINETAG,SIDE_FRONT,TEXTURE_MIDDLE,"");
+	SetLineTexture(LINETAG,SIDE_BACK,TEXTURE_MIDDLE,"");
+}
+
+*/
+
+//RANDOM SHIT
+
+Script 50 open
+{
+	Int r = 0;
+	R = Random(1,2);
+	If(r==1)
+	{
+		Floor_LowerToLowest(148,255);
+		Terminate;
+	}
+}
+
+Script 51 open
+{
+	Int r = 0;
+	R=Random(1,2);
+	If(r==1)
+	{
+		Floor_LowerToLowest(137,255);
+		ChangeFloor(137,"GRASS1");
+		Floor_RaiseByValue(136,255,128);
+		Floor_RaiseByValue(158,255,128);
+		ChangeFloor(136,"SHAWN2");
+		Floor_LowerToLowest(147,255);
+		Floor_RaiseByValue(132,255,128);
+		FloorAndCeiling_LowerByValue(134,255,64);
+		SpawnSpot("ZH2LegacySwitchableFireLargeClient", 133, 0,0);
+		SetLineBlocking(135,BLOCK_EVERYTHING);
+		SetLineBlocking(138,BLOCK_EVERYTHING);
+		SetLineBlocking(139,BLOCK_NOTHING);
+	}
+}
+
+/*
+Script 52 OPEN
+{
+Int r = 0;
+R=Random(1,2);
+If(r==1)
+    {
+    SetLineSpecial(178,Acs_Execute,18,0);
+    }
+else
+    {
+    Ceiling_LowerToFloor(179,255);
+    }
+}
+*/
+
+Script 53 open
+{
+	Int r = 0;
+	R=Random(1,2);
+	If(r==2)
+	{
+		Door_Open(182,255);
+		Terminate;
+	}
+}
+
+//Resists
+
+function void ResistMessage1 (int restime, str todo)
+{
+	SetFont("BIGFONT");
+	HudMessageBold(s:todo, d:restime, s:" seconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+}
+
+Int Resist2 = 30;
+Int Resist3 = 27;
+Int Resist4 = 12;
+Int Resist5 = 16;
+Int Resist6 = 15;
+Int Resist7 = 20;
+Int Resist10 = 60;
+Int Resist11 = 42;
+
+Script 93 (void) //Lavapillars 3
+{
+	Acs_Executealways(67,0,170);
+	SetActivator(-1);
+	for(int i = resist6; i > 0; i--)
+	{
+		ResistMessage1(i,"\ci3th Pillars lower in... ");
+		Delay(35);
+	}
+	Floor_LowerToLowest(173,255);
+	SetLineBlocking(174,BLOCK_NOTHING);
+	Delay(35*3);
+	Floor_RaiseByValue(180,25,384);
+}
+
+Script 94 (void) //Lavapillars 2
+{
+	Acs_Executealways(67,0,170);
+	SetActivator(-1);
+	for(int i = resist5; i > 0; i--)
+	{
+		ResistMessage1(i,"\ci2th Pillars lower in... ");
+		Delay(35);
+	}
+	Floor_LowerToLowest(172,255);
+}
+
+Script 95 (void) //Lavapillars 1
+{
+	Acs_Executealways(67,0,170);
+	SetActivator(-1);
+	for(int i = resist4; i > 0; i--)
+	{
+		ResistMessage1(i,"\ci1st Pillars lower in... ");
+		Delay(35);
+	}
+	Floor_LowerToLowest(95,255);
+}
+
+Script 96 (void) //Steam thingy
+{
+	Acs_Executealways(67,0,170);
+	SetActivator(-1);
+	for(int i = resist2; i > 0; i--)
+	{
+		ResistMessage1(i,"\ciClosing pipe in... ");
+		Delay(35);
+	}
+	Acs_Executealways(67,0,163);
+	SetLineBlocking(10,BLOCK_NOTHING);
+	SetLineBlocking(164,BLOCK_NOTHING);
+	Delay(35*5);
+	Door_Open(25,25);
+}
+
+Script 97 (void) //Rock Thingy
+{
+	SetActivator(-1);
+	for(int i = resist3; i > 0; i--)
+	{
+		ResistMessage1(i,"\ciStone lowers in... ");
+		Delay(35);
+	}
+	Floor_LowerToLowest(162,255);
+}
+
+Script 98 (void) //Object Thingy
+{
+	SetActivator(-1);
+	for(int i = resist7; i > 0; i--)
+	{
+		ResistMessage1(i,"\ciObject Raises in... ");
+		Delay(35);
+	}
+	FloorAndCeiling_RaiseByValue(156,10,256);
+	Floor_RaiseByValue(157,10,256);
+	Delay(500);
+	Ceiling_LowerToFloor(161,255);
+}
+
+Script 99 (void) //EarthQuake :D
+{
+	SetFont("BIGFONT");
+	printbold(n:0, s:" \cffound the anti-earthquake room!");
+	Delay(35*3);
+	SetActivator(-1);
+	for(int i = resist10; i > 0; i--)
+	{
+		ResistMessage1(i,"\ciEarthquake in... ");
+		Delay(35);
+	}
+	Ceiling_LowerByValue(191,15,32);
+	Radius_Quake(255,255,0,255,0);
+	Delay(35*3);
+	Game::KillUnsafePlayers();
+	SetLineBlocking(213,BLOCK_EVERYTHING);
+	Delay(35*5);
+	Door_open(189,255);
+	Door_open(191,255);
+}
+
+
+
+Script 92 (void) //Portal to heaven
+{
+	SetFont("BIGFONT");
+	printbold(n:0, s:" \cffound the portal to heaven!");
+	Delay(35*3);
+	SetActivator(-1);
+	for(int i = resist11; i > 0; i--)
+	{
+		ResistMessage1(i,"\ciPortal to heaven closes in... ");
+		Delay(35);
+	}
+	Game::KillUnsafePlayers();
+	SetLineBlocking(177,BLOCK_EVERYTHING);
+}
+
+
+//RANDOM SCRIPTS
+
+Int STIFFCOOKIE = 0;
+Int STIFF = 1;
+
+Script 59 (void)
+{
+	If(STIFF <= 4)
+	{
+		STIFF++;
+		print(s:"Changed speed to profile ",d:STIFF);
+		Delay(35);
+		Terminate;
+	}
+	else
+	{
+		STIFF=1;
+		print(s:"Changed speed to profile ",d:STIFF);
+		Delay(35);
+		Terminate;
+	}
+}
+
+Script 60 open
+{
+	FloorAndCeiling_RaiseByValue(142,10*STIFF,256);
+	TagWait(142);
+	FloorAndCeiling_LowerByValue(142,150,256);
+	TagWait(142);
+	ThingSound(143, "sound/piledriver", 255);
+	Delay(35/STIFF);
+	Restart;
+}
+
+Script 62 (void) //Cookieposter
+{
+	SetLineTexture(227,SIDE_FRONT,TEXTURE_MIDDLE,"");
+	Print(s:"You destroyed the cookieposter ! D:");
+	SpawnSpot("ZH2LegacyZE14Explosion",229,0,0);
+}

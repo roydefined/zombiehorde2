@@ -1,0 +1,39 @@
+actor ZH2DoomHealthBonus : ZH2DoomCustomInventoryHealthAndArmor replaces HealthBonus
+{
+    Inventory.PickupMessage "$GOTHTHBONUS" // "Picked up a health bonus."
+    Inventory.PickupSound "items/poweruppickup"
+
+    States
+    {
+        Spawn:
+            BONU AAAABBBBCCCCDDDDEEEEFFFFGGGGFFFFEEEEDDDDCCCCBBBB 1 NoDelay A_SpawnItemEx("ZH2DoomHealthBonusFlare", 0, 0, 6)
+            loop
+
+        Pickup:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, "PickupSuccess")
+            stop
+        PickupSuccess:
+            TNT1 A 0 A_RailWait
+            TNT1 A 5 A_GiveInventory("ZH2DoomHealthBonusHealth", 1)
+            Stop
+    }
+}
+
+Actor ZH2DoomHealthBonusFlare : ZH2DoomItemLensFlare
+{
+    Scale .5
+    Alpha .2
+
+    States
+    {
+        Spawn:
+            LFLR B 1 NoDelay Bright
+            stop
+    }
+}
+
+actor ZH2DoomHealthBonusHealth : Health
+{
+    inventory.Amount 1
+    inventory.MaxAmount 200
+}

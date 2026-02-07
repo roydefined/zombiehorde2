@@ -8,32 +8,60 @@
 
 strict namespace Power
 {
-    internal int GetPowerSize() { return ZH2Game::PersistingGameContext.PowerCollection.Size; }
-
-    internal void GivePower(int powerIndex) { GivePlayerPower(PlayerNumber(), powerIndex); }
-    internal void GivePlayerPower(int id, int powerIndex) { SetPlayerPowerTics(id, powerIndex, BCSUtils::INT_MAX); }
-
-    internal void TakePower(int powerIndex) { TakePlayerPower(PlayerNumber(), powerIndex); }
-    internal void TakePlayerPower(int id, int powerIndex)
+    internal void Unload()
     {
-        BCSUtils::SetActorInventory(Identity::GetTid(id), GetItemName(powerIndex), 0);
-        RecalculatePlayerPowers(id);
+        // We must unset the overridden powers or they persist to the next map (because it's part of the persisting data).
+        // We could check if everything exists, but by default these values should always be 0.0 anyway.
+        for (int i = 0; i < GetPowerSize(); ++i)
+        {
+            for (int j = 0; j < MAX_POWER_TYPES; ++j)
+                SetPowerOverrideFactorValue(i, j, 0.0);
+        }
     }
 
-    internal void AddPowerTics(int powerIndex, int tics) { AddPlayerPowerTics(PlayerNumber(), powerIndex, tics); }
-    internal void AddPlayerPowerTics(int id, int powerIndex, int tics)
-	{
-        int ticsLeft = GetPlayerPowerTicsLeft(id, powerIndex);
-        SetPlayerPowerTics(id, powerIndex, ticsLeft + tics);
-	}
+    internal int GetPowerSize() { return ZH2Game::PersistingGameContext.PowerCollection.Size; }
 
-    internal void SetPowerTics(int powerIndex, int tics) { SetPlayerPowerTics(PlayerNumber(), powerIndex, tics); }
-    internal void SetPlayerPowerTics(int id, int powerIndex, int tics)
-	{
+    internal void GivePower(int powerIndex, bool recalculatePowers = true) { GivePlayerPower(PlayerNumber(), powerIndex, recalculatePowers); }
+    internal void GivePlayerPower(int id, int powerIndex, bool recalculatePowers = true) { SetPlayerPowerTics(id, powerIndex, BCSUtils::INT_MAX, recalculatePowers); }
+
+    internal void TakePower(int powerIndex, bool recalculatePowers = true) { TakePlayerPower(PlayerNumber(), powerIndex, recalculatePowers); }
+    internal void TakePlayerPower(int id, int powerIndex, bool recalculatePowers = true)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return;
+
+        BCSUtils::SetActorInventory(Identity::GetTid(id), GetItemName(powerIndex), 0);
+
+        if (recalculatePowers)
+            RecalculatePlayerPowers(id);
+    }
+
+    internal void AddPowerTics(int powerIndex, int tics, bool recalculatePowers = true) { AddPlayerPowerTics(PlayerNumber(), powerIndex, tics, recalculatePowers); }
+    internal void AddPlayerPowerTics(int id, int powerIndex, int tics, bool recalculatePowers = true)
+    {
+        int ticsLeft = GetPlayerPowerTicsLeft(id, powerIndex);
+        SetPlayerPowerTics(id, powerIndex, ticsLeft + tics, recalculatePowers);
+    }
+
+    internal void SetPowerTics(int powerIndex, int tics, bool recalculatePowers = true) { SetPlayerPowerTics(PlayerNumber(), powerIndex, tics, recalculatePowers); }
+    internal void SetPlayerPowerTics(int id, int powerIndex, int tics, bool recalculatePowers = true)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return;
+
+        // Never set powers when the round ended.
+        if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
+        {
+            Logger::LogDebug(LOGSOURCE, "Ignore power \cd" + GetPowerName(powerIndex) + "\cj change for " + BCSUtils::PlayerName(id) + ". Round is over.");
+            return;
+        }
+
         PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
 
         // Min / Max tics
-        tics = BCSUtils::Clamp(tics, 0, context.MaxTics);
+        // Max tics default to being infinite if not set.
+        int maxTics = context.MaxTics == 0 ? BCSUtils::INT_MAX : context.MaxTics;
+        tics = BCSUtils::Clamp(tics, 0, maxTics);
 
         // Ensure we don't underflow or overflow the timestamp in the clamp.
         int timer = Utils::GetSynchronizedTimer();
@@ -41,53 +69,308 @@ strict namespace Power
 
         int timeStamp = timer + tics;
         BCSUtils::SetActorInventory(Identity::GetTid(id), GetItemName(powerIndex), timeStamp);
-        RecalculatePlayerPowers(id);
 
-        Logger::LogDebug(LOGSOURCE, "Power updated for player " + BCSUtils::PlayerName(id) + ". Power \cd" + GetPowerIndexAsString(powerIndex) + "\cj now has \cd" + str(tics) + " \cjtics left.");
-	}
-    
+        if (recalculatePowers)
+            RecalculatePlayerPowers(id);
+
+        Logger::LogDebug(LOGSOURCE, "Power updated for player " + BCSUtils::PlayerName(id) + ". Power \cd" + GetPowerName(powerIndex) + "\cj now has \cd" + str(tics) + " \cjtics left.");
+    }
+
     internal int GetPowerTicsLeft(int powerIndex) { return GetPlayerPowerTicsLeft(PlayerNumber(), powerIndex); }
     internal int GetPlayerPowerTicsLeft(int id, int powerIndex)
-	{
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return (raw)0;
+
         int timeStamp = CheckActorInventory(Identity::GetTid(id), GetItemName(powerIndex));
         int tics = BCSUtils::Max(timeStamp - Utils::GetSynchronizedTimer(), 0);
         return tics;
-	}
-    
+    }
+
     internal bool GetHasPower(int powerIndex) { return GetPowerTicsLeft(powerIndex) > 0; }
     internal bool GetPlayerHasPower(int id, int powerIndex)
-	{
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return (raw)0;
+
         // Note we don't use `GetPlayerPowerTicsLeft` here as this truly indicates if we have the power set
         // (and also makes it useful for checking for expired powers).
         return CheckActorInventory(Identity::GetTid(id), GetItemName(powerIndex)) > 0;
-	}
+    }
 
-    internal str GetPowerHudGraphic(int powerIndex) { return GetPlayerPowerHudGraphic(PlayerNumber(), powerIndex); }
-    internal str GetPlayerPowerHudGraphic(int id, int powerIndex)
-	{
+    internal str GetPowerHudGraphic(int powerIndex)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return (raw)0;
+
         PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
         return context.HudGraphic;
-	}
+    }
+
+    internal str GetPowerName(int powerIndex)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return (raw)0;
+
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        return context.Name;
+    }
+
+    internal int GetPowerMaxTics(int powerIndex)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return (raw)0;
+
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        return context.MaxTics;
+    }
+
+    internal fixed GetPowerDefaultFactorValue(int powerIndex, int factorIndex)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return (raw)0;
+
+        if (!ValidateFactorIndex(__FUNCTION__, factorIndex))
+            return (raw)0;
+
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        return context.DefaultFactors[factorIndex].Factor;
+    }
+
+    internal void SetPowerDefaultFactorValue(int powerIndex, int factorIndex, fixed factor)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return;
+
+        if (!ValidateFactorIndex(__FUNCTION__, factorIndex))
+            return;
+
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        context.DefaultFactors[factorIndex].Factor = factor;
+    }
+
+    internal bool GetPowerDefaultFactorDefined(int powerIndex, int factorIndex)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return (raw)0;
+
+        if (!ValidateFactorIndex(__FUNCTION__, factorIndex))
+            return (raw)0;
+
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        return context.DefaultFactors[factorIndex].Defined;
+    }
+
+    internal void SetPowerDefaultFactorDefined(int powerIndex, int factorIndex, bool defined)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return;
+
+        if (!ValidateFactorIndex(__FUNCTION__, factorIndex))
+            return;
+
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        context.DefaultFactors[factorIndex].Defined = defined;
+    }
+
+    internal fixed GetPowerOverrideFactorValue(int powerIndex, int factorIndex)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return (raw)0;
+
+        if (!ValidateFactorIndex(__FUNCTION__, factorIndex))
+            return (raw)0;
+
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        return context.OverrideFactors[factorIndex].Factor;
+    }
+
+    internal void SetPowerOverrideFactorValue(int powerIndex, int factorIndex, fixed factor)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return;
+
+        if (!ValidateFactorIndex(__FUNCTION__, factorIndex))
+            return;
+
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        context.OverrideFactors[factorIndex].Factor = factor;
+    }
+
+    internal bool GetPowerOverrideFactorDefined(int powerIndex, int factorIndex)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return (raw)0;
+
+        if (!ValidateFactorIndex(__FUNCTION__, factorIndex))
+            return (raw)0;
+
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        return context.OverrideFactors[factorIndex].Defined;
+    }
+
+    internal void SetPowerOverrideFactorDefined(int powerIndex, int factorIndex, bool defined)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return;
+
+        if (!ValidateFactorIndex(__FUNCTION__, factorIndex))
+            return;
+
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+        context.OverrideFactors[factorIndex].Defined = defined;
+    }
+
+    // No setter for these. Use the override one instead.
+    internal fixed GetPowerFactorValue(int powerIndex, int factorIndex)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return (raw)0;
+
+        if (!ValidateFactorIndex(__FUNCTION__, factorIndex))
+            return (raw)0;
+
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+
+        // If we have overridden the factor, return that one instead.
+        return context.OverrideFactors[factorIndex].Defined
+            ? context.OverrideFactors[factorIndex].Factor
+            : context.DefaultFactors[factorIndex].Factor;
+    }
+
+    internal bool GetPowerFactorDefined(int powerIndex, int factorIndex)
+    {
+        if (!ValidatePowerIndex(__FUNCTION__, powerIndex))
+            return (raw)0;
+
+        if (!ValidateFactorIndex(__FUNCTION__, factorIndex))
+            return (raw)0;
+
+        PowerContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.PowerCollection.Collection[powerIndex];
+
+        // If we have overridden the factor, return that one instead.
+        return context.DefaultFactors[factorIndex].Defined
+            || context.OverrideFactors[factorIndex].Defined;
+    }
 
     internal str GetItemName(int index)
     {
         return BCSUtils::StrReplace(POWER_ACTOR_BASE, "{0}", str(index));
     }
 
-    internal str GetPowerIndexAsString(int powerIndex)
+    internal fixed GetCalculatedPowerFactor(int index)
+    {
+        return GetPlayerCalculatedPowerFactor(PlayerNumber(), index);
+    }
+
+    internal fixed GetPlayerCalculatedPowerFactor(int id, int index)
+    {
+        if (!ValidatePowerTypeIndex(__FUNCTION__, index))
+            return (raw)0;
+
+        return ZH2Game::GameContext.Players[id].CalculatedPowerFactors[index];
+    }
+
+    internal void SetCalculatedPowerFactor(int index, fixed factor)
+    {
+        SetPlayerCalculatedPowerFactor(PlayerNumber(), index, factor);
+    }
+
+    internal void SetPlayerCalculatedPowerFactor(int id, int index, fixed factor)
+    {
+        if (!ValidatePowerTypeIndex(__FUNCTION__, index))
+            return;
+
+        ZH2Game::GameContext.Players[id].CalculatedPowerFactors[index] = factor;
+    }
+
+    internal str GetPowerFactorName(int index)
     {
         static str collection[] = {
-            "fire burning", "acid burning", "sprinting",
-            "panicking", "caffeine", "zombie protection",
-            "human immunity", "human speed reward", "human weapon upgrade reward",
-            "zombie speed reward", "zombie jump reward", "zombie vulnerability reward" };
+            "Speed", "Jump", "Damage Factor", "Damage Multiplier", "Knockback"
+        };
 
-        // No known type, return custom and the index.
-        if (powerIndex < 0 || powerIndex >= lengthof(collection))
-            return "Custom (" + str(powerIndex) + ")";
+        // Should not happen. The index should always point to a known type.
+        if (index < 0 || index >= lengthof(collection))
+            return "Unknown (" + str(index) + ")";
 
-        return collection[powerIndex];
+        return collection[index];
+    }
+
+    internal fixed GetPlayerPowerFactorDefaultValue(int id, int index)
+    {
+        switch(index)
+        {
+            case Power::POWERTYPE_SPEED: return Player::GetPlayerIsZombie(id) ? 1.2 : 1.0;
+            case Power::POWERTYPE_JUMP: return 8.0;
+            default: return 1.0;
+        }
+    }
+
+    internal int PowerFactorToActorProperty(int index)
+    {
+        // NOTE: Everything not in here is handled in the code.
+        static int collection[] = {
+            APROP_SPEED, APROP_JUMPZ, //APROP_DAMAGEFACTOR, APROP_DAMAGEMULTIPLIER
+        };
+
+        // Should not happen. The index should always point to a known type.
+        // Otherwise it should be checked beforehand.
+        if (index < 0 || index >= lengthof(collection))
+            return 0;
+
+        return collection[index];
+    }
+
+    // Returns if a power can be set through actor properties.
+    // If it's false then the factor is applied through code.
+    internal bool PowerFactorHasActorProperty(int index)
+    {
+        static int collection[] = {
+            POWERTYPE_SPEED, POWERTYPE_JUMP
+        };
+
+        for (int i = 0; i < lengthof(collection); ++i)
+        {
+            if (collection[i] == index)
+                return true;
+        }
+
+        return false;
+    }
+
+    internal bool ValidatePowerIndex(str functionName, int value)
+    {
+        if (value < 0 || value >= MAX_POWERS)
+        {
+            Logger::LogError(LOGSOURCE, "Error at '" + functionName + "': power index " + str(value) + " is out of bounds (0 - " + str(MAX_POWERS - 1) + ")!");
+            return false;
+        }
+
+        return true;
+    }
+
+    internal bool ValidateFactorIndex(str functionName, int value)
+    {
+        if (value < 0 || value >= MAX_POWER_TYPES)
+        {
+            Logger::LogError(LOGSOURCE, "Error at '" + functionName + "': factor index " + str(value) + " is out of bounds (0 - " + str(MAX_POWER_TYPES - 1) + ")!");
+            return false;
+        }
+
+        return true;
+    }
+
+    internal bool ValidatePowerTypeIndex(str functionName, int value)
+    {
+        if (value < 0 || value >= MAX_POWER_TYPES)
+        {
+            Logger::LogError(LOGSOURCE, "Error at '" + functionName + "': power type index " + str(value) + " is out of bounds (0 - " + str(MAX_POWER_TYPES - 1) + ")!");
+            return false;
+        }
+
+        return true;
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE
