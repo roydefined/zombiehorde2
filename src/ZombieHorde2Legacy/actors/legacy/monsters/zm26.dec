@@ -5,12 +5,12 @@ actor ZH2LegacyZM24Blot : ZH2LegacyMonster 20501
     height 24
     mass 50
     speed 0
-    seesound "monster/blot/see"
+    //seesound "monster/blot/see"
     deathsound "monster/blot/death"
 
     obituary "%o was engulfed by a Blot."
     tag "Blot"
-    
+
     BloodType None
     MONSTER
     +STANDSTILL
@@ -24,13 +24,19 @@ actor ZH2LegacyZM24Blot : ZH2LegacyMonster 20501
     states
     {
         Spawn:
+            TNT1 A 10
+        Spawn.Rest:
             TNT1 A 10 A_Look
             loop
         See:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_gettargetiszombie") == true, "Spawn")
+            TNT1 A 0 A_PlaySound("monster/blot/see")
+        See.Rest:
             EYES A 1 bright A_Chase
             EYES AAAAA 0 A_SpawnItemEx ("ZH2LegacyZM24BlotSmoke", -2, random (0, -8), random (-4, 4), 0, random (-1, 1), random (-1, 1), 0, 160)
             loop
         Missile:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_gettargetiszombie") == true, "Spawn")
             EYES A 1 bright A_FaceTarget
             TNT1 AAAAA 0 A_SpawnItemEx ("ZH2LegacyZM24BlotSmoke", -2, random (0, -8), random (-4, 4), 0, random (-1, 1), random (-1, 1), 0, 160)
             EYES A 1 bright ThrustThingZ (0, 12, 0, 0)
@@ -78,28 +84,28 @@ actor ZH2LegacyZM24BlotSmoke
             TNT1 A 0
             TNT1 A 0 A_Jump (256, "Blot1", "Blot2", "Blot3", "Blot4")
             Blot1:
-            BLOT A 2 
+            BLOT A 2
             BLOT B 2 A_SetTranslucent (0.4, 0)
             BLOT C 2 A_SetTranslucent (0.3, 0)
             BLOT D 2 A_SetTranslucent (0.2, 0)
             BLOT E 2 A_SetTranslucent (0.1, 0)
             stop
         Blot2:
-            BLOT F 2 
+            BLOT F 2
             BLOT G 2 A_SetTranslucent (0.4, 0)
             BLOT H 2 A_SetTranslucent (0.3, 0)
             BLOT I 2 A_SetTranslucent (0.2, 0)
             BLOT J 2 A_SetTranslucent (0.1, 0)
             stop
         Blot3:
-            BLOT K 2 
+            BLOT K 2
             BLOT L 2 A_SetTranslucent (0.4, 0)
             BLOT M 2 A_SetTranslucent (0.3, 0)
             BLOT N 2 A_SetTranslucent (0.2, 0)
             BLOT O 2 A_SetTranslucent (0.1, 0)
             stop
         Blot4:
-            BLOT P 2 
+            BLOT P 2
             BLOT Q 2 A_SetTranslucent (0.4, 0)
             BLOT R 2 A_SetTranslucent (0.3, 0)
             BLOT S 2 A_SetTranslucent (0.2, 0)
