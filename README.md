@@ -30,7 +30,7 @@ You have two options to pack and build Zombie Horde 2:
 
 Additional tools you may want:
 - Git with submodules support.
-- [Zandronum 3.2.1](https://zandronum.com/download) or later (provided in `tools/`).
+- [Zandronum 3.3](https://zandronum.com/download) (provided in `tools/`).
 - For editing maps: [Ultimate Doom Builder](https://ultimatedoombuilder.github.io/) (provided in `tools/`).
 - For editing maps and mod assets: [Slade 3](https://slade.mancubus.net/) (provided in `tools/`).
 - Python, for using the scripts provided in `scripts/`.
