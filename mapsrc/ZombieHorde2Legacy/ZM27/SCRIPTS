@@ -13,3 +13,24 @@ script 1 OPEN
     Sector_SetColor(2, 0, 48, 160);
     Sector_SetColor(68, 255, 202, 17);
 }
+
+script "jacks_room_open"
+{
+	static bool opened;
+	if (!opened && !CheckInventory("ZH2LegacyCaveKey"))
+	{
+		print(s:"This door appears to be locked.");
+		ActivatorSound("sound/locked1", 127);
+		terminate;
+	}
+
+	opened = true;
+
+	Door_Open(54, 35, 0);
+	TagWait(54);
+
+	delay(const: 35 * 5);
+
+	Door_Close(54, 35, 0);
+	TagWait(54);
+}
