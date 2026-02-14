@@ -19,6 +19,11 @@ script "ze04_open" open // Level setups
 	Sector_SetDamage(27, 10000, 20);
 }
 
+script "ze04_unload" Unloading
+{
+	SetPlayerProperty(1, false, PROP_TOTALLYFROZEN);
+}
+
 /* RESIST EVENT */
 script "ze04_internal_event_resistelapsed" (raw packetRaw)
 {
@@ -98,22 +103,17 @@ Script 7 (void)
 	Delay(35*4);
 	ChangeCamera(26, 1, 0);
 
-	for(int k = 0; k <= BCSUtils::MAX_PLAYERS; k++)
-	{
-		if(!Game::GetPlayerIsSafe(k))
-		{
-			int tid = Identity::GetTid(k);
-			TeleportOther(tid, 900 + k, 0);
-		}
-	}
+	SetPlayerProperty(1, true, PROP_TOTALLYFROZEN);
 
-	for(int l = 0; l <= BCSUtils::MAX_PLAYERS; l++)
+	for(int i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
 	{
-		if(!Game::GetPlayerIsSafe(l))
+		int tid = Identity::GetTid(i);
+
+		if(!Game::GetPlayerIsSafe(i) && BCSUtils::ActorIsAlive(tid))
 		{
-			tid = Identity::GetTid(k);
-			ThrustThing(64, 200, 0, tid);
+			TeleportOther(tid, 900 + i, 0);
 			ThrustThingZ(tid, 100, 0, 0);
+			ThrustThing(64, 200, 0, tid);
 		}
 	}
 
@@ -124,7 +124,9 @@ Script 7 (void)
 	Delay(35*2);
 	Game::KillUnsafePlayers();
 	Delay(35*5);
-	ChangeCamera(0, 1, 0); // Just in case
+
+	ChangeCamera(0, 1, 0);
+	SetPlayerProperty(1, false, PROP_TOTALLYFROZEN);
 }
 
 Script 8 (void)
