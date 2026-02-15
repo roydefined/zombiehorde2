@@ -298,24 +298,28 @@ Script 11 (void) // gtv
 
 Script 12 (void) // tv
 {
-    if(CheckInventory("ZH2LegacyCaveKey") == 1)
-    {
-        HudMessage(s:"no signal."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-        Plat_DownWaitUpStay(22, 35, 0);
-    }
-    else
+    if(!CheckInventory("ZH2LegacyCaveKey"))
     {
         HudMessage(s:"without batteries...."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-    }
+		terminate;
+	}
+
+    HudMessage(s:"no signal."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+	Plat_DownWaitUpStay(22, 35, 0);
 }
 
 script 13 (void)
 {
-    if(CheckInventory("ZH2LegacyBookKey"))
-        Plat_DownWaitUpStay(32, 35, 35);
+	static bool opened;
 
-    else
-        ActivatorSound("sound/locked1", 127);
+    if(!opened && !CheckInventory("ZH2LegacyBookKey"))
+	{
+		ActivatorSound("sound/locked1", 127);
+		terminate;
+	}
+
+    Plat_DownWaitUpStay(32, 35, 35);
+	opened = true;
 }
 
 Script 14 (void) // BOOGIE DOWN!!

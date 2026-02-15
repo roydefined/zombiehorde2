@@ -167,7 +167,7 @@ strict namespace ZH2Game
         }
 
         // Determine source info
-        int sourceId;
+        int sourceId = -1;
         bool sourceIsMonster;
         str sourceName;
         bool hasSource = !IsPointerEqual(AAPTR_DAMAGE_SOURCE, AAPTR_NULL);
@@ -308,8 +308,9 @@ strict namespace ZH2Game
                 case "Exit": Event::SendPlayerDied(targetId, DEATHTYPE_UNSAFE); return;
                 default:
                 {
-                    // Player killed by player
-                    if (sourceId != -1)
+                    // Player killed by player.
+                    // If we killed ourselves we don't want to use this.
+                    if (sourceId != -1 && sourceId != targetId)
                     {
                         // Additional info about the player to draw with the obituary.
                         // I have to send this data from the server as the client might no longer have it due to the death.

@@ -109,12 +109,12 @@ strict namespace Power
         }
     }
 
-    internal void ResetPowers()
+    internal void ResetPowers(bool forceRecalculate = true)
     {
-        ResetPlayerPowers(PlayerNumber());
+        ResetPlayerPowers(PlayerNumber(), forceRecalculate);
     }
 
-    internal void ResetPlayerPowers(int id)
+    internal void ResetPlayerPowers(int id, bool forceRecalculate = true)
     {
         // Track if we took a power from this player. If not, we do not want to recalculate.
         bool hasPower = false;
@@ -130,7 +130,7 @@ strict namespace Power
         }
 
         // Secondly recalculate the new properties so they reset properly, but only if they had a power.
-        if (hasPower)
+        if (hasPower || forceRecalculate)
             RecalculatePlayerPowers(id);
     }
 }
