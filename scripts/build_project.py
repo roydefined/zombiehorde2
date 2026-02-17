@@ -18,44 +18,44 @@ def main():
 
     logging.info("Build Zombie Horde 2")
 
-    # Copy ACSUtils artifacts over from the module into libsrc.
+    # Copy ACSUtils artifacts over from the module into lib.
     copy_file(paths["acsutils_dist"] / "bcsutils.bcs",
               paths["bcsutils_target"] / "bcsutils.acs")
 
     copy_file(paths["acsutils_dist"] / "cvarinfo.acsutils",
-              paths["libsrc"] / "cvarinfo.acsutils")
+              paths["lib"] / "cvarinfo.acsutils")
 
     copy_file(paths["acsutils_dist"] / "decorate.acsutils",
-              paths["libsrc"] / "decorate.acsutils")
+              paths["lib"] / "decorate.acsutils")
 
     logging.info("Compiling...")
 
     macro_lib = ["-D", "DEV"]
     macro_core = ["-D", "DEV", "-D", "DEV_PLAYERCAP"]
 
-    include_libsrc = ["-i", str(paths["libsrc_acs_source"])]
+    include_lib = ["-i", str(paths["lib_src"])]
     include_core = [
-        "-i", str(paths["libsrc_acs_source"]),
-        "-i", str(paths["libsrc_acs_source"] / "bcsutils")
+        "-i", str(paths["lib_src"]),
+        "-i", str(paths["lib_src"] / "bcsutils")
     ]
 
     # Build BCSUtils source.
     logging.info("[bcsutils]")
     run_cmd([
         str(bcc),
-        str(paths["libsrc_acs_source"] / "bcsutils.acs"),
-        str(paths["libsrc_acs"] / "bcsutils.o"),
+        str(paths["lib_src"] / "bcsutils.acs"),
+        str(paths["lib_acs"] / "bcsutils.o"),
     ])
 
-    # Build libsrc source.
-    logging.info("[libsrc]")
+    # Build lib source.
+    logging.info("[lib]")
     run_cmd(
         [str(bcc)]
-        + include_libsrc
+        + include_lib
         + macro_lib
         + [
-            str(paths["libsrc_acs_source"] / "zh2lib.acs"),
-            str(paths["libsrc_acs"] / "zh2lib.o")
+            str(paths["lib_src"] / "zh2lib.acs"),
+            str(paths["lib_acs"] / "zh2lib.o")
         ]
     )
 

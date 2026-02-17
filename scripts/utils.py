@@ -66,9 +66,9 @@ def get_paths():
         "bcsutils_target": root / "pk3" / "lib" / "acs_source" / "bcsutils",
 
         # Library
-        "libsrc": root / "pk3" / "lib",
-        "libsrc_acs_source": root / "pk3" / "lib" / "acs_source",
-        "libsrc_acs": root / "pk3" / "lib" / "acs",
+        "lib": root / "pk3" / "lib",
+        "lib_src": root / "pk3" / "lib" / "acs_source",
+        "lib_acs": root / "pk3" / "lib" / "acs",
 
         # Core
         "core_src": root / "pk3" / "ZombieHorde2" / "acs_source",
