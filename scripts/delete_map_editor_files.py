@@ -12,15 +12,15 @@ def main():
     setup_logging()
 
     root = get_root()
-    srcroot = root / "src"
+    pk3root = root / "pk3"
 
-    if not srcroot.exists():
-        raise SystemExit(f'[ERROR] Source directory "{srcroot}" does not exist.')
+    if not pk3root.exists():
+        raise SystemExit(f'[ERROR] Source directory "{pk3root}" does not exist.')
 
-    logging.info(f'Cleaning map editor files in "{srcroot}"...')
+    logging.info(f'Cleaning map editor files in "{pk3root}"...')
 
     # Loop all projects in the source.
-    for project_path in sorted(p for p in srcroot.iterdir() if p.is_dir()):
+    for project_path in sorted(p for p in pk3root.iterdir() if p.is_dir()):
         project_name = project_path.name
         mapdir = project_path / "maps"
 

@@ -9,7 +9,7 @@ def main():
     setup_logging()
 
     root = get_root()
-    srcroot = root / "src"
+    srcroot = root / "pk3"
 
     if not srcroot.exists():
         raise SystemExit(f'[ERROR] Source directory "{srcroot}" does not exist.')

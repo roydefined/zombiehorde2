@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from utils import setup_logging, get_root, run_cmd
+from utils import setup_logging, get_root, run_cmd, mod_to_map_folder
 
-# === Unpack maps from WAD files back into mapsrc/ ===
+# === Unpack maps from WAD files back into pk3/maps/ ===
 
 def safe_delete(path: Path):
     try:
@@ -16,19 +16,19 @@ def main():
 
     root = get_root()
     tool = root / "tools" / "Gdcc_x64" / "gdcc-ar-wad.exe"
-    srcroot = root / "src"
-    outroot = root / "mapsrc"
+    pk3root = root / "pk3"
+    outroot = root / "pk3" / "maps"
 
     if not tool.exists():
         raise SystemExit(f'[ERROR] gdcc-ar-wad.exe not found at "{tool}"')
 
-    if not srcroot.exists():
-        raise SystemExit(f'[ERROR] Source directory "{srcroot}" does not exist.')
+    if not pk3root.exists():
+        raise SystemExit(f'[ERROR] Source directory "{pk3root}" does not exist.')
 
-    logging.info(f'Searching for projects in "{srcroot}"...\n')
+    logging.info(f'Searching for projects in "{pk3root}"...\n')
 
     # Projects inside src/
-    for project_path in sorted(p for p in srcroot.iterdir() if p.is_dir()):
+    for project_path in sorted(p for p in pk3root.iterdir() if p.is_dir()):
         project_name = project_path.name
         mapdir = project_path / "maps"
 
@@ -38,7 +38,7 @@ def main():
 
         logging.info(f"[PROJECT] {project_name}")
 
-        outdir = outroot / project_name
+        outdir = outroot / mod_to_map_folder(project_name)
         outdir.mkdir(parents=True, exist_ok=True)
 
         had_wads = False
@@ -65,7 +65,7 @@ def main():
             else:
                 logging.info(f"  [OK] Extracted {wad_file.name}")
 
-            # Folder name inside mapsrc is based on wad name
+            # Folder name inside maps is based on wad name
             mapfolder = outdir / wad_file.stem
 
             # Remove ENDMAP

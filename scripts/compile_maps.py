@@ -12,23 +12,23 @@ def main():
 
     root = get_root()
     bcc = root / "tools" / "Zt-bcc_x86" / "zt-bcc.exe"
-    mapsrc = root / "mapsrc"
+    mapfolder = root / "pk3" / "maps"
 
     if not bcc.exists():
         raise SystemExit(f'[ERROR] BCC compiler not found at "{bcc}"')
 
-    if not mapsrc.exists():
-        raise SystemExit(f'[ERROR] Source directory "{mapsrc}" does not exist.')
+    if not mapfolder.exists():
+        raise SystemExit(f'[ERROR] Source directory "{mapfolder}" does not exist.')
 
-    logging.info(f'Compiling ACS scripts from "{mapsrc}"...\n')
+    logging.info(f'Compiling ACS scripts from "{mapfolder}"...\n')
 
     include_args = [
-        "-i", str(root / "libsrc"),
-        "-i", str(root / "src" / "ZombieHorde2")
+        "-i", str(root / "pk3" / "lib"),
+        "-i", str(root / "pk3" / "ZombieHorde2")
     ]
 
     # Iterate project folders
-    for project_path in sorted(p for p in mapsrc.iterdir() if p.is_dir()):
+    for project_path in sorted(p for p in mapfolder.iterdir() if p.is_dir()):
         project_name = project_path.name
         logging.info(f"[PROJECT] {project_name}")
 
