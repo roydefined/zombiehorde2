@@ -1,0 +1,53 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    // Called from the server to retrieve the incoming damage to clients.
+    script "zh2_internal_damagefeedback_receiveclient"(raw isKill) clientside
+    {
+        if (isKill)
+            SetKillFeedbackTics();
+        else
+            SetHitFeedbackTics();
+    }
+
+    internal void SetHitFeedbackTics()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        ZH2Game::GameContext.DamageFeedbackInfo.HitFeedbackTic = Timer();
+    }
+
+    internal void SetKillFeedbackTics()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        ZH2Game::GameContext.DamageFeedbackInfo.KillFeedbackTic = Timer();
+    }
+
+    internal int GetHitFeedbackTics()
+    {
+        return ZH2Game::GameContext.DamageFeedbackInfo.HitFeedbackTic;
+    }
+
+    internal int GetKillFeedbackTics()
+    {
+        return ZH2Game::GameContext.DamageFeedbackInfo.KillFeedbackTic;
+    }
+
+    internal int GetElapsedHitFeedbackTics()
+    {
+        int tics = GetHitFeedbackTics();
+        if (tics == 0)
+            return 0;
+        return Timer() - tics;
+    }
+
+    internal int GetElapsedKillFeedbackTics()
+    {
+        int tics = GetKillFeedbackTics();
+        if (tics == 0)
+            return 0;
+        return Timer() - tics;
+    }
+}
