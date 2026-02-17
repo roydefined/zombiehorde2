@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from utils import setup_logging, get_root, run_cmd
+from utils import setup_logging, get_root, run_cmd, map_to_mod_folder
 
-# === Pack maps from mapsrc/ into .wad files ===
+# === Pack maps from pk3/maps/ into .wad files ===
 # Supports optional --no-source (to exclude the map sources).
 
 def create_temp_file(path: Path) -> bool:
@@ -65,26 +65,26 @@ def main():
 
     root = get_root()
     tool = root / "tools" / "Gdcc_x64" / "gdcc-ar-wad.exe"
-    mapsrc = root / "mapsrc"
-    outroot = root / "src"
+    mapfolder = root / "pk3" / "maps"
+    outroot = root / "pk3"
 
     if not tool.exists():
         raise SystemExit(f'[ERROR] gdcc-ar-wad.exe not found at "{tool}"')
 
-    if not mapsrc.exists():
-        raise SystemExit(f'[ERROR] Source directory "{mapsrc}" does not exist.')
+    if not mapfolder.exists():
+        raise SystemExit(f'[ERROR] Source directory "{mapfolder}" does not exist.')
 
     # Compile maps first
     logging.info("Compiling maps...\n")
     run_cmd(["python", str(root / "scripts" / "compile_maps.py")])
     logging.info("")
 
-    logging.info(f'Packing projects from "{mapsrc}"...')
+    logging.info(f'Packing projects from "{mapfolder}"...')
 
     # Iterate project folders
-    for project_path in sorted(p for p in mapsrc.iterdir() if p.is_dir()):
+    for project_path in sorted(p for p in mapfolder.iterdir() if p.is_dir()):
         project_name = project_path.name
-        outdir = outroot / project_name / "maps"
+        outdir = outroot / map_to_mod_folder(project_name) / "maps"
         outdir.mkdir(parents=True, exist_ok=True)
 
         logging.info(f"[PROJECT] {project_name}")

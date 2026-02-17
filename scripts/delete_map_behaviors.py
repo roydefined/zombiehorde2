@@ -4,22 +4,22 @@ from pathlib import Path
 from utils import setup_logging, get_root
 
 # === Remove BEHAVIOR lumps ===
-# This script removes all compiled BEHAVIOR lumps from every map under `mapsrc/`.
+# This script removes all compiled BEHAVIOR lumps from every map under `pk3/maps/`.
 
 def main():
     setup_logging()
 
     root = get_root()
-    mapsrc = root / "mapsrc"
+    mapfolder = root / "pk3" / "maps"
 
-    if not mapsrc.exists():
-        raise SystemExit(f'[ERROR] Source directory "{mapsrc}" does not exist.')
+    if not mapfolder.exists():
+        raise SystemExit(f'[ERROR] Source directory "{mapfolder}" does not exist.')
 
-    logging.info(f'Cleaning BEHAVIOR lumps from "{mapsrc}"...')
+    logging.info(f'Cleaning BEHAVIOR lumps from "{mapfolder}"...')
     logging.info("")
 
     # Iterate project folders
-    for project_path in sorted(p for p in mapsrc.iterdir() if p.is_dir()):
+    for project_path in sorted(p for p in mapfolder.iterdir() if p.is_dir()):
         project_name = project_path.name
         logging.info(f"[PROJECT] {project_name}")
 
