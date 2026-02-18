@@ -1,0 +1,60 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawDamageCount()
+    {
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(1280.0, 960.0);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        PrepareHud(640.0, 480.0, false);
+
+        // Booleans are used to determine if we did hit once.
+        // This ensures we can use tic 0 for displaying feedback.
+        bool hasHitOnce = Player::GetHitFeedbackTics() > 0;
+        bool hasKillOnce = Player::GetKillFeedbackTics() > 0;
+
+        int elapsedHit = Player::GetElapsedHitFeedbackTics();
+        int elapsedKill = Player::GetElapsedKillFeedbackTics();
+
+        // TODO: replace with configurable length.
+        int shownDamageTics = 60;
+        int shownKillTics = 100;
+
+        fixed y = 20.0;
+
+        int damageTicsLeft = BCSUtils::Max(0, shownDamageTics - elapsedHit);
+        if (hasHitOnce && damageTicsLeft > 0)
+        {
+            fixed alpha = CalculateFeedbackAlpha(damageTicsLeft);
+            fixed scale = CalculateFeedbackPulseScale(elapsedHit);
+            int damageCount = Player::GetDamageCount();
+
+            BCSUtils::HudSetAlpha(alpha);
+            BCSUtils::HudSetScale(scale);
+
+            HudSetPointInternal(0.0, y);
+            BCSUtils::HudDrawText(--_drawnHudId, str(damageCount));
+
+            y += 10.0;
+        }
+
+        int killTicsLeft = BCSUtils::Max(0, shownKillTics - elapsedKill);
+        if (hasKillOnce && killTicsLeft > 0)
+        {
+            fixed alpha = CalculateFeedbackAlpha(killTicsLeft);
+            fixed scale = CalculateFeedbackPulseScale(elapsedKill);
+            int killCount = Player::GetKillCount();
+
+            BCSUtils::HudSetAlpha(alpha);
+            BCSUtils::HudSetScale(scale);
+            BCSUtils::HudSetTextColor(CR_RED);
+
+            HudSetPointInternal(0.0, y);
+            BCSUtils::HudDrawText(--_drawnHudId, str(killCount) + " kill" + (killCount != 1 ? "s" : ""));
+        }
+    }
+}

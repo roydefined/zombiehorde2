@@ -3,11 +3,37 @@
 #endif
 
 #include "marker.acs"
+#include "counter.acs"
 
 strict namespace Hud
 {
     internal void DrawDamageFeedback()
     {
         DrawMarker();
+        DrawDamageCount();
+    }
+
+    // Gradual fadeout on the last 10 tics.
+    internal fixed CalculateFeedbackAlpha(int ticsLeft)
+    {
+        if (ticsLeft > 10)
+            return 1.0;
+
+        fixed t = fixed(ticsLeft) / 10.0;
+        return t;
+    }
+
+    // A small "bump" on the first draw of the counters.
+    internal fixed CalculateFeedbackPulseScale(int elapsed)
+    {
+        int pulseTics = 5;
+
+        if (elapsed < 0 || elapsed >= pulseTics)
+            return 1.0;
+
+        fixed t = fixed(pulseTics - elapsed) / fixed(pulseTics);
+        t = BCSUtils::Max(0, t);
+
+        return 1.0 + (0.25 * (t * t));
     }
 }
