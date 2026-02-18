@@ -17,17 +17,22 @@ strict namespace Hud
         bool hasHitOnce = Player::GetHitFeedbackTics() > 0;
         bool hasKillOnce = Player::GetKillFeedbackTics() > 0;
 
+        // Booleans indicate if the user configured the markers to show.
+        ZH2Game::DamageFeedbackMarkerShowTypeT markerShowType = ZH2Game::GetDamageFeedbackMarkerShowType();
+        bool showHitMarkers = markerShowType == ZH2Game::DAMAGEFEEDBACK_MARKER_SHOW_HITS || markerShowType == ZH2Game::DAMAGEFEEDBACK_MARKER_SHOW_BOTH;
+        bool showKillMarkers = markerShowType == ZH2Game::DAMAGEFEEDBACK_MARKER_SHOW_KILLS || markerShowType == ZH2Game::DAMAGEFEEDBACK_MARKER_SHOW_BOTH;
+
         // First draw hit, then kill.
         // Kill will be drawn over any hit graphics.
         int elapsedHit = Player::GetElapsedHitFeedbackTics();
         int elapsedKill = Player::GetElapsedKillFeedbackTics();
 
-        // TODO: replace with configurable length.
-        int shownHitTics = 10;
-        int shownKillTics = 35;
+        // These values indicate the max amount of tics the markers are shown for.
+        int shownHitTics = ZH2Game::GetDamageFeedbackHitMarkerShownTics();
+        int shownKillTics = ZH2Game::GetDamageFeedbackKillMarkerShownTics();
 
         int ticsLeft = BCSUtils::Max(0, shownHitTics - elapsedHit);
-        if (hasHitOnce && ticsLeft > 0)
+        if (showHitMarkers && hasHitOnce && ticsLeft > 0)
         {
             HudSetPointInternal();
             BCSUtils::HudSetAlpha(CalculateFeedbackAlpha(ticsLeft));
@@ -35,7 +40,7 @@ strict namespace Hud
         }
 
         ticsLeft = BCSUtils::Max(0, shownKillTics - elapsedKill);
-        if (hasKillOnce && ticsLeft > 0)
+        if (showKillMarkers && hasKillOnce && ticsLeft > 0)
         {
             HudSetPointInternal();
             BCSUtils::HudSetAlpha(CalculateFeedbackAlpha(ticsLeft));

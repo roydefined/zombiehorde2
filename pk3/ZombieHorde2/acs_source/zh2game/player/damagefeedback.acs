@@ -8,11 +8,14 @@ strict namespace Player
     // The script accepts the damage done to the actor, and wether or not it killed them.
     script "zh2_internal_damagefeedback_receiveclient"(raw damage, raw isKill) clientside
     {
+        // Don't set anything if globally disabled.
+        if (!ZH2Game::GetSvEnableDamageFeedback() || !ZH2Game::GetClEnableDamageFeedback())
+            terminate;
+
         if (isKill)
         {
-            // If the elapsed tics exceeded the shown tics, we reset it.
-            // TODO: replace with configurable length.
-            int shownKillTics = 100;
+            // If the elapsed tics exceeded the shown tics, we reset the counter.
+            int shownKillTics = ZH2Game::GetDamageFeedbackKillCounterShownTics();
             int killCount = GetElapsedKillFeedbackTics() > shownKillTics
                 ? 1 : GetKillCount() + 1;
 
@@ -22,9 +25,8 @@ strict namespace Player
         else
         {
 
-            // If the elapsed tics exceeded the shown tics, we reset it.
-            // TODO: replace with configurable length.
-            int shownDamageTics = 60;
+            // If the elapsed tics exceeded the shown tics, we reset counter.
+            int shownDamageTics = ZH2Game::GetDamageFeedbackDamageCounterShownTics();
             int damageCount = GetElapsedHitFeedbackTics() > shownDamageTics
                 ? damage : GetDamageCount() + damage;
 

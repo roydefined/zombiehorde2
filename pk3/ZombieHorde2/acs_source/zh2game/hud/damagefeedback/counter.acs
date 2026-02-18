@@ -17,17 +17,22 @@ strict namespace Hud
         bool hasHitOnce = Player::GetHitFeedbackTics() > 0;
         bool hasKillOnce = Player::GetKillFeedbackTics() > 0;
 
+        // Booleans indicate if the user configured the counters to show.
+        ZH2Game::DamageFeedbackCounterShowTypeT counterShowType = ZH2Game::GetDamageFeedbackCounterShowType();
+        bool showDamageCounters = counterShowType == ZH2Game::DAMAGEFEEDBACK_COUNTER_SHOW_DAMAGE || counterShowType == ZH2Game::DAMAGEFEEDBACK_COUNTER_SHOW_BOTH;
+        bool showKillCounters = counterShowType == ZH2Game::DAMAGEFEEDBACK_COUNTER_SHOW_KILLS || counterShowType == ZH2Game::DAMAGEFEEDBACK_COUNTER_SHOW_BOTH;
+
         int elapsedHit = Player::GetElapsedHitFeedbackTics();
         int elapsedKill = Player::GetElapsedKillFeedbackTics();
 
-        // TODO: replace with configurable length.
-        int shownDamageTics = 60;
-        int shownKillTics = 100;
+        // These values indicate the max amount of tics the counters are shown for.
+        int shownDamageTics = ZH2Game::GetDamageFeedbackDamageCounterShownTics();
+        int shownKillTics = ZH2Game::GetDamageFeedbackKillCounterShownTics();
 
         fixed y = 20.0;
 
         int damageTicsLeft = BCSUtils::Max(0, shownDamageTics - elapsedHit);
-        if (hasHitOnce && damageTicsLeft > 0)
+        if (showDamageCounters && hasHitOnce && damageTicsLeft > 0)
         {
             fixed alpha = CalculateFeedbackAlpha(damageTicsLeft);
             fixed scale = CalculateFeedbackPulseScale(elapsedHit);
@@ -43,7 +48,7 @@ strict namespace Hud
         }
 
         int killTicsLeft = BCSUtils::Max(0, shownKillTics - elapsedKill);
-        if (hasKillOnce && killTicsLeft > 0)
+        if (showKillCounters && hasKillOnce && killTicsLeft > 0)
         {
             fixed alpha = CalculateFeedbackAlpha(killTicsLeft);
             fixed scale = CalculateFeedbackPulseScale(elapsedKill);
