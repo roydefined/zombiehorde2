@@ -14,16 +14,16 @@ strict namespace Hud
 
         // Booleans are used to determine if we did hit once.
         // This ensures we can use tic 0 for displaying feedback.
-        bool hasHitOnce = Player::GetHitFeedbackTics() > 0;
-        bool hasKillOnce = Player::GetKillFeedbackTics() > 0;
+        bool hasHitOnce = DamageFeedback::GetHitFeedbackTics() > 0;
+        bool hasKillOnce = DamageFeedback::GetKillFeedbackTics() > 0;
 
         // Booleans indicate if the user configured the counters to show.
         ZH2Game::DamageFeedbackCounterShowTypeT counterShowType = ZH2Game::GetDamageFeedbackCounterShowType();
         bool showDamageCounters = counterShowType == ZH2Game::DAMAGEFEEDBACK_COUNTER_SHOW_DAMAGE || counterShowType == ZH2Game::DAMAGEFEEDBACK_COUNTER_SHOW_BOTH;
         bool showKillCounters = counterShowType == ZH2Game::DAMAGEFEEDBACK_COUNTER_SHOW_KILLS || counterShowType == ZH2Game::DAMAGEFEEDBACK_COUNTER_SHOW_BOTH;
 
-        int elapsedHit = Player::GetElapsedHitFeedbackTics();
-        int elapsedKill = Player::GetElapsedKillFeedbackTics();
+        int elapsedHit = DamageFeedback::GetElapsedHitFeedbackTics();
+        int elapsedKill = DamageFeedback::GetElapsedKillFeedbackTics();
 
         // These values indicate the max amount of tics the counters are shown for.
         int shownDamageTics = ZH2Game::GetDamageFeedbackDamageCounterShownTics();
@@ -36,7 +36,7 @@ strict namespace Hud
         {
             fixed alpha = CalculateFeedbackAlpha(damageTicsLeft);
             fixed scale = CalculateFeedbackPulseScale(elapsedHit);
-            int damageCount = Player::GetDamageCount();
+            int damageCount = DamageFeedback::GetDamageCount();
 
             BCSUtils::HudSetAlpha(alpha);
             BCSUtils::HudSetScale(scale);
@@ -52,7 +52,7 @@ strict namespace Hud
         {
             fixed alpha = CalculateFeedbackAlpha(killTicsLeft);
             fixed scale = CalculateFeedbackPulseScale(elapsedKill);
-            int killCount = Player::GetKillCount();
+            int killCount = DamageFeedback::GetKillCount();
 
             BCSUtils::HudSetAlpha(alpha);
             BCSUtils::HudSetScale(scale);
