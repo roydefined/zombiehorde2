@@ -1,0 +1,97 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace DamageFeedback
+{
+    internal void UpdateDamageNumbers()
+    {
+        for (int i = 0; i < MAX_DAMAGE_NUMBERS; ++i)
+        {
+            DamageFeedbackNumberInfoT& numberInfo = GetDamageNumberInfo(i);
+            if (!numberInfo.Set)
+                continue;
+
+            // Warp each digit actor to the master actor.
+            for (int j = 0; j < numberInfo.NumberCount; ++j)
+            {
+                int digitTid = numberInfo.Tid + 1 + j;
+
+                SetActivator(digitTid);
+                Warp(numberInfo.Tid, 0.0, 0.0, 0.0, 0.0, 0);
+            }
+        }
+
+        SetActivatorToPlayer(ConsolePlayerNumber());
+    }
+
+    internal void AddDamageNumberOnActor(int tid, int damage)
+    {
+        int value = damage;
+        if (value < 0)
+            value = -value;
+
+        int numberCount = 1;
+        int tmp = value;
+
+        // Let's assume we can't hit over 10 digits worth of damage for now.
+        while (tmp >= 10 && numberCount < 10)
+        {
+            tmp /= 10;
+            ++numberCount;
+        }
+
+        fixed x = GetActorX(tid) + Math::FRandom(-10.0, 10.0),
+              y = GetActorY(tid) + Math::FRandom(-10.0, 10.0),
+              z = GetActorZ(tid) + Math::FRandom( 56.0, 64.0);
+
+        int masterTid = UniqueTid();
+        SpawnForced("ZH2DamageNumberMaster", x, y, z, masterTid, 0);
+
+        for (int i = 0; i < numberCount; ++i)
+        {
+            int digitTid = masterTid + 1 + i;
+
+            SpawnForced("ZH2DamageNumber", x, y, z, digitTid, 0);
+
+            int div = 1;
+            int power = (numberCount - 1) - i;
+            while (power-- > 0)
+                div *= 10;
+
+            int digitNumber = (value / div) % 10;
+            SetThingSpecial(digitTid, 0, digitNumber);
+        }
+
+        SetActorVelocity(masterTid, 0.0, 0.0, 0.25, false, false);
+        SetNextDamageNumberInfo(masterTid, numberCount);
+    }
+
+    internal void SetNextDamageNumberInfo(int tid, int numberCount)
+    {
+        int index = GetDamageNumberIndex() + 1;
+        index %= MAX_DAMAGE_NUMBERS;
+        SetDamageNumberIndex(index);
+
+        DamageFeedbackNumberInfoT& numberInfo = GetDamageNumberInfo(index);
+        numberInfo.Set = true;
+        numberInfo.SpawnTic = Timer();
+        numberInfo.Tid = tid;
+        numberInfo.NumberCount = numberCount;
+    }
+
+    internal void SetDamageNumberIndex(int index)
+    {
+        ZH2Game::GameContext.DamageFeedbackInfo.DamageNumberIndex = index;
+    }
+
+    internal int GetDamageNumberIndex()
+    {
+        return ZH2Game::GameContext.DamageFeedbackInfo.DamageNumberIndex;
+    }
+
+    internal DamageFeedbackNumberInfoT& GetDamageNumberInfo(int index)
+    {
+        return ZH2Game::GameContext.DamageFeedbackInfo.DamageNumbers[index];
+    }
+}

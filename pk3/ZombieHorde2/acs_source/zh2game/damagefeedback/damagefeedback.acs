@@ -4,11 +4,18 @@
 
 #define LOGSOURCE "DamageFeedback"
 
+#include "damagenumbers.acs"
+
 strict namespace DamageFeedback
 {
+    internal void DamageFeedbackTicClient()
+    {
+        UpdateDamageNumbers();
+    }
+
     // Called from the server to retrieve the incoming damage to clients.
     // The script accepts the damage done to the actor, and wether or not it killed them.
-    script "zh2_internal_damagefeedback_receiveclient"(raw damage, raw isKill) clientside
+    script "zh2_internal_damagefeedback_receiveclient"(raw tid, raw damage, raw isKill) clientside
     {
         // Don't set anything if globally disabled.
         if (!ZH2Game::GetSvEnableDamageFeedback() || !ZH2Game::GetClEnableDamageFeedback())
@@ -34,6 +41,7 @@ strict namespace DamageFeedback
 
             SetHitFeedbackTics();
             SetDamageCount(damageCount);
+            AddDamageNumberOnActor(tid, damage);
         }
     }
 
