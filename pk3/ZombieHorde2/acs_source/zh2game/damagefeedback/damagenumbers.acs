@@ -4,6 +4,11 @@
 
 strict namespace DamageFeedback
 {
+    // Constants for the damage number palette translations
+    #define DAMAGE_NUMBER_PALETTE_WHITE_INDEX 50000
+    #define DAMAGE_NUMBER_PALETTE_YELLOW_INDEX 50001
+    #define DAMAGE_NUMBER_PALETTE_RED_INDEX 50002
+
     // Constant defines the spacing of numbers between eachother.
     #define DAMAGE_NUMBER_DIGIT_SPACING_BASE 8.0
 
@@ -22,6 +27,13 @@ strict namespace DamageFeedback
 
     #define DAMAGE_NUMBER_LIFETIME_TICS_MIN 18
     #define DAMAGE_NUMBER_LIFETIME_TICS_MAX 35 + 18
+
+    internal void InitializeDamageNumbersClient()
+    {
+        CreateTranslation(DAMAGE_NUMBER_PALETTE_WHITE_INDEX, 0:0=0:0, 87:87=4:4);
+        CreateTranslation(DAMAGE_NUMBER_PALETTE_YELLOW_INDEX, 0:0=0:0, 87:87=163:163);
+        CreateTranslation(DAMAGE_NUMBER_PALETTE_RED_INDEX, 0:0=0:0, 87:87=184:184);
+    }
 
     internal void UpdateDamageNumbers()
     {
@@ -92,6 +104,13 @@ strict namespace DamageFeedback
         int masterTid = UniqueTid();
         SpawnForced("ZH2DamageNumberMaster", x, y, z, masterTid, 0);
 
+        // The translation to provide to the numbers
+        int translationIndex = damage >= 250
+            ? DAMAGE_NUMBER_PALETTE_RED_INDEX
+            : damage >= 100
+                ? DAMAGE_NUMBER_PALETTE_YELLOW_INDEX
+                : DAMAGE_NUMBER_PALETTE_WHITE_INDEX;
+
         for (int i = 0; i < numberCount; ++i)
         {
             int digitTid = masterTid + 1 + i;
@@ -105,6 +124,7 @@ strict namespace DamageFeedback
 
             int digitNumber = (damage / div) % 10;
             SetThingSpecial(digitTid, 0, digitNumber);
+            Thing_SetTranslation(digitTid, translationIndex);
         }
 
         int cappedDamage = damage;
