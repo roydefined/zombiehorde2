@@ -5,11 +5,12 @@
 strict namespace DamageFeedback
 {
     // Constant defines the spacing of numbers between eachother.
-    #define DAMAGE_NUMBER_DIGIT_SPACING_BASE 10.0
+    #define DAMAGE_NUMBER_DIGIT_SPACING_BASE 8.0
 
-    // Constants define the general values to determine how gravity, velocity and scale is handled.
+    // Constants define the general values to determine how gravity, velocity, scale and lifetime is handled.
     // The cap is the highest number we assume before the value is using the max value of the constants below.
     #define DAMAGE_NUMBER_DAMAGE_CAP 300
+
     #define DAMAGE_NUMBER_VELOCITY_Z_MIN 0.3
     #define DAMAGE_NUMBER_VELOCITY_Z_MAX 2.0
 
@@ -19,6 +20,9 @@ strict namespace DamageFeedback
     #define DAMAGE_NUMBER_SCALE_MIN 0.30
     #define DAMAGE_NUMBER_SCALE_MAX 0.60
 
+    #define DAMAGE_NUMBER_LIFETIME_TICS_MIN 18
+    #define DAMAGE_NUMBER_LIFETIME_TICS_MAX 35 + 18
+
     internal void UpdateDamageNumbers()
     {
         for (int i = 0; i < MAX_DAMAGE_NUMBERS; ++i)
@@ -26,6 +30,27 @@ strict namespace DamageFeedback
             DamageFeedbackNumberInfoT& numberInfo = GetDamageNumberInfo(i);
             if (!numberInfo.Set)
                 continue;
+
+            int lived = Timer() - numberInfo.SpawnTic;
+            int lifetime = DAMAGE_NUMBER_LIFETIME_TICS_MIN
+                + int(fixed(DAMAGE_NUMBER_LIFETIME_TICS_MAX - DAMAGE_NUMBER_LIFETIME_TICS_MIN) * numberInfo.Ratio);
+
+            // Has the lifetime expired?
+            if (lived >= lifetime)
+            {
+                RemoveDigit(numberInfo);
+                continue;
+            }
+
+            fixed fadeRatio = fixed(lived) / fixed(lifetime);
+            fixed alpha = 1.0 - fadeRatio;
+
+            // Apply alpha to all digits
+            for (int i = 0; i < numberInfo.NumberCount; ++i)
+            {
+                int digitTid = numberInfo.Tid + 1 + i;
+                SetActorProperty(digitTid, APROP_ALPHA, alpha);
+            }
 
             // Read the scale of the first digit and determine the spacing.
             fixed scale = GetActorProperty(numberInfo.Tid + 1, APROP_SCALEX);
@@ -104,20 +129,34 @@ strict namespace DamageFeedback
             SetActorProperty(digitTid, APROP_SCALEY, scale);
         }
 
-        SetNextDamageNumberInfo(masterTid, numberCount);
+        SetNextDamageNumberInfo(masterTid, numberCount, ratio);
     }
 
-    internal void SetNextDamageNumberInfo(int tid, int numberCount)
+    internal void SetNextDamageNumberInfo(int tid, int numberCount, fixed ratio)
     {
         int index = GetDamageNumberIndex() + 1;
         index %= MAX_DAMAGE_NUMBERS;
         SetDamageNumberIndex(index);
 
         DamageFeedbackNumberInfoT& numberInfo = GetDamageNumberInfo(index);
+
+        // Remove an existing damage number from this slot to overwrite.
+        if (numberInfo.Set)
+            RemoveDigit(numberInfo);
+
         numberInfo.Set = true;
         numberInfo.SpawnTic = Timer();
         numberInfo.Tid = tid;
         numberInfo.NumberCount = numberCount;
+        numberInfo.Ratio = ratio;
+    }
+
+    internal void RemoveDigit(DamageFeedbackNumberInfoT& numberInfo)
+    {
+        Thing_Remove(numberInfo.Tid);
+        for (int i = 0; i < numberInfo.NumberCount; ++i)
+            Thing_Remove(numberInfo.Tid + 1 + i);
+        numberInfo.Set = false;
     }
 
     internal void SetDamageNumberIndex(int index)
