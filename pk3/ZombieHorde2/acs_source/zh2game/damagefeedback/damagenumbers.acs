@@ -4,6 +4,21 @@
 
 strict namespace DamageFeedback
 {
+    // Constant defines the spacing of numbers between eachother.
+    #define DAMAGE_NUMBER_DIGIT_SPACING_BASE 10.0
+
+    // Constants define the general values to determine how gravity, velocity and scale is handled.
+    // The cap is the highest number we assume before the value is using the max value of the constants below.
+    #define DAMAGE_NUMBER_DAMAGE_CAP 300
+    #define DAMAGE_NUMBER_VELOCITY_Z_MIN 0.3
+    #define DAMAGE_NUMBER_VELOCITY_Z_MAX 2.0
+
+    #define DAMAGE_NUMBER_GRAVITY_MIN 0.02
+    #define DAMAGE_NUMBER_GRAVITY_MAX 0.08
+
+    #define DAMAGE_NUMBER_SCALE_MIN 0.30
+    #define DAMAGE_NUMBER_SCALE_MAX 0.60
+
     internal void UpdateDamageNumbers()
     {
         for (int i = 0; i < MAX_DAMAGE_NUMBERS; ++i)
@@ -12,13 +27,21 @@ strict namespace DamageFeedback
             if (!numberInfo.Set)
                 continue;
 
-            // Warp each digit actor to the master actor.
+            // Read the scale of the first digit and determine the spacing.
+            fixed scale = GetActorProperty(numberInfo.Tid + 1, APROP_SCALEX);
+            fixed spacing = DAMAGE_NUMBER_DIGIT_SPACING_BASE * scale;
+
+            // Position the numbers in a way so they will always be centered relative to the master actor.
+            fixed baseY = (fixed(numberInfo.NumberCount - 1) * spacing) / 2.0;
+
             for (int j = 0; j < numberInfo.NumberCount; ++j)
             {
                 int digitTid = numberInfo.Tid + 1 + j;
 
+                fixed offsetY = baseY - (fixed(j) * spacing);
+
                 SetActivator(digitTid);
-                Warp(numberInfo.Tid, 0.0, 0.0, 0.0, 0.0, 0);
+                Warp(numberInfo.Tid, 0.0, offsetY, 0.0, 0.0, WARPF_NOCHECKPOSITION | WARPF_STOP);
             }
         }
 
@@ -27,12 +50,8 @@ strict namespace DamageFeedback
 
     internal void AddDamageNumberOnActor(int tid, int damage)
     {
-        int value = damage;
-        if (value < 0)
-            value = -value;
-
         int numberCount = 1;
-        int tmp = value;
+        int tmp = damage;
 
         // Let's assume we can't hit over 10 digits worth of damage for now.
         while (tmp >= 10 && numberCount < 10)
@@ -59,11 +78,32 @@ strict namespace DamageFeedback
             while (power-- > 0)
                 div *= 10;
 
-            int digitNumber = (value / div) % 10;
+            int digitNumber = (damage / div) % 10;
             SetThingSpecial(digitTid, 0, digitNumber);
         }
 
-        SetActorVelocity(masterTid, 0.0, 0.0, 0.25, false, false);
+        int cappedDamage = damage;
+        if (cappedDamage > DAMAGE_NUMBER_DAMAGE_CAP)
+            cappedDamage = DAMAGE_NUMBER_DAMAGE_CAP;
+
+        fixed ratio = fixed(cappedDamage) / fixed(DAMAGE_NUMBER_DAMAGE_CAP);
+
+        fixed velZ = DAMAGE_NUMBER_VELOCITY_Z_MAX - (ratio * (DAMAGE_NUMBER_VELOCITY_Z_MAX - DAMAGE_NUMBER_VELOCITY_Z_MIN));
+        fixed grav = DAMAGE_NUMBER_GRAVITY_MAX - (ratio * (DAMAGE_NUMBER_GRAVITY_MAX - DAMAGE_NUMBER_GRAVITY_MIN));
+        fixed scale = DAMAGE_NUMBER_SCALE_MIN + (ratio * (DAMAGE_NUMBER_SCALE_MAX - DAMAGE_NUMBER_SCALE_MIN));
+
+        SetActorVelocity(masterTid, 0.0, 0.0, velZ, false, false);
+        SetActorProperty(masterTid, APROP_GRAVITY, grav);
+
+        // Apply scale to all digit actors
+        for (int i = 0; i < numberCount; ++i)
+        {
+            int digitTid = masterTid + 1 + i;
+
+            SetActorProperty(digitTid, APROP_SCALEX, scale);
+            SetActorProperty(digitTid, APROP_SCALEY, scale);
+        }
+
         SetNextDamageNumberInfo(masterTid, numberCount);
     }
 
