@@ -81,12 +81,26 @@ strict namespace DamageFeedback
         SetActivatorToPlayer(ConsolePlayerNumber());
     }
 
-    internal void AddDamageNumberOnActor(int tid, int damage)
+    internal void AddIndividualDamageNumberOnActor(int tid, int damage)
     {
-        // Configured not to show.
-        if (!ZH2Game::GetClEnableDamageFeedbackNumbers())
+        // Configured not to show, or we don't show individual numbers.
+        if (ZH2Game::GetClDamageFeedbackNumberShowType() != ZH2Game::DAMAGEFEEDBACK_NUMBER_SHOW_INDIVIDUAL)
             return;
 
+        AddDamageNumberOnActor(tid, damage);
+    }
+
+    internal void AddTotalDamageNumberOnActor(int tid, int damage)
+    {
+        // Configured not to show, or we don't show total numbers.
+        if (ZH2Game::GetClDamageFeedbackNumberShowType() != ZH2Game::DAMAGEFEEDBACK_NUMBER_SHOW_TOTAL)
+            return;
+
+        AddDamageNumberOnActor(tid, damage);
+    }
+
+    internal void AddDamageNumberOnActor(int tid, int damage)
+    {
         int numberCount = 1;
         int tmp = damage;
 

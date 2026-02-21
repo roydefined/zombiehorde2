@@ -1,0 +1,86 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Damage"
+
+strict namespace Damage
+{
+    internal void FlushClient()
+    {
+        int size = GetTotalDamageSize();
+        if (size == 0)
+            return;
+
+        for (int i = 0; i < size; ++i)
+        {
+            int tid = ZH2Game::GameContext.DamageTotalContext.Collection[i].Tid;
+            int damage = ZH2Game::GameContext.DamageTotalContext.Collection[i].Damage;
+
+            // Send total damage to the client.
+            // TODO: Handle this with an event. See #84
+            ACS_NamedExecuteWithResult("zh2_internal_damagetotal_receiveclient", tid, damage);
+        }
+
+        SetTotalDamageSize(0);
+    }
+
+    internal void SetTotalDamage(int tid, int damage)
+    {
+        int index = GetTotalDamageIndexByTid(tid);
+
+        // If the index is -1 we need to add a new index. But there does need to be space.
+        // Otherwise we'll just ignore it.
+        if (index == -1)
+        {
+            index = GetTotalDamageSize() + 1;
+
+            if (index == DAMAGETOTAL_CLIENT_MAX_SIZE)
+                return;
+
+            SetTotalDamageSize(index);
+            ZH2Game::GameContext.DamageTotalContext.Collection[index].Tid = tid;
+        }
+
+        ZH2Game::GameContext.DamageTotalContext.Collection[index].Damage = damage;
+    }
+
+    internal void AddTotalDamage(int tid, int damage)
+    {
+        SetTotalDamage(tid, GetTotalDamage(tid) + damage);
+    }
+
+    internal int GetTotalDamage(int tid)
+    {
+        int index = GetTotalDamageIndexByTid(tid);
+        if (index == -1)
+            return 0;
+
+        return ZH2Game::GameContext.DamageTotalContext.Collection[index].Damage;
+    }
+
+    internal void SetTotalDamageSize(int size)
+    {
+        ZH2Game::GameContext.DamageTotalContext.Size = size;
+    }
+
+    internal int GetTotalDamageSize()
+    {
+        return ZH2Game::GameContext.DamageTotalContext.Size;
+    }
+
+    internal int GetTotalDamageIndexByTid(int tid)
+    {
+        for (int i = 0; i < GetTotalDamageSize(); ++i)
+        {
+            if (ZH2Game::GameContext.DamageTotalContext.Collection[i].Tid != tid)
+                continue;
+
+            return i;
+        }
+
+        return -1;
+    }
+}
+
+#undef LOGSOURCE
