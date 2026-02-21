@@ -12,10 +12,6 @@ strict namespace DamageFeedback
     // Constant defines the spacing of numbers between eachother.
     #define DAMAGE_NUMBER_DIGIT_SPACING_BASE 8.0
 
-    // Constants define the general values to determine how gravity, velocity, scale and lifetime is handled.
-    // The cap is the highest number we assume before the value is using the max value of the constants below.
-    #define DAMAGE_NUMBER_DAMAGE_CAP 300
-
     #define DAMAGE_NUMBER_VELOCITY_Z_MIN 0.3
     #define DAMAGE_NUMBER_VELOCITY_Z_MAX 2.0
 
@@ -87,6 +83,10 @@ strict namespace DamageFeedback
 
     internal void AddDamageNumberOnActor(int tid, int damage)
     {
+        // Configured not to show.
+        if (!ZH2Game::GetClEnableDamageFeedbackNumbers())
+            return;
+
         int numberCount = 1;
         int tmp = damage;
 
@@ -104,10 +104,12 @@ strict namespace DamageFeedback
         int masterTid = UniqueTid();
         SpawnForced("ZH2DamageNumberMaster", x, y, z, masterTid, 0);
 
-        // The translation to provide to the numbers
-        int translationIndex = damage >= 250
+        // The translation to provide to the numbers.
+        int yellowColorThreshold = ZH2Game::GetDamageFeedbackYellowDamageNumberThreshold();
+        int redColorThreshold = ZH2Game::GetDamageFeedbackRedDamageNumberThreshold();
+        int translationIndex = damage >= redColorThreshold
             ? DAMAGE_NUMBER_PALETTE_RED_INDEX
-            : damage >= 100
+            : damage >= yellowColorThreshold
                 ? DAMAGE_NUMBER_PALETTE_YELLOW_INDEX
                 : DAMAGE_NUMBER_PALETTE_WHITE_INDEX;
 
@@ -127,11 +129,14 @@ strict namespace DamageFeedback
             Thing_SetTranslation(digitTid, translationIndex);
         }
 
-        int cappedDamage = damage;
-        if (cappedDamage > DAMAGE_NUMBER_DAMAGE_CAP)
-            cappedDamage = DAMAGE_NUMBER_DAMAGE_CAP;
+        // The cap is the highest number we assume before the value is using the max value of the constants below.
+        int capValue = ZH2Game::GetDamageFeedbackRatioDamageCap();
 
-        fixed ratio = fixed(cappedDamage) / fixed(DAMAGE_NUMBER_DAMAGE_CAP);
+        int cappedDamage = damage;
+        if (cappedDamage > capValue)
+            cappedDamage = capValue;
+
+        fixed ratio = fixed(cappedDamage) / fixed(capValue);
 
         fixed velZ = DAMAGE_NUMBER_VELOCITY_Z_MAX - (ratio * (DAMAGE_NUMBER_VELOCITY_Z_MAX - DAMAGE_NUMBER_VELOCITY_Z_MIN));
         fixed grav = DAMAGE_NUMBER_GRAVITY_MAX - (ratio * (DAMAGE_NUMBER_GRAVITY_MAX - DAMAGE_NUMBER_GRAVITY_MIN));
