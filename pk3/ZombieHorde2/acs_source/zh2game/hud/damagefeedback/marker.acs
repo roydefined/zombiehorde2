@@ -1,0 +1,50 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawMarker()
+    {
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(1280.0, 960.0);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        PrepareHud(640.0, 480.0, false);
+
+        // Booleans are used to determine if we did hit once.
+        // This ensures we can use tic 0 for displaying feedback.
+        bool hasHitOnce = DamageFeedback::GetHitFeedbackTics() > 0;
+        bool hasKillOnce = DamageFeedback::GetKillFeedbackTics() > 0;
+
+        // Booleans indicate if the user configured the markers to show.
+        ZH2Game::DamageFeedbackMarkerShowTypeT markerShowType = ZH2Game::GetDamageFeedbackMarkerShowType();
+        bool showHitMarkers = markerShowType == ZH2Game::DAMAGEFEEDBACK_MARKER_SHOW_HITS || markerShowType == ZH2Game::DAMAGEFEEDBACK_MARKER_SHOW_BOTH;
+        bool showKillMarkers = markerShowType == ZH2Game::DAMAGEFEEDBACK_MARKER_SHOW_KILLS || markerShowType == ZH2Game::DAMAGEFEEDBACK_MARKER_SHOW_BOTH;
+
+        // First draw hit, then kill.
+        // Kill will be drawn over any hit graphics.
+        int elapsedHit = DamageFeedback::GetElapsedHitFeedbackTics();
+        int elapsedKill = DamageFeedback::GetElapsedKillFeedbackTics();
+
+        // These values indicate the max amount of tics the markers are shown for.
+        int shownHitTics = ZH2Game::GetDamageFeedbackHitMarkerShownTics();
+        int shownKillTics = ZH2Game::GetDamageFeedbackKillMarkerShownTics();
+
+        int ticsLeft = BCSUtils::Max(0, shownHitTics - elapsedHit);
+        if (showHitMarkers && hasHitOnce && ticsLeft > 0)
+        {
+            HudSetPointInternal();
+            BCSUtils::HudSetAlpha(CalculateFeedbackAlpha(ticsLeft));
+            BCSUtils::HudDrawImage(--_drawnHudId, FEEDBACK_HIT_GRAPHIC);
+        }
+
+        ticsLeft = BCSUtils::Max(0, shownKillTics - elapsedKill);
+        if (showKillMarkers && hasKillOnce && ticsLeft > 0)
+        {
+            HudSetPointInternal();
+            BCSUtils::HudSetAlpha(CalculateFeedbackAlpha(ticsLeft));
+            BCSUtils::HudDrawImage(--_drawnHudId, FEEDBACK_KILL_GRAPHIC);
+        }
+    }
+}

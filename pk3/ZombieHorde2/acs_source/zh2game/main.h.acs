@@ -15,6 +15,8 @@
 #include "feature/feature.h.acs"
 #include "gameloop/gameloop.h.acs"
 #include "roundtimer/roundtimer.h.acs"
+#include "damage/damage.h.acs"
+#include "damagefeedback/damagefeedback.h.acs"
 #include "settings/settings.h.acs"
 #include "shuffle/shuffle.h.acs"
 #include "music/music.h.acs"
@@ -56,6 +58,31 @@ strict namespace ZH2Game
         DROPBEHAVIOUR_ONLY_REGULAR_ZOMBIES,
         DROPBEHAVIOUR_NEVER,
     };
+
+    internal enum DamageFeedbackMarkerShowTypeT : int
+    {
+        DAMAGEFEEDBACK_MARKER_SHOW_NONE,
+        DAMAGEFEEDBACK_MARKER_SHOW_HITS,
+        DAMAGEFEEDBACK_MARKER_SHOW_KILLS,
+        DAMAGEFEEDBACK_MARKER_SHOW_BOTH,
+    };
+
+    internal enum DamageFeedbackCounterShowTypeT : int
+    {
+        DAMAGEFEEDBACK_COUNTER_SHOW_NONE,
+        DAMAGEFEEDBACK_COUNTER_SHOW_DAMAGE,
+        DAMAGEFEEDBACK_COUNTER_SHOW_KILLS,
+        DAMAGEFEEDBACK_COUNTER_SHOW_BOTH,
+    };
+
+
+    internal enum DamageFeedbackNumberShowTypeT : int
+    {
+        DAMAGEFEEDBACK_NUMBER_SHOW_NONE,
+        DAMAGEFEEDBACK_NUMBER_SHOW_TOTAL,
+        DAMAGEFEEDBACK_NUMBER_SHOW_INDIVIDUAL,
+    };
+
 
     internal enum PlayerDeathTypeT : int
     {
@@ -221,6 +248,12 @@ strict namespace ZH2Game
         // Required in order to properly unset the state back to making allies opaque and hiding indicators when disabled.
         bool TranslucentAlliesEnabled;
         bool TeamIndicatorsEnabled;
+
+        // Clientside, tracks total damage done to an actor on a frame.
+        Damage::DamageTotalContextT DamageTotalContext;
+
+        // Clientside, holds info regarding damage feedback to inform the player.
+        DamageFeedback::DamageFeedbackInfoT DamageFeedbackInfo;
     };
 
     // General game info. Persisting between rounds.

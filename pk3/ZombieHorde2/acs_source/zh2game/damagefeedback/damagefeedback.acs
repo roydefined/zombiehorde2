@@ -1,0 +1,116 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "DamageFeedback"
+
+#include "damagenumbers.acs"
+
+strict namespace DamageFeedback
+{
+    internal void InitializeDamageFeedbackClient()
+    {
+        InitializeDamageNumbersClient();
+    }
+
+    internal void DamageFeedbackTicClient()
+    {
+        UpdateDamageNumbers();
+    }
+
+    internal void SetTidDamaged(int tid, int damage, bool isKill)
+    {
+        // Don't set anything if globally disabled.
+        if (!ZH2Game::GetSvEnableDamageFeedback() || !ZH2Game::GetClEnableDamageFeedback())
+            return;
+
+        if (isKill)
+        {
+            // If the elapsed tics exceeded the shown tics, we reset the counter.
+            int shownKillTics = ZH2Game::GetDamageFeedbackKillCounterShownTics();
+            int killCount = GetElapsedKillFeedbackTics() > shownKillTics
+                ? 1 : GetKillCount() + 1;
+
+            SetKillFeedbackTics();
+            SetKillCount(killCount);
+        }
+        else
+        {
+
+            // If the elapsed tics exceeded the shown tics, we reset counter.
+            int shownDamageTics = ZH2Game::GetDamageFeedbackDamageCounterShownTics();
+            int damageCount = GetElapsedHitFeedbackTics() > shownDamageTics
+                ? damage : GetDamageCount() + damage;
+
+            SetHitFeedbackTics();
+            SetDamageCount(damageCount);
+            AddIndividualDamageNumberOnActor(tid, damage);
+        }
+    }
+
+    internal void SetHitFeedbackTics()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        ZH2Game::GameContext.DamageFeedbackInfo.HitFeedbackTic = Timer();
+    }
+
+    internal int GetHitFeedbackTics()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION_RETURN(0);
+        return ZH2Game::GameContext.DamageFeedbackInfo.HitFeedbackTic;
+    }
+
+    internal void SetDamageCount(int count)
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        ZH2Game::GameContext.DamageFeedbackInfo.DamageCount = count;
+    }
+
+    internal int GetDamageCount()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION_RETURN(0);
+        return ZH2Game::GameContext.DamageFeedbackInfo.DamageCount;
+    }
+
+    internal void SetKillFeedbackTics()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        ZH2Game::GameContext.DamageFeedbackInfo.KillFeedbackTic = Timer();
+    }
+
+    internal int GetKillFeedbackTics()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION_RETURN(0);
+        return ZH2Game::GameContext.DamageFeedbackInfo.KillFeedbackTic;
+    }
+
+    internal void SetKillCount(int count)
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        ZH2Game::GameContext.DamageFeedbackInfo.KillCount = count;
+    }
+
+    internal int GetKillCount()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION_RETURN(0);
+        return ZH2Game::GameContext.DamageFeedbackInfo.KillCount;
+    }
+
+    internal int GetElapsedHitFeedbackTics()
+    {
+        int tics = GetHitFeedbackTics();
+        if (tics == 0)
+            return 0;
+        return Timer() - tics;
+    }
+
+    internal int GetElapsedKillFeedbackTics()
+    {
+        int tics = GetKillFeedbackTics();
+        if (tics == 0)
+            return 0;
+        return Timer() - tics;
+    }
+}
+
+#undef LOGSOURCE

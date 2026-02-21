@@ -1,0 +1,26 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Event
+{
+    // TODO: Make this a genuine event.
+    script "zh2_internal_damage_receiveclient"(raw tid, raw damage, raw isKill) clientside
+    {
+        Damage::AddTotalDamage(tid, damage, isKill);
+        DamageFeedback::SetTidDamaged(tid, damage, isKill);
+    }
+
+    // TODO: Make this a genuine event.
+    script "zh2_internal_damagetotal_receiveclient"(raw tid, raw damage, raw isKill) clientside
+    {
+        // Play a sound if enabled.
+        if (ZH2Game::GetClEnableDamageFeedbackSounds())
+        {
+            str sound = isKill ? "world/damagekill" : "world/damagehit";
+            AmbientSound(sound, 127);
+        }
+
+        DamageFeedback::AddTotalDamageNumberOnActor(tid, damage);
+    }
+}

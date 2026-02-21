@@ -149,10 +149,14 @@ strict namespace ZH2Game
     internal void OnActorDamaged(int damage, str damageType)
     {
         int targetId = PlayerNumber();
+        int targetTid = ActivatorTid();
         bool targetIsMonster = (ClassifyActor(0) & ACTOR_MONSTER) != 0;
 
         int targetHealth = BCSUtils::GetActorHealth(0);
         bool targetDied = targetHealth - damage <= 0;
+
+        // Extra variable that returns how much damage we actually dealth in case of death
+        int dealtDamage = targetDied ? targetHealth : damage;
 
         str targetName;
         if (targetId != -1)
@@ -288,6 +292,11 @@ strict namespace ZH2Game
             if (sourceId != -1 && targetId != -1 && weapon != (str)0)
                 Game::TriggerWeaponKickback(sourceId, targetId, damage, weapon);
         }
+
+        // Send damage feedback to the source if they're a player.
+        // TODO: Handle this with an event. See #84
+        if (sourceId != -1)
+            NamedExecuteClientScript("zh2_internal_damage_receiveclient", sourceId, targetTid, dealtDamage, int(targetDied));
 
         // Below is only for deaths of other players.
         if (!targetDied || targetIsMonster)
