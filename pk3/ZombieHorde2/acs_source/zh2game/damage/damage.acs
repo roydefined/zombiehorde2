@@ -14,18 +14,21 @@ strict namespace Damage
 
         for (int i = 0; i < size; ++i)
         {
-            int tid = ZH2Game::GameContext.DamageTotalContext.Collection[i].Tid;
-            int damage = ZH2Game::GameContext.DamageTotalContext.Collection[i].Damage;
+            DamageTotalItemContextT& context = ZH2Game::GameContext.DamageTotalContext.Collection[i];
 
             // Send total damage to the client.
             // TODO: Handle this with an event. See #84
-            ACS_NamedExecuteWithResult("zh2_internal_damagetotal_receiveclient", tid, damage);
+            ACS_NamedExecuteWithResult("zh2_internal_damagetotal_receiveclient", context.Tid, context.Damage, context.IsKill);
+
+            context.Tid = 0;
+            context.Damage = 0;
+            context.IsKill = false;
         }
 
         SetTotalDamageSize(0);
     }
 
-    internal void SetTotalDamage(int tid, int damage)
+    internal void SetTotalDamage(int tid, int damage, bool isKill)
     {
         int index = GetTotalDamageIndexByTid(tid);
 
@@ -43,11 +46,18 @@ strict namespace Damage
         }
 
         ZH2Game::GameContext.DamageTotalContext.Collection[index].Damage = damage;
+
+        // Just in case another piece of damage hits that didn't kill that frame, this ensures we do pass the correct information.
+        if (isKill)
+        {
+            printbold(s:"set ");
+            ZH2Game::GameContext.DamageTotalContext.Collection[index].IsKill = true;
+        }
     }
 
-    internal void AddTotalDamage(int tid, int damage)
+    internal void AddTotalDamage(int tid, int damage, bool isKill)
     {
-        SetTotalDamage(tid, GetTotalDamage(tid) + damage);
+        SetTotalDamage(tid, GetTotalDamage(tid) + damage, isKill);
     }
 
     internal int GetTotalDamage(int tid)
@@ -57,6 +67,15 @@ strict namespace Damage
             return 0;
 
         return ZH2Game::GameContext.DamageTotalContext.Collection[index].Damage;
+    }
+
+    internal bool GetDamageIsKill(int tid)
+    {
+        int index = GetTotalDamageIndexByTid(tid);
+        if (index == -1)
+            return false;
+
+        return ZH2Game::GameContext.DamageTotalContext.Collection[index].IsKill;
     }
 
     internal void SetTotalDamageSize(int size)
