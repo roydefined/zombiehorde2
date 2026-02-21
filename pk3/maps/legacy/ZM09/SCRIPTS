@@ -1,7 +1,7 @@
 /* ABANDONED MINES
 
     CREATED BY:IBM5155
-    
+
 ========================
 copyrights:you may use any script here on your mod IF you credit me on the start of the script.
 
@@ -78,7 +78,7 @@ script x OPEN CLIENTSIDE{
  41 - int x - White Face scirpt: Change the map + Ravishing vision
  42 - int x - Software Render lights
  43 - int spot - White Face third floor/mine trick
- 44 - VOID - White Face attack script 
+ 44 - VOID - White Face attack script
  45 - VOID - Third floor table room random events
  46 - VOID White Face Speed Set Script <!> NEW <!>
  47 - VOID - Rainfall script
@@ -122,10 +122,15 @@ script x OPEN CLIENTSIDE{
 -Modified:Dynamic lights inside the house.
 */
 
+#pragma raw include on
+#pragma raw define on
 
 #include "zcommon.acs"
-#import "ZMGAME.acs"
-#import "FUNCTION.ACS"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
 
 #define PLAYER_TID 600
 #define SPAWN_LAVA 0
@@ -138,6 +143,8 @@ script x OPEN CLIENTSIDE{
 #define ASPECT_16_10 1.6
 
 int user_ghoulinvisiblecount=0;
+int zm09_dev2=0;
+int debug_zm09;
 
 int used_tids[11]={49,50,51,52,59,62,63,66,114,116,122};
 bool debug_locker=0;
@@ -164,7 +171,7 @@ bool debug_locker=0;
 
 
  script 1 open{//MAIN SCRIPT
-    int getout=FALSE;    
+    int getout=FALSE;
     int i=0;
     i=GetCvar("x_zh_zm09_cn");
     SetCvar("x_zh_zm09_cn",i+1);
@@ -180,13 +187,13 @@ bool debug_locker=0;
     winery_key_spawn();
     acs_execute(42,0,0,0,0);
     while(getout==FALSE){
-        if(HumanCounter()==1 && zombieCounter()>=1){
-                getout=TRUE;  
+        if(Game::HumanCount()==1 && Game::ZombieCount()>=1){
+                getout=TRUE;
                 Music_Played=LAST_HUMAN_MUSIC;
                 play_zm09_music();
         }delay(35);
-    }while(Game_info_round_timer>=0)delay(35);
-    if(zombieCounter()==0){
+    }while(Round::GetGameIsPregameOrPlaying())delay(35);
+    if(Game::ZombieCount()==0){
         getout=GetCvar("x_zh_zm09_hw");
         SetCvar("x_zh_zm09_hw",getout+1);
     }
@@ -221,7 +228,7 @@ int teste=0;
 Script 14 (void) clientside{//Generic Locked Door Mensage/Sound
     if(ConsolePlayerNumber() != PlayerNumber()) Terminate;
     Print(s:"That door is locked.");
-    ActivatorSound("DRLOCKED", 127);
+    ActivatorSound("sound/locked1", 127);
     delay(15);
 }
 
@@ -234,7 +241,7 @@ script 17 (void){//Unlock Teleport Door
         tele_active++;
         SetFont("BIGFONT");
         HudMessageBold(s:"a door is now unlocked"; HUDMSG_FADEOUT, 998, CR_YELLOW, 0.5, 0.5, 5.5, 0.5);
-        AmbientSound("REVEAL",127);
+        AmbientSound("world/reveal1",127);
         door_open(64,25);
     }
 }
@@ -246,7 +253,7 @@ script 20 (int door){//Super Shotgun Little Door open
         door_open(146,30);
     else{
         door_open(69,13);
-        spawnspot("fakedoubleshotgun",68,0,0);
+        spawnspot("ZH2WeaponDoubleShotgunSpawn",68,0,0);
     }
 }
 
@@ -277,7 +284,7 @@ script 32 (int x) NET clientside
 
 script 38 (int x) clientside{//Miners dead description
     if(x==1)    print(s:"Ravick\nwa born in 08/04/1980\nDead in 06/03/2007\nUnknow death, his body was founded on the mine, with a mensage to not going back or others would die, the suspects are it was James spirit that killed he, with a hellish pet");
-    else if(x==2)    print(s:"735 miners died with unknow reasons on the mines and on the houses near mine, all the dead bodies were buried inside a little wood room, and it was sealed with land, noone could enter on it\nFor dangerous reasons, all the mines areas and houses were evacuated and abandoned to avoid more deaths");  
+    else if(x==2)    print(s:"735 miners died with unknow reasons on the mines and on the houses near mine, all the dead bodies were buried inside a little wood room, and it was sealed with land, noone could enter on it\nFor dangerous reasons, all the mines areas and houses were evacuated and abandoned to avoid more deaths");
     else    print(s:"James\nWas born in 06/05/1975\nDead in 06/03/1983\nSuicide\nchildren with mental problens");
 }
 
@@ -335,7 +342,7 @@ script 51 (void){//Piano script
         giveinventory("IMSCAREDACTIVE",1);
         piano_touched=0;
     }else{
-        
+
         if(i<=5) thingsound(150,"riff1",127);
         else thingsound(150,"riff2",127);
         piano_touched++;
@@ -346,7 +353,7 @@ script 51 (void){//Piano script
 Script 52 (void) clientside{//Generic Locked Door Mensage/Sound
     if(ConsolePlayerNumber() != PlayerNumber()) Terminate;
     Print(s:"Noone can enter on Igor's abandoned castle");
-    ActivatorSound("DRLOCKED", 127);
+    ActivatorSound("sound/locked1", 127);
     delay(15);
 }
 
@@ -659,4 +666,4 @@ function int abs (int x)
         return -x;
 
     return x;
-}  
+}
