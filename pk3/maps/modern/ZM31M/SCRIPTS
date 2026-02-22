@@ -141,6 +141,11 @@ Script "OnOpen" open
 		delay(1);
 	}
 
+	// Events
+	str scriptName = cond(random(0, 3) > 0, "Events_Night", "Events_Nuke");
+	if (!ACS_NamedExecute(scriptName, 0)) {
+		LogError(StrParam(s:"Failed to call script ", s:scriptName, s:"."));
+	}
 }
 
 Script "OnOpenClient" Open CLIENTSIDE
@@ -1140,6 +1145,8 @@ function void DrawFrostScreen(int x, int y, int id)
 		return;
 	}
 
+	SetFont(StrParam(s:"FROSTSC", d:graphicIndex));
+	HudMessage(s:"a"; HUDMSG_FADEINOUT | HUDMSG_ADDBLEND, 0, CR_UNTRANSLATED, 240.0, 240.0, 0.0, 0.5, 0.1);
 }
 
 function void DrawTemperatureGauge(int x, int y, int id)
@@ -1149,6 +1156,8 @@ function void DrawTemperatureGauge(int x, int y, int id)
 		return;
 	}
 
+	SetFont("TEMPICON");
+	HudMessage(s:"a"; HUDMSG_PLAIN | HUDMSG_ALPHA, id, CR_UNTRANSLATED, x, y, 0.03, 0.5);
 }
 
 function void DrawTemperatureValue(int amount, int x, int y, int id)
@@ -1206,6 +1215,90 @@ function bool GetIsWarm(int playerId)
 // This script handles the behavior of the temperature timer and ensures it increments/decrements.
 script "TemperatureLoop" (void)
 {
+	int nextTemperatureTic = Timer() + TEMPERATURE_TIC_NORMAL;
+	bool lastTicWarm = false;
+	bool firstDamageTic = false;
+
+	// Sync initial value. Also keep track of last value for synchronization.
+	int temperature = TEMPERATURE_MAX;
+	int lastTemperature = TEMPERATURE_MAX;
+	SynchronizeTemperature(temperature);
+
+	while(IsAlive())
+	{
+		// Game ended.
+		if (GetGameState() > statePlaying)
+		{
+			Delay(const: 1);
+			continue;
+		}
+
+		// Zombies are not affected by the temperature.
+		// Make sure the temperature is reset.
+		if (IsZombie()) {
+
+			if (temperature != TEMPERATURE_MAX) {
+				temperature = TEMPERATURE_MAX;
+				SynchronizeTemperature(temperature);
+			}
+
+			Delay(const: 1);
+			continue;
+		}
+
+		bool warm = GetIsWarm(PlayerNumber());
+		bool inWater = GetActorWaterLevel(ActivatorTID()) > 0;
+
+		// Hurt the player every 5 tics if they are at minimum temperature.
+		if (temperature == TEMPERATURE_MIN && !warm)
+		{
+			if (!firstDamageTic) {
+				firstDamageTic = true;
+				LogActivator("You are freezing to death! Seek shelter.");
+			}
+
+			if (Timer() % 5 == 0) {
+				Thing_damage2(ActivatorTID(), 1, "silent");
+			}
+
+			Delay(const: 1);
+			continue;
+		}
+
+		firstDamageTic = false;
+
+		// Check if the next tic passed.
+		if (nextTemperatureTic > Timer()) {
+			Delay(const: 1);
+			continue;
+		}
+
+		// If the player's situation changed and they changed inside state, ignore the changes in the next tic.
+		if (lastTicWarm == warm)
+		{
+			// If the player is inside, add temperature. Otherwise take it.
+			temperature += cond(warm, 1, -1);
+			temperature = clamp(temperature, TEMPERATURE_MIN, TEMPERATURE_MAX);
+
+			if (temperature != lastTemperature)
+			{
+				SynchronizeTemperature(temperature);
+			}
+		}
+
+		// Determine next tic to check based on the player's state.
+		// If outside at night, the next tic happens quicker.
+		int addedTics = cond(warm,
+			TEMPERATURE_TIC_WARM,
+			cond(inWater,
+				TEMPERATURE_TIC_WATER, cond(NightHasFallen(),
+					TEMPERATURE_TIC_NIGHT, TEMPERATURE_TIC_NORMAL)));
+
+		nextTemperatureTic = Timer() + addedTics;
+		lastTicWarm = warm;
+		lastTemperature = temperature;
+		Delay(const: 1);
+	}
 }
 
 function void SynchronizeTemperature(int amount)
