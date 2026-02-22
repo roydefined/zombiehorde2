@@ -1,9 +1,4 @@
 //ZM09 Code
-/*#library "zm09_cod"
-#include "zcommon.acs"
-#import "zm09_gen.acs"
-#import "modcvars.acs"
-*/
 int ibmnu_text[5]={"ibmnu1","ibmnu2","ibmnu3","ibmnu4","ibmnu1"};
 int lava_del_tids[8]={44,49,50,51,52,53,72,86};
 int tele_x,tele_y,tele_z,tele_active=0;
@@ -12,10 +7,14 @@ int secret[10];//a var to store the right code and the typed code and how right/
 //switch [ 4 - 7] store the typed code
 //switch [ 8    ] store how wrong the code is
 //switch [ 9    ] store how rigt the code is
+
 int selected;// ?
 int force_whiteface=false;
 
 #define SPAWN_LAVA_SOUND 1
+#define WRONG_CNT_INDEX 8
+#define RIGHT_CNT_INDEX 9
+#define ALL_DIGITS_INSERTED 4
 
 script 2 (int x){//Red door Switches
     test_secret(x);
@@ -23,7 +22,6 @@ script 2 (int x){//Red door Switches
 
 script 6 (void){//Lava Script
     int time_delay=0;
-	//print_developer(1,"Lava Script Started",0,0,0,0,0);
     tele_active=1;
     time_delay=random(0,30);
     if(time_delay>0) delay(35*time_delay);
@@ -32,6 +30,7 @@ script 6 (void){//Lava Script
     ThingSound(15,"IBMSND1",255);
     Radius_Quake(random(5,9), 12*35, 0, 16, 15);
     delay(255);
+    
     Ceiling_LowerAndCrush(4,7,6553);
     Ceiling_LowerAndCrush(10,7,65536);
     Ceiling_LowerAndCrush(94,4,65536);
@@ -39,10 +38,12 @@ script 6 (void){//Lava Script
     Ceiling_LowerAndCrush(18,7,65536);
     Ceiling_LowerAndCrush(124,7,65536);
     delay(350);
+    
     ceiling_raisebyvalue(9,10,335);
     ceiling_raisebyvalue(48,10,464);
     acs_execute(15,0,SPAWN_LAVA_SOUND,0,0);//text effect
     delay(350);
+    
     door_close(4,7);    door_close(10,7);    door_close(94,4);    door_close(14,7);    door_close(18,7);    door_close(124,7);
     acs_execute(17,0,0,0,0);
     time_delay=0;while(time_delay<8){
@@ -54,7 +55,8 @@ script 6 (void){//Lava Script
     Thing_ChangeTID(66, 500);
     Sector_SetDamage(7,MOD_LAVA,MOD_LAVA);
     delay(random(350,3500));
-    acs_execute(13,0,0,0,0);
+    
+    acs_execute(13,0,0,0,0); // Invoke Ravishing.
 }
 
 script 7 (void){//50% Right code door open on cave
@@ -65,7 +67,7 @@ script 7 (void){//50% Right code door open on cave
     floor_lowerbyvalue(16,25,64);
 }
 
-script 15 (int action) clientside{//Lava Script: Mensage/sound Effect
+script 15 (int action) clientside{//Lava Script: Message/sound Effect
     if(action==SPAWN_LAVA){
         int i=0;
         while(i<17){
@@ -80,32 +82,33 @@ script 15 (int action) clientside{//Lava Script: Mensage/sound Effect
         while(true){//Replace with ambientsound
             ThingSound(15,"ibmlava1",255);
             delay(67);
-}   }   }
+        }   
+    }   
+}
 
 
-script 27 open {//Switch Code display core
+script 27 open { //Cursor blink logic.
     int comm=0;
     int num_pos=0;
     int s_exit=FALSE;
     while(s_exit==FALSE){
-        if(comm==0 && secret[8]+secret[9]+82!=86) { // "_"
-            SetLineTexture(secret[8]+secret[9]+82,SIDE_FRONT,TEXTURE_MIDDLE,"ibmnu5"); 
+        if(comm==0 && secret[WRONG_CNT_INDEX] + secret[RIGHT_CNT_INDEX]!= ALL_DIGITS_INSERTED) { // "_"
+            SetLineTexture(secret[WRONG_CNT_INDEX] + secret[RIGHT_CNT_INDEX] + 82,SIDE_FRONT,TEXTURE_MIDDLE,"ibmnu5"); 
             comm++;
         }
-        else if (secret[8]+secret[9]+82!=86) {// " "
-            SetLineTexture(secret[8]+secret[9]+82,SIDE_FRONT,TEXTURE_MIDDLE,"ibmnu6"); 
+        else if (secret[WRONG_CNT_INDEX] + secret[RIGHT_CNT_INDEX] != ALL_DIGITS_INSERTED) {// " "
+            SetLineTexture(secret[WRONG_CNT_INDEX]+secret[RIGHT_CNT_INDEX]+82,SIDE_FRONT,TEXTURE_MIDDLE,"ibmnu6"); 
             comm--;
         }
         else{
             s_exit=true;
         }
-        num_pos=secret[secret[8]+secret[9]+3];//receive the actual number;
+        num_pos=secret[secret[WRONG_CNT_INDEX]+secret[RIGHT_CNT_INDEX]+3];//receive the actual number;
         if(num_pos!=0){
-            SetLineTexture(secret[8]+secret[9]+81,SIDE_FRONT,TEXTURE_MIDDLE,ibmnu_text[num_pos-1]);
+            SetLineTexture(secret[WRONG_CNT_INDEX]+secret[RIGHT_CNT_INDEX]+81,SIDE_FRONT,TEXTURE_MIDDLE,ibmnu_text[num_pos-1]);
         }delay(10);
     }
 }
-
 
 script 68 (int type_human) { //only actived when 100% right code, or 0% right code
  	if (type_human == false){
@@ -144,13 +147,60 @@ script 71 (int code, int scrpt_numb){
 	}
 }
 
-function void test_secret(int switchh){
+#define _100PCT_CORRECT 4
+#define _75PCT_CORRECT 3
+#define _50PCT_CORRECT 2
+#define _25PCT_CORRECT 1
+#define _0PCT_CORRECT 0
+
+function void test_secret (int switchh){
     int i=0;
     selected++;
     secret[selected+3]=switchh;
-    if(secret[selected+3]==secret[selected-1]) secret[9]++;
-    else secret[8]++;
-    if(secret[9]==2 && selected==4){
+    if(secret[selected+3]==secret[selected-1])
+    {
+        secret[RIGHT_CNT_INDEX]++;
+    }
+    else
+    {
+         secret[WRONG_CNT_INDEX]++;
+    }
+
+    if (selected != ALL_DIGITS_INSERTED)
+    {
+        return;
+    }
+
+    if(secret[RIGHT_CNT_INDEX] == _100PCT_CORRECT) {
+        //print_developer(1,"100% right code",0,0,0,0,0);
+        selected=GetCvar("x_zh_zm09_100");
+        SetCvar("x_zh_zm09_100",selected+1);
+        print_code();
+        selected=random(0,100);
+        if(selected<50){
+            SetFont("BIGFONT");
+            AmbientSound("achievement/unlocked",127);
+            HudMessageBold(s:"a  wall has been opened"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 5.5, 0.5);
+            AmbientSound("world/reveal1",127);
+            door_open(5,18);
+        }else if(selected<70){
+            SetFont("BIGFONT");
+            AmbientSound("achievement/unlocked",127);
+            AmbientSound("world/reveal1",127);
+            HudMessageBold(s:"ALL HUMANS GAINED ITENS!!!!"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 5.5, 0.5);
+            AmbientSound("world/reveal1",127);
+            Acs_execute(68,0,1,0,0);
+        }else{
+            SetFont("BIGFONT");
+            HudMessageBold(n:0,s:" Opened all the secret passages!!!"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 5.5, 0.5);
+            AmbientSound("world/reveal1",127);
+            AmbientSound("achievement/unlocked",127);
+            door_open(11,24);
+            door_open(62,24);
+            door_open(5,18);
+        }
+    }
+    else if(secret[RIGHT_CNT_INDEX] == _50PCT_CORRECT){
         selected=GetCvar("x_zh_zm09_50");
         SetCvar("x_zh_zm09_50",selected+1);
         selected=random(0,5);
@@ -169,41 +219,20 @@ function void test_secret(int switchh){
             door_open(11,24);
             ravishing_selector(100);
         }AmbientSound("world/reveal1",127);
-    }if(secret[9]==4){   // 100% right code
-			//print_developer(1,"100% right code",0,0,0,0,0);
-            selected=GetCvar("x_zh_zm09_100");
-            SetCvar("x_zh_zm09_100",selected+1);
-            print_code();
-            selected=random(0,100);
-            if(selected<50){
-                SetFont("BIGFONT");
-                AmbientSound("achievement/unlocked",127);
-                HudMessageBold(s:"a  wall has been opened"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 5.5, 0.5);
-                AmbientSound("world/reveal1",127);
-                door_open(5,18);
-            }else if(selected<70){
-                SetFont("BIGFONT");
-                AmbientSound("achievement/unlocked",127);
-                AmbientSound("world/reveal1",127);
-                HudMessageBold(s:"ALL HUMANS GAINED ITENS!!!!"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 5.5, 0.5);
-                AmbientSound("world/reveal1",127);
-                Acs_execute(68,0,1,0,0);
-            }else{
-                SetFont("BIGFONT");
-                HudMessageBold(n:0,s:" Opened all the secret passages!!!"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 5.5, 0.5);
-                AmbientSound("world/reveal1",127);
-                AmbientSound("achievement/unlocked",127);
-                door_open(11,24);
-                door_open(62,24);
-                door_open(5,18);
-            }
-    }if(secret[8]==4){// 0% right code
-		//print_developer(1,"0% right code",0,0,0,0,0);
+    }
+    else if(secret[RIGHT_CNT_INDEX]==_25PCT_CORRECT){
+		//print_developer(1,"25% right code",0,0,0,0,0);
+        selected=GetCvar("x_zh_zm09_25");
+        SetCvar("x_zh_zm09_25",selected+1);
+        print_code();
+        ravishing_selector(35);
+        Acs_ExecuteAlways(164, 0, PlayerNumber(), 0, 0);
+    }
+    else if(secret[RIGHT_CNT_INDEX] == _0PCT_CORRECT){
         selected=GetCvar("x_zh_zm09_0");
         SetCvar("x_zh_zm09_0",selected+1);
         selected=random(0,100);
-		print(d:force_whiteface);
-        if(selected>=90 || force_whiteface==true){//White Face script
+        if(selected >= 90 || force_whiteface==true){//White Face script
             acs_execute(35,0,0,0,0);
             acs_execute(4,0,0,0,0);
             SpawnSpot ("IMSCARED2BETA",25,100,24);
@@ -211,19 +240,17 @@ function void test_secret(int switchh){
             selected=GetCvar("x_zh_zm09_wf");
             SetCvar("x_zh_zm09_wf",selected+1);
         }else if(selected>=30){
-                i=GetCvar("x_zh_zm09_zp");
-                SetCvar("x_zh_zm09_zp",i+1);
-                Acs_execute(68,0);
-        }else ACS_Execute(6,0,0,0,0);
+            // Give Special Items to Zombies.
+            i=GetCvar("x_zh_zm09_zp");
+            SetCvar("x_zh_zm09_zp",i+1);
+            Acs_execute(68,0);
+        }
+        else 
+        {
+            // Spawn Lava + Ravishing.
+            ACS_Execute(6,0,0,0,0);
+        }
         print_code();
-    }
-    else if(secret[8]==3 && secret[9]==1){//25% right code
-		//print_developer(1,"25% right code",0,0,0,0,0);
-        selected=GetCvar("x_zh_zm09_25");
-        SetCvar("x_zh_zm09_25",selected+1);
-        print_code();
-        ravishing_selector(35);
-        Acs_ExecuteAlways(164, 0, PlayerNumber(), 0, 0);
     }
 }
 
@@ -252,31 +279,25 @@ function void print_code(void){
     HudMessageBold(n:0, s:" activated the code"; HUDMSG_FADEOUT, 997, CR_RED, 0.5, 0.5, 9.5, 0.5);
     HudMessageBold(s:"the right code is:",d:secret[0],d:secret[1],d:secret[2],d:secret[3]; HUDMSG_FADEOUT, 996, CR_RED, 0.5, 0.52, 9.5, 0.5);
     HudMessageBold(n:0, s:" code is:",d:secret[4],d:secret[5],d:secret[6],d:secret[7]; HUDMSG_FADEOUT, 995, CR_RED, 0.5, 0.54, 9.5, 0.5);
-    HudMessageBold(s:"the code is ",d:100-25*secret[8],s:"% right"; HUDMSG_FADEOUT, 985, CR_RED, 0.5, 0.56, 9.5, 0.5);
+    HudMessageBold(s:"the code is ",d:100-25*secret[WRONG_CNT_INDEX],s:"% right"; HUDMSG_FADEOUT, 985, CR_RED, 0.5, 0.56, 9.5, 0.5);
 }
 
 function void secret_select(void){
-    int a;
-    a=random(1,21);
-    if(a==1){       secret[0]=1;secret[1]=2;secret[2]=3;secret[3]=4;
-    }else if(a==2){ secret[0]=2;secret[1]=1;secret[2]=4;secret[3]=3;
-    }else if(a==3){ secret[0]=2;secret[1]=3;secret[2]=1;secret[3]=4;
-    }else if(a==4){ secret[0]=2;secret[1]=3;secret[2]=4;secret[3]=1;
-    }else if(a==5){ secret[0]=1;secret[1]=3;secret[2]=2;secret[3]=4;
-    }else if(a==6){ secret[0]=1;secret[1]=3;secret[2]=4;secret[3]=2;
-    }else if(a==7){ secret[0]=3;secret[1]=1;secret[2]=2;secret[3]=4;
-    }else if(a==8){ secret[0]=1;secret[1]=2;secret[2]=4;secret[3]=3;
-    }else if(a==9){ secret[0]=4;secret[1]=1;secret[2]=2;secret[3]=3;
-    }else if(a==10){secret[0]=1;secret[1]=4;secret[2]=2;secret[3]=3;
-    }else if(a==11){secret[0]=3;secret[1]=4;secret[2]=1;secret[3]=2;
-    }else if(a==12){secret[0]=4;secret[1]=3;secret[2]=2;secret[3]=1;
-    }else if(a==13){secret[0]=1;secret[1]=4;secret[2]=3;secret[3]=2;
-    }else if(a==14){secret[0]=4;secret[1]=2;secret[2]=3;secret[3]=1;
-    }else if(a==15){secret[0]=3;secret[1]=2;secret[2]=4;secret[3]=1;
-    }else if(a==16){secret[0]=3;secret[1]=2;secret[2]=1;secret[3]=4;
-    }else if(a==17){secret[0]=4;secret[1]=3;secret[2]=1;secret[3]=2;
-    }else if(a==18){secret[0]=4;secret[1]=1;secret[2]=3;secret[3]=2;
-    }else if(a==19){secret[0]=2;secret[1]=1;secret[2]=4;secret[3]=3;
-    }else if(a==20){secret[0]=2;secret[1]=4;secret[2]=3;secret[3]=1;
-    }else if(a==21){secret[0]=3;secret[1]=4;secret[2]=2;secret[3]=1;}
-}  
+    int i, j, temp;
+
+    // Initialize ordered sequence
+    secret[0] = 1;
+    secret[1] = 2;
+    secret[2] = 3;
+    secret[3] = 4;
+
+    // Fisher-Yates shuffle
+    for(i = 3; i > 0; i--)
+    {
+        j = random(0, i);
+
+        temp = secret[i];
+        secret[i] = secret[j];
+        secret[j] = temp;
+    }
+}
