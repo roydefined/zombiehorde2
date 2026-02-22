@@ -1,0 +1,1223 @@
+#import "acs_source_public\zhcore.g.acs"
+#import "acs_source_public\common.g.acs"
+#import "acs_source_public\utils.g.acs"
+#import "acs_source_public\weather.g.acs"
+#import "acs_source_public\log.g.acs"
+#import "acs_source_public\timer.g.acs"
+#import "acs_source_public\identity.g.acs"
+#import "acs_source_public\hud.g.acs"
+#import "acs_source_public\bcsutils.g.acs"
+
+#include "zcommon.acs"
+
+// Base TID for anything related to displaying a message when interacting with the map.
+#define HUDID_INTERACTION 60
+
+// The TID that is used for synchronising the event state
+#define SYNC_EVENTSTATE 100
+#define SYNC_NIGHTTIMESTAMP 101
+#define SYNC_NUKETIMESTAMP 102
+
+// Temperature min/max amount and hud id
+#define TEMPERATURE_MIN 28
+#define TEMPERATURE_MAX 37
+#define HUDID_TEMPERATURE 50
+
+// Temperature checks in tics based on how cold it is.
+#define TEMPERATURE_TIC_NORMAL 35 * 4
+#define TEMPERATURE_TIC_NIGHT 35 * 2
+#define TEMPERATURE_TIC_WATER 28
+#define TEMPERATURE_TIC_WARM 18
+
+// `consoleClientTemperature` is synchronized clientside from the main temperature loop.
+int consoleClientTemperature;
+
+// Indicates if players are "warm", i.e. inside or next to fire.
+// Also has a clientsided synchronized value that indicates if the console client is warm.
+int isWarm[MAX_PLAYERS];
+int consoleClientIsWarm;
+
+// Current event state
+// Event state is synchronized to clients.
+#define EVENTSTATE_NONE 0
+#define EVENTSTATE_NIGHT 1
+#define EVENTSTATE_NUKE 2
+int eventState = EVENTSTATE_NONE;
+
+// Timestamp indicating when nightmode falls.
+int nightModeStartTimestamp = 0;
+
+// Timestamp indicating when the nuke drops.
+int nukeExplosionTimestamp = 0;
+
+// Indicates if players are inside the bunker.
+// Also has a clientsided synchronized value that indicates if the console client is in the bunker.
+bool isInBunker[MAX_PLAYERS],
+	 consoleClientIsInBunker;
+
+// Level atmosphere tags that have their color adjusted in events
+#define COLORTAGCOUNT 13
+int colorTags[COLORTAGCOUNT] = {
+	0, 1, 3, 5, 6, 10, 36,
+	25, 26, 27, 28, 29
+};
+
+// Guardhouse / toxic reactor room / lab unlocked
+bool guardhouseUnlocked,
+	 crossRoomUnlocked,
+	 labUnlocked;
+
+// player in toxic reactor room / decontermination room
+bool inToxicRoom[MAX_PLAYERS],
+	 inDeconterminationRoom[MAX_PLAYERS];
+
+// Nuke boundary rock tags. First index is the rock's tag, second index is the height to set the rock to.
+int nukeBoundaryRocks [6][2] = {
+	{ 36, 176 },
+	{ 39, 120 },
+	{ 40, 88 },
+	{ 41, 136 },
+	{ 43, 32 },
+	{ 44, 16 },
+};
+
+// Shelter markers for the nuke effect.
+// Map amrkers that show where to hide.
+int shelterMarkers[2] = {
+	37, 38
+};
+
+// Function handles setting the atmosphere of the map.
+function void SetLevelAtmosphere (int fade, int color1, int color2)
+{
+	// General relevant map geometry.
+	for(int i = 0; i < COLORTAGCOUNT; ++i) {
+        sector_setfade(colorTags[i], fade, fade, fade);
+		sector_setcolor(colorTags[i], color1, color2, color2);
+    }
+
+	// Boundary rocks.
+	for (i = 0; i < 6; ++i) {
+		sector_setfade(nukeBoundaryRocks[i][0], fade, fade, fade);
+		sector_setcolor(nukeBoundaryRocks[i][0], color1, color2, color2);
+	}
+}
+
+Script "OnOpen" open
+{
+	// Red key card spawner
+    spawnspot("KeycardRed", random(10, 16));
+
+	// The underground water stream
+    scroll_floor(4, 0, 100, CARRY);
+    scroll_ceiling(5, 0, 150, SCROLL);
+
+	// Holy cross room
+	sector_setfade(14, 0, 255, 0);
+    sector_setcolor(14, 255, 200, 255);
+	sector_setfade(15, 0, 255, 0);
+    sector_setcolor(15, 255, 200, 255);
+
+	// Skybox
+    scroll_floor(48, 1, 10, 0);
+    scroll_floor(49, 3, 5, 0);
+
+	// Reset nuke boundaries to display snow.
+	for (int i = 0; i < 6; ++i) {
+		int sectorTag = nukeBoundaryRocks[i][0];
+		Floor_MoveToValue(sectorTag, 999, 0);
+		ChangeFloor(sectorTag, "SNOWFL01");
+	}
+
+	Delay(1);
+
+    SetSurvivalDefaults();
+	StartMode();
+
+	// Delay until we're halfway through the main time, then trigger a random event.
+	int gameTime = GetTimerTime(stateToTimerIndex(statePlaying)) / 2;
+
+	while (--gameTime) {
+		delay(1);
+	}
+
+}
+
+Script "OnOpenClient" Open CLIENTSIDE
+{
+	ClientSyncEventState();
+	ClientSyncNightModeTimestamp();
+	ClientSyncNukeTimestamp();
+
+	// Atmosphere and music depends on current events.
+	// If clients join later and an event has triggered, this ensures the atmosphere and music is correct.
+	// FYI, if the event JUST started, they still don't get the correct data since they didn't trigger the script.
+	// These checks ensure everything works.
+	if (eventState == EVENTSTATE_NONE)
+	{
+		SetMapMusic("PSXMUS05", MAPMUSICSETDEFAULT);
+		SetLevelAtmosphere(156, 255, 255);
+	}
+	else if (eventState == EVENTSTATE_NIGHT)
+	{
+		SetMapMusic("SUBZERO", MAPMUSICSETDEFAULT);
+		SetLevelAtmosphere(20, 120, 120);
+	}
+	else
+	{
+		SetMapMusic("DISPOSAL", MAPMUSICSETDEFAULT);
+		SetLevelAtmosphere(10, 255, 10);
+		SpawnSpot("Nuke", 6);
+		ChangeFloor(48, "-");
+		ChangeFloor(49, "-");
+	}
+
+	CreateWeather(WEATHERTYPESNOW, true, false, 15, 200, 500, 50, 150);
+	CreateWeather(WEATHERTYPEDUST, false, true, 10, 30, 500, -200, 200);
+	StartWeather(0);
+
+	if (!ACS_NamedExecute("FrozenDebug", 0))
+	{
+		LogError("Failed to invoke FrozenDebug");
+	}
+}
+
+script "enter" enter
+{
+	if(!ACS_NamedExecuteAlways("TemperatureLoop", 0)) {
+		LogError(StrParam(s:"Failed to call script TemperatureLoop."));
+	}
+}
+
+script "enterClient" enter clientside
+{
+	while(IsAlive()) {
+		TemperatureTickClient();
+		Delay(const: 1);
+	}
+}
+
+/*
+** -----------------------------------------------------------------------------
+** General scripts
+** -----------------------------------------------------------------------------
+*/
+
+// Interaction messages
+script 2 (int messageIndex)
+{
+	static int interactionMessages[10][2] = {
+		{ "The lock is jammed. This door cannot be opened.",  "generic/locked1" },
+		{ "This door is damaged beyond use.",				  "" },
+		{ "The engine will not start.", 					  "" },
+		{ "The guardhouse is locked and will not open.", 	  "generic/locked3" },
+		{ "Quarantine protocols have sealed this room.",	  "generic/itemlocked" },
+		{ "The radio is dead. No one will come to help you.", "" },
+		{ "These guns are just for show.",					  "" },
+		{ "the gas has spoiled.",							  "" },
+		{ "Locked. Maybe a terminal can open it.",			  "generic/itemlocked" },
+		{ "This does not appear to be working.",			  "" }
+	};
+
+	// A few checks
+	if((messageIndex == 3 && guardhouseUnlocked) ||
+	   (messageIndex == 8 && crossRoomUnlocked)) {
+
+		// The guardhouse door is unlocked and will open like normal.
+		if (messageIndex == 3) {
+			Door_Open(7, 32);
+			delay(35*4);
+			Door_Close(7, 32);
+		}
+		terminate;
+    }
+
+	setFont("smallfont");
+	SetHudSize(640, 480, false);
+    HudMessage(s:interactionMessages[messageIndex][0]; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+	if (interactionMessages[messageIndex][1]) {
+		ActivatorSound(interactionMessages[messageIndex][1], 127);
+	}
+}
+
+Script 3 (void)
+{
+	static int boundaryMessages[4] = {
+		"This place is too far out in the wilderness to escape on foot.",
+		"I don't feel like freezing to death.",
+		"I'd feel better leaving in a truck.",
+		"Leaving on foot would be suicide."
+	};
+
+	HudMessage(s:"\cj", s:boundaryMessages[random(0, 3)]; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+}
+
+Script "UnlockLabs" (void)
+{
+	SetFont("smallfont");
+	SetHudSize(640, 480, FALSE);
+
+    if(!CheckInventory("KeycardRed")) {
+        HudMessage(s:"Clearance required."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+		delay(35);
+        terminate;
+    }
+
+	ClearLineSpecial();
+	LogBold(StrParam(n:0, s:" has cleared the quarantine. Elevators are now activated."));
+	AmbientSound("world/reveal", 255);
+	door_open(35, 8);
+	labUnlocked = true;
+	ACS_NamedExecuteAlways("labUnlocked_client", 0);
+}
+
+// TODO: Proper sync.
+script "labUnlocked_client" (void) clientside
+{
+	labUnlocked = TRUE;
+}
+
+// Guardhouse unlocks after entering it after a while
+script "EnterGuardHouse" (void)
+{
+    if(GuardHouseunlocked) {
+		terminate;
+	}
+
+	LogTo("Upon entering the house, you hear a trigger beneath your feet go off...", PlayerNumber());
+    delay(35*10);
+    GuardHouseunlocked = true;
+}
+
+Script 20 (int index)
+{
+	static int flares[3] = {10, 10, 10};
+
+    // Zombies can't pick-up flares
+    if(IsZombie()) {
+		terminate;
+	}
+
+	setFont("smallfont");
+	SetHudSize(640, 480, FALSE);
+
+    if(!flares[index] || CheckInventory("FlareSpawn") == 2) {
+		if(!flares[index]) {
+			HudMessage(s:"This locker has no flares left."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+		} else {
+			HudMessage(s:"You've got enough flares!"; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+		}
+
+		LocalAmbientSound("generic/itemlocked", 128);
+        terminate;
+    }
+
+    HudMessage(s:"Grabbed a flare. This locker has ", d:--flares[index], s:" flare", s:cond(flares[index] != 1, "s", ""), s:" left."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+    LocalAmbientSound("generic/itemget", 128);
+	GiveInventory("FlareSpawn", 1);
+}
+
+// Bunker teleport system
+script "SetInBunker" (int enterBunker, int targetTid)
+{
+	isInBunker[PlayerNumber()] = enterBunker;
+	Teleport_NoFog(targetTid);
+
+	// Apply velocity if entering, otherwise it's removed.
+	if (enterBunker) {
+		SetActorVelocity(ActivatorTID(), 0, 0, GetActorVelZ(ActivatorTID()), FALSE, FALSE);
+	}
+
+	if (!NamedExecuteClientScript("SetInBunker_Client", PlayerNumber(), enterBunker)) {
+		LogError(StrParam(s:"Failed to invoke SetInBunker_Client on client ", d:PlayerNumber()));
+	}
+}
+
+script "SetInBunker_Client" (int enterBunker) clientside
+{
+	consoleClientIsInBunker = enterBunker;
+
+	// Switch weather
+	StartWeather(cond(enterBunker, 1, 0));
+}
+
+// For debugging.
+script "FrozenDebug" (void) CLIENTSIDE
+{
+	if (!IsDevelopment())
+	{
+		terminate;
+	}
+
+	while(true)
+	{
+		if (GetUserCVar(ConsolePlayerNumber(), "zm20debug") == 0)
+		{
+			Delay(const: 1);
+			continue;
+		}
+
+		SetHudSize(640, 480, FALSE);
+		SetFont("smallfont");
+
+		str currentEvent = cond(eventState == EVENTSTATE_NONE, "none",
+			cond(eventState == EVENTSTATE_NIGHT, "night",
+				"nuke"));
+
+		int nightFallsIn = cond(eventState == EVENTSTATE_NIGHT, nightModeStartTimestamp - Timer(), 0);
+		str nightFallen = cond(NightHasFallen(), "true", "false");
+
+		int nukeExplosionIn = cond(eventState == EVENTSTATE_NUKE, nukeExplosionTimestamp - Timer(), 0);
+
+		str warm = cond(consoleClientIsWarm, "true", "false");
+		str inBunker = cond(consoleClientIsInBunker, "true", "false");
+
+		HudMessage(s:"Current event: ", s:currentEvent; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 45.0, 0.03);
+
+		HudMessage(s:"Night falls in: ", d:nightFallsIn; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 60.0, 0.03);
+		HudMessage(s:"Night has fallen: ", s:nightFallen; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 70.0, 0.03);
+
+		HudMessage(s:"Nuke explosion in: ", d:nukeExplosionIn; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 85.0, 0.03);
+
+		HudMessage(s:"Is warm: ", s:warm; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 100.0, 0.03);
+		HudMessage(s:"Is in bunker: ", s:inBunker; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 110.0, 0.03);
+		Delay(const: 1);
+	}
+}
+
+/*
+** -----------------------------------------------------------------------------
+** Holy cross flow
+** -----------------------------------------------------------------------------
+*/
+
+script 21 (void)
+{
+    if (IsZombie()) {
+		terminate;
+	}
+
+    setFont("smallfont");
+	SetHudSize(640, 480, FALSE);
+	HudMessage(s:"You thoroughly search the locker"; HUDMSG_TYPEON, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 4.0, 0.04, 0);
+
+	int searchingCount = 35*5;
+	while (--searchingCount) {
+
+		if (IsMoving() || IsZombie())
+		{
+			if (IsZombie()) {
+				ClearHudMessage(HUDID_INTERACTION);
+				ClearHudMessage(HUDID_INTERACTION+1);
+			} else {
+				HudMessage(s:"You are unable to properly search the locker when moving."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+				ClearHudMessage(HUDID_INTERACTION+1);
+			}
+
+			terminate;
+		}
+
+		if (searchingCount == 35*4) {
+			HudMessage(s:"..."; HUDMSG_TYPEON, HUDID_INTERACTION+1, CR_WHITE, 445.0, 120.0, 0, 1.0, 0.0);
+		}
+
+		delay(1);
+	}
+
+	HudMessage(s:"The locker is stuffed with radiation suits."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 1.0);
+	HudMessage(s:"You take one, but what use would it have here?"; HUDMSG_FADEOUT, HUDID_INTERACTION+1, CR_WHITE, 320.0, 130.0, 3.0, 1.0);
+	GiveInventory("IronFeetZM20", 1);
+}
+
+// Opening the cross room
+script "OpenCrossRoom" (void)
+{
+    ClearLineSpecial();
+	ActivatorSound("sequence/switch6", 255);
+	SetActivator(-1);
+	crossRoomUnlocked = true;
+
+    floor_movetovalue(31, 10, -248);
+    ceiling_movetovalue(31, 10, -144);
+    tagwait(31);
+
+    delay(35);
+
+    floor_movetovalue(34, 10, -248);
+    ceiling_movetovalue(34, 10, -144);
+}
+
+// Hacking for the holy cross
+script "HackHolyCross" (void)
+{
+    if(IsZombie()) {
+		terminate;
+	}
+
+	setFont("smallfont");
+	SetHudSize(640, 480, FALSE);
+
+	int hackingPercentage = 100;
+	while (hackingPercentage) {
+
+		if (IsMoving() || IsZombie())
+		{
+			if (IsZombie()) {
+				ClearHudMessage(HUDID_INTERACTION);
+				ClearHudMessage(HUDID_INTERACTION+1);
+			} else {
+				HudMessage(s:"Do not move if you want to hack the terminal."; HUDMSG_FADEOUT, HUDID_INTERACTION+1, CR_WHITE, 320.0, 130.0, 3.0, 1.0);
+			}
+
+			terminate;
+		}
+
+		if (!(timer() % 8)) {
+			hackingPercentage--;
+		}
+
+		HudMessage(s:"Hacking: ", d:100-hackingPercentage, s:"%"; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 1.0);
+		HudMessage(s:"Do not move."; HUDMSG_FADEOUT, HUDID_INTERACTION + 1, CR_WHITE, 320.0, 130.0, 3.0, 1.0);
+		delay(1);
+	}
+
+	floor_lowerbyvalue(15, 8, 96);
+	ClearLineSpecial();
+}
+
+// Toxic room
+script "ToxicRoomTrigger" (void)
+{
+	bool toxicLineSide = LineSide() == LINE_FRONT;
+	inToxicRoom[PlayerNumber()] = toxicLineSide;
+
+	while (inToxicRoom[PlayerNumber()]) {
+		if (!CheckInventory("IronFeetZM20") && IsHuman()) {
+			if (Timer() % 2 == 0) {
+				Thing_damage2(ActivatorTID(), 1, "silent");
+			}
+		}
+
+        delay(const: 1);
+	}
+}
+
+/*
+** -----------------------------------------------------------------------------
+** Lift script
+** -----------------------------------------------------------------------------
+*/
+
+int inElevator[MAX_PLAYERS];
+bool elevatorInUse[4];
+
+// Elevator data
+int elevatorTags[4][7] = {
+	  // Poly tag right, poly right angle, ding sound and source teleport tag, source sector tag, temp target teleport tag, temp target sector tag, target teleport tag
+	{ 1,				 192,			   31,								   53,				  50,						54,						34 },
+	{ 3,				 192,			   34,								   55,				  21,						32,						31 },
+	{ 5,				 128,			   36,								   30,				  22,						33,						39 },
+	{ 7,				 128,			   39,								   56,				  52,						51,						36 }
+};
+
+// Trigger the player as outside / inside an elevator
+script "TogglePlayerElevatorId" (int elevatorId)
+{
+	bool entersElevator = LineSide() == LINE_FRONT;
+	if (entersElevator)
+	{
+		LogDebug(StrParam(s:"Player ", n:0, s:" has entered elevator ", d:elevatorId));
+		inElevator[PlayerNumber()] = elevatorId;
+		terminate;
+	}
+
+	LogDebug(StrParam(s:"Player ", n:0, s:" has exited the elevator"));
+    inElevator[PlayerNumber()] = 0;
+}
+
+// Main elevator logic. Parameters indicate pressed elevator id, target elevator id, and wether the button inside the elevator was pressed.
+script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
+{
+	int playerId = PlayerNumber();
+
+	// Checks when the elevator may not be used
+    if (eventState == EVENTSTATE_NUKE
+		|| !labUnlocked
+		|| (IsZombie() && !pressedInside)
+		|| elevatorInUse[elevatorId])
+	{
+		NamedExecuteClientScript("Elevator_client", playerId);
+        terminate;
+    }
+
+	SetActivator(-1);
+
+	// Elevator is now in use
+	elevatorInUse[elevatorId] = true;
+	elevatorInUse[targetElevatorId] = true;
+
+	// Elevator sound.
+	int dingSoundTag = elevatorTags[elevatorId][2];
+	ThingSound(dingSoundTag, "generic/ding", 127);
+	Delay(35);
+
+	LogDebug(StrParam(s:"Start elevator logic. Elevator id: ", d:elevatorId, s:", target elevatorId", d:targetElevatorId));
+
+	// Open doors.
+	int polyRightTag = elevatorTags[elevatorId][0];
+	int polyLeftTag = polyRightTag++;
+	int polyRightAngle = elevatorTags[elevatorId][1];
+	int polyLeftAngle = polyRightAngle + 128;
+	Polyobj_OR_Move(polyRightTag, 5, polyRightAngle, 32);
+	Polyobj_OR_Move(polyLeftTag, 5, polyLeftAngle, 32);
+	PolyWait(polyRightTag);
+	PolyWait(polyLeftTag);
+
+	Delay(35*4);
+
+	Polyobj_OR_Move(polyRightTag, 5, polyLeftAngle, 32);
+	Polyobj_OR_Move(polyLeftTag, 5, polyRightAngle, 32);
+	PolyWait(polyRightTag);
+	PolyWait(polyLeftTag);
+
+	// Stop here if a zombie called from the inside.
+	if (PlayerIsZombie(playerId) && pressedInside) {
+		terminate;
+	}
+
+	// Check if elevator or target elevator have occupands.
+	if (!AnybodyInElevator(elevatorId) && !AnybodyInElevator(targetElevatorId)) {
+		terminate;
+	}
+
+	// Rest of the logic happends on both sides.
+	ACS_NamedExecuteAlways("ElevatorLogic2", 0, elevatorId, targetElevatorId);
+	ACS_NamedExecuteAlways("ElevatorLogic2", 0, targetElevatorId, elevatorId);
+}
+
+script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
+{
+	// Move to a temporary room.
+	int sourceTag = elevatorTags[elevatorId][2];
+	int sourceSectorTag = elevatorTags[elevatorId][3];
+	int tempDestTag = elevatorTags[elevatorId][4];
+	int tempDestSectorTag = elevatorTags[elevatorId][5];
+	int destTag = elevatorTags[elevatorId][6];
+	delay(35*2);
+	TeleportInSector(sourceSectorTag, sourceTag, tempDestTag, 0);
+	PlaySound(tempDestTag, "sequence/lift1", CHAN_AUTO, 1.0);
+	delay(35*5);
+	TeleportInSector(tempDestSectorTag, tempDestTag, destTag, 0);
+	ThingSound(destTag, "generic/ding", 127);
+
+	// Open doors.
+	int polyRightTag = elevatorTags[targetElevatorId][0];
+	int polyLeftTag = polyRightTag++;
+	int polyRightAngle = elevatorTags[targetElevatorId][1];
+	int polyLeftAngle = polyRightAngle + 128;
+	Polyobj_OR_Move(polyRightTag, 5, polyRightAngle, 32);
+	Polyobj_OR_Move(polyLeftTag, 5, polyLeftAngle, 32);
+	PolyWait(polyRightTag);
+	PolyWait(polyLeftTag);
+
+	Delay(35*4);
+
+	Polyobj_OR_Move(polyRightTag, 5, polyLeftAngle, 32);
+	Polyobj_OR_Move(polyLeftTag, 5, polyRightAngle, 32);
+	PolyWait(polyRightTag);
+	PolyWait(polyLeftTag);
+
+	// Elevators no longer in use.
+	elevatorInUse[elevatorId] = false;
+	elevatorInUse[targetElevatorId] = false;
+}
+
+function bool AnybodyInElevator(int elevatorId)
+{
+	// Check if anybody has entered the elevator.
+	for (int i = 0; i < MAX_PLAYERS; ++i) {
+		if (!PlayerInGame(i) || inElevator[i] != elevatorId) {
+			continue;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+script "Elevator_client" (void) clientside
+{
+	if(IsZombie())
+	{
+		Chat(StrParam(n:0, s:"\cd: Brainz...?"));
+	}
+	else if(eventState == EVENTSTATE_NUKE)
+	{
+		Log(s:"The lift circuits are fried by the nuke. The elevator can not be used.");
+	}
+    else if(!labunlocked)
+	{
+		Log(s:"The lifts have been locked down for quarantine.");
+	}
+}
+
+
+/*
+** -----------------------------------------------------------------------------
+** EVENT STATE
+** -----------------------------------------------------------------------------
+*/
+
+function void SetEventState(int state)
+{
+	LogDebug(StrParam(s:"Setting event state to ", d:state));
+	eventState = state;
+	SyncEventState();
+}
+
+function void SyncEventState(void)
+{
+	if (!IsServer()) {
+		LogError("SyncEventState was called clientside.");
+		return;
+	}
+
+	// Do not sync when not in a network game.
+	if (!IsNetworkGame()) {
+		return;
+	}
+
+	SyncVariable(SYNC_EVENTSTATE, eventState);
+
+	// Receive on all clients.
+	if (!ACS_NamedExecuteAlways("SyncEventState_Client", 0)) {
+		LogError("Failed to execute SyncEventState_Client.");
+	}
+}
+
+script "SyncEventState_Client" (void) clientside
+{
+	ClientSyncEventState();
+}
+
+// Called clientside to fetch the synced state.
+function void ClientSyncEventState(void)
+{
+	if (!IsClient()) {
+		LogError("ClientSyncEventState was called serverside.");
+		return;
+	}
+
+	// Do not sync when not in a network game.
+	if (!IsNetworkGame()) {
+		return;
+	}
+
+	int state = GetSyncVarDefault(SYNC_EVENTSTATE, EVENTSTATE_NONE);
+	eventState = state;
+
+	LogDebug(StrParam(s:"Synced event state client: ", d:eventState));
+}
+
+/*
+** -----------------------------------------------------------------------------
+** EVENTS - Night
+** -----------------------------------------------------------------------------
+*/
+
+// Return true if night has fallen.
+function bool NightHasFallen(void)
+{
+	return eventState == EVENTSTATE_NIGHT
+		&& nightModeStartTimestamp < SynchronizedTimer();
+}
+
+// Nighttime event
+Script "Events_Night" (void)
+{
+	nightModeStartTimestamp = Timer() + 35 * 30;
+	SetEventState(EVENTSTATE_NIGHT);
+	SyncNightModeTimestamp();
+	ACS_NamedExecuteAlways("Events_Night_client", 0);
+}
+
+Script "Events_Night_client" (void) clientside
+{
+	int fadeValue  = 156,
+		colorValue = 255;
+
+	setFont("bigfont");
+	SetHudSize(640, 480, FALSE);
+    HudMessage(s:"Night approaches"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 100.0, 5.0, 1.0, 5.0);
+
+	delay(35 * 3);
+	SetMapMusic("", MAPMUSICSETDEFAULT);
+	delay(35 * 8);
+
+	while (--fadeValue > 20 && --colorValue)
+	{
+		if (fadeValue < 30 && PlayerIsHuman(ConsolePlayerNumber()))
+		{
+			SetHudSize(640, 480, FALSE);
+			HudMessage(s:"As the night approaches"; HUDMSG_TYPEON, 0, CR_WHITE, 320.0, 93.0, 3.0, 0.04, 1.0);
+			HudMessage(s:"it suddenly becomes very, very cold..."; HUDMSG_TYPEON, 0, CR_WHITE, 320.0, 107.0, 2.5, 0.04, 1.0);
+		}
+
+		SetLevelAtmosphere(fadeValue, colorValue, colorValue);
+        delay(5);
+    }
+
+	SetMapMusic("SUBZERO", MAPMUSICSETDEFAULT);
+}
+
+function void SyncNightModeTimestamp(void)
+{
+	if (!IsServer()) {
+		LogError("SyncNightModeTimestamp was called clientside.");
+		return;
+	}
+
+	if (!IsNetworkGame()) {
+		return;
+	}
+
+	SyncVariable(SYNC_NIGHTTIMESTAMP, nightModeStartTimestamp);
+	if (!ACS_NamedExecuteAlways("ClientSyncNightModeTimestamp_Client", 0)) {
+		LogError("Failed to execute ClientSyncNightModeTimestamp_Client.");
+	}
+}
+
+script "ClientSyncNightModeTimestamp_Client" (void) clientside
+{
+	ClientSyncNightModeTimestamp();
+}
+
+function void ClientSyncNightModeTimestamp(void)
+{
+	if (!IsClient()) {
+		LogError("ClientSyncNightModeStartTimestamp was called serverside.");
+		return;
+	}
+
+	// Do not sync when not in a network game.
+	if (!IsNetworkGame()) {
+		return;
+	}
+
+	int timeStamp = GetSyncVarDefault(SYNC_NIGHTTIMESTAMP, 0);
+	nightModeStartTimestamp = timeStamp;
+
+	LogDebug(StrParam(s:"Synced night mode time stamp: ", d:nightModeStartTimestamp));
+}
+
+/*
+** -----------------------------------------------------------------------------
+** EVENTS - Nuke
+** -----------------------------------------------------------------------------
+*/
+
+Script "Events_Nuke" (void)
+{
+	nukeExplosionTimestamp = Timer() + 35 * 36;
+	SetEventState(EVENTSTATE_NUKE);
+	SyncNukeExplosionTimestamp();
+	ACS_NamedExecuteAlways("Events_Nuke_client", 0);
+
+	while(nukeExplosionTimestamp > Timer())
+	{
+		Delay(const: 1);
+	}
+
+	// Delay before the nuke truly hits
+	Delay(35 * 11);
+
+	for (int i = 0; i < MAX_PLAYERS; ++i)
+	{
+		if (!PlayerInGame(i)) {
+			continue;
+		}
+
+
+		NamedExecuteClientScript("Events_Nuke_Final_client", i);
+	}
+
+	Delay(12);
+
+	for (i = 0; i < MAX_PLAYERS; ++i)
+	{
+		if (!PlayerInGame(i) || isInBunker[i]) {
+			continue;
+		}
+
+		// TODO: Use proper safety features.
+		KillPlayer(i, false);
+	}
+
+	// Set boundaries by raising rocks
+	SetLineBlocking(2, BLOCK_PLAYERS);
+	for (i = 0; i < 6; ++i) {
+		int tag = nukeBoundaryRocks[i][0],
+			height = nukeBoundaryRocks[i][1];
+		Floor_MoveToValue(tag, 999, height);
+		ChangeFloor(tag, "DROCK02");
+	}
+}
+
+Script "Events_Nuke_client" (void) clientside
+{
+	SetActivatorToPlayer(ConsolePlayerNumber());
+
+	int startTime = Timer();
+	int timeUntilExplosion = INT_MAX;
+	SetMapMusic("", MAPMUSICSETDEFAULT);
+
+	while(timeUntilExplosion > 0)
+	{
+		SetHudSize(640, 480, FALSE);
+
+		int passedTime = Timer() - startTime;
+		timeUntilExplosion = nukeExplosionTimestamp - SynchronizedTimer();
+
+		// Debug
+		if (IsDevelopment() && GetUserCVar(ConsolePlayerNumber(), "zm20debug") == 1)
+		{
+			setFont("smallfont");
+			HudMessage(s:"Passed nuke time: ", d:passedTime; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 125.0, 0.03);
+			HudMessage(s:"Time until nuke explosion: ", d:timeUntilExplosion; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 135.0, 0.03);
+		}
+
+		// Alarm every four seconds.
+		if (passedTime % (35 * 4) == 0)
+		{
+			AmbientSound("ambient/alarm2", 255);
+		}
+
+		// Message every two seconds.
+		if (passedTime % (35 * 2) == 0)
+		{
+			setFont("bigfont");
+			HudMessage(s:"Civil defence siren"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 93.0, 1.0, 0.6, 0.6);
+		}
+
+		// After at least two seconds, every two seconds.
+		if (passedTime > (35 * 2) && passedTime % (35 * 2) == 0)
+		{
+			setFont("bigfont");
+			HudMessage(s:"Nuke incoming"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 107.0, 1.0, 0.6, 0.6);
+		}
+
+		// Once after four seconds.
+		if (passedTime == 35 * 4)
+		{
+			SetMapMusic("Disposal", MAPMUSICSETDEFAULT);
+		}
+
+		// Inform of shelter after 6 seconds.
+		if (passedTime == 35 * 6)
+		{
+			if (!consoleClientIsInBunker)
+			{
+				setFont("smallfont");
+				HudMessage(s:"Seek shelter in the indicated bunkers"; HUDMSG_TYPEON, 0, CR_WHITE, 320.0, 120.0, 2.0, 0.04, 1.0);
+			}
+
+			for (int i = 0; i < 2; ++i) {
+				SpawnSpotForced("RadioActiveMarker", shelterMarkers[i], 0, 0);
+			}
+		}
+
+		// Display time until explosion after 10.5 seconds.
+		if(passedTime > 35 * 10 + 18)
+		{
+			setFont("smallfont");
+			HudMessage(s:"Explosion in: ", s:FormatTics(timeUntilExplosion, true); HUDMSG_PLAIN, 0, CR_WHITE, 320.0, 120.0, HUDTIC);
+		}
+
+		// Display safety markers on map avery tic after 6 seconds.
+		if(passedTime > 35 * 6 && !consoleClientIsInBunker)
+		{
+			HudResetState();
+			HudSetCameraActor(0);
+			HudSetVirtualSize(120.0, 90.0);
+			HudSetStayTime(HUDTIC);
+			HudSetShowOnFullAutomap(FALSE);
+
+			for (i = 0; i < 2; ++i)
+			{
+				int tag = shelterMarkers[i];
+				if (ActorDistance2D(0, tag) > 1000.0 && !consoleClientIsInBunker) {
+					HudSetPoint3D(GetActorX(tag), GetActorY(tag), GetActorZ(tag)+150.0);
+					HudDrawImage(0, "marker13");
+				}
+			}
+		}
+
+		Delay(const: 1);
+	}
+
+	if (!consoleClientIsInBunker)
+	{
+		FadeTo(150, 20, 20, 1.0, 0);
+	}
+
+	// Spawn nuke, red atmosphere, and remove clouds which actually also mess with the nuke's flare.
+	SetLevelAtmosphere(10, 255, 10);
+	SpawnSpot("Nuke", 6);
+	ChangeFloor(48, "-");
+	ChangeFloor(49, "-");
+	Radius_Quake2(0, 1, 35*5, 0, 1, "");
+	delay(35);
+
+	if (!consoleClientIsInBunker)
+	{
+		FadeTo(0, 0, 0, 0, 8.0);
+	}
+
+	delay(35*2);
+	for (i = 2; i <= 4; ++i)
+	{
+		Radius_Quake2(0, i, 35*2, 0, 1, "");
+		delay(35*2);
+	}
+
+	Radius_Quake2(0, i, 35*3, 0, 1, "");
+}
+
+script "Events_Nuke_Final_client" (void) CLIENTSIDE
+{
+	SetActivatorToPlayer(ConsolePlayerNumber());
+	if (!consoleClientIsInBunker)
+	{
+		AmbientSound("generic/nukexplosion", 255);
+		delay(6);
+		Spawn("FrozenMap_NukeSmoke", GetActorX(0), GetActorY(0), GetActorZ(0));
+	}
+	else
+	{
+		AmbientSound("generic/nukexplosionfar", 255);
+		delay(6);
+		SpawnSpotForced("FrozenMap_NukeSmokeBunker", 1, 0, 0);
+		SpawnSpotForced("FrozenMap_NukeSmokeBunker", 4, 0, 0);
+	}
+
+	// TODO: Doesn't work.
+	for (int i = 0; i < 2; ++i) {
+		Thing_Remove(shelterMarkers[i]);
+	}
+}
+
+function void SyncNukeExplosionTimestamp(void)
+{
+	if (!IsServer()) {
+		LogError("SyncNukeExplosionTimestamp was called clientside.");
+		return;
+	}
+
+	if (!IsNetworkGame()) {
+		return;
+	}
+
+	SyncVariable(SYNC_NUKETIMESTAMP, nukeExplosionTimestamp);
+	if (!ACS_NamedExecuteAlways("SyncNukeTimestamp_Client", 0)) {
+		LogError("Failed to execute SyncNukeTimestamp_Client.");
+	}
+}
+
+script "SyncNukeTimestamp_Client" (void) clientside
+{
+	ClientSyncNukeTimestamp();
+}
+
+function void ClientSyncNukeTimestamp(void)
+{
+	if (!IsClient()) {
+		LogError("ClientSyncNukeTimestamp was called serverside.");
+		return;
+	}
+
+	// Do not sync when not in a network game.
+	if (!IsNetworkGame()) {
+		return;
+	}
+
+	int timeStamp = GetSyncVarDefault(SYNC_NUKETIMESTAMP, 0);
+	nukeExplosionTimestamp = timeStamp;
+
+	LogDebug(StrParam(s:"Synced nuke drop time stamp: ", d:nukeExplosionTimestamp));
+}
+
+
+/*
+** -----------------------------------------------------------------------------
+** Temperature - CLIENTSIDE
+** -----------------------------------------------------------------------------
+*/
+
+function void TemperatureTickClient(void)
+{
+	if (IsServerOnly()) {
+		LogError("TemperatureTickClient must be called clientside.");
+		return;
+	}
+
+	// Game ended.
+	if (GetGameState() > statePlaying) {
+		return;
+	}
+
+	// The temperature does not exist on zombies.
+	if (IsZombie()) {
+		return;
+	}
+
+
+	int x = GetHudX(),
+		xLeft = GetHudLeftX(),
+	    xRight = GetHudRightX(),
+	    y = GetHudY();
+
+	// Client is in water
+	bool inWater = GetActorWaterLevel(ActivatorTID()) > 0;
+	if (!consoleClientIsWarm && inWater)
+	{
+		SetHudSize(640, 480, false);
+		SetFont("smallfont");
+		HudMessage(s:"Watch out! The water is incredibly cold, get out!"; HUDMSG_FADEOUT, HUDID_INTERACTION + 1, CR_YELLOW, 320.0, 400.0, 5.0, 0.6, 0.6);
+	}
+
+	// Inform client to get warm
+	else if (!consoleClientIsWarm && NightHasFallen())
+	{
+		SetHudSize(640, 480, false);
+		SetFont("smallfont");
+		HudMessage(s:"Caution! It is very cold at night, get somewhere warm!"; HUDMSG_FADEOUT, HUDID_INTERACTION + 1, CR_YELLOW, 320.0, 400.0, 5.0, 0.6, 0.6);
+	}
+
+	SetHudSize(480, 480, 0);
+	DrawFrostScreen(240.0, 240.0, HUDID_TEMPERATURE);
+
+	if (!HudEnabledZH()) {
+		return;
+	}
+
+	SetHudResolution();
+	DrawTemperatureValue(consoleClientTemperature, xLeft - 55.0, y - 95.0, HUDID_TEMPERATURE + 4);
+	DrawTemperatureGauge(xLeft - 55.0, y - 95.0, HUDID_TEMPERATURE + 5);
+}
+
+function void DrawFrostScreen(int x, int y, int id)
+{
+	// The values at which the graphics are going to be displayed.
+	static int frostGraphicValues[4] = {
+		35, 33, 31, 29
+	};
+
+	// Update every three tics.
+	if (Timer() % 3 != 0) {
+		return;
+	}
+
+	// Determine graphic.
+	int graphicIndex = 0;
+	for (int i = 3; i >= 0; --i)
+	{
+		if (consoleClientTemperature > frostGraphicValues[i]) {
+			continue;
+		}
+
+		graphicIndex = i + 1;
+		break;
+	}
+
+	// Always show the last graphic if outside at night or in water.
+	bool inWater = GetActorWaterLevel(ActivatorTID()) > 0;
+	if (!consoleClientIsWarm && (NightHasFallen() || inWater)) {
+		graphicIndex = 4;
+	}
+
+	if (graphicIndex == 0) {
+		return;
+	}
+
+}
+
+function void DrawTemperatureGauge(int x, int y, int id)
+{
+	if (consoleClientIsInBunker)
+	{
+		return;
+	}
+
+}
+
+function void DrawTemperatureValue(int amount, int x, int y, int id)
+{
+	if (consoleClientIsInBunker)
+	{
+		return;
+	}
+
+	if (amount == TEMPERATURE_MIN && Timer() % 10 >= 5)
+	{
+		return;
+	}
+
+	int color = cond(amount > 32, CR_WHITE,
+		cond(amount > 30, CR_YELLOW, CR_RED));
+
+	SetFont("smallfont");
+	HudMessage(d:amount; HUDMSG_PLAIN, id, color, x, y, 0.03);
+}
+
+// Called to synchronize the current temperature to the client.
+script "TemperatureSync" (int amount) CLIENTSIDE
+{
+	LogDebug(StrParam(s:"Synchronizing temperature to ", d:amount));
+	consoleClientTemperature = amount;
+}
+
+script "WarmSync" (int warm) CLIENTSIDE
+{
+	LogDebug(StrParam(s:"Marking self as ", s:cond(warm, "warm", "cold"), s:"."));
+	consoleClientIsWarm = warm;
+}
+
+/*
+** -----------------------------------------------------------------------------
+** Temperature - SERVERSIDE
+** -----------------------------------------------------------------------------
+*/
+
+// Mark the player as inside/outside depending on lineside.
+script "SetPlayerWarm" (void) {
+
+	bool warm = LineSide() == LINE_FRONT;
+    isWarm[PlayerNumber()] = warm;
+	SynchronizeWarm(warm);
+}
+
+function bool GetIsWarm(int playerId)
+{
+	return isWarm[playerId];
+}
+
+// Main loop, runs on each client.
+// This script handles the behavior of the temperature timer and ensures it increments/decrements.
+script "TemperatureLoop" (void)
+{
+}
+
+function void SynchronizeTemperature(int amount)
+{
+	if (!NamedExecuteClientScript("TemperatureSync", PlayerNumber(), amount)) {
+		LogError(StrParam(s:"Failed to call script TemperatureSync."));
+	}
+}
+
+function void SynchronizeWarm(int warm)
+{
+	if (!NamedExecuteClientScript("WarmSync", PlayerNumber(), warm)) {
+		LogError(StrParam(s:"Failed to call script WarmSync."));
+	}
+}

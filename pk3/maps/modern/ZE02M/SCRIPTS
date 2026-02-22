@@ -1,0 +1,187 @@
+#import "acs_source_public\zhcore.g.acs"
+#import "acs_source_public\weather.g.acs"
+#import "acs_source_public\common.g.acs"
+#import "acs_source_public\log.g.acs"
+#import "acs_source_public\utils.g.acs"
+#import "acs_source_public\resist.g.acs"
+#import "acs_source_public\bcsutils.g.acs"
+#include "zcommon.acs"
+
+Script "OnOpen" open
+{
+	// This is the poly object in the elevator that will push anybody trying to block it.
+	// Move it to the side for now until it is needed
+	Polyobj_Move(5, 50, 128, 256);
+
+	// Final doors, already open
+	Polyobj_Move(8, 7, 128, 80);
+	Polyobj_Move(9, 7, 0, 80);
+
+	CreateResistSimple(35 * 15, "Lowering pillars");
+	CreateResistSimple(35 * 20, "Opening excavation entrance");
+	CreateResistSimple(35 * 25, "Initializing elevators");
+	CreateResistSimple(35 * 45, "Defend the secure room");
+
+	SpawnSpotForced("ZH02VolcanoSmoke", 6, 0, 0);
+	Delay(const: 1);
+
+	SetEscapeDefaults();
+	StartMode();
+}
+
+script "OnOpenClient" open clientside
+{
+	CreateWeather(WEATHERTYPESPARK, true, true, 5, 30, 500, -200, 200);
+	CreateWeather(WEATHERTYPESPARK, true, true, 25, 30, 500, -200, 200);
+}
+
+// Switches the sparks on or off depending on the lineside.
+script "SparksSwitch" (void) clientside
+{
+	int side = LineSide() == LINE_FRONT;
+	if (side) {
+		StartWeather(0);
+	}
+	else {
+		StopWeather(0);
+	}
+}
+
+// Switches the big sparks on or off depending on the lineside.
+// This switch assumes the small sparks are already enabled.
+script "BigSparksSwitch" (void) clientside
+{
+	int side = LineSide() == LINE_FRONT;
+	if (side) {
+		StartWeather(1);
+		StopWeather(0);
+	}
+	else {
+		StopWeather(1);
+		StartWeather(0);
+	}
+}
+
+Script "Resist1" (void)
+{
+    SetActivator(-1);
+	Delay(StartResist(0));
+
+    Floor_LowerByValue(8, 16, 108);
+    SetLineBlocking(1, BLOCK_NOTHING);
+
+}
+
+Script "Resist2" (void)
+{
+    SetActivator(-1);
+	Delay(StartResist(1));
+
+    Floor_LowerByValue(5, 16, 108);
+    SetLineBlocking(2, BLOCK_NOTHING);
+
+}
+
+Script "Resist3" (void)
+{
+    SetActivator(-1);
+	Delay(StartResist(2));
+
+    Polyobj_Move(1, 7, 128, 128);
+	Polyobj_Move(2, 7, 0, 128);
+	SoundSequenceOnPolyObj(2, "LiftDoor1");
+
+	PolyWait(1);
+	Delay(35*2);
+
+	Polyobj_Move(1, 7, 0, 128);
+	Polyobj_Move(2, 7, 128, 128);
+	SoundSequenceOnPolyObj(2, "LiftDoor1");
+
+	PolyWait(1);
+
+	// Move the pushing polyobject too
+	Polyobj_Move(5, 50, 0, 256);
+
+	PolyWait(5);
+	Delay(35*2);
+
+	// Now slowly move it forward into the crowd
+	Polyobj_Move(5, 5, 192, 12);
+
+	Floor_RaiseByValue(60, 20, 570);
+	Ceiling_RaiseByValue(60, 20, 570);
+	Floor_RaiseByValue(62, 20, 570);
+	Ceiling_RaiseByValue(62, 20, 570);
+	Ceiling_RaiseByValue(1, 20, 570);
+
+
+	// Move it back to avoid z fighting
+	PolyWait(5);
+	Delay(15);
+	Polyobj_Move(5, 5, 64, 12);
+
+	TagWait(60);
+	Delay(35 * 1 + 18);
+
+	Polyobj_Move(3, 7, 128, 128);
+	Polyobj_Move(4, 7, 0, 128);
+	SoundSequenceOnPolyObj(3, "LiftDoor1");
+
+	PolyWait(3);
+	Delay(35*2);
+
+	LogBold("A secondary path has been opened.");
+
+	Polyobj_Move(6, 10, 192, 100);
+	Polyobj_Move(7, 10, 64, 100);
+	SoundSequenceOnPolyObj(4, "SlidingDoor2");
+}
+
+
+Script "FinalResist" (void)
+{
+    SetFont("SMALLFONT");
+    HudMessageBold(s:"The volcano grows restless.\nPrepare for a huge volcanic eruption!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+
+    SetActivator(-1);
+    delay(35*3);
+
+	Delay(StartResist(3));
+
+	for (int i = 0; i < MAX_PLAYERS; ++i)
+    {
+		if (!PlayerInGame(i)) {
+			continue;
+		}
+
+		SetActivatorToPlayer(i);
+		Radius_Quake(15, 35*7, 0, 50, 0);
+	}
+
+	SetActivator(-1);
+
+	Polyobj_Move(8, 7, 0, 80);
+	Polyobj_Move(9, 7, 128, 80);
+
+	Delay(35*2);
+
+    SetFont("BIGFONT");
+    HudMessageBold(s:"\cGVolcanic Eruption!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+    delay(35*2);
+
+    AmbientSound("world/VOLCANO", 127);
+    delay(35);
+
+    KillUnsafePlayers();
+}
+
+Script "Lava_Teleport" (int teleportid, int noDamage)
+{
+    if(IsHuman() && !noDamage)
+    {
+        Thing_Damage(0, GetActorProperty(0, APROP_Health)/3, 0);
+    }
+
+	AdvancedTeleport(teleportid, 32, TELEPORTFOG | TELEPORTUSEANGLE);
+}

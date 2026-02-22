@@ -1,0 +1,747 @@
+#import "acs_source_public\zhcore.g.acs"
+#import "acs_source_public\bcsutils.g.acs"
+#import "acs_source_public\common.g.acs"
+#import "acs_source_public\log.g.acs"
+#import "acs_source_public\resist.g.acs"
+#include "zcommon.acs"
+
+// Used for synchronization
+#define SYNC_MAPSTATE 100
+#define SYNC_PILLARSTATE 101
+
+// Indicates the finished pillars
+bool pillarDone[4];
+
+// The tids used for the lens flare on each pillar.
+int pillarTids[4] = { 3, 2, 5, 1 };
+
+// This specifies the gameType that is being played.
+#define GAMETYPE_LINEAR 0
+#define GAMETYPE_QUICKLINEAR 1
+#define GAMETYPE_NONLINEAR 2
+int mapGameType;
+
+// The state type of the map.
+// Used during synchronization to indicate if the music should be played to joining players.
+#define MAPSTATE_NONE 0
+#define MAPSTATE_ENDING 1
+#define MAPSTATE_ENDED 2
+
+// The actual map state.
+int mapState = MAPSTATE_NONE;
+
+script "OnEnterClient" enter clientside
+{
+	PlaySound(0, "ambient/wind1", CHAN_UI, 1.0, true);
+}
+
+script "OnOpenClient" open clientside
+{
+	ClientSyncActivePillars();
+	ClientSyncMapState();
+	if(!ACS_NamedExecute("FinalMusicLoop", 0))
+	{
+		LogError("Failed to start FinalMusicLoop");
+	}
+
+	if (!ACS_NamedExecute("PillarDebug", 0))
+	{
+		LogError("Failed to invoke PillarDebug");
+	}
+
+	delay(70);
+
+	// Logo
+	SetHudSize(640, 480, FALSE);
+	SetFont("DESTLOGO");
+	HudMessageBold(s:"a"; HUDMSG_FADEINOUT, 0, 0, 320.0, 80.0, 1.0, 3.0, 2.0);
+}
+
+script "OnOpen" open
+{
+	Delay(const: 1);
+
+	// Resists
+	CreateResist(20 * 35, "\cjActivating eastern Beacon", "\cc%t", RESISTTYPEFADEOUT);
+	CreateResist(20 * 35, "\cjActivating northern Beacon", "\cc%t", RESISTTYPEFADEOUT);
+	CreateResist(20 * 35, "\cjActivating western Beacon", "\cc%t", RESISTTYPEFADEOUT);
+	CreateResist(20 * 35, "\cjActivating southern Beacon", "\cc%t", RESISTTYPEFADEOUT);
+	CreateResist(30 * 35, "\cjOpening pyramid", "\ccResist for \cd%t \ccseconds", RESISTTYPEFADEOUT);
+	CreateResist(40 * 35, "\cjReach the burial chamber", "%t \ciseconds left", RESISTTYPEPLAIN);
+
+    SetEscapeDefaults();
+	SetGlobalZombieTeleports(1);
+	StartMode();
+
+	// Determine the game to run.
+	// In a developmental environment, this can instead be done with switches which will be available.
+	if (IsDevelopment())
+	{
+		LogBold("Please press one of the switches in order to choose the game.");
+	}
+	else
+	{
+		if (Random(0, 8) == 8) {
+			SetNonLinearGame();
+		}
+		else
+		{
+			SetLinearGame(Random(0, 5) >= 1);
+		}
+
+		Floor_LowerToLowest(43, 999);
+	}
+
+	// Scrolling of the quicksand.
+	// These are specific angles.
+	Scroll_Floor(48, -15, -80, SCROLL_AND_CARRY);
+	Scroll_Floor(49, -80, -80, SCROLL_AND_CARRY);
+	Scroll_Floor(50, -80, -15, SCROLL_AND_CARRY);
+	Scroll_Floor(51, -80,  15, SCROLL_AND_CARRY);
+	Scroll_Floor(52, -80,  80, SCROLL_AND_CARRY);
+	Scroll_Floor(53, -15,  80, SCROLL_AND_CARRY);
+	Scroll_Floor(54,  15,  80, SCROLL_AND_CARRY);
+	Scroll_Floor(55,  80,  80, SCROLL_AND_CARRY);
+	Scroll_Floor(56,  80,  15, SCROLL_AND_CARRY);
+	Scroll_Floor(57,  80, -15, SCROLL_AND_CARRY);
+	Scroll_Floor(58,  80, -80, SCROLL_AND_CARRY);
+	Scroll_Floor(59,  15, -80, SCROLL_AND_CARRY);
+
+	// Unset the beam opacity to appear later.
+	TranslucentLine(1, 0);
+	TranslucentLine(2, 0);
+	TranslucentLine(3, 0);
+	TranslucentLine(5, 0);
+}
+
+// Switch used to set the game type in development mode.
+script "SwitchSetGame"(int game)
+{
+	if (!IsDevelopment())
+	{
+		terminate;
+	}
+
+	if (mapGameType != 0)
+	{
+		terminate;
+	}
+
+	if (game == 1)
+	{
+		SetLinearGame(false);
+	}
+	else if (game == 2)
+	{
+		SetLinearGame(true);
+	}
+	else
+	{
+		SetNonLinearGame();
+	}
+
+	Floor_LowerToLowest(43, 999);
+}
+
+script "StartTrigger" (void) CLIENTSIDE
+{
+	static bool _startTriggerRun;
+	if (_startTriggerRun) {
+		terminate;
+	}
+
+	_startTriggerRun = true;
+	SetActivator(-1);
+	ClearLineSpecial();
+	SetMapMusic("d_egypt", MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+	delay(18);
+
+	int stayTime = cond(mapGameType == GAMETYPE_LINEAR, 3.75, 5.75);
+
+	SetHudSize(640, 480, FALSE);
+    SetFont("smallfont");
+    HudMessage(s:"You must activate all four pillars"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 42.0, stayTime + 0.25, 1.0, 0.5);
+	delay(9);
+	HudMessage(s:"on each cardinal direction in order to open the pyramid"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 52.0, stayTime, 1.0, 0.5);
+
+	delay(35 * 2);
+	if (mapGameType == GAMETYPE_QUICKLINEAR)
+	{
+		HudMessage(s:"You're in luck! Some of the pillars are already active."; HUDMSG_FADEOUT, 0, CR_GREEN, 320.0, 62.0, 4.5, 0.5);
+	}
+	if (mapGameType == GAMETYPE_NONLINEAR)
+	{
+		HudMessage(s:"The desert is in your favour. You can freely move to any pillar!"; HUDMSG_FADEOUT, 0, CR_GREEN, 320.0, 62.0, 4.5, 0.5);
+	}
+}
+
+// The general function to activate a beacon.
+// If silent is `true`, do not play the ambient sound.
+function void TriggerBeaconActive (int tag, bool silent)
+{
+	TranslucentLine(tag, 128, true);
+
+	if (!silent) {
+		AmbientSound("world/beaconactive", 127);
+	}
+
+	if (!IsNetworkGame())
+	{
+		TriggerBeaconActiveClient(tag);
+	}
+
+	// Open up the pillar if all four are activated.
+	// The quick game type will have a seperate resist first.
+	if (GetPillarsDoneCount() == 4 && mapGameType != GAMETYPE_QUICKLINEAR)
+	{
+		floor_lowerinstant(28, 0, 2048);
+		ceiling_lowerinstant(28, 0, 2048);
+		ACS_NamedExecute("PyramidOpened", 0);
+	}
+}
+
+function void TriggerBeaconActiveClient (int tag)
+{
+	Thing_Activate(tag);
+
+	// Activate the Light flare at the pyramid with the first finished beacon.
+	if (GetPillarsDoneCount() == 1) {
+		Thing_Activate(4);
+	}
+}
+
+// Enables the zombie teleports after 10 seconds, and the shortcut after another 5 seconds. Called after the last pillar was activated.
+script "PyramidOpened"(void)
+{
+	Delay(35 * 3);
+
+	SetHudSize(640, 480, FALSE);
+	AmbientSound("world/reveal", 127);
+	HudMessageBold(s:"The top into the pyramid has been opened."; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 50.0, 2.0, 0.5);
+
+	delay(35 * 7);
+
+	SetZombieTeleportSpotTid(8);
+	LogMessageToHumans("Zombies can now teleport to the pyramid entrance.");
+	LogMessageToZombies("You can now teleport to the pyramid entrance.");
+
+	delay (35*5);
+
+	floor_LowerByValue(33, 16, 112);
+	LogBold("A shortcut has been opened north of the beacon for anyone left behind.");
+}
+
+// Resist to open the pyramid.
+// Specific to the quick linear game type.
+script "OpenPyramidResist" (void)
+{
+	if(mapGameType != GAMETYPE_QUICKLINEAR) {
+		terminate;
+	}
+
+    static bool hasRun;
+	if (hasRun) {
+		terminate;
+	}
+	hasRun = true;
+
+    SetActivator(-1);
+	Delay(StartResist(4));
+
+    floor_lowerinstant(28, 0, 2048);
+	ceiling_lowerinstant(28, 0, 2048);
+
+
+	SetHudSize(640, 480, FALSE);
+	AmbientSound("world/reveal", 127);
+	HudMessageBold(s:"The top into the pyramid has been opened."; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 50.0, 2.0, 0.5);
+}
+
+// Small teleport script that fixes the fade inside the pyramid for software users, disables the wind sound and also disables the pillar icons.
+script "EnterPyramid" (void) clientside
+{
+	if(ConsolePlayerNumber() != PlayerNumber()) {
+		terminate;
+	}
+
+	// TODO: Won't stop the wind sound.
+	StopSound(0, CHAN_UI);
+	SoundVolume(0, CHAN_UI, 0.0);
+
+	if (!isOpenGL())
+	{
+		for(int i=0; i<999; ++i)
+        {
+            Light_RaiseByValue(i, 80);
+            sector_setfade(i, 0, 0, 0);
+        }
+	}
+}
+
+function int GetPillarsDoneCount(void)
+{
+	return pillarDone[0] + pillarDone[1] + pillarDone[2] + pillarDone[3];
+}
+
+Script "FinalResist" (void)
+{
+    SetActivator(-1);
+
+    int y = 40.0;
+
+	SetHudSize(640, 480, FALSE);
+	SetFont("BIGFONT");
+	HudMessageBold(s:"A curse is about to befall the area!"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, y, 0.5, 0.5);
+	HudMessageBold(s:"Take shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, y+15.0, 0.5, 0.5);
+	delay(18);
+	HudMessageBold(s:"A curse is about to befall the area!"; HUDMSG_FADEINOUT, 0, CR_RED, 320.0, y, 0.0, 0.5, 0.5);
+	HudMessageBold(s:"Take shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEINOUT, 0, CR_RED, 320.0, y+15.0, 0.0, 0.5, 0.5);
+	delay(18);
+	HudMessageBold(s:"A curse is about to befall the area!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, y, 2.0, 0.5, 0.5);
+	HudMessageBold(s:"Take shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, y+15.0, 2.0, 0.5, 0.5);
+    Delay(35*3);
+    ACS_NamedExecute("FinalMusic",0,0,0,0);
+	Delay(StartResist(5));
+	Generic_Ceiling(31, 16, 128, 5, 16);
+	tagwait(31);
+	delay(35);
+    SetFont("BIGFONT");
+    HudMessageBold(s:"The curse is here"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, y, 5.0, 3.0);
+    Delay(35);
+	for (int i = 0; i < MAX_PLAYERS; ++i) {
+		if (IsPlayerSafe(i) || !PlayerInGame(i)) {
+			continue;
+		}
+
+		NamedExecuteClientScript("DeathQuake", i);
+	}
+
+	delay(35*4+18);
+    KillUnsafePlayers();
+}
+
+// The earthquake to trigger on clients that did not make it.
+script "DeathQuake" (void) {
+	FadeTo(0, 0, 0, 1.0, 4.0);
+	for (int i = 1; i < 4; i++) {
+		Radius_Quake2(ActivatorTID(), i, 35, 0, 1, "");
+		delay(35);
+	}
+
+	Radius_Quake2(ActivatorTID(), i, 35, 0, 1, "");
+	delay(35*2);
+	FadeTo(0, 0, 0, 0.0, 1.0);
+}
+
+// Called just before the final resist.
+// Handles setting the map's state which is useful for the final music to run properly.
+Script "FinalMusic" (void)
+{
+    Delay(525);
+	SyncMapState(MAPSTATE_ENDING);
+    Delay(1100);
+	SyncMapState(MAPSTATE_ENDED);
+}
+
+// Runs clientside on players to avoid issues with the music cutting of prematurely.
+script "FinalMusicLoop" (void) clientside
+{
+	SetActivator(-1);
+	if (mapState != MAPSTATE_ENDING)
+	{
+		delay(const: 1);
+		restart;
+	}
+
+	SetMapMusic("d_egypt2", 0);
+    Delay(1225);
+	SetMapMusic("", 0);
+}
+
+script "BridgeBlockpoint" (void)
+{
+    LogBold(StrParam(n:0, s:"\c- has lowered the bridges! They will raise in 10 seconds"));
+
+    SetActivator(-1);
+    ClearLineSpecial();
+
+    floor_lowerbyvalue(25, 8, 120);
+    ceiling_lowerbyvalue(25, 8, 120);
+    delay(35*10);
+
+    floor_raisebyvalue(25, 8, 120);
+    ceiling_raisebyvalue(25, 8, 120);
+}
+
+// For debugging.
+script "PillarDebug" (void) CLIENTSIDE
+{
+	if (!IsDevelopment())
+	{
+		terminate;
+	}
+
+	while(true)
+	{
+		if (GetUserCVar(ConsolePlayerNumber(), "zh04debug") == 0)
+		{
+			Delay(const: 1);
+			continue;
+		}
+
+		SetHudSize(640, 480, FALSE);
+		SetFont("smallfont");
+
+		HudMessage(s:"Map state: ", d:mapState; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 50.0, 0.03);
+		HudMessage(s:"Eastern pillar active: ", d:pillarDone[0]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 60.0, 0.03);
+		HudMessage(s:"Northern pillar active: ", d:pillarDone[1]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 70.0, 0.03);
+		HudMessage(s:"Western pillar active: ", d:pillarDone[2]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 80.0, 0.03);
+		HudMessage(s:"Southern pillar active: ", d:pillarDone[3]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 90.0, 0.03);
+
+		Delay(const: 1);
+	}
+}
+
+// -------------------------------------------
+//
+// MAP STATE SYNC
+//
+// -------------------------------------------
+
+function void SyncMapState(int state)
+{
+	if (!IsServer()) {
+		LogError("SyncMapState was called clientside.");
+		return;
+	}
+
+	mapState = state;
+
+	// Do not sync when not in a network game.
+	if (!IsNetworkGame()) {
+		return;
+	}
+
+	SyncVariable(SYNC_MAPSTATE, state);
+
+	// Receive on all clients.
+	if (!ACS_NamedExecuteAlways("SyncMapState_Client", 0)) {
+		LogError("Failed to execute SyncMapState_Client.");
+	}
+}
+
+script "SyncMapState_Client" (void) clientside
+{
+	ClientSyncMapState();
+}
+
+// Called clientside to fetch the synced state.
+function void ClientSyncMapState(void)
+{
+	if (!IsClient()) {
+		LogError("ClientSyncMapState was called serverside.");
+		return;
+	}
+
+	// Do not sync when not in a network game.
+	if (!IsNetworkGame()) {
+		return;
+	}
+
+	mapState = GetSyncVarDefault(SYNC_MAPSTATE, MAPSTATE_NONE);
+	LogDebug(StrParam(s:"Synced map state to client: ", d:mapState, s:"."));
+}
+
+// -------------------------------------------
+//
+// GAMEMODE INIT
+//
+// -------------------------------------------
+
+// Sets up a linear game mode by changing the map.
+// If quick is `true`, three pillars will prematurely raise as was done with the last version made by DrDoctor.
+function void SetLinearGame(bool quick)
+{
+	// General linedef changes
+	Line_SetBlocking(22, BLOCK_PLAYERS, 0);
+
+	// General linedef changes when the map is not being played quickly.
+	if (!quick)
+	{
+		Line_SetBlocking(73, BLOCK_PLAYERS, 0);
+	}
+
+	// Sectors and linedefs near south beacon
+	Floor_RaiseByValue(12, 999, 150);
+	Floor_RaiseByValue(16, 999, 200);
+	SetLineBlocking(4, BLOCK_PLAYERS);
+	Floor_RaiseByValue(3, 10, 40);
+
+	if (!quick) {
+		Floor_LowerByValue(21, 999, 200);
+	}
+	if (quick) {
+		Floor_RaiseByValue(7, 999, 100);
+		Line_SetBlocking(77, BLOCK_PLAYERS, 0);
+	}
+
+	// Sector and linedefs near east beacon
+	Floor_RaiseByValue(37, 999, 100);
+	Floor_RaiseByValue(40, 999, 200);
+	floor_RaiseByValue(36, 32, 150);
+
+	// Sectors and linedefs between west and north beacon
+	floor_RaiseByValue(42, 150, 150);
+	floor_RaiseByValue(69, 200, 150);
+	floor_RaiseByValue(69, 96, 150);
+
+	// Sectors and linedefs near west beacon
+	if (!quick)
+	{
+		Line_SetBlocking(7, 0, BLOCK_PLAYERS);
+		TranslucentLine(7, 0);
+
+		// The ceiling textures will be set to F_SKY1 to imitate a sky.
+		ChangeCeiling(71, "F_SKY1");
+		ChangeCeiling(72, "F_SKY1");
+		ChangeCeiling(38, "F_SKY1");
+	}
+
+	if (quick)
+	{
+		// North of the beacon, blocked off and door opened to take a shortcut to the west beacon.
+		floor_RaiseByValue(74, 80, 150);
+		Line_SetBlocking(75, BLOCK_PLAYERS, 0);
+		floor_LowerByValue(33, 16, 112);
+
+		// Set the teleport of the shortcut to the west beacon
+		SetThingSpecial(17, 77, 0, 17, 76);
+
+		// North
+		floor_LowerByValue(44, 16, 112);
+		floor_raisebyvalue(5, 8, 128);
+		pillarDone[1] = true;
+		TriggerBeaconActive(pillarTids[1], true);
+
+		// West
+		ceiling_raisebyvalue(43, 64, 108);
+		ceiling_raisebyvalue(23, 64, 88);
+		Floor_LowerByValue(18, 999, 120);
+		floor_raisebyvalue(17, 8, 48);
+		floor_raisebyvalue(11, 8, 48 + 128);
+		pillarDone[2] = true;
+		TriggerBeaconActive(pillarTids[2], true);
+
+		// South
+		floor_raisebyvalue(32, 8, 64);
+		floor_raisebyvalue(10, 8, 64 + 128);
+		pillarDone[3] = true;
+		TriggerBeaconActive(pillarTids[3], true);
+
+		SyncActivePillars();
+	}
+
+	mapGameType = cond(quick, GAMETYPE_QUICKLINEAR, GAMETYPE_LINEAR);
+	LogDebug("The game has been initialized as a linear game.");
+}
+
+// Sets up a non linear game mode by changing the map.
+function void SetNonLinearGame(void)
+{
+	Line_SetBlocking(6, BLOCK_PLAYERS, 0);
+
+	// Sectors and linedefs near south beacon
+	Floor_RaiseByValue(7, 999, 100);
+	Line_SetBlocking(77, BLOCK_PLAYERS, 0);
+
+	// Sectors and linedefs near west beacon
+	ceiling_raisebyvalue(43, 999, 108);
+	ceiling_raisebyvalue(23, 999, 88);
+	Floor_LowerByValue(18, 999, 120);
+
+	// The ceiling textures will be set to F_SKY1 to imitate a sky.
+	ChangeCeiling(71, "F_SKY1");
+	ChangeCeiling(72, "F_SKY1");
+	ChangeCeiling(38, "F_SKY1");
+
+	mapGameType = GAMETYPE_NONLINEAR;
+	LogDebug("The game has been initialized as a non-linear game.");
+}
+
+// -------------------------------------------
+//
+// PILLAR RESISTS
+//
+// -------------------------------------------
+
+
+script "BeaconEastResist" (void)
+{
+    if(pillarDone[0]) {
+		terminate;
+	}
+    pillarDone[0] = true;
+
+    SetActivator(-1);
+	SetHudSize(640, 480, FALSE);
+	SetFont("smallfont");
+
+	Delay(StartResist(0));
+
+    floor_raisebyvalue(8,16,408);
+    floor_raisebyvalue(9,16,536);
+
+	// Only lowered in linear game types
+	if (mapGameType == GAMETYPE_LINEAR || mapGameType == GAMETYPE_QUICKLINEAR) {
+		floor_LowerByValue(36, 32, 150);
+	}
+
+    tagwait(9);
+	delay(35);
+
+	TriggerBeaconActive(pillarTids[0], false);
+	SyncActivePillars();
+}
+
+script "BeaconNorthResist" (void)
+{
+    if(pillarDone[1]) {
+		terminate;
+	}
+    pillarDone[1] = true;
+
+    SetActivator(-1);
+	SetHudSize(640, 480, FALSE);
+	SetFont("smallfont");
+
+	Delay(StartResist(1));
+
+    floor_raisebyvalue(5, 8, 128);
+
+	// Only lowered in linear gamemodes
+	if (mapGameType == GAMETYPE_LINEAR) {
+		floor_LowerByValue(44, 16, 112);
+	}
+
+    tagwait(5);
+	delay(35);
+
+    TriggerBeaconActive(pillarTids[1], false);
+	SyncActivePillars();
+}
+
+script "BeaconWestResist" (void)
+{
+    //clearLineSpecial is possible here but not used because the teleports also rely on this array.
+    if(pillarDone[2]) {
+		terminate;
+	}
+    pillarDone[2] = true;
+
+	SetActivator(-1);
+	SetHudSize(640, 480, FALSE);
+	SetFont("smallfont");
+
+	Delay(StartResist(2));
+
+    door_open(42,128);
+	floor_raisebyvalue(17, 8, 48);
+	floor_raisebyvalue(11, 8, 48 + 128);
+
+	// Only risen in linear game types
+	if (mapGameType == GAMETYPE_LINEAR) {
+		ceiling_raisebyvalue(43, 64, 108);
+		ceiling_raisebyvalue(23, 64, 88);
+		Floor_LowerByValue(18, 999, 120);
+	}
+
+	TagWait(11);
+    delay(35);
+
+	TriggerBeaconActive(pillarTids[2], false);
+	SyncActivePillars();
+}
+
+script "BeaconSouthResist" (void)
+{
+    if(pillarDone[3]) {
+		terminate;
+	}
+    pillarDone[3] = true;
+
+    SetActivator(-1);
+	SetHudSize(640, 480, FALSE);
+	SetFont("smallfont");
+
+	Delay(StartResist(3));
+
+    /*SpawnspotForced("Explosion", 29, 0, 0);
+    AmbientSound("REVEAL",127);*/
+
+	floor_raisebyvalue(32, 8, 64);
+    floor_raisebyvalue(10, 8, 64 + 128);
+
+	// Only lowered in linear game types
+	if (mapGameType == GAMETYPE_LINEAR) {
+		Floor_LowerByValue(3, 10, 40);
+		SetLineBlocking(4, BLOCK_NOTHING);
+	}
+
+    tagwait(10);
+	delay(35);
+
+	TriggerBeaconActive(pillarTids[3], false);
+	SyncActivePillars();
+}
+
+// -------------------------------------------
+//
+// PILLAR SYNCHRONIZATION
+//
+// -------------------------------------------
+
+// Synchronizes the current active pillars with clients.
+function void SyncActivePillars(void)
+{
+	if (IsNetworkGame())
+	{
+		return;
+	}
+
+	int value = PackBytes(pillarDone[0], pillarDone[1], pillarDone[2], pillarDone[3]);
+	SyncVariable(SYNC_PILLARSTATE, value);
+
+	// Receive on all clients.
+	if (!ACS_NamedExecuteAlways("SyncActivePillars_Client", 0)) {
+		LogError("Failed to execute SyncBaseTID_Client.");
+	}
+}
+
+script "SyncActivePillars_Client"(void) clientside
+{
+	ClientSyncActivePillars();
+}
+
+// Called clientside to synchronize the active pillars.
+function void ClientSyncActivePillars(void)
+{
+	int value = GetSyncVarDefault(SYNC_PILLARSTATE, 0);
+	if (!pillarDone[0] && UnpackByte1(value)) {
+		pillarDone[0] = true;
+		TriggerBeaconActiveClient(pillarTids[0]);
+	}
+	if (!pillarDone[1] && UnpackByte2(value)) {
+		pillarDone[1] = true;
+		TriggerBeaconActiveClient(pillarTids[1]);
+	}
+	if (!pillarDone[2] && UnpackByte3(value)) {
+		pillarDone[2] = true;
+		TriggerBeaconActiveClient(pillarTids[2]);
+	}
+	if (!pillarDone[3] && UnpackByte4(value)) {
+		pillarDone[3] = true;
+		TriggerBeaconActiveClient(pillarTids[3]);
+	}
+
+	LogDebug(StrParam(s:"Synced active pillars to client: ", d:value, s:"."));
+}
