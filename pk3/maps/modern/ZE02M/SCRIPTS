@@ -1,11 +1,11 @@
-#import "acs_source_public\zhcore.g.acs"
-#import "acs_source_public\weather.g.acs"
-#import "acs_source_public\common.g.acs"
-#import "acs_source_public\log.g.acs"
-#import "acs_source_public\utils.g.acs"
-#import "acs_source_public\resist.g.acs"
-#import "acs_source_public\bcsutils.g.acs"
-#include "zcommon.acs"
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
 
 Script "OnOpen" open
 {
@@ -17,55 +17,54 @@ Script "OnOpen" open
 	Polyobj_Move(8, 7, 128, 80);
 	Polyobj_Move(9, 7, 0, 80);
 
-	CreateResistSimple(35 * 15, "Lowering pillars");
-	CreateResistSimple(35 * 20, "Opening excavation entrance");
-	CreateResistSimple(35 * 25, "Initializing elevators");
-	CreateResistSimple(35 * 45, "Defend the secure room");
+	Resist::CreateResist(35 * 15, "Lowering pillars");
+	Resist::CreateResist(35 * 20, "Opening excavation entrance");
+	Resist::CreateResist(35 * 25, "Initializing elevators");
+	Resist::CreateResist(35 * 45, "Defend the secure room");
 
 	SpawnSpotForced("ZH02VolcanoSmoke", 6, 0, 0);
-	Delay(const: 1);
-
-	SetEscapeDefaults();
-	StartMode();
 }
 
 script "OnOpenClient" open clientside
 {
-	CreateWeather(WEATHERTYPESPARK, true, true, 5, 30, 500, -200, 200);
-	CreateWeather(WEATHERTYPESPARK, true, true, 25, 30, 500, -200, 200);
+	// TODO: Support
+	//CreateWeather(WEATHERTYPESPARK, true, true, 5, 30, 500, -200, 200);
+	//CreateWeather(WEATHERTYPESPARK, true, true, 25, 30, 500, -200, 200);
 }
 
 // Switches the sparks on or off depending on the lineside.
 script "SparksSwitch" (void) clientside
 {
-	int side = LineSide() == LINE_FRONT;
-	if (side) {
-		StartWeather(0);
-	}
-	else {
-		StopWeather(0);
-	}
+	// TODO: Support
+	//int side = LineSide() == LINE_FRONT;
+	//if (side) {
+	//	StartWeather(0);
+	//}
+	//else {
+	//	StopWeather(0);
+	//}
 }
 
 // Switches the big sparks on or off depending on the lineside.
 // This switch assumes the small sparks are already enabled.
 script "BigSparksSwitch" (void) clientside
 {
-	int side = LineSide() == LINE_FRONT;
-	if (side) {
-		StartWeather(1);
-		StopWeather(0);
-	}
-	else {
-		StopWeather(1);
-		StartWeather(0);
-	}
+	// TODO: Support
+	//int side = LineSide() == LINE_FRONT;
+	//if (side) {
+	//	StartWeather(1);
+	//	StopWeather(0);
+	//}
+	//else {
+	//	StopWeather(1);
+	//	StartWeather(0);
+	//}
 }
 
 Script "Resist1" (void)
 {
     SetActivator(-1);
-	Delay(StartResist(0));
+	Delay(Resist::StartResistByIndex(0));
 
     Floor_LowerByValue(8, 16, 108);
     SetLineBlocking(1, BLOCK_NOTHING);
@@ -75,7 +74,7 @@ Script "Resist1" (void)
 Script "Resist2" (void)
 {
     SetActivator(-1);
-	Delay(StartResist(1));
+	Delay(Resist::StartResistByIndex(1));
 
     Floor_LowerByValue(5, 16, 108);
     SetLineBlocking(2, BLOCK_NOTHING);
@@ -85,7 +84,7 @@ Script "Resist2" (void)
 Script "Resist3" (void)
 {
     SetActivator(-1);
-	Delay(StartResist(2));
+	Delay(Resist::StartResistByIndex(2));
 
     Polyobj_Move(1, 7, 128, 128);
 	Polyobj_Move(2, 7, 0, 128);
@@ -131,7 +130,7 @@ Script "Resist3" (void)
 	PolyWait(3);
 	Delay(35*2);
 
-	LogBold("A secondary path has been opened.");
+	Logger::LogBold("A secondary path has been opened.");
 
 	Polyobj_Move(6, 10, 192, 100);
 	Polyobj_Move(7, 10, 64, 100);
@@ -147,9 +146,9 @@ Script "FinalResist" (void)
     SetActivator(-1);
     delay(35*3);
 
-	Delay(StartResist(3));
+	Delay(Resist::StartResistByIndex(3));
 
-	for (int i = 0; i < MAX_PLAYERS; ++i)
+	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
     {
 		if (!PlayerInGame(i)) {
 			continue;
@@ -173,15 +172,16 @@ Script "FinalResist" (void)
     AmbientSound("world/VOLCANO", 127);
     delay(35);
 
-    KillUnsafePlayers();
+    Game::KillUnsafePlayers();
 }
 
 Script "Lava_Teleport" (int teleportid, int noDamage)
 {
-    if(IsHuman() && !noDamage)
+    if(Player::GetIsHuman() && !noDamage)
     {
         Thing_Damage(0, GetActorProperty(0, APROP_Health)/3, 0);
     }
 
-	AdvancedTeleport(teleportid, 32, TELEPORTFOG | TELEPORTUSEANGLE);
+	// TODO: Support
+	//AdvancedTeleport(teleportid, 32, TELEPORTFOG | TELEPORTUSEANGLE);
 }

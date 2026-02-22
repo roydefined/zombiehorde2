@@ -1,11 +1,11 @@
-#import "acs_source_public\zhcore.g.acs"
-#import "acs_source_public\common.g.acs"
-#import "acs_source_public\utils.g.acs"
-#import "acs_source_public\resist.g.acs"
-#import "acs_source_public\log.g.acs"
-#import "acs_source_public\bcsutils.g.acs"
+#pragma raw include on
+#pragma raw define on
 
-#include "zcommon.acs"
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
 
 // The TID that is used for synchronising the Delorean state with clients.
 #define SYNC_DELOREANSTATE 100
@@ -25,22 +25,19 @@ bool trainReached = false;
 // The current speed of the Delorean.
 int deloreanSpeed = 20;
 
+#define LOGSOURCE "Map"
+
 script "OnOpen" open
 {
 	// Resists
-	CreateResistSimple(35 * 20, "");
-	CreateResistSimple(35 * 25, "");
-	CreateResistSimple(35 * 20, "");
+	Resist::CreateResist(35 * 20);
+	Resist::CreateResist(35 * 25);
+	Resist::CreateResist(35 * 20);
 
 	// Resist blocking lines.
 	SetLineBlocking(1, BLOCK_CREATURES);
 	SetLineBlocking(2, BLOCK_CREATURES);
 	SetLineBlocking(7, BLOCK_CREATURES);
-
-	Delay(const: 1);
-
-	SetEscapeDefaults();
-	StartMode();
 }
 
 script "OnOpenClient" open CLIENTSIDE
@@ -48,41 +45,41 @@ script "OnOpenClient" open CLIENTSIDE
 	ClientSyncDeloreanState();
 	if(!ACS_NamedExecute("DeloreanMusicLoop", 0))
 	{
-		LogError("Failed to start DeloreanMusicLoop");
+		Logger::LogError(LOGSOURCE, "Failed to start DeloreanMusicLoop");
 	}
 }
 
 script "Resist1" (void)
 {
 	SetActivator(-1);
-	Delay(StartResist(0));
+	Delay(Resist::StartResistByIndex(0));
 
 	Floor_LowerByValue(9, 32, 248);
 	SetLineBlocking(1, BLOCK_NOTHING);
 
 	Delay(35*5);
 
-	LogBold("A secondary path has opened.");
+	Logger::LogBold("A secondary path has opened.");
 	Floor_LowerByValue(5, 32, 64);
 }
 
 script "Resist2" (void)
 {
 	SetActivator(-1);
-	Delay(StartResist(1));
+	Delay(Resist::StartResistByIndex(1));
 	Floor_LowerByValue(8, 16, 120);
 	SetLineBlocking(2, BLOCK_NOTHING);
 }
 
 script "Resist3" (void)
 {
-	Delay(StartResist(2));
+	Delay(Resist::StartResistByIndex(2));
 	Floor_LowerByValue(30, 16, 120);
 	SetLineBlocking(7, BLOCK_NOTHING);
 
 	Delay(35*5);
 
-	LogBold("A secondary path has opened.");
+	Logger::LogBold("A secondary path has opened.");
 	Floor_LowerByValue(15, 32, 64);
 }
 
@@ -95,19 +92,22 @@ script "TeleportToTrain" (void)
 	}
 
 	// Humans are teleported further ahead.
-	if(IsHuman())
+	if(Player::GetIsHuman())
 	{
-		AdvancedTeleportBetween(400, 405, 90, TELEPORTFOG | TELEPORTUSEANGLE);
+		// TODO: Support
+		//AdvancedTeleportBetween(400, 405, 90, TELEPORTFOG | TELEPORTUSEANGLE);
 	}
 	else
 	{
-		AdvancedTeleportBetween(300, 305, 90, TELEPORTFOG | TELEPORTUSEANGLE);
+		// TODO: Support
+		//AdvancedTeleportBetween(300, 305, 90, TELEPORTFOG | TELEPORTUSEANGLE);
 	}
 }
 
 script "FellOffTrain"(void)
 {
-	AdvancedTeleportBetween(300, 305, 90, TELEPORTFOG | TELEPORTUSEANGLE);
+	// TODO: Support
+	//AdvancedTeleportBetween(300, 305, 90, TELEPORTFOG | TELEPORTUSEANGLE);
 }
 
 function void DrawSpeed(int speed)
@@ -149,7 +149,7 @@ script "DeloreanSpeedOMeter" (void)
 	Delay(35);
 
 	// Initial message to unsafe players.
-	for(int i = 0; i <= MAX_PLAYERS; i++)
+	for(int i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
 	{
 		if (!PlayerInGame(i)) {
 			continue;
@@ -157,7 +157,7 @@ script "DeloreanSpeedOMeter" (void)
 
 		SetActivatorToPlayer(i);
 
-		if(IsSafe())
+		if(Game::GetIsSafe())
 		{
 			continue;
 		}
@@ -173,7 +173,7 @@ script "DeloreanSpeedOMeter" (void)
 	SetLineBlocking(33, BLOCK_CREATURES);
 
 	// Start teleporting safe players.
-	for(i = 0; i <= MAX_PLAYERS; i++)
+	for(i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
 	{
 		if (!PlayerInGame(i)) {
 			continue;
@@ -181,7 +181,7 @@ script "DeloreanSpeedOMeter" (void)
 
 		SetActivatorToPlayer(i);
 
-		if(!IsSafe())
+		if(!Game::GetIsSafe())
 		{
 			continue;
 		}
@@ -195,7 +195,7 @@ script "DeloreanSpeedOMeter" (void)
 	Delay(21);
 
 	// Start teleporting non-safe players.
-	for(i = 0; i <= MAX_PLAYERS; i++)
+	for(i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
 	{
 		if (!PlayerInGame(i)) {
 			continue;
@@ -203,14 +203,17 @@ script "DeloreanSpeedOMeter" (void)
 
 		SetActivatorToPlayer(i);
 
-		if(IsSafe())
+		if(Game::GetIsSafe())
 		{
 			continue;
 		}
 
 
 		ChangeCamera(26, 0, 0);
-		AdvancedTeleport(700, 350, TELEPORTTRANSFERVEL);
+
+		// TODO: Support
+		//AdvancedTeleport(700, 350, TELEPORTTRANSFERVEL);
+
 		ThrustThing(64, 100, 0, ActivatorTID());
 		ThrustThingZ(ActivatorTID(), 20, 0, 0);
 	}
@@ -222,7 +225,7 @@ script "DeloreanSpeedOMeter" (void)
 	HudMessageBold(s:"The train and its passengers have fallen over the cliff!"; HUDMSG_PLAIN, 0, CR_WHITE, 0.5, 0.75, 3.0);
 
 	Delay(35);
-	KillUnsafePlayers();
+	Game::KillUnsafePlayers();
 	Delay(35*5);
 
 	ChangeCamera(0, 1, 0);
@@ -242,13 +245,15 @@ script "TeleportToSafety" (int playerId)
 	SetFont("SMALLFONT");
 	Print(s:"\cCThe Delorean has passed through time...");
 
-	if(IsHuman())
+	if(Player::GetIsHuman())
 	{
-		AdvancedTeleport(900, 200, TELEPORTTRANSFERVEL);
+		// TODO: Support
+		//AdvancedTeleport(900, 200, TELEPORTTRANSFERVEL);
 	}
 	else
 	{
-		AdvancedTeleport(800, 200, TELEPORTTRANSFERVEL);
+		// TODO: Support
+		//AdvancedTeleport(800, 200, TELEPORTTRANSFERVEL);
 	}
 
 	FadeTo(255, 255, 0, 0.0, 0.2);
@@ -265,15 +270,15 @@ script "DeloreanMusicLoop" (void) clientside
 		restart;
 	}
 
-	SetMapMusic("ROUTEDEL", 0);
+	Music::SetMusic("ROUTEDEL", 0);
 	Delay(35*55);
-	SetMapMusic("", 0);
+	Music::SetMusic("", 0);
 }
 
 function void SyncDeloreanState(int state)
 {
-	if (!IsServer()) {
-		LogError("SyncDeloreanState was called clientside.");
+	if (!BCSUtils::IsServer()) {
+		Logger::LogError(LOGSOURCE, "SyncDeloreanState was called clientside.");
 		return;
 	}
 
@@ -284,11 +289,11 @@ function void SyncDeloreanState(int state)
 		return;
 	}
 
-	SyncVariable(SYNC_DELOREANSTATE, state);
+	BCSUtils::SyncVariable(SYNC_DELOREANSTATE, state);
 
 	// Receive on all clients.
 	if (!ACS_NamedExecuteAlways("SyncDeloreanState_Client", 0)) {
-		LogError("Failed to execute SyncDeloreanState_Client.");
+		Logger::LogError(LOGSOURCE, "Failed to execute SyncDeloreanState_Client.");
 	}
 }
 
@@ -300,8 +305,8 @@ script "SyncDeloreanState_Client" (void) clientside
 // Called clientside to fetch the synced state.
 function void ClientSyncDeloreanState(void)
 {
-	if (!IsClient()) {
-		LogError("ClientSyncDeloreanState was called serverside.");
+	if (!BCSUtils::IsClient()) {
+		Logger::LogError(LOGSOURCE, "ClientSyncDeloreanState was called serverside.");
 		return;
 	}
 
@@ -310,6 +315,8 @@ function void ClientSyncDeloreanState(void)
 		return;
 	}
 
-	deloreanState = GetSyncVarDefault(SYNC_DELOREANSTATE, DELOREANSTATE_NONE);
-	LogDebug(StrParam(s:"Synced delorean state to client: ", d:deloreanState, s:"."));
+	deloreanState = BCSUtils::GetSyncVarDefault(SYNC_DELOREANSTATE, DELOREANSTATE_NONE);
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced delorean state to client: ", d:deloreanState, s:"."));
 }
+
+#undef LOGSOURCE

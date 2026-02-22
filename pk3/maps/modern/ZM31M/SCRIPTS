@@ -1,14 +1,11 @@
-#import "acs_source_public\zhcore.g.acs"
-#import "acs_source_public\common.g.acs"
-#import "acs_source_public\utils.g.acs"
-#import "acs_source_public\weather.g.acs"
-#import "acs_source_public\log.g.acs"
-#import "acs_source_public\timer.g.acs"
-#import "acs_source_public\identity.g.acs"
-#import "acs_source_public\hud.g.acs"
-#import "acs_source_public\bcsutils.g.acs"
+#pragma raw include on
+#pragma raw define on
 
-#include "zcommon.acs"
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
 
 // Base TID for anything related to displaying a message when interacting with the map.
 #define HUDID_INTERACTION 60
@@ -34,7 +31,7 @@ int consoleClientTemperature;
 
 // Indicates if players are "warm", i.e. inside or next to fire.
 // Also has a clientsided synchronized value that indicates if the console client is warm.
-int isWarm[MAX_PLAYERS];
+int isWarm[BCSUtils::MAX_PLAYERS];
 int consoleClientIsWarm;
 
 // Current event state
@@ -52,7 +49,7 @@ int nukeExplosionTimestamp = 0;
 
 // Indicates if players are inside the bunker.
 // Also has a clientsided synchronized value that indicates if the console client is in the bunker.
-bool isInBunker[MAX_PLAYERS],
+bool isInBunker[BCSUtils::MAX_PLAYERS],
 	 consoleClientIsInBunker;
 
 // Level atmosphere tags that have their color adjusted in events
@@ -68,8 +65,8 @@ bool guardhouseUnlocked,
 	 labUnlocked;
 
 // player in toxic reactor room / decontermination room
-bool inToxicRoom[MAX_PLAYERS],
-	 inDeconterminationRoom[MAX_PLAYERS];
+bool inToxicRoom[BCSUtils::MAX_PLAYERS],
+	 inDeconterminationRoom[BCSUtils::MAX_PLAYERS];
 
 // Nuke boundary rock tags. First index is the rock's tag, second index is the height to set the rock to.
 int nukeBoundaryRocks [6][2] = {
@@ -86,6 +83,8 @@ int nukeBoundaryRocks [6][2] = {
 int shelterMarkers[2] = {
 	37, 38
 };
+
+#define LOGSOURCE "Map"
 
 // Function handles setting the atmosphere of the map.
 function void SetLevelAtmosphere (int fade, int color1, int color2)
@@ -129,22 +128,18 @@ Script "OnOpen" open
 		ChangeFloor(sectorTag, "SNOWFL01");
 	}
 
-	Delay(1);
-
-    SetSurvivalDefaults();
-	StartMode();
-
 	// Delay until we're halfway through the main time, then trigger a random event.
-	int gameTime = GetTimerTime(stateToTimerIndex(statePlaying)) / 2;
+	// TODO: Support
+	int gameTime = 1;//GetTimerTime(stateToTimerIndex(statePlaying)) / 2;
 
 	while (--gameTime) {
 		delay(1);
 	}
 
 	// Events
-	str scriptName = cond(random(0, 3) > 0, "Events_Night", "Events_Nuke");
+	str scriptName = BCSUtils::cond(random(0, 3) > 0, "Events_Night", "Events_Nuke");
 	if (!ACS_NamedExecute(scriptName, 0)) {
-		LogError(StrParam(s:"Failed to call script ", s:scriptName, s:"."));
+		Logger::LogError(LOGSOURCE, StrParam(s:"Failed to call script ", s:scriptName, s:"."));
 	}
 }
 
@@ -160,43 +155,44 @@ Script "OnOpenClient" Open CLIENTSIDE
 	// These checks ensure everything works.
 	if (eventState == EVENTSTATE_NONE)
 	{
-		SetMapMusic("PSXMUS05", MAPMUSICSETDEFAULT);
+		Music::SetDefaultMusic("PSXMUS05");
 		SetLevelAtmosphere(156, 255, 255);
 	}
 	else if (eventState == EVENTSTATE_NIGHT)
 	{
-		SetMapMusic("SUBZERO", MAPMUSICSETDEFAULT);
+		Music::SetDefaultMusic("SUBZERO");
 		SetLevelAtmosphere(20, 120, 120);
 	}
 	else
 	{
-		SetMapMusic("DISPOSAL", MAPMUSICSETDEFAULT);
+		Music::SetDefaultMusic("DISPOSAL");
 		SetLevelAtmosphere(10, 255, 10);
 		SpawnSpot("Nuke", 6);
 		ChangeFloor(48, "-");
 		ChangeFloor(49, "-");
 	}
 
-	CreateWeather(WEATHERTYPESNOW, true, false, 15, 200, 500, 50, 150);
-	CreateWeather(WEATHERTYPEDUST, false, true, 10, 30, 500, -200, 200);
-	StartWeather(0);
+	// TODO: Support
+	//CreateWeather(WEATHERTYPESNOW, true, false, 15, 200, 500, 50, 150);
+	//CreateWeather(WEATHERTYPEDUST, false, true, 10, 30, 500, -200, 200);
+	//StartWeather(0);
 
 	if (!ACS_NamedExecute("FrozenDebug", 0))
 	{
-		LogError("Failed to invoke FrozenDebug");
+		Logger::LogError(LOGSOURCE, "Failed to invoke FrozenDebug");
 	}
 }
 
 script "enter" enter
 {
 	if(!ACS_NamedExecuteAlways("TemperatureLoop", 0)) {
-		LogError(StrParam(s:"Failed to call script TemperatureLoop."));
+		Logger::LogError(LOGSOURCE, StrParam(s:"Failed to call script TemperatureLoop."));
 	}
 }
 
 script "enterClient" enter clientside
 {
-	while(IsAlive()) {
+	while(BCSUtils::IsAlive()) {
 		TemperatureTickClient();
 		Delay(const: 1);
 	}
@@ -269,7 +265,7 @@ Script "UnlockLabs" (void)
     }
 
 	ClearLineSpecial();
-	LogBold(StrParam(n:0, s:" has cleared the quarantine. Elevators are now activated."));
+	Logger::LogBold(StrParam(n:0, s:" has cleared the quarantine. Elevators are now activated."));
 	AmbientSound("world/reveal", 255);
 	door_open(35, 8);
 	labUnlocked = true;
@@ -289,7 +285,7 @@ script "EnterGuardHouse" (void)
 		terminate;
 	}
 
-	LogTo("Upon entering the house, you hear a trigger beneath your feet go off...", PlayerNumber());
+	Logger::LogActivator("Upon entering the house, you hear a trigger beneath your feet go off...");
     delay(35*10);
     GuardHouseunlocked = true;
 }
@@ -299,7 +295,7 @@ Script 20 (int index)
 	static int flares[3] = {10, 10, 10};
 
     // Zombies can't pick-up flares
-    if(IsZombie()) {
+    if(Player::GetIsZombie()) {
 		terminate;
 	}
 
@@ -317,7 +313,7 @@ Script 20 (int index)
         terminate;
     }
 
-    HudMessage(s:"Grabbed a flare. This locker has ", d:--flares[index], s:" flare", s:cond(flares[index] != 1, "s", ""), s:" left."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+    HudMessage(s:"Grabbed a flare. This locker has ", d:--flares[index], s:" flare", s:BCSUtils::cond(flares[index] != 1, "s", ""), s:" left."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
     LocalAmbientSound("generic/itemget", 128);
 	GiveInventory("FlareSpawn", 1);
 }
@@ -334,7 +330,7 @@ script "SetInBunker" (int enterBunker, int targetTid)
 	}
 
 	if (!NamedExecuteClientScript("SetInBunker_Client", PlayerNumber(), enterBunker)) {
-		LogError(StrParam(s:"Failed to invoke SetInBunker_Client on client ", d:PlayerNumber()));
+		Logger::LogError(LOGSOURCE, StrParam(s:"Failed to invoke SetInBunker_Client on client ", d:PlayerNumber()));
 	}
 }
 
@@ -343,13 +339,16 @@ script "SetInBunker_Client" (int enterBunker) clientside
 	consoleClientIsInBunker = enterBunker;
 
 	// Switch weather
-	StartWeather(cond(enterBunker, 1, 0));
+	// TODO: Support
+	//StartWeather(BCSUtils::cond(enterBunker, 1, 0));
 }
 
 // For debugging.
 script "FrozenDebug" (void) CLIENTSIDE
 {
-	if (!IsDevelopment())
+	// TODO: Support
+	if (false)
+	//if (!ZH2Game::IsDevelopment())
 	{
 		terminate;
 	}
@@ -365,17 +364,17 @@ script "FrozenDebug" (void) CLIENTSIDE
 		SetHudSize(640, 480, FALSE);
 		SetFont("smallfont");
 
-		str currentEvent = cond(eventState == EVENTSTATE_NONE, "none",
-			cond(eventState == EVENTSTATE_NIGHT, "night",
+		str currentEvent = BCSUtils::cond(eventState == EVENTSTATE_NONE, "none",
+			BCSUtils::cond(eventState == EVENTSTATE_NIGHT, "night",
 				"nuke"));
 
-		int nightFallsIn = cond(eventState == EVENTSTATE_NIGHT, nightModeStartTimestamp - Timer(), 0);
-		str nightFallen = cond(NightHasFallen(), "true", "false");
+		int nightFallsIn = BCSUtils::cond(eventState == EVENTSTATE_NIGHT, nightModeStartTimestamp - Timer(), 0);
+		str nightFallen = BCSUtils::cond(NightHasFallen(), "true", "false");
 
-		int nukeExplosionIn = cond(eventState == EVENTSTATE_NUKE, nukeExplosionTimestamp - Timer(), 0);
+		int nukeExplosionIn = BCSUtils::cond(eventState == EVENTSTATE_NUKE, nukeExplosionTimestamp - Timer(), 0);
 
-		str warm = cond(consoleClientIsWarm, "true", "false");
-		str inBunker = cond(consoleClientIsInBunker, "true", "false");
+		str warm = BCSUtils::cond(consoleClientIsWarm, "true", "false");
+		str inBunker = BCSUtils::cond(consoleClientIsInBunker, "true", "false");
 
 		HudMessage(s:"Current event: ", s:currentEvent; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 45.0, 0.03);
 
@@ -398,7 +397,7 @@ script "FrozenDebug" (void) CLIENTSIDE
 
 script 21 (void)
 {
-    if (IsZombie()) {
+    if (Player::GetIsZombie()) {
 		terminate;
 	}
 
@@ -409,14 +408,15 @@ script 21 (void)
 	int searchingCount = 35*5;
 	while (--searchingCount) {
 
-		if (IsMoving() || IsZombie())
+		// TODO: Support
+		if (/*Utils::IsMoving() || */Player::GetIsZombie())
 		{
-			if (IsZombie()) {
-				ClearHudMessage(HUDID_INTERACTION);
-				ClearHudMessage(HUDID_INTERACTION+1);
+			if (Player::GetIsZombie()) {
+				BCSUtils::ClearHudMessage(HUDID_INTERACTION);
+				BCSUtils::ClearHudMessage(HUDID_INTERACTION+1);
 			} else {
 				HudMessage(s:"You are unable to properly search the locker when moving."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
-				ClearHudMessage(HUDID_INTERACTION+1);
+				BCSUtils::ClearHudMessage(HUDID_INTERACTION+1);
 			}
 
 			terminate;
@@ -455,7 +455,7 @@ script "OpenCrossRoom" (void)
 // Hacking for the holy cross
 script "HackHolyCross" (void)
 {
-    if(IsZombie()) {
+    if(Player::GetIsZombie()) {
 		terminate;
 	}
 
@@ -465,11 +465,12 @@ script "HackHolyCross" (void)
 	int hackingPercentage = 100;
 	while (hackingPercentage) {
 
-		if (IsMoving() || IsZombie())
+		// TODO: Support
+		if (/*IsMoving() || */Player::GetIsZombie())
 		{
-			if (IsZombie()) {
-				ClearHudMessage(HUDID_INTERACTION);
-				ClearHudMessage(HUDID_INTERACTION+1);
+			if (Player::GetIsZombie()) {
+				BCSUtils::ClearHudMessage(HUDID_INTERACTION);
+				BCSUtils::ClearHudMessage(HUDID_INTERACTION+1);
 			} else {
 				HudMessage(s:"Do not move if you want to hack the terminal."; HUDMSG_FADEOUT, HUDID_INTERACTION+1, CR_WHITE, 320.0, 130.0, 3.0, 1.0);
 			}
@@ -497,7 +498,7 @@ script "ToxicRoomTrigger" (void)
 	inToxicRoom[PlayerNumber()] = toxicLineSide;
 
 	while (inToxicRoom[PlayerNumber()]) {
-		if (!CheckInventory("IronFeetZM20") && IsHuman()) {
+		if (!CheckInventory("IronFeetZM20") && Player::GetIsHuman()) {
 			if (Timer() % 2 == 0) {
 				Thing_damage2(ActivatorTID(), 1, "silent");
 			}
@@ -513,7 +514,7 @@ script "ToxicRoomTrigger" (void)
 ** -----------------------------------------------------------------------------
 */
 
-int inElevator[MAX_PLAYERS];
+int inElevator[BCSUtils::MAX_PLAYERS];
 bool elevatorInUse[4];
 
 // Elevator data
@@ -531,12 +532,12 @@ script "TogglePlayerElevatorId" (int elevatorId)
 	bool entersElevator = LineSide() == LINE_FRONT;
 	if (entersElevator)
 	{
-		LogDebug(StrParam(s:"Player ", n:0, s:" has entered elevator ", d:elevatorId));
+		Logger::LogDebug(LOGSOURCE, StrParam(s:"Player ", n:0, s:" has entered elevator ", d:elevatorId));
 		inElevator[PlayerNumber()] = elevatorId;
 		terminate;
 	}
 
-	LogDebug(StrParam(s:"Player ", n:0, s:" has exited the elevator"));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Player ", n:0, s:" has exited the elevator"));
     inElevator[PlayerNumber()] = 0;
 }
 
@@ -548,7 +549,7 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 	// Checks when the elevator may not be used
     if (eventState == EVENTSTATE_NUKE
 		|| !labUnlocked
-		|| (IsZombie() && !pressedInside)
+		|| (Player::GetIsZombie() && !pressedInside)
 		|| elevatorInUse[elevatorId])
 	{
 		NamedExecuteClientScript("Elevator_client", playerId);
@@ -566,7 +567,7 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 	ThingSound(dingSoundTag, "generic/ding", 127);
 	Delay(35);
 
-	LogDebug(StrParam(s:"Start elevator logic. Elevator id: ", d:elevatorId, s:", target elevatorId", d:targetElevatorId));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Start elevator logic. Elevator id: ", d:elevatorId, s:", target elevatorId", d:targetElevatorId));
 
 	// Open doors.
 	int polyRightTag = elevatorTags[elevatorId][0];
@@ -586,7 +587,7 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 	PolyWait(polyLeftTag);
 
 	// Stop here if a zombie called from the inside.
-	if (PlayerIsZombie(playerId) && pressedInside) {
+	if (Player::GetPlayerIsZombie(playerId) && pressedInside) {
 		terminate;
 	}
 
@@ -640,7 +641,7 @@ script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
 function bool AnybodyInElevator(int elevatorId)
 {
 	// Check if anybody has entered the elevator.
-	for (int i = 0; i < MAX_PLAYERS; ++i) {
+	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i) {
 		if (!PlayerInGame(i) || inElevator[i] != elevatorId) {
 			continue;
 		}
@@ -653,9 +654,10 @@ function bool AnybodyInElevator(int elevatorId)
 
 script "Elevator_client" (void) clientside
 {
-	if(IsZombie())
+	if(Player::GetIsZombie())
 	{
-		Chat(StrParam(n:0, s:"\cd: Brainz...?"));
+		// TODO: Support
+		//Chat(StrParam(n:0, s:"\cd: Brainz...?"));
 	}
 	else if(eventState == EVENTSTATE_NUKE)
 	{
@@ -676,15 +678,15 @@ script "Elevator_client" (void) clientside
 
 function void SetEventState(int state)
 {
-	LogDebug(StrParam(s:"Setting event state to ", d:state));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Setting event state to ", d:state));
 	eventState = state;
 	SyncEventState();
 }
 
 function void SyncEventState(void)
 {
-	if (!IsServer()) {
-		LogError("SyncEventState was called clientside.");
+	if (!BCSUtils::IsServer()) {
+		Logger::LogError(LOGSOURCE, "SyncEventState was called clientside.");
 		return;
 	}
 
@@ -693,11 +695,11 @@ function void SyncEventState(void)
 		return;
 	}
 
-	SyncVariable(SYNC_EVENTSTATE, eventState);
+	BCSUtils::SyncVariable(SYNC_EVENTSTATE, eventState);
 
 	// Receive on all clients.
 	if (!ACS_NamedExecuteAlways("SyncEventState_Client", 0)) {
-		LogError("Failed to execute SyncEventState_Client.");
+		Logger::LogError(LOGSOURCE, "Failed to execute SyncEventState_Client.");
 	}
 }
 
@@ -709,8 +711,8 @@ script "SyncEventState_Client" (void) clientside
 // Called clientside to fetch the synced state.
 function void ClientSyncEventState(void)
 {
-	if (!IsClient()) {
-		LogError("ClientSyncEventState was called serverside.");
+	if (!BCSUtils::IsClient()) {
+		Logger::LogError(LOGSOURCE, "ClientSyncEventState was called serverside.");
 		return;
 	}
 
@@ -719,10 +721,10 @@ function void ClientSyncEventState(void)
 		return;
 	}
 
-	int state = GetSyncVarDefault(SYNC_EVENTSTATE, EVENTSTATE_NONE);
+	int state = BCSUtils::GetSyncVarDefault(SYNC_EVENTSTATE, EVENTSTATE_NONE);
 	eventState = state;
 
-	LogDebug(StrParam(s:"Synced event state client: ", d:eventState));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced event state client: ", d:eventState));
 }
 
 /*
@@ -735,7 +737,7 @@ function void ClientSyncEventState(void)
 function bool NightHasFallen(void)
 {
 	return eventState == EVENTSTATE_NIGHT
-		&& nightModeStartTimestamp < SynchronizedTimer();
+		&& nightModeStartTimestamp < Utils::GetSynchronizedTimer();
 }
 
 // Nighttime event
@@ -757,12 +759,12 @@ Script "Events_Night_client" (void) clientside
     HudMessage(s:"Night approaches"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 100.0, 5.0, 1.0, 5.0);
 
 	delay(35 * 3);
-	SetMapMusic("", MAPMUSICSETDEFAULT);
+	Music::SetDefaultMusic("");
 	delay(35 * 8);
 
 	while (--fadeValue > 20 && --colorValue)
 	{
-		if (fadeValue < 30 && PlayerIsHuman(ConsolePlayerNumber()))
+		if (fadeValue < 30 && Player::GetPlayerIsHuman(ConsolePlayerNumber()))
 		{
 			SetHudSize(640, 480, FALSE);
 			HudMessage(s:"As the night approaches"; HUDMSG_TYPEON, 0, CR_WHITE, 320.0, 93.0, 3.0, 0.04, 1.0);
@@ -773,13 +775,13 @@ Script "Events_Night_client" (void) clientside
         delay(5);
     }
 
-	SetMapMusic("SUBZERO", MAPMUSICSETDEFAULT);
+	Music::SetDefaultMusic("SUBZERO");
 }
 
 function void SyncNightModeTimestamp(void)
 {
-	if (!IsServer()) {
-		LogError("SyncNightModeTimestamp was called clientside.");
+	if (!BCSUtils::IsServer()) {
+		Logger::LogError(LOGSOURCE, "SyncNightModeTimestamp was called clientside.");
 		return;
 	}
 
@@ -787,9 +789,9 @@ function void SyncNightModeTimestamp(void)
 		return;
 	}
 
-	SyncVariable(SYNC_NIGHTTIMESTAMP, nightModeStartTimestamp);
+	BCSUtils::SyncVariable(SYNC_NIGHTTIMESTAMP, nightModeStartTimestamp);
 	if (!ACS_NamedExecuteAlways("ClientSyncNightModeTimestamp_Client", 0)) {
-		LogError("Failed to execute ClientSyncNightModeTimestamp_Client.");
+		Logger::LogError(LOGSOURCE, "Failed to execute ClientSyncNightModeTimestamp_Client.");
 	}
 }
 
@@ -800,8 +802,8 @@ script "ClientSyncNightModeTimestamp_Client" (void) clientside
 
 function void ClientSyncNightModeTimestamp(void)
 {
-	if (!IsClient()) {
-		LogError("ClientSyncNightModeStartTimestamp was called serverside.");
+	if (!BCSUtils::IsClient()) {
+		Logger::LogError(LOGSOURCE, "ClientSyncNightModeStartTimestamp was called serverside.");
 		return;
 	}
 
@@ -810,10 +812,10 @@ function void ClientSyncNightModeTimestamp(void)
 		return;
 	}
 
-	int timeStamp = GetSyncVarDefault(SYNC_NIGHTTIMESTAMP, 0);
+	int timeStamp = BCSUtils::GetSyncVarDefault(SYNC_NIGHTTIMESTAMP, 0);
 	nightModeStartTimestamp = timeStamp;
 
-	LogDebug(StrParam(s:"Synced night mode time stamp: ", d:nightModeStartTimestamp));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced night mode time stamp: ", d:nightModeStartTimestamp));
 }
 
 /*
@@ -837,7 +839,7 @@ Script "Events_Nuke" (void)
 	// Delay before the nuke truly hits
 	Delay(35 * 11);
 
-	for (int i = 0; i < MAX_PLAYERS; ++i)
+	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
 	{
 		if (!PlayerInGame(i)) {
 			continue;
@@ -849,14 +851,15 @@ Script "Events_Nuke" (void)
 
 	Delay(12);
 
-	for (i = 0; i < MAX_PLAYERS; ++i)
+	for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
 	{
 		if (!PlayerInGame(i) || isInBunker[i]) {
 			continue;
 		}
 
-		// TODO: Use proper safety features.
-		KillPlayer(i, false);
+		// Support
+		// TODO: This should use safety slots.
+		//KillPlayer(i, false);
 	}
 
 	// Set boundaries by raising rocks
@@ -875,17 +878,18 @@ Script "Events_Nuke_client" (void) clientside
 
 	int startTime = Timer();
 	int timeUntilExplosion = INT_MAX;
-	SetMapMusic("", MAPMUSICSETDEFAULT);
+	Music::SetDefaultMusic("");
 
 	while(timeUntilExplosion > 0)
 	{
 		SetHudSize(640, 480, FALSE);
 
 		int passedTime = Timer() - startTime;
-		timeUntilExplosion = nukeExplosionTimestamp - SynchronizedTimer();
+		timeUntilExplosion = nukeExplosionTimestamp - Utils::GetSynchronizedTimer();
 
 		// Debug
-		if (IsDevelopment() && GetUserCVar(ConsolePlayerNumber(), "zm20debug") == 1)
+		// TODO: Support
+		if (/*ZH2Game::IsDevelopment() && */GetUserCVar(ConsolePlayerNumber(), "zm20debug") == 1)
 		{
 			setFont("smallfont");
 			HudMessage(s:"Passed nuke time: ", d:passedTime; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 125.0, 0.03);
@@ -915,7 +919,7 @@ Script "Events_Nuke_client" (void) clientside
 		// Once after four seconds.
 		if (passedTime == 35 * 4)
 		{
-			SetMapMusic("Disposal", MAPMUSICSETDEFAULT);
+			Music::SetDefaultMusic("Disposal");
 		}
 
 		// Inform of shelter after 6 seconds.
@@ -936,24 +940,24 @@ Script "Events_Nuke_client" (void) clientside
 		if(passedTime > 35 * 10 + 18)
 		{
 			setFont("smallfont");
-			HudMessage(s:"Explosion in: ", s:FormatTics(timeUntilExplosion, true); HUDMSG_PLAIN, 0, CR_WHITE, 320.0, 120.0, HUDTIC);
+			HudMessage(s:"Explosion in: ", s:Utils::FormatTics(timeUntilExplosion, true); HUDMSG_PLAIN, 0, CR_WHITE, 320.0, 120.0, BCSUtils::HUDTIC);
 		}
 
 		// Display safety markers on map avery tic after 6 seconds.
 		if(passedTime > 35 * 6 && !consoleClientIsInBunker)
 		{
-			HudResetState();
-			HudSetCameraActor(0);
-			HudSetVirtualSize(120.0, 90.0);
-			HudSetStayTime(HUDTIC);
-			HudSetShowOnFullAutomap(FALSE);
+			BCSUtils::HudResetState();
+			BCSUtils::HudSetCameraActor(0);
+			BCSUtils::HudSetVirtualSize(120.0, 90.0);
+			BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+			BCSUtils::HudSetShowOnFullAutomap(FALSE);
 
 			for (i = 0; i < 2; ++i)
 			{
 				int tag = shelterMarkers[i];
-				if (ActorDistance2D(0, tag) > 1000.0 && !consoleClientIsInBunker) {
-					HudSetPoint3D(GetActorX(tag), GetActorY(tag), GetActorZ(tag)+150.0);
-					HudDrawImage(0, "marker13");
+				if (BCSUtils::ActorDistance2D(0, tag) > 1000.0 && !consoleClientIsInBunker) {
+					BCSUtils::HudSetPoint3D(GetActorX(tag), GetActorY(tag), GetActorZ(tag)+150.0);
+					BCSUtils::HudDrawImage(0, "marker13");
 				}
 			}
 		}
@@ -1014,8 +1018,8 @@ script "Events_Nuke_Final_client" (void) CLIENTSIDE
 
 function void SyncNukeExplosionTimestamp(void)
 {
-	if (!IsServer()) {
-		LogError("SyncNukeExplosionTimestamp was called clientside.");
+	if (!BCSUtils::IsServer()) {
+		Logger::LogError(LOGSOURCE, "SyncNukeExplosionTimestamp was called clientside.");
 		return;
 	}
 
@@ -1023,9 +1027,9 @@ function void SyncNukeExplosionTimestamp(void)
 		return;
 	}
 
-	SyncVariable(SYNC_NUKETIMESTAMP, nukeExplosionTimestamp);
+	BCSUtils::SyncVariable(SYNC_NUKETIMESTAMP, nukeExplosionTimestamp);
 	if (!ACS_NamedExecuteAlways("SyncNukeTimestamp_Client", 0)) {
-		LogError("Failed to execute SyncNukeTimestamp_Client.");
+		Logger::LogError(LOGSOURCE, "Failed to execute SyncNukeTimestamp_Client.");
 	}
 }
 
@@ -1036,8 +1040,8 @@ script "SyncNukeTimestamp_Client" (void) clientside
 
 function void ClientSyncNukeTimestamp(void)
 {
-	if (!IsClient()) {
-		LogError("ClientSyncNukeTimestamp was called serverside.");
+	if (!BCSUtils::IsClient()) {
+		Logger::LogError(LOGSOURCE, "ClientSyncNukeTimestamp was called serverside.");
 		return;
 	}
 
@@ -1046,10 +1050,10 @@ function void ClientSyncNukeTimestamp(void)
 		return;
 	}
 
-	int timeStamp = GetSyncVarDefault(SYNC_NUKETIMESTAMP, 0);
+	int timeStamp = BCSUtils::GetSyncVarDefault(SYNC_NUKETIMESTAMP, 0);
 	nukeExplosionTimestamp = timeStamp;
 
-	LogDebug(StrParam(s:"Synced nuke drop time stamp: ", d:nukeExplosionTimestamp));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced nuke drop time stamp: ", d:nukeExplosionTimestamp));
 }
 
 
@@ -1061,29 +1065,29 @@ function void ClientSyncNukeTimestamp(void)
 
 function void TemperatureTickClient(void)
 {
-	if (IsServerOnly()) {
-		LogError("TemperatureTickClient must be called clientside.");
+	if (BCSUtils::IsServerOnly()) {
+		Logger::LogError(LOGSOURCE, "TemperatureTickClient must be called clientside.");
 		return;
 	}
 
 	// Game ended.
-	if (GetGameState() > statePlaying) {
+	if (Round::GetGameIsEnding()) {
 		return;
 	}
 
 	// The temperature does not exist on zombies.
-	if (IsZombie()) {
+	if (Player::GetIsZombie()) {
 		return;
 	}
 
 
-	int x = GetHudX(),
-		xLeft = GetHudLeftX(),
-	    xRight = GetHudRightX(),
-	    y = GetHudY();
+	int x = 0,//GetHudX(),
+		xLeft = 0,//GetHudLeftX(),
+	    xRight = 0,//GetHudRightX(),
+	    y = 0;//GetHudY();
 
 	// Client is in water
-	bool inWater = GetActorWaterLevel(ActivatorTID()) > 0;
+	bool inWater = BCSutils::GetActorWaterLevel(ActivatorTID()) > 0;
 	if (!consoleClientIsWarm && inWater)
 	{
 		SetHudSize(640, 480, false);
@@ -1102,13 +1106,16 @@ function void TemperatureTickClient(void)
 	SetHudSize(480, 480, 0);
 	DrawFrostScreen(240.0, 240.0, HUDID_TEMPERATURE);
 
-	if (!HudEnabledZH()) {
+	// TODO: Support?
+	//if (!HudEnabledZH()) {
+	if (false) {
 		return;
 	}
 
-	SetHudResolution();
-	DrawTemperatureValue(consoleClientTemperature, xLeft - 55.0, y - 95.0, HUDID_TEMPERATURE + 4);
-	DrawTemperatureGauge(xLeft - 55.0, y - 95.0, HUDID_TEMPERATURE + 5);
+	// TODO: Support
+	//SetHudResolution();
+	//DrawTemperatureValue(consoleClientTemperature, xLeft - 55.0, y - 95.0, HUDID_TEMPERATURE + 4);
+	//DrawTemperatureGauge(xLeft - 55.0, y - 95.0, HUDID_TEMPERATURE + 5);
 }
 
 function void DrawFrostScreen(int x, int y, int id)
@@ -1136,7 +1143,7 @@ function void DrawFrostScreen(int x, int y, int id)
 	}
 
 	// Always show the last graphic if outside at night or in water.
-	bool inWater = GetActorWaterLevel(ActivatorTID()) > 0;
+	bool inWater = BCSUtils::GetActorWaterLevel(ActivatorTID()) > 0;
 	if (!consoleClientIsWarm && (NightHasFallen() || inWater)) {
 		graphicIndex = 4;
 	}
@@ -1172,8 +1179,8 @@ function void DrawTemperatureValue(int amount, int x, int y, int id)
 		return;
 	}
 
-	int color = cond(amount > 32, CR_WHITE,
-		cond(amount > 30, CR_YELLOW, CR_RED));
+	int color = BCSUtils::cond(amount > 32, CR_WHITE,
+		BCSUtils::cond(amount > 30, CR_YELLOW, CR_RED));
 
 	SetFont("smallfont");
 	HudMessage(d:amount; HUDMSG_PLAIN, id, color, x, y, 0.03);
@@ -1182,13 +1189,13 @@ function void DrawTemperatureValue(int amount, int x, int y, int id)
 // Called to synchronize the current temperature to the client.
 script "TemperatureSync" (int amount) CLIENTSIDE
 {
-	LogDebug(StrParam(s:"Synchronizing temperature to ", d:amount));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synchronizing temperature to ", d:amount));
 	consoleClientTemperature = amount;
 }
 
 script "WarmSync" (int warm) CLIENTSIDE
 {
-	LogDebug(StrParam(s:"Marking self as ", s:cond(warm, "warm", "cold"), s:"."));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Marking self as ", s:BCSUtils::cond(warm, "warm", "cold"), s:"."));
 	consoleClientIsWarm = warm;
 }
 
@@ -1224,10 +1231,10 @@ script "TemperatureLoop" (void)
 	int lastTemperature = TEMPERATURE_MAX;
 	SynchronizeTemperature(temperature);
 
-	while(IsAlive())
+	while(BCSUtils::IsAlive())
 	{
 		// Game ended.
-		if (GetGameState() > statePlaying)
+		if (Round::GetGameIsEnding())
 		{
 			Delay(const: 1);
 			continue;
@@ -1235,7 +1242,7 @@ script "TemperatureLoop" (void)
 
 		// Zombies are not affected by the temperature.
 		// Make sure the temperature is reset.
-		if (IsZombie()) {
+		if (Player::GetIsZombie()) {
 
 			if (temperature != TEMPERATURE_MAX) {
 				temperature = TEMPERATURE_MAX;
@@ -1247,14 +1254,14 @@ script "TemperatureLoop" (void)
 		}
 
 		bool warm = GetIsWarm(PlayerNumber());
-		bool inWater = GetActorWaterLevel(ActivatorTID()) > 0;
+		bool inWater = BCSUtils::GetActorWaterLevel(ActivatorTID()) > 0;
 
 		// Hurt the player every 5 tics if they are at minimum temperature.
 		if (temperature == TEMPERATURE_MIN && !warm)
 		{
 			if (!firstDamageTic) {
 				firstDamageTic = true;
-				LogActivator("You are freezing to death! Seek shelter.");
+				Logger::LogActivator("You are freezing to death! Seek shelter.");
 			}
 
 			if (Timer() % 5 == 0) {
@@ -1277,8 +1284,8 @@ script "TemperatureLoop" (void)
 		if (lastTicWarm == warm)
 		{
 			// If the player is inside, add temperature. Otherwise take it.
-			temperature += cond(warm, 1, -1);
-			temperature = clamp(temperature, TEMPERATURE_MIN, TEMPERATURE_MAX);
+			temperature += BCSUtils::cond(warm, 1, -1);
+			temperature = BCSUtils::clamp(temperature, TEMPERATURE_MIN, TEMPERATURE_MAX);
 
 			if (temperature != lastTemperature)
 			{
@@ -1288,10 +1295,10 @@ script "TemperatureLoop" (void)
 
 		// Determine next tic to check based on the player's state.
 		// If outside at night, the next tic happens quicker.
-		int addedTics = cond(warm,
+		int addedTics = BCSUtils::cond(warm,
 			TEMPERATURE_TIC_WARM,
-			cond(inWater,
-				TEMPERATURE_TIC_WATER, cond(NightHasFallen(),
+			BCSUtils::cond(inWater,
+				TEMPERATURE_TIC_WATER, BCSUtils::cond(NightHasFallen(),
 					TEMPERATURE_TIC_NIGHT, TEMPERATURE_TIC_NORMAL)));
 
 		nextTemperatureTic = Timer() + addedTics;
@@ -1304,13 +1311,15 @@ script "TemperatureLoop" (void)
 function void SynchronizeTemperature(int amount)
 {
 	if (!NamedExecuteClientScript("TemperatureSync", PlayerNumber(), amount)) {
-		LogError(StrParam(s:"Failed to call script TemperatureSync."));
+		Logger::LogError(LOGSOURCE, StrParam(s:"Failed to call script TemperatureSync."));
 	}
 }
 
 function void SynchronizeWarm(int warm)
 {
 	if (!NamedExecuteClientScript("WarmSync", PlayerNumber(), warm)) {
-		LogError(StrParam(s:"Failed to call script WarmSync."));
+		Logger::LogError(LOGSOURCE, StrParam(s:"Failed to call script WarmSync."));
 	}
 }
+
+#undef LOGSOURCE

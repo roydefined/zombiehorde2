@@ -1,12 +1,11 @@
-#import "acs_source_public\zhcore.g.acs"
-#import "acs_source_public\bcsutils.g.acs"
-#import "acs_source_public\log.g.acs"
-#import "acs_source_public\common.g.acs"
-#import "acs_source_public\utils.g.acs"
-#import "acs_source_public\weather.g.acs"
-#import "acs_source_public\resist.g.acs"
+#pragma raw include on
+#pragma raw define on
 
-#include "zcommon.acs"
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
 
 // The TID that is used for synchronising the state of the keys.
 #define SYNC_JEWELSTATE 100
@@ -46,7 +45,7 @@ bool blueJewelAlreadyPlaced = false,
 // Used by the ward.
 // If `true`, all zombies in the ward, as defined in `playerInWard`, are pushed back.
 bool wardActive;
-bool playerInWard[MAX_PLAYERS];
+bool playerInWard[BCSUtils::MAX_PLAYERS];
 
 // All the possible things that can be bought from the shop guy
 // { item name, decorate name, gold needed }
@@ -96,17 +95,20 @@ str shopGuyGiveLines[3] =
 
 // Indicates the player is in the shop area.
 // This prevents abuse of puking the server script.
-bool playerInShopArea[MAX_PLAYERS];
+bool playerInShopArea[BCSUtils::MAX_PLAYERS];
 
 // If `true`, the item with the given index is pending being bought.
 bool confirmShopItem[4];
 
+#define LOGSOURCE "Map"
+
 script "OnOpen" open
 {
 	// Resists
-	CreateResist(20 * 35, "", "\cgResist for \cj%t \cgseconds", RESISTTYPEFADEOUT);
-	CreateResist(20 * 35, "", "\cgResist for \cj%t \cgseconds", RESISTTYPEFADEOUT);
-	CreateResist(80 * 35, "", "\cgYou have %t \cgseconds to reach safety!", RESISTTYPEPLAIN);
+	// TODO: Support third parameter?
+	Resist::CreateResist(20 * 35, "", "\cgResist for \cj%t \cgseconds"); //, RESISTTYPEFADEOUT);
+	Resist::CreateResist(20 * 35, "", "\cgResist for \cj%t \cgseconds"); //, RESISTTYPEFADEOUT);
+	Resist::CreateResist(80 * 35, "", "\cgYou have %t \cgseconds to reach safety!"); //, RESISTTYPEPLAIN);
 
 	// Skybox
     scroll_floor(42, 1, 10, 0);
@@ -135,18 +137,14 @@ script "OnOpen" open
 	{
 		Floor_LowerByValue(11, 16, 120);
 	}
-
-	Delay(1);
-
-	SetEscapeDefaults();
-	StartMode();
 }
 
 script "OnOpenClient" open clientside
 {
-	CreateWeather(WEATHERTYPERAIN, true, false, 1, 200, 500, 50, 150);
-	CreateWeather(WEATHERTYPEDUST, false, true, 10, 30, 500, -200, 200);
-	StartWeather(0);
+	// TODO: Support
+	//CreateWeather(WEATHERTYPERAIN, true, false, 1, 200, 500, 50, 150);
+	//CreateWeather(WEATHERTYPEDUST, false, true, 10, 30, 500, -200, 200);
+	//StartWeather(0);
 
 	ClientSyncJewelState();
 	ClientSyncJewelSynthTimestamp(SYNCWHICH_BLUEJEWEL);
@@ -154,11 +152,12 @@ script "OnOpenClient" open clientside
 	ClientSyncJewelAlreadySet();
 
 	// Random music pick
-	SetMapMusic(StrParam(s:"CASTLE", d:random(0, 1)), MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+	// TODO: Support parameters
+	Music::SetDefaultMusic(StrParam(s:"CASTLE", d:random(0, 1)));//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
 
 	if (!ACS_NamedExecute("CastleJewelDebug", 0))
 	{
-		LogError("Failed to invoke CastleJewelDebug");
+		Logger::LogError(LOGSOURCE, "Failed to invoke CastleJewelDebug");
 	}
 
 	delay(70);
@@ -170,7 +169,7 @@ script "OnOpenClient" open clientside
 // First blockpoint (main gate)
 script "BlockPoint1" (void)
 {
-	LogBold(StrParam(n:0, s:"\c- has raised the gate. Lowering in 20 seconds."));
+	Logger::LogBold(StrParam(n:0, s:"\c- has raised the gate. Lowering in 20 seconds."));
     SetActivator(-1);
     ClearLineSpecial();
     floor_raisebyvalue(5,32, 128);
@@ -180,31 +179,34 @@ script "BlockPoint1" (void)
 
 script "FellInWater"(void)
 {
-	AdvancedTeleport(43, 90, TELEPORTUSEANGLE | TELEPORTFOG);
+	// TODO: Support
+	//AdvancedTeleport(43, 90, TELEPORTUSEANGLE | TELEPORTFOG);
 }
 
 // Called to switch rain on and off depending on the line side.
 script "RainSwitch" (void) clientside
 {
-	int side = LineSide() == LINE_FRONT;
-	if (side) {
-		StartWeather(0);
-	}
-	else {
-		StopWeather(0);
-	}
+	// TODO: Support
+	//int side = LineSide() == LINE_FRONT;
+	//if (side) {
+	//	StartWeather(0);
+	//}
+	//else {
+	//	StopWeather(0);
+	//}
 }
 
 // Called to switch dust on and off depending on the line side.
 script "DustSwitch" (void) clientside
 {
-	int side = LineSide() == LINE_FRONT;
-	if (side) {
-		StartWeather(1);
-	}
-	else {
-		StopWeather(1);
-	}
+	// TODO: Support
+	//int side = LineSide() == LINE_FRONT;
+	//if (side) {
+	//	StartWeather(1);
+	//}
+	//else {
+	//	StopWeather(1);
+	//}
 }
 
 
@@ -284,7 +286,7 @@ Script "PlaceGem" (int ruby)
 
         if (!CheckInventory("BloodrubyJewel"))
 		{
-			LogActivator("You are missing the blood ruby!");
+			Logger::LogActivator("You are missing the blood ruby!");
             terminate;
         }
 
@@ -305,7 +307,7 @@ Script "PlaceGem" (int ruby)
 
         if (!CheckInventory("NightsapphireJewel"))
 		{
-			LogActivator("You are missing the night sapphire!");
+			Logger::LogActivator("You are missing the night sapphire!");
             terminate;
         }
 
@@ -336,7 +338,7 @@ Script "LowerCross" (void)
     SetActivator(-1);
     ClearLineSpecial();
 
-    LogBold("\cvSomething happened somewhere...");
+    Logger::LogBold("\cvSomething happened somewhere...");
 
     floor_lowerbyvalue(15,32,96);
     Ceiling_lowerbyvalue(15,32,96);
@@ -347,14 +349,14 @@ Script "LowerCross" (void)
 
 Script "OnHolyCrossPickup" (void)
 {
-    LogBold(StrParam(n:0, s:"\cj has picked up the \cvHoly Cross\cj!"));
+    Logger::LogBold(StrParam(n:0, s:"\cj has picked up the \cvHoly Cross\cj!"));
 }
 
 Script "Resist1" (void)
 {
     SetActivator(-1);
     ClearLineSpecial();
-	Delay(StartResist(0));
+	Delay(Resist::StartResistByIndex(0));
     Ceiling_raisetonearest(16,32);
     thing_destroy(35);
     thing_activate(36);
@@ -373,7 +375,7 @@ Script "Resist2" (void)
     ClearLineSpecial();
 	diningRoomDone = true;
 
-	Delay(StartResist(1));
+	Delay(Resist::StartResistByIndex(1));
 
     Ceiling_raisetonearest(30,32);
 }
@@ -399,15 +401,15 @@ Script "Resist3" (void)
 	HudMessageBold(s:"Get to the catacombs before it's too late!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 55.0, 2.0, 0.5, 0.5);
 
     Delay(35*3);
-	Delay(StartResist(2));
+	Delay(Resist::StartResistByIndex(2));
     Generic_Ceiling(31, 16, 128, 5, 16);
     Delay(35*3);
     SetFont("BIGFONT");
     HudMessageBold(s:"Death is here"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 40.0, 5.0, 3.0);
     Delay(35);
-	for (int i = 0; i < MAX_PLAYERS; ++i)
+	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
 	{
-		if (IsPlayerSafe(i) || !PlayerInGame(i)) {
+		if (Game::GetPlayerIsSafe(i) || !PlayerInGame(i)) {
 			continue;
 		}
 
@@ -416,7 +418,7 @@ Script "Resist3" (void)
 	}
 
 	delay(35*4+18);
-    KillUnsafePlayers();
+    Game::KillUnsafePlayers();
 }
 
 script "DeathQuake" (void)
@@ -436,21 +438,21 @@ script "DeathQuake" (void)
 // Marks the player as being inside the ward.
 Script "SetInWard" (void)
 {
-	LogDebug(StrParam(s:PlayerName(PlayerNumber()), s:" in ward: ", s:cond(LineSide()== LINE_FRONT, "true", "false"), s:"."));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:BCSUtils::PlayerName(PlayerNumber()), s:" in ward: ", s:BCSUtils::cond(LineSide()== LINE_FRONT, "true", "false"), s:"."));
     playerInWard[PlayerNumber()] = (LineSide()== LINE_FRONT);
 }
 
 // The ward that pushes out zombies.
 Script "Ward" (void)
 {
-    if (IsZombie())
+    if (Player::GetIsZombie())
 	{
-        LogActivator("Why would you make things tougher for yourself?");
+        Logger::LogActivator("Why would you make things tougher for yourself?");
         terminate;
     }
 
     ClearLineSpecial();
-    LogBold(StrParam(s:PlayerName(PlayerNumber()), s:" \cjhas placed a holy ward in the main room.\nIt will shut down in 15 seconds."));
+    Logger::LogBold(StrParam(s:BCSUtils::PlayerName(PlayerNumber()), s:" \cjhas placed a holy ward in the main room.\nIt will shut down in 15 seconds."));
 
     SetActivator(-1);
 
@@ -479,13 +481,13 @@ Script "WardLoop" (void) // Shield script forcer
 {
     while(wardActive)
 	{
-        for(int i = 0; i < MAX_PLAYERS; i++)
+        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
 		{
 			if (!PlayerInGame(i)) {
 				continue;
 			}
 
-			if (!PlayerIsZombie(i) || !playerInWard[i]) {
+			if (!Player::GetPlayerIsZombie(i) || !playerInWard[i]) {
 				continue;
 			}
 
@@ -500,7 +502,7 @@ Script "WardLoop" (void) // Shield script forcer
 
 script "LockDiningRoom" (void)
 {
-    LogBold(StrParam(s:PlayerName(PlayerNumber()), s:"\c- has locked the dining room."));
+    Logger::LogBold(StrParam(s:BCSUtils::PlayerName(PlayerNumber()), s:"\c- has locked the dining room."));
     Generic_Ceiling(35, 64, 128, 5, 16);
     delay(35*10);
     door_open(18, 20);
@@ -509,7 +511,9 @@ script "LockDiningRoom" (void)
 // For debugging.
 script "CastleJewelDebug" (void) CLIENTSIDE
 {
-	if (!IsDevelopment())
+	// TODO
+	if (false)
+	//if (!ZH2Game::IsDevelopment())
 	{
 		terminate;
 	}
@@ -547,8 +551,8 @@ script "CastleJewelDebug" (void) CLIENTSIDE
 
 function void SyncJewelAlreadySet(bool blueSet, bool redSet)
 {
-	if (!IsServer()) {
-		LogError("SyncJewelState was called clientside.");
+	if (!BCSUtils::IsServer()) {
+		Logger::LogError(LOGSOURCE, "SyncJewelState was called clientside.");
 		return;
 	}
 
@@ -560,12 +564,12 @@ function void SyncJewelAlreadySet(bool blueSet, bool redSet)
 		return;
 	}
 
-	int pack = PackShorts(blueSet, redSet);
-	SyncVariable(SYNC_JEWELALREADYPLACED, pack);
+	int pack = BCSUtils::PackShorts(blueSet, redSet);
+	BCSUtils::SyncVariable(SYNC_JEWELALREADYPLACED, pack);
 
 	// Receive on all clients.
 	if (!ACS_NamedExecuteAlways("SyncJewelAlreadySet_Client", 0)) {
-		LogError("Failed to execute SyncJewelAlreadySet_Client.");
+		Logger::LogError(LOGSOURCE, "Failed to execute SyncJewelAlreadySet_Client.");
 	}
 }
 
@@ -577,8 +581,8 @@ script "SyncJewelAlreadySet_Client" (void) clientside
 // Called clientside to fetch the synced state.
 function void ClientSyncJewelAlreadySet(void)
 {
-	if (!IsClient()) {
-		LogError("ClientSyncJewelAlreadySet was called serverside.");
+	if (!BCSUtils::IsClient()) {
+		Logger::LogError(LOGSOURCE, "ClientSyncJewelAlreadySet was called serverside.");
 		return;
 	}
 
@@ -587,11 +591,11 @@ function void ClientSyncJewelAlreadySet(void)
 		return;
 	}
 
-	int pack = GetSyncVarDefault(SYNC_JEWELALREADYPLACED, 0);
-	blueJewelAlreadyPlaced = UnpackShort1(pack);
-	redJewelAlreadyPlaced = UnpackShort2(pack);
+	int pack = BCSUtils::GetSyncVarDefault(SYNC_JEWELALREADYPLACED, 0);
+	blueJewelAlreadyPlaced = BCSUtils::UnpackShort1(pack);
+	redJewelAlreadyPlaced = BCSUtils::UnpackShort2(pack);
 
-	LogDebug(StrParam(s:"Synced jewel already set state to client. Blue: ", d:blueJewelAlreadyPlaced, s:", red: ", d:redJewelAlreadyPlaced, s:"."));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced jewel already set state to client. Blue: ", d:blueJewelAlreadyPlaced, s:", red: ", d:redJewelAlreadyPlaced, s:"."));
 }
 
 
@@ -604,10 +608,12 @@ function void ClientSyncJewelAlreadySet(void)
 // Main loop that is called when entering the castle.
 script "CastleJewelContext" (void) CLIENTSIDE
 {
-	SetMapMusic(cond(IsHuman(), "CASTLE2", "CASTLE3"), MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+	// TODO: Support parameters?
+	Music::SetDefaultMusic(BCSUtils::cond(Player::GetIsHuman(), "CASTLE2", "CASTLE3"));//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
 
-	if (IsHuman() && (blueJewelAlreadyPlaced || redJewelAlreadyPlaced))
+	if (Player::GetIsHuman() && (blueJewelAlreadyPlaced || redJewelAlreadyPlaced))
 	{
+		// TODO: LogBuilder
 		str message;
 		if (blueJewelAlreadyPlaced && redJewelAlreadyPlaced)
 		{
@@ -622,7 +628,7 @@ script "CastleJewelContext" (void) CLIENTSIDE
 			message = "You're in luck! It appears the Blood Ruby has already been inserted. You don't have to collect it.";
 		}
 
-		LogBold(message);
+		Logger::LogBold(message);
 	}
 
 	if (redJewelState == JEWELSTATE_PLACED && blueJewelState == JEWELSTATE_PLACED)
@@ -645,7 +651,7 @@ script "CastleJewelContext" (void) CLIENTSIDE
 	{
 		if (!ACS_NamedExecute("CastleRedJewelContext", 0))
 		{
-			LogError("Failed to invoke CastleRedJewelContext");
+			Logger::LogError(LOGSOURCE, "Failed to invoke CastleRedJewelContext");
 		}
 	}
 
@@ -654,7 +660,7 @@ script "CastleJewelContext" (void) CLIENTSIDE
 	{
 		if (!ACS_NamedExecute("CastleBlueJewelContext", 0))
 		{
-			LogError("Failed to invoke CastleBlueJewelContext");
+			Logger::LogError(LOGSOURCE, "Failed to invoke CastleBlueJewelContext");
 		}
 	}
 }
@@ -685,7 +691,7 @@ script "CastleRedJewelContext" (void) CLIENTSIDE
 		if (redJewelSynthesizeTimestamp != 0 && redJewelSynthesizeTimestamp > Timer())
 		{
 			int timeLeft = redJewelSynthesizeTimestamp - Timer();
-			message = StrParam(s:"\ccSynthesizing \cgBlood Ruby \cc", s:FormatTics(timeLeft, true));
+			message = StrParam(s:"\ccSynthesizing \cgBlood Ruby \cc", s:Utils::FormatTics(timeLeft, true));
 		}
 		else if (redJewelState == JEWELSTATE_NONE)
 		{
@@ -693,7 +699,7 @@ script "CastleRedJewelContext" (void) CLIENTSIDE
 		}
 		else
 		{
-			message = cond(CheckInventory("BloodRubyJewel"), "Acquired!", "Acquirable");
+			message = BCSUtils::cond(CheckInventory("BloodRubyJewel"), "Acquired!", "Acquirable");
 		}
 
 		SetFont("REDJEWLI");
@@ -737,7 +743,7 @@ script "CastleBlueJewelContext" (void) CLIENTSIDE
 		if (blueJewelSynthesizeTimestamp != 0 && blueJewelSynthesizeTimestamp > Timer())
 		{
 			int timeLeft = blueJewelSynthesizeTimestamp - Timer();
-			message = StrParam(s:"\ccSynthesizing \chNight Sapphire \cc", s:FormatTics(timeLeft, true));
+			message = StrParam(s:"\ccSynthesizing \chNight Sapphire \cc", s:Utils::FormatTics(timeLeft, true));
 		}
 		else if (blueJewelState == JEWELSTATE_NONE)
 		{
@@ -745,7 +751,7 @@ script "CastleBlueJewelContext" (void) CLIENTSIDE
 		}
 		else
 		{
-			message = cond(CheckInventory("NightSapphireJewel"), "Acquired!", "Acquirable");
+			message = BCSUtils::cond(CheckInventory("NightSapphireJewel"), "Acquired!", "Acquirable");
 		}
 
 		SetFont("BLUJEWLI");
@@ -765,8 +771,8 @@ script "CastleBlueJewelContext" (void) CLIENTSIDE
 
 function void SyncJewelState(int which, int state)
 {
-	if (!IsServer()) {
-		LogError("SyncJewelState was called clientside.");
+	if (!BCSUtils::IsServer()) {
+		Logger::LogError(LOGSOURCE, "SyncJewelState was called clientside.");
 		return;
 	}
 
@@ -784,12 +790,12 @@ function void SyncJewelState(int which, int state)
 		return;
 	}
 
-	int pack = PackShorts(blueJewelState, redJewelState);
-	SyncVariable(SYNC_JEWELSTATE, pack);
+	int pack = BCSUtils::PackShorts(blueJewelState, redJewelState);
+	BCSUtils::SyncVariable(SYNC_JEWELSTATE, pack);
 
 	// Receive on all clients.
 	if (!ACS_NamedExecuteAlways("SyncJewelState_Client", 0)) {
-		LogError("Failed to execute SyncJewelState_Client.");
+		Logger::LogError(LOGSOURCE, "Failed to execute SyncJewelState_Client.");
 	}
 }
 
@@ -801,8 +807,8 @@ script "SyncJewelState_Client" (void) clientside
 // Called clientside to fetch the synced state.
 function void ClientSyncJewelState(void)
 {
-	if (!IsClient()) {
-		LogError("ClientSyncJewelState was called serverside.");
+	if (!BCSUtils::IsClient()) {
+		Logger::LogError(LOGSOURCE, "ClientSyncJewelState was called serverside.");
 		return;
 	}
 
@@ -811,17 +817,17 @@ function void ClientSyncJewelState(void)
 		return;
 	}
 
-	int pack = GetSyncVarDefault(SYNC_JEWELSTATE, 0);
-	blueJewelState = UnpackShort1(pack);
-	redJewelState = UnpackShort2(pack);
+	int pack = BCSUtils::GetSyncVarDefault(SYNC_JEWELSTATE, 0);
+	blueJewelState = BCSUtils::UnpackShort1(pack);
+	redJewelState = BCSUtils::UnpackShort2(pack);
 
-	LogDebug(StrParam(s:"Synced jewel state to client. Blue: ", d:blueJewelState, s:", red: ", d:redJewelState, s:"."));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced jewel state to client. Blue: ", d:blueJewelState, s:", red: ", d:redJewelState, s:"."));
 }
 
 function void SyncJewelSynthesizeTimestamp(int which, int timestamp)
 {
-	if (!IsServer()) {
-		LogError("SyncJewelState was called clientside.");
+	if (!BCSUtils::IsServer()) {
+		Logger::LogError(LOGSOURCE, "SyncJewelState was called clientside.");
 		return;
 	}
 
@@ -840,12 +846,12 @@ function void SyncJewelSynthesizeTimestamp(int which, int timestamp)
 		return;
 	}
 
-	int packId = cond(which == SYNCWHICH_BLUEJEWEL, SYNC_SYNTHESIZE_BLUEJEWEL, SYNC_SYNTHESIZE_REDJEWEL);
-	SyncVariable(packId, timestamp);
+	int packId = BCSUtils::cond(which == SYNCWHICH_BLUEJEWEL, SYNC_SYNTHESIZE_BLUEJEWEL, SYNC_SYNTHESIZE_REDJEWEL);
+	BCSUtils::SyncVariable(packId, timestamp);
 
 	// Receive on all clients.
 	if (!ACS_NamedExecuteAlways("SyncJewelSynthesizeTimestamp_Client", 0, which)) {
-		LogError("Failed to execute SyncJewelSynthesizeTimestamp_Client.");
+		Logger::LogError(LOGSOURCE, "Failed to execute SyncJewelSynthesizeTimestamp_Client.");
 	}
 }
 
@@ -857,8 +863,8 @@ script "SyncJewelSynthesizeTimestamp_Client" (int which) clientside
 // Called clientside to fetch the synced state.
 function void ClientSyncJewelSynthTimestamp(int which)
 {
-	if (!IsClient()) {
-		LogError("ClientSyncJewelSynthTimestamp was called serverside.");
+	if (!BCSUtils::IsClient()) {
+		Logger::LogError(LOGSOURCE, "ClientSyncJewelSynthTimestamp was called serverside.");
 		return;
 	}
 
@@ -867,8 +873,8 @@ function void ClientSyncJewelSynthTimestamp(int which)
 		return;
 	}
 
-	int packId = cond(which == SYNCWHICH_BLUEJEWEL, SYNC_SYNTHESIZE_BLUEJEWEL, SYNC_SYNTHESIZE_REDJEWEL);
-	int timestamp = GetSyncVarDefault(packId, 0);
+	int packId = BCSUtils::cond(which == SYNCWHICH_BLUEJEWEL, SYNC_SYNTHESIZE_BLUEJEWEL, SYNC_SYNTHESIZE_REDJEWEL);
+	int timestamp = BCSUtils::GetSyncVarDefault(packId, 0);
 	if (packId == SYNCWHICH_BLUEJEWEL)
 	{
 		blueJewelSynthesizeTimestamp = timestamp;
@@ -878,7 +884,7 @@ function void ClientSyncJewelSynthTimestamp(int which)
 		redJewelSynthesizeTimestamp = timestamp;
 	}
 
-	LogDebug(StrParam(s:"Synced jewel synthesize timestamp to client. Blue: ", d:blueJewelSynthesizeTimestamp, s:", red: ", d:redJewelSynthesizeTimestamp, s:"."));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced jewel synthesize timestamp to client. Blue: ", d:blueJewelSynthesizeTimestamp, s:", red: ", d:redJewelSynthesizeTimestamp, s:"."));
 }
 
 
@@ -892,7 +898,7 @@ function void ClientSyncJewelSynthTimestamp(int which)
 // Marks the player as being inside the shop area.
 Script "SetInShopArea" (void)
 {
-	LogDebug(StrParam(s:PlayerName(PlayerNumber()), s:" in shop area: ", s:cond(LineSide()== LINE_FRONT, "true", "false"), s:"."));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:BCSUtils::PlayerName(PlayerNumber()), s:" in shop area: ", s:BCSUtils::cond(LineSide()== LINE_FRONT, "true", "false"), s:"."));
     playerInShopArea[PlayerNumber()] = (LineSide()== LINE_FRONT);
 }
 
@@ -904,10 +910,10 @@ script "ShopGuyChat" (int index) clientside
 	}
 
 	// This guy does not serve zombies.
-	if (IsZombie())
+	if (Player::GetIsZombie())
 	{
 		if (!NamedRequestScriptPuke("ShopGuyChat_Animation", 1)) {
-			LogError("Failed to invoke serverside script \"ShopGuyChat_Animation\".");
+			Logger::LogError(LOGSOURCE, "Failed to invoke serverside script \"ShopGuyChat_Animation\".");
 		}
 
 		line = shopGuyZombieLines[Random(0, 2)];
@@ -922,7 +928,7 @@ script "ShopGuyChat" (int index) clientside
 	// Player already has this item
 	if (CheckInventory(entry))
 	{
-		line = StrReplace(shopGuyDuplicateLines[Random(0, 2)], "%s", label);
+		line = BCSUtils::StrReplace(shopGuyDuplicateLines[Random(0, 2)], "%s", label);
 		ShopGuyChat(line);
 		terminate;
 	}
@@ -931,13 +937,13 @@ script "ShopGuyChat" (int index) clientside
 	if (!confirmShopItem[index])
 	{
 		if (!NamedRequestScriptPuke("ShopGuyChat_Animation", 0)) {
-			LogError("Failed to invoke serverside script \"ShopGuyChat_Animation\".");
+			Logger::LogError(LOGSOURCE, "Failed to invoke serverside script \"ShopGuyChat_Animation\".");
 		}
 
-		line = StrReplace(shopGuyPriceLines[Random(0, 2)], "%s", label);
-		line = StrReplace(line, "%d", StrParam(d:value));
+		line = BCSUtils::StrReplace(shopGuyPriceLines[Random(0, 2)], "%s", label);
+		line = BCSUtils::StrReplace(line, "%d", StrParam(d:value));
 		ShopGuyChat(line);
-		LogActivator(StrParam(s:"Press the ", s:label, s:" a second time to buy it."));
+		Logger::LogActivator(StrParam(s:"Press the ", s:label, s:" a second time to buy it."));
 		confirmShopItem[index] = true;
 		delay(35*2);
 		confirmShopItem[index] = false;
@@ -948,19 +954,19 @@ script "ShopGuyChat" (int index) clientside
 	if (CheckInventory("GoldCoin") < value)
 	{
 		if (!NamedRequestScriptPuke("ShopGuyChat_Animation", 1)) {
-			LogError("Failed to invoke serverside script \"ShopGuyChat_Animation\".");
+			Logger::LogError(LOGSOURCE, "Failed to invoke serverside script \"ShopGuyChat_Animation\".");
 		}
 
-		line = StrReplace(shopGuyNoMoneyLines[Random(0, 2)], "%s", label);
+		line = BCSUtils::StrReplace(shopGuyNoMoneyLines[Random(0, 2)], "%s", label);
 		ShopGuyChat(line);
 		terminate;
 	}
 
-	line = StrReplace(shopGuyGiveLines[Random(0, 2)], "%s", label);
+	line = BCSUtils::StrReplace(shopGuyGiveLines[Random(0, 2)], "%s", label);
 	ShopGuyChat(line);
 
 	if (!NamedRequestScriptPuke("ShopGuyChat_Server", index)) {
-		LogError("Failed to invoke serverside script \"ShopGuyChat_Server\".");
+		Logger::LogError(LOGSOURCE, "Failed to invoke serverside script \"ShopGuyChat_Server\".");
 	}
 }
 
@@ -970,7 +976,7 @@ script "ShopGuyChat_Animation" (int type) net
 	// Not in the shop area
 	if (!playerInShopArea[PlayerNumber()])
 	{
-		LogDebug("Shop animation failed: player not in shop area.");
+		Logger::LogDebug(LOGSOURCE, "Shop animation failed: player not in shop area.");
 		terminate;
 	}
 
@@ -986,7 +992,7 @@ script "ShopGuyChat_Animation" (int type) net
 			break;
 
 		default:
-			LogError(StrParam(s:"Unknown animation type: ", d:type, s:"."));
+			Logger::LogError(LOGSOURCE, StrParam(s:"Unknown animation type: ", d:type, s:"."));
 	}
 }
 
@@ -996,13 +1002,13 @@ script "ShopGuyChat_Server" (int index) net
 	// Not in the shop area
 	if (!playerInShopArea[PlayerNumber()])
 	{
-		LogDebug("Shop failed: player not in shop area.");
+		Logger::LogDebug(LOGSOURCE, "Shop failed: player not in shop area.");
 		terminate;
 	}
 
-	if (IsZombie())
+	if (Player::GetIsZombie())
 	{
-		LogDebug("Shop failed: player is a zombie.");
+		Logger::LogDebug(LOGSOURCE, "Shop failed: player is a zombie.");
 		terminate;
 	}
 
@@ -1011,13 +1017,13 @@ script "ShopGuyChat_Server" (int index) net
 
 	if (CheckInventory(entry))
 	{
-		LogDebug("Shop failed: player already has this item.");
+		Logger::LogDebug(LOGSOURCE, "Shop failed: player already has this item.");
 		terminate;
 	}
 
 	if (CheckInventory("GoldCoin") < value)
 	{
-		LogDebug("Shop failed: player does not have enough coins.");
+		Logger::LogDebug(LOGSOURCE, "Shop failed: player does not have enough coins.");
 		terminate;
 	}
 
@@ -1027,5 +1033,8 @@ script "ShopGuyChat_Server" (int index) net
 
 function void ShopGuyChat (str string)
 {
-	Chat(StrParam(s:"\cdShopguy\cj: ", s:string));
+	// TODO: Support
+	//Chat(StrParam(s:"\cdShopguy\cj: ", s:string));
 }
+
+#undef LOGSOURCE

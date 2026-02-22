@@ -1,9 +1,11 @@
-#import "acs_source_public\zhcore.g.acs"
-#import "acs_source_public\bcsutils.g.acs"
-#import "acs_source_public\common.g.acs"
-#import "acs_source_public\log.g.acs"
-#import "acs_source_public\resist.g.acs"
-#include "zcommon.acs"
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
 
 // Used for synchronization
 #define SYNC_MAPSTATE 100
@@ -30,6 +32,8 @@ int mapGameType;
 // The actual map state.
 int mapState = MAPSTATE_NONE;
 
+#define LOGSOURCE "Map"
+
 script "OnEnterClient" enter clientside
 {
 	PlaySound(0, "ambient/wind1", CHAN_UI, 1.0, true);
@@ -41,12 +45,12 @@ script "OnOpenClient" open clientside
 	ClientSyncMapState();
 	if(!ACS_NamedExecute("FinalMusicLoop", 0))
 	{
-		LogError("Failed to start FinalMusicLoop");
+		Logger::LogError(LOGSOURCE, "Failed to start FinalMusicLoop");
 	}
 
 	if (!ACS_NamedExecute("PillarDebug", 0))
 	{
-		LogError("Failed to invoke PillarDebug");
+		Logger::LogError(LOGSOURCE, "Failed to invoke PillarDebug");
 	}
 
 	delay(70);
@@ -62,22 +66,24 @@ script "OnOpen" open
 	Delay(const: 1);
 
 	// Resists
-	CreateResist(20 * 35, "\cjActivating eastern Beacon", "\cc%t", RESISTTYPEFADEOUT);
-	CreateResist(20 * 35, "\cjActivating northern Beacon", "\cc%t", RESISTTYPEFADEOUT);
-	CreateResist(20 * 35, "\cjActivating western Beacon", "\cc%t", RESISTTYPEFADEOUT);
-	CreateResist(20 * 35, "\cjActivating southern Beacon", "\cc%t", RESISTTYPEFADEOUT);
-	CreateResist(30 * 35, "\cjOpening pyramid", "\ccResist for \cd%t \ccseconds", RESISTTYPEFADEOUT);
-	CreateResist(40 * 35, "\cjReach the burial chamber", "%t \ciseconds left", RESISTTYPEPLAIN);
+	// TODO: Support the additional parameter?
+	Resist::CreateResist(20 * 35, "\cjActivating eastern Beacon", "\cc%t"); //, RESISTTYPEFADEOUT);
+	Resist::CreateResist(20 * 35, "\cjActivating northern Beacon", "\cc%t"); //, RESISTTYPEFADEOUT);
+	Resist::CreateResist(20 * 35, "\cjActivating western Beacon", "\cc%t"); //, RESISTTYPEFADEOUT);
+	Resist::CreateResist(20 * 35, "\cjActivating southern Beacon", "\cc%t"); //, RESISTTYPEFADEOUT);
+	Resist::CreateResist(30 * 35, "\cjOpening pyramid", "\ccResist for \cd%t \ccseconds"); //, RESISTTYPEFADEOUT);
+	Resist::CreateResist(40 * 35, "\cjReach the burial chamber", "%t \ciseconds left"); //, RESISTTYPEPLAIN);
 
-    SetEscapeDefaults();
-	SetGlobalZombieTeleports(1);
-	StartMode();
+	// TODO: Support
+    //SetGlobalZombieTeleports(1);
 
 	// Determine the game to run.
 	// In a developmental environment, this can instead be done with switches which will be available.
-	if (IsDevelopment())
+	// TODO: Support
+	if (true)
+	//if (ZH2Game::IsDevelopment())
 	{
-		LogBold("Please press one of the switches in order to choose the game.");
+		Logger::LogBold("Please press one of the switches in order to choose the game.");
 	}
 	else
 	{
@@ -117,7 +123,9 @@ script "OnOpen" open
 // Switch used to set the game type in development mode.
 script "SwitchSetGame"(int game)
 {
-	if (!IsDevelopment())
+	// TODO: Support
+	if (false)
+	//if (!ZH2Game::IsDevelopment())
 	{
 		terminate;
 	}
@@ -153,10 +161,12 @@ script "StartTrigger" (void) CLIENTSIDE
 	_startTriggerRun = true;
 	SetActivator(-1);
 	ClearLineSpecial();
-	SetMapMusic("d_egypt", MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+
+	// TODO: Support
+	Music::SetDefaultMusic("d_egypt");//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
 	delay(18);
 
-	int stayTime = cond(mapGameType == GAMETYPE_LINEAR, 3.75, 5.75);
+	int stayTime = BCSUtils::cond(mapGameType == GAMETYPE_LINEAR, 3.75, 5.75);
 
 	SetHudSize(640, 480, FALSE);
     SetFont("smallfont");
@@ -221,14 +231,15 @@ script "PyramidOpened"(void)
 
 	delay(35 * 7);
 
-	SetZombieTeleportSpotTid(8);
-	LogMessageToHumans("Zombies can now teleport to the pyramid entrance.");
-	LogMessageToZombies("You can now teleport to the pyramid entrance.");
+	// TODO: Support
+	//SetZombieTeleportSpotTid(8);
+	//LogMessageToHumans("Zombies can now teleport to the pyramid entrance.");
+	//LogMessageToZombies("You can now teleport to the pyramid entrance.");
 
 	delay (35*5);
 
 	floor_LowerByValue(33, 16, 112);
-	LogBold("A shortcut has been opened north of the beacon for anyone left behind.");
+	Logger::LogBold("A shortcut has been opened north of the beacon for anyone left behind.");
 }
 
 // Resist to open the pyramid.
@@ -246,7 +257,7 @@ script "OpenPyramidResist" (void)
 	hasRun = true;
 
     SetActivator(-1);
-	Delay(StartResist(4));
+	Delay(Resist::StartResistByIndex(4));
 
     floor_lowerinstant(28, 0, 2048);
 	ceiling_lowerinstant(28, 0, 2048);
@@ -268,7 +279,7 @@ script "EnterPyramid" (void) clientside
 	StopSound(0, CHAN_UI);
 	SoundVolume(0, CHAN_UI, 0.0);
 
-	if (!isOpenGL())
+	if (!BCSUtils::IsOpenGL())
 	{
 		for(int i=0; i<999; ++i)
         {
@@ -301,15 +312,15 @@ Script "FinalResist" (void)
 	HudMessageBold(s:"Take shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, y+15.0, 2.0, 0.5, 0.5);
     Delay(35*3);
     ACS_NamedExecute("FinalMusic",0,0,0,0);
-	Delay(StartResist(5));
+	Delay(Resist::StartResistByIndex(5));
 	Generic_Ceiling(31, 16, 128, 5, 16);
 	tagwait(31);
 	delay(35);
     SetFont("BIGFONT");
     HudMessageBold(s:"The curse is here"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, y, 5.0, 3.0);
     Delay(35);
-	for (int i = 0; i < MAX_PLAYERS; ++i) {
-		if (IsPlayerSafe(i) || !PlayerInGame(i)) {
+	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i) {
+		if (Game::GetPlayerIsSafe(i) || !PlayerInGame(i)) {
 			continue;
 		}
 
@@ -317,7 +328,7 @@ Script "FinalResist" (void)
 	}
 
 	delay(35*4+18);
-    KillUnsafePlayers();
+    Game::KillUnsafePlayers();
 }
 
 // The earthquake to trigger on clients that did not make it.
@@ -353,14 +364,14 @@ script "FinalMusicLoop" (void) clientside
 		restart;
 	}
 
-	SetMapMusic("d_egypt2", 0);
+	Music::SetMusic("d_egypt2", 0);
     Delay(1225);
-	SetMapMusic("", 0);
+	Music::SetMusic("", 0);
 }
 
 script "BridgeBlockpoint" (void)
 {
-    LogBold(StrParam(n:0, s:"\c- has lowered the bridges! They will raise in 10 seconds"));
+    Logger::LogBold(StrParam(n:0, s:"\c- has lowered the bridges! They will raise in 10 seconds"));
 
     SetActivator(-1);
     ClearLineSpecial();
@@ -376,14 +387,18 @@ script "BridgeBlockpoint" (void)
 // For debugging.
 script "PillarDebug" (void) CLIENTSIDE
 {
-	if (!IsDevelopment())
+	// TODO: Support
+	if (False)
+	//if (!ZH2Game::IsDevelopment())
 	{
 		terminate;
 	}
 
 	while(true)
 	{
-		if (GetUserCVar(ConsolePlayerNumber(), "zh04debug") == 0)
+		// TODO: Support this cvar?
+		if (false)
+		//if (GetUserCVar(ConsolePlayerNumber(), "zh04debug") == 0)
 		{
 			Delay(const: 1);
 			continue;
@@ -410,8 +425,8 @@ script "PillarDebug" (void) CLIENTSIDE
 
 function void SyncMapState(int state)
 {
-	if (!IsServer()) {
-		LogError("SyncMapState was called clientside.");
+	if (!BCSUtils::IsServer()) {
+		Logger::LogError(LOGSOURCE, "SyncMapState was called clientside.");
 		return;
 	}
 
@@ -422,11 +437,11 @@ function void SyncMapState(int state)
 		return;
 	}
 
-	SyncVariable(SYNC_MAPSTATE, state);
+	BCSUtils::SyncVariable(SYNC_MAPSTATE, state);
 
 	// Receive on all clients.
 	if (!ACS_NamedExecuteAlways("SyncMapState_Client", 0)) {
-		LogError("Failed to execute SyncMapState_Client.");
+		Logger::LogError(LOGSOURCE, "Failed to execute SyncMapState_Client.");
 	}
 }
 
@@ -438,8 +453,8 @@ script "SyncMapState_Client" (void) clientside
 // Called clientside to fetch the synced state.
 function void ClientSyncMapState(void)
 {
-	if (!IsClient()) {
-		LogError("ClientSyncMapState was called serverside.");
+	if (!BCSUtils::IsClient()) {
+		Logger::LogError(LOGSOURCE, "ClientSyncMapState was called serverside.");
 		return;
 	}
 
@@ -448,8 +463,8 @@ function void ClientSyncMapState(void)
 		return;
 	}
 
-	mapState = GetSyncVarDefault(SYNC_MAPSTATE, MAPSTATE_NONE);
-	LogDebug(StrParam(s:"Synced map state to client: ", d:mapState, s:"."));
+	mapState = BCSUtils::GetSyncVarDefault(SYNC_MAPSTATE, MAPSTATE_NONE);
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced map state to client: ", d:mapState, s:"."));
 }
 
 // -------------------------------------------
@@ -541,8 +556,8 @@ function void SetLinearGame(bool quick)
 		SyncActivePillars();
 	}
 
-	mapGameType = cond(quick, GAMETYPE_QUICKLINEAR, GAMETYPE_LINEAR);
-	LogDebug("The game has been initialized as a linear game.");
+	mapGameType = BCSUtils::cond(quick, GAMETYPE_QUICKLINEAR, GAMETYPE_LINEAR);
+	Logger::LogDebug(LOGSOURCE, "The game has been initialized as a linear game.");
 }
 
 // Sets up a non linear game mode by changing the map.
@@ -565,7 +580,7 @@ function void SetNonLinearGame(void)
 	ChangeCeiling(38, "F_SKY1");
 
 	mapGameType = GAMETYPE_NONLINEAR;
-	LogDebug("The game has been initialized as a non-linear game.");
+	Logger::LogDebug(LOGSOURCE, "The game has been initialized as a non-linear game.");
 }
 
 // -------------------------------------------
@@ -586,7 +601,7 @@ script "BeaconEastResist" (void)
 	SetHudSize(640, 480, FALSE);
 	SetFont("smallfont");
 
-	Delay(StartResist(0));
+	Delay(Resist::StartResistByIndex(0));
 
     floor_raisebyvalue(8,16,408);
     floor_raisebyvalue(9,16,536);
@@ -614,7 +629,7 @@ script "BeaconNorthResist" (void)
 	SetHudSize(640, 480, FALSE);
 	SetFont("smallfont");
 
-	Delay(StartResist(1));
+	Delay(Resist::StartResistByIndex(1));
 
     floor_raisebyvalue(5, 8, 128);
 
@@ -642,7 +657,7 @@ script "BeaconWestResist" (void)
 	SetHudSize(640, 480, FALSE);
 	SetFont("smallfont");
 
-	Delay(StartResist(2));
+	Delay(Resist::StartResistByIndex(2));
 
     door_open(42,128);
 	floor_raisebyvalue(17, 8, 48);
@@ -673,7 +688,7 @@ script "BeaconSouthResist" (void)
 	SetHudSize(640, 480, FALSE);
 	SetFont("smallfont");
 
-	Delay(StartResist(3));
+	Delay(Resist::StartResistByIndex(3));
 
     /*SpawnspotForced("Explosion", 29, 0, 0);
     AmbientSound("REVEAL",127);*/
@@ -708,12 +723,12 @@ function void SyncActivePillars(void)
 		return;
 	}
 
-	int value = PackBytes(pillarDone[0], pillarDone[1], pillarDone[2], pillarDone[3]);
-	SyncVariable(SYNC_PILLARSTATE, value);
+	int value = BCSUtils::PackBytes(pillarDone[0], pillarDone[1], pillarDone[2], pillarDone[3]);
+	BCSUtils::SyncVariable(SYNC_PILLARSTATE, value);
 
 	// Receive on all clients.
 	if (!ACS_NamedExecuteAlways("SyncActivePillars_Client", 0)) {
-		LogError("Failed to execute SyncBaseTID_Client.");
+		Logger::LogError(LOGSOURCE, "Failed to execute SyncBaseTID_Client.");
 	}
 }
 
@@ -725,23 +740,25 @@ script "SyncActivePillars_Client"(void) clientside
 // Called clientside to synchronize the active pillars.
 function void ClientSyncActivePillars(void)
 {
-	int value = GetSyncVarDefault(SYNC_PILLARSTATE, 0);
-	if (!pillarDone[0] && UnpackByte1(value)) {
+	int value = BCSUtils::GetSyncVarDefault(SYNC_PILLARSTATE, 0);
+	if (!pillarDone[0] && BCSUtils::UnpackByte1(value)) {
 		pillarDone[0] = true;
 		TriggerBeaconActiveClient(pillarTids[0]);
 	}
-	if (!pillarDone[1] && UnpackByte2(value)) {
+	if (!pillarDone[1] && BCSUtils::UnpackByte2(value)) {
 		pillarDone[1] = true;
 		TriggerBeaconActiveClient(pillarTids[1]);
 	}
-	if (!pillarDone[2] && UnpackByte3(value)) {
+	if (!pillarDone[2] && BCSUtils::UnpackByte3(value)) {
 		pillarDone[2] = true;
 		TriggerBeaconActiveClient(pillarTids[2]);
 	}
-	if (!pillarDone[3] && UnpackByte4(value)) {
+	if (!pillarDone[3] && BCSUtils::UnpackByte4(value)) {
 		pillarDone[3] = true;
 		TriggerBeaconActiveClient(pillarTids[3]);
 	}
 
-	LogDebug(StrParam(s:"Synced active pillars to client: ", d:value, s:"."));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced active pillars to client: ", d:value, s:"."));
 }
+
+#undef LOGSOURCE

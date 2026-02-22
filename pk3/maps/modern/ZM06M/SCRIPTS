@@ -1,10 +1,11 @@
-#import "acs_source_public\zhcore.g.acs"
-#import "acs_source_public\bcsutils.g.acs"
-#import "acs_source_public\identity.g.acs"
-#import "acs_source_public\weather.g.acs"
-#import "acs_source_public\utils.g.acs"
-#import "acs_source_public\log.g.acs"
-#include "zcommon.acs"
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
 
 // Hud ids
 #define HUDID_INTERACTION 4200
@@ -53,6 +54,8 @@ bool keySpot[6];
 // Flare spots.
 int Flaresleft[3] = { 10, 10, 10 };
 
+#define LOGSOURCE "Map"
+
 function void InteractionMessage(str message)
 {
 	setFont("smallfont");
@@ -95,18 +98,14 @@ Script "OnOpen" OPEN
 {
 	// Set a random wall as containing the key.
     keySpot[random(0,5)] = true;
-
-    delay(1);
-
-	SetSurvivalDefaults();
-	StartMode();
 }
 
 script "OnOpenClient" open clientside
 {
 	// Weather
-	CreateWeather(WEATHERTYPESNOW, true, false, 1, 200, 500, 50, 150);
-	StartWeather(0);
+	// TODO: Support
+	//CreateWeather(WEATHERTYPESNOW, true, false, 1, 200, 500, 50, 150);
+	//StartWeather(0);
 
 	SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
 
@@ -144,16 +143,18 @@ script "ToggleWeather" (void) clientside
 
 	if (LineSide() == LINE_FRONT)
 	{
-		StopWeather(0);
+		// TODO: Support
+		//StopWeather(0);
 		terminate;
 	}
 
-	StartWeather(0);
+	// TODO: Support
+	//StartWeather(0);
 }
 
 Script "FlareLocker" (int whatfloor)
 {
-    if(IsZombie())
+    if(Player::GetIsZombie())
 	{
 		terminate;
 	}
@@ -270,7 +271,7 @@ Script 999 (void){
 // vending machines
 Script 9 (void) {
 
-    if(IsHuman())
+    if(Player::GetIsHuman())
         InteractionMessage("This is no time for snacks.");
     else
 		InteractionMessage("No brainz here...");
@@ -364,15 +365,15 @@ Script 4 (void) {
 
 function void SetEventState(int state)
 {
-	LogDebug(StrParam(s:"Setting event state to ", d:state));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Setting event state to ", d:state));
 	eventState = state;
 	SyncEventState();
 }
 
 function void SyncEventState(void)
 {
-	if (!IsServer()) {
-		LogError("SyncEventState was called clientside.");
+	if (!BCSUtils::IsServer()) {
+		Logger::LogError(LOGSOURCE, "SyncEventState was called clientside.");
 		return;
 	}
 
@@ -381,11 +382,11 @@ function void SyncEventState(void)
 		return;
 	}
 
-	SyncVariable(SYNC_EVENTSTATE, eventState);
+	BCSUtils::SyncVariable(SYNC_EVENTSTATE, eventState);
 
 	// Receive on all clients.
 	if (!ACS_NamedExecuteAlways("SyncEventState_Client", 0)) {
-		LogError("Failed to execute SyncEventState_Client.");
+		Logger::LogError(LOGSOURCE, "Failed to execute SyncEventState_Client.");
 	}
 }
 
@@ -397,8 +398,8 @@ script "SyncEventState_Client" (void) clientside
 // Called clientside to fetch the synced state.
 function void ClientSyncEventState(void)
 {
-	if (!IsClient()) {
-		LogError("ClientSyncEventState was called serverside.");
+	if (!BCSUtils::IsClient()) {
+		Logger::LogError(LOGSOURCE, "ClientSyncEventState was called serverside.");
 		return;
 	}
 
@@ -407,10 +408,10 @@ function void ClientSyncEventState(void)
 		return;
 	}
 
-	int state = GetSyncVarDefault(SYNC_EVENTSTATE, EVENTSTATE_NONE);
+	int state = BCSUtils::GetSyncVarDefault(SYNC_EVENTSTATE, EVENTSTATE_NONE);
 	eventState = state;
 
-	LogDebug(StrParam(s:"Synced event state client: ", d:eventState));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced event state client: ", d:eventState));
 }
 
 /*
@@ -482,7 +483,8 @@ script "Event_Disco_Client" (void) clientside
 		delay(const: 1);
 	}
 
-	SetMapMusic("HDISCO", MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+	// TODO: Support parameter?
+	Music::SetDefaultMusic("HDISCO"); //, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
 
 	delay(35*2);
 
@@ -513,11 +515,12 @@ script "Event_Disco_Client" (void) clientside
 	}
 
 	Log(s:"The hospital has returned to its former charm.");
-	SetMapMusic("HOSPITAL", MAPMUSICSETDEFAULT);
+
+	Music::SetDefaultMusic("HOSPITAL");
 	SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
 
 	for (int i = 0; i < StrLen(message); ++i) {
-		ClearHudMessageBold(HUDID_DISCO + i);
+		BCSUtils::ClearHudMessageBold(HUDID_DISCO + i);
 	}
 }
 
@@ -575,12 +578,14 @@ script "Event_Uboa_Client" (void) clientside
 		delay(const: 1);
 	}
 
-	SetMapMusic(cond(Random(0, 1), "HUBOA", "HUBOA2"), MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+	// TODO: Support parameter?
+	Music::SetDefaultMusic(BCSUtils::cond(Random(0, 1), "HUBOA", "HUBOA2"));//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
 
 	int startTimestamp = Timer();
 	int targetColor = 0;
 	int currentColor = DEFAULTLEVELCOLOR;
 
+	// TODO: From past testing it was determined that this might be incredibly laggy.
 	while(eventState == EVENTSTATE_UBOA)
 	{
 		if (Timer() - startTimestamp == 35 * 2)
@@ -686,7 +691,8 @@ script "FallsInNightmare_Client" (void) clientside
 		terminate;
 	}
 
-	StartWeather(0);
+	// TODO: Support
+	//StartWeather(0);
 }
 
 script "Event_Nightmare_Client" (void) clientside
@@ -697,7 +703,8 @@ script "Event_Nightmare_Client" (void) clientside
 		delay(const: 1);
 	}
 
-	SetMapMusic("HSCARY", MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+	// TODO: Support parameter?
+	Music::SetDefaultMusic("HSCARY");//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
 	SetLevelAtmosphere(DEFAULTLEVELCOLOR - 20, DEFAULTLEVELCOLOR - 20, DEFAULTLEVELCOLOR - 20);
 	delay(35*2);
 	Log(s:"This place turned into your worst nightmare!");
@@ -797,7 +804,8 @@ script "Event_Spiders_Client" (void) clientside
 		delay(const: 1);
 	}
 
-	SetMapMusic("HAVERY", MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+	// TODO: Support parameter?
+	Music::SetDefaultMusic("HAVERY");//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
 	delay(35*2);
 	Log(s:"This place turned a spidernest!");
 }
@@ -826,7 +834,9 @@ Script "EnterAltar" (void)
 	}
 
 	SetEventState(EVENTSTATE_PREANGELS);
-	SetMapMusic("", MAPMUSICLOCAL | MAPMUSICREPLACERADIO);
+
+	// TODO: Support parameter?
+	Music::SetMusic("");//, MAPMUSICLOCAL | MAPMUSICREPLACERADIO);
     LocalAmbientSound("hospital/stinging", 50);
 
     Setfont("smallfont");
@@ -848,7 +858,7 @@ Script "EnterAltar" (void)
 
 	delay(35*4);
 
-	if (!ActorIsAlive(tid))
+	if (!BCSUtils::ActorIsAlive(tid))
 	{
 		SetEventState(EVENTSTATE_NONE);
 		terminate;
@@ -868,7 +878,8 @@ Script "EnterAltar" (void)
     InteractionMessageBold(StrParam(n:0, s:" has come back from heaven! ...that was a mistake."));
 	SetActivator(-1);
 
-	SetMapMusic("", MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+	// TODO: Support parameter?
+	Music::SetDefaultMusic("");//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
 
 	delay(35 * 10);
 	ACS_NamedExecute("Event_Angels", 0);
@@ -910,7 +921,9 @@ script "Event_Angels" (void)
 		{
 			SetEventState(EVENTSTATE_ANGELS);
 			ACS_NamedExecuteAlways("Event_Angels_Client", 0);
-			SetMapMusic("HANGELS", MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+
+			// TODO: Support parameter?
+			Music::SetDefaultMusic("HANGELS");//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
 
 			// Replace hospital textures
 			SetActorState(TAG_MAPSPOTCEILINGLAMP, "inactive");
@@ -935,7 +948,7 @@ script "Event_Angels" (void)
 			SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "SPOOKW01");
 		}
 
-		LogDebug(StrParam(s:"Angel count: ", d:angelCount));
+		Logger::LogDebug(LOGSOURCE, StrParam(s:"Angel count: ", d:angelCount));
 
         // No more than 5 angels should leave.
         if(angelCount == 5)
@@ -947,7 +960,9 @@ script "Event_Angels" (void)
 
 script "Event_Angels_Client" (void) clientside
 {
-	SetMapMusic("HANGELS", MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+	// TODO: Support parameter?
+	// TODO: Is this even required? Already handled serverside.
+	Music::SetDefaultMusic("HANGELS");//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
 
 	int startTimestamp = Timer();
 	int targetColor = 0;

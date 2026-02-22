@@ -1,10 +1,11 @@
-#import "acs_source_public\zhcore.g.acs"
-#import "acs_source_public\bcsutils.g.acs"
-#import "acs_source_public\weather.g.acs"
-#import "acs_source_public\lock.g.acs"
-#import "acs_source_public\log.g.acs"
-#import "acs_source_public\utils.g.acs"
-#include "zcommon.acs"
+#pragma raw include on
+#pragma raw define on
+
+#import "zcommon.bcs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
 
 bool jacks = true;
 bool tele = false;
@@ -22,30 +23,31 @@ script "OnOpen" OPEN
 	Floor_RaiseByValue(136, 50, 8);
 
 	// Locks
-	CreateNewLock();
-	SetLockStayUnlocked();
-	SetLockTakeKeys();
-	AddActorKey("MetalKey");
+	// TODO: Support?
+	//CreateNewLock();
+	//SetLockStayUnlocked();
+	//SetLockTakeKeys();
+	//AddActorKey("MetalKey");
 	SpawnSpot("MetalKey", Random(132, 135));
 
 	// Weather
-	CreateWeather(WEATHERTYPERAIN, true, false, 5, 200, 500, 50, 150);
-
-	delay(1);
-
-	SetSurvivalDefaults();
-	StartMode();
+	// TODO: Support
+	//CreateWeather(WEATHERTYPERAIN, true, false, 5, 200, 500, 50, 150);
 
 	if (Random(0, 5) == 5)
 	{
-		SetMapMusic("D_CLIFF2", MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+		// TODO: Support parameter?
+		Music::SetDefaultMusic("D_CLIFF2");//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
 		ChangeSky("SUNSKY1", "SUNSKY1");
 	}
 	else
 	{
-		SetMapMusic("D_CLIFF1", MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+		// TODO: Support parameter?
+		Music::SetDefaultMusic("D_CLIFF1");//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
 		ChangeSky("SUNSSKY2", "SUNSSKY2");
-		StartWeather(0);
+
+		// TODO: Support
+		//StartWeather(0);
 	}
 }
 
@@ -95,13 +97,16 @@ script "BookcaseNote" (void) CLIENTSIDE
 script "CellarDoor" (void)
 {
 	static bool firstOpened;
-	if (!CheckLock(0)) {
-		LogActivator("You need the key for this wine cellar.");
+
+	// TODO: Support?
+	if (false) {
+	//if (!CheckLock(0)) {
+		Logger::LogActivator("You need the key for this wine cellar.");
 		terminate;
 	}
 
 	if (!firstOpened) {
-		LogBold(StrParam(s:PlayerName(PlayerNumber()), s:" has opened the wine cellar."));
+		Logger::LogBold(StrParam(s:BCSUtils::PlayerName(PlayerNumber()), s:" has opened the wine cellar."));
 		AmbientSound("ambient/reveal", 127);
 		ActivatorSound("sequence/door1", 127);
 		firstOpened = true;
@@ -136,7 +141,7 @@ script "TeleportToJacks" (void) // Secret teleport to jacksgun
 		terminate;
     }
 
-    if (IsZombie()){
+    if (Player::GetIsZombie()){
 		terminate;
     }
 
@@ -146,8 +151,8 @@ script "TeleportToJacks" (void) // Secret teleport to jacksgun
 
 script "FruitPicker" (void)
 {
-	static bool fruitTaken[MAX_PLAYERS];
-    if(IsZombie())
+	static bool fruitTaken[BCSUtils::MAX_PLAYERS];
+    if(Player::GetIsZombie())
 	{
 		terminate;
     }
@@ -189,7 +194,7 @@ script "FruitPicker" (void)
 
 script 11 (void)
 {
-    if(IsHuman()){
+    if(Player::GetIsHuman()){
 		teleport(0,39,0);
     }
 }
@@ -227,5 +232,6 @@ script 24(void)
 
 function void SelfChat(str message)
 {
-	Chat(StrParam(n:0, s:"\cd: ", s:message));
+	// TODO: Support
+	//Chat(StrParam(n:0, s:"\cd: ", s:message));
 }
