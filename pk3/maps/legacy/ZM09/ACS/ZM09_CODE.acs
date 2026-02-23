@@ -207,13 +207,11 @@ function void test_secret (int switchh){
         print_code();
         if(selected>3){//50% right code
             SetFont("BIGFONT");
-			//print_developer(1,"50% right code",0,0,0,0,0);
             HudMessageBold(s:"a door has been unlocked"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 5.5, 0.5);
             AmbientSound("world/reveal1",127);
             door_open(62,24);
         }else{//50% right code + ravishing
             SetFont("BIGFONT");
-			//print_developer(1,"50% right code",0,0,0,0,0);
             HudMessageBold(s:"a door has been opened"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 5.5, 0.5);
             AmbientSound("world/reveal1",127);
             door_open(11,24);
@@ -221,24 +219,35 @@ function void test_secret (int switchh){
         }AmbientSound("world/reveal1",127);
     }
     else if(secret[RIGHT_CNT_INDEX]==_25PCT_CORRECT){
-		//print_developer(1,"25% right code",0,0,0,0,0);
+		// Only the activator gets an item. May trigger ravishing.
         selected=GetCvar("x_zh_zm09_25");
         SetCvar("x_zh_zm09_25",selected+1);
         print_code();
         ravishing_selector(35);
-        Acs_ExecuteAlways(164, 0, PlayerNumber(), 0, 0);
+
+        int tid = Identity::GetTid(PlayerNumber());
+        GiveActorInventory(tid, "ZH2ItemRewardOrbMinor", 1);
     }
     else if(secret[RIGHT_CNT_INDEX] == _0PCT_CORRECT){
         selected=GetCvar("x_zh_zm09_0");
         SetCvar("x_zh_zm09_0",selected+1);
         selected=random(0,100);
+        force_whiteface = true;  // DEBUG
         if(selected >= 90 || force_whiteface==true){//White Face script
             acs_execute(35,0,0,0,0);
             acs_execute(4,0,0,0,0);
             SpawnSpot ("IMSCARED2BETA",25,100,24);
-            HudMessageBold(s:"Thanks ", n:0, s:" Now I'm free again!!!"; HUDMSG_FADEOUT, 919, CR_GREEN, 0.5, 0.6, 5.5, 0.5);
             selected=GetCvar("x_zh_zm09_wf");
             SetCvar("x_zh_zm09_wf",selected+1);
+
+            BCSUtils::HudSetFont("SMALLFONT");
+            BCSUtils::HudSetTextColor(CR_GREEN);
+            BCSUtils::HudSetScale(0.8);
+            BCSUtils::HudSetStayTime(5.5);
+            BCSUtils::HudSetPoint(320.0, 240.0);
+
+            str message = StrParam(s:"Thanks ", n:0, s:" Now I'm free again!!!");
+            BCSUtils::HudDrawText(0, message);
         }else if(selected>=30){
             // Give Special Items to Zombies.
             i=GetCvar("x_zh_zm09_zp");
@@ -276,10 +285,18 @@ function void ravishing_selector(int lucky){
 }
 
 function void print_code(void){
-    HudMessageBold(n:0, s:" activated the code"; HUDMSG_FADEOUT, 997, CR_RED, 0.5, 0.5, 9.5, 0.5);
-    HudMessageBold(s:"the right code is:",d:secret[0],d:secret[1],d:secret[2],d:secret[3]; HUDMSG_FADEOUT, 996, CR_RED, 0.5, 0.52, 9.5, 0.5);
-    HudMessageBold(n:0, s:" code is:",d:secret[4],d:secret[5],d:secret[6],d:secret[7]; HUDMSG_FADEOUT, 995, CR_RED, 0.5, 0.54, 9.5, 0.5);
-    HudMessageBold(s:"the code is ",d:100-25*secret[WRONG_CNT_INDEX],s:"% right"; HUDMSG_FADEOUT, 985, CR_RED, 0.5, 0.56, 9.5, 0.5);
+    BCSUtils::HudSetFont("ConsoleFont");
+    BCSUtils::HudSetTextColor(CR_WHITE);
+    BCSUtils::HudSetScale(0.8);
+    BCSUtils::HudSetStayTime(15.0);
+    BCSUtils::HudSetPoint(30.0, 320.0);
+
+    str message = StrParam(
+        n:0, s:" completed the terminal code\n",
+        s:"The right code is: ",d:secret[0],d:secret[1],d:secret[2],d:secret[3],s:"\n",
+        s:"The writen code is:",d:secret[4],d:secret[5],d:secret[6],d:secret[7],s:"\n",
+        s:"the code is ",d:100-25*secret[WRONG_CNT_INDEX],s:"% right");
+    BCSUtils::HudDrawText(0, message);
 }
 
 function void secret_select(void){

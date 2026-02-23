@@ -83,10 +83,26 @@ script 47 (void) clientside{// Rainfall Script, Long Distance rain
 					}//else it's not a skybox area, or there's nothing on that area
 				}
 				if (CheckActorCeilingTexture(tid, "F_SKY1")){    //the new area is on a sky? then get the sky position
-					if(rain_detail==0)spawnspot("raindrop",tid,0,0);
-					else if(rain_detail==1)spawnspot("raindrop2",tid,0,0);
-					else if(rain_detail==-1)spawnspot("raindrop",tid,0,0);
-					else spawnspot("raindrop3",tid,0,0);
+                    if (rain_detail == -1)
+                    {
+                        Spawn_Raindrop_by_detail(-30, 50, tid);
+                    }
+					else if (rain_detail == 0)
+                    {
+                        Spawn_Raindrop_by_detail(10, 50, tid);
+                    }
+                    else if (rain_detail == 1)
+                    {
+                        Spawn_Raindrop_by_detail(20, 85, tid);
+                    }
+                    else if (rain_detail == 2)
+                    {
+                        Spawn_Raindrop_by_detail(40, 100, tid);
+                    }
+					else
+                    {
+                        Spawn_Raindrop_by_detail(50, 120, tid);
+                    }
 				}
 				thing_remove(tid);
 			        //print(s:"X:",f:x,s:"\nY:",f:y,s:"\nZ:",f:z,s:"\ni:",f:i, s:"\n inc i:",f:inc_i, s:"\n j:",d:j,s:"\n player tid:",d:tid_player,s:" pos x:",f:posx, s:" posy:", f:posy, s:" posz:",f:posz);
@@ -132,40 +148,19 @@ script 50 LIGHTNING {//RAIN SCRIPT
     AmbientSound("thunder",127);
 }
 
-/*
-function int get_valid_spawn(int x,int y,int z, int tid){
-	int output=false;
-	spawn("mapspot",x,y,z,tid,0);
-    if (thingcount(t_none,tid)==0){ 
-		spawn("mapspot",x,y,z+35.0,tid,0);
-		if (thingcount(t_none,tid)==0){ 
-			spawn("mapspot",x,y,z-35.0,tid,0);
-			if (thingcount(t_none,tid)==0){ 
-				spawn("mapspot",x,y,GetSectorCeilingZ(0,x /1.0,y /1.0)-20.0,tid,0); //gets the lowest ceiling on that sector, but unfortnetly not on the actuall sector
-				if (thingcount(t_none,tid)==0){
-					spawn("mapspot",x,y,z+135.0,tid,0);
-					if (thingcount(t_none,tid)==0){
-						spawn("mapspot",x,y,z-135.0,tid,0);
-						if (thingcount(t_none,tid)==0){
-							spawn("mapspot",x,y,z+274.0  ,tid,0);
-							if (thingcount(t_none,tid)==0){
-								spawn("mapspot",x,y,z-274.0,tid,0);
-								if (thingcount(t_none,tid)==0)
-									output=true;
-								else
-									valid_rain_posz=z-274.0;
-							}else
-								valid_rain_posz=z+274.0;
-						}else
-							valid_rain_posz=z-135.0;
-					}else
-						valid_rain_posz=z+135.0;
-				}else
-					valid_rain_posz=GetSectorCeilingZ(0,x /1.0,y /1.0)-20.0;
-			}else
-				valid_rain_posz=z-35.0;
-		}else
-			valid_rain_posz=z+35.0;
-	}else valid_rain_posz=z;
-	return output;
-}*/  
+function void Spawn_Raindrop_by_detail(int min, int max, int tid) 
+{
+    int chance = random(min, max);
+    if (chance < 35)
+    {
+        spawnspot("LegacyZM09Raindrop",tid,0,0);
+    }
+    else if (chance < 70)
+    {
+        spawnspot("raindrop2",tid,0,0);
+    }
+    else
+    {
+        spawnspot("raindrop3",tid,0,0);
+    }
+}

@@ -2,15 +2,54 @@ int zm09_menu_options[5];
 #define MENU_ACTIVE 1
 #define MENU_CLOSE  0
 
+#define RAIN_DISTANCE_IND 0 // 0 - 4
+#define RAIN_SOUND_IND 1 // 1 = disable
+#define RAIN_DETAILS_IND 2 // X // 0 - 4
+#define NEDM_ALLOW  3 // 0 enable
+#define REFLECTION_ALLOW 4 // 1 = disable
+
 int men_pX[5]={483.0  ,563.0  ,643.0  ,723.0 ,803.0};//fixed positons of the menu
 int men_pY[5]={241.0,331.0,421.0,511.0,591.0};//fixed positions of the menu
-int men_selected[5]={4,1,0,1,0};//can be changed
+int men_selected[5]={2,0,2,0,0};//can be changed
 int men_max_opt[5]={4,1,4,1,1};//fixed information
 int men_selected_tid[5]={505,499,496,493,490};//fixed information
 int men_size = 4;//fixed information
 
 int zm09_strsettings[8]={"ULTRA LOW","LOW","MEDIUM","HIGH","ULTRA","EXTREME","ON","OFF"};//CHECK IF CAN BE DELETED
 int menu_zm09;//CHECK IF CAN BE DELETED
+
+// START Simplified settings.
+script "zm09help" (void) NET clientside {
+    printbold(s:"====================================");
+    printbold(s:"\cfQUICK HELP GUIDE FOR ZM09.");
+    printbold(s:"- \czCommand 'pukename setting_block_nedm 1' blocks NEDM (type 0 instead to allow).");
+    printbold(s:"- \cf(PERFORMANCE) \cd Command 'pukename setting_reflection 1' to disable map reflection (type 0 instead to enable).");
+    printbold(s:"- \cf(PERFORMANCE) \cd Command 'pukename setting_rainfall_distance X' configures how far the rain will go from you (0 [low] to 5 [high]).");
+    printbold(s:"- \cf(PERFORMANCE) \cd Command 'pukename setting_rainfall_quality X' configures how detailed the rain be rendered (0 [low] to 5 [high]).");
+    printbold(s:"");
+    printbold(s:"- \czCommand 'puke 48' for classic settings for ZM09.");
+    printbold(s:"- \czCommand 'puke 62'\cf for map tutorial (offline only).");
+    printbold(s:"====================================");
+    printbold(s:"Check console for options");
+}
+
+script "setting_allow_nedm" (int value) NET clientside {
+    zm09_consolemenu_set_option(value, NEDM_ALLOW, 0);
+}
+
+script "setting_rainfall_distance" (int value) NET clientside {
+    zm09_consolemenu_set_option(value, RAIN_DISTANCE_IND, 0);
+}
+
+script "setting_rainfall_quality" (int value) NET clientside {
+    zm09_consolemenu_set_option(value - 1, RAIN_DETAILS_IND, -1);
+}
+
+script "setting_reflection" (int value) NET clientside {
+    zm09_consolemenu_set_option(value, REFLECTION_ALLOW, 0);
+}
+
+// END Simplified settings
 
 script 48 (void) NET clientside{//Rainfall menu
   int menu=MENU_ACTIVE;
@@ -19,18 +58,15 @@ script 48 (void) NET clientside{//Rainfall menu
   AmbientSound("menu/activate",127);
   SetHudSize(1360,768,1);
   SETFONT("IBMMENU");
-//  HudMessageBold(type,id,color,x,y,z
   HudMessageBold(s:"A";HUDMSG_PLAIN,543,0,680.0,384.0,0,0,0);
   zm09_menu_render();
   zm09_menu_render_options(selected_menu);
   while(menu==MENU_ACTIVE){
-//    print(d:selected_menu, s: " ",d:men_pX[men_selected[selected_menu]]);
     SETFONT("IBMSELEC");
     HudMessageBold(s:"A";HUDMSG_PLAIN,men_selected_tid[selected_menu],0,men_pX[men_selected[selected_menu]],men_pY[selected_menu],0,0,0);
     if(GetPlayerInput(-1, INPUT_BUTTONS)==BT_LEFT || GetPlayerInput(-1, INPUT_BUTTONS)==BT_MOVELEFT){
-        if(men_selected[selected_menu]>0){
+        if(men_selected[selected_menu] > 0){
             men_selected[selected_menu]--;
-            zm09_menu_refresh_settings();
             AmbientSound("menu/change",127);
             zm09_save_settings();
         }
@@ -38,7 +74,6 @@ script 48 (void) NET clientside{//Rainfall menu
     else if(GetPlayerInput(-1, INPUT_BUTTONS)==BT_RIGHT || GetPlayerInput(-1, INPUT_BUTTONS)==BT_MOVERIGHT){
         if(men_max_opt[selected_menu]>men_selected[selected_menu]){
             men_selected[selected_menu]++;
-            zm09_menu_refresh_settings();
             AmbientSound("menu/change",127);
             zm09_save_settings();
         }
@@ -136,14 +171,6 @@ function void zm09_menu_render_options(INT selected_menu){
 
 }
 
-function void zm09_menu_refresh_settings(void){
-
-}
-
-function void zm09_menu_upd_client_settings(void){
-
-}
-
 function void zm09_menu_close(void){
  for(int i=488;i<506;i++){
     setfont("normalfont");
@@ -185,6 +212,16 @@ function void zm09_save_settings(void){
 	}
     x = (music_quality+1)*10000+(rain_detail+2)*1000+(rain_sound+2)*100+(weather_quality+2)*10+(nedm_desactive+2+reflection_actived*2);
     SetCvar("x_zh_zm09",x);
-//    printbold(s:"SET VALUE :",d:x);
-//    printbold(s:"TOOK VALUE:",d:getcvar("zh_zm09"));
+}
+
+function void zm09_consolemenu_set_option(int value, int option, int min)
+{
+    if ( value < min || value > men_max_opt[option])
+    {
+        printbold(s:"invalid parameter, it should be between ", d: min, s:" and ", d: men_max_opt[option]);
+        return;
+    }
+    men_selected[option] = value;
+
+    zm09_save_settings();
 }
