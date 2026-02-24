@@ -74,7 +74,7 @@ strict namespace RoundTimer
         //     ZH2Game::GameContext.MapDetails.Timers = BCS::ArrResize(timers, index + 1, lengthof(lengthdef));
         // }
 
-        RoundTimerContextT& timer = GetTimerRefByindex(index);
+        RoundTimerContextT module& timer = GetTimerRefByindex(index);
         timer.InitialState.Length = length;
         timer.InitialState.MaximumTime = maximumTime;
         timer.InitialState.Flags = flags;
@@ -104,9 +104,9 @@ strict namespace RoundTimer
     internal void SetActiveTimerByKnownType(KnownRoundTimerT timerType, bool broadcast = true) { SetActiveTimerByIndex(GetIndexOfKnownType(timerType), broadcast); }
     internal void DisableTimer(bool broadcast = true) { SetActiveTimerByIndex(0, broadcast); }
 
-    internal RoundTimerContextT& GetTimerRefCurrent() { return GetTimerRefByindex(GetActiveTimerIndex()); }
-    internal RoundTimerContextT& GetTimerRefByKnown(KnownRoundTimerT timerType) { return GetTimerRefByindex(GetIndexOfKnownType(timerType)); }
-    internal RoundTimerContextT& GetTimerRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Timers[index]; }
+    internal RoundTimerContextT module& GetTimerRefCurrent() { return GetTimerRefByindex(GetActiveTimerIndex()); }
+    internal RoundTimerContextT module& GetTimerRefByKnown(KnownRoundTimerT timerType) { return GetTimerRefByindex(GetIndexOfKnownType(timerType)); }
+    internal RoundTimerContextT module& GetTimerRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Timers[index]; }
 
     /* Properties */
 
@@ -117,7 +117,7 @@ strict namespace RoundTimer
     // If not active, we return the initial length.
     internal int GetTimerTicsLeft(int index)
     {
-        RoundTimerContextT& timerContext = GetTimerRefByindex(index);
+        RoundTimerContextT module& timerContext = GetTimerRefByindex(index);
 
         if (!GetTimerActive(index))
             return timerContext.InitialState.Length * 35;
@@ -128,7 +128,7 @@ strict namespace RoundTimer
 
     internal void SetTimerTicsLeft(int index, int tics)
     {
-        RoundTimerContextT& timerContext = GetTimerRefByindex(index);
+        RoundTimerContextT module& timerContext = GetTimerRefByindex(index);
 
         // Also clamped to not go below 0 or above the maximum configured time.
         tics = BCSUtils::Clamp(tics, 0, timerContext.InitialState.MaximumTime * 35);
@@ -170,7 +170,7 @@ strict namespace RoundTimer
             return;
 
         // Also have to update the end tic after pausing.
-        RoundTimerContextT& timerContext = GetTimerRefByindex(index);
+        RoundTimerContextT module& timerContext = GetTimerRefByindex(index);
         int diff = timerContext.EndingTic - timerContext.PauseTic;
         timerContext.PauseTic = -1;
         timerContext.EndingTic = Timer() + diff;
@@ -181,7 +181,7 @@ strict namespace RoundTimer
 
     internal void ResetTimer(int index)
     {
-        RoundTimerContextT& timerContext = GetTimerRefByindex(index);
+        RoundTimerContextT module& timerContext = GetTimerRefByindex(index);
         timerContext.EndingTic = -1;
         timerContext.PauseTic = -1;
         timerContext.Flags = timerContext.InitialState.Flags;
@@ -192,7 +192,7 @@ strict namespace RoundTimer
 
     internal void StartTimer(int index, bool broadcast = true)
     {
-        RoundTimerContextT& timerContext = GetTimerRefByindex(index);
+        RoundTimerContextT module& timerContext = GetTimerRefByindex(index);
         timerContext.EndingTic = Timer() + timerContext.InitialState.Length * 35;
 
         // Ensure not paused, otherwise this doesn't make much sense.
@@ -249,4 +249,4 @@ strict namespace RoundTimer
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE

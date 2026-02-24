@@ -17,7 +17,7 @@ strict namespace Resist
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        ResistT[]& resists = ZH2Game::GameContext.MapDetails.Resists;
+        ResistT[] module& resists = ZH2Game::GameContext.MapDetails.Resists;
         for (int index = 0; index < lengthof(resists); ++index)
         {
             if (!IsDefined(index))
@@ -43,7 +43,7 @@ strict namespace Resist
             return;
         }
 
-        ResistT& resist = GetRefByindex(index);
+        ResistT module& resist = GetRefByindex(index);
         resist.InitialState.Length = length;
         resist.InitialState.TopReasonLabel = topReasonLabel;
         resist.InitialState.TimeReasonLabel = timeReasonLabel;
@@ -58,12 +58,12 @@ strict namespace Resist
         Logger::LogDebug(LOGSOURCE, "Created new resist at index \cd" + str(index) + "\cj. Length: \cd" + str(length) + "\cj. Top reason: \cd" + topReasonLabel + "\cj. Time reason: \cd" + timeReasonLabel + ".");
     }
 
-    internal ResistT& GetRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Resists[index]; }
+    internal ResistT module& GetRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Resists[index]; }
 
     // Called by the client, which is used to determine some things about the resist that do not change after it was made.
     internal void InitializeResistClientside(int index)
     {
-        ResistT& resist = GetRefByindex(index);
+        ResistT module& resist = GetRefByindex(index);
 
         // Explicit check for `(raw)0` as timereason meaning nothing was set at all.
         // Default to "resist for %t seconds" then.
@@ -123,7 +123,7 @@ strict namespace Resist
         if (GetRunState(index) != STATENONE)
             return;
 
-        ResistT& resist = GetRefByindex(index);
+        ResistT module& resist = GetRefByindex(index);
 
         // The ending tic of a resist is set to an interval of 35 to keep in sync with other resists.
         // This is mostly so the visualization of them remains equal between other resists.
@@ -167,4 +167,4 @@ strict namespace Resist
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE
