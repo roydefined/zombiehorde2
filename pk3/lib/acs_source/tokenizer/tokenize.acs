@@ -81,7 +81,7 @@ strict namespace Tokenizer
     str HandleToString(int handle)
     {
         if (!IsActive(handle)) return "";
-        TokenizerT& tokenizer = _tokenizers[handle];
+        TokenizerT module& tokenizer = _tokenizers[handle];
         return "Parenthesis level: " + str(tokenizer.ParenthesisLevel) + ". Brace level: " + str(tokenizer.BraceLevel) + ". Bracket level: " + str(tokenizer.BracketLevel) + ". Current token: " + str(tokenizer.Token) + ". Current symbol: " + tokenizer.Symbol + ".";
     }
 
@@ -91,7 +91,7 @@ strict namespace Tokenizer
         {
             if (_tokenizers[i].State != STATENONE) continue;
 
-            TokenizerT& tokenizer = _tokenizers[i];
+            TokenizerT module& tokenizer = _tokenizers[i];
             tokenizer.Buffer = buffer;
 
             tokenizer.PositionStart = 0;
@@ -127,7 +127,7 @@ strict namespace Tokenizer
     void Next(int handle, bool errorOnEOF = true)
     {
         if (!IsActive(handle)) return;
-        TokenizerT& tokenizer = _tokenizers[handle];
+        TokenizerT module& tokenizer = _tokenizers[handle];
 
         SkipNonTokenizableContent(handle);
 
@@ -203,7 +203,7 @@ strict namespace Tokenizer
 
     internal void SkipNonTokenizableContent(int handle)
     {
-        TokenizerT& tokenizer = _tokenizers[handle];
+        TokenizerT module& tokenizer = _tokenizers[handle];
         while(true)
         {
             int currentCharacter = GetCurrentCharacter(handle);
@@ -298,7 +298,7 @@ strict namespace Tokenizer
 
     internal TokenTypeT NextToken(int handle)
     {
-        TokenizerT& tokenizer = _tokenizers[handle];
+        TokenizerT module& tokenizer = _tokenizers[handle];
         int currentCharacter = GetCurrentCharacter(handle);
 
         // Single character cases
@@ -439,35 +439,35 @@ strict namespace Tokenizer
 
     internal void IncrementLine(int handle)
     {
-        TokenizerT& tokenizer = _tokenizers[handle];
+        TokenizerT module& tokenizer = _tokenizers[handle];
         tokenizer.Line++;
         tokenizer.LinePositionStart = tokenizer.Position;
     }
 
     internal int GetLine(int handle)
     {
-        TokenizerT& tokenizer = _tokenizers[handle];
+        TokenizerT module& tokenizer = _tokenizers[handle];
         return tokenizer.Line;
     }
 
     internal int GetLinePosition(int handle)
     {
-        TokenizerT& tokenizer = _tokenizers[handle];
+        TokenizerT module& tokenizer = _tokenizers[handle];
         return tokenizer.Position - tokenizer.LinePositionStart;
     }
 
     internal int GetCurrentCharacter(int handle)
     {
-        TokenizerT& tokenizer = _tokenizers[handle];
+        TokenizerT module& tokenizer = _tokenizers[handle];
         return GetChar(tokenizer.Buffer, tokenizer.Position);
     }
 
     internal bool CompareCurrent(int handle, str comparer)
     {
-        TokenizerT& tokenizer = _tokenizers[handle];
+        TokenizerT module& tokenizer = _tokenizers[handle];
         str comparing = StrMid(tokenizer.Buffer, tokenizer.Position, StrLen(comparer));
         return comparing == comparer;
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE
