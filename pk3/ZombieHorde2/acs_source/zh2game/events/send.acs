@@ -206,4 +206,25 @@ strict namespace Event
         packet = Packet::Packet_Append(packet, id, Packet::PACKET_WORD);
         EventBus::CallEvent(packet);
     }
+
+    internal void SendActorDamaged(int id, int tid, int damage, bool targetDied)
+    {
+        str packet = Packet::Packet_New();
+        packet = Packet::Packet_AppendStr(packet, EVENTACTORDAMAGED);
+        packet = Packet::Packet_Append(packet, id, Packet::PACKET_WORD);
+        packet = Packet::Packet_Append(packet, tid, Packet::PACKET_WORD);
+        packet = Packet::Packet_Append(packet, damage, Packet::PACKET_WORD);
+        packet = Packet::Packet_Append(packet, targetDied, Packet::PACKET_WORD);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendActorDamagedClientTotal(int tid, int damage, bool targetDied)
+    {
+        str packet = Packet::Packet_New();
+        packet = Packet::Packet_AppendStr(packet, EVENTACTORDAMAGEDCLIENTTOTAL);
+        packet = Packet::Packet_Append(packet, tid, Packet::PACKET_WORD);
+        packet = Packet::Packet_Append(packet, damage, Packet::PACKET_WORD);
+        packet = Packet::Packet_Append(packet, targetDied, Packet::PACKET_WORD);
+        EventBus::CallEvent(packet);
+    }
 }

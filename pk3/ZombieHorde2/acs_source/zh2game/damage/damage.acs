@@ -14,12 +14,9 @@ strict namespace Damage
 
         for (int i = 0; i < size; ++i)
         {
-            DamageTotalItemContextT module& context = ZH2Game::GameContext.DamageTotalContext.Collection[i];
-
             // Send total damage to the client.
-            // TODO: Handle this with an event. See #84
-            ACS_NamedExecuteWithResult("zh2_internal_damagetotal_receiveclient", context.Tid, context.Damage, context.IsKill);
-
+            DamageTotalItemContextT module& context = ZH2Game::GameContext.DamageTotalContext.Collection[i];
+            Event::SendActorDamagedClientTotal(context.Tid, context.Damage, context.IsKill);
             context.Tid = 0;
             context.Damage = 0;
             context.IsKill = false;
