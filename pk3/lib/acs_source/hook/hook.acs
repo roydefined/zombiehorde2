@@ -6,9 +6,9 @@
 
 strict namespace Hook
 {
-    internal int function(void[]*)? _hooks[HOOK_MAX];
+    internal raw function(void[]*)? _hooks[HOOK_MAX];
 
-    bool Register(HookTypeT type, int function(void[]*)& fn)
+    bool Register(HookTypeT type, raw function(void[]*)& fn)
     {
         if (type < 0 || type >= HOOK_MAX)
             return false;
@@ -28,17 +28,17 @@ strict namespace Hook
         _hooks[type] = null;
     }
 
-    void Call(HookTypeT type, void[]* data)
+    raw Call(HookTypeT type, void[]* data)
     {
         if (type < 0 || type >= HOOK_MAX)
-            return;
+            return 0;
 
-        int function(void[]*)? fnOrNull = _hooks[type];
+        raw function(void[]*)? fnOrNull = _hooks[type];
         if (fnOrNull == null)
-            return;
+            return 0;
 
-        int function(void[]*)& fn = fnOrNull!!;
-        fn(data);
+        raw function(void[]*)& fn = fnOrNull!!;
+        return fn(data);
     }
 }
 
