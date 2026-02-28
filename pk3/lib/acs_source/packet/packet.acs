@@ -83,23 +83,23 @@ strict namespace Packet
         return StrParam(s:pac, s:val);
     }
 
-    int Send(str scrip, str pac, int client)
+    bool Send(str scrip, str pac, int client = -1)
     {
         int maxPacketSize = GetMaxSize(), packetSize = GetSize(pac);
 
         if(packetSize > maxPacketSize)
         {
             Log(s:"Send ERROR: Packet is too large (", i:packetSize, s:" bytes)! Current server settings allow for only ", i:maxPacketSize, s:" bytes.");
-            return 0;
+            return false;
         }
 
         if(packetSize == PACKET_NATIVE_HEADER_SIZE)
         {
             Log(s:"Send ERROR: Packet is empty. Not sending.");
-            return 0;
+            return false;
         }
 
-        return NamedSendNetworkString(scrip, pac, client);
+        return (bool)NamedSendNetworkString(scrip, pac, client);
     }
 
     //str Read(str pac, int width = PACKET_WORD)
