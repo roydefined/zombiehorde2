@@ -52,6 +52,7 @@ script 26 open{//Update server side functions to clientside
 script 63 DEATH{//ZM09 STATISTICS
     int input;
     int input2;
+    // Not a perfect solution since players can die in other ways.
     if(ghoul_target==playernumber()+PLAYER_TID){
         if(ThingCountName ("ravishing",0)==1){
             input=GetCvar("x_zh_zm09_rk");
@@ -67,7 +68,6 @@ script 63 DEATH{//ZM09 STATISTICS
 }
 
 script 64 (int who) DISCONNECT{//REGISTER IS SOMEONE DISCONNECTED
-//	print_developer(3,"Player tid",who," DISCONNECTED",0,0,0);
     int input=GetCvar("x_zh_zm09_di");
     SetCvar("x_zh_zm09_di",input+1);
 }
@@ -258,102 +258,6 @@ script 67 (void) NET clientside{//show statistics
 
 }
 
-script 69 (int code) NET{
-	if(code==1414325){
-		int back_wf_script=-1;
-		int back_rav_script=-1; //there's no -1 situation
-		int script_cnt=0;
-		int tic_cnt=0;
-		while(true){
-			SETFONT("SMALLFONT");
-			HudMessage(s:"TICS:",d:tic_cnt; HUDMSG_PLAIN, 544, CR_RED, 0, 0.2, 9.8, 0);
-			tic_cnt+=3;
-		/*
-		Ravishing script:offline/online/disconnected
-		Ravishing situation:visible/invisible/Stucked
-		Ravishing target:!ghoul_hate
-		Ravishing last script called:!ravishing_script
-		*/			
-		    SETFONT("SMALLFONT");
-			HudMessage(s:"Ravishing script:"; HUDMSG_PLAIN, 545, CR_RED, 0, 0.22, 9.8, 0);
-			if(ravishing_script==0){
-				HudMessage(s:"offline"; HUDMSG_PLAIN, 546, CR_WHITE, 0.15, 0.22, 9.8, 0);
-			}else if(ravishing_script==back_rav_script){
-				script_cnt++;
-				if(script_cnt>=50){
-					HudMessage(s:"Disconnected"; HUDMSG_PLAIN, 546, CR_YELLOW, 0.2, 0.22, 9.8, 0);
-				}else{
-					HudMessage(s:"online"; HUDMSG_PLAIN, 546, CR_GREEN, 0.15, 0.22, 9.8, 0);
-				}
-			}else{
-				HudMessage(s:"online"; HUDMSG_PLAIN, 546, CR_GREEN, 0.15, 0.22, 9.8, 0);
-				script_cnt=0;
-			}
-
-
-			HudMessage(s:"Ravishing situation:"; HUDMSG_PLAIN, 547, CR_RED, 0, 0.24, 9.8, 0);
-			if(user_invisible==true){
-				HudMessage(s:"Invisible"; HUDMSG_PLAIN, 548, CR_WHITE, 0.15, 0.24, 9.8, 0);
-			}else if(stuck_test>=20){
-				HudMessage(s:"Stucked"; HUDMSG_PLAIN, 548, CR_YELLOW, 0.15, 0.24, 9.8, 0);
-			}else{
-				HudMessage(s:"Visible"; HUDMSG_PLAIN, 549, CR_RED, 0.15, 0.24, 9.8, 0);
-			}
-
-			HudMessage(s:"Ravishing target:"; HUDMSG_PLAIN, 550, CR_RED, 0, 0.26, 9.8, 0);
-				HudMessage(n:ghoul_target-601, s:" ...number:",d:ghoul_target; HUDMSG_PLAIN, 551, CR_WHITE, 0.2, 0.26, 9.8, 0);
-			HudMessage(s:"Ravishing last script:"; HUDMSG_PLAIN, 552, CR_RED, 0, 0.28, 9.8, 0);
-				HudMessage(d:ravishing_script; HUDMSG_PLAIN, 553, CR_WHITE, 0.15, 0.28, 9.8, 0);
-		/*
-		White Face script:offline/online/disconnected/starting (debug_wf_scrpt_stck:0-2:3:4:5-else-1)
-		White Face situation:visible/invisible (debug_wf_vsble)
-		White Face speed:slow/fast (debug_wf_speed)
-		White Face target:!ghoul_hate
-		*/
-		    SETFONT("SMALLFONT");
-			HudMessage(s:"White Face script:"; HUDMSG_PLAIN, 554, CR_WHITE, 0, 0.3, 9.8, 0);
-			if(debug_wf_scrpt_stck==0){
-				HudMessage(s:"OFFLINE"; HUDMSG_PLAIN, 555, CR_WHITE, 0.15, 0.3, 9.8, 0);	
-			}else if(debug_wf_scrpt_stck==1)
-				HudMessage(s:"STARTING"; HUDMSG_PLAIN, 555, CR_BLUE, 0.15, 0.3, 9.8, 0);
-			else if(debug_wf_scrpt_stck==back_wf_script){
-				if(script_cnt>=50){
-					HudMessage(s:"DISCONNECTED"; HUDMSG_PLAIN, 555, CR_YELLOW, 0.15, 0.3, 9.8, 0);	
-				}else{
-					script_cnt++;
-					HudMessage(s:"ONLINE"; HUDMSG_PLAIN, 555, CR_GREEN, 0.15, 0.3, 9.8, 0);	
-				}
-			}else{
-				HudMessage(s:"ONLINE"; HUDMSG_PLAIN, 555, CR_GREEN, 0.15, 0.3, 9.8, 0);
-				script_cnt=0;
-			}			
-			
-			HudMessage(s:"White Face situation:"; HUDMSG_PLAIN, 556, CR_WHITE, 0, 0.32, 9.8, 0);
-			switch(debug_wf_vsble){
-				case true:
-				HudMessage(s:"VISIBLE"; HUDMSG_PLAIN, 557, CR_WHITE, 0.15, 0.32, 9.8, 0);	
-				break;
-				case false:
-				HudMessage(s:"INVISIBLE"; HUDMSG_PLAIN, 557, CR_RED, 0.15, 0.32, 9.8, 0);
-				break;
-			}
-			
-			HudMessage(s:"White Face speed:"; HUDMSG_PLAIN, 558, CR_WHITE, 0, 0.34, 9.8, 0);
-			if(debug_wf_speed==false){
-				HudMessage(s:"SLOW"; HUDMSG_PLAIN, 559, CR_GREEN, 0.15, 0.34, 9.8, 0);
-			}else{
-				HudMessage(s:"FAST"; HUDMSG_PLAIN, 560, CR_RED, 0.15, 0.34, 9.8, 0);
-			}
-		
-			HudMessage(s:"White Face target:"; HUDMSG_PLAIN, 561, CR_WHITE, 0, 0.36, 9.8, 0);
-				HudMessage(n:ghoul_target-601, s:" ...number:",d:ghoul_target; HUDMSG_PLAIN, 562, CR_WHITE, 0.2, 0.36, 9.8, 0);
-			delay(3);
-		}
-	}else{
-		log(s:"\ck<white face> ", n:ActivatorTID(), s:"\cd stop cheating... thanks from ibm :) ");
-	}
-}
-
 function void zm09_update_settings(void){
 int i=0;
 int j=0;
@@ -415,7 +319,5 @@ int input=GetCvar("x_zh_zm09");
         Sector_SetPlaneReflection (149, 66, 0);
         Sector_SetPlaneReflection (3, 44, 0);
     }
-	
-	
     play_zm09_music();
-}  
+}
