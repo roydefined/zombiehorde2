@@ -110,15 +110,20 @@ strict namespace Chat
 
     internal void SendChatMessageClientside(str name, str message)
     {
-        int chatSoundCvar = GetCVar("chat_sound");
+        // Skip the sound if the user doesn't display messages.
+        // They do need to show in the console.
 
-        if (chatSoundCvar != 0)
+        if (ZH2Lib::GetShowMessages())
         {
-            // 1 and 3 both use misc/chat
-            str chatSound = chatSoundCvar == 2
-                ? "misc/chat2" : "misc/chat";
+            int chatSoundCvar = ZH2Lib::GetChatSound();
+            if (chatSoundCvar != 0)
+            {
+                // 1 and 3 both use misc/chat
+                str chatSound = chatSoundCvar == 2
+                    ? "misc/chat2" : "misc/chat";
 
-            AmbientSound(chatSound, 255);
+                AmbientSound(chatSound, 255);
+            }
         }
 
 		Log(s:"\c*", s:name, s:": ", s:message);
