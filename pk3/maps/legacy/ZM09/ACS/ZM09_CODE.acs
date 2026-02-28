@@ -9,7 +9,6 @@ int secret[10];//a var to store the right code and the typed code and how right/
 //switch [ 9    ] store how rigt the code is
 
 int selected;// ?
-int force_whiteface=false;
 
 #define SPAWN_LAVA_SOUND 1
 #define WRONG_CNT_INDEX 8
@@ -133,14 +132,6 @@ script 68 (int type_human) { //only actived when 100% right code, or 0% right co
     }
 }
 
-script 70 (int code) NET{
-	if(code==1414325){
-	force_whiteface=true;
-	print(d:force_whiteface);
-	print(s:"force white face spawn = true when the code is all wrong");
-	}else print(s:"nop");
-}
-
 script 71 (int code, int scrpt_numb){
 	if(code==1414325){
 		acs_suspend(scrpt_numb,0);
@@ -232,8 +223,7 @@ function void test_secret (int switchh){
         selected=GetCvar("x_zh_zm09_0");
         SetCvar("x_zh_zm09_0",selected+1);
         selected=random(0,100);
-        force_whiteface = true;  // DEBUG
-        if(selected >= 90 || force_whiteface==true){//White Face script
+        if(selected >= 70 ){//White Face script
             acs_execute(35,0,0,0,0);
             acs_execute(4,0,0,0,0);
             SpawnSpot ("IMSCARED2BETA",25,100,24);

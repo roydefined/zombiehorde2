@@ -51,19 +51,22 @@ script 26 open{//Update server side functions to clientside
 
 script 63 DEATH{//ZM09 STATISTICS
     int input;
-    int input2;
-    // Not a perfect solution since players can die in other ways.
-    if(ghoul_target==playernumber()+PLAYER_TID){
-        if(ThingCountName ("ravishing",0)==1){
-            input=GetCvar("x_zh_zm09_rk");
-            SetCvar("x_zh_zm09_rk",input+1);
-        }else if(ThingCountName ("imscared2",0)==1){
+    int killer = GetActorProperty(0, APROP_TargetTID);
+    if (killer == 100) {
+        if (CheckActorClass(killer, "IMSCARED2BETA")) {
             input=GetCvar("x_zh_zm09_wk");
             SetCvar("x_zh_zm09_wk",input+1);
-        }else if(ThingCountName ("ghouldemon",0)>=1){//pacman
-            input=GetCvar("x_zh_zm09_sk");
-            SetCvar("x_zh_zm09_sk",input+1);
         }
+        else if (CheckActorClass(killer, "ravishing"))
+        {
+            input=GetCvar("x_zh_zm09_rk");
+            SetCvar("x_zh_zm09_rk",input+1);
+        }
+    }
+    else if (killer == 114)
+    {
+        input=GetCvar("x_zh_zm09_sk");
+        SetCvar("x_zh_zm09_sk",input+1);
     }
 }
 
