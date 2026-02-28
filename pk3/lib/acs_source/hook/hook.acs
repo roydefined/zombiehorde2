@@ -1,0 +1,45 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Hook"
+
+strict namespace Hook
+{
+    internal raw function(void[]*)? _hooks[HOOK_MAX];
+
+    bool Register(HookTypeT type, raw function(void[]*)& fn)
+    {
+        if (type < 0 || type >= HOOK_MAX)
+            return false;
+
+        if (_hooks[type] != null)
+            return false;
+
+        _hooks[type] = fn;
+        return true;
+    }
+
+    void Unregister(HookTypeT type)
+    {
+        if (type < 0 || type >= HOOK_MAX)
+            return;
+
+        _hooks[type] = null;
+    }
+
+    raw Call(HookTypeT type, void[]* data = null)
+    {
+        if (type < 0 || type >= HOOK_MAX)
+            return 0;
+
+        raw function(void[]*)? fnOrNull = _hooks[type];
+        if (fnOrNull == null)
+            return 0;
+
+        raw function(void[]*)& fn = fnOrNull!!;
+        return fn(data);
+    }
+}
+
+#undef LOGSOURCE

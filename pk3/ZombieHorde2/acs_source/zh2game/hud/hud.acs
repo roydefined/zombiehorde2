@@ -42,6 +42,9 @@ strict namespace Hud
     // This means we're not spectating anybody, nor are we on some camera.
     internal bool _clientCameraOnBody;
 
+    // Send through the hook.
+    HudHookDataT? _hudHookData;
+
     internal void Tic()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
@@ -50,6 +53,10 @@ strict namespace Hud
         _drawnHudId = HUDID_BASE;
 
         _clientCameraOnBody = CheckPlayerCamera(ConsolePlayerNumber()) == ActivatorTid();
+
+        // Ensure we have the hook data allocated.
+        if (_hudHookData == null)
+            _hudHookData = bcs::malloc(lengthof(_hudHookData));
 
         UpdateHudShakeOffset();
 

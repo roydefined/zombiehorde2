@@ -9,6 +9,9 @@
 
 strict namespace GameLoop
 {
+    // Send through the hook.
+    internal PlayerTicHookDataT? _playerTicHookData;
+
     // Handles initialization of a player specific GameLoop on the serverside.
     internal void StartServerLoop()
     {
@@ -25,6 +28,10 @@ strict namespace GameLoop
     internal void StartServerPlayerLoopById(int id)
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        // Ensure we have the hook data allocated.
+        if (_playerTicHookData == null)
+            _playerTicHookData = bcs::malloc(lengthof(_playerTicHookData));
 
         if (!BCSUtils::PlayerIsConnected(id))
         {
@@ -52,4 +59,4 @@ strict namespace GameLoop
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE
