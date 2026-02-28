@@ -9,25 +9,29 @@ strict namespace LibIO
     void ParseLoggerDefClientside()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
-        ACS_NamedExecuteWithResult(SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_CLIENTSIDE);
+        ACS_NamedExecuteWithResult("zh2_internal_parse_logger_defs_client");
     }
 
     void ParseLoggerDefServerside()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
-        ACS_NamedExecuteWithResult(SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_SERVERSIDE);
+        ACS_NamedExecuteWithResult("zh2_internal_parse_logger_defs_server");
     }
 
-    script SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_CLIENTSIDE clientside
+    script "zh2_internal_parse_logger_defs_client" clientside
     {
-        if (ZH2Lib::PersistingLibContext.LogContext.IsParsedClientside) terminate;
+        if (ZH2Lib::PersistingLibContext.LogContext.IsParsedClientside)
+            terminate;
+
         ParseLogDefCore();
         ZH2Lib::PersistingLibContext.LogContext.IsParsedClientside = true;
     }
 
-    script SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_SERVERSIDE
+    script "zh2_internal_parse_logger_defs_server"
     {
-        if (ZH2Lib::PersistingLibContext.LogContext.IsParsedServerside) terminate;
+        if (ZH2Lib::PersistingLibContext.LogContext.IsParsedServerside)
+            terminate;
+
         ParseLogDefCore();
         ZH2Lib::PersistingLibContext.LogContext.IsParsedServerside = true;
     }
