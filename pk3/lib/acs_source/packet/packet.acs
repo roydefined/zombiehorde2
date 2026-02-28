@@ -6,7 +6,7 @@
 
 strict namespace Packet
 {
-    internal int _tmp[4];
+    internal raw _tmp[5];
 
     raw Value;
 
@@ -20,7 +20,7 @@ strict namespace Packet
         return b;
     }
 
-    int GetMaxSize(void)
+    int GetMaxSize()
     {
         int maxPacketSize = GetCVar("sv_maxpacketsize");
 
@@ -35,55 +35,37 @@ strict namespace Packet
         return StrLen(pac) + PACKET_NATIVE_HEADER_SIZE;
     }
 
+    // Does nothing currently, but it might be needed in the future.
     str New()
     {
         return "";
     }
 
-    //str Append(str pac, raw val, int width = PACKET_WORD)
     str Append(str pac, raw val)
     {
-        int width = PACKET_WORD;
-        int zeroChar = 0x80, max, tmp;
+        int tmp;
 
-        if( (width < PACKET_WORD) || (width >= PACKET_TOTAL) )
-            width = PACKET_WORD;
-
-        switch(width)
+        for(int i = PACKET_WORD_SIZE - 1; i >= 0; i--)
         {
-            case PACKET_WORD: max = 4; break;
-            case PACKET_SHORT: max = 2; break;
-            case PACKET_BYTE: max = 1; break;
+            tmp = val & ((1 << PACKET_BYTE_BITS) - 1);
+
+            _tmp[i] = tmp + ' ';
+
+            val >>= PACKET_BYTE_BITS;
         }
 
-        for(int i = 0; i < max; i++)
-        {
-            tmp = val & 0xFF;
-
-            if(!tmp)
-            {
-                zeroChar |= 1 << i;
-                tmp = 0xFF;
-            }
-
-            _tmp[i] = tmp;
-
-            val >>= 8;
-        }
-
-        return StrParam(s:pac, c:zeroChar, a:(_tmp, 0, max));
+        return StrParam(s:pac, a:_tmp);
     }
 
     str AppendStr(str pac, str val)
     {
         val = StrLeft(val, 2048);
-
-        pac = Append(pac, StrLen(val));//, PACKET_WORD);
+        pac = Append(pac, StrLen(val));
 
         return StrParam(s:pac, s:val);
     }
 
-    bool Send(str scrip, str pac, int client = -1)
+    bool Send(str scriptName, str pac, int client = -1)
     {
         int maxPacketSize = GetMaxSize(), packetSize = GetSize(pac);
 
@@ -99,52 +81,58 @@ strict namespace Packet
             return false;
         }
 
-        return (bool)NamedSendNetworkString(scrip, pac, client);
+        return (bool)NamedSendNetworkString(scriptName, pac, client);
     }
 
-    //str Read(str pac, int width = PACKET_WORD)
     str Read(str pac)
     {
-        int width = PACKET_WORD;
-        int zeroChar = ReadUnsignedByte(pac, 0), max, shiftAmount;
-
-        if( (width < PACKET_WORD) || (width >= PACKET_TOTAL) )
-            width = PACKET_WORD;
-
-        switch(width)
-        {
-            case PACKET_WORD: max = 4; break;
-            case PACKET_SHORT: max = 2; break;
-            case PACKET_BYTE: max = 1; break;
-        }
-
-        shiftAmount = (max - 1) * 8;
+        int shiftAmount = 4 * 8, tmp;
 
         Value = 0;
 
-        for(int i = 0; i < max; i++)
+        for(int i = 0; i < PACKET_WORD_SIZE; i++)
         {
-            Value >>= 8;
+            Value <<= PACKET_BYTE_BITS;
+            tmp = (ReadUnsignedByte(pac, i) /*& ((1 << PACKET_BYTE_BITS) - 1)*/) - ' ';
 
-            if(!(zeroChar & (1 << i)))
-            {
-                Value &= 0x00FFFFFF;
-                Value |= ReadUnsignedByte(pac, i + 1) << shiftAmount;
-            }
+            Value |= tmp;
         }
 
-        return StrMid(pac, max + 1, 0x7FFFFFFF);
+        return StrMid(pac, PACKET_WORD_SIZE, 0x7FFFFFFF);
     }
 
     str ReadStr(str pac)
     {
         int len;
-        pac = Read(pac);//, PACKET_WORD);
+        pac = Read(pac);
         len = Value;
 
         Value = StrLeft(pac, len);
 
         return StrMid(pac, len, 0x7FFFFFFF);
+    }
+
+    int PackValue(int pack, int pos, int width, raw v)
+    {
+        if(v & PACKET_MSB_MASK)
+            v |= 1 << (width - 1);
+
+        v &= ((1 << width) - 1);
+        return pack | (v << pos);
+    }
+
+    raw UnpackValue(int pack, int pos, int width, bool signed = false)
+    {
+        int widthm1 = width - 1;
+        int v = (pack >> pos) & ((1 << width) - 1), m;
+
+        if(signed && (v & (1 << widthm1)))
+        {
+            m = 1 << widthm1;
+            v = (v ^ m) - m;
+        }
+
+        return v;
     }
 }
 
