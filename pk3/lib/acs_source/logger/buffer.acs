@@ -21,21 +21,21 @@ strict namespace Logger
 
             str messagePacket = _logBuffer[index];
 
-            messagePacket = Packet::Packet_ReadStr(messagePacket);
-            str source = Packet::Packet_Rval;
+            messagePacket = Packet::ReadStr(messagePacket);
+            str source = Packet::Value;
 
-            messagePacket = Packet::Packet_Read(messagePacket, Packet::PACKET_WORD);
-            LogLevelT level = GetLogLevelByIndex(Packet::Packet_Rval);
+            messagePacket = Packet::Read(messagePacket);
+            LogLevelT level = GetLogLevelByIndex(Packet::Value);
 
             // This log message is not enabled on the client/server
             if (!IsEnabled(source, level))
                 continue;
 
-            messagePacket = Packet::Packet_Read(messagePacket, Packet::PACKET_WORD);
-            LogOwnerT owner = GetLogOwnerByIndex(Packet::Packet_Rval);
+            messagePacket = Packet::Read(messagePacket);
+            LogOwnerT owner = GetLogOwnerByIndex(Packet::Value);
 
-            messagePacket = Packet::Packet_ReadStr(messagePacket);
-            str message = Packet::Packet_Rval;
+            messagePacket = Packet::ReadStr(messagePacket);
+            str message = Packet::Value;
 
             str formattedMessage = FormatMessage(source, level, owner, message);
             Log(s:formattedMessage);
@@ -49,11 +49,11 @@ strict namespace Logger
         // Gonna have to copy the packet so we don't lose data.
         str messagePacketCopy = messagePacket;
 
-        messagePacketCopy = Packet::Packet_ReadStr(messagePacketCopy);
-        str source = Packet::Packet_Rval;
+        messagePacketCopy = Packet::ReadStr(messagePacketCopy);
+        str source = Packet::Value;
 
-        Packet::Packet_Read(messagePacketCopy, Packet::PACKET_WORD);
-        LogLevelT level = GetLogLevelByIndex(Packet::Packet_Rval);
+        Packet::Read(messagePacketCopy);
+        LogLevelT level = GetLogLevelByIndex(Packet::Value);
 
         // This is a premature check to block any log messages that are definitely not enabled.
         // It is premature because the IO might not be finished here, so if a log is super early it might pass.
