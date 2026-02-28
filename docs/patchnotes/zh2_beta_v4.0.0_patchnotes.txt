@@ -5,11 +5,60 @@ As of beta 4 Zombie Horde 2 will require Zandronum 3.3 in order to load and play
 New features have been added exclusive to this version.
 The mod will NOT load anymore on Zandronum 3.2/3.2.1 because of this.
 
+New features
+------------------------------------------------
+
+ * * New damage feedback system * *
+A new system has been added which improves the feedback towards players when it comes to damaging other actors.
+The player can now configure multiple features on their end:
+- Configure drawing a hitmarker when damaging or killing an actor. This hitmarker will be white for damage, and red for kills.
+- Configure playing a sound when damaging or killing an actor. This sound will vary depending on if the damage kills the actor.
+- Configure showing dealth damage to actors on the HUD. This damage will accumulate over time, depending on the configured length, and stops showing after a while.
+- Configure showing damage numbers on the actor you damage. These damage numbers will change grow in size, gravity and color the bigger the damage.
+  Additionally, the player can configure showing the damage numbers as individual damage or total damage.
+  Individual damage means that each puff counts as a separate number. This changes how the shotgun shows damage, for example.
+
+MAP changes
+------------------------------------------------
+
+- [ZM11]: This map has gotten some updates to its geometry to fix an issue where bad overlapping linedefs caused the map to break when edited.
+          This should not affect the map visually too much, though some very specific bushes might have been moved a bit.
+
+API changes
+------------------------------------------------
+
+ * * New hook system for mappers to hook logic into the mod * *
+A new system has been added which allows modders to hook custom logic into their maps. This system is very different from the eventbus, and much more advanced.
+You're adviced to check the wiki on how hooks work: https://zombiehorde.wiki.gg/wiki/Using_Hooks
+In short, hooks are a performance-oriented feature where you can hook onto code that runs every tic or more.
+Think drawing the hud, or logic running on a specific joined player. This allows mappers to more finely control logic that requires this knowledge.
+Where most things work fine with using the eventbus, this system will be used for those specific tic-based behaviors you might want.
+The hook system currently supports:
+- `HOOK_CLIENTDRAWHUD`, which runs clientside for each hud part drawn.
+- `HOOK_CLIENTTIC`, which runs clientside when the client tics.
+- `HOOK_SERVERTIC`, which runs serverside when the server tics.
+- `HOOK_SERVERPLAYERTIC`, which runs serverside when a player tics. This means it runs for each individual player.
+
+ * * New events * *
+New events have been added. These have been added to support damage feedback better.
+Events:
+- `actordamaged`, which will trigger when an actor received damage. This event works similary to the Zandronum event, but with the benefit of being send clientside.
+- `actordamagedclienttotal`, which runs clientside and sends information about the total damage done that tic by the client.
+
+ * * Libbcs support * *
+Support has been added for libbcs, which is part of BCC: https://github.com/zeta-group/zt-bcc
+Support for libbcs is required for various features to be possible, including the hook system.
+It is now possible to use function references, dynamic allocation and much more now that it has been added.
+This will bring many new features in the future, both performance wise and gameplay wise.
+Mappers can also use this library now, if they dare to do so.
+
 Other mod changes
 ------------------------------------------------
 
 - The EventBus will now use `CheckScript` function to ensure scripts used for callbacks exist.
 - The reward system will now use `CheckScript` function to ensure restrict/give scripts exist.
 - Added support for the new `BUSY` keyword in heavy scripts. This will cause the game to start much quicker as extra delays are now removed.
+- Additionally with the `BUSY` keyword being supported, this allows the mod to have an improved startup time. It now runs all logic in a single tic instead of being delayed.
+- The wait preprocessor functions have been removed. These are no longer required now that the mod starts up in a single tic.
 - The mod now uses a new feature to lock the mod into the cooperative gamemode. You can no longer switch gamemodes, and as such the mod no longer checks for this either.
 - Improved player join flow with `GAMEEVENT_PLAYERJOINS`. Join feedback is now much better when you're not allowed to join during the round.
