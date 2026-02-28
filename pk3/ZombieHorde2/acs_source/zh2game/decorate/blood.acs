@@ -14,18 +14,18 @@ strict namespace Decorate
         if (!BCSUtils::StrIEquals(GetActorClass(0), HUMAN_BULLETPUFF))
             return;
 
-        str packet = Packet::Packet_New();
+        str packet = Packet::New();
 
         // Puff
-        packet = Packet::Packet_Append(packet, GetActorX(0), Packet::PACKET_WORD);
-        packet = Packet::Packet_Append(packet, GetActorY(0), Packet::PACKET_WORD);
-        packet = Packet::Packet_Append(packet, GetActorZ(0), Packet::PACKET_WORD);
+        packet = Packet::Append(packet, GetActorX(0));
+        packet = Packet::Append(packet, GetActorY(0));
+        packet = Packet::Append(packet, GetActorZ(0));
 
         // Source/target id
-        packet = Packet::Packet_Append(packet, sourceId, Packet::PACKET_BYTE);
-        packet = Packet::Packet_Append(packet, targetId, Packet::PACKET_BYTE);
+        packet = Packet::Append(packet, sourceId);
+        packet = Packet::Append(packet, targetId);
 
-        if(!NamedSendNetworkString("zh2_internal_dec_blood_spawn_client", packet))
+        if(!Packet::Send("zh2_internal_dec_blood_spawn_client", packet))
             Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_dec_blood_spawn_client. Message packet: '" + packet + "'.");
     }
 
@@ -41,21 +41,21 @@ strict namespace Decorate
         if (bloodType == 0) terminate;
 
         // Puff
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
-        fixed puffX = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        fixed puffX = Packet::Value;
 
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
-        fixed puffY = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        fixed puffY = Packet::Value;
 
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
-        fixed puffZ = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        fixed puffZ = Packet::Value;
 
         // Source/Target
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_BYTE);
-        int sourceId = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        int sourceId = Packet::Value;
 
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_BYTE);
-        int targetId = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        int targetId = Packet::Value;
 
         // Now check if we were the source.
         if (bloodType == 1 && sourceId != ConsolePlayerNumber()) terminate;
