@@ -1,0 +1,73 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Weather
+{
+    internal void TicEmitterWeather(int sourceTid)
+    {
+        for (int i = 0; i < EMITTER_WEATHER_COUNT; ++i)
+        {
+            EmitterWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[i];
+
+            if (!context.Enabled)
+                continue;
+
+            // Don't spawn this tic.
+            if (context.NextSpawnTic > Timer())
+                continue;
+
+            str class = GetEmitterWeatherActorByIndex(i);
+
+            for (int j = 0; j < context.SpawnCount; ++j)
+                SpawnParticle(sourceTid, class, context);
+
+            context.NextSpawnTic = Timer() + context.SpawnDelay;
+        }
+    }
+
+    internal void SpawnParticle(int sourceTid, str class, EmitterWeatherContextT module& context)
+    {
+        fixed angle = fixed(random(0, 1000)) / 1000.0,
+              radius = fixed(random(context.MinRadius, context.MaxRadius));
+
+        fixed sourceZ = GetActorZ(sourceTid) + GetActorViewHeight(sourceTid);
+
+        // Determine the position to spawn the weather particle at
+        fixed spotX = GetActorX(sourceTid) + cos(angle) * radius,
+              spotY = GetActorY(sourceTid) + sin(angle) * radius,
+              spotZ = sourceZ + fixed(random(context.MinZpos, context.MaxZpos));
+
+        // Determine the z-height of the ceiling.
+        fixed ceilingZ = GetSectorCeilingZ(0, int(spotX), int(spotY)) - 2.0;
+
+        // If the ceiling is closer use the ceiling's z positioning instead to prevent it from not spawning.
+        if (spotZ > ceilingZ)
+            spotZ = ceilingZ;
+
+        int spotId = UniqueTID();
+
+        // The weather has specific behavior when it comes to spawning with a ceiling.
+        if (context.CeilingBehavior != Weather::EMITTERWEATHER_CEILINGBEHAVIOUR_NONE)
+        {
+            if (!Spawn("MapSpot", spotX, spotY, sourceZ, spotId, 0))
+                return;
+
+            bool hasSkyCeiling = CheckActorCeilingTexture(spotId, "F_SKY1");
+            Thing_Remove(spotId);
+
+            // Further depending on the enum, check if we need a sky ceiling or not.
+            if (context.CeilingBehavior == Weather::EMITTERWEATHER_CEILINGBEHAVIOUR_REQUIRESKY && !hasSkyCeiling
+                || context.CeilingBehavior == Weather::EMITTERWEATHER_CEILINGBEHAVIOUR_REQUIRENOSKY && hasSkyCeiling)
+                return;
+        }
+
+        SpawnForced(class, spotX, spotY, spotZ, 0, 0);
+    }
+
+    internal str GetEmitterWeatherActorByIndex(int index)
+    {
+        static str actors[] = { "DebugDrop", "DebugDropSky", "DebugDropNoSky", "ZH2WeatherSnowDrop", "ZH2WeatherRainDrop" };
+        return actors[index];
+    }
+}
