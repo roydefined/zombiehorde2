@@ -1,0 +1,109 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace LibIO
+{
+    script "zh2_internal_parse_weather_defs_client" clientside busy
+    {
+        if (ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed)
+            terminate;
+
+        ParseWeatherLumps(HandleParsedProfile);
+        ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed = true;
+    }
+
+    script "zh2_internal_parse_weather_defs_server" busy
+    {
+        if (ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed)
+            terminate;
+
+        ParseWeatherLumps(HandleParsedProfile);
+        ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed = true;
+    }
+
+    internal void HandleParsedProfile(ParsedEmitterWeatherContextT global:0& data)
+    {
+        //Weather::EmitterWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[data.Index];
+        Weather::SetEmitterWeatherEnabled(data.Index, data.Enabled);
+        Weather::SetEmitterWeatherSkyBehavior(data.Index, data.SkyBehavior);
+        Weather::SetEmitterWeatherSpawnCount(data.Index, data.SpawnCount);
+        Weather::SetEmitterWeatherSpawnDelay(data.Index, data.SpawnDelay);
+        Weather::SetEmitterWeatherMinRadius(data.Index, data.MinRadius);
+        Weather::SetEmitterWeatherMaxRadius(data.Index, data.MaxRadius);
+        Weather::SetEmitterWeatherMinZpos(data.Index, data.MinZpos);
+        Weather::SetEmitterWeatherMaxZpos(data.Index, data.MaxZpos);
+    }
+
+    // Parses all the weathdef lumps.
+    internal void ParseWeatherLumps(void function(ParsedEmitterWeatherContextT global:0&)& parseCallback)
+    {
+        int startIndex = -1;
+        while(true)
+        {
+            startIndex = LumpOpen("weathdef", startIndex);
+
+            if (startIndex == -1)
+                break;
+
+            if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) == 0)
+                continue;
+
+            ParseSingleWeatherLump(LumpReadString(startIndex, 0), parseCallback);
+            LumpClose(startIndex);
+        }
+    }
+
+    internal void ParseSingleWeatherLump(str buffer, void function(ParsedEmitterWeatherContextT global:0&)& parseCallback)
+    {
+        int handle = Tokenizer::RentTokenizer(buffer);
+        if (handle == -1)
+            return;
+
+        Tokenizer::Next(handle, false);
+
+        while(Tokenizer::CanRead(handle))
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseDefaultWeatherProfile(handle, symbol, parseCallback))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing weather lump: '" + symbol + "'.");
+            Tokenizer::ReturnTokenizer(handle);
+            return;
+        }
+
+        Tokenizer::ReturnTokenizer(handle);
+    }
+
+    internal bool ParseDefaultWeatherProfile(int handle, str identifyingSymbol, void function(ParsedEmitterWeatherContextT global:0&)& parseCallback)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "defaultweatherprofiles")) return false;
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseEmitterWeatherBlock(handle, symbol))
+            {
+                parseCallback(ParsedEmitterWeatherContext!!);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing default weather profiles: '" + symbol + "'.");
+            return false;
+        }
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+        return true;
+    }
+}

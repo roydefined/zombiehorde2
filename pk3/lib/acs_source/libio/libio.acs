@@ -6,9 +6,29 @@
 
 #include "client/footstep/footstep.acs"
 #include "shared/logger/logger.acs"
+#include "weather/parser.acs"
+#include "weather/parts.acs"
 
 strict namespace LibIO
 {
+    /* WEATHER */
+    ParsedEmitterWeatherContextT? ParsedEmitterWeatherContext;
+
+    void ParseWeatherDefClientside()
+    {
+        ParsedEmitterWeatherContext = BCS::Malloc(lengthof(ParsedEmitterWeatherContext));
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        ACS_NamedExecuteWithResult("zh2_internal_parse_weather_defs_client");
+        BCS::Free(ParsedEmitterWeatherContext);
+    }
+
+    void ParseWeatherDefServerside()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+        ParsedEmitterWeatherContext = BCS::Malloc(lengthof(ParsedEmitterWeatherContext));
+        ACS_NamedExecuteWithResult("zh2_internal_parse_weather_defs_server");
+        BCS::Free(ParsedEmitterWeatherContext);
+    }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE

@@ -1,0 +1,281 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace LibIO
+{
+    internal bool ParseEmitterWeatherBlock(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "emitterweather"))
+            return false;
+
+        Tokenizer::Next(handle, false);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for weather type whilst parsing emitter weather: '" + Tokenizer::GetSymbol(handle) + "'. Symbol should be of type string.");
+            return false;
+        }
+
+        str weatherType = Tokenizer::GetSymbol(handle);
+        ParsedEmitterWeatherContext.Index = WeatherTypeToIndex(weatherType);
+
+        if (ParsedEmitterWeatherContext.Index == -1)
+        {
+            Tokenizer::SetErrored(handle, "Invalid weather type provided whilst parsing emitter weather: '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseEmitterWeatherBlockEnabled(handle, symbol)
+                || ParseEmitterWeatherBlockSkyBehavior(handle, symbol)
+                || ParseEmitterWeatherBlockSpawnCount(handle, symbol)
+                || ParseEmitterWeatherBlockSpawnDelay(handle, symbol)
+                || ParseEmitterWeatherBlockMinRadius(handle, symbol)
+                || ParseEmitterWeatherBlockMaxRadius(handle, symbol)
+                || ParseEmitterWeatherBlockMinZpos(handle, symbol)
+                || ParseEmitterWeatherBlockMaxZpos(handle, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing default weather profiles: '" + symbol + "'.");
+            return false;
+        }
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LOGSOURCE, "New emitter weather parsed under index \cd" + str(ParsedEmitterWeatherContext.Index) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseEmitterWeatherBlockEnabled(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "enabled"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseBooleanOrNumbericValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for Enabled is not a correct value. Expected boolean or numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        bool value = parsedValue != 0;
+        ParsedEmitterWeatherContext.Enabled = value;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed IsEnabled: \cd" + str(value) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseEmitterWeatherBlockSkyBehavior(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "skybehavior"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+        str symbol = Tokenizer::GetSymbol(handle);
+
+        int index = WeatherSkyBehaviorToIndex(symbol);
+
+        if (index == -1)
+        {
+            Tokenizer::SetErrored(handle, "The given value for SkyBehavior is not a correct value. The value " + symbol + " does not map to a known type.");
+            return false;
+        }
+
+        Weather::EmitterWeatherSkyBehaviorT value = Weather::GetEmitterWeatherSkyBehaviorByIndex(index);
+        ParsedEmitterWeatherContext.SkyBehavior = value;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed SkyBehavior: \cd" + str(value) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseEmitterWeatherBlockSpawnCount(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "spawncount"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for SpawnCount is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        ParsedEmitterWeatherContext.SpawnCount = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed SpawnCount: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseEmitterWeatherBlockSpawnDelay(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "spawndelay"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for SpawnDelay is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        ParsedEmitterWeatherContext.SpawnDelay = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed SpawnDelay: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseEmitterWeatherBlockMinRadius(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "minradius"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for MinRadius is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        ParsedEmitterWeatherContext.MinRadius = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed MinRadius: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseEmitterWeatherBlockMaxRadius(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "maxradius"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for MaxRadius is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        ParsedEmitterWeatherContext.MaxRadius = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed MaxRadius: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseEmitterWeatherBlockMinZpos(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "minzpos"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for MinZpos is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        ParsedEmitterWeatherContext.MinZpos = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed MinZpos: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseEmitterWeatherBlockMaxZpos(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "maxzpos"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for MaxZpos is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        ParsedEmitterWeatherContext.MaxZpos = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed MaxZpos: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    // HACK: Can't use `static str` here due to a compiler bug.
+    str weatherTypes[] = { "debug", "debugsky", "debugnosky", "rain", "snow" };
+    internal int WeatherTypeToIndex(str weatherType)
+    {
+        for (int i = 0; i < 5; ++i)
+        {
+            if (BCSUTILS::StrIEquals(weatherType, weatherTypes[i]))
+                return i;
+        }
+
+        return -1;
+    }
+
+    // HACK: Same as above.
+    str weatherSkyBehaviorTypes[] = { "none", "requiresky", "requirenosky" };
+    internal int WeatherSkyBehaviorToIndex(str skyBehavior)
+    {
+        for (int i = 0; i < 5; ++i)
+        {
+            if (BCSUTILS::StrIEquals(skyBehavior, weatherSkyBehaviorTypes[i]))
+                return i;
+        }
+
+        return -1;
+    }
+}
