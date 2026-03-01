@@ -4,7 +4,7 @@
 
 strict namespace LibIO
 {
-    internal bool ParseEmitterWeatherBlock(int handle, str identifyingSymbol)
+    internal bool ParseEmitterWeatherBlock(int handle, str identifyingSymbol, bool useDefaultBase)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "emitterweather"))
             return false;
@@ -18,12 +18,27 @@ strict namespace LibIO
         }
 
         str weatherType = Tokenizer::GetSymbol(handle);
-        ParsedEmitterWeatherContext.Index = WeatherTypeToIndex(weatherType);
+        int index = WeatherTypeToIndex(weatherType);
 
         if (ParsedEmitterWeatherContext.Index == -1)
         {
             Tokenizer::SetErrored(handle, "Invalid weather type provided whilst parsing emitter weather: '" + Tokenizer::GetSymbol(handle) + "'.");
             return false;
+        }
+
+        ParsedEmitterWeatherContext.Index = index;
+
+        // Set up default values from persisting data if we want this (map-specific parsing does this)
+        if (useDefaultBase)
+        {
+            ParsedEmitterWeatherContext.Enabled = Weather::GetPersistingEmitterWeatherEnabled(index);
+            ParsedEmitterWeatherContext.SkyBehavior = Weather::GetPersistingEmitterWeatherSkyBehavior(index);
+            ParsedEmitterWeatherContext.SpawnCount = Weather::GetPersistingEmitterWeatherSpawnCount(index);
+            ParsedEmitterWeatherContext.SpawnDelay = Weather::GetPersistingEmitterWeatherSpawnDelay(index);
+            ParsedEmitterWeatherContext.MinRadius = Weather::GetPersistingEmitterWeatherMinRadius(index);
+            ParsedEmitterWeatherContext.MaxRadius = Weather::GetPersistingEmitterWeatherMaxRadius(index);
+            ParsedEmitterWeatherContext.MinZpos = Weather::GetPersistingEmitterWeatherMinZpos(index);
+            ParsedEmitterWeatherContext.MaxZpos = Weather::GetPersistingEmitterWeatherMaxZpos(index);
         }
 
         int braceLevel = Tokenizer::GetBraceLevel(handle);

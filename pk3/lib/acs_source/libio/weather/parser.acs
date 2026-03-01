@@ -9,8 +9,81 @@ strict namespace LibIO
         if (ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed)
             terminate;
 
-        ParseWeatherLumps(HandleParsedProfile);
+        ParseWeatherLumps();
         ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed = true;
+    }
+
+    // Parses all the weathdef lumps.
+    internal void ParseWeatherLumps()
+    {
+        int startIndex = -1;
+        while(true)
+        {
+            startIndex = LumpOpen("weathdef", startIndex);
+
+            if (startIndex == -1)
+                break;
+
+            if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) == 0)
+                continue;
+
+            ParseSingleWeatherLump(LumpReadString(startIndex, 0));
+            LumpClose(startIndex);
+        }
+    }
+
+    internal void ParseSingleWeatherLump(str buffer)
+    {
+        int handle = Tokenizer::RentTokenizer(buffer);
+        if (handle == -1)
+            return;
+
+        Tokenizer::Next(handle, false);
+
+        while(Tokenizer::CanRead(handle))
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseWeatherProfile(handle, symbol, "defaultweatherprofiles", false, HandleParsedProfile))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing weather lump: '" + symbol + "'.");
+            Tokenizer::ReturnTokenizer(handle);
+            return;
+        }
+
+        Tokenizer::ReturnTokenizer(handle);
+    }
+
+    // Externed for override behavior to be possible.
+    bool ParseWeatherProfile(int handle, str identifyingSymbol, str expectedSymbol, bool useDefaultBase, void function(ParsedEmitterWeatherContextT global:0&)& parseCallback)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, expectedSymbol)) return false;
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseEmitterWeatherBlock(handle, symbol, useDefaultBase))
+            {
+                parseCallback(ParsedEmitterWeatherContext!!);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + expectedSymbol + ": '" + symbol + "'.");
+            return false;
+        }
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+        return true;
     }
 
     // Sets the default profile.
@@ -27,77 +100,5 @@ strict namespace LibIO
         Weather::SetPersistingEmitterWeatherMaxRadius(data.Index, data.MaxRadius);
         Weather::SetPersistingEmitterWeatherMinZpos(data.Index, data.MinZpos);
         Weather::SetPersistingEmitterWeatherMaxZpos(data.Index, data.MaxZpos);
-    }
-
-    // Parses all the weathdef lumps.
-    internal void ParseWeatherLumps(void function(ParsedEmitterWeatherContextT global:0&)& parseCallback)
-    {
-        int startIndex = -1;
-        while(true)
-        {
-            startIndex = LumpOpen("weathdef", startIndex);
-
-            if (startIndex == -1)
-                break;
-
-            if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) == 0)
-                continue;
-
-            ParseSingleWeatherLump(LumpReadString(startIndex, 0), parseCallback);
-            LumpClose(startIndex);
-        }
-    }
-
-    internal void ParseSingleWeatherLump(str buffer, void function(ParsedEmitterWeatherContextT global:0&)& parseCallback)
-    {
-        int handle = Tokenizer::RentTokenizer(buffer);
-        if (handle == -1)
-            return;
-
-        Tokenizer::Next(handle, false);
-
-        while(Tokenizer::CanRead(handle))
-        {
-            str symbol = Tokenizer::GetSymbol(handle);
-            if (ParseDefaultWeatherProfile(handle, symbol, parseCallback))
-                continue;
-
-            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing weather lump: '" + symbol + "'.");
-            Tokenizer::ReturnTokenizer(handle);
-            return;
-        }
-
-        Tokenizer::ReturnTokenizer(handle);
-    }
-
-    internal bool ParseDefaultWeatherProfile(int handle, str identifyingSymbol, void function(ParsedEmitterWeatherContextT global:0&)& parseCallback)
-    {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, "defaultweatherprofiles")) return false;
-
-        int braceLevel = Tokenizer::GetBraceLevel(handle);
-        if (!Tokenizer::ExpectNextChar(handle, '{'))
-            return false;
-
-        Tokenizer::Next(handle);
-
-        // While the brace level does not match the end level, we keep parsing.
-        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
-        {
-            str symbol = Tokenizer::GetSymbol(handle);
-            if (ParseEmitterWeatherBlock(handle, symbol))
-            {
-                parseCallback(ParsedEmitterWeatherContext!!);
-                continue;
-            }
-
-            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing default weather profiles: '" + symbol + "'.");
-            return false;
-        }
-
-        // Optional comma.
-        Tokenizer::Next(handle, false);
-        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
-            Tokenizer::Next(handle, false);
-        return true;
     }
 }
