@@ -4,15 +4,6 @@
 
 strict namespace LibIO
 {
-    script "zh2_internal_parse_weather_defs_client" clientside busy
-    {
-        if (ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed)
-            terminate;
-
-        ParseWeatherLumps(HandleParsedProfile);
-        ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed = true;
-    }
-
     script "zh2_internal_parse_weather_defs_server" busy
     {
         if (ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed)
@@ -22,17 +13,20 @@ strict namespace LibIO
         ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed = true;
     }
 
+    // Sets the default profile.
     internal void HandleParsedProfile(ParsedEmitterWeatherContextT global:0& data)
     {
+        // I can't use a ref here because the data is missing. Compiler bug.
         //Weather::EmitterWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[data.Index];
-        Weather::SetEmitterWeatherEnabled(data.Index, data.Enabled);
-        Weather::SetEmitterWeatherSkyBehavior(data.Index, data.SkyBehavior);
-        Weather::SetEmitterWeatherSpawnCount(data.Index, data.SpawnCount);
-        Weather::SetEmitterWeatherSpawnDelay(data.Index, data.SpawnDelay);
-        Weather::SetEmitterWeatherMinRadius(data.Index, data.MinRadius);
-        Weather::SetEmitterWeatherMaxRadius(data.Index, data.MaxRadius);
-        Weather::SetEmitterWeatherMinZpos(data.Index, data.MinZpos);
-        Weather::SetEmitterWeatherMaxZpos(data.Index, data.MaxZpos);
+
+        Weather::SetPersistingEmitterWeatherEnabled(data.Index, data.Enabled);
+        Weather::SetPersistingEmitterWeatherSkyBehavior(data.Index, data.SkyBehavior);
+        Weather::SetPersistingEmitterWeatherSpawnCount(data.Index, data.SpawnCount);
+        Weather::SetPersistingEmitterWeatherSpawnDelay(data.Index, data.SpawnDelay);
+        Weather::SetPersistingEmitterWeatherMinRadius(data.Index, data.MinRadius);
+        Weather::SetPersistingEmitterWeatherMaxRadius(data.Index, data.MaxRadius);
+        Weather::SetPersistingEmitterWeatherMinZpos(data.Index, data.MinZpos);
+        Weather::SetPersistingEmitterWeatherMaxZpos(data.Index, data.MaxZpos);
     }
 
     // Parses all the weathdef lumps.
