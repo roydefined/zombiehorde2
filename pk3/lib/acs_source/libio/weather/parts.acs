@@ -4,7 +4,7 @@
 
 strict namespace LibIO
 {
-    internal bool ParseEmitterWeatherBlock(int handle, str identifyingSymbol, bool useDefaultBase)
+    internal bool ParseEmitterWeatherBlock(int handle, str identifyingSymbol, bool setPersisting)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "emitterweather"))
             return false;
@@ -20,25 +20,37 @@ strict namespace LibIO
         str weatherType = Tokenizer::GetSymbol(handle);
         int index = WeatherTypeToIndex(weatherType);
 
-        if (ParsedEmitterWeatherContext.Index == -1)
+        if (_parsedEmitterWeatherContext.Index == -1)
         {
             Tokenizer::SetErrored(handle, "Invalid weather type provided whilst parsing emitter weather: '" + Tokenizer::GetSymbol(handle) + "'.");
             return false;
         }
 
-        ParsedEmitterWeatherContext.Index = index;
+        _parsedEmitterWeatherContext.Index = index;
 
-        // Set up default values from persisting data if we want this (map-specific parsing does this)
-        if (useDefaultBase)
+        // If `setPersisting` is false we want to provide the values that are currently set for the current transient info we have.
+        // This is useful for mappers to set only part of the new values.
+        if (!setPersisting)
         {
-            ParsedEmitterWeatherContext.Enabled = Weather::GetPersistingEmitterWeatherEnabled(index);
-            ParsedEmitterWeatherContext.SkyBehavior = Weather::GetPersistingEmitterWeatherSkyBehavior(index);
-            ParsedEmitterWeatherContext.SpawnCount = Weather::GetPersistingEmitterWeatherSpawnCount(index);
-            ParsedEmitterWeatherContext.SpawnDelay = Weather::GetPersistingEmitterWeatherSpawnDelay(index);
-            ParsedEmitterWeatherContext.MinRadius = Weather::GetPersistingEmitterWeatherMinRadius(index);
-            ParsedEmitterWeatherContext.MaxRadius = Weather::GetPersistingEmitterWeatherMaxRadius(index);
-            ParsedEmitterWeatherContext.MinZpos = Weather::GetPersistingEmitterWeatherMinZpos(index);
-            ParsedEmitterWeatherContext.MaxZpos = Weather::GetPersistingEmitterWeatherMaxZpos(index);
+            _parsedEmitterWeatherContext.Enabled = Weather::GetEmitterWeatherEnabled(index);
+            _parsedEmitterWeatherContext.SkyBehavior = Weather::GetEmitterWeatherSkyBehavior(index);
+            _parsedEmitterWeatherContext.SpawnCount = Weather::GetEmitterWeatherSpawnCount(index);
+            _parsedEmitterWeatherContext.SpawnDelay = Weather::GetEmitterWeatherSpawnDelay(index);
+            _parsedEmitterWeatherContext.MinRadius = Weather::GetEmitterWeatherMinRadius(index);
+            _parsedEmitterWeatherContext.MaxRadius = Weather::GetEmitterWeatherMaxRadius(index);
+            _parsedEmitterWeatherContext.MinZpos = Weather::GetEmitterWeatherMinZpos(index);
+            _parsedEmitterWeatherContext.MaxZpos = Weather::GetEmitterWeatherMaxZpos(index);
+        }
+        else
+        {
+            _parsedEmitterWeatherContext.Enabled = false;
+            _parsedEmitterWeatherContext.SkyBehavior = Weather::EMITTERWEATHER_SKYBEHAVIOUR_UNKNOWN;
+            _parsedEmitterWeatherContext.SpawnCount = 0;
+            _parsedEmitterWeatherContext.SpawnDelay = 0;
+            _parsedEmitterWeatherContext.MinRadius = 0;
+            _parsedEmitterWeatherContext.MaxRadius = 0;
+            _parsedEmitterWeatherContext.MinZpos = 0;
+            _parsedEmitterWeatherContext.MaxZpos = 0;
         }
 
         int braceLevel = Tokenizer::GetBraceLevel(handle);
@@ -76,7 +88,7 @@ strict namespace LibIO
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
             Tokenizer::Next(handle, false);
 
-        Logger::LogDebug(LOGSOURCE, "New emitter weather parsed under index \cd" + str(ParsedEmitterWeatherContext.Index) + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "New emitter weather parsed under index \cd" + str(_parsedEmitterWeatherContext.Index) + "\cj.");
         return true;
     }
 
@@ -98,7 +110,7 @@ strict namespace LibIO
 
         int parsedValue = (int)Tokenizer::GetParsedValue();
         bool value = parsedValue != 0;
-        ParsedEmitterWeatherContext.Enabled = value;
+        _parsedEmitterWeatherContext.Enabled = value;
 
         Logger::LogDebug(LOGSOURCE, "Parsed IsEnabled: \cd" + str(value) + "\cj.");
         return true;
@@ -124,7 +136,7 @@ strict namespace LibIO
         }
 
         Weather::EmitterWeatherSkyBehaviorT value = Weather::GetEmitterWeatherSkyBehaviorByIndex(index);
-        ParsedEmitterWeatherContext.SkyBehavior = value;
+        _parsedEmitterWeatherContext.SkyBehavior = value;
 
         Logger::LogDebug(LOGSOURCE, "Parsed SkyBehavior: \cd" + str(value) + "\cj.");
         return true;
@@ -147,7 +159,7 @@ strict namespace LibIO
         }
 
         int parsedValue = (int)Tokenizer::GetParsedValue();
-        ParsedEmitterWeatherContext.SpawnCount = parsedValue;
+        _parsedEmitterWeatherContext.SpawnCount = parsedValue;
 
         Logger::LogDebug(LOGSOURCE, "Parsed SpawnCount: \cd" + str(parsedValue) + "\cj.");
         return true;
@@ -170,7 +182,7 @@ strict namespace LibIO
         }
 
         int parsedValue = (int)Tokenizer::GetParsedValue();
-        ParsedEmitterWeatherContext.SpawnDelay = parsedValue;
+        _parsedEmitterWeatherContext.SpawnDelay = parsedValue;
 
         Logger::LogDebug(LOGSOURCE, "Parsed SpawnDelay: \cd" + str(parsedValue) + "\cj.");
         return true;
@@ -193,7 +205,7 @@ strict namespace LibIO
         }
 
         int parsedValue = (int)Tokenizer::GetParsedValue();
-        ParsedEmitterWeatherContext.MinRadius = parsedValue;
+        _parsedEmitterWeatherContext.MinRadius = parsedValue;
 
         Logger::LogDebug(LOGSOURCE, "Parsed MinRadius: \cd" + str(parsedValue) + "\cj.");
         return true;
@@ -216,7 +228,7 @@ strict namespace LibIO
         }
 
         int parsedValue = (int)Tokenizer::GetParsedValue();
-        ParsedEmitterWeatherContext.MaxRadius = parsedValue;
+        _parsedEmitterWeatherContext.MaxRadius = parsedValue;
 
         Logger::LogDebug(LOGSOURCE, "Parsed MaxRadius: \cd" + str(parsedValue) + "\cj.");
         return true;
@@ -239,7 +251,7 @@ strict namespace LibIO
         }
 
         int parsedValue = (int)Tokenizer::GetParsedValue();
-        ParsedEmitterWeatherContext.MinZpos = parsedValue;
+        _parsedEmitterWeatherContext.MinZpos = parsedValue;
 
         Logger::LogDebug(LOGSOURCE, "Parsed MinZpos: \cd" + str(parsedValue) + "\cj.");
         return true;
@@ -262,7 +274,7 @@ strict namespace LibIO
         }
 
         int parsedValue = (int)Tokenizer::GetParsedValue();
-        ParsedEmitterWeatherContext.MaxZpos = parsedValue;
+        _parsedEmitterWeatherContext.MaxZpos = parsedValue;
 
         Logger::LogDebug(LOGSOURCE, "Parsed MaxZpos: \cd" + str(parsedValue) + "\cj.");
         return true;

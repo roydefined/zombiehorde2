@@ -43,7 +43,7 @@ strict namespace LibIO
         while(Tokenizer::CanRead(handle))
         {
             str symbol = Tokenizer::GetSymbol(handle);
-            if (ParseWeatherProfile(handle, symbol, "defaultweatherprofiles", false, HandleParsedProfile))
+            if (ParseWeatherProfile(handle, symbol, "defaultweatherprofiles", true))
                 continue;
 
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing weather lump: '" + symbol + "'.");
@@ -55,7 +55,7 @@ strict namespace LibIO
     }
 
     // Externed for override behavior to be possible.
-    bool ParseWeatherProfile(int handle, str identifyingSymbol, str expectedSymbol, bool useDefaultBase, void function(ParsedEmitterWeatherContextT global:0&)& parseCallback)
+    bool ParseWeatherProfile(int handle, str identifyingSymbol, str expectedSymbol, bool setPersisting)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, expectedSymbol)) return false;
 
@@ -69,9 +69,9 @@ strict namespace LibIO
         while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
         {
             str symbol = Tokenizer::GetSymbol(handle);
-            if (ParseEmitterWeatherBlock(handle, symbol, useDefaultBase))
+            if (ParseEmitterWeatherBlock(handle, symbol, setPersisting))
             {
-                parseCallback(ParsedEmitterWeatherContext!!);
+                HandleParsedProfile(setPersisting);
                 continue;
             }
 
@@ -87,18 +87,32 @@ strict namespace LibIO
     }
 
     // Sets the default profile.
-    internal void HandleParsedProfile(ParsedEmitterWeatherContextT global:0& data)
+    internal void HandleParsedProfile(bool setPersisting)
     {
         // I can't use a ref here because the data is missing. Compiler bug.
-        //Weather::EmitterWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[data.Index];
+        //Weather::EmitterWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[_parsedEmitterWeatherContext.Index];
 
-        Weather::SetPersistingEmitterWeatherEnabled(data.Index, data.Enabled);
-        Weather::SetPersistingEmitterWeatherSkyBehavior(data.Index, data.SkyBehavior);
-        Weather::SetPersistingEmitterWeatherSpawnCount(data.Index, data.SpawnCount);
-        Weather::SetPersistingEmitterWeatherSpawnDelay(data.Index, data.SpawnDelay);
-        Weather::SetPersistingEmitterWeatherMinRadius(data.Index, data.MinRadius);
-        Weather::SetPersistingEmitterWeatherMaxRadius(data.Index, data.MaxRadius);
-        Weather::SetPersistingEmitterWeatherMinZpos(data.Index, data.MinZpos);
-        Weather::SetPersistingEmitterWeatherMaxZpos(data.Index, data.MaxZpos);
+        if (setPersisting)
+        {
+            Weather::SetPersistingEmitterWeatherEnabled(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.Enabled);
+            Weather::SetPersistingEmitterWeatherSkyBehavior(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.SkyBehavior);
+            Weather::SetPersistingEmitterWeatherSpawnCount(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.SpawnCount);
+            Weather::SetPersistingEmitterWeatherSpawnDelay(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.SpawnDelay);
+            Weather::SetPersistingEmitterWeatherMinRadius(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MinRadius);
+            Weather::SetPersistingEmitterWeatherMaxRadius(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MaxRadius);
+            Weather::SetPersistingEmitterWeatherMinZpos(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MinZpos);
+            Weather::SetPersistingEmitterWeatherMaxZpos(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MaxZpos);
+        }
+        else
+        {
+            Weather::SetEmitterWeatherEnabled(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.Enabled);
+            Weather::SetEmitterWeatherSkyBehavior(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.SkyBehavior);
+            Weather::SetEmitterWeatherSpawnCount(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.SpawnCount);
+            Weather::SetEmitterWeatherSpawnDelay(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.SpawnDelay);
+            Weather::SetEmitterWeatherMinRadius(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MinRadius);
+            Weather::SetEmitterWeatherMaxRadius(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MaxRadius);
+            Weather::SetEmitterWeatherMinZpos(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MinZpos);
+            Weather::SetEmitterWeatherMaxZpos(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MaxZpos);
+        }
     }
 }
