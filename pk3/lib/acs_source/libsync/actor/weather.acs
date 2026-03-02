@@ -1,0 +1,115 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace LibSync
+{
+    #define SYNC_CATEGORY "WEATHER"
+
+    internal void SyncWeatherActor()
+    {
+        int syncId = SYNC_WEATHER;
+
+        syncId = SyncWriteTransientWeatherStates(syncId);
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing weather packs through actors."));
+        VERIFY_SYNCID(syncId, SYNC_WEATHER, SYNC_WEATHER_LENGTH);
+    }
+
+    internal void CallSyncWeatherActorOnClients()
+    {
+        if (!ACS_NamedExecuteAlways("zh2_internal_sync_weather_actor_clientside", 0))
+            Logger::LogError(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for weather."));
+    }
+
+    script "zh2_internal_sync_weather_actor_clientside" clientside
+    {
+        SyncWeatherActorClientside();
+    }
+
+    internal void SyncWeatherActorClientside()
+    {
+        int syncId = SYNC_WEATHER;
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading weather packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        syncId = SyncReadTransientWeatherStates(syncId);
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Synced weather to client."));
+        VERIFY_SYNCID(syncId, SYNC_WEATHER, SYNC_WEATHER_LENGTH);
+    }
+
+    internal int SyncWriteTransientWeatherStates(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing transient weather states. Sync id: " + str(syncId) + ". Length: " + str(EMITTER_WEATHER_COUNT) + "."));
+
+        for (int i = 0; i < EMITTER_WEATHER_COUNT; ++i)
+        {
+            BCSUtils::SyncVariable(--syncId, Weather::GetEmitterWeatherEnabled(i));
+            BCSUtils::SyncVariable(--syncId, Weather::GetEmitterWeatherSkyBehavior(i));
+
+            BCSUtils::SyncVariable(--syncId, Weather::GetEmitterWeatherSpawnCount(i));
+            BCSUtils::SyncVariable(--syncId, Weather::GetEmitterWeatherSpawnDelay(i));
+
+            BCSUtils::SyncVariable(--syncId, Weather::GetEmitterWeatherMinRadius(i));
+            BCSUtils::SyncVariable(--syncId, Weather::GetEmitterWeatherMaxRadius(i));
+
+            BCSUtils::SyncVariable(--syncId, Weather::GetEmitterWeatherMinZpos(i));
+            BCSUtils::SyncVariable(--syncId, Weather::GetEmitterWeatherMaxZpos(i));
+
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "Weather \cd" + str(i) + "\cj. Enabled: \cd" + str(Weather::GetEmitterWeatherEnabled(i)) +
+                    "\cj. SkyBehavior: \cd" + str(Weather::GetEmitterWeatherSkyBehavior(i)) +
+                    "\cj. SpawnCount: \cd" + str(Weather::GetEmitterWeatherSpawnCount(i)) +
+                    "\cj. SpawnDelay: \cd" + str(Weather::GetEmitterWeatherSpawnDelay(i)) +
+                    "\cj. Radius: \cd" + str(Weather::GetEmitterWeatherMinRadius(i)) + "\cj-\cd" + str(Weather::GetEmitterWeatherMaxRadius(i)) +
+                    "\cj. Z: \cd" + str(Weather::GetEmitterWeatherMinZpos(i)) + "\cj-\cd" + str(Weather::GetEmitterWeatherMaxZpos(i)) + "\cj."));
+        }
+
+        return syncId;
+    }
+
+    internal int SyncReadTransientWeatherStates(int syncId)
+    {
+        for (int i = 0; i < EMITTER_WEATHER_COUNT; ++i)
+        {
+            bool enabled = BCSUtils::GetSyncVarDefault(--syncId, 0) != 0;
+            Weather::EmitterWeatherSkyBehaviorT skyBehavior = Weather::GetEmitterWeatherSkyBehaviorByIndex(BCSUtils::GetSyncVarDefault(--syncId, 0));
+
+            int spawnCount = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            int spawnDelay = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+            int minRadius = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            int maxRadius = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+            int minZ = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            int maxZ = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+            Weather::SetEmitterWeatherEnabled(i, enabled);
+            Weather::SetEmitterWeatherSkyBehavior(i, skyBehavior);
+
+            Weather::SetEmitterWeatherSpawnCount(i, spawnCount);
+            Weather::SetEmitterWeatherSpawnDelay(i, spawnDelay);
+
+            Weather::SetEmitterWeatherMinRadius(i, minRadius);
+            Weather::SetEmitterWeatherMaxRadius(i, maxRadius);
+
+            Weather::SetEmitterWeatherMinZpos(i, minZ);
+            Weather::SetEmitterWeatherMaxZpos(i, maxZ);
+
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "Weather \cd" + str(i) + "\cj. Enabled: \cd" + str(enabled) +
+                    "\cj. SkyBehavior: \cd" + str(int(skyBehavior)) +
+                    "\cj. SpawnCount: \cd" + str(spawnCount) +
+                    "\cj. SpawnDelay: \cd" + str(spawnDelay) +
+                    "\cj. Radius: \cd" + str(minRadius) + "\cj-\cd" + str(maxRadius) +
+                    "\cj. Z: \cd" + str(minZ) + "\cj-\cd" + str(maxZ) + "\cj."));
+        }
+
+        return syncId;
+    }
+
+    #undef SYNC_CATEGORY
+}
