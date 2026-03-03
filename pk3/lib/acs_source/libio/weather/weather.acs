@@ -3,11 +3,13 @@
 #endif
 
 #include "emitter.acs"
+#include "randomized.acs"
 
 strict namespace LibIO
 {
     // Parsed contexts for each weather type.
     ParsedEmitterWeatherContextT _parsedEmitterWeatherContext;
+    ParsedRandomizedWeatherContextT _parsedRandomizedWeatherContext;
 
     script "zh2_internal_parse_weather_defs_server" busy
     {
@@ -76,7 +78,12 @@ strict namespace LibIO
             str symbol = Tokenizer::GetSymbol(handle);
             if (ParseEmitterWeatherBlock(handle, symbol, setPersisting))
             {
-                HandleEmitterProfile(setPersisting);
+                HandleEmitterWeatherProfile(setPersisting);
+                continue;
+            }
+            if (ParseRandomizedWeatherBlock(handle, symbol, setPersisting))
+            {
+                HandleRandomizedWeatherProfile(setPersisting);
                 continue;
             }
 
@@ -91,7 +98,7 @@ strict namespace LibIO
         return true;
     }
 
-    internal void HandleEmitterProfile(bool setPersisting)
+    internal void HandleEmitterWeatherProfile(bool setPersisting)
     {
         // I can't use a ref here because the data is missing. Compiler bug.
         //Weather::EmitterWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[_parsedEmitterWeatherContext.Index];
@@ -117,6 +124,25 @@ strict namespace LibIO
             Weather::SetTransientEmitterWeatherMaxRadius(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MaxRadius);
             Weather::SetTransientEmitterWeatherMinZpos(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MinZpos);
             Weather::SetTransientEmitterWeatherMaxZpos(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MaxZpos);
+        }
+    }
+
+    internal void HandleRandomizedWeatherProfile(bool setPersisting)
+    {
+        // I can't use a ref here because the data is missing. Compiler bug.
+        //Weather::RandomizedWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.RandomizedWeatherCollection[_parsedRandomizedWeatherContext.Index];
+
+        if (setPersisting)
+        {
+            Weather::SetPersistingRandomizedWeatherEnabled(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.Enabled);
+            Weather::SetPersistingRandomizedWeatherMinDelay(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.MinDelay);
+            Weather::SetPersistingRandomizedWeatherMaxDelay(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.MaxDelay);
+        }
+        else
+        {
+            Weather::SetTransientRandomizedWeatherEnabled(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.Enabled);
+            Weather::SetTransientRandomizedWeatherMinDelay(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.MinDelay);
+            Weather::SetTransientRandomizedWeatherMaxDelay(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.MaxDelay);
         }
     }
 }
