@@ -86,6 +86,11 @@ def main():
 
         logging.info("")
 
+    # Cleanup BEHAVIOR lumps
+    logging.info("Deleting map behaviors...\n")
+    run_cmd(["python", str(root / "scripts" / "delete_map_behaviors.py")])
+    logging.info("")
+
     logging.info("All projects processed.")
 
 if __name__ == "__main__":
