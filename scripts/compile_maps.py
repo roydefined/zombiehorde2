@@ -2,7 +2,8 @@
 import logging
 import subprocess
 from pathlib import Path
-from utils import setup_logging, get_root
+from logger import setup_logging
+from utils import get_root
 
 # === Compile ACS SCRIPTS into BEHAVIOR lumps ===
 # Compiles the SCRIPTS file in each map into a BEHAVIOR lump.
@@ -15,10 +16,10 @@ def main():
     mapfolder = root / "pk3" / "maps"
 
     if not bcc.exists():
-        raise SystemExit(f'[ERROR] BCC compiler not found at "{bcc}"')
+        raise SystemExit(f'BCC compiler not found at "{bcc}"')
 
     if not mapfolder.exists():
-        raise SystemExit(f'[ERROR] Source directory "{mapfolder}" does not exist.')
+        raise SystemExit(f'Source directory "{mapfolder}" does not exist.')
 
     logging.info(f'Compiling ACS scripts from "{mapfolder}"...\n')
 
@@ -30,7 +31,7 @@ def main():
     # Iterate project folders
     for project_path in sorted(p for p in mapfolder.iterdir() if p.is_dir()):
         project_name = project_path.name
-        logging.info(f"[PROJECT] {project_name}")
+        logging.info(f"Project: {project_name}")
 
         # Iterate maps inside this project
         for map_path in sorted(p for p in project_path.iterdir() if p.is_dir()):
@@ -40,7 +41,7 @@ def main():
             dst_behavior = map_path / "BEHAVIOR"
 
             if not src_acs.exists():
-                logging.info(f"  [SKIP] {map_name} contains no script")
+                logging.info(f"Skipped: {map_name} contains no script")
                 continue
 
             #logging.info(f"  Compiling {map_name}...")
@@ -51,13 +52,13 @@ def main():
             result = subprocess.run(cmd)
 
             if result.returncode == 0:
-                logging.info(f"  [OK] Compiled {map_name}")
+                logging.info(f"Compiled {map_name}")
             else:
-                logging.error(f"  [FAIL] Failed to compile {map_name}")
+                logging.error(f"Failed to compile {map_name}")
 
         logging.info("")
 
-    logging.info("[DONE] All map scripts compiled.")
+    logging.info("All map scripts compiled.")
 
 
 if __name__ == "__main__":

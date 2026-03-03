@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from utils import setup_logging, get_root, run_cmd, mod_to_map_folder
+from logger import setup_logging
+from utils import get_root, run_cmd, mod_to_map_folder
 
 # === Unpack maps from WAD files back into pk3/maps/ ===
 
@@ -20,10 +21,10 @@ def main():
     outroot = root / "pk3" / "maps"
 
     if not tool.exists():
-        raise SystemExit(f'[ERROR] gdcc-ar-wad.exe not found at "{tool}"')
+        raise SystemExit(f'gdcc-ar-wad.exe not found at "{tool}"')
 
     if not pk3root.exists():
-        raise SystemExit(f'[ERROR] Source directory "{pk3root}" does not exist.')
+        raise SystemExit(f'Source directory "{pk3root}" does not exist.')
 
     logging.info(f'Searching for projects in "{pk3root}"...\n')
 
@@ -33,7 +34,7 @@ def main():
         mapdir = project_path / "maps"
 
         if not mapdir.exists():
-            logging.info(f'[INFO] Skipping "{project_name}". No "maps/" directory found.\n')
+            logging.info(f'Skipping "{project_name}". No "maps/" directory found.\n')
             continue
 
         logging.info(f"[PROJECT] {project_name}")
@@ -49,7 +50,7 @@ def main():
                 continue
 
             had_wads = True
-            #logging.info(f"  Extracting {wad_file.name} -> {outdir}...")
+            #logging.info(f"Extracting {wad_file.name} -> {outdir}...")
 
             # Run extractor
             try:
@@ -60,10 +61,10 @@ def main():
                     "-o", str(outdir)
                 ])
             except SystemExit:
-                logging.error(f"  [FAIL] Failed to extract {wad_file.name}")
+                logging.error(f"Failed to extract {wad_file.name}")
                 continue
             else:
-                logging.info(f"  [OK] Extracted {wad_file.name}")
+                logging.info(f"Extracted {wad_file.name}")
 
             # Folder name inside maps is based on wad name
             mapfolder = outdir / wad_file.stem
@@ -71,22 +72,26 @@ def main():
             # Remove ENDMAP
             endmap = mapfolder / "ENDMAP"
             if endmap.exists():
-                #logging.info(f"    Removing ENDMAP from {mapfolder}...")
+                #logging.info(f"Removing ENDMAP from {mapfolder}...")
                 safe_delete(endmap)
 
             # Remove level lump
             level_file = mapfolder / wad_file.stem
             if level_file.exists():
-                #logging.info(f"    Removing {wad_file.stem} from {mapfolder}...")
+                #logging.info(f"Removing {wad_file.stem} from {mapfolder}...")
                 safe_delete(level_file)
 
         if not had_wads:
-            logging.info(f"  [WARN] No .wad files found in {mapdir}")
+            logging.warning(f'No .wad files found in "{mapdir}"')
 
         logging.info("")
 
-    logging.info("[DONE] All projects processed.")
+    # Cleanup BEHAVIOR lumps
+    logging.info("Deleting map behaviors...\n")
+    run_cmd(["python", str(root / "scripts" / "delete_map_behaviors.py")])
+    logging.info("")
 
+    logging.info("All projects processed.")
 
 if __name__ == "__main__":
     main()
