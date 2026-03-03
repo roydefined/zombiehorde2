@@ -2,8 +2,13 @@
     #error This file must be #included.
 #endif
 
+#include "emitter.acs"
+
 strict namespace LibIO
 {
+    // Parsed contexts for each weather type.
+    ParsedEmitterWeatherContextT _parsedEmitterWeatherContext;
+
     script "zh2_internal_parse_weather_defs_server" busy
     {
         if (ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed)
@@ -71,7 +76,7 @@ strict namespace LibIO
             str symbol = Tokenizer::GetSymbol(handle);
             if (ParseEmitterWeatherBlock(handle, symbol, setPersisting))
             {
-                HandleParsedProfile(setPersisting);
+                HandleEmitterProfile(setPersisting);
                 continue;
             }
 
@@ -86,8 +91,7 @@ strict namespace LibIO
         return true;
     }
 
-    // Sets the default profile.
-    internal void HandleParsedProfile(bool setPersisting)
+    internal void HandleEmitterProfile(bool setPersisting)
     {
         // I can't use a ref here because the data is missing. Compiler bug.
         //Weather::EmitterWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[_parsedEmitterWeatherContext.Index];
