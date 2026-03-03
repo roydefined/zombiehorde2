@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from utils import setup_logging, get_root
+from logger import setup_logging
+from utils import get_root
 
 # === Find duplicate texture names in all projects. ===
 
@@ -24,7 +25,7 @@ def main():
 
     # Iterate each project folder.
     for project_path in sorted(p for p in srcroot.iterdir() if p.is_dir()):
-        logging.info(f"[PROJECT] {project_path.name}")
+        logging.info(f"Project: {project_path.name}")
 
         # Iterate the defined folders to scan.
         for folder_name in texture_folders:
@@ -56,7 +57,7 @@ def main():
     if not found_any:
         logging.info("No duplicates found.")
 
-    logging.info("[DONE]")
+    logging.info("Finished analysing.")
 
 
 if __name__ == "__main__":
