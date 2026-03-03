@@ -41,16 +41,26 @@ strict namespace Admin
     // General broadcast function to inform everybody somebody was set/unset as an admin.
     internal void BroadcastPlayerAdmin(int id, bool set)
     {
-        str logMessage;
-        buildmsg(logMessage = StrParam())
+        int activatorId = PlayerNumber();
+
+        str logMessageTo;
+        buildmsg(logMessageTo = StrParam())
         {
-            Append(s:"Player (\cd" + str(id) + "\cj) has been \cd" + (set ? "added" : "removed") + "\cj as an admin");
-            if (PlayerNumber() == -1) Append(s:".");
-            else Append(s:" by (\cd" + str(id) + "\cj) " + BCSUTILS::PlayerName(id) + ".");
+            Append(s:"\cfYou have been " + (set ? "added" : "removed") + " as an admin player");
+            if (activatorId == -1) Append(s:"!");
+            else Append(s:" by (\cd" + str(activatorId) + "\cj) " + BCSUTILS::PlayerName(activatorId) + "!");
         }
 
-        Logger::LogTo(id, "\cfYou have been " + (set ? "added" : "removed") + " as an admin player!");
-        Logger::LogExcept(id, logMessage);
+        str logMessageExcept;
+        buildmsg(logMessageExcept = StrParam())
+        {
+            Append(s:"Player (\cd" + str(id) + "\cj) " + BCSUTILS::PlayerName(id) + " has been \cd" + (set ? "added" : "removed") + "\cj as an admin");
+            if (activatorId == -1) Append(s:".");
+            else Append(s:" by (\cd" + str(activatorId) + "\cj) " + BCSUTILS::PlayerName(activatorId) + ".");
+        }
+
+        Logger::LogTo(id, logMessageTo);
+        Logger::LogExcept(id, logMessageExcept);
     }
 
     internal void ToggleAdminHud()
