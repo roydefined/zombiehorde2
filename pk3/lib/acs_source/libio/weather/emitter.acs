@@ -18,7 +18,7 @@ strict namespace LibIO
         }
 
         str weatherType = Tokenizer::GetSymbol(handle);
-        int index = WeatherTypeToIndex(weatherType);
+        int index = EmitterWeatherTypeToIndex(weatherType);
 
         if (_parsedEmitterWeatherContext.Index == -1)
         {
@@ -127,7 +127,7 @@ strict namespace LibIO
         Tokenizer::Next(handle);
         str symbol = Tokenizer::GetSymbol(handle);
 
-        int index = WeatherSkyBehaviorToIndex(symbol);
+        int index = EmitterWeatherSkyBehaviorToIndex(symbol);
 
         if (index == -1)
         {
@@ -281,12 +281,12 @@ strict namespace LibIO
     }
 
     // HACK: Can't use `static str` here due to a compiler bug.
-    str weatherTypes[] = { "debug", "debugsky", "debugnosky", "rain", "snow" };
-    internal int WeatherTypeToIndex(str weatherType)
+    str emitterWeatherTypes[] = { "debug", "debugsky", "debugnosky", "rain", "snow" };
+    internal int EmitterWeatherTypeToIndex(str weatherType)
     {
         for (int i = 0; i < 5; ++i)
         {
-            if (BCSUTILS::StrIEquals(weatherType, weatherTypes[i]))
+            if (BCSUTILS::StrIEquals(weatherType, emitterWeatherTypes[i]))
                 return i;
         }
 
@@ -294,12 +294,12 @@ strict namespace LibIO
     }
 
     // HACK: Same as above. Compiler bug.
-    str weatherSkyBehaviorTypes[] = { "none", "requiresky", "requirenosky" };
-    internal int WeatherSkyBehaviorToIndex(str skyBehavior)
+    str emitterWeatherSkyBehaviorTypes[] = { "none", "requiresky", "requirenosky" };
+    internal int EmitterWeatherSkyBehaviorToIndex(str skyBehavior)
     {
         for (int i = 0; i < 5; ++i)
         {
-            if (BCSUTILS::StrIEquals(skyBehavior, weatherSkyBehaviorTypes[i]))
+            if (BCSUTILS::StrIEquals(skyBehavior, emitterWeatherSkyBehaviorTypes[i]))
                 return i;
         }
 

@@ -18,7 +18,7 @@ strict namespace LibIO
         }
 
         str weatherType = Tokenizer::GetSymbol(handle);
-        int index = WeatherTypeToIndex(weatherType);
+        int index = RandomizedWeatherTypeToIndex(weatherType);
 
         if (_parsedRandomizedWeatherContext.Index == -1)
         {
@@ -145,5 +145,18 @@ strict namespace LibIO
 
         Logger::LogDebug(LOGSOURCE, "Parsed MaxDelay: \cd" + str(parsedValue) + "\cj.");
         return true;
+    }
+
+    // HACK: Can't use `static str` here due to a compiler bug.
+    str randomizedWeatherTypes[] = { "thunder" };
+    internal int RandomizedWeatherTypeToIndex(str weatherType)
+    {
+        for (int i = 0; i < 5; ++i)
+        {
+            if (BCSUTILS::StrIEquals(weatherType, randomizedWeatherTypes[i]))
+                return i;
+        }
+
+        return -1;
     }
 }
