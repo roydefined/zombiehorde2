@@ -5,12 +5,13 @@
 #define LOGSOURCE "Weather"
 
 #include "emitter.acs"
+#include "randomized.acs"
 
 strict namespace Weather
 {
     void InitializeServer()
     {
-        for (int i = 0; i < EMITTER_WEATHER_COUNT; ++i)
+        for (int i = 0; i < EMITTERWEATHER_COUNT; ++i)
         {
             SetTransientEmitterWeatherEnabled(i, GetPersistingEmitterWeatherEnabled(i));
             SetTransientEmitterWeatherSkyBehavior(i, GetPersistingEmitterWeatherSkyBehavior(i));
@@ -21,6 +22,13 @@ strict namespace Weather
             SetTransientEmitterWeatherMinZpos(i, GetPersistingEmitterWeatherMinZpos(i));
             SetTransientEmitterWeatherMaxZpos(i, GetPersistingEmitterWeatherMaxZpos(i));
             SetTransientEmitterWeatherNextSpawnTic(i, GetPersistingEmitterWeatherNextSpawnTic(i));
+        }
+
+        for (int i = 0; i < RANDOMIZEDWEATHER_COUNT; ++i)
+        {
+            SetTransientRandomizedWeatherEnabled(i, GetPersistingRandomizedWeatherEnabled(i));
+            SetTransientRandomizedWeatherMinDelay(i, GetPersistingRandomizedWeatherMinDelay(i));
+            SetTransientRandomizedWeatherMaxDelay(i, GetPersistingRandomizedWeatherMaxDelay(i));
         }
     }
 
@@ -37,6 +45,7 @@ strict namespace Weather
             return;
 
         TicEmitterWeather(cameraTid);
+        TicRandomizedWeather(cameraTid);
     }
 }
 

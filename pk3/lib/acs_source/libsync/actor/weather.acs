@@ -41,9 +41,9 @@ strict namespace LibSync
 
     internal int SyncWriteTransientWeatherStates(int syncId)
     {
-        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing transient weather states. Sync id: " + str(syncId) + ". Length: " + str(EMITTER_WEATHER_COUNT) + "."));
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing transient weather states. Sync id: " + str(syncId) + ". Length: " + str(EMITTERWEATHER_COUNT) + "."));
 
-        for (int i = 0; i < EMITTER_WEATHER_COUNT; ++i)
+        for (int i = 0; i < EMITTERWEATHER_COUNT; ++i)
         {
             BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherEnabled(i));
 
@@ -62,7 +62,7 @@ strict namespace LibSync
 
             Logger::LogDebug(LOGSOURCE,
                 FormatLog(SYNC_CATEGORY,
-                    "Weather \cd" + str(i) + "\cj. Enabled: \cd" + str(Weather::GetTransientEmitterWeatherEnabled(i)) +
+                    "EmitterWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(Weather::GetTransientEmitterWeatherEnabled(i)) +
                     "\cj. SkyBehavior: \cd" + str(Weather::GetTransientEmitterWeatherSkyBehavior(i)) +
                     "\cj. SpawnCount: \cd" + str(Weather::GetTransientEmitterWeatherSpawnCount(i)) +
                     "\cj. SpawnDelay: \cd" + str(Weather::GetTransientEmitterWeatherSpawnDelay(i)) +
@@ -70,12 +70,25 @@ strict namespace LibSync
                     "\cj. Z: \cd" + str(Weather::GetTransientEmitterWeatherMinZpos(i)) + "\cj-\cd" + str(Weather::GetTransientEmitterWeatherMaxZpos(i)) + "\cj."));
         }
 
+        for (int i = 0; i < RANDOMIZEDWEATHER_COUNT; ++i)
+        {
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientRandomizedWeatherEnabled(i));
+
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientRandomizedWeatherMinDelay(i));
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientRandomizedWeatherMaxDelay(i));
+
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "RandomizedWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(Weather::GetTransientRandomizedWeatherEnabled(i)) +
+                    "\cj. delay: \cd" + str(Weather::GetTransientRandomizedWeatherMinDelay(i)) + "\cj-\cd" + str(Weather::GetTransientRandomizedWeatherMaxDelay(i)) + "\cj."));
+        }
+
         return syncId;
     }
 
     internal int SyncReadTransientWeatherStates(int syncId)
     {
-        for (int i = 0; i < EMITTER_WEATHER_COUNT; ++i)
+        for (int i = 0; i < EMITTERWEATHER_COUNT; ++i)
         {
             bool enabled = BCSUtils::GetSyncVarDefault(--syncId, 0) != 0;
             Weather::EmitterWeatherSkyBehaviorT skyBehavior = Weather::GetTransientEmitterWeatherSkyBehaviorByIndex(BCSUtils::GetSyncVarDefault(--syncId, 0));
@@ -103,12 +116,30 @@ strict namespace LibSync
 
             Logger::LogDebug(LOGSOURCE,
                 FormatLog(SYNC_CATEGORY,
-                    "Weather \cd" + str(i) + "\cj. Enabled: \cd" + str(enabled) +
+                    "EmitterWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(enabled) +
                     "\cj. SkyBehavior: \cd" + str(int(skyBehavior)) +
                     "\cj. SpawnCount: \cd" + str(spawnCount) +
                     "\cj. SpawnDelay: \cd" + str(spawnDelay) +
                     "\cj. Radius: \cd" + str(minRadius) + "\cj-\cd" + str(maxRadius) +
                     "\cj. Z: \cd" + str(minZ) + "\cj-\cd" + str(maxZ) + "\cj."));
+        }
+
+        for (int i = 0; i < RANDOMIZEDWEATHER_COUNT; ++i)
+        {
+            bool enabled = BCSUtils::GetSyncVarDefault(--syncId, 0) != 0;
+
+            int minDelay = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            int maxDelay = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+            Weather::SetTransientRandomizedWeatherEnabled(i, enabled);
+
+            Weather::SetTransientRandomizedWeatherMinDelay(i, minDelay);
+            Weather::SetTransientRandomizedWeatherMaxDelay(i, maxDelay);
+
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "RandomizedWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(enabled) +
+                    "\cj. Delay: \cd" + str(minDelay) + "\cj-\cd" + str(maxDelay) + "\cj."));
         }
 
         return syncId;

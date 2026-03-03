@@ -4,15 +4,8 @@
 
 strict namespace Weather
 {
-    #define EMITTER_WEATHER_COUNT 5
-
-    enum EmitterWeatherSkyBehaviorT : int
-    {
-        EMITTERWEATHER_SKYBEHAVIOUR_UNKNOWN,
-        EMITTERWEATHER_SKYBEHAVIOUR_NONE,
-        EMITTERWEATHER_SKYBEHAVIOUR_REQUIRESKY,
-        EMITTERWEATHER_SKYBEHAVIOUR_REQUIRENOSKY,
-    };
+    #define EMITTERWEATHER_COUNT 5
+    #define RANDOMIZEDWEATHER_COUNT 1
 
     enum EmitterWeatherTypeT : int
     {
@@ -24,16 +17,32 @@ strict namespace Weather
         EMITTERWEATHER_SNOW,
     };
 
+    enum RandomizedWeatherTypeT : int
+    {
+        RANDOMIZEDWEATHER_UNKNOWN,
+        RANDOMIZEDWEATHER_THUNDER,
+    };
+
+    enum EmitterWeatherSkyBehaviorT : int
+    {
+        EMITTERWEATHER_SKYBEHAVIOUR_UNKNOWN,
+        EMITTERWEATHER_SKYBEHAVIOUR_NONE,
+        EMITTERWEATHER_SKYBEHAVIOUR_REQUIRESKY,
+        EMITTERWEATHER_SKYBEHAVIOUR_REQUIRENOSKY,
+    };
+
     struct WeatherContextT
     {
         // Map-specific overrides.
-        EmitterWeatherContextT EmitterWeatherCollection[EMITTER_WEATHER_COUNT];
+        EmitterWeatherContextT EmitterWeatherCollection[EMITTERWEATHER_COUNT];
+        RandomizedWeatherContextT RandomizedWeatherCollection[RANDOMIZEDWEATHER_COUNT];
     };
 
     struct PersistingWeatherContextT
     {
         // Global defaults.
-        EmitterWeatherContextT EmitterWeatherCollection[EMITTER_WEATHER_COUNT];
+        EmitterWeatherContextT EmitterWeatherCollection[EMITTERWEATHER_COUNT];
+        RandomizedWeatherContextT RandomizedWeatherCollection[RANDOMIZEDWEATHER_COUNT];
 
         // IO
         bool DefaultProfilesParsed;
@@ -50,6 +59,16 @@ strict namespace Weather
         int MaxRadius;
         int MinZpos;
         int MaxZpos;
+
+        // Clientside, tracks when to spawn the weather next.
+        int NextSpawnTic;
+    };
+
+    struct RandomizedWeatherContextT
+    {
+        bool Enabled;
+        int MinDelay;
+        int MaxDelay;
 
         // Clientside, tracks when to spawn the weather next.
         int NextSpawnTic;
