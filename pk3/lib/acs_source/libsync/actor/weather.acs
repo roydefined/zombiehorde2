@@ -46,7 +46,10 @@ strict namespace LibSync
         for (int i = 0; i < EMITTER_WEATHER_COUNT; ++i)
         {
             BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherEnabled(i));
-            BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherSkyBehavior(i));
+
+            // Because sky behavior includes an "unknown" state we must decrement once to get the true index to map on the client.
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherSkyBehavior(i) - 1);
+
 
             BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherSpawnCount(i));
             BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherSpawnDelay(i));
