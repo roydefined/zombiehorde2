@@ -58,8 +58,8 @@ strict namespace LibIO
             if (ParseAmbientWeatherBlockEnabled(handle, symbol)
                 || ParseAmbientWeatherBlockSound(handle, symbol)
                 || ParseAmbientWeatherBlockShelteredSound(handle, symbol)
-                || ParseAmbientWeatherBlockNearRadius(handle, symbol)
-                || ParseAmbientWeatherBlockFarRadius(handle, symbol)
+                || ParseAmbientWeatherBlockRadius(handle, symbol)
+                || ParseAmbientWeatherBlockShelteredRadius(handle, symbol)
                 || ParseAmbientWeatherBlockDelay(handle, symbol))
             {
                 // Optional comma.
@@ -140,9 +140,9 @@ strict namespace LibIO
         return true;
     }
 
-    internal bool ParseAmbientWeatherBlockNearRadius(int handle, str identifyingSymbol)
+    internal bool ParseAmbientWeatherBlockRadius(int handle, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, "nearradius"))
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "radius"))
             return false;
 
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
@@ -152,20 +152,20 @@ strict namespace LibIO
 
         if (!Tokenizer::TryParseIntValue(handle))
         {
-            Tokenizer::SetErrored(handle, "The given value for NearRadius is not a correct value. Expected a valid numeric value within bounds.");
+            Tokenizer::SetErrored(handle, "The given value for Radius is not a correct value. Expected a valid numeric value within bounds.");
             return false;
         }
 
         int parsedValue = (int)Tokenizer::GetParsedValue();
-        _parsedAmbientWeatherContext.NearRadius = parsedValue;
+        _parsedAmbientWeatherContext.Radius = parsedValue;
 
-        Logger::LogDebug(LOGSOURCE, "Parsed NearRadius: \cd" + str(parsedValue) + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "Parsed Radius: \cd" + str(parsedValue) + "\cj.");
         return true;
     }
 
-    internal bool ParseAmbientWeatherBlockFarRadius(int handle, str identifyingSymbol)
+    internal bool ParseAmbientWeatherBlockShelteredRadius(int handle, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, "farradius"))
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "shelteredradius"))
             return false;
 
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
@@ -175,14 +175,14 @@ strict namespace LibIO
 
         if (!Tokenizer::TryParseIntValue(handle))
         {
-            Tokenizer::SetErrored(handle, "The given value for FarRadius is not a correct value. Expected a valid numeric value within bounds.");
+            Tokenizer::SetErrored(handle, "The given value for ShelteredRadius is not a correct value. Expected a valid numeric value within bounds.");
             return false;
         }
 
         int parsedValue = (int)Tokenizer::GetParsedValue();
-        _parsedAmbientWeatherContext.FarRadius = parsedValue;
+        _parsedAmbientWeatherContext.ShelteredRadius = parsedValue;
 
-        Logger::LogDebug(LOGSOURCE, "Parsed FarRadius: \cd" + str(parsedValue) + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "Parsed ShelteredRadius: \cd" + str(parsedValue) + "\cj.");
         return true;
     }
 
