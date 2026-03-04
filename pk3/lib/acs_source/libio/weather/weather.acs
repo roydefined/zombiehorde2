@@ -4,12 +4,14 @@
 
 #include "emitter.acs"
 #include "randomized.acs"
+#include "ambient.acs"
 
 strict namespace LibIO
 {
     // Parsed contexts for each weather type.
     ParsedEmitterWeatherContextT _parsedEmitterWeatherContext;
     ParsedRandomizedWeatherContextT _parsedRandomizedWeatherContext;
+    ParsedAmbientWeatherContextT _parsedAmbientWeatherContext;
 
     script "zh2_internal_parse_weather_defs_server" busy
     {
@@ -86,6 +88,11 @@ strict namespace LibIO
                 HandleRandomizedWeatherProfile(setPersisting);
                 continue;
             }
+            if (ParseAmbientWeatherBlock(handle, symbol, setPersisting))
+            {
+                HandleAmbientWeatherProfile(setPersisting);
+                continue;
+            }
 
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + expectedSymbol + ": '" + symbol + "'.");
             return false;
@@ -143,6 +150,25 @@ strict namespace LibIO
             Weather::SetTransientRandomizedWeatherEnabled(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.Enabled);
             Weather::SetTransientRandomizedWeatherMinDelay(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.MinDelay);
             Weather::SetTransientRandomizedWeatherMaxDelay(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.MaxDelay);
+        }
+    }
+
+    internal void HandleAmbientWeatherProfile(bool setPersisting)
+    {
+        // I can't use a ref here because the data is missing. Compiler bug.
+        //Weather::AmbientWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.AmbientWeatherCollection[_parsedRandomizedWeatherContext.Index];
+
+        if (setPersisting)
+        {
+            Weather::SetPersistingAmbientWeatherEnabled(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Enabled);
+            Weather::SetPersistingAmbientWeatherSound(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Sound);
+            Weather::SetPersistingAmbientWeatherDelay(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Delay);
+        }
+        else
+        {
+            Weather::SetTransientAmbientWeatherEnabled(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Enabled);
+            Weather::SetTransientAmbientWeatherSound(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Sound);
+            Weather::SetTransientAmbientWeatherDelay(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Delay);
         }
     }
 }
