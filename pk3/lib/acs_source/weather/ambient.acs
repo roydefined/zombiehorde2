@@ -4,6 +4,30 @@
 
 strict namespace Weather
 {
+    #define AMBIENTWEATHER_RING_BASETID 30000
+
+    #define AMBIENTWEATHER_NEAR_SPOTCOUNT 8
+    #define AMBIENTWEATHER_FAR_SPOTCOUNT  12
+
+    #define AMBIENTWEATHER_RING_ACTOR "MapSpot"
+
+    internal void InitializeAmbientWeatherClient()
+    {
+        // Near ring
+        for (int j = 0; j < AMBIENTWEATHER_NEAR_SPOTCOUNT; ++j)
+        {
+            int tid = GetAmbientWeatherNearRingTid(j);
+            SpawnForced(AMBIENTWEATHER_RING_ACTOR, 0.0, 0.0, 0.0, tid, 0);
+        }
+
+        // Far ring
+        for (int k = 0; k < AMBIENTWEATHER_FAR_SPOTCOUNT; ++k)
+        {
+            int tid = GetAmbientWeatherFarRingTid(k);
+            SpawnForced(AMBIENTWEATHER_RING_ACTOR, 0.0, 0.0, 0.0, tid, 0);
+        }
+    }
+
     internal void TicAmbientWeather(int sourceTid)
     {
         for (int i = 0; i < AMBIENTWEATHER_COUNT; ++i)
@@ -11,17 +35,106 @@ strict namespace Weather
             if (!GetTransientAmbientWeatherEnabled(i))
                 continue;
 
-            // TODO: Update the ambient weather position.
-
             // Don't play this tic.
             if (GetTransientAmbientWeatherNextPlayTic(i) > Timer())
                 continue;
 
-            // TODO: replay the sound of this ambient weather.
+            UpdateAmbientWeatherRingPositions(sourceTid, i);
+
+            str sound = GetTransientAmbientWeatherSound(i);
+            str shelteredSound = GetTransientAmbientWeatherShelteredSound(i);
+
+            int nearSkyCount = CountNearRingSkyCeilings();
+            if (nearSkyCount > 0 && sound != (raw)0 && sound != "")
+            {
+                LocalAmbientSound(sound, 255);
+            }
+            else
+            {
+                int farSkyCount  = CountFarRingSkyCeilings();
+                if (farSkyCount > 0 && shelteredSound != (raw)0 && shelteredSound != "")
+                {
+                    LocalAmbientSound(shelteredSound, 255);
+                }
+            }
 
             int delay = GetTransientAmbientWeatherDelay(i);
             SetTransientAmbientWeatherNextPlayTic(i, Timer() + delay);
         }
+    }
+
+    internal int GetAmbientWeatherNearRingTid(int spot)
+    {
+        return AMBIENTWEATHER_RING_BASETID + spot;
+    }
+
+    internal int GetAmbientWeatherFarRingTid(int spot)
+    {
+        return AMBIENTWEATHER_RING_BASETID + AMBIENTWEATHER_NEAR_SPOTCOUNT + spot;
+    }
+
+    internal void UpdateAmbientWeatherRingPositions(int sourceTid, int index)
+    {
+        fixed sourceX = GetActorX(sourceTid);
+        fixed sourceY = GetActorY(sourceTid);
+        fixed sourceZ = GetActorZ(sourceTid) + GetActorViewHeight(sourceTid);
+
+        fixed radius = fixed(GetTransientAmbientWeatherRadius(index));
+        fixed shelteredRadius = fixed(GetTransientAmbientWeatherShelteredRadius(index));
+
+        // Near ring
+        for (int j = 0; j < AMBIENTWEATHER_NEAR_SPOTCOUNT; ++j)
+        {
+            int tid = GetAmbientWeatherNearRingTid(j);
+
+            fixed t = fixed(j) / fixed(AMBIENTWEATHER_NEAR_SPOTCOUNT);
+            fixed angle = t * 1.0;
+
+            fixed x = sourceX + cos(angle) * radius;
+            fixed y = sourceY + sin(angle) * radius;
+
+            SetActorPosition(tid, x, y, sourceZ, false);
+        }
+
+        // Far ring
+        for (int k = 0; k < AMBIENTWEATHER_FAR_SPOTCOUNT; ++k)
+        {
+            int tid = GetAmbientWeatherFarRingTid(k);
+
+            fixed t = fixed(k) / fixed(AMBIENTWEATHER_FAR_SPOTCOUNT);
+            fixed angle = t * 1.0;
+
+            fixed x = sourceX + cos(angle) * shelteredRadius;
+            fixed y = sourceY + sin(angle) * shelteredRadius;
+
+            SetActorPosition(tid, x, y, sourceZ, false);
+        }
+    }
+
+    internal int CountNearRingSkyCeilings()
+    {
+        int count = 0;
+        for (int j = 0; j < AMBIENTWEATHER_NEAR_SPOTCOUNT; ++j)
+        {
+            int tid = GetAmbientWeatherNearRingTid(j);
+            if (CheckActorCeilingTexture(tid, "F_SKY1"))
+                count++;
+        }
+
+        return count;
+    }
+
+    internal int CountFarRingSkyCeilings()
+    {
+        int count = 0;
+        for (int k = 0; k < AMBIENTWEATHER_FAR_SPOTCOUNT; ++k)
+        {
+            int tid = GetAmbientWeatherFarRingTid(k);
+            if (CheckActorCeilingTexture(tid, "F_SKY1"))
+                count++;
+        }
+
+        return count;
     }
 
     // Transient context
