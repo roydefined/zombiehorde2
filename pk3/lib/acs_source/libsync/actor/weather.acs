@@ -83,6 +83,23 @@ strict namespace LibSync
                     "\cj. delay: \cd" + str(Weather::GetTransientRandomizedWeatherMinDelay(i)) + "\cj-\cd" + str(Weather::GetTransientRandomizedWeatherMaxDelay(i)) + "\cj."));
         }
 
+        for (int i = 0; i < AMBIENTWEATHER_COUNT; ++i)
+        {
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientAmbientWeatherEnabled(i));
+
+            // TODO: Use some sort of string formatting function.
+            str sound = Weather::GetTransientAmbientWeatherSound(i);
+            SetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_AMBIENTWEATHER_SOUND_TEMPLATE, "%n", str(i)), sound);
+
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientAmbientWeatherDelay(i));
+
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "AmbientWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(Weather::GetTransientAmbientWeatherEnabled(i)) +
+                    "\cj. Sound: \cd" + str(Weather::GetTransientAmbientWeatherSound(i)) +
+                    "\cj. Delay: \cd" + str(Weather::GetTransientAmbientWeatherDelay(i)) + "\cj."));
+        }
+
         return syncId;
     }
 
@@ -140,6 +157,27 @@ strict namespace LibSync
                 FormatLog(SYNC_CATEGORY,
                     "RandomizedWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(enabled) +
                     "\cj. Delay: \cd" + str(minDelay) + "\cj-\cd" + str(maxDelay) + "\cj."));
+        }
+
+        for (int i = 0; i < AMBIENTWEATHER_COUNT; ++i)
+        {
+            bool enabled = BCSUtils::GetSyncVarDefault(--syncId, 0) != 0;
+
+            // TODO: Use some sort of string formatting function.
+            str sound = GetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_AMBIENTWEATHER_SOUND_TEMPLATE, "%n", str(i)));
+
+            int delay = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+            Weather::SetTransientAmbientWeatherEnabled(i, enabled);
+
+            Weather::SetTransientAmbientWeatherSound(i, sound);
+            Weather::SetTransientAmbientWeatherDelay(i, delay);
+
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "AmbientWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(enabled) +
+                    "\cj. Delay: \cd" + sound +
+                    "\cj. Sound: \cd" + str(delay) + "\cj."));
         }
 
         return syncId;

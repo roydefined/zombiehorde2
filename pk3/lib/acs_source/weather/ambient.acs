@@ -1,0 +1,46 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Weather
+{
+    internal void TicAmbientWeather(int sourceTid)
+    {
+        for (int i = 0; i < AMBIENTWEATHER_COUNT; ++i)
+        {
+            if (!GetTransientAmbientWeatherEnabled(i))
+                continue;
+
+            // TODO: Update the ambient weather position.
+
+            // Don't play this tic.
+            if (GetTransientAmbientWeatherNextPlayTic(i) > Timer())
+                continue;
+
+            // TODO: replay the sound of this ambient weather.
+
+            int delay = GetTransientAmbientWeatherDelay(i);
+            SetTransientAmbientWeatherNextPlayTic(i, Timer() + delay);
+        }
+    }
+
+    // Transient context
+    internal bool GetTransientAmbientWeatherEnabled(int index) { return ZH2Lib::LibContext.WeatherContext.AmbientWeatherCollection[index].Enabled; }
+    internal void SetTransientAmbientWeatherEnabled(int index, bool value) { ZH2Lib::LibContext.WeatherContext.AmbientWeatherCollection[index].Enabled = value; }
+    internal str GetTransientAmbientWeatherSound(int index) { return ZH2Lib::LibContext.WeatherContext.AmbientWeatherCollection[index].Sound; }
+    internal void SetTransientAmbientWeatherSound(int index, str value) { ZH2Lib::LibContext.WeatherContext.AmbientWeatherCollection[index].Sound = value; }
+    internal int GetTransientAmbientWeatherDelay(int index) { return ZH2Lib::LibContext.WeatherContext.AmbientWeatherCollection[index].Delay; }
+    internal void SetTransientAmbientWeatherDelay(int index, int value) { ZH2Lib::LibContext.WeatherContext.AmbientWeatherCollection[index].Delay = value; }
+    internal int GetTransientAmbientWeatherNextPlayTic(int index) { return ZH2Lib::LibContext.WeatherContext.AmbientWeatherCollection[index].NextPlayTic; }
+    internal void SetTransientAmbientWeatherNextPlayTic(int index, int value) { ZH2Lib::LibContext.WeatherContext.AmbientWeatherCollection[index].NextPlayTic = value; }
+
+    // Persisting context
+    internal bool GetPersistingAmbientWeatherEnabled(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.AmbientWeatherCollection[index].Enabled; }
+    internal void SetPersistingAmbientWeatherEnabled(int index, bool value) { ZH2Lib::PersistingLibContext.WeatherContext.AmbientWeatherCollection[index].Enabled = value; }
+    internal str GetPersistingAmbientWeatherSound(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.AmbientWeatherCollection[index].Sound; }
+    internal void SetPersistingAmbientWeatherSound(int index, str value) { ZH2Lib::PersistingLibContext.WeatherContext.AmbientWeatherCollection[index].Sound = value; }
+    internal int GetPersistingAmbientWeatherDelay(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.AmbientWeatherCollection[index].Delay; }
+    internal void SetPersistingAmbientWeatherDelay(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.AmbientWeatherCollection[index].Delay = value; }
+    internal int GetPersistingAmbientWeatherNextPlayTic(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.AmbientWeatherCollection[index].NextPlayTic; }
+    internal void SetPersistingAmbientWeatherNextPlayTic(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.AmbientWeatherCollection[index].NextPlayTic = value; }
+}

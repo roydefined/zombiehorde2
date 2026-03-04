@@ -6,6 +6,7 @@ strict namespace Weather
 {
     #define EMITTERWEATHER_COUNT 5
     #define RANDOMIZEDWEATHER_COUNT 1
+    #define AMBIENTWEATHER_COUNT 2
 
     enum EmitterWeatherTypeT : int
     {
@@ -23,6 +24,13 @@ strict namespace Weather
         RANDOMIZEDWEATHER_THUNDER,
     };
 
+    enum AmbientWeatherTypeT : int
+    {
+        AMBIENTWEATHER_UNKNOWN,
+        AMBIENTWEATHER_RAIN,
+        AMBIENTWEATHER_WIND,
+    };
+
     enum EmitterWeatherSkyBehaviorT : int
     {
         EMITTERWEATHER_SKYBEHAVIOUR_UNKNOWN,
@@ -36,6 +44,7 @@ strict namespace Weather
         // Map-specific overrides.
         EmitterWeatherContextT EmitterWeatherCollection[EMITTERWEATHER_COUNT];
         RandomizedWeatherContextT RandomizedWeatherCollection[RANDOMIZEDWEATHER_COUNT];
+        AmbientWeatherContextT AmbientWeatherCollection[AMBIENTWEATHER_COUNT];
     };
 
     struct PersistingWeatherContextT
@@ -43,6 +52,7 @@ strict namespace Weather
         // Global defaults.
         EmitterWeatherContextT EmitterWeatherCollection[EMITTERWEATHER_COUNT];
         RandomizedWeatherContextT RandomizedWeatherCollection[RANDOMIZEDWEATHER_COUNT];
+        AmbientWeatherContextT AmbientWeatherCollection[AMBIENTWEATHER_COUNT];
 
         // IO
         bool DefaultProfilesParsed;
@@ -72,6 +82,16 @@ strict namespace Weather
 
         // Clientside, tracks when to spawn the weather next.
         int NextSpawnTic;
+    };
+
+    struct AmbientWeatherContextT
+    {
+        bool Enabled;
+        str Sound;
+        int Delay;
+
+        // Clientside, tracks when to replay the sound.
+        int NextPlayTic;
     };
 
     extern void InitializeServer();
