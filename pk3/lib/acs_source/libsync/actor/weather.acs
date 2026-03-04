@@ -91,12 +91,21 @@ strict namespace LibSync
             str sound = Weather::GetTransientAmbientWeatherSound(i);
             SetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_AMBIENTWEATHER_SOUND_TEMPLATE, "%n", str(i)), sound);
 
+            str shelteredSound = Weather::GetTransientAmbientWeatherShelteredSound(i);
+            SetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_AMBIENTWEATHER_SHELTEREDSOUND_TEMPLATE, "%n", str(i)), sound);
+
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientAmbientWeatherNearRadius(i));
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientAmbientWeatherFarRadius(i));
+
             BCSUtils::SyncVariable(--syncId, Weather::GetTransientAmbientWeatherDelay(i));
 
             Logger::LogDebug(LOGSOURCE,
                 FormatLog(SYNC_CATEGORY,
                     "AmbientWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(Weather::GetTransientAmbientWeatherEnabled(i)) +
                     "\cj. Sound: \cd" + str(Weather::GetTransientAmbientWeatherSound(i)) +
+                    "\cj. ShelteredSound: \cd" + str(Weather::GetTransientAmbientWeatherShelteredSound(i)) +
+                    "\cj. NearRadius: \cd" + str(Weather::GetTransientAmbientWeatherNearRadius(i)) +
+                    "\cj. FarRadius: \cd" + str(Weather::GetTransientAmbientWeatherFarRadius(i)) +
                     "\cj. Delay: \cd" + str(Weather::GetTransientAmbientWeatherDelay(i)) + "\cj."));
         }
 
@@ -165,19 +174,31 @@ strict namespace LibSync
 
             // TODO: Use some sort of string formatting function.
             str sound = GetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_AMBIENTWEATHER_SOUND_TEMPLATE, "%n", str(i)));
+            str shelteredSound = GetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_AMBIENTWEATHER_SHELTEREDSOUND_TEMPLATE, "%n", str(i)));
+
+            int nearRadius = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            int farRadius = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
             int delay = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
             Weather::SetTransientAmbientWeatherEnabled(i, enabled);
 
             Weather::SetTransientAmbientWeatherSound(i, sound);
+            Weather::SetTransientAmbientWeatherShelteredSound(i, shelteredSound);
+
+            Weather::SetTransientAmbientWeatherNearRadius(i, nearRadius);
+            Weather::SetTransientAmbientWeatherFarRadius(i, farRadius);
+
             Weather::SetTransientAmbientWeatherDelay(i, delay);
 
             Logger::LogDebug(LOGSOURCE,
                 FormatLog(SYNC_CATEGORY,
                     "AmbientWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(enabled) +
-                    "\cj. Delay: \cd" + sound +
-                    "\cj. Sound: \cd" + str(delay) + "\cj."));
+                    "\cj. Sound: \cd" + sound +
+                    "\cj. ShelteredSound: \cd" + shelteredSound +
+                    "\cj. NearRadius: \cd" + str(nearRadius) +
+                    "\cj. FarRadius: \cd" + str(farRadius) +
+                    "\cj. Delay: \cd" + str(delay) + "\cj."));
         }
 
         return syncId;

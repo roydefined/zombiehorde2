@@ -34,12 +34,14 @@ strict namespace LibIO
         {
             _parsedAmbientWeatherContext.Enabled = Weather::GetTransientAmbientWeatherEnabled(index);
             _parsedAmbientWeatherContext.Sound = Weather::GetTransientAmbientWeatherSound(index);
+            _parsedAmbientWeatherContext.ShelteredSound = Weather::GetTransientAmbientWeatherShelteredSound(index);
             _parsedAmbientWeatherContext.Delay = Weather::GetTransientAmbientWeatherDelay(index);
         }
         else
         {
             _parsedAmbientWeatherContext.Enabled = false;
             _parsedAmbientWeatherContext.Sound = (raw)0;
+            _parsedAmbientWeatherContext.ShelteredSound = (raw)0;
             _parsedAmbientWeatherContext.Delay = 0;
         }
 
@@ -55,6 +57,9 @@ strict namespace LibIO
             str symbol = Tokenizer::GetSymbol(handle);
             if (ParseAmbientWeatherBlockEnabled(handle, symbol)
                 || ParseAmbientWeatherBlockSound(handle, symbol)
+                || ParseAmbientWeatherBlockShelteredSound(handle, symbol)
+                || ParseAmbientWeatherBlockNearRadius(handle, symbol)
+                || ParseAmbientWeatherBlockFarRadius(handle, symbol)
                 || ParseAmbientWeatherBlockDelay(handle, symbol))
             {
                 // Optional comma.
@@ -115,6 +120,69 @@ strict namespace LibIO
         _parsedAmbientWeatherContext.Sound = symbol;
 
         Logger::LogDebug(LOGSOURCE, "Parsed Sound: \cd" + symbol + "\cj.");
+        return true;
+    }
+
+    internal bool ParseAmbientWeatherBlockShelteredSound(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "shelteredsound"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        str symbol = Tokenizer::GetSymbol(handle);
+        _parsedAmbientWeatherContext.ShelteredSound = symbol;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed ShelteredSound: \cd" + symbol + "\cj.");
+        return true;
+    }
+
+    internal bool ParseAmbientWeatherBlockNearRadius(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "nearradius"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for NearRadius is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        _parsedAmbientWeatherContext.NearRadius = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed NearRadius: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseAmbientWeatherBlockFarRadius(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "farradius"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for FarRadius is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        _parsedAmbientWeatherContext.FarRadius = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed FarRadius: \cd" + str(parsedValue) + "\cj.");
         return true;
     }
 
