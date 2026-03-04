@@ -9,7 +9,12 @@ strict namespace Weather
     #define AMBIENTWEATHER_NEAR_SPOTCOUNT 8
     #define AMBIENTWEATHER_FAR_SPOTCOUNT  12
 
-    #define AMBIENTWEATHER_RING_ACTOR "MapSpot"
+    #define AMBIENTWEATHER_RING_ACTOR "DebugDropAmbient"
+    //#define AMBIENTWEATHER_RING_ACTOR "MapSpot"
+
+    // For debugging, when `true` we change the color of a spot when sheltered.
+    // For this we must use the debug drops.
+    internal bool _debugColorShelteredSpots = true;
 
     internal void InitializeAmbientWeatherClient()
     {
@@ -28,6 +33,7 @@ strict namespace Weather
         }
     }
 
+    // NOTE: This could use performance improvements if we get rid of the debugging.
     internal void TicAmbientWeather(int sourceTid)
     {
         for (int i = 0; i < AMBIENTWEATHER_COUNT; ++i)
@@ -35,27 +41,26 @@ strict namespace Weather
             if (!GetTransientAmbientWeatherEnabled(i))
                 continue;
 
-            // Don't play this tic.
-            if (GetTransientAmbientWeatherNextPlayTic(i) > Timer())
-                continue;
-
+            // All of this runs now for the debugging.
             UpdateAmbientWeatherRingPositions(sourceTid, i);
 
             str sound = GetTransientAmbientWeatherSound(i);
             str shelteredSound = GetTransientAmbientWeatherShelteredSound(i);
 
-            int nearSkyCount = CountNearRingSkyCeilings();
+            int nearSkyCount = CountRingSkyCeilings(true);
+            int farSkyCount  = CountRingSkyCeilings(false);
+
+            // Don't play this tic.
+            if (GetTransientAmbientWeatherNextPlayTic(i) > Timer())
+                continue;
+
             if (nearSkyCount > 0 && sound != (raw)0 && sound != "")
             {
                 LocalAmbientSound(sound, 255);
             }
-            else
+            else if (farSkyCount > 0 && shelteredSound != (raw)0 && shelteredSound != "")
             {
-                int farSkyCount  = CountFarRingSkyCeilings();
-                if (farSkyCount > 0 && shelteredSound != (raw)0 && shelteredSound != "")
-                {
-                    LocalAmbientSound(shelteredSound, 255);
-                }
+                LocalAmbientSound(shelteredSound, 255);
             }
 
             int delay = GetTransientAmbientWeatherDelay(i);
@@ -111,27 +116,20 @@ strict namespace Weather
         }
     }
 
-    internal int CountNearRingSkyCeilings()
+    internal int CountRingSkyCeilings(bool near)
     {
         int count = 0;
-        for (int j = 0; j < AMBIENTWEATHER_NEAR_SPOTCOUNT; ++j)
+        for (int i = 0; i < AMBIENTWEATHER_NEAR_SPOTCOUNT; ++i)
         {
-            int tid = GetAmbientWeatherNearRingTid(j);
-            if (CheckActorCeilingTexture(tid, "F_SKY1"))
-                count++;
-        }
+            int tid = near
+                ? GetAmbientWeatherNearRingTid(i)
+                : GetAmbientWeatherFarRingTid(i);
 
-        return count;
-    }
+            bool hasSkyCeiling = CheckActorCeilingTexture(tid, "F_SKY1");
+            count += (int)hasSkyCeiling;
 
-    internal int CountFarRingSkyCeilings()
-    {
-        int count = 0;
-        for (int k = 0; k < AMBIENTWEATHER_FAR_SPOTCOUNT; ++k)
-        {
-            int tid = GetAmbientWeatherFarRingTid(k);
-            if (CheckActorCeilingTexture(tid, "F_SKY1"))
-                count++;
+            if (_debugColorShelteredSpots)
+                    SetThingSpecial(tid, 0, hasSkyCeiling);
         }
 
         return count;
