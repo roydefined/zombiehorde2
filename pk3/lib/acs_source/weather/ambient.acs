@@ -37,14 +37,18 @@ strict namespace Weather
             SpawnForced(AMBIENTWEATHER_RING_ACTOR, 0.0, 0.0, 0.0, tid, 0);
         }
 
-        // Sound ring
-        for (int i = 0; i < AMBIENTWEATHER_SPOTCOUNT; ++i)
+        // Sound rings
+        // To ensure we can use multiple weather types simulataneously, each type has its own ring set.
+        for (int index = 0; index < AMBIENTWEATHER_COUNT; ++index)
         {
-            int tidNormal = GetAmbientWeatherSoundRingTid(i, false);
-            int tidSheltered = GetAmbientWeatherSoundRingTid(i, true);
+            for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
+            {
+                int tidNormal = GetAmbientWeatherSoundRingTid(index, spot, false);
+                int tidSheltered = GetAmbientWeatherSoundRingTid(index, spot, true);
 
-            SpawnForced(AMBIENTWEATHER_SOUND_ACTOR, 0.0, 0.0, 0.0, tidNormal, 0);
-            SpawnForced(AMBIENTWEATHER_SOUND_ACTOR, 0.0, 0.0, 0.0, tidSheltered, 0);
+                SpawnForced(AMBIENTWEATHER_SOUND_ACTOR, 0.0, 0.0, 0.0, tidNormal, 0);
+                SpawnForced(AMBIENTWEATHER_SOUND_ACTOR, 0.0, 0.0, 0.0, tidSheltered, 0);
+            }
         }
 
         // After spawning we must wait a moment before we can do anything with the actors.
@@ -57,15 +61,16 @@ strict namespace Weather
 
         // Sound ring sound initialization.
         // Note it starts off muted and will gain volume when needed in the loop.
-        for (int i = 0; i < AMBIENTWEATHER_COUNT; ++i)
+        for (int index = 0; index < AMBIENTWEATHER_COUNT; ++index)
         {
-            str sound = GetTransientAmbientWeatherSound(i);
-            str shelteredSound = GetTransientAmbientWeatherShelteredSound(i);
+            str sound = GetTransientAmbientWeatherSound(index);
+            str shelteredSound = GetTransientAmbientWeatherShelteredSound(index);
+
             if (sound != (raw)0 && sound != "")
             {
                 for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
                 {
-                    int tid = GetAmbientWeatherSoundRingTid(spot, false);
+                    int tid = GetAmbientWeatherSoundRingTid(index, spot, false);
                     PlaySound(tid, sound, CHAN_BODY, 1.0, true, 1.0, false);
                 }
             }
@@ -74,7 +79,7 @@ strict namespace Weather
             {
                 for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
                 {
-                    int tid = GetAmbientWeatherSoundRingTid(spot, true);
+                    int tid = GetAmbientWeatherSoundRingTid(index, spot, true);
                     PlaySound(tid, shelteredSound, CHAN_BODY, 1.0, true, 1.0, false);
                 }
             }
@@ -83,45 +88,58 @@ strict namespace Weather
 
     internal void TicAmbientWeather(int sourceTid)
     {
-        for (int i = 0; i < AMBIENTWEATHER_COUNT; ++i)
+        for (int index = 0; index < AMBIENTWEATHER_COUNT; ++index)
         {
-            // TODO: Make sure we don't accidentally keep playing a sound when disabled.
-            // Can't do this yet because we share the spots.
-            if (!GetTransientAmbientWeatherEnabled(i))
+            // Make sure we don't accidentally keep playing a sound when disabled.
+            if (!GetTransientAmbientWeatherEnabled(index))
+            {
+                for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
+                {
+                    int tidNormal = GetAmbientWeatherSoundRingTid(index, spot, false);
+                    int tidSheltered = GetAmbientWeatherSoundRingTid(index, spot, true);
+
+                    SoundVolume(tidNormal, CHAN_BODY, 0.0);
+                    SoundVolume(tidSheltered, CHAN_BODY, 0.0);
+                }
+
                 continue;
+            }
 
-            UpdateAmbientWeatherRingPositions(sourceTid, i);
+            UpdateAmbientWeatherRingPositions(sourceTid, index);
 
-            str sound = GetTransientAmbientWeatherSound(i);
-            str shelteredSound = GetTransientAmbientWeatherShelteredSound(i);
+            str sound = GetTransientAmbientWeatherSound(index);
+            str shelteredSound = GetTransientAmbientWeatherShelteredSound(index);
 
             bool hasNormalSound = (sound != (raw)0 && sound != "");
             bool hasShelteredSound = (shelteredSound != (raw)0 && shelteredSound != "");
 
-            for (int j = 0; j < AMBIENTWEATHER_SPOTCOUNT; ++j)
+            for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
             {
-                int tidNormal = GetAmbientWeatherSoundRingTid(j, false);
-                int tidSheltered = GetAmbientWeatherSoundRingTid(j, true);
+                int tidNormal = GetAmbientWeatherSoundRingTid(index, spot, false);
+                int tidSheltered = GetAmbientWeatherSoundRingTid(index, spot, true);
 
                 fixed normalVolume = 0.0;
                 fixed shelteredVolume = 0.0;
 
-                bool nearHasSky = HasNearRingSkyCeiling(j);
-                bool farHasSky  = HasFarRingSkyCeiling(j);
+                bool nearHasSky = HasNearRingSkyCeiling(spot);
+                bool farHasSky  = HasFarRingSkyCeiling(spot);
 
+                // Debug coloring (keeps behavior visible, but doesn't force global logic).
                 if (_debugColorShelteredSpots)
                 {
-                    SetThingSpecial(GetAmbientWeatherNearRingTid(j), 0, nearHasSky);
-                    SetThingSpecial(GetAmbientWeatherFarRingTid(j), 0, farHasSky);
+                    SetThingSpecial(GetAmbientWeatherNearRingTid(spot), 0, nearHasSky);
+                    SetThingSpecial(GetAmbientWeatherFarRingTid(spot), 0, farHasSky);
                 }
 
-                if (nearHasSky && hasNormalSound)
+                if (nearHasSky)
                 {
-                    normalVolume = 1.0;
+                    if (hasNormalSound)
+                        normalVolume = 1.0;
                 }
-                else if (farHasSky && hasShelteredSound)
+                else if (farHasSky)
                 {
-                    shelteredVolume = 1.0;
+                    if (hasShelteredSound)
+                        shelteredVolume = 1.0;
                 }
 
                 SoundVolume(tidNormal, CHAN_BODY, normalVolume);
@@ -130,9 +148,14 @@ strict namespace Weather
         }
     }
 
-    internal int GetAmbientWeatherSoundRingTid(int spot, bool sheltered)
+    // This is a bit complicated.
+    // The function has to determine the spot based on a few factors.
+    // - Each weather type will have its own sound ring spot set.
+    // - Each sound ring spot from the set is also divided by a regular spot and a "sheltered" spot.
+    internal int GetAmbientWeatherSoundRingTid(int index, int spot, bool sheltered)
     {
-        return AMBIENTWEATHER_RING_BASETID + (AMBIENTWEATHER_SPOTCOUNT * 2) + (spot * 2) + (int)sheltered;
+        int soundRingBase = AMBIENTWEATHER_RING_BASETID + (AMBIENTWEATHER_SPOTCOUNT * 2);
+        return soundRingBase + (index * AMBIENTWEATHER_SPOTCOUNT * 2) + (spot * 2) + (int)sheltered;
     }
 
     internal int GetAmbientWeatherNearRingTid(int spot)
@@ -193,7 +216,7 @@ strict namespace Weather
             SetActorPosition(tid, x, y, sourceZ, false);
         }
 
-        // Sound ring
+        // Sound ring (per weather type)
         for (int i = 0; i < AMBIENTWEATHER_SPOTCOUNT; ++i)
         {
             fixed angle = fixed(i) / fixed(AMBIENTWEATHER_SPOTCOUNT);
@@ -201,12 +224,15 @@ strict namespace Weather
             fixed x = sourceX + cos(angle) * soundRadius;
             fixed y = sourceY + sin(angle) * soundRadius;
 
-            int tidNormal = GetAmbientWeatherSoundRingTid(i, false);
-            int tidSheltered = GetAmbientWeatherSoundRingTid(i, true);
+            int tidNormal = GetAmbientWeatherSoundRingTid(index, i, false);
+            int tidSheltered = GetAmbientWeatherSoundRingTid(index, i, true);
 
-            // For the sake of debugging these have a different zpos.
-            SetActorPosition(tidNormal, x, y, sourceZ + 10.0, false);
-            SetActorPosition(tidSheltered, x, y, sourceZ - 10.0, false);
+            // For the sake of debugging these have a different zpos,
+            // and each index also gets its own offset so sets don't overlap.
+            fixed indexZ = fixed(index) * 20.0;
+
+            SetActorPosition(tidNormal, x, y, sourceZ + 10.0 + indexZ, false);
+            SetActorPosition(tidSheltered, x, y, sourceZ - 10.0 + indexZ, false);
         }
     }
 
