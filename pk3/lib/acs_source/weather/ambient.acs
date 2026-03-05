@@ -6,8 +6,7 @@ strict namespace Weather
 {
     #define AMBIENTWEATHER_RING_BASETID 30000
 
-    #define AMBIENTWEATHER_NEAR_SPOTCOUNT 8
-    #define AMBIENTWEATHER_FAR_SPOTCOUNT  12
+    #define AMBIENTWEATHER_SPOTCOUNT 10
 
     #define AMBIENTWEATHER_RING_ACTOR "DebugDropAmbient"
     //#define AMBIENTWEATHER_RING_ACTOR "MapSpot"
@@ -19,16 +18,16 @@ strict namespace Weather
     internal void InitializeAmbientWeatherClient()
     {
         // Near ring
-        for (int j = 0; j < AMBIENTWEATHER_NEAR_SPOTCOUNT; ++j)
+        for (int i = 0; i < AMBIENTWEATHER_SPOTCOUNT; ++i)
         {
-            int tid = GetAmbientWeatherNearRingTid(j);
+            int tid = GetAmbientWeatherNearRingTid(i);
             SpawnForced(AMBIENTWEATHER_RING_ACTOR, 0.0, 0.0, 0.0, tid, 0);
         }
 
         // Far ring
-        for (int k = 0; k < AMBIENTWEATHER_FAR_SPOTCOUNT; ++k)
+        for (int i = 0; i < AMBIENTWEATHER_SPOTCOUNT; ++i)
         {
-            int tid = GetAmbientWeatherFarRingTid(k);
+            int tid = GetAmbientWeatherFarRingTid(i);
             SpawnForced(AMBIENTWEATHER_RING_ACTOR, 0.0, 0.0, 0.0, tid, 0);
         }
     }
@@ -75,7 +74,7 @@ strict namespace Weather
 
     internal int GetAmbientWeatherFarRingTid(int spot)
     {
-        return AMBIENTWEATHER_RING_BASETID + AMBIENTWEATHER_NEAR_SPOTCOUNT + spot;
+        return AMBIENTWEATHER_RING_BASETID + AMBIENTWEATHER_SPOTCOUNT + spot;
     }
 
     internal void UpdateAmbientWeatherRingPositions(int sourceTid, int index)
@@ -88,12 +87,11 @@ strict namespace Weather
         fixed shelteredRadius = fixed(GetTransientAmbientWeatherShelteredRadius(index));
 
         // Near ring
-        for (int j = 0; j < AMBIENTWEATHER_NEAR_SPOTCOUNT; ++j)
+        for (int i = 0; i < AMBIENTWEATHER_SPOTCOUNT; ++i)
         {
-            int tid = GetAmbientWeatherNearRingTid(j);
+            int tid = GetAmbientWeatherNearRingTid(i);
 
-            fixed t = fixed(j) / fixed(AMBIENTWEATHER_NEAR_SPOTCOUNT);
-            fixed angle = t * 1.0;
+            fixed angle = fixed(i) / fixed(AMBIENTWEATHER_SPOTCOUNT);
 
             fixed x = sourceX + cos(angle) * radius;
             fixed y = sourceY + sin(angle) * radius;
@@ -102,12 +100,11 @@ strict namespace Weather
         }
 
         // Far ring
-        for (int k = 0; k < AMBIENTWEATHER_FAR_SPOTCOUNT; ++k)
+        for (int i = 0; i < AMBIENTWEATHER_SPOTCOUNT; ++i)
         {
-            int tid = GetAmbientWeatherFarRingTid(k);
+            int tid = GetAmbientWeatherFarRingTid(i);
 
-            fixed t = fixed(k) / fixed(AMBIENTWEATHER_FAR_SPOTCOUNT);
-            fixed angle = t * 1.0;
+            fixed angle = fixed(i) / fixed(AMBIENTWEATHER_SPOTCOUNT);
 
             fixed x = sourceX + cos(angle) * shelteredRadius;
             fixed y = sourceY + sin(angle) * shelteredRadius;
@@ -119,7 +116,7 @@ strict namespace Weather
     internal int CountRingSkyCeilings(bool near)
     {
         int count = 0;
-        for (int i = 0; i < AMBIENTWEATHER_NEAR_SPOTCOUNT; ++i)
+        for (int i = 0; i < AMBIENTWEATHER_SPOTCOUNT; ++i)
         {
             int tid = near
                 ? GetAmbientWeatherNearRingTid(i)
