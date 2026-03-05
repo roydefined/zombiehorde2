@@ -95,13 +95,8 @@ strict namespace Weather
             str sound = GetTransientAmbientWeatherSound(i);
             str shelteredSound = GetTransientAmbientWeatherShelteredSound(i);
 
-            int nearSkyCount = CountRingSkyCeilings(true);
-            int farSkyCount  = CountRingSkyCeilings(false);
-
-            // Normal sounds take priority.
-            // Otherwise the sheltered sound is used if that one does count.
-            bool wantNormal = (nearSkyCount > 0 && sound != (raw)0 && sound != "");
-            bool wantSheltered = (!wantNormal && farSkyCount > 0 && shelteredSound != (raw)0 && shelteredSound != "");
+            bool hasNormalSound = (sound != (raw)0 && sound != "");
+            bool hasShelteredSound = (shelteredSound != (raw)0 && shelteredSound != "");
 
             for (int j = 0; j < AMBIENTWEATHER_SPOTCOUNT; ++j)
             {
@@ -111,15 +106,22 @@ strict namespace Weather
                 fixed normalVolume = 0.0;
                 fixed shelteredVolume = 0.0;
 
-                if (wantNormal)
+                bool nearHasSky = HasNearRingSkyCeiling(j);
+                bool farHasSky  = HasFarRingSkyCeiling(j);
+
+                if (_debugColorShelteredSpots)
                 {
-                    if (HasNearRingSkyCeiling(j))
-                        normalVolume = 1.0;
+                    SetThingSpecial(GetAmbientWeatherNearRingTid(j), 0, nearHasSky);
+                    SetThingSpecial(GetAmbientWeatherFarRingTid(j), 0, farHasSky);
                 }
-                else if (wantSheltered)
+
+                if (nearHasSky && hasNormalSound)
                 {
-                    if (HasFarRingSkyCeiling(j))
-                        shelteredVolume = 1.0;
+                    normalVolume = 1.0;
+                }
+                else if (farHasSky && hasShelteredSound)
+                {
+                    shelteredVolume = 1.0;
                 }
 
                 SoundVolume(tidNormal, CHAN_BODY, normalVolume);
@@ -206,30 +208,6 @@ strict namespace Weather
             SetActorPosition(tidNormal, x, y, sourceZ + 10.0, false);
             SetActorPosition(tidSheltered, x, y, sourceZ - 10.0, false);
         }
-    }
-
-    internal int CountRingSkyCeilings(bool near)
-    {
-        int count = 0;
-        for (int i = 0; i < AMBIENTWEATHER_SPOTCOUNT; ++i)
-        {
-            bool hasSkyCeiling = near
-                ? HasNearRingSkyCeiling(i)
-                : HasFarRingSkyCeiling(i);
-
-            count += (int)hasSkyCeiling;
-
-            if (_debugColorShelteredSpots)
-            {
-                int tid = near
-                    ? GetAmbientWeatherNearRingTid(i)
-                    : GetAmbientWeatherFarRingTid(i);
-
-                SetThingSpecial(tid, 0, hasSkyCeiling);
-            }
-        }
-
-        return count;
     }
 
     // Transient context
