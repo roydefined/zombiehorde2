@@ -35,42 +35,9 @@ strict namespace Weather
 
                 SpawnForced(AMBIENTWEATHER_SOUND_ACTOR, 0.0, 0.0, 0.0, tidNormal, 0);
                 SpawnForced(AMBIENTWEATHER_SOUND_ACTOR, 0.0, 0.0, 0.0, tidSheltered, 0);
-            }
-        }
 
-        // After spawning we must wait a moment before we can do anything with the actors.
-        ACS_NamedExecuteWithResult("zh2_internal_weather_initializerest");
-    }
-
-    script "zh2_internal_weather_initializerest" clientside
-    {
-        delay(const: 5);
-
-        // Sound ring sound initialization.
-        // Note it starts off muted and will gain volume in the loop.
-        for (int index = 0; index < AMBIENTWEATHER_COUNT; ++index)
-        {
-            str sound = GetTransientAmbientWeatherSound(index);
-            str shelteredSound = GetTransientAmbientWeatherShelteredSound(index);
-
-            if (sound != (raw)0 && sound != "")
-            {
-                for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
-                {
-                    int tid = GetAmbientWeatherSoundRingTid(index, spot, false);
-                    PlaySound(tid, sound, CHAN_BODY, 1.0, true, ATTN_NORM, false);
-                    SoundVolume(tid, CHAN_BODY, 0.1);
-                }
-            }
-
-            if (shelteredSound != (raw)0 && shelteredSound != "")
-            {
-                for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
-                {
-                    int tid = GetAmbientWeatherSoundRingTid(index, spot, true);
-                    PlaySound(tid, shelteredSound, CHAN_BODY, 1.0, true, ATTN_NORM, false);
-                    SoundVolume(tid, CHAN_BODY, 0.1);
-                }
+                SetTransientAmbientWeatherSoundActive(index, spot, false);
+                SetTransientAmbientWeatherShelteredSoundActive(index, spot, false);
             }
         }
     }
@@ -92,8 +59,8 @@ strict namespace Weather
 
             for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
             {
-                fixed normalTarget = 0.1;
-                fixed shelteredTarget = 0.1;
+                fixed normalTarget = 0.0;
+                fixed shelteredTarget = 0.0;
 
                 if (enabled)
                 {
@@ -106,22 +73,14 @@ strict namespace Weather
                         SetThingSpecial(GetAmbientWeatherFarRingTid(spot), 0, farHasSky);
                     }
 
-                    if (nearHasSky)
+                    if (nearHasSky && hasNormalSound)
                     {
-                        if (hasNormalSound)
-                            normalTarget = 1.0;
+                        normalTarget = 1.0;
                     }
-                    else if (farHasSky)
+                    else if (farHasSky && hasShelteredSound)
                     {
-                        if (hasShelteredSound)
-                            shelteredTarget = 1.0;
+                        shelteredTarget = 1.0;
                     }
-                }
-                else if (_debugColorShelteredSpots)
-                {
-                    // Make sure to clear debug state when disabled.
-                    SetThingSpecial(GetAmbientWeatherNearRingTid(spot), 0, false);
-                    SetThingSpecial(GetAmbientWeatherFarRingTid(spot), 0, false);
                 }
 
                 SetTransientAmbientWeatherTargetSoundVolume(index, spot, normalTarget);
@@ -134,6 +93,12 @@ strict namespace Weather
 
     internal void UpdateAmbientWeatherSoundVolumes(int index)
     {
+        str sound = GetTransientAmbientWeatherSound(index);
+        str shelteredSound = GetTransientAmbientWeatherShelteredSound(index);
+
+        bool hasNormalSound = (sound != (raw)0 && sound != "");
+        bool hasShelteredSound = (shelteredSound != (raw)0 && shelteredSound != "");
+
         for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
         {
             int tidNormal = GetAmbientWeatherSoundRingTid(index, spot, false);
@@ -145,14 +110,72 @@ strict namespace Weather
             fixed currentSheltered = GetTransientAmbientWeatherCurrentShelteredSoundVolume(index, spot);
             fixed targetSheltered = GetTransientAmbientWeatherTargetShelteredSoundVolume(index, spot);
 
-            currentNormal = LerpAmbientWeatherSound(currentNormal, targetNormal);
-            currentSheltered = LerpAmbientWeatherSound(currentSheltered, targetSheltered);
+            bool normalActive = GetTransientAmbientWeatherSoundActive(index, spot);
+            bool shelteredActive = GetTransientAmbientWeatherShelteredSoundActive(index, spot);
 
-            SetTransientAmbientWeatherCurrentSoundVolume(index, spot, currentNormal);
-            SetTransientAmbientWeatherCurrentShelteredSoundVolume(index, spot, currentSheltered);
+            // Start normal sound only when it becomes audible.
+            if (hasNormalSound && targetNormal > 0.0 && !normalActive)
+            {
+                PlaySound(tidNormal, sound, CHAN_BODY, 1.0, true, ATTN_NORM, false);
+                SoundVolume(tidNormal, CHAN_BODY, 0.0);
 
-            SoundVolume(tidNormal, CHAN_BODY, currentNormal);
-            SoundVolume(tidSheltered, CHAN_BODY, currentSheltered);
+                normalActive = true;
+                SetTransientAmbientWeatherSoundActive(index, spot, true);
+            }
+
+            // Start sheltered sound only when it becomes audible.
+            if (hasShelteredSound && targetSheltered > 0.0 && !shelteredActive)
+            {
+                PlaySound(tidSheltered, shelteredSound, CHAN_BODY, 1.0, true, ATTN_NORM, false);
+                SoundVolume(tidSheltered, CHAN_BODY, 0.0);
+
+                shelteredActive = true;
+                SetTransientAmbientWeatherShelteredSoundActive(index, spot, true);
+            }
+
+            // Lerp normal volume whether going up or down.
+            if (normalActive)
+            {
+                currentNormal = LerpAmbientWeatherSound(currentNormal, targetNormal);
+                SetTransientAmbientWeatherCurrentSoundVolume(index, spot, currentNormal);
+                SoundVolume(tidNormal, CHAN_BODY, currentNormal);
+
+                // Only stop after it has faded out.
+                if (targetNormal <= 0.0 && currentNormal <= AMBIENTWEATHER_SOUND_LERP_EPSILON)
+                {
+                    StopSound(tidNormal, CHAN_BODY);
+                    SetTransientAmbientWeatherSoundActive(index, spot, false);
+                    SetTransientAmbientWeatherCurrentSoundVolume(index, spot, 0.0);
+                }
+            }
+            else
+            {
+                // Keep inactive sounds at zero.
+                if (currentNormal != 0.0)
+                    SetTransientAmbientWeatherCurrentSoundVolume(index, spot, 0.0);
+            }
+
+            // Lerp sheltered volume whether going up or down.
+            if (shelteredActive)
+            {
+                currentSheltered = LerpAmbientWeatherSound(currentSheltered, targetSheltered);
+                SetTransientAmbientWeatherCurrentShelteredSoundVolume(index, spot, currentSheltered);
+                SoundVolume(tidSheltered, CHAN_BODY, currentSheltered);
+
+                // Only stop after it has faded out.
+                if (targetSheltered <= 0.0 && currentSheltered <= AMBIENTWEATHER_SOUND_LERP_EPSILON)
+                {
+                    StopSound(tidSheltered, CHAN_BODY);
+                    SetTransientAmbientWeatherShelteredSoundActive(index, spot, false);
+                    SetTransientAmbientWeatherCurrentShelteredSoundVolume(index, spot, 0.0);
+                }
+            }
+            else
+            {
+                // Keep inactive sounds at zero.
+                if (currentSheltered != 0.0)
+                    SetTransientAmbientWeatherCurrentShelteredSoundVolume(index, spot, 0.0);
+            }
         }
     }
 
@@ -331,6 +354,31 @@ strict namespace Weather
     {
         int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
         ZH2Lib::LibContext.WeatherContext.TargetShelteredSoundVolume[arrayIndex] = value;
+    }
+
+    // Transient context sound active state
+    internal bool GetTransientAmbientWeatherSoundActive(int index, int spot)
+    {
+        int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
+        return ZH2Lib::LibContext.WeatherContext.SoundActive[arrayIndex];
+    }
+
+    internal void SetTransientAmbientWeatherSoundActive(int index, int spot, bool value)
+    {
+        int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
+        ZH2Lib::LibContext.WeatherContext.SoundActive[arrayIndex] = value;
+    }
+
+    internal bool GetTransientAmbientWeatherShelteredSoundActive(int index, int spot)
+    {
+        int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
+        return ZH2Lib::LibContext.WeatherContext.ShelteredSoundActive[arrayIndex];
+    }
+
+    internal void SetTransientAmbientWeatherShelteredSoundActive(int index, int spot, bool value)
+    {
+        int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
+        ZH2Lib::LibContext.WeatherContext.ShelteredSoundActive[arrayIndex] = value;
     }
 
     internal int GetAmbientWeatherSoundVolumeArrayIndex(int index, int spot)
