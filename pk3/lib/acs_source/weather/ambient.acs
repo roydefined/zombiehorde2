@@ -4,19 +4,6 @@
 
 strict namespace Weather
 {
-    #define AMBIENTWEATHER_RING_BASETID 30000
-
-    #define AMBIENTWEATHER_SPOTCOUNT 10
-
-    #define AMBIENTWEATHER_RING_ACTOR "DebugDropAmbient"
-    //#define AMBIENTWEATHER_RING_ACTOR "MapSpot"
-
-    #define AMBIENTWEATHER_SOUND_ACTOR "DebugDropAmbientSound"
-    //#define AMBIENTWEATHER_SOUND_ACTOR "MapSpot"
-
-    // Static radius for the sound ring.
-    #define AMBIENTWEATHER_SOUND_RING_RADIUS 256.0
-
     // For debugging, when `true` we change the color of a spot when sheltered.
     // For this we must use the debug drops.
     internal bool _debugColorShelteredSpots = true;
@@ -38,7 +25,7 @@ strict namespace Weather
         }
 
         // Sound rings
-        // To ensure we can use multiple weather types simulataneously, each type has its own ring set.
+        // To ensure we can use multiple weather types simultaneously, each type has its own ring set.
         for (int index = 0; index < AMBIENTWEATHER_COUNT; ++index)
         {
             for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
@@ -60,7 +47,7 @@ strict namespace Weather
         delay(const: 5);
 
         // Sound ring sound initialization.
-        // Note it starts off muted and will gain volume when needed in the loop.
+        // Note it starts off muted and will gain volume in the loop.
         for (int index = 0; index < AMBIENTWEATHER_COUNT; ++index)
         {
             str sound = GetTransientAmbientWeatherSound(index);
@@ -72,6 +59,7 @@ strict namespace Weather
                 {
                     int tid = GetAmbientWeatherSoundRingTid(index, spot, false);
                     PlaySound(tid, sound, CHAN_BODY, 1.0, true, 1.0, false);
+                    SoundVolume(tid, CHAN_BODY, 0.0);
                 }
             }
 
@@ -81,6 +69,7 @@ strict namespace Weather
                 {
                     int tid = GetAmbientWeatherSoundRingTid(index, spot, true);
                     PlaySound(tid, shelteredSound, CHAN_BODY, 1.0, true, 1.0, false);
+                    SoundVolume(tid, CHAN_BODY, 0.0);
                 }
             }
         }
@@ -90,22 +79,10 @@ strict namespace Weather
     {
         for (int index = 0; index < AMBIENTWEATHER_COUNT; ++index)
         {
-            // Make sure we don't accidentally keep playing a sound when disabled.
-            if (!GetTransientAmbientWeatherEnabled(index))
-            {
-                for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
-                {
-                    int tidNormal = GetAmbientWeatherSoundRingTid(index, spot, false);
-                    int tidSheltered = GetAmbientWeatherSoundRingTid(index, spot, true);
+            bool enabled = GetTransientAmbientWeatherEnabled(index);
 
-                    SoundVolume(tidNormal, CHAN_BODY, 0.0);
-                    SoundVolume(tidSheltered, CHAN_BODY, 0.0);
-                }
-
-                continue;
-            }
-
-            UpdateAmbientWeatherRingPositions(sourceTid, index);
+            if (enabled)
+                UpdateAmbientWeatherRingPositions(sourceTid, index);
 
             str sound = GetTransientAmbientWeatherSound(index);
             str shelteredSound = GetTransientAmbientWeatherShelteredSound(index);
@@ -115,37 +92,78 @@ strict namespace Weather
 
             for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
             {
-                int tidNormal = GetAmbientWeatherSoundRingTid(index, spot, false);
-                int tidSheltered = GetAmbientWeatherSoundRingTid(index, spot, true);
+                fixed normalTarget = 0.0;
+                fixed shelteredTarget = 0.0;
 
-                fixed normalVolume = 0.0;
-                fixed shelteredVolume = 0.0;
-
-                bool nearHasSky = HasNearRingSkyCeiling(spot);
-                bool farHasSky  = HasFarRingSkyCeiling(spot);
-
-                // Debug coloring (keeps behavior visible, but doesn't force global logic).
-                if (_debugColorShelteredSpots)
+                if (enabled)
                 {
-                    SetThingSpecial(GetAmbientWeatherNearRingTid(spot), 0, nearHasSky);
-                    SetThingSpecial(GetAmbientWeatherFarRingTid(spot), 0, farHasSky);
+                    bool nearHasSky = HasNearRingSkyCeiling(spot);
+                    bool farHasSky  = HasFarRingSkyCeiling(spot);
+
+                    if (_debugColorShelteredSpots)
+                    {
+                        SetThingSpecial(GetAmbientWeatherNearRingTid(spot), 0, nearHasSky);
+                        SetThingSpecial(GetAmbientWeatherFarRingTid(spot), 0, farHasSky);
+                    }
+
+                    if (nearHasSky)
+                    {
+                        if (hasNormalSound)
+                            normalTarget = 1.0;
+                    }
+                    else if (farHasSky)
+                    {
+                        if (hasShelteredSound)
+                            shelteredTarget = 1.0;
+                    }
+                }
+                else if (_debugColorShelteredSpots)
+                {
+                    // Make sure to clear debug state when disabled.
+                    SetThingSpecial(GetAmbientWeatherNearRingTid(spot), 0, false);
+                    SetThingSpecial(GetAmbientWeatherFarRingTid(spot), 0, false);
                 }
 
-                if (nearHasSky)
-                {
-                    if (hasNormalSound)
-                        normalVolume = 1.0;
-                }
-                else if (farHasSky)
-                {
-                    if (hasShelteredSound)
-                        shelteredVolume = 1.0;
-                }
-
-                SoundVolume(tidNormal, CHAN_BODY, normalVolume);
-                SoundVolume(tidSheltered, CHAN_BODY, shelteredVolume);
+                SetTransientAmbientWeatherTargetSoundVolume(index, spot, normalTarget);
+                SetTransientAmbientWeatherTargetShelteredSoundVolume(index, spot, shelteredTarget);
             }
+
+            UpdateAmbientWeatherSoundVolumes(index);
         }
+    }
+
+    internal void UpdateAmbientWeatherSoundVolumes(int index)
+    {
+        for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
+        {
+            int tidNormal = GetAmbientWeatherSoundRingTid(index, spot, false);
+            int tidSheltered = GetAmbientWeatherSoundRingTid(index, spot, true);
+
+            fixed currentNormal = GetTransientAmbientWeatherCurrentSoundVolume(index, spot);
+            fixed targetNormal = GetTransientAmbientWeatherTargetSoundVolume(index, spot);
+
+            fixed currentSheltered = GetTransientAmbientWeatherCurrentShelteredSoundVolume(index, spot);
+            fixed targetSheltered = GetTransientAmbientWeatherTargetShelteredSoundVolume(index, spot);
+
+            currentNormal = LerpAmbientWeatherSound(currentNormal, targetNormal);
+            currentSheltered = LerpAmbientWeatherSound(currentSheltered, targetSheltered);
+
+            SetTransientAmbientWeatherCurrentSoundVolume(index, spot, currentNormal);
+            SetTransientAmbientWeatherCurrentShelteredSoundVolume(index, spot, currentSheltered);
+
+            SoundVolume(tidNormal, CHAN_BODY, currentNormal);
+            SoundVolume(tidSheltered, CHAN_BODY, currentSheltered);
+        }
+    }
+
+    internal fixed LerpAmbientWeatherSound(fixed current, fixed target)
+    {
+        fixed delta = target - current;
+
+        if (BCSUtils::Abs(delta) <= AMBIENTWEATHER_SOUND_LERP_EPSILON)
+            return target;
+
+        return current + (delta * AMBIENTWEATHER_SOUND_LERP_FACTOR);
     }
 
     // This is a bit complicated.
@@ -263,4 +281,60 @@ strict namespace Weather
     internal void SetPersistingAmbientWeatherShelteredRadius(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.AmbientWeatherCollection[index].ShelteredRadius = value; }
     internal int GetPersistingAmbientWeatherDelay(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.AmbientWeatherCollection[index].Delay; }
     internal void SetPersistingAmbientWeatherDelay(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.AmbientWeatherCollection[index].Delay = value; }
+
+    // Transient context sound volume
+    // This one is a bit larger due to the limitation of not allowing nested arrays within a struct.
+    // So it's partially flattened.
+    internal fixed GetTransientAmbientWeatherCurrentSoundVolume(int index, int spot)
+    {
+        int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
+        return ZH2Lib::LibContext.WeatherContext.CurrentSoundVolume[arrayIndex];
+    }
+
+    internal void SetTransientAmbientWeatherCurrentSoundVolume(int index, int spot, fixed value)
+    {
+        int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
+        ZH2Lib::LibContext.WeatherContext.CurrentSoundVolume[arrayIndex] = value;
+    }
+
+    internal fixed GetTransientAmbientWeatherTargetSoundVolume(int index, int spot)
+    {
+        int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
+        return ZH2Lib::LibContext.WeatherContext.TargetSoundVolume[arrayIndex];
+    }
+
+    internal void SetTransientAmbientWeatherTargetSoundVolume(int index, int spot, fixed value)
+    {
+        int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
+        ZH2Lib::LibContext.WeatherContext.TargetSoundVolume[arrayIndex] = value;
+    }
+
+    internal fixed GetTransientAmbientWeatherCurrentShelteredSoundVolume(int index, int spot)
+    {
+        int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
+        return ZH2Lib::LibContext.WeatherContext.CurrentShelteredSoundVolume[arrayIndex];
+    }
+
+    internal void SetTransientAmbientWeatherCurrentShelteredSoundVolume(int index, int spot, fixed value)
+    {
+        int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
+        ZH2Lib::LibContext.WeatherContext.CurrentShelteredSoundVolume[arrayIndex] = value;
+    }
+
+    internal fixed GetTransientAmbientWeatherTargetShelteredSoundVolume(int index, int spot)
+    {
+        int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
+        return ZH2Lib::LibContext.WeatherContext.TargetShelteredSoundVolume[arrayIndex];
+    }
+
+    internal void SetTransientAmbientWeatherTargetShelteredSoundVolume(int index, int spot, fixed value)
+    {
+        int arrayIndex = GetAmbientWeatherSoundVolumeArrayIndex(index, spot);
+        ZH2Lib::LibContext.WeatherContext.TargetShelteredSoundVolume[arrayIndex] = value;
+    }
+
+    internal int GetAmbientWeatherSoundVolumeArrayIndex(int index, int spot)
+    {
+        return (index * AMBIENTWEATHER_SPOTCOUNT) + spot;
+    }
 }
