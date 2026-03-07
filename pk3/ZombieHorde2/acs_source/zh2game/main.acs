@@ -2,9 +2,6 @@
     #error This file must be #included.
 #endif
 
-// Note, included from zh2lib.
-#include "validation.acs"
-
 #include "debug/debug.acs"
 #include "game/game.acs"
 #include "sync/sync.acs"
@@ -88,9 +85,14 @@ strict namespace ZH2Game
         // Note, these two parses should work concurrently and both rent a tokenizer for this.
         // Parse persisting data here.
         Logger::LogDebug(LOGSOURCE, "Start parsing persisting data (server).");
+        LibIO::ParseWeatherDefServerside();
         LibIO::ParseLoggerDefServerside();
         IO::ParseModDefLumpsServerside();
         IO::ParseMapDefLumps();
+
+        // Initialize library
+        // Weather must initialize before we parse the map.
+        Weather::InitializeServer();
 
         // Parse non-persisting data now.
         Logger::LogDebug(LOGSOURCE, "Start parsing non-persisting data (server).");
@@ -168,6 +170,8 @@ strict namespace ZH2Game
 
         // Resync admin list
         Sync::SyncAdmins();
+
+        LibSync::SyncWeather();
 
         // After a moment, sync all players and allow them to sync themselves on enter.
         Delay(const: 5);
@@ -250,6 +254,7 @@ strict namespace ZH2Game
 
         // Fully sync up the client.
         Sync::SyncAllClientside();
+        LibSync::SyncAllClientside();
 
         Settings::UpdateCurrentClientSettings();
 

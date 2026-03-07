@@ -1,0 +1,85 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "LibSync"
+
+#include "actor/weather.acs"
+
+strict namespace LibSync
+{
+    // Basic log formatter to include an additional sync category.
+    internal str FormatLog(str category, str message)
+    {
+        return "[" + category + "] " + message;
+    }
+
+    /* COMBINED */
+
+    void SyncAll(bool callSyncOnClients = true)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        LibSync::SyncWeather(callSyncOnClients);
+    }
+
+    void CallClientSyncAll()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        LibSync::CallSyncWeatherOnClients();
+    }
+
+    void SyncAllClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        LibSync::SyncWeatherClientside();
+    }
+
+    /* WEATHER */
+
+    void SyncWeather(bool callSyncOnClients = true)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        SyncWeatherActor();
+
+        if (callSyncOnClients)
+            CallSyncWeatherOnClients();
+    }
+
+    void CallSyncWeatherOnClients()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        CallSyncWeatherActorOnClients();
+    }
+
+    void SyncWeatherClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        SyncWeatherActorClientSide();
+    }
+}
+
+#undef LOGSOURCE

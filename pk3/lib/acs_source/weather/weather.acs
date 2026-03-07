@@ -4,87 +4,86 @@
 
 #define LOGSOURCE "Weather"
 
-// NOTE: this current iteration lacks features because it was only set up to support ZM03. Later more will be added.
+#include "emitter.acs"
+#include "randomized.acs"
+#include "ambient.acs"
+#include "extern.acs"
 
 strict namespace Weather
 {
+    // Clientside state that determines if we must initialize/dispose ambient weather.
+    internal bool _ambientWeatherInitialized;
+
+    void InitializeServer()
+    {
+        for (int i = 0; i < EMITTERWEATHER_COUNT; ++i)
+        {
+            SetTransientEmitterWeatherEnabled(i, GetPersistingEmitterWeatherEnabled(i));
+            SetTransientEmitterWeatherSkyBehavior(i, GetPersistingEmitterWeatherSkyBehavior(i));
+            SetTransientEmitterWeatherSpawnCount(i, GetPersistingEmitterWeatherSpawnCount(i));
+            SetTransientEmitterWeatherSpawnDelay(i, GetPersistingEmitterWeatherSpawnDelay(i));
+            SetTransientEmitterWeatherMinRadius(i, GetPersistingEmitterWeatherMinRadius(i));
+            SetTransientEmitterWeatherMaxRadius(i, GetPersistingEmitterWeatherMaxRadius(i));
+            SetTransientEmitterWeatherMinZpos(i, GetPersistingEmitterWeatherMinZpos(i));
+            SetTransientEmitterWeatherMaxZpos(i, GetPersistingEmitterWeatherMaxZpos(i));
+            SetTransientEmitterWeatherNextSpawnTic(i, GetPersistingEmitterWeatherNextSpawnTic(i));
+        }
+
+        for (int i = 0; i < RANDOMIZEDWEATHER_COUNT; ++i)
+        {
+            SetTransientRandomizedWeatherEnabled(i, GetPersistingRandomizedWeatherEnabled(i));
+            SetTransientRandomizedWeatherMinDelay(i, GetPersistingRandomizedWeatherMinDelay(i));
+            SetTransientRandomizedWeatherMaxDelay(i, GetPersistingRandomizedWeatherMaxDelay(i));
+        }
+
+        for (int i = 0; i < AMBIENTWEATHER_COUNT; ++i)
+        {
+            SetTransientAmbientWeatherEnabled(i, GetPersistingAmbientWeatherEnabled(i));
+            SetTransientAmbientWeatherSound(i, GetPersistingAmbientWeatherSound(i));
+            SetTransientAmbientWeatherShelteredSound(i, GetPersistingAmbientWeatherShelteredSound(i));
+            SetTransientAmbientWeatherRadius(i, GetPersistingAmbientWeatherRadius(i));
+            SetTransientAmbientWeatherShelteredRadius(i, GetPersistingAmbientWeatherShelteredRadius(i));
+            SetTransientAmbientWeatherDelay(i, GetPersistingAmbientWeatherDelay(i));
+        }
+    }
+
     void TicClient()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!ZH2Lib::GetEnableWeather())
-            return;
-
-        // Determine the client's current camera position.
-        // This makes it possible to also spawn weather when spectating.
+        // Determine the client's current camera position to determine where the tic handles weather.
         int cameraTid = CheckPlayerCamera(PlayerNumber());
-        if (cameraTid == -1)
-            return;
 
-        // These can be enabled whenever to test the behaviour.
-        //for (int i = 0; i < 10; ++i) SpawnParticle(cameraTid, "DebugDrop", Weather::WEATHER_CEILINGBEHAVIOUR_NONE, 200, 1200, -400, 400);
-        //for (int i = 0; i < 10; ++i) SpawnParticle(cameraTid, "DebugDropSky", Weather::WEATHER_CEILINGBEHAVIOUR_REQUIRESKY, 200, 1200, -400, 400);
-        //for (int i = 0; i < 10; ++i) SpawnParticle(cameraTid, "DebugDropNoSky", Weather::WEATHER_CEILINGBEHAVIOUR_REQUIRENOSKY, 200, 1200, -400, 400);
+        bool enableWeatherGlobal = ZH2Lib::GetSvEnableWeather() && ZH2Lib::GetClEnableWeather();
+        bool emitterWeatherEnabled = ZH2Lib::GetClEnableEmitterWeather() && enableWeatherGlobal && cameraTid != -1;
+        bool randomizedWeatherEnabled = ZH2Lib::GetClEnableRandomizedWeather() && enableWeatherGlobal && cameraTid != -1;
+        bool ambientWeatherEnabled = ZH2Lib::GetClEnableAmbientWeather() && enableWeatherGlobal && cameraTid != -1;
 
-        if (ZH2Lib::LibContext.Snowing)
-            for (int i = 0; i < 30; ++i)
-                SpawnParticle(cameraTid, "ZH2WeatherSnowDrop", Weather::WEATHER_CEILINGBEHAVIOUR_REQUIRESKY, 100, 1200, 50, 600);
-
-        if (ZH2Lib::LibContext.Raining)
-            for (int i = 0; i < 30; ++i)
-                SpawnParticle(cameraTid, "ZH2WeatherRainDrop", Weather::WEATHER_CEILINGBEHAVIOUR_REQUIRESKY, 100, 600, 50, 600);
-    }
-
-    // TEMPORARY
-    void EnableSnow()
-    {
-        VALIDATE_IS_CLIENTSIDE_FUNCTION();
-        ZH2Lib::LibContext.Snowing = true;
-    }
-    void EnableRain()
-    {
-        VALIDATE_IS_CLIENTSIDE_FUNCTION();
-        ZH2Lib::LibContext.Raining = true;
-    }
-
-    internal void SpawnParticle(int sourceTid, str class, WeatherCeilingBehaviourT ceilingBehaviour, int minRadius, int maxRadius, int minZpos, int maxZpos)
-    {
-        fixed angle = fixed(random(0, 1000)) / 1000.0,
-              radius = fixed(random(minRadius, maxRadius));
-
-        fixed sourceZ = GetActorZ(sourceTid) + GetActorViewHeight(sourceTid);
-
-        // Determine the position to spawn the weather particle at
-        fixed spotX = GetActorX(sourceTid) + cos(angle) * radius,
-              spotY    = GetActorY(sourceTid) + sin(angle) * radius,
-              spotZ    = sourceZ + fixed(random(minZpos, maxZpos));
-
-        // Determine the z-height of the ceiling.
-        fixed ceilingZ = GetSectorCeilingZ(0, int(spotX), int(spotY)) - 2.0;
-
-        // If the ceiling is closer use the ceiling's z positioning instead to prevent it from not spawning.
-        if (spotZ > ceilingZ)
-            spotZ = ceilingZ;
-
-        int spotId = UniqueTID();
-
-        // The weather has specific behaviour when it comes to spawning with a ceiling.
-        if (ceilingBehaviour != Weather::WEATHER_CEILINGBEHAVIOUR_NONE)
+        // Ensure ambient weather is properly initialized/disposed.
+        if (_ambientWeatherInitialized != ambientWeatherEnabled)
         {
-            if (!Spawn("MapSpot", spotX, spotY, sourceZ, spotId, 0))
-                return;
+            if (ambientWeatherEnabled)
+                InitializeAmbientWeatherClient();
+            else
+                DisposeAmbientWeatherClient();
 
-            bool hasSkyCeiling = CheckActorCeilingTexture(spotId, "F_SKY1");
-            Thing_Remove(spotId);
-
-            // Further depending on the enum, check if we need a sky ceiling or not.
-            if (ceilingBehaviour == Weather::WEATHER_CEILINGBEHAVIOUR_REQUIRESKY && !hasSkyCeiling
-                || ceilingBehaviour == Weather::WEATHER_CEILINGBEHAVIOUR_REQUIRENOSKY && hasSkyCeiling)
-                return;
+            _ambientWeatherInitialized = ambientWeatherEnabled;
         }
 
-        SpawnForced(class, spotX, spotY, spotZ, 0, 0);
+        if (emitterWeatherEnabled)
+            TicEmitterWeather(cameraTid);
+
+        if (randomizedWeatherEnabled)
+            TicRandomizedWeather(cameraTid);
+
+        if (ambientWeatherEnabled)
+            TicAmbientWeather(cameraTid);
+    }
+
+    internal int TypeToIndex(int type)
+    {
+        return type - 1;
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE

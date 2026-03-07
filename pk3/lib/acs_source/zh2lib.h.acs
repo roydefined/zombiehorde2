@@ -6,6 +6,11 @@
 
 #include "libbcs.h.acs"
 
+#include "libpreprocessor/event.h.acs"
+#include "libpreprocessor/context.h.acs"
+#include "libpreprocessor/identity.h.acs"
+#include "libpreprocessor/sync.h.acs"
+
 #include "utils/utils.h.acs"
 #include "tokenizer/tokenize.h.acs"
 #include "weather/weather.h.acs"
@@ -16,6 +21,8 @@
 #include "packet/packet.h.acs"
 #include "weight/weight.h.acs"
 #include "chat/chat.h.acs"
+#include "libevent/event.h.acs"
+#include "libsync/libsync.h.acs"
 #include "identity/identity.h.acs"
 #include "footstep/footstep.h.acs"
 #include "trackedproperties/trackedproperties.h.acs"
@@ -40,15 +47,15 @@ strict namespace ZH2Lib
         // Stores the eventbus keys and their callbacks.
         EventBus::EventBusCollectionT EventBusCollection;
 
+        // Clientside and serverside handled. Not synched.
+        // Stores received data from events, which has been unpacked.
+        Event::EventReceiveContextT EventReceiveContext;
+
         // Clientside
         // When should the given client id next play a footstep sound?
         int StepTimestamps[BCSUtils::MAX_PLAYERS];
 
-        // TEMPORARY
-        // Indicates if we should spawn snow.
-        // This will be replaced with proper tracking once more types are added and we don't just need this for ZM03 and ZE09
-        bool Snowing;
-        bool Raining;
+        Weather::WeatherContextT WeatherContext;
     };
 
     struct LibPlayerT
@@ -61,6 +68,7 @@ strict namespace ZH2Lib
     {
         Logger::LogContextT LogContext;
         Footstep::StepCollectionContextT StepContext;
+        Weather::PersistingWeatherContextT WeatherContext;
     };
 
     extern void ResetPlayerLibContext(int id);
