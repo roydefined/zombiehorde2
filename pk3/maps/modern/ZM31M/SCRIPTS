@@ -172,11 +172,6 @@ Script "OnOpenClient" Open CLIENTSIDE
 		ChangeFloor(49, "-");
 	}
 
-	// TODO: Support
-	//CreateWeather(WEATHERTYPESNOW, true, false, 15, 200, 500, 50, 150);
-	//CreateWeather(WEATHERTYPEDUST, false, true, 10, 30, 500, -200, 200);
-	//StartWeather(0);
-
 	if (!ACS_NamedExecute("FrozenDebug", 0))
 	{
 		Logger::LogError(LOGSOURCE, "Failed to invoke FrozenDebug");
@@ -338,9 +333,10 @@ script "SetInBunker_Client" (int enterBunker) clientside
 {
 	consoleClientIsInBunker = enterBunker;
 
-	// Switch weather
-	// TODO: Support
-	//StartWeather(BCSUtils::cond(enterBunker, 1, 0));
+    if (enterBunker)
+        Weather::StartEmitterWeather(Weather::EMITTERWEATHER_DUST);
+    else
+        Weather::StopEmitterWeather(Weather::EMITTERWEATHER_DUST);
 }
 
 // For debugging.
