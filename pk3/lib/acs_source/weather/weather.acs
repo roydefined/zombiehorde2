@@ -10,6 +10,9 @@
 
 strict namespace Weather
 {
+    // Clientside state that determines if we must initialize/dispose ambient weather.
+    internal bool _ambientWeatherInitialized;
+
     void InitializeServer()
     {
         for (int i = 0; i < EMITTERWEATHER_COUNT; ++i)
@@ -43,26 +46,37 @@ strict namespace Weather
         }
     }
 
-    void InitializeClient()
-    {
-        InitializeAmbientWeatherClient();
-    }
-
     void TicClient()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!ZH2Lib::GetEnableWeather())
-            return;
-
         // Determine the client's current camera position to determine where the tic handles weather.
         int cameraTid = CheckPlayerCamera(PlayerNumber());
-        if (cameraTid == -1)
-            return;
 
-        TicEmitterWeather(cameraTid);
-        TicRandomizedWeather(cameraTid);
-        TicAmbientWeather(cameraTid);
+        bool enableWeatherGlobal = ZH2Lib::GetSvEnableWeather() && ZH2Lib::GetClEnableWeather();
+        bool emitterWeatherEnabled = ZH2Lib::GetClEnableEmitterWeather() && enableWeatherGlobal && cameraTid != -1;
+        bool randomizedWeatherEnabled = ZH2Lib::GetClEnableRandomizedWeather() && enableWeatherGlobal && cameraTid != -1;
+        bool ambientWeatherEnabled = ZH2Lib::GetClEnableAmbientWeather() && enableWeatherGlobal && cameraTid != -1;
+
+        // Ensure ambient weather is properly initialized/disposed.
+        if (_ambientWeatherInitialized != ambientWeatherEnabled)
+        {
+            if (ambientWeatherEnabled)
+                InitializeAmbientWeatherClient();
+            else
+                DisposeAmbientWeatherClient();
+
+            _ambientWeatherInitialized = ambientWeatherEnabled;
+        }
+
+        if (emitterWeatherEnabled)
+            TicEmitterWeather(cameraTid);
+
+        if (randomizedWeatherEnabled)
+            TicRandomizedWeather(cameraTid);
+
+        if (ambientWeatherEnabled)
+            TicAmbientWeather(cameraTid);
     }
 }
 

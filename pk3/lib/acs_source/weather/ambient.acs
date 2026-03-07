@@ -35,9 +35,43 @@ strict namespace Weather
 
                 SpawnForced(AMBIENTWEATHER_SOUND_ACTOR, 0.0, 0.0, 0.0, tidNormal, 0);
                 SpawnForced(AMBIENTWEATHER_SOUND_ACTOR, 0.0, 0.0, 0.0, tidSheltered, 0);
+            }
+        }
+    }
+    internal void DisposeAmbientWeatherClient()
+    {
+        // Near ring
+        for (int i = 0; i < AMBIENTWEATHER_SPOTCOUNT; ++i)
+        {
+            int tid = GetAmbientWeatherNearRingTid(i);
+            Thing_Remove(tid);
+        }
+
+        // Far ring
+        for (int i = 0; i < AMBIENTWEATHER_SPOTCOUNT; ++i)
+        {
+            int tid = GetAmbientWeatherFarRingTid(i);
+            Thing_Remove(tid);
+        }
+
+        // Sound rings
+        for (int index = 0; index < AMBIENTWEATHER_COUNT; ++index)
+        {
+            for (int spot = 0; spot < AMBIENTWEATHER_SPOTCOUNT; ++spot)
+            {
+                int tidNormal = GetAmbientWeatherSoundRingTid(index, spot, false);
+                int tidSheltered = GetAmbientWeatherSoundRingTid(index, spot, true);
+
+                SetTransientAmbientWeatherCurrentSoundVolume(index, spot, 0.0);
+                SetTransientAmbientWeatherTargetSoundVolume(index, spot, 0.0);
+                SetTransientAmbientWeatherCurrentShelteredSoundVolume(index, spot, 0.0);
+                SetTransientAmbientWeatherTargetShelteredSoundVolume(index, spot, 0.0);
 
                 SetTransientAmbientWeatherSoundActive(index, spot, false);
                 SetTransientAmbientWeatherShelteredSoundActive(index, spot, false);
+
+                Thing_Remove(tidNormal);
+                Thing_Remove(tidSheltered);
             }
         }
     }
