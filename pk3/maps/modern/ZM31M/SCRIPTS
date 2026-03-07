@@ -842,15 +842,15 @@ Script "Events_Nuke" (void)
 
 	Delay(12);
 
+	// TODO: Use safety API
 	for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
 	{
 		if (!PlayerInGame(i) || isInBunker[i]) {
 			continue;
 		}
 
-		// Support
-		// TODO: This should use safety slots.
-		//KillPlayer(i, false);
+		int tid = Identity::GetTid(i);
+		Thing_Damage(tid, 10000, MOD_EXIT);
 	}
 
 	// Set boundaries by raising rocks
