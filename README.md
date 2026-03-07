@@ -8,7 +8,7 @@
     <a href="https://www.RoyDefined.com/"><img src="https://img.shields.io/badge/RoyDefined.com-blue" /></a>
 </div>
 
-> [!WARNING]  
+> [!WARNING]
 > **Zombie Horde 2 is currently in a beta state**. Content is subject to change, and you may encounter bugs.
 
 ## Setup
@@ -16,11 +16,11 @@
 ### Prerequisites
 You have two options to pack and build Zombie Horde 2:
 
-1. **Using PubDoomer (recommended)**  
-   - Easiest option: all packing, compiling, and management happens inside PubDoomer.  
+1. **Using PubDoomer (recommended)**
+   - Easiest option: all packing, compiling, and management happens inside PubDoomer.
    - Requires:
      - [Clone PubDoomer](https://github.com/RoyDefined/PubDoomer) or use a prebuilt executable.
-     - [.NET SDK 9.0.x](https://dotnet.microsoft.com/) (confirm with `dotnet --info`)  
+     - [.NET SDK 9.0.x](https://dotnet.microsoft.com/) (confirm with `dotnet --info`)
      - (Optional) Visual Studio 2022 / Rider / VS Code.
 
 2. **Without PubDoomer (manual build)**
@@ -61,17 +61,19 @@ git clone --recurse-submodules https://github.com/RoyDefined/zombiehorde2
 ### 2) Build the project
 
 #### Option A: Using PubDoomer
-1. Run `pack-acsutils.py`. This prepares ACSUtils into `modules\acsutils\dist`.  
-2. Start PubDoomer.
-3. Open `zh2project.pdtproj` in the application.
-4. Go to the 'Profiles' tab.
-5. Run the 'Compile project' profile.
+1. Run `pack-acsutils.py`. This prepares ACSUtils into `modules\acsutils\dist`.
+2. Run `pack-maps.py`. This packs all the maps into their respective folder in a `.wad` file.
+3. Start PubDoomer.
+4. Open `zh2project.pdtproj` in the application.
+5. Go to the 'Profiles' tab.
+6. Run the 'Compile project' profile.
 
 #### Option B: Manually
-1. Run `pack-acsutils.py`. This prepares ACSUtils into `modules\acsutils\dist`.  
-2. Run `build-project.py`. This compiles all files.
+1. Run `pack-acsutils.py`. This prepares ACSUtils into `modules\acsutils\dist`.
+2. Run `pack-maps.py`. This packs all the maps into their respective folder in a `.wad` file.
+3. Run `build-project.py`. This compiles all files.
 
-For both options, subsequent builds do not need another call of `pack-acsutils.py`.
+For both options, subsequent builds do not need another call of `pack-acsutils.py` or `pack-maps.py` unless you changed something in ACSUtils or one of the maps.
 
 ---
 
