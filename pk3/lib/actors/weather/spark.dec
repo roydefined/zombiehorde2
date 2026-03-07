@@ -1,0 +1,53 @@
+actor ZH2WeatherSparkParticle
+{
+	Height 2
+	Radius 2
+	Renderstyle Add
+	Alpha 0
+	
+	+MISSILE
+	+CLIENTSIDEONLY
+	+NOTIMEFREEZE
+	+NOBLOCKMAP
+	+DONTSPLASH
+	+NOGRAVITY
+	+FORCEXYBILLBOARD
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_ChangeVelocity(Frandom(-0.1, 0.1), Frandom(-0.1, 0.1), Frandom(-0.1, 0.1), CVF_REPLACE)
+			TNT1 A 0 A_JumpIf(WaterLevel > 0, "Death.Silent")
+			
+			// Jump to different scale ratios so we don't have stretched sprites.
+			TNT1 A 0 A_Jump(192, 2, 3, 4)
+			TNT1 A 0 A_SetScale(0.1, 0.1)
+			goto Spawn.FadeIn
+			TNT1 A 0 A_SetScale(0.05, 0.05)
+			goto Spawn.FadeIn
+			TNT1 A 0 A_SetScale(0.01, 0.01)
+			goto Spawn.FadeIn
+			TNT1 A 0 A_SetScale(0.005, 0.005)
+			
+		Spawn.FadeIn:
+			WSPK AAAA 1 A_FadeIn(.1)
+			TNT1 A 0 A_Jump(50, "Spawn.Rest")
+			WSPK AA 1 A_FadeIn(.05)
+			TNT1 A 0 A_Jump(50, "Spawn.Rest")
+			WSPK AA 1 A_FadeIn(.05)
+			TNT1 A 0 A_Jump(50, "Spawn.Rest")
+			WSPK AA 1 A_FadeIn(.05)
+		Spawn.Rest:
+			WSPK AAAAAAAAAAAAA 5 A_JumpIf(WaterLevel > 0, "Death.Silent")
+		
+		// Remove the actor manually after a while.
+		Spawn.FadeOut:
+			WSPK A 1 A_JumpIf(WaterLevel > 0,"Death.Silent")
+			TNT1 A 0 A_FadeOut(.02)
+			loop
+		
+		Death.Silent:
+			TNT1 A 0
+			stop
+	}
+}
