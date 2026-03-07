@@ -4,20 +4,38 @@
 
 strict namespace Event
 {
-    // TODO: Make this a genuine event.
-    script "zh2_internal_damage_receiveclient"(raw tid, raw damage, raw isKill) clientside
+    script "zh2_internal_event_actordamaged"(raw packetStr) clientside
     {
-        Damage::AddTotalDamage(tid, damage, isKill);
-        DamageFeedback::SetTidDamaged(tid, damage, isKill);
+        str packet = (str)packetStr;
+        Event::ReceiveActorDamaged(packet);
+
+        int id = Event::GetReceiveData(0);
+
+        // Only handle damage from ourselves.
+        if (id != ConsolePlayerNumber())
+            terminate;
+
+        int tid = Event::GetReceiveData(1);
+        int damage = Event::GetReceiveData(2);
+        bool targetDied = Event::GetReceiveData(3);
+
+        Damage::AddTotalDamage(tid, damage, targetDied);
+        DamageFeedback::SetTidDamaged(tid, damage, targetDied);
     }
 
-    // TODO: Make this a genuine event.
-    script "zh2_internal_damagetotal_receiveclient"(raw tid, raw damage, raw isKill) clientside
+    script "zh2_internal_event_actordamaged_clienttotal"(raw packetStr) clientside
     {
+        str packet = (str)packetStr;
+        Event::ReceiveActorDamagedClientTotal(packet);
+
+        int tid = Event::GetReceiveData(0);
+        int damage = Event::GetReceiveData(1);
+        bool targetDied = Event::GetReceiveData(2);
+
         // Play a sound if enabled.
         if (ZH2Game::GetClEnableDamageFeedbackSounds())
         {
-            str sound = isKill ? "world/damagekill" : "world/damagehit";
+            str sound = targetDied ? "world/damagekill" : "world/damagehit";
             AmbientSound(sound, 127);
         }
 

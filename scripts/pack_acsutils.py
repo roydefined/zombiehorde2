@@ -2,7 +2,8 @@
 import logging
 import os
 from pathlib import Path
-from utils import setup_logging, get_paths, copy_file, run_cmd
+from logger import setup_logging
+from utils import get_paths, copy_file, run_cmd
 
 # === ACSUtils packing script ===
 # This script prepares ACSUtils by copying files and running preprocessing steps.
@@ -33,14 +34,14 @@ def main():
     os.chdir(acsutils_dir)
 
     # Run preprocess.py
-    logging.info("[preprocess]")
+    logging.info("Running preprocess.py")
     run_cmd(["py", "tools/preprocess.py"])
 
     # Run changeflaggen.py
-    logging.info("[changeflaggen]")
+    logging.info("Running changeflaggen.py")
     run_cmd(["py", "tools/changeflaggen.py"])
 
-    logging.info("SUCCESS")
+    logging.info("Finished packing ACSUtils.")
 
 
 if __name__ == "__main__":

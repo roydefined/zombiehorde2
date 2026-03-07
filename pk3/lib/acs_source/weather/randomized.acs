@@ -1,0 +1,48 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Weather
+{
+    internal void TicRandomizedWeather(int sourceTid)
+    {
+        for (int i = 0; i < RANDOMIZEDWEATHER_COUNT; ++i)
+        {
+            if (!GetTransientRandomizedWeatherEnabled(i))
+                continue;
+
+            // Don't spawn this tic.
+            if (GetTransientRandomizedWeatherNextSpawnTic(i) > Timer())
+                continue;
+
+            Event::SendRandomizedWeatherTrigger(i);
+
+            // Schedule the next trigger using a randomized delay window.
+            int minDelay = GetTransientRandomizedWeatherMinDelay(i);
+            int maxDelay = GetTransientRandomizedWeatherMaxDelay(i);
+
+            int nextDelay = Random(minDelay, maxDelay);
+            SetTransientRandomizedWeatherNextSpawnTic(i, Timer() + nextDelay);
+        }
+    }
+
+    // Transient context
+    internal bool GetTransientRandomizedWeatherEnabled(int index) { return ZH2Lib::LibContext.WeatherContext.RandomizedWeatherCollection[index].Enabled; }
+    internal void SetTransientRandomizedWeatherEnabled(int index, bool value) { ZH2Lib::LibContext.WeatherContext.RandomizedWeatherCollection[index].Enabled = value; }
+    internal int GetTransientRandomizedWeatherMinDelay(int index) { return ZH2Lib::LibContext.WeatherContext.RandomizedWeatherCollection[index].MinDelay; }
+    internal void SetTransientRandomizedWeatherMinDelay(int index, int value) { ZH2Lib::LibContext.WeatherContext.RandomizedWeatherCollection[index].MinDelay = value; }
+    internal int GetTransientRandomizedWeatherMaxDelay(int index) { return ZH2Lib::LibContext.WeatherContext.RandomizedWeatherCollection[index].MaxDelay; }
+    internal void SetTransientRandomizedWeatherMaxDelay(int index, int value) { ZH2Lib::LibContext.WeatherContext.RandomizedWeatherCollection[index].MaxDelay = value; }
+    internal int GetTransientRandomizedWeatherNextSpawnTic(int index) { return ZH2Lib::LibContext.WeatherContext.RandomizedWeatherCollection[index].NextSpawnTic; }
+    internal void SetTransientRandomizedWeatherNextSpawnTic(int index, int value) { ZH2Lib::LibContext.WeatherContext.RandomizedWeatherCollection[index].NextSpawnTic = value; }
+
+    // Persisting context
+    internal bool GetPersistingRandomizedWeatherEnabled(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.RandomizedWeatherCollection[index].Enabled; }
+    internal void SetPersistingRandomizedWeatherEnabled(int index, bool value) { ZH2Lib::PersistingLibContext.WeatherContext.RandomizedWeatherCollection[index].Enabled = value; }
+    internal int GetPersistingRandomizedWeatherMinDelay(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.RandomizedWeatherCollection[index].MinDelay; }
+    internal void SetPersistingRandomizedWeatherMinDelay(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.RandomizedWeatherCollection[index].MinDelay = value; }
+    internal int GetPersistingRandomizedWeatherMaxDelay(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.RandomizedWeatherCollection[index].MaxDelay; }
+    internal void SetPersistingRandomizedWeatherMaxDelay(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.RandomizedWeatherCollection[index].MaxDelay = value; }
+    internal int GetPersistingRandomizedWeatherNextSpawnTic(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.RandomizedWeatherCollection[index].NextSpawnTic; }
+    internal void SetPersistingRandomizedWeatherNextSpawnTic(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.RandomizedWeatherCollection[index].NextSpawnTic = value; }
+}

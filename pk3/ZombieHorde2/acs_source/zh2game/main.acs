@@ -2,9 +2,6 @@
     #error This file must be #included.
 #endif
 
-// Note, included from zh2lib.
-#include "validation.acs"
-
 #include "debug/debug.acs"
 #include "game/game.acs"
 #include "sync/sync.acs"
@@ -36,7 +33,9 @@
 #include "scriptevents.acs"
 #include "cvars.acs"
 #include "binds.acs"
-#include "wait.acs"
+
+#define SCRIPT_ENTER_RESPAWN_NAME "zh2_internal_enter_respawn"
+#define SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME "zh2_internal_enter_respawn_clientside"
 
 strict namespace ZH2Game
 {
@@ -83,33 +82,21 @@ strict namespace ZH2Game
             terminate;
         }*/
 
-        str awaiter = GetServersideAwaiter();
-        Logger::LogDebug(LOGSOURCE, "Start awaiter \"" + awaiter + "\".");
-
-        if (!ACS_NamedExecute(awaiter, 0))
-        {
-            Logger::LogError(LOGSOURCE, "Awaiter " + awaiter + " could not be started. Script failed to execute.");
-            terminate;
-        }
-
         // Note, these two parses should work concurrently and both rent a tokenizer for this.
         // Parse persisting data here.
         Logger::LogDebug(LOGSOURCE, "Start parsing persisting data (server).");
+        LibIO::ParseWeatherDefServerside();
         LibIO::ParseLoggerDefServerside();
         IO::ParseModDefLumpsServerside();
         IO::ParseMapDefLumps();
 
-        // Wait for the persisting data to be parsed.
-        WAIT_FOR_SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_SERVERSIDE();
-        WAIT_FOR_SCRIPT_PARSE_PERSISTING_MOD_DEFS_SERVERSIDE();
-        WAIT_FOR_SCRIPT_PARSE_PERSISTING_MAP_POSITION_DEFS();
+        // Initialize library
+        // Weather must initialize before we parse the map.
+        Weather::InitializeServer();
 
         // Parse non-persisting data now.
         Logger::LogDebug(LOGSOURCE, "Start parsing non-persisting data (server).");
         IO::ParseCurrentMapLump();
-
-        // Wait for the non-persisting data to be parsed.
-        WAIT_FOR_SCRIPT_PARSE_CURRENT_MAP_DEFS();
 
         // Now the loop starts because we have loaded everything.
         GameLoop::StartServerLoop();
@@ -166,7 +153,7 @@ strict namespace ZH2Game
                 RoundTimer::StartTimer(index);
             }
 
-            // Is not, we go to the state before the countdown and the map will have to start manually.
+            // If not, we go to the state before the countdown and the map will have to start manually.
             else
             {
                 Round::SetKnownRoundState(Round::STATESTARTING);
@@ -184,6 +171,8 @@ strict namespace ZH2Game
         // Resync admin list
         Sync::SyncAdmins();
 
+        LibSync::SyncWeather();
+
         // After a moment, sync all players and allow them to sync themselves on enter.
         Delay(const: 5);
 
@@ -198,13 +187,6 @@ strict namespace ZH2Game
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_open_client\"");
 
-        str awaiter = GetClientsideAwaiter();
-        if (!ACS_NamedExecute(awaiter, 0))
-        {
-            Logger::LogError(LOGSOURCE, "Awaiter " + awaiter + " could not be started. Script failed to execute.");
-            terminate;
-        }
-
         Logger::LogDebug(LOGSOURCE, "Start parsing persisting data (client).");
 
         // Parse other persisting data here.
@@ -218,21 +200,10 @@ strict namespace ZH2Game
 
         // Wait for the persisting data to be parsed.
         Logger::LogDebug(LOGSOURCE, "Start parsing non-persisting data (client).");
-        WAIT_FOR_SCRIPT_PARSE_PERSISTING_FOOTSTEP_DEFS();
-        WAIT_FOR_SCRIPT_PARSE_PERSISTING_MOD_DEFS_CLIENTSIDE();
-        if (IsNetworkGame())
-        {
-            WAIT_FOR_SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_CLIENTSIDE();
-            WAIT_FOR_SCRIPT_PARSE_PERSISTING_MAP_POSITION_DEFS();
-        }
 
         // Parse non-persisting data now.
         if (IsNetworkGame())
             IO::ParseCurrentMapLump();
-
-        // Wait for the non-persisting data to be parsed.
-        if (IsNetworkGame())
-            WAIT_FOR_SCRIPT_PARSE_CURRENT_MAP_DEFS();
 
         // We now iterate the resulting list of items, splitting them into three separate collections which makes iterating them much easier.
         // TODO: This should be exported to its own function. Or perhaps be removed altogether.
@@ -282,7 +253,8 @@ strict namespace ZH2Game
         GameLoop::StartClientPlayerLoopActivator();
 
         // Fully sync up the client.
-        Sync::SynAllClientside();
+        Sync::SyncAllClientside();
+        LibSync::SyncAllClientside();
 
         Settings::UpdateCurrentClientSettings();
 
@@ -323,7 +295,7 @@ strict namespace ZH2Game
 
         // Everything below requires the client to be the activator.
         // TODO: Improve so this is not required.
-        if (!SetActivatorToPlayer(ConsolePlayerNumber()))
+        if (!BCSUtils::SetActivatorToConsolePlayer())
             terminate;
 
         Settings::BroadcastClientConsolidateSettings(false);
@@ -421,6 +393,7 @@ strict namespace ZH2Game
 
         // Skip this script if the player is not playing (state is likely dead already).
         // This will always happen when setting a player as a dead spectator.
+        // TODO: No longer required with `GAMEEVENT_PLAYERJOINS`
         if (Player::GetPlayerState(killedId) != Player::STATEPLAYING)
             terminate;
 
@@ -483,8 +456,6 @@ strict namespace ZH2Game
     script SCRIPT_ENTER_RESPAWN_NAME
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"" + SCRIPT_ENTER_RESPAWN_NAME + "\"");
-        WAIT_FOR_SCRIPT_OPEN_SERVER();
-        Logger::LogDebug(LOGSOURCE, "Call script \"" + SCRIPT_ENTER_RESPAWN_NAME + "\" after awaiter");
 
         Identity::InitializeActivator();
 
@@ -590,10 +561,9 @@ strict namespace ZH2Game
     script SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME clientside
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"" + SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME + "\"");
-        WAIT_FOR_SCRIPT_OPEN_CLIENT();
-        Logger::LogDebug(LOGSOURCE, "Call script \"" + SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME + "\" after awaiter");
 
         // Same as on the serverside, check if we can join the game at all or if we are capped/restricted.
+        // TODO: No longer required with `GAMEEVENT_PLAYERJOINS`
         if (!GetPlayerIsWithinPlayerCap(PlayerNumber()) || !GetPlayerCanJoin(PlayerNumber()))
             terminate;
 

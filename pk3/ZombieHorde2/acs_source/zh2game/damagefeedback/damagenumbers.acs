@@ -35,7 +35,7 @@ strict namespace DamageFeedback
     {
         for (int i = 0; i < MAX_DAMAGE_NUMBERS; ++i)
         {
-            DamageFeedbackNumberInfoT& numberInfo = GetDamageNumberInfo(i);
+            DamageFeedbackNumberInfoT module& numberInfo = GetDamageNumberInfo(i);
             if (!numberInfo.Set)
                 continue;
 
@@ -78,7 +78,7 @@ strict namespace DamageFeedback
             }
         }
 
-        SetActivatorToPlayer(ConsolePlayerNumber());
+        BCSUtils::SetActivatorToConsolePlayer();
     }
 
     internal void AddIndividualDamageNumberOnActor(int tid, int damage)
@@ -177,7 +177,7 @@ strict namespace DamageFeedback
         index %= MAX_DAMAGE_NUMBERS;
         SetDamageNumberIndex(index);
 
-        DamageFeedbackNumberInfoT& numberInfo = GetDamageNumberInfo(index);
+        DamageFeedbackNumberInfoT module& numberInfo = GetDamageNumberInfo(index);
 
         // Remove an existing damage number from this slot to overwrite.
         if (numberInfo.Set)
@@ -190,7 +190,7 @@ strict namespace DamageFeedback
         numberInfo.Ratio = ratio;
     }
 
-    internal void RemoveDigit(DamageFeedbackNumberInfoT& numberInfo)
+    internal void RemoveDigit(DamageFeedbackNumberInfoT module& numberInfo)
     {
         Thing_Remove(numberInfo.Tid);
         for (int i = 0; i < numberInfo.NumberCount; ++i)
@@ -208,7 +208,7 @@ strict namespace DamageFeedback
         return ZH2Game::GameContext.DamageFeedbackInfo.DamageNumberIndex;
     }
 
-    internal DamageFeedbackNumberInfoT& GetDamageNumberInfo(int index)
+    internal DamageFeedbackNumberInfoT module& GetDamageNumberInfo(int index)
     {
         return ZH2Game::GameContext.DamageFeedbackInfo.DamageNumbers[index];
     }

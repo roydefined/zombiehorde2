@@ -41,15 +41,6 @@ def mod_path_to_map_path(path: Path) -> Path:
     return path.with_name(mod_to_map_folder(path.name))
 
 
-# Helper function that sets up the logger used for logging script output.
-def setup_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(message)s",
-        datefmt="%H:%M:%S"
-    )
-
-
 # Helper function that returns the root of the project.
 def get_root() -> Path:
     return Path(__file__).resolve().parent.parent

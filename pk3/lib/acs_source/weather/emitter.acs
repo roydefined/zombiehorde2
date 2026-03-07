@@ -1,0 +1,130 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Weather
+{
+    internal void TicEmitterWeather(int sourceTid)
+    {
+        for (int i = 0; i < EMITTERWEATHER_COUNT; ++i)
+        {
+            // I can't use a ref here because the data is missing. Compiler bug.
+            //EmitterWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[i];
+
+            if (!GetTransientEmitterWeatherEnabled(i))
+                continue;
+
+            // Don't spawn this tic.
+            if (GetTransientEmitterWeatherNextSpawnTic(i) > Timer())
+                continue;
+
+            str class = GetTransientEmitterWeatherActorByIndex(i);
+
+            for (int j = 0; j < GetTransientEmitterWeatherSpawnCount(i); ++j)
+                SpawnParticle(sourceTid, class, i);
+
+            SetTransientEmitterWeatherNextSpawnTic(i, Timer() + GetTransientEmitterWeatherSpawnDelay(i));
+        }
+    }
+
+    internal void SpawnParticle(int sourceTid, str class, int index)
+    {
+        fixed angle = fixed(random(0, 1000)) / 1000.0,
+              radius = fixed(random(GetTransientEmitterWeatherMinRadius(index), GetTransientEmitterWeatherMaxRadius(index)));
+
+        fixed sourceZ = GetActorZ(sourceTid) + GetActorViewHeight(sourceTid);
+
+        // Determine the position to spawn the weather particle at
+        fixed spotX = GetActorX(sourceTid) + cos(angle) * radius,
+              spotY = GetActorY(sourceTid) + sin(angle) * radius,
+              spotZ = sourceZ + fixed(random(GetTransientEmitterWeatherMinZpos(index), GetTransientEmitterWeatherMaxZpos(index)));
+
+        // Determine the z-height of the ceiling.
+        fixed ceilingZ = GetSectorCeilingZ(0, int(spotX), int(spotY)) - 2.0;
+
+        // If the ceiling is closer use the ceiling's z positioning instead to prevent it from not spawning.
+        if (spotZ > ceilingZ)
+            spotZ = ceilingZ;
+
+        int spotId = UniqueTID();
+
+        EmitterWeatherSkyBehaviorT skyBehavior = GetTransientEmitterWeatherSkyBehavior(index);
+
+        // The weather has specific behavior when it comes to spawning with a ceiling.
+        if (skyBehavior != Weather::EMITTERWEATHER_SKYBEHAVIOUR_NONE)
+        {
+            if (!Spawn("MapSpot", spotX, spotY, sourceZ, spotId, 0))
+                return;
+
+            bool hasSkyCeiling = CheckActorCeilingTexture(spotId, "F_SKY1");
+            Thing_Remove(spotId);
+
+            // Further depending on the enum, check if we need a sky ceiling or not.
+            if (skyBehavior == Weather::EMITTERWEATHER_SKYBEHAVIOUR_REQUIRESKY && !hasSkyCeiling
+                || skyBehavior == Weather::EMITTERWEATHER_SKYBEHAVIOUR_REQUIRENOSKY && hasSkyCeiling)
+                return;
+        }
+
+        SpawnForced(class, spotX, spotY, spotZ, 0, 0);
+    }
+
+    // Transient context
+    internal bool GetTransientEmitterWeatherEnabled(int index) { return ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].Enabled; }
+    internal void SetTransientEmitterWeatherEnabled(int index, bool value) { ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].Enabled = value; }
+    internal EmitterWeatherSkyBehaviorT GetTransientEmitterWeatherSkyBehavior(int index) { return ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].SkyBehavior; }
+    internal void SetTransientEmitterWeatherSkyBehavior(int index, EmitterWeatherSkyBehaviorT value) { ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].SkyBehavior = value; }
+    internal int GetTransientEmitterWeatherSpawnCount(int index) { return ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].SpawnCount; }
+    internal void SetTransientEmitterWeatherSpawnCount(int index, int value) { ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].SpawnCount = value; }
+    internal int GetTransientEmitterWeatherSpawnDelay(int index) { return ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].SpawnDelay; }
+    internal void SetTransientEmitterWeatherSpawnDelay(int index, int value) { ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].SpawnDelay = value; }
+    internal int GetTransientEmitterWeatherMinRadius(int index) { return ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].MinRadius; }
+    internal void SetTransientEmitterWeatherMinRadius(int index, int value) { ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].MinRadius = value; }
+    internal int GetTransientEmitterWeatherMaxRadius(int index) { return ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].MaxRadius; }
+    internal void SetTransientEmitterWeatherMaxRadius(int index, int value) { ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].MaxRadius = value; }
+    internal int GetTransientEmitterWeatherMinZpos(int index) { return ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].MinZpos; }
+    internal void SetTransientEmitterWeatherMinZpos(int index, int value) { ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].MinZpos = value; }
+    internal int GetTransientEmitterWeatherMaxZpos(int index) { return ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].MaxZpos; }
+    internal void SetTransientEmitterWeatherMaxZpos(int index, int value) { ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].MaxZpos = value; }
+    internal int GetTransientEmitterWeatherNextSpawnTic(int index) { return ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].NextSpawnTic; }
+    internal void SetTransientEmitterWeatherNextSpawnTic(int index, int value) { ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[index].NextSpawnTic = value; }
+
+    // Persisting context
+    internal bool GetPersistingEmitterWeatherEnabled(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].Enabled; }
+    internal void SetPersistingEmitterWeatherEnabled(int index, bool value) { ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].Enabled = value; }
+    internal EmitterWeatherSkyBehaviorT GetPersistingEmitterWeatherSkyBehavior(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].SkyBehavior; }
+    internal void SetPersistingEmitterWeatherSkyBehavior(int index, EmitterWeatherSkyBehaviorT value) { ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].SkyBehavior = value; }
+    internal int GetPersistingEmitterWeatherSpawnCount(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].SpawnCount; }
+    internal void SetPersistingEmitterWeatherSpawnCount(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].SpawnCount = value; }
+    internal int GetPersistingEmitterWeatherSpawnDelay(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].SpawnDelay; }
+    internal void SetPersistingEmitterWeatherSpawnDelay(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].SpawnDelay = value; }
+    internal int GetPersistingEmitterWeatherMinRadius(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].MinRadius; }
+    internal void SetPersistingEmitterWeatherMinRadius(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].MinRadius = value; }
+    internal int GetPersistingEmitterWeatherMaxRadius(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].MaxRadius; }
+    internal void SetPersistingEmitterWeatherMaxRadius(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].MaxRadius = value; }
+    internal int GetPersistingEmitterWeatherMinZpos(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].MinZpos; }
+    internal void SetPersistingEmitterWeatherMinZpos(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].MinZpos = value; }
+    internal int GetPersistingEmitterWeatherMaxZpos(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].MaxZpos; }
+    internal void SetPersistingEmitterWeatherMaxZpos(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].MaxZpos = value; }
+    internal int GetPersistingEmitterWeatherNextSpawnTic(int index) { return ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].NextSpawnTic; }
+    internal void SetPersistingEmitterWeatherNextSpawnTic(int index, int value) { ZH2Lib::PersistingLibContext.WeatherContext.EmitterWeatherCollection[index].NextSpawnTic = value; }
+
+    internal str GetTransientEmitterWeatherActorByIndex(int index)
+    {
+        static str actors[] = { "DebugDrop", "DebugDropSky", "DebugDropNoSky", "ZH2WeatherRainDrop", "ZH2WeatherSnowDrop", "ZH2WeatherDustParticle", "ZH2WeatherSparkParticle" };
+
+        if (index < 0 || index >= lengthof(actors))
+            return (raw)0;
+
+        return actors[index];
+    }
+
+    internal EmitterWeatherSkyBehaviorT GetTransientEmitterWeatherSkyBehaviorByIndex(int index)
+    {
+        static EmitterWeatherSkyBehaviorT actors[] = { EMITTERWEATHER_SKYBEHAVIOUR_NONE, EMITTERWEATHER_SKYBEHAVIOUR_REQUIRESKY, EMITTERWEATHER_SKYBEHAVIOUR_REQUIRENOSKY, };
+
+        if (index < 0 || index >= lengthof(actors))
+            return EMITTERWEATHER_SKYBEHAVIOUR_UNKNOWN;
+
+        return actors[index];
+    }
+}

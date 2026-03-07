@@ -1,0 +1,208 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace LibSync
+{
+    #define SYNC_CATEGORY "WEATHER"
+
+    internal void SyncWeatherActor()
+    {
+        int syncId = SYNC_WEATHER;
+
+        syncId = SyncWriteTransientWeatherStates(syncId);
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing weather packs through actors."));
+        VERIFY_SYNCID(syncId, SYNC_WEATHER, SYNC_WEATHER_LENGTH);
+    }
+
+    internal void CallSyncWeatherActorOnClients()
+    {
+        if (!ACS_NamedExecuteAlways("zh2_internal_sync_weather_actor_clientside", 0))
+            Logger::LogError(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for weather."));
+    }
+
+    script "zh2_internal_sync_weather_actor_clientside" clientside
+    {
+        SyncWeatherActorClientside();
+    }
+
+    internal void SyncWeatherActorClientside()
+    {
+        int syncId = SYNC_WEATHER;
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading weather packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        syncId = SyncReadTransientWeatherStates(syncId);
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Synced weather to client."));
+        VERIFY_SYNCID(syncId, SYNC_WEATHER, SYNC_WEATHER_LENGTH);
+    }
+
+    internal int SyncWriteTransientWeatherStates(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing transient weather states. Sync id: " + str(syncId) + ". Length: " + str(EMITTERWEATHER_COUNT) + "."));
+
+        for (int i = 0; i < EMITTERWEATHER_COUNT; ++i)
+        {
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherEnabled(i));
+
+            // Because sky behavior includes an "unknown" state we must decrement once to get the true index to map on the client.
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherSkyBehavior(i) - 1);
+
+
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherSpawnCount(i));
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherSpawnDelay(i));
+
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherMinRadius(i));
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherMaxRadius(i));
+
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherMinZpos(i));
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientEmitterWeatherMaxZpos(i));
+
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "EmitterWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(Weather::GetTransientEmitterWeatherEnabled(i)) +
+                    "\cj. SkyBehavior: \cd" + str(Weather::GetTransientEmitterWeatherSkyBehavior(i)) +
+                    "\cj. SpawnCount: \cd" + str(Weather::GetTransientEmitterWeatherSpawnCount(i)) +
+                    "\cj. SpawnDelay: \cd" + str(Weather::GetTransientEmitterWeatherSpawnDelay(i)) +
+                    "\cj. Radius: \cd" + str(Weather::GetTransientEmitterWeatherMinRadius(i)) + "\cj-\cd" + str(Weather::GetTransientEmitterWeatherMaxRadius(i)) +
+                    "\cj. Z: \cd" + str(Weather::GetTransientEmitterWeatherMinZpos(i)) + "\cj-\cd" + str(Weather::GetTransientEmitterWeatherMaxZpos(i)) + "\cj."));
+        }
+
+        for (int i = 0; i < RANDOMIZEDWEATHER_COUNT; ++i)
+        {
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientRandomizedWeatherEnabled(i));
+
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientRandomizedWeatherMinDelay(i));
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientRandomizedWeatherMaxDelay(i));
+
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "RandomizedWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(Weather::GetTransientRandomizedWeatherEnabled(i)) +
+                    "\cj. delay: \cd" + str(Weather::GetTransientRandomizedWeatherMinDelay(i)) + "\cj-\cd" + str(Weather::GetTransientRandomizedWeatherMaxDelay(i)) + "\cj."));
+        }
+
+        for (int i = 0; i < AMBIENTWEATHER_COUNT; ++i)
+        {
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientAmbientWeatherEnabled(i));
+
+            // TODO: Use some sort of string formatting function.
+            str sound = Weather::GetTransientAmbientWeatherSound(i);
+            SetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_AMBIENTWEATHER_SOUND_TEMPLATE, "%n", str(i)), sound);
+
+            str shelteredSound = Weather::GetTransientAmbientWeatherShelteredSound(i);
+            SetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_AMBIENTWEATHER_SHELTEREDSOUND_TEMPLATE, "%n", str(i)), shelteredSound);
+
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientAmbientWeatherRadius(i));
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientAmbientWeatherShelteredRadius(i));
+
+            BCSUtils::SyncVariable(--syncId, Weather::GetTransientAmbientWeatherDelay(i));
+
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "AmbientWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(Weather::GetTransientAmbientWeatherEnabled(i)) +
+                    "\cj. Sound: \cd" + str(Weather::GetTransientAmbientWeatherSound(i)) +
+                    "\cj. ShelteredSound: \cd" + str(Weather::GetTransientAmbientWeatherShelteredSound(i)) +
+                    "\cj. Radius: \cd" + str(Weather::GetTransientAmbientWeatherRadius(i)) +
+                    "\cj. ShelteredRadius: \cd" + str(Weather::GetTransientAmbientWeatherShelteredRadius(i)) +
+                    "\cj. Delay: \cd" + str(Weather::GetTransientAmbientWeatherDelay(i)) + "\cj."));
+        }
+
+        return syncId;
+    }
+
+    internal int SyncReadTransientWeatherStates(int syncId)
+    {
+        for (int i = 0; i < EMITTERWEATHER_COUNT; ++i)
+        {
+            bool enabled = BCSUtils::GetSyncVarDefault(--syncId, 0) != 0;
+            Weather::EmitterWeatherSkyBehaviorT skyBehavior = Weather::GetTransientEmitterWeatherSkyBehaviorByIndex(BCSUtils::GetSyncVarDefault(--syncId, 0));
+
+            int spawnCount = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            int spawnDelay = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+            int minRadius = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            int maxRadius = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+            int minZ = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            int maxZ = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+            Weather::SetTransientEmitterWeatherEnabled(i, enabled);
+            Weather::SetTransientEmitterWeatherSkyBehavior(i, skyBehavior);
+
+            Weather::SetTransientEmitterWeatherSpawnCount(i, spawnCount);
+            Weather::SetTransientEmitterWeatherSpawnDelay(i, spawnDelay);
+
+            Weather::SetTransientEmitterWeatherMinRadius(i, minRadius);
+            Weather::SetTransientEmitterWeatherMaxRadius(i, maxRadius);
+
+            Weather::SetTransientEmitterWeatherMinZpos(i, minZ);
+            Weather::SetTransientEmitterWeatherMaxZpos(i, maxZ);
+
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "EmitterWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(enabled) +
+                    "\cj. SkyBehavior: \cd" + str(int(skyBehavior)) +
+                    "\cj. SpawnCount: \cd" + str(spawnCount) +
+                    "\cj. SpawnDelay: \cd" + str(spawnDelay) +
+                    "\cj. Radius: \cd" + str(minRadius) + "\cj-\cd" + str(maxRadius) +
+                    "\cj. Z: \cd" + str(minZ) + "\cj-\cd" + str(maxZ) + "\cj."));
+        }
+
+        for (int i = 0; i < RANDOMIZEDWEATHER_COUNT; ++i)
+        {
+            bool enabled = BCSUtils::GetSyncVarDefault(--syncId, 0) != 0;
+
+            int minDelay = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            int maxDelay = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+            Weather::SetTransientRandomizedWeatherEnabled(i, enabled);
+
+            Weather::SetTransientRandomizedWeatherMinDelay(i, minDelay);
+            Weather::SetTransientRandomizedWeatherMaxDelay(i, maxDelay);
+
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "RandomizedWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(enabled) +
+                    "\cj. Delay: \cd" + str(minDelay) + "\cj-\cd" + str(maxDelay) + "\cj."));
+        }
+
+        for (int i = 0; i < AMBIENTWEATHER_COUNT; ++i)
+        {
+            bool enabled = BCSUtils::GetSyncVarDefault(--syncId, 0) != 0;
+
+            // TODO: Use some sort of string formatting function.
+            str sound = GetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_AMBIENTWEATHER_SOUND_TEMPLATE, "%n", str(i)));
+            str shelteredSound = GetCVarString(BCSUTILS::StrReplace(ACTOR_SYNC_AMBIENTWEATHER_SHELTEREDSOUND_TEMPLATE, "%n", str(i)));
+
+            int radius = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            int shelteredRadius = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+            int delay = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+            Weather::SetTransientAmbientWeatherEnabled(i, enabled);
+
+            Weather::SetTransientAmbientWeatherSound(i, sound);
+            Weather::SetTransientAmbientWeatherShelteredSound(i, shelteredSound);
+
+            Weather::SetTransientAmbientWeatherRadius(i, radius);
+            Weather::SetTransientAmbientWeatherShelteredRadius(i, shelteredRadius);
+
+            Weather::SetTransientAmbientWeatherDelay(i, delay);
+
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "AmbientWeather \cd" + str(i) + "\cj. Enabled: \cd" + str(enabled) +
+                    "\cj. Sound: \cd" + sound +
+                    "\cj. ShelteredSound: \cd" + shelteredSound +
+                    "\cj. Radius: \cd" + str(radius) +
+                    "\cj. ShelteredRadius: \cd" + str(shelteredRadius) +
+                    "\cj. Delay: \cd" + str(delay) + "\cj."));
+        }
+
+        return syncId;
+    }
+
+    #undef SYNC_CATEGORY
+}

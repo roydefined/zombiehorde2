@@ -27,22 +27,22 @@ strict namespace LibDec
         // We require a valid TID of the source for tracers to work.
         if (shooterTid == 0) terminate;
 
-        str packet = Packet::Packet_New();
+        str packet = Packet::New();
 
         // Puff
-        packet = Packet::Packet_Append(packet, GetActorX(0), Packet::PACKET_WORD);
-        packet = Packet::Packet_Append(packet, GetActorY(0), Packet::PACKET_WORD);
-        packet = Packet::Packet_Append(packet, GetActorZ(0), Packet::PACKET_WORD);
+        packet = Packet::Append(packet, GetActorX(0));
+        packet = Packet::Append(packet, GetActorY(0));
+        packet = Packet::Append(packet, GetActorZ(0));
 
         // Shooter
-        packet = Packet::Packet_Append(packet, shooterTid, Packet::PACKET_BYTE);
-        packet = Packet::Packet_Append(packet, GetActorX(shooterTid), Packet::PACKET_WORD);
-        packet = Packet::Packet_Append(packet, GetActorY(shooterTid), Packet::PACKET_WORD);
-        packet = Packet::Packet_Append(packet, GetActorZ(shooterTid), Packet::PACKET_WORD);
-        packet = Packet::Packet_Append(packet, GetActorAngle(shooterTid), Packet::PACKET_WORD);
-        packet = Packet::Packet_Append(packet, GetActorViewHeight(shooterTid), Packet::PACKET_SHORT);
+        packet = Packet::Append(packet, shooterTid);
+        packet = Packet::Append(packet, GetActorX(shooterTid));
+        packet = Packet::Append(packet, GetActorY(shooterTid));
+        packet = Packet::Append(packet, GetActorZ(shooterTid));
+        packet = Packet::Append(packet, GetActorAngle(shooterTid));
+        packet = Packet::Append(packet, GetActorViewHeight(shooterTid));
 
-        if(!NamedSendNetworkString("zh2_internal_dec_tracer_spawn_client", packet))
+        if(!Packet::Send("zh2_internal_dec_tracer_spawn_client", packet))
             Logger::LogError(LOGSOURCE, "Failed to invoke zh2_dec_tracer_spawn_client. Message packet: '" + packet + "'.");
     }
 
@@ -51,7 +51,7 @@ strict namespace LibDec
         if (PlayerIsBot(ConsolePlayerNumber())) terminate;
 
         // Note, fixes the cvars which do not work otherwise.
-        if (!SetActivatorToPlayer(ConsolePlayerNumber())) terminate;
+        if (!BCSUtils::SetActivatorToConsolePlayer()) terminate;
 
         // 0 - Nobody.
         // 1 - Only locally.
@@ -60,18 +60,18 @@ strict namespace LibDec
         if (tracerType == 0) terminate;
 
         // Puff
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
-        fixed puffX = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        fixed puffX = Packet::Value;
 
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
-        fixed puffY = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        fixed puffY = Packet::Value;
 
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
-        fixed puffZ = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        fixed puffZ = Packet::Value;
 
         // Shooter
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_BYTE);
-        int shooterTid = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        int shooterTid = Packet::Value;
 
         // Attempt to grab a player ID if the shooter was a player.
         int shooterId = Identity::IsValidTID(shooterTid)
@@ -81,20 +81,20 @@ strict namespace LibDec
         // Now check if we were the source.
         if (tracerType == 0 && shooterId != ConsolePlayerNumber()) terminate;
 
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
-        fixed shooterX = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        fixed shooterX = Packet::Value;
 
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
-        fixed shooterY = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        fixed shooterY = Packet::Value;
 
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
-        fixed shooterZ = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        fixed shooterZ = Packet::Value;
 
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_WORD);
-        fixed shooterAngle = Packet::Packet_Rval - 0.25;
+        messagePack = Packet::Read(messagePack);
+        fixed shooterAngle = Packet::Value - 0.25;
 
-        messagePack = Packet::Packet_Read(messagePack, Packet::PACKET_SHORT);
-        fixed shooterViewHeight = Packet::Packet_Rval;
+        messagePack = Packet::Read(messagePack);
+        fixed shooterViewHeight = Packet::Value;
 
         // Adjust based on actor's angle and view height.
         // If the shooting player matches the console player, then we locally apply configured tracer offsets for angled weapons.
