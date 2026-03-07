@@ -30,6 +30,9 @@
 #define KEYTEXTDISPLAYX KEYICONDISPLAYX + 12.1
 #define KEYTEXTDISPLAYY KEYICONDISPLAYY
 
+// The shopguy's TID, used for animations and chatting.
+#define SHOPGUY_TID 44
+
 // Indicates the current state of a key.
 int blueJewelState = JEWELSTATE_NONE,
 	redJewelState = JEWELSTATE_NONE;
@@ -952,11 +955,11 @@ script "ShopGuyChat_Animation" (int type) net
 	switch(type)
 	{
 		case 0:
-			SetActorState(44, "talking");
+			SetActorState(SHOPGUY_TID, "talking");
 			break;
 
 		case 1:
-			SetActorState(44, "nosale");
+			SetActorState(SHOPGUY_TID, "nosale");
 			break;
 
 		default:
@@ -999,10 +1002,10 @@ script "ShopGuyChat_Server" (int index) net
 	GiveInventory(entry, 1);
 }
 
+// Note, clientside
 function void ShopGuyChat (str string)
 {
-	// TODO: Support
-	//Chat(StrParam(s:"\cdShopguy\cj: ", s:string));
+	Chat::SendActor(SHOPGUY_TID, string);
 }
 
 #undef LOGSOURCE
