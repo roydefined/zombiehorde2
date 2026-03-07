@@ -1,0 +1,27 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace PlayerSpace
+{
+    #define THRUACTORS_CHECKSPOT_TID 4000
+    #define THRUACTORS_CHECKSPOT_NAME "ZH2ThruActorsSpotChecker"
+
+    enum PlayerThruActorsStateT : int
+    {
+        STATE_DEFAULT, // Default setting. Might still allow walking through players/allies if `sv_unblockplayers` / `sv_unblockallies` is enabled.
+        STATE_THRUACTORS, // Player is explicitly allowed to walk through actors.
+        STATE_GOBACKDEFAULT, // Player is ready to turn back to the default state if able.
+    };
+
+    extern bool PlayerSpaceTic();
+
+    extern void SetThruActors(bool enable);
+    extern void SetPlayerThruActors(int id, bool enable);
+
+    extern PlayerThruActorsStateT GetThruActorsState();
+    extern PlayerThruActorsStateT GetPlayerThruActorsState(int id);
+    extern void SetThruActorsState(PlayerThruActorsStateT state);
+    extern void SetPlayerThruActorsState(int id, PlayerThruActorsStateT state);
+    extern PlayerThruActorsStateT GetThruActorsStateByIndex(int index);
+}
