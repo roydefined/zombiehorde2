@@ -1,6 +1,8 @@
 #pragma raw include on
 #pragma raw define on
 
+#pragma pointer_space global 0
+
 #import "zcommon.bcs"
 #import "acs_source/bcsutils.acs"
 
@@ -51,6 +53,9 @@ int nukeExplosionTimestamp = 0;
 // Also has a clientsided synchronized value that indicates if the console client is in the bunker.
 bool isInBunker[BCSUtils::MAX_PLAYERS],
 	 consoleClientIsInBunker;
+
+// Used with the temperature gauge, which hooks on the HUD.
+internal Hud::HudHookDataT? hudHookDataRef;
 
 // Level atmosphere tags that have their color adjusted in events
 #define COLORTAGCOUNT 13
@@ -129,8 +134,7 @@ Script "OnOpen" open
 	}
 
 	// Delay until we're halfway through the main time, then trigger a random event.
-	// TODO: Support
-	int gameTime = 1;//GetTimerTime(stateToTimerIndex(statePlaying)) / 2;
+	int gameTime = RoundTimer::GetPlayingTicsLeft() / 2;
 
 	while (--gameTime) {
 		delay(1);
@@ -148,6 +152,8 @@ Script "OnOpenClient" Open CLIENTSIDE
 	ClientSyncEventState();
 	ClientSyncNightModeTimestamp();
 	ClientSyncNukeTimestamp();
+
+    Hook::Register(Hook::HOOK_CLIENTDRAWHUD, OnDrawTemperatureGaugeHud);
 
 	// Atmosphere and music depends on current events.
 	// If clients join later and an event has triggered, this ensures the atmosphere and music is correct.
@@ -398,10 +404,9 @@ script 21 (void)
 	HudMessage(s:"You thoroughly search the locker"; HUDMSG_TYPEON, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 4.0, 0.04, 0);
 
 	int searchingCount = 35*5;
-	while (--searchingCount) {
-
-		// TODO: Support
-		if (/*Utils::IsMoving() || */Player::GetIsZombie())
+	while (--searchingCount)
+    {
+		if (Utils::GetIsMoving() || Player::GetIsZombie())
 		{
 			if (Player::GetIsZombie()) {
 				BCSUtils::ClearHudMessage(HUDID_INTERACTION);
@@ -455,10 +460,9 @@ script "HackHolyCross" (void)
 	SetHudSize(640, 480, FALSE);
 
 	int hackingPercentage = 100;
-	while (hackingPercentage) {
-
-		// TODO: Support
-		if (/*IsMoving() || */Player::GetIsZombie())
+	while (hackingPercentage)
+    {
+		if (Utils::GetIsMoving() || Player::GetIsZombie())
 		{
 			if (Player::GetIsZombie()) {
 				BCSUtils::ClearHudMessage(HUDID_INTERACTION);
@@ -1071,12 +1075,6 @@ function void TemperatureTickClient(void)
 		return;
 	}
 
-
-	int x = 0,//GetHudX(),
-		xLeft = 0,//GetHudLeftX(),
-	    xRight = 0,//GetHudRightX(),
-	    y = 0;//GetHudY();
-
 	// Client is in water
 	bool inWater = BCSutils::GetActorWaterLevel(ActivatorTID()) > 0;
 	if (!consoleClientIsWarm && inWater)
@@ -1096,17 +1094,38 @@ function void TemperatureTickClient(void)
 
 	SetHudSize(480, 480, 0);
 	DrawFrostScreen(240.0, 240.0, HUDID_TEMPERATURE);
+}
 
-	// TODO: Support?
-	//if (!HudEnabledZH()) {
-	if (false) {
-		return;
-	}
+internal raw OnDrawTemperatureGaugeHud(void[]* data)
+{
+    if (data == null)
+		return 0;
 
-	// TODO: Support
-	//SetHudResolution();
-	//DrawTemperatureValue(consoleClientTemperature, xLeft - 55.0, y - 95.0, HUDID_TEMPERATURE + 4);
-	//DrawTemperatureGauge(xLeft - 55.0, y - 95.0, HUDID_TEMPERATURE + 5);
+    hudHookDataRef = data;
+
+	if (hudHookDataRef.Type != Hud::HUDHOOK_PLAYERSTATUS)
+		return 0;
+
+	if (consoleClientIsInBunker)
+		return 0;
+
+	Hud::SetRelativePoint(-20.0, -30.0);
+	BCSUtils::HudDrawImage(HUDID_TEMPERATURE + 4, "TEMPICON");
+
+	// Flicker effect for the value.
+	if (consoleClientTemperature == TEMPERATURE_MIN && Timer() % 10 >= 5)
+		return 0;
+
+	int color = consoleClientTemperature > 32
+		? CR_WHITE
+		: consoleClientTemperature > 30
+			? CR_YELLOW
+			: CR_RED;
+
+	Hud::SetRelativePoint(-8.0, -30.0);
+	BCSUtils::HudSetTextColor(color);
+	BCSUtils::HudDrawText(HUDID_TEMPERATURE + 5, str((int)consoleClientTemperature));
+    return 0;
 }
 
 function void DrawFrostScreen(int x, int y, int id)
@@ -1145,36 +1164,6 @@ function void DrawFrostScreen(int x, int y, int id)
 
 	SetFont(StrParam(s:"FROSTSC", d:graphicIndex));
 	HudMessage(s:"a"; HUDMSG_FADEINOUT | HUDMSG_ADDBLEND, 0, CR_UNTRANSLATED, 240.0, 240.0, 0.0, 0.5, 0.1);
-}
-
-function void DrawTemperatureGauge(int x, int y, int id)
-{
-	if (consoleClientIsInBunker)
-	{
-		return;
-	}
-
-	SetFont("TEMPICON");
-	HudMessage(s:"a"; HUDMSG_PLAIN | HUDMSG_ALPHA, id, CR_UNTRANSLATED, x, y, 0.03, 0.5);
-}
-
-function void DrawTemperatureValue(int amount, int x, int y, int id)
-{
-	if (consoleClientIsInBunker)
-	{
-		return;
-	}
-
-	if (amount == TEMPERATURE_MIN && Timer() % 10 >= 5)
-	{
-		return;
-	}
-
-	int color = BCSUtils::cond(amount > 32, CR_WHITE,
-		BCSUtils::cond(amount > 30, CR_YELLOW, CR_RED));
-
-	SetFont("smallfont");
-	HudMessage(d:amount; HUDMSG_PLAIN, id, color, x, y, 0.03);
 }
 
 // Called to synchronize the current temperature to the client.

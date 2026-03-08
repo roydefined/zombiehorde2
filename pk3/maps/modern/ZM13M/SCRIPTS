@@ -22,13 +22,8 @@ script "OnOpen" OPEN
 	Ceiling_LowerByValue(136, 50, 120);
 	Floor_RaiseByValue(136, 50, 8);
 
-	// Locks
-	// TODO: Support?
-	//CreateNewLock();
-	//SetLockStayUnlocked();
-	//SetLockTakeKeys();
-	//AddActorKey("MetalKey");
-	SpawnSpot("MetalKey", Random(132, 135));
+	// TODO: This should become its own key, not a legacy key!
+	SpawnSpot("ZH2LegacyCaveKey", Random(132, 135));
 
 	if (Random(0, 5) == 5)
 	{
@@ -91,20 +86,19 @@ script "BookcaseNote" (void) CLIENTSIDE
 
 script "CellarDoor" (void)
 {
-	static bool firstOpened;
+	static bool opened;
 
-	// TODO: Support?
-	if (false) {
-	//if (!CheckLock(0)) {
+	if (!opened && !CheckInventory("ZH2LegacyCaveKey")) {
 		Logger::LogActivator("You need the key for this wine cellar.");
 		terminate;
 	}
 
-	if (!firstOpened) {
+	if (!opened)
+    {
 		Logger::LogBold(StrParam(s:BCSUtils::PlayerName(PlayerNumber()), s:" has opened the wine cellar."));
 		AmbientSound("ambient/reveal", 127);
 		ActivatorSound("sequence/door1", 127);
-		firstOpened = true;
+		opened = true;
 	}
 
     Polyobj_Move(1, 12, 0, 56);
