@@ -98,6 +98,43 @@ Note these were externed for the mod to pass behavior between libraries.
 They're not very useful for mappers.
 Also note some other functions also got externed but these are for internal use.
 
+ * * Round namespace function change * *
+The function `GetGameIsPregameOrPlaying` was changed to `GetGameIsPregame` and now only returns if the pregame is being played.
+
+ * * New RoundTimer namespace functions * *
+New functions have been added from the `RoundTimer` namespace.
+These all help mappers to determine the time played/left in a specific round type.
+- `int GetPlayingTicsElapsed()` - Return the elapsed playing tics.
+- `int GetPlayingTicsLeft()` - Return the remaining playing tics.
+- `int GetEndingTicsElapsed()` - Return the elapsed ending tics.
+- `int GetEndingTicsLeft()` - Return the remaining ending tics.
+
+ * * New TeleportUtil namespace functions * *
+New functions have been added from the `TeleportUtil` namespace.
+These are special teleport functions with build in anti-telefrag support.
+Consider using these over traditional teleport functions.
+The functions take an area, which is used to test space to teleport to.
+This means the actual spot coordinates are likely not used when there's no space.
+Additionally, the "Between" versions take a min and max TID (inclusive) to test more area on different spots.
+Should there be no space, then the player teleports to the tid (or min TID) whilst unsolid).
+- `void TeleportAreaBetween(int targetTidMin, int targetTidMax, int area = 90, int flags = 0)`
+- `void PlayerTeleportAreaBetween(int sourceId, int targetTidMin, int targetTidMax, int area = 90, int flags = 0)`
+- `void TeleportArea(int targetTid, int area = 90, int flags = 0)`
+- `void PlayerTeleportArea(int sourceId, int targetTid, int area = 90, int flags = 0)`
+
+ * * New Hud namespace function * *
+A new function was added which allows mappers to make proper use of the new Hook system when hooking onto HUD draws.
+The function allows you to set a relative point in a space to draw at.
+This function will support offsetting and scaling that might be done on the HUD.
+- `void SetRelativePoint(fixed x = 0.0, fixed y = 0.0)`
+
+ * * New Util namespace functions * *
+Two new functions have been added which allows you to more easily check if a player is moving.
+This removes the need to manually check button input.
+Additionally, the functions ensure that players send full button info, which is required (though currently this is always forced by the mod)
+- `bool GetIsMoving()`
+- `bool GetPlayerIsMoving (int id)`
+
 Other mod changes
 ------------------------------------------------
 
