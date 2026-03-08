@@ -32,18 +32,22 @@ strict namespace TeleportUtil
         }
 
         int targetTid = targetTidMin;
-        while(targetTidMin <= targetTidMax)
+        while(targetTid <= targetTidMax)
         {
-            if (!TryTeleportPlayerArea(sourceId, targetTidMin, area, flags))
+            Logger::LogDebug(LOGSOURCE, "Start try teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj) to tid \cd" + str(targetTid) + "\cj.");
+            if (!TryTeleportPlayerArea(sourceId, targetTid, area, flags))
             {
-                targetTidMin++;
+                Logger::LogDebug(LOGSOURCE, "End try teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj). No space.");
+                targetTid++;
                 continue;
             }
 
+            Logger::LogDebug(LOGSOURCE, "End try teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj). Teleport was succesfull.");
             return;
         }
 
-        TeleportUnsolidActor(sourceId, targetTidMin, flags);
+        Logger::LogDebug(LOGSOURCE, "Teleport unsolid player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj).");
+        TeleportUnsolidPlayer(sourceId, targetTidMin, flags);
     }
 
     void TeleportArea(int targetTid, int area = 90, int flags = 0)
@@ -64,9 +68,17 @@ strict namespace TeleportUtil
     {
         VALIDATE_ID_VALID_FUNCTION(sourceId);
 
+        Logger::LogDebug(LOGSOURCE, "Start try teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj) to tid \cd" + str(targetTid) + "\cj.");
+
         // If false, we failed to get a position without telefragging. So instead make the player unsolid.
         if (!TryTeleportPlayerArea(sourceId, targetTid, area, flags))
-            TeleportUnsolidActor(sourceId, targetTid, flags);
+        {
+            Logger::LogDebug(LOGSOURCE, "End try teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj). No space. Teleporting as unsolid.");
+            TeleportUnsolidPlayer(sourceId, targetTid, flags);
+            return;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "End try teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj). Teleport was succesfull.");
     }
 
     internal bool TryTeleportPlayerArea(int sourceId, int targetTid, int area, int flags)
@@ -105,7 +117,7 @@ strict namespace TeleportUtil
         return false;
     }
 
-    internal void TeleportUnsolidActor(int sourceId, int targetTid, int flags)
+    internal void TeleportUnsolidPlayer(int sourceId, int targetTid, int flags)
     {
         int sourceTid = Identity::GetTid(sourceId);
         fixed x = GetActorX(targetTID),
