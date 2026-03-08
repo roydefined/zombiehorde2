@@ -230,7 +230,7 @@ strict namespace Sync
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             // We have to make sure to split the state value over two bits.
-            int state = PlayerSpace::GetPlayerThruActorsState(i);
+            int state = SpaceUtil::GetPlayerThruActorsState(i);
             bool leastSignificantBit = (state & 1) != 0;
             bool mostSignificantBit  = (state & 2) != 0;
             BitMath::SetBit128(BitMath::GetBitPack1(), BitMath::GetBitPack2(), BitMath::GetBitPack3(), BitMath::GetBitPack4(), i * 2, leastSignificantBit);
@@ -266,7 +266,7 @@ strict namespace Sync
             int mostSignificantBit = BitMath::GetBit128(pack1, pack2, pack3, pack4, i * 2 + 1);
             int state = (mostSignificantBit << 1) | leastSignificantBit;
 
-            PlayerSpace::SetPlayerThruActorsState(i, PlayerSpace::GetThruActorsStateByIndex(state));
+            SpaceUtil::SetPlayerThruActorsState(i, SpaceUtil::GetThruActorsStateByIndex(state));
 
             if (PlayerInGame(i))
                 Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Client - Player \cd" + str(i) + "\cj: \cd" + (state ? "true" : "false") + "\cj. Bits: \cd" + str(int(mostSignificantBit)) + str(int(leastSignificantBit)) + "\cj."));
