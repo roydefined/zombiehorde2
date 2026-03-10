@@ -149,18 +149,20 @@ script "OnOpenClient" open clientside
 	ClientSyncJewelSynthTimestamp(SYNCWHICH_REDJEWEL);
 	ClientSyncJewelAlreadySet();
 
-	// Random music pick
-	// TODO: Support parameters
-	Music::SetDefaultMusic(StrParam(s:"CASTLE", d:random(0, 1)));//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
-
 	if (!ACS_NamedExecute("CastleJewelDebug", 0))
 	{
 		Logger::LogError(LOGSOURCE, "Failed to invoke CastleJewelDebug");
 	}
 
+	// Random music pick
+	Music::SetDefaultMusic(StrParam(s:"CASTLE", d:(Random(0, 1) ? 0 : 2)));
+    Music::PlayDefaultMusic();
+
 	delay(70);
 	SetHudSize(640, 480, FALSE);
-	SetFont("CVLOGO1");
+
+	// TODO: Move to its own logo.
+	SetFont("ze13logo");
 	HudMessageBold(s:"a"; HUDMSG_FADEINOUT, 0, 0, 320.0, 80.0, 1.0, 3.0, 2.0);
 }
 
@@ -574,8 +576,8 @@ function void ClientSyncJewelAlreadySet(void)
 // Main loop that is called when entering the castle.
 script "CastleJewelContext" (void) CLIENTSIDE
 {
-	// TODO: Support parameters?
-	Music::SetDefaultMusic(BCSUtils::cond(Player::GetIsHuman(), "CASTLE2", "CASTLE3"));//, MAPMUSICSETDEFAULT | MAPMUSICREPLACERADIO);
+	Music::SetDefaultMusic(BCSUtils::cond(Player::GetIsHuman(), "CASTLE1", "CASTLE3"));
+    Music::PlayDefaultMusic();
 
 	if (Player::GetIsHuman() && (blueJewelAlreadyPlaced || redJewelAlreadyPlaced))
 	{
