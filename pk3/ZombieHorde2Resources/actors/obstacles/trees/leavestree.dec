@@ -1,0 +1,126 @@
+actor ZH2LeavesTreeSpawner : ZH2TreeSpawner 22000
+{
+    //$Sprite GTREA0
+
+    //$Arg0 Type
+    //$Arg0Tooltip Specify the type of tree that should be spawned.
+    //$Arg0Type 11
+    //$Arg0Enum { 0 = "Any"; 1 = "Specific - leaves"; 2 = "Specific - no leaves"; }
+
+    tag "Normal tree spawner"
+
+    States
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_JumpIf(args[0] != 0, 2)
+            TNT1 A 0 A_SpawnItem("ZH2LeavesTreeSpawnerAny")
+            stop
+
+            TNT1 A 0 A_JumpIf(args[0] != 1, 2)
+            TNT1 A 0 A_SpawnItem("ZH2LeavesTree1Spawner")
+            stop
+
+            TNT1 A 0 A_SpawnItem("ZH2LeavesTree2Spawner")
+            stop
+    }
+}
+
+/*
+** -----------------------------------------------------------------------------
+** Tree spawners
+** -----------------------------------------------------------------------------
+*/
+
+actor ZH2LeavesTreeSpawnerAny : RandomSpawner
+{
+    DropItem "ZH2LeavesTree1Spawner" 255, 3
+    DropItem "ZH2LeavesTree2Spawner" 255, 1
+}
+
+actor ZH2LeavesTree1Spawner : RandomSpawner
+{
+    DropItem "ZH2LeavesTree1Huge" 255, 1
+    DropItem "ZH2LeavesTree1Big" 255, 1
+    DropItem "ZH2LeavesTree1Medium" 255, 1
+    DropItem "ZH2LeavesTree1Small" 255, 1
+}
+
+actor ZH2LeavesTree2Spawner : RandomSpawner
+{
+    DropItem "ZH2LeavesTree2Huge" 255, 1
+    DropItem "ZH2LeavesTree2Big" 255, 1
+    DropItem "ZH2LeavesTree2Medium" 255, 1
+    DropItem "ZH2LeavesTree2Small" 255, 1
+}
+
+/*
+** -----------------------------------------------------------------------------
+** Tree instances
+** -----------------------------------------------------------------------------
+*/
+
+actor ZH2LeavesTree1Huge
+{
+    +CLIENTSIDEONLY
+    +FORCEYBILLBOARD
+    -SOLID
+
+    scale 1.25
+    height 200
+    radius 10
+    States
+    {
+        Spawn:
+            LTRE A -1
+    }
+}
+
+actor ZH2LeavesTree1Big : ZH2LeavesTree1Huge
+{
+    scale 1.05
+    height 175
+    radius 8
+}
+
+actor ZH2LeavesTree1Medium : ZH2LeavesTree1Huge
+{
+    scale .85
+    height 150
+    radius 7
+}
+
+actor ZH2LeavesTree1Small : ZH2LeavesTree1Huge
+{
+    scale .75
+    height 125
+    radius 6
+}
+
+actor ZH2LeavesTree2Huge : ZH2LeavesTree1Huge
+{
+    States
+    {
+        Spawn: LTRE B -1
+    }
+}
+actor ZH2LeavesTree2Big : ZH2LeavesTree1Big
+{
+    States
+    {
+        Spawn: LTRE B -1
+    }
+}
+actor ZH2LeavesTree2Medium : ZH2LeavesTree1Medium
+{
+    States
+    {
+        Spawn: LTRE B -1
+    }
+}
+actor ZH2LeavesTree2Small : ZH2LeavesTree1Small
+{
+    States
+    {
+        Spawn: LTRE B -1
+    }
+}
