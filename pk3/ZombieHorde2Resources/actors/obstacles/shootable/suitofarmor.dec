@@ -1,0 +1,75 @@
+// TODO: Make shootable. Sprites for one variant already exists.
+
+Actor ZH2SuitOfArmor : ZH2Shootable 20017
+{
+    //$Sprite ARMOA0
+
+    //$Arg0 Type
+    //$Arg0Tooltip Specify the type of armor to spawn.
+    //$Arg0Type 11
+    //$Arg0Enum { 0 = "Any"; 1 = "Specific - gray"; 2 = "Specific - black"; }
+
+    tag "Suit of Armor"
+
+    states
+    {
+        Spawn:
+            TNT1 A 0 nodelay A_JumpIf(args[0] != 0, 2)
+            TNT1 A 0 A_SpawnItem("ZH2SuitOfArmorAny")
+            stop
+
+            TNT1 A 0 A_JumpIf(args[0] != 1, 2)
+            TNT1 A 0 A_SpawnItem("ZH2SuitOfArmorGray")
+            stop
+
+            TNT1 A 0 A_SpawnItem("ZH2SuitOfArmorBlack")
+            stop
+    }
+}
+
+/*
+** -----------------------------------------------------------------------------
+** Spawners
+** -----------------------------------------------------------------------------
+*/
+
+actor ZH2SuitOfArmorAny : RandomSpawner
+{
+    DropItem "ZH2SuitOfArmorGray" 255, 1
+    DropItem "ZH2SuitOfArmorBlack" 255, 1
+}
+
+/*
+** -----------------------------------------------------------------------------
+** Instances
+** -----------------------------------------------------------------------------
+*/
+
+Actor ZH2SuitOfArmorGray
+{
+	radius 16
+	height 72
+
+	Mass 0x7ffffff
+	Health 0x7FFFFFFF
+
+	+SOLID
+	+NOBLOOD
+	+SHOOTABLE
+	+FORCEYBILLBOARD
+
+	states
+	{
+		spawn:
+			ARMO A -1
+	}
+}
+
+Actor ZH2SuitOfArmorBlack : ZH2SuitOfArmorGray
+{
+	states
+	{
+		spawn:
+			ARMO B -1
+	}
+}
