@@ -1,0 +1,42 @@
+actor ZH2ZE02MVolcanoSmoke
+{
+	+NOINTERACTION
+	+CLIENTSIDEONLY
+	
+	States
+	{
+		Spawn:
+			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 0 NoDelay A_SpawnItemEx("ZH2ZE02MVolcanoSmokeParticle", Frandom(-300.0, 300.0), Frandom(-300.0, 300.0), Frandom(0.0, 1000.0), Frandom(-0.2, 0.2), Frandom(-0.2, 0.2), Frandom(4.0, 6.0))
+			TNT1 A 6 A_SpawnItemEx("ZH2ZE02MVolcanoSmokeParticle", Frandom(-300.0, 300.0), Frandom(-300.0, 300.0), 0, Frandom(-0.2, 0.2), Frandom(-0.2, 0.2), Frandom(4.0, 6.0))
+			Wait
+	}
+}
+
+
+actor ZH2ZE02MVolcanoSmokeParticle
+{
+	+Missile
+	+NOGRAVITY
+	+NOCLIP
+	+CLIENTSIDEONLY
+	+FORCEXYBILLBOARD
+	
+	RenderStyle Translucent
+	var int user_Tics;
+			
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_SetScale(FRandom(5.0, 6.0), FRandom(5.0, 6.0))
+			TNT1 A 0 A_SetUserVar("user_Tics", 18*random(80, 120))
+			TNT1 A 0 A_SetTranslucent(Frandom(0.4, 0.8))
+			TNT1 A 0 A_SetUserVar("user_Tics", user_Tics-1)
+			TNT1 A 0 A_JumpIf(user_Tics < 0, "Depleted")
+			TNT1 A 0 A_ScaleVelocity(0.99)
+			SMKV A 2
+			Goto Spawn+3
+		Depleted:
+			SMKV A 4 A_FadeOut(0.02)
+			wait
+	}
+}
