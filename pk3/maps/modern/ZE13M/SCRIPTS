@@ -54,10 +54,10 @@ bool playerInWard[BCSUtils::MAX_PLAYERS];
 // { item name, decorate name, gold needed }
 int shopGuyStuff[5][3] =
 {
-	{ "jacks gun", "ZHJacksGun", 100 },
-	{ "double barrel shotgun", "ZHDoubleShotgun", 100 },
-    { "radio", "ZHRadio", 30  },
-	{ "leap stone", "LeapstoneSpawn", 50  },
+	{ "jacks gun", WEAPON_JACKSGUN_SPAWN_NAME, 100 },
+	{ "double barrel shotgun", WEAPON_DOUBLESHOTGUN_SPAWN_NAME, 100 },
+    { "radio", WEAPON_RADIO_SPAWN_NAME, 30  },
+	{ "leap stone", LEAPSTONE_ITEM, 50  },
 };
 
 // THe possible lines the shop guy can give.
@@ -127,13 +127,13 @@ script "OnOpen" open
 	if (blueJewelAlreadyPlaced)
 	{
 		Door_Close(45, 10);
-		SetLineTexture(3, SIDE_FRONT, TEXTURE_BOTTOM, "GOTHDOR2");
+		SetLineTexture(3, SIDE_FRONT, TEXTURE_BOTTOM, "EPITAPH2");
 		SyncJewelState(SYNCWHICH_BLUEJEWEL, JEWELSTATE_PLACED);
 	}
 	if (redJewelAlreadyPlaced)
 	{
 		Door_Close(26, 10);
-        SetLineTexture(2, SIDE_FRONT, TEXTURE_BOTTOM, "GOTHDOR2");
+        SetLineTexture(2, SIDE_FRONT, TEXTURE_BOTTOM, "EPITAPH2");
 		SyncJewelState(SYNCWHICH_REDJEWEL, JEWELSTATE_PLACED);
 	}
 	if (blueJewelAlreadyPlaced && redJewelAlreadyPlaced)
@@ -258,15 +258,15 @@ Script "PlaceGem" (int ruby)
 			terminate;
 		}
 
-        if (!CheckInventory("BloodrubyJewel"))
+        if (!CheckInventory(KEY_BLOODRUBY_NAME))
 		{
 			Logger::LogActivator("You are missing the blood ruby!");
             terminate;
         }
 
         ClearLineSpecial();
-        SetLineTexture(2, SIDE_FRONT, TEXTURE_BOTTOM, "GOTHDOR2");
-		TakeInventory("BloodRuby", 1);
+        SetLineTexture(2, SIDE_FRONT, TEXTURE_BOTTOM, "EPITAPH2");
+		TakeInventory(KEY_BLOODRUBY_NAME, 1);
 		SyncJewelState(SYNCWHICH_REDJEWEL, JEWELSTATE_PLACED);
     }
 
@@ -279,15 +279,15 @@ Script "PlaceGem" (int ruby)
 			terminate;
 		}
 
-        if (!CheckInventory("NightsapphireJewel"))
+        if (!CheckInventory(KEY_NIGHTSAPPHIRE_NAME))
 		{
 			Logger::LogActivator("You are missing the night sapphire!");
             terminate;
         }
 
         ClearLineSpecial();
-        SetLineTexture(3, SIDE_FRONT, TEXTURE_BOTTOM, "GOTHDOR2");
-		TakeInventory("NightSapphire", 1);
+        SetLineTexture(3, SIDE_FRONT, TEXTURE_BOTTOM, "EPITAPH2");
+		TakeInventory(KEY_NIGHTSAPPHIRE_NAME, 1);
 		SyncJewelState(SYNCWHICH_BLUEJEWEL, JEWELSTATE_PLACED);
     }
 
@@ -647,7 +647,7 @@ script "CastleRedJewelContext" (void) CLIENTSIDE
 
 	SetHudSize(640, 480, false);
 
-	SetFont("REDJEWLI");
+	SetFont("MAPCK01I");
 	HudMessage(s:"a"; HUDMSG_FADEINOUT, KEYDISPLAYID, CR_UNTRANSLATED, iconX, iconY, 5.0, 1.0, 0);
 
 	SetFont("smallfont");
@@ -669,10 +669,10 @@ script "CastleRedJewelContext" (void) CLIENTSIDE
 		}
 		else
 		{
-			message = BCSUtils::cond(CheckInventory("BloodRubyJewel"), "Acquired!", "Acquirable");
+			message = BCSUtils::cond(CheckInventory(KEY_BLOODRUBY_NAME), "Acquired!", "Acquirable");
 		}
 
-		SetFont("REDJEWLI");
+		SetFont("MAPCK01I");
 		HudMessage(s:"a"; HUDMSG_PLAIN, KEYDISPLAYID, CR_UNTRANSLATED, iconX, iconY, 0.0);
 
 		SetFont("smallfont");
@@ -680,7 +680,7 @@ script "CastleRedJewelContext" (void) CLIENTSIDE
 		Delay(const: 1);
 	}
 
-	SetFont("REDJEWLI");
+	SetFont("MAPCK01I");
 	HudMessage(s:"a"; HUDMSG_FADEOUT, KEYDISPLAYID, CR_UNTRANSLATED, iconX, iconY, 2.0, 0.5);
 
 	SetFont("smallfont");
@@ -699,7 +699,7 @@ script "CastleBlueJewelContext" (void) CLIENTSIDE
 
 	SetHudSize(640, 480, false);
 
-	SetFont("BLUJEWLI");
+	SetFont("MAPCK02I");
 	HudMessage(s:"a"; HUDMSG_FADEINOUT, iconId, CR_UNTRANSLATED, iconX, iconY, 5.0, 1.0, 0);
 
 	SetFont("smallfont");
@@ -721,10 +721,10 @@ script "CastleBlueJewelContext" (void) CLIENTSIDE
 		}
 		else
 		{
-			message = BCSUtils::cond(CheckInventory("NightSapphireJewel"), "Acquired!", "Acquirable");
+			message = BCSUtils::cond(CheckInventory(KEY_NIGHTSAPPHIRE_NAME), "Acquired!", "Acquirable");
 		}
 
-		SetFont("BLUJEWLI");
+		SetFont("MAPCK02I");
 		HudMessage(s:"a"; HUDMSG_PLAIN, iconId, CR_UNTRANSLATED, iconX, iconY, 0.0);
 
 		SetFont("smallfont");
@@ -732,7 +732,7 @@ script "CastleBlueJewelContext" (void) CLIENTSIDE
 		Delay(const: 1);
 	}
 
-	SetFont("BLUJEWLI");
+	SetFont("MAPCK02I");
 	HudMessage(s:"a"; HUDMSG_FADEOUT, iconId, CR_UNTRANSLATED, iconX, iconY, 2.0, 0.5);
 
 	SetFont("smallfont");
@@ -921,7 +921,7 @@ script "ShopGuyChat" (int index) clientside
 	}
 
 	// Does the player have enough for this item?
-	if (CheckInventory("GoldCoin") < value)
+	if (CheckInventory(CURRENCY_CASH_NAME) < value)
 	{
 		if (!NamedRequestScriptPuke("ShopGuyChat_Animation", 1)) {
 			Logger::LogError(LOGSOURCE, "Failed to invoke serverside script \"ShopGuyChat_Animation\".");
@@ -991,13 +991,13 @@ script "ShopGuyChat_Server" (int index) net
 		terminate;
 	}
 
-	if (CheckInventory("GoldCoin") < value)
+	if (CheckInventory(CURRENCY_CASH_NAME) < value)
 	{
 		Logger::LogDebug(LOGSOURCE, "Shop failed: player does not have enough coins.");
 		terminate;
 	}
 
-	TakeInventory("GoldCoin", value);
+	TakeInventory(CURRENCY_CASH_NAME, value);
 	GiveInventory(entry, 1);
 }
 

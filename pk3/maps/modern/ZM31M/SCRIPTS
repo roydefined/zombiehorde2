@@ -110,7 +110,7 @@ function void SetLevelAtmosphere (int fade, int color1, int color2)
 Script "OnOpen" open
 {
 	// Red key card spawner
-    spawnspot("KeycardRed", random(10, 16));
+    spawnspot(KEY_RED_KEYCARD, random(10, 16));
 
 	// The underground water stream
     scroll_floor(4, 0, 100, CARRY);
@@ -130,7 +130,7 @@ Script "OnOpen" open
 	for (int i = 0; i < 6; ++i) {
 		int sectorTag = nukeBoundaryRocks[i][0];
 		Floor_MoveToValue(sectorTag, 999, 0);
-		ChangeFloor(sectorTag, "SNOWFL01");
+		ChangeFloor(sectorTag, "SNOW");
 	}
 
 	// Delay until we're halfway through the main time, then trigger a random event.
@@ -215,15 +215,15 @@ script "enterClient" enter clientside
 script 2 (int messageIndex)
 {
 	static int interactionMessages[10][2] = {
-		{ "The lock is jammed. This door cannot be opened.",  "generic/locked1" },
+		{ "The lock is jammed. This door cannot be opened.",  "sound/locked1" },
 		{ "This door is damaged beyond use.",				  "" },
 		{ "The engine will not start.", 					  "" },
-		{ "The guardhouse is locked and will not open.", 	  "generic/locked3" },
-		{ "Quarantine protocols have sealed this room.",	  "generic/itemlocked" },
+		{ "The guardhouse is locked and will not open.", 	  "sound/locked3" },
+		{ "Quarantine protocols have sealed this room.",	  "sound/itemfail1" },
 		{ "The radio is dead. No one will come to help you.", "" },
 		{ "These guns are just for show.",					  "" },
 		{ "the gas has spoiled.",							  "" },
-		{ "Locked. Maybe a terminal can open it.",			  "generic/itemlocked" },
+		{ "Locked. Maybe a terminal can open it.",			  "sound/itemfail1" },
 		{ "This does not appear to be working.",			  "" }
 	};
 
@@ -265,7 +265,7 @@ Script "UnlockLabs" (void)
 	SetFont("smallfont");
 	SetHudSize(640, 480, FALSE);
 
-    if(!CheckInventory("KeycardRed")) {
+    if(!CheckInventory(KEY_RED_KEYCARD)) {
         HudMessage(s:"Clearance required."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
 		delay(35);
         terminate;
@@ -273,7 +273,7 @@ Script "UnlockLabs" (void)
 
 	ClearLineSpecial();
 	Logger::LogBold(StrParam(n:0, s:" has cleared the quarantine. Elevators are now activated."));
-	AmbientSound("world/reveal", 255);
+	AmbientSound("world/reveal1", 255);
 	door_open(35, 8);
 	labUnlocked = true;
 	ACS_NamedExecuteAlways("labUnlocked_client", 0);
@@ -309,7 +309,7 @@ Script 20 (int index)
 	setFont("smallfont");
 	SetHudSize(640, 480, FALSE);
 
-    if(!flares[index] || CheckInventory("FlareSpawn") == 2) {
+    if(!flares[index] || CheckInventory(FLARE_ITEM) == 2) {
 		if(!flares[index]) {
 			HudMessage(s:"This locker has no flares left."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
 		} else {
@@ -322,7 +322,7 @@ Script 20 (int index)
 
     HudMessage(s:"Grabbed a flare. This locker has ", d:--flares[index], s:" flare", s:BCSUtils::cond(flares[index] != 1, "s", ""), s:" left."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
     LocalAmbientSound("generic/itemget", 128);
-	GiveInventory("FlareSpawn", 1);
+	GiveInventory(FLARE_ITEM, 1);
 }
 
 // Bunker teleport system
@@ -441,7 +441,7 @@ script 21 (void)
 script "OpenCrossRoom" (void)
 {
     ClearLineSpecial();
-	ActivatorSound("sequence/switch6", 255);
+	ActivatorSound("switches/normbutn", 255);
 	SetActivator(-1);
 	crossRoomUnlocked = true;
 
@@ -566,7 +566,7 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 
 	// Elevator sound.
 	int dingSoundTag = elevatorTags[elevatorId][2];
-	ThingSound(dingSoundTag, "generic/ding", 127);
+	ThingSound(dingSoundTag, "sound/ding1", 127);
 	Delay(35);
 
 	Logger::LogDebug(LOGSOURCE, StrParam(s:"Start elevator logic. Elevator id: ", d:elevatorId, s:", target elevatorId", d:targetElevatorId));
@@ -613,10 +613,10 @@ script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
 	int destTag = elevatorTags[elevatorId][6];
 	delay(35*2);
 	TeleportInSector(sourceSectorTag, sourceTag, tempDestTag, 0);
-	PlaySound(tempDestTag, "sequence/lift1", CHAN_AUTO, 1.0);
+	PlaySound(tempDestTag, "sound/lift1", CHAN_AUTO, 1.0);
 	delay(35*5);
 	TeleportInSector(tempDestSectorTag, tempDestTag, destTag, 0);
-	ThingSound(destTag, "generic/ding", 127);
+	ThingSound(destTag, "sound/ding1", 127);
 
 	// Open doors.
 	int polyRightTag = elevatorTags[targetElevatorId][0];
