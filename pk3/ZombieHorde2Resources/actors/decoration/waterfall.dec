@@ -1,0 +1,74 @@
+Actor ZH2WaterfallSpawner : ZH2Decoration 22022
+{
+	//$Angled
+	//$Sprite WFALA0
+
+	Radius 50
+	Height 16
+
+	Tag "Waterfall"
+
+	+NOGRAVITY
+	+NOBLOCKMAP
+	+CLIENTSIDEONLY
+
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_JumpIf(waterlevel >= 1, "Spawn.Rest")
+			TNT1 AAA 0 A_SpawnItemEx ("ZH2WaterfallParticleState1", 0, Random(-50, 50), 0, Random(1, 4), FRandom(-0.5, 0.5), FRandom(0.2, 1.0), 0, 0)
+		Spawn.Rest:
+			TNT1 A 1
+			Goto Spawn
+	}
+}
+
+Actor ZH2WaterfallParticleState1
+{
+	Height 0
+	Radius 0
+
+	Gravity 0.6
+	Speed 3
+
+	+MISSILE
+	+NOBLOCKMAP
+	-NOGRAVITY
+	+DONTSPLASH
+	+FORCEXYBILLBOARD
+	+CLIENTSIDEONLY
+
+	RenderStyle Translucent
+
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_SetTranslucent(FRandom(0.1, 0.2), 0)
+			TNT1 A 0 A_SetScale(FRandom(0.8, 2.0))
+			WFAL A 1 A_JumpIf(waterlevel >= 1, "Death")
+			Wait
+
+		Death:
+			TNT1 A 0 A_Jump(100, 1)
+			Stop
+			TNT1 A 0 A_Spawnitemex ("ZH2WaterParticleState2", 0, 0, 0, random(1, 8), random(-1, 1), random(2, 8), 0, 0)
+			Stop
+	}
+}
+
+actor ZH2WaterParticleState2 : ZH2WaterfallParticleState1
+{
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_SetTranslucent(FRandom(0.2, 0.5), 0)
+			TNT1 A 0 A_SetScale(FRandom(0.8, 2.0))
+		Spawn.Rest:
+			TNT1 A 0 A_JumpIf(waterlevel >= 1, 2)
+			WFAL B 1 A_FadeOut(FRandom(0.005, 0.02))
+			Loop
+			TNT1 A 0 A_ScaleVelocity(0.9)
+			WFAL B 1 A_FadeOut(FRandom(0.01, 0.05))
+			Loop
+	}
+}
