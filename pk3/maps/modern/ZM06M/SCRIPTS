@@ -81,23 +81,23 @@ function void SetLevelAtmosphere (int red, int green, int blue)
 	};
 
 	for(int i = 0; i < 42; i++){
-        Sector_Setcolor(colorRooms[i], red, green, blue);
-    }
+		Sector_Setcolor(colorRooms[i], red, green, blue);
+	}
 
-    Sector_Setcolor(62, red, 0, 0);
+	Sector_Setcolor(62, red, 0, 0);
 }
 
 function void TurnOffGenerator(void)
 {
 	eventTriggered = true;
 	thing_deactivate(56);
-    PlaySound(56, "ambient/generatoroff", 128);
+	PlaySound(56, "sound/powerstop", 128);
 }
 
 Script "OnOpen" OPEN
 {
 	// Set a random wall as containing the key.
-    keySpot[random(0,5)] = true;
+	keySpot[random(0,5)] = true;
 }
 
 script "OnOpenClient" open clientside
@@ -138,80 +138,80 @@ script "ToggleWeather" (void) clientside
 
 	if (LineSide() == LINE_FRONT)
 	{
-        Weather::StopEmitterWeather(Weather::EMITTERWEATHER_RAIN);
+		Weather::StopEmitterWeather(Weather::EMITTERWEATHER_SNOW);
 		terminate;
 	}
 
-    Weather::StartEmitterWeather(Weather::EMITTERWEATHER_RAIN);
+	Weather::StartEmitterWeather(Weather::EMITTERWEATHER_SNOW);
 }
 
 Script "FlareLocker" (int whatfloor)
 {
-    if(Player::GetIsZombie())
+	if(Player::GetIsZombie())
 	{
 		terminate;
 	}
 
-    if(!Flaresleft[whatfloor]){
-        delay(10);
-        InteractionMessage("\caThere are no more flares.");
-        LocalAmbientSound("generic/itemlocked", 128);
-        terminate;
-    }
-    if(CheckInventory("FlareSpawn") == 2){
-        InteractionMessage("You have enough flares.");
-        LocalAmbientSound("generic/itemlocked", 128);
-        terminate;
-    }
+	if(!Flaresleft[whatfloor]){
+		delay(10);
+		InteractionMessage("\caThere are no more flares.");
+		LocalAmbientSound("sound/itemfail1", 128);
+		terminate;
+	}
+	if(CheckInventory("FlareSpawn") == 2){
+		InteractionMessage("You have enough flares.");
+		LocalAmbientSound("sound/itemfail1", 128);
+		terminate;
+	}
 
-    InteractionMessage("You got a flare.");
-    GiveInventory("FlareSpawn", 1);
-    LocalAmbientSound("generic/itemget", 128);
-    Flaresleft[whatfloor]--;
+	InteractionMessage("You got a flare.");
+	GiveInventory("FlareSpawn", 1);
+	LocalAmbientSound("sound/itemget1", 128);
+	Flaresleft[whatfloor]--;
 }
 
 // Search the wall for a key.
 Script "CheckForKey" (int spot)
 {
-    if(!keySpot[spot]){
+	if(!keySpot[spot]){
 		InteractionMessage("Nothing there.");
-        terminate;
-    }
+		terminate;
+	}
 
-    InteractionMessage("You found a key that says ''Generator switch''");
-    GiveInventory("MetalKey", 1);
-    LocalAmbientSound("generic/itemget",128);
+	InteractionMessage("You found a key that says ''Generator switch''");
+	GiveInventory(KEY_CAVEKEY, 1);
+	LocalAmbientSound("sound/itemget1",128);
 
 	// Disabled so anybody can get the key.
 	//keySpot[spot] = false;
 }
 
-Script "OpenGeneratorBox" (void){
-
-    if(!CheckInventory("MetalKey"))
+Script "OpenGeneratorBox" (void)
+{
+	if(!CheckInventory(KEY_CAVEKEY))
 	{
-        InteractionMessage("It won't open, must be locked.");
-        ActivatorSound("generic/locked1", 127);
-        terminate;
-    }
+		InteractionMessage("It won't open, must be locked.");
+		ActivatorSound("sound/locked1", 127);
+		terminate;
+	}
 
-    InteractionMessage("Be Warned. Bad things can happen in the dark.");
-    Takeinventory("generic/itemget", 1);
-    Ceiling_RaiseInstant(55, 0, 16);
-    clearlinespecial();
+	InteractionMessage("Be Warned. Bad things can happen in the dark.");
+	Takeinventory("sound/itemget1", 1);
+	Ceiling_RaiseInstant(55, 0, 16);
+	clearlinespecial();
 }
 
 Script "TurnOffGenerator" (void)
 {
-    if(eventTriggered)
+	if(eventTriggered)
 	{
 		InteractionMessage("It no longer works.");
-        terminate;
-    }
+		terminate;
+	}
 
-    int EventCase = random(0, 10);
-    switch(EventCase)
-    {
+	int EventCase = random(0, 10);
+	switch(EventCase)
+	{
 		case 0:
 		case 1:
 		case 2:
@@ -234,63 +234,64 @@ Script "TurnOffGenerator" (void)
 		case 10:
 			ACS_NamedExecute("Event_Spiders", 0);
 			break;
-    }
+	}
 }
 
 // Uboa death script (gotta lower this to a lower number or named script
 // this might conflict with the source code, being so high
-Script 999 (void){
-
-    setmusic("UBOADEAD",0,0);
-    radius_quake(128,1000,0,500,90);
-    HudMessageBold(s:"Someone has slain Uboa!"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-    delay(17);
-    radius_quake(128,70,0,500,80);
-    delay(70);
-    radius_quake(64,35,0,500,80);
-    delay(35);
-    radius_quake(32,17,0,500,80);
+Script 999 (void)
+{
+	setmusic("UBOADEAD",0,0);
+	radius_quake(128,1000,0,500,90);
+	HudMessageBold(s:"Someone has slain Uboa!"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+	delay(17);
+	radius_quake(128,70,0,500,80);
+	delay(70);
+	radius_quake(64,35,0,500,80);
+	delay(35);
+	radius_quake(32,17,0,500,80);
 }
 
-    // guitar riff
-    Script 5 (void) {
-
-    if(!CheckInventory("zombiemaker"))
-        ThingSound(1, "RIFF", 127);
-    else
-    InteractionMessage("Zombies don't know how to rock.");
+// guitar riff
+Script 5 (void)
+{
+	if(Player::GetIsHuman())
+		ThingSound(1, "sound/guitarriff", 127);
+	else
+		InteractionMessage("Zombies don't know how to rock.");
 }
 
 // vending machines
 Script 9 (void) {
 
-    if(Player::GetIsHuman())
-        InteractionMessage("This is no time for snacks.");
-    else
+	if(Player::GetIsHuman())
+		InteractionMessage("This is no time for snacks.");
+	else
 		InteractionMessage("No brainz here...");
 }
 
 // unopenable doors
 Script 10 (void) {
 
-    if(eventState != EVENTSTATE_DISCO)
+	if(eventState != EVENTSTATE_DISCO)
 	{
-        InteractionMessage("The lock is jammed. This door cannot be opened.");
-        ActivatorSound("generic/locked2", 127);
-        terminate;
-    }
+		InteractionMessage("The lock is jammed. This door cannot be opened.");
+		ActivatorSound("sound/locked2", 127);
+		terminate;
+	}
 
-    InteractionMessage("GET DOWN!!");
+	InteractionMessage("GET DOWN!!");
 }
 
 Script 11 (void){
 
-    if(eventState != EVENTSTATE_DISCO){
-        InteractionMessage("It's too dangerous to go out there.");
-        terminate;
-    }
+	if(eventState != EVENTSTATE_DISCO)
+	{
+		InteractionMessage("It's too dangerous to go out there.");
+		terminate;
+	}
 
-    InteractionMessage("Where ya goin'? The party just started!");
+	InteractionMessage("Where ya goin'? The party just started!");
 }
 
 script "GeneratorDoor" (int side)
@@ -299,55 +300,58 @@ script "GeneratorDoor" (int side)
 	if (side && !doorOpened)
 	{
 		InteractionMessage("Locked from the other side.");
-		ActivatorSound("generic/locked2", 127);
+		ActivatorSound("sound/locked2", 127);
 		terminate;
 	}
 
-    Door_open(40, 10);
+	Door_open(40, 10);
 	doorOpened = true;
 }
 
 // elevators
 Script 14 (void)
 {
-    if(eventState != EVENTSTATE_DISCO)
+	if(eventState != EVENTSTATE_DISCO)
 	{
-        InteractionMessage("Elevator doesn't work.");
-        ActivatorSound("generic/itemlocked", 127);
+		InteractionMessage("Elevator doesn't work.");
+		ActivatorSound("sound/itemfail1", 127);
 		terminate;
-    }
+	}
 
-    InteractionMessage("DIG IT!");
+	InteractionMessage("DIG IT!");
 }
 
 // elevators
 Script 15 (void) {
 
-    if(eventState != EVENTSTATE_DISCO)
+	if(eventState != EVENTSTATE_DISCO)
 	{
-        InteractionMessage("The Elevator is stuck on this floor.");
-        ActivatorSound("generic/itemlocked", 127);
-        terminate;
-    }
+		InteractionMessage("The Elevator is stuck on this floor.");
+		ActivatorSound("sound/itemfail1", 127);
+		terminate;
+	}
 
-    InteractionMessage("DISCO INFERNO!");
+	InteractionMessage("DISCO INFERNO!");
 }
 
 // locked door
-Script 3 (void) {
-
-	if(doorcheck2flr) terminate;
+Script 3 (void)
+{
+	if(doorcheck2flr)
+		terminate;
 
 	InteractionMessage("Locked from the other side.");
-	ActivatorSound("generic/locked2", 127);
+	ActivatorSound("sound/locked2", 127);
 }
 
 // unlocked the door
-Script 4 (void) {
-    if(doorcheck2flr) terminate;
+Script 4 (void)
+{
+	if(doorcheck2flr)
+		terminate;
 
-    Door_open(47,128);
-    doorcheck2flr = true;
+	Door_open(47,128);
+	doorcheck2flr = true;
 }
 
 /*
@@ -365,22 +369,21 @@ function void SetEventState(int state)
 
 function void SyncEventState(void)
 {
-	if (!BCSUtils::IsServer()) {
+	if (!BCSUtils::IsServer())
+	{
 		Logger::LogError(LOGSOURCE, "SyncEventState was called clientside.");
 		return;
 	}
 
 	// Do not sync when not in a network game.
-	if (!IsNetworkGame()) {
+	if (!IsNetworkGame())
 		return;
-	}
 
 	BCSUtils::SyncVariable(SYNC_EVENTSTATE, eventState);
 
 	// Receive on all clients.
-	if (!ACS_NamedExecuteAlways("SyncEventState_Client", 0)) {
+	if (!ACS_NamedExecuteAlways("SyncEventState_Client", 0))
 		Logger::LogError(LOGSOURCE, "Failed to execute SyncEventState_Client.");
-	}
 }
 
 script "SyncEventState_Client" (void) clientside
@@ -391,15 +394,15 @@ script "SyncEventState_Client" (void) clientside
 // Called clientside to fetch the synced state.
 function void ClientSyncEventState(void)
 {
-	if (!BCSUtils::IsClient()) {
+	if (!BCSUtils::IsClient())
+	{
 		Logger::LogError(LOGSOURCE, "ClientSyncEventState was called serverside.");
 		return;
 	}
 
 	// Do not sync when not in a network game.
-	if (!IsNetworkGame()) {
+	if (!IsNetworkGame())
 		return;
-	}
 
 	int state = BCSUtils::GetSyncVarDefault(SYNC_EVENTSTATE, EVENTSTATE_NONE);
 	eventState = state;
@@ -418,9 +421,8 @@ function void DrawDiscoMessageHeader (str message)
 	setfont("BIGFONT");
 	SetHudSize(320, 240, false);
 
-	for (int i = 0; i < StrLen(message); ++i) {
+	for (int i = 0; i < StrLen(message); ++i)
 		hudmessageBold(c:GetChar(message, i); HUDMSG_PLAIN, HUDID_DISCO + i,  random(1, 20), 70.0 + (20.0 * i), random(20.0, 22.0), 1.0);
-	}
 }
 
 function void DrawDiscoMessage (void)
@@ -441,9 +443,7 @@ function void DrawDiscoMessage (void)
 script "Event_Disco" (void)
 {
 	if (eventState != EVENTSTATE_NONE)
-	{
 		terminate;
-	}
 
 	TurnOffGenerator();
 	SetEventState(EVENTSTATE_DISCO);
@@ -463,7 +463,7 @@ script "Event_Disco" (void)
 	// Replace lights again.
 	Thing_Remove(TAG_MAPSPOTDISCOBOWL);
 	Thing_Remove(TAG_MAPSPOTCEILINGLAMP);
-	SpawnSpot(TAG_MAPSPOTCEILINGLAMP, "CeilingLamp", 0, 0);
+	SpawnSpot(TAG_MAPSPOTCEILINGLAMP, "ZH2CeilingLamp", 0, 0);
 
 	SetEventState(EVENTSTATE_NONE);
 }
@@ -472,12 +472,10 @@ script "Event_Disco_Client" (void) clientside
 {
 	// This wait until the client is aware of the new event.
 	while (eventState != EVENTSTATE_DISCO)
-	{
 		delay(const: 1);
-	}
 
 	Music::SetDefaultMusic("DISCO2");
-    Music::PlayDefaultMusic();
+	Music::PlayDefaultMusic();
 
 	delay(35*2);
 
@@ -543,14 +541,14 @@ script "Event_Uboa" (void)
 	// Replace hospital textures
 	SetActorState(TAG_MAPSPOTCEILINGLAMP, "inactive");
 	SetActorState(TAG_MAPSPOTLIGHTBULB, "inactive");
-	ReplaceTextures ("HOSPWR1", "HOSPWR3" , 0);
-	ReplaceTextures ("HOSPWR2", "HOSPWR3" , 0);
-	ReplaceTextures ("HOSPWG1", "HOSPWG3" , 0);
-	ReplaceTextures ("HOSPWG2", "HOSPWG3" , 0);
-	ReplaceTextures ("HOSPWB1", "HOSPWB3" , 0);
-	ReplaceTextures ("HOSPWB2", "HOSPWB3" , 0);
-	ReplaceTextures ("HSWALL12", "HSWALL13" , 0);
-	SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QKMETL02");
+	ReplaceTextures("0_RUS21", "0_RUS28" , 0);
+	ReplaceTextures("0_RUS25", "0_RUS28" , 0);
+	ReplaceTextures("0_RUS17", "0_RUS26" , 0);
+	ReplaceTextures("0_RUS23", "0_RUS26" , 0);
+	ReplaceTextures("0_RUS20", "0_RUS27" , 0);
+	ReplaceTextures("0_RUS24", "0_RUS27" , 0);
+	ReplaceTextures("0694", "0880" , 0);
+	SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QUAKE2_2");
 }
 
 script "Event_Uboa_Teleporter" (void)
@@ -572,7 +570,7 @@ script "Event_Uboa_Client" (void) clientside
 	}
 
 	Music::SetDefaultMusic(BCSUtils::cond(Random(0, 1), "FUCKED", "FUCKED2"));
-    Music::PlayDefaultMusic();
+	Music::PlayDefaultMusic();
 
 	int startTimestamp = Timer();
 	int targetColor = 0;
@@ -626,8 +624,8 @@ script "Event_Nightmare" (void)
 	thing_deactivate(56);
 
 	// Floor and door next to the green floor portal to nightmare land
-	ChangeFloor(77, "DSNAKE04");
-	ChangeFloor(78, "DSNAKE04");
+	ChangeFloor(77, "SFLR6_4");
+	ChangeFloor(78, "SFLR6_4");
 	floor_lowerbyvalue(77,32,8);
 	floor_lowerbyvalue(78,32,16);
 	ceiling_raisebyvalue(79, 32, 64);
@@ -641,29 +639,29 @@ script "Event_Nightmare" (void)
 	// Replace hospital textures
 	SetActorState(TAG_MAPSPOTCEILINGLAMP, "inactive");
 	SetActorState(TAG_MAPSPOTLIGHTBULB, "inactive");
-	ReplaceTextures ("HOSPWR1", "HOSPWR3" , 0);
-	ReplaceTextures ("HOSPWR2", "HOSPWR3" , 0);
-	ReplaceTextures ("HOSPWG1", "HOSPWG3" , 0);
-	ReplaceTextures ("HOSPWG2", "HOSPWG3" , 0);
-	ReplaceTextures ("HOSPWB1", "HOSPWB3" , 0);
-	ReplaceTextures ("HOSPWB2", "HOSPWB3" , 0);
-	ReplaceTextures ("HSWALL12", "HSWALL13" , 0);
+	ReplaceTextures("0_RUS21", "0_RUS28" , 0);
+	ReplaceTextures("0_RUS25", "0_RUS28" , 0);
+	ReplaceTextures("0_RUS17", "0_RUS26" , 0);
+	ReplaceTextures("0_RUS23", "0_RUS26" , 0);
+	ReplaceTextures("0_RUS20", "0_RUS27" , 0);
+	ReplaceTextures("0_RUS24", "0_RUS27" , 0);
+	ReplaceTextures("0694", "0880" , 0);
 
 	// Child room textures
-	SetLineTexture(99, SIDE_FRONT, TEXTURE_MIDDLE, "DSNAKE02");
-	SetLineTexture(99, SIDE_FRONT, TEXTURE_BOTTOM, "DSNAKE02");
-	SetLineTexture(99, SIDE_FRONT, TEXTURE_TOP, "DSNAKE02");
-	SetLineTexture(99, SIDE_BACK, TEXTURE_MIDDLE, "DSNAKE02");
-	SetLineTexture(99, SIDE_BACK, TEXTURE_BOTTOM, "DSNAKE02");
-	SetLineTexture(99, SIDE_BACK, TEXTURE_TOP, "DSNAKE02");
-	SetLineTexture(100, SIDE_FRONT, TEXTURE_BOTTOM, "DSNAKE02");
-	SetLineTexture(100, SIDE_FRONT, TEXTURE_TOP, "DSNAKE02");
-	SetLineTexture(100, SIDE_BACK, TEXTURE_BOTTOM, "DSNAKE02");
-	SetLineTexture(100, SIDE_BACK, TEXTURE_TOP, "DSNAKE02");
-	SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QKMETL02");
-	ChangeFloor(58, "DSNAKE04");
-	ChangeCeiling(58, "DSNAKE04");
-	ChangeCeiling(59, "DSNAKE04");
+	SetLineTexture(99, SIDE_FRONT, TEXTURE_MIDDLE, "WSKSNAK2");
+	SetLineTexture(99, SIDE_FRONT, TEXTURE_BOTTOM, "WSKSNAK2");
+	SetLineTexture(99, SIDE_FRONT, TEXTURE_TOP, "WSKSNAK2");
+	SetLineTexture(99, SIDE_BACK, TEXTURE_MIDDLE, "WSKSNAK2");
+	SetLineTexture(99, SIDE_BACK, TEXTURE_BOTTOM, "WSKSNAK2");
+	SetLineTexture(99, SIDE_BACK, TEXTURE_TOP, "WSKSNAK2");
+	SetLineTexture(100, SIDE_FRONT, TEXTURE_BOTTOM, "WSKSNAK2");
+	SetLineTexture(100, SIDE_FRONT, TEXTURE_TOP, "WSKSNAK2");
+	SetLineTexture(100, SIDE_BACK, TEXTURE_BOTTOM, "WSKSNAK2");
+	SetLineTexture(100, SIDE_BACK, TEXTURE_TOP, "WSKSNAK2");
+	SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QUAKE2_2");
+	ChangeFloor(58, "SFLR6_4");
+	ChangeCeiling(58, "SFLR6_4");
+	ChangeCeiling(59, "SFLR6_4");
 
 	delay(35 * 2);
 
@@ -680,11 +678,9 @@ script "FallsInNightmare" (void)
 script "FallsInNightmare_Client" (void) clientside
 {
 	if (ConsolePlayerNumber() != PlayerNumber())
-	{
 		terminate;
-	}
 
-    Weather::StartEmitterWeather(Weather::EMITTERWEATHER_RAIN);
+	Weather::StartEmitterWeather(Weather::EMITTERWEATHER_SNOW);
 }
 
 script "Event_Nightmare_Client" (void) clientside
@@ -696,7 +692,7 @@ script "Event_Nightmare_Client" (void) clientside
 	}
 
 	Music::SetDefaultMusic("SCARYMUS");
-    Music::PlayDefaultMusic();
+	Music::PlayDefaultMusic();
 
 	SetLevelAtmosphere(DEFAULTLEVELCOLOR - 20, DEFAULTLEVELCOLOR - 20, DEFAULTLEVELCOLOR - 20);
 	delay(35*2);
@@ -723,70 +719,69 @@ script "Event_Spiders" (void)
 	SetActorState (TAG_MAPSPOTCEILINGLAMP, "inactive");
 	SetActorState (TAG_MAPSPOTLIGHTBULB, "inactive");
 
-	ReplaceTextures ("HOSPWR1", "WEBBIN03", 0);
-	ReplaceTextures ("HOSPWR2", "WEBBIN03", 0);
-	ReplaceTextures ("HOSPWR3", "WEBBIN03", 0);
+	ReplaceTextures("0_RUS21", "WEBBIN03", 0);
+	ReplaceTextures("0_RUS25", "WEBBIN03", 0);
+	ReplaceTextures("0_RUS28", "WEBBIN03", 0);
 
-	ReplaceTextures ("HOSPWG1", "WEBBIN03", 0);
-	ReplaceTextures ("HOSPWG2", "WEBBIN03", 0);
-	ReplaceTextures ("HOSPWG3", "WEBBIN03", 0);
+	ReplaceTextures("0_RUS17", "WEBBIN03", 0);
+	ReplaceTextures("0_RUS23", "WEBBIN03", 0);
+	ReplaceTextures("0_RUS26", "WEBBIN03", 0);
 
-	ReplaceTextures ("HOSPWB1", "WEBBIN03", 0);
-	ReplaceTextures ("HOSPWB2", "WEBBIN03", 0);
-	ReplaceTextures ("HOSPWB3", "WEBBIN03", 0);
+	ReplaceTextures("0_RUS20", "WEBBIN03", 0);
+	ReplaceTextures("0_RUS24", "WEBBIN03", 0);
+	ReplaceTextures("0_RUS27", "WEBBIN03", 0);
 
-	ReplaceTextures ("HSWALL12", "WEBBIN03" , 0);
+	ReplaceTextures("0694", "WEBBIN03" , 0);
 
-	ReplaceTextures ("HOSPFL01", "WEBBIN03", 0);
-	ReplaceTextures ("HOSPFL02", "WEBBIN03", 0);
-	ReplaceTextures ("RUFLAT01", "WEBBIN03", 0);
-	ReplaceTextures ("WALBRWN1", "WEBBIN03", 0);
+	ReplaceTextures("0690", "WEBBIN03", 0);
+	ReplaceTextures("0691", "WEBBIN03", 0);
+	ReplaceTextures("0_RUS14", "WEBBIN03", 0);
+	ReplaceTextures("1171", "WEBBIN03", 0);
 
 
-	ReplaceTextures ("HOSPWK2", "WEBBIN03", 0);
-	ReplaceTextures ("HOSPWK2", "WEBBIN03", 0);
+	ReplaceTextures("GRAFFI00", "WEBBIN03", 0);
+	ReplaceTextures("GRAFFI00", "WEBBIN03", 0);
 
-	SetLineTexture(69, SIDE_FRONT, TEXTURE_Middle, "WEBBIN05");
-	SetLineTexture(69, SIDE_BACK, TEXTURE_Middle, "WEBBIN05");
+	SetLineTexture(69, SIDE_FRONT, TEXTURE_MIDDLE, "WEBBIN05");
+	SetLineTexture(69, SIDE_BACK, TEXTURE_MIDDLE, "WEBBIN05");
 	SetLineTexture(66, SIDE_FRONT, TEXTURE_MIDDLE, "WEBBIN04");
 	SetLineTexture(66, SIDE_BACK, TEXTURE_MIDDLE, "WEBBIN04");
 	SetLineTexture(73, SIDE_FRONT, TEXTURE_MIDDLE, "WEBBIN08");
 
-    // A constant loop checking if there needs to be any refilling of spiders on each spot.
-    while(true)
+	// A constant loop checking if there needs to be any refilling of spiders on each spot.
+	while(true)
 	{
 		int spawnTagMin = TAG_SPIDERSPAWNMIN;
 		int spawnTagMax = TAG_SPIDERSPAWNMAX;
 
 		// Failsafe
 		int totalSpiderCount = thingcountname("ZH2SpiderRed", 0)
-              + thingcountname("ZH2SpiderGreen", 0)
-              + thingcountname("ZH2SpiderBlue", 0)
-              + thingcountname("ZH2SpiderBlack", 0)
-              + thingcountname("ZH2SpiderGray", 0);
+			+ thingcountname("ZH2SpiderGreen", 0)
+			+ thingcountname("ZH2SpiderBlue", 0)
+			+ thingcountname("ZH2SpiderBlack", 0)
+			+ thingcountname("ZH2SpiderGray", 0);
 		if (totalSpiderCount >= MAX_SPIDER) {
 			terminate;
 		}
 
-        for(int i = 0; i < spawnTagMax - spawnTagMin; i++)
+		for(int i = 0; i < spawnTagMax - spawnTagMin; i++)
 		{
 			int spiderCount = thingcountname("ZH2SpiderRed", TAG_SPIDER + i)
-              + thingcountname("ZH2SpiderGreen", TAG_SPIDER + i)
-              + thingcountname("ZH2SpiderBlue", TAG_SPIDER + i)
-              + thingcountname("ZH2SpiderBlack", TAG_SPIDER + i)
-              + thingcountname("ZH2SpiderGray", TAG_SPIDER + i);
+			+ thingcountname("ZH2SpiderGreen", TAG_SPIDER + i)
+			+ thingcountname("ZH2SpiderBlue", TAG_SPIDER + i)
+			+ thingcountname("ZH2SpiderBlack", TAG_SPIDER + i)
+			+ thingcountname("ZH2SpiderGray", TAG_SPIDER + i);
 
 			// Enough spiders on spot.
-            if (spiderCount >= MAX_SPIDERSPOT) {
+			if (spiderCount >= MAX_SPIDERSPOT)
 				continue;
-			}
 
 			int spot = spawnTagMin + i;
-            spawnspot("ZH2SpiderSpawner", spot, TAG_SPIDER + i);
-        }
+			spawnspot("ZH2SpiderSpawner", spot, TAG_SPIDER + i);
+		}
 
-        delay(random(30, 60));
-    }
+		delay(random(30, 60));
+	}
 }
 
 script "Event_Spiders_Client" (void) clientside
@@ -798,7 +793,7 @@ script "Event_Spiders_Client" (void) clientside
 	}
 
 	Music::SetDefaultMusic("AVERY");
-    Music::PlayDefaultMusic();
+	Music::PlayDefaultMusic();
 
 	delay(35*2);
 	Log(s:"This place turned a spidernest!");
@@ -812,9 +807,9 @@ script "Event_Spiders_Client" (void) clientside
 
 Script "AltarMessage" (void)
 {
-    InteractionMessage("???");
-    delay(random(120,240));
-    thing_activate(32);
+	InteractionMessage("???");
+	delay(random(120,240));
+	thing_activate(32);
 }
 
 Script "EnterAltar" (void)
@@ -831,10 +826,10 @@ Script "EnterAltar" (void)
 
 	// TODO: Support parameter?
 	Music::SetMusic("");//, MAPMUSICLOCAL | MAPMUSICREPLACERADIO);
-    LocalAmbientSound("hospital/stinging", 50);
+	LocalAmbientSound("sound/musicsting", 50);
 
-    Setfont("smallfont");
-    HudMessageBold(n:0, s:" found the door to heaven."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+	Setfont("smallfont");
+	HudMessageBold(n:0, s:" found the door to heaven."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
 	teleport_nofog(6, true, 0);
 
 	int tid = ActivatorTID();
@@ -862,18 +857,16 @@ Script "EnterAltar" (void)
 	teleport(19);
 
 	if (angelEventTriggered)
-	{
 		terminate;
-	}
 
 	angelEventTriggered = true;
 
-    Setfont("smallfont");
-    InteractionMessageBold(StrParam(n:0, s:" has come back from heaven! ...that was a mistake."));
+	Setfont("smallfont");
+	InteractionMessageBold(StrParam(n:0, s:" has come back from heaven! ...that was a mistake."));
 	SetActivator(-1);
 
 	Music::SetDefaultMusic("");
-    Music::PlayDefaultMusic();
+	Music::PlayDefaultMusic();
 
 	delay(35 * 10);
 	ACS_NamedExecute("Event_Angels", 0);
@@ -882,32 +875,27 @@ Script "EnterAltar" (void)
 script "Event_Angels" (void)
 {
 	if (eventState != EVENTSTATE_NONE && eventState != EVENTSTATE_PREANGELS)
-	{
 		terminate;
-	}
 
 	// Spawn angels (should already be the case but it would not be if this script is called directly)
 	if(!angelsSpawned)
 	{
 		angelsSpawned = true;
 
-		for(int i = 0; i < MAX_ANGELS; i++) {
+		for(int i = 0; i < MAX_ANGELS; i++)
 			SpawnSpot("ZH2Angel", TAG_ANGELSPAWN + i, TAG_ANGEL + i);
-		}
 	}
 
-    int angelCount = 0;
-    while(true)
+	int angelCount = 0;
+	while(true)
 	{
-        // This is a small random count that becomes rarer to pass the more it passes.
-        while(random(0, 2 + angelCount))
-		{
+		// This is a small random count that becomes rarer to pass the more it passes.
+		while(random(0, 2 + angelCount))
 			delay(35 * random(5, 15));
-		}
 
-        // Teleport an angel.
+		// Teleport an angel.
 		teleportother(TAG_ANGEL + angelCount, Random(500, 517), 1);
-        InteractionMessageBold("\cgSomething has crossed from beyond...");
+		InteractionMessageBold("\cgSomething has crossed from beyond...");
 		angelCount++;
 
 		// Replace hospital and music on first spawn
@@ -917,46 +905,44 @@ script "Event_Angels" (void)
 			ACS_NamedExecuteAlways("Event_Angels_Client", 0);
 
 			Music::SetDefaultMusic("ANGELS");
-            Music::PlayDefaultMusic();
+			Music::PlayDefaultMusic();
 
 			// Replace hospital textures
 			SetActorState(TAG_MAPSPOTCEILINGLAMP, "inactive");
 			SetActorState(TAG_MAPSPOTLIGHTBULB, "inactive");
-			ReplaceTextures ("HOSPWR1", "HORRFLR1" , 0);
-			ReplaceTextures ("HOSPWR2", "HORRFLR1" , 0);
-			ReplaceTextures ("HOSPWR3", "HORRFLR1" , 0);
-			ReplaceTextures ("HOSPWG1", "HORRFLR1" , 0);
-			ReplaceTextures ("HOSPWG2", "HORRFLR1" , 0);
-			ReplaceTextures ("HOSPWG3", "HORRFLR1" , 0);
-			ReplaceTextures ("HOSPWB1", "HORRFLR1" , 0);
-			ReplaceTextures ("HOSPWB2", "HORRFLR1" , 0);
-			ReplaceTextures ("HOSPWB3", "HORRFLR1" , 0);
-			ReplaceTextures ("HSWALL12", "HORRFLR1" , 0);
-			ReplaceTextures ("HOSPFL01", "HORRFLR1" , 0);
-			ReplaceTextures ("HOSPFL02", "HORRFLR1" , 0);
-			ReplaceTextures ("DGRAY07", "HORRFLR1" , 0);
-			ReplaceTextures ("DRROCK16", "HORRFLR1" , 0);
-			ReplaceTextures ("RUFLAT01", "HORRFLR1" , 0);
-			ReplaceTextures ("RUFLAT02", "HORRFLR1" , 0);
-			ReplaceTextures ("BRBRIK03", "HORRFLR1" , 0);
+			ReplaceTextures("0_RUS21", "HORRFLR1", 0);
+			ReplaceTextures("0_RUS25", "HORRFLR1", 0);
+			ReplaceTextures("0_RUS28", "HORRFLR1", 0);
+			ReplaceTextures("0_RUS17", "HORRFLR1", 0);
+			ReplaceTextures("0_RUS23", "HORRFLR1", 0);
+			ReplaceTextures("0_RUS26", "HORRFLR1", 0);
+			ReplaceTextures("0_RUS20", "HORRFLR1", 0);
+			ReplaceTextures("0_RUS24", "HORRFLR1", 0);
+			ReplaceTextures("0_RUS27", "HORRFLR1", 0);
+			ReplaceTextures("0694", "HORRFLR1", 0);
+			ReplaceTextures("0690", "HORRFLR1", 0);
+			ReplaceTextures("0691", "HORRFLR1", 0);
+			ReplaceTextures("FLAT3", "HORRFLR1", 0);
+			ReplaceTextures("RROCK03", "HORRFLR1", 0);
+			ReplaceTextures("0_RUS14", "HORRFLR1", 0);
+			ReplaceTextures("0_RUS15", "HORRFLR1", 0);
+			ReplaceTextures("0_RUS05", "HORRFLR1", 0);
 			SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "HORRFLR1");
 		}
 
 		Logger::LogDebug(LOGSOURCE, StrParam(s:"Angel count: ", d:angelCount));
 
-        // No more than 5 angels should leave.
-        if(angelCount == 5)
-		{
+		// No more than 5 angels should leave.
+		if (angelCount == 5)
 			terminate;
-		};
-    }
+	}
 }
 
 script "Event_Angels_Client" (void) clientside
 {
 	// TODO: Is this even required? Already handled serverside.
 	Music::SetDefaultMusic("ANGELS");
-    Music::PlayDefaultMusic();
+	Music::PlayDefaultMusic();
 
 	int startTimestamp = Timer();
 	int targetColor = 0;
