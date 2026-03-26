@@ -1,0 +1,23 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Utils
+{
+    bool GetIsMoving()
+    {
+        return GetPlayerIsMoving(PlayerNumber());
+    }
+
+    bool GetPlayerIsMoving (int id)
+    {
+        // This function requires the "send full button info" compat cvar to be enabled serverside.
+        // This is not actually something we need to check as the mod forces it to be enabled, but it's added in case the cvar is disabled somehow.
+        if (IsNetworkGame() && BCSUtils::IsServerOnly() && !ZH2Lib::GetClientSendFullButtonInfo()) {
+            Logger::LogWarning(LOGSOURCE, "Unable to check if player " + str(id) + " is moving serverside as 'compat_clientssendfullbuttoninfo' must be enabled.");
+            return false;
+        }
+
+        return BCSUtils::PlayerKeyDownAny(id, BT_FORWARD | BT_BACK | BT_MOVELEFT | BT_MOVERIGHT);
+    }
+}

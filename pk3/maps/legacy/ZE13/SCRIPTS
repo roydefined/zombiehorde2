@@ -32,7 +32,7 @@ script "ze13_internal_event_resistelapsed" (raw packetRaw)
 {
 	Event::ReceiveTimerElapsed((str)packetRaw);
 	int index = Event::GetReceiveData(0);
-	
+
 	switch(index)
 	{
 		case 0:
@@ -179,9 +179,18 @@ Script 40 (void) //Shop=============================
 	if (Player::GetIsHuman())
 	{
 		if(CheckInventory(CURRENCY_CASH_NAME) < 50)
+		{
 			print(s:"You don't have enough gold.");
+			terminate;
+		}
 
-		else if(CheckInventory(CURRENCY_CASH_NAME)==50)
+		else if(CheckInventory(LEAPSTONE_ITEM))
+		{
+			print(s:"You already have a Leap Stone.");
+			terminate;
+		}
+
+		else
 		{
 			print(s:"Here's your Leap Stone. Use it wisely.");
 			SpawnSpot (LEAPSTONE_ITEM, 34, 0);

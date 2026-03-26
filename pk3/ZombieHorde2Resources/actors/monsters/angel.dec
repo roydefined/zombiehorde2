@@ -1,0 +1,84 @@
+actor ZH2Angel : ZH2Monster 20120
+{
+	//$NotANGEed
+
+	Radius 16
+	Height 64
+	scale .4
+	Speed 30
+	painchance 128
+
+	Mass 0x7fffffff
+	Health 3500
+	meleeDamage 30
+
+	Tag "Angel"
+	BloodType "ZH2AngelBlood"
+
+	Obituary "%o has met an angel."
+	attacksound "ZH2Angel/attack"
+	painsound "ZH2Angel/pain"
+	deathsound "ZH2Angel/death"
+
+	+FLOORCLIP
+	+FASTER
+	+FASTMELEE
+	-CANNOTPUSH
+	+FLOORHUGGER
+	+DROPOFF
+	+BRIGHT
+	+LOOKALLAROUND
+
+	States
+	{
+		Spawn.Clear:
+			TNT1 A 0 A_ClearTarget
+			ANGE ABCD 3 A_Wander
+		Spawn:
+			ANGE A 3 NoDelay A_Wander
+			TNT1 A 0 A_Look
+			ANGE B 3 A_Wander
+			TNT1 A 0 A_Look
+			ANGE C 3 A_Wander
+			TNT1 A 0 A_Look
+			ANGE D 3 A_Wander
+			TNT1 A 0 A_Look
+			Loop
+
+		See:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_gettargetiszombie") == true, "Spawn.Clear")
+			TNT1 A 0 A_Playsound("ZH2Angel/see", CHAN_AUTO)
+		See.Rest:
+			TNT1 A 0 A_Playsound("ZH2Angel/chase")
+			ANGE A 3 A_Chase
+			ANGE B 3 A_Chase
+			TNT1 A 0 A_Playsound("ZH2Angel/chase")
+			ANGE C 3 A_Chase
+			ANGE D 3 A_Chase
+			loop
+
+		Melee:
+			TNT1 A 0 A_Playsound("ZH2Angel/chase")
+			ANGE E 3 A_FaceTarget
+			ANGE F 1
+			ANGE G 2 A_MeleeAttack
+			ANGE GGGG 6 A_Playsound("ZH2Angel/chase")
+			goto See
+
+		Pain:
+			ANGE G 1 A_Pain
+			goto See
+
+		Death:
+			TNT1 A 0 A_Scream
+			TNT1 A 0 A_NoBlocking
+			ANGE I 50
+			ANGE I 35 A_FadeOut(0.2)
+			wait
+	}
+}
+
+actor ZH2AngelBlood : ZH2HumanBlood
+{
+	Translation "0:255=%[0.00,0.00,0.00]:[0.00,0.00,0.00]"
+}

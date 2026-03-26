@@ -2,12 +2,37 @@
     #error This file must be #included.
 #endif
 
-#define LOGSOURCE "Timer"
+#define LOGSOURCE "RoundTimer"
 
-#include "extensions.acs"
+#include "extern.acs"
+#include "state.acs"
 
 strict namespace RoundTimer
 {
+    internal void SetSurvivalDefaults()
+    {
+        Logger::LogDebug(LOGSOURCE, "Setting survival gamemode profile for round timers.");
+
+        // TODO: play timer should be scalable.
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERPREGAMECOUNTDOWN, 10, 30, RoundTimer::TIMERDRAWDECIMALS, "Game is starting in");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERCOUNTDOWN, 30, 30, RoundTimer::TIMERDRAWDECIMALS, "Picking a zombie in");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERPLAYING, 60, 180, RoundTimer::TIMERDOCOUNTDOWN, "Time left");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDING, 10, 10, RoundTimer::TIMERDRAWDECIMALS);
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTING, 20, 20, RoundTimer::TIMERDRAWDECIMALS); // TODO: RoundTimer::TIMERHIDDEN
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTED, 5, 5, RoundTimer::TIMERDRAWDECIMALS, "Moving to next map...");
+    }
+
+    internal void SetEscapeDefaults()
+    {
+        Logger::LogDebug(LOGSOURCE, "Setting escape gamemode profile for round timers.");
+
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERPREGAMECOUNTDOWN, 10, 30, RoundTimer::TIMERDRAWDECIMALS, "Game is starting in");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERCOUNTDOWN, 10, 30, RoundTimer::TIMERDRAWDECIMALS, "Picking a zombie in");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDING, 10, 10, RoundTimer::TIMERDRAWDECIMALS);
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTING, 20, 20, RoundTimer::TIMERDRAWDECIMALS); // TODO: RoundTimer::TIMERHIDDEN
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTED, 5, 5, RoundTimer::TIMERDRAWDECIMALS, "Moving to next map...");
+    }
+
     // NOTE: Commented and unused until we get to allocating these again.
     // internal void Initialize()
     // {
@@ -48,204 +73,6 @@ strict namespace RoundTimer
     internal void CallEndSound()
     {
         AmbientSound("world/TIMEREND", 100);
-    }
-
-    internal void DefineKnownTimer(KnownRoundTimerT timerType, int length, int maximumTime, int flags, str label = "")
-    {
-        DefineTimer(GetIndexOfKnownType(timerType), length, maximumTime, flags, label);
-    }
-
-    internal void DefineTimer(int index, int length, int maximumTime, int flags, str label = "")
-    {
-        if (index < 0 || index >= MAX_TIMERS)
-        {
-            Logger::LogError(LOGSOURCE, "Timer index " + str(index) + " is invalid. Timer must be between 0-" + str(MAX_TIMERS - 1) + ".");
-            return;
-        }
-
-
-        // Reallocate the timer to support the given index.
-        // NOTE: Commented and unused until we get to allocating these again.
-        // RoundTimerContextT[]? timers = ZH2Game::GameContext.MapDetails.Timers;
-        // if (index >= lengthof(timers))
-        // {
-        //     static RoundTimer::RoundTimerContextT lengthdef;
-        //     Logger::LogDebug(LOGSOURCE, "Reallocating to size of \cd" + str(index + 1) + "\cj.");
-        //     ZH2Game::GameContext.MapDetails.Timers = BCS::ArrResize(timers, index + 1, lengthof(lengthdef));
-        // }
-
-        RoundTimerContextT module& timer = GetTimerRefByindex(index);
-        timer.InitialState.Length = length;
-        timer.InitialState.MaximumTime = maximumTime;
-        timer.InitialState.Flags = flags;
-        timer.InitialState.Label = label;
-        timer.EndingTic = -1;
-        timer.PauseTic = -1;
-        timer.Flags = flags;
-        timer.Defined = true;
-    }
-
-    /* General accessors for getting the active timer and a reference */
-
-    internal int GetActiveTimerIndex() { return ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex; }
-    internal KnownRoundTimerT GetActiveTimerKnownType() { return GetKnownTypeOfIndex(GetActiveTimerIndex()); }
-
-    internal bool GetAnyTimerActive() { return GetActiveTimerIndex() != 0; }
-
-    internal void SetActiveTimerByIndex(int index, bool broadcast = true)
-    {
-        int previousIndex = GetActiveTimerIndex();
-        ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex = index;
-        Logger::LogDebug(LOGSOURCE, "Timer has switched to \cd" + GetTimerIndexAsString(index) + "\cj.");
-
-        if (broadcast)
-            Event::SendTimerSwitched(previousIndex, index);
-    }
-    internal void SetActiveTimerByKnownType(KnownRoundTimerT timerType, bool broadcast = true) { SetActiveTimerByIndex(GetIndexOfKnownType(timerType), broadcast); }
-    internal void DisableTimer(bool broadcast = true) { SetActiveTimerByIndex(0, broadcast); }
-
-    internal RoundTimerContextT module& GetTimerRefCurrent() { return GetTimerRefByindex(GetActiveTimerIndex()); }
-    internal RoundTimerContextT module& GetTimerRefByKnown(KnownRoundTimerT timerType) { return GetTimerRefByindex(GetIndexOfKnownType(timerType)); }
-    internal RoundTimerContextT module& GetTimerRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Timers[index]; }
-
-    /* Properties */
-
-    internal str GetTimerLabel(int index) { return GetTimerRefByindex(index).InitialState.Label; }
-
-    // Returns the actual time of the timer, also accounting for the fact it can be paused.
-    // If paused, we take the pause tic. If not, we take the world timer.
-    // If not active, we return the initial length.
-    internal int GetTimerTicsLeft(int index)
-    {
-        RoundTimerContextT module& timerContext = GetTimerRefByindex(index);
-
-        if (!GetTimerActive(index))
-            return timerContext.InitialState.Length * 35;
-
-        int tic = GetTimerPaused(index) ? timerContext.PauseTic : Timer();
-        return BCSUtils::Max(timerContext.EndingTic - tic, 0);
-    }
-
-    internal void SetTimerTicsLeft(int index, int tics)
-    {
-        RoundTimerContextT module& timerContext = GetTimerRefByindex(index);
-
-        // Also clamped to not go below 0 or above the maximum configured time.
-        tics = BCSUtils::Clamp(tics, 0, timerContext.InitialState.MaximumTime * 35);
-        int baseTic = GetTimerPaused(index) ? timerContext.PauseTic : Timer();
-        timerContext.EndingTic = baseTic + tics;
-    }
-
-    // Both increment and decrement return an integer, indicating how much time was added/removed.
-    internal int IncrementTimer(int index, int tics)
-    {
-        int start = GetTimerTicsLeft(index);
-        SetTimerTicsLeft(index, start + tics);
-        return tics < 0
-            ? start - GetTimerTicsLeft(index)
-            : GetTimerTicsLeft(index) - start;
-    }
-    internal int DecrementTimer(int index, int tics)
-    {
-        return IncrementTimer(index, -tics);
-    }
-
-    internal bool GetTimerDefined(int index) { return GetTimerRefByindex(index).Defined; }
-    internal bool GetTimerPaused(int index) { return GetTimerRefByindex(index).PauseTic != -1; }
-
-    internal void PauseTimer(int index, bool broadcast = true)
-    {
-        if (GetTimerPaused(index))
-            return;
-
-        GetTimerRefByindex(index).PauseTic = Timer();
-
-        if (broadcast)
-            Event::SendTimerPaused(index);
-    }
-
-    internal void ResumeTimer(int index, bool broadcast = true)
-    {
-        if (!GetTimerPaused(index))
-            return;
-
-        // Also have to update the end tic after pausing.
-        RoundTimerContextT module& timerContext = GetTimerRefByindex(index);
-        int diff = timerContext.EndingTic - timerContext.PauseTic;
-        timerContext.PauseTic = -1;
-        timerContext.EndingTic = Timer() + diff;
-
-        if (broadcast)
-            Event::SendTimerResumed(index);
-    }
-
-    internal void ResetTimer(int index)
-    {
-        RoundTimerContextT module& timerContext = GetTimerRefByindex(index);
-        timerContext.EndingTic = -1;
-        timerContext.PauseTic = -1;
-        timerContext.Flags = timerContext.InitialState.Flags;
-        timerContext.Defined = true;
-    }
-
-    internal bool GetTimerActive(int index) { return GetTimerRefByindex(index).EndingTic != -1; }
-
-    internal void StartTimer(int index, bool broadcast = true)
-    {
-        RoundTimerContextT module& timerContext = GetTimerRefByindex(index);
-        timerContext.EndingTic = Timer() + timerContext.InitialState.Length * 35;
-
-        // Ensure not paused, otherwise this doesn't make much sense.
-        ResumeTimer(index);
-
-        if (broadcast)
-            Event::SendTimerStarted(index);
-    }
-
-    internal void StopTimer(int index, bool broadcast = true)
-    {
-        GetTimerRefByindex(index).EndingTic = -1;
-
-        if (broadcast)
-            Event::SendTimerStopped(index);
-    }
-
-    internal void ShowTimer(int index) { GetTimerRefByindex(index).Flags &= ~TIMERHIDDEN; }
-    internal void HideTimer(int index) { GetTimerRefByindex(index).Flags |= TIMERHIDDEN; }
-
-    internal int GetTimerMaximumTics(int index) { return GetTimerRefByindex(index).InitialState.MaximumTime * 35; }
-    internal bool GetTimerVisible(int index) { return (GetTimerRefByindex(index).Flags & TIMERHIDDEN) == 0; }
-    internal bool GetTimerDrawDecimals(int index) { return (GetTimerRefByindex(index).Flags & TIMERDRAWDECIMALS) != 0; }
-    internal bool GetTimerDoCountdown(int index) { return (GetTimerRefByindex(index).Flags & TIMERDOCOUNTDOWN) != 0; }
-
-    /* Casting / Conversions */
-
-    internal int GetIndexOfKnownType(KnownRoundTimerT timerType) { return (int)timerType; }
-
-    // Returns TIMERNONE if the round timer is not known.
-    internal KnownRoundTimerT GetKnownTypeOfIndex(int index)
-    {
-        static KnownRoundTimerT collection[] = { TIMERNONE, TIMERPREGAMECOUNTDOWN, TIMERCOUNTDOWN, TIMERPLAYING, TIMERENDING, TIMERVOTING, TIMERVOTED };
-        foreach(KnownRoundTimerT item; collection)
-        {
-            if (index != item)
-                continue;
-
-            return item;
-        }
-
-        return TIMERNONE;
-    }
-
-    internal str GetTimerIndexAsString(int index)
-    {
-        static str collection[] = { "Pregame Countdown", "Countdown", "Playing", "Ending", "Voting", "Voted" };
-        KnownRoundTimerT knownTimer = GetKnownTypeOfIndex(index);
-        if (knownTimer != TIMERNONE)
-            return collection[index];
-
-        // No known timer, return custom and the index.
-        return "Custom (" + str(index) + ")";
     }
 }
 

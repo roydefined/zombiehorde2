@@ -4,82 +4,34 @@
 
 #define LOGSOURCE "Round"
 
-#include "extensions.acs"
+#include "extern.acs"
+#include "state.acs"
 #include "initialzombie.acs"
 
 strict namespace Round
 {
-    internal void DefineRoundByKnown(KnownRoundStateT roundType, bool denyJoin, bool isEnding)
+    internal void SetSurvivalDefaults()
     {
-        DefineRoundByIndex(GetIndexOfKnownRoundStateType(roundType), denyJoin, isEnding);
+        Logger::LogDebug(LOGSOURCE, "Setting survival gamemode profile for round.");
+
+        Round::DefineRoundByKnown(Round::STATEPREGAME, false, false);
+        Round::DefineRoundByKnown(Round::STATESTARTING, false, false);
+        Round::DefineRoundByKnown(Round::STATECOUNTDOWN, false, false);
+        Round::DefineRoundByKnown(Round::STATEPLAYING, true, false);
+        Round::DefineRoundByKnown(Round::STATEENDING, true, true);
+        Round::DefineRoundByKnown(Round::STATEVOTING, true, true);
     }
 
-    internal void DefineRoundByIndex(int index, bool denyJoin, bool isEnding)
+    internal void SetEscapeDefaults()
     {
-        if (index < 0 || index >= MAX_ROUNDSTATES)
-        {
-            Logger::LogError(LOGSOURCE, "Round state index " + str(index) + " is invalid. Index must be between 0-" + str(MAX_ROUNDSTATES - 1) + ".");
-            return;
-        }
+        Logger::LogDebug(LOGSOURCE, "Setting escape gamemode profile for round.");
 
-        // TODO: If we ever support reallocation we must add it here too.
-
-        RoundStateContextT module& state = GetRoundRefByindex(index);
-        state.DenyJoin = denyJoin;
-        state.IsEnding = isEnding;
-        state.Defined = true;
-    }
-
-    internal KnownRoundStateT GetActiveKnownRoundState() { return GetKnownRoundStateTypeByIndex(GetActiveRoundStateIndex()); }
-    internal int GetActiveRoundStateIndex() { return ZH2Game::GameContext.MapDetails.ActiveRoundStateIndex; }
-
-    internal void SetKnownRoundState(KnownRoundStateT stateType) { SetRoundState(GetIndexOfKnownRoundStateType(stateType)); }
-    internal void SetRoundState(int index, bool broadcast = true)
-    {
-        int previousIndex = GetActiveRoundStateIndex();
-        ZH2Game::GameContext.MapDetails.ActiveRoundStateIndex = index;
-        Logger::LogDebug(LOGSOURCE, "Game state has switched to \cd" + GetRoundStateIndexAsString(index) + "\cj.");
-
-        if (broadcast)
-            Event::SendRoundSwitched(previousIndex, index);
-    }
-
-    internal RoundStateContextT module& GetRoundRefCurrent() { return GetRoundRefByindex(GetActiveRoundStateIndex()); }
-    internal RoundStateContextT module& GetRoundRefByKnownRoundStateType(KnownRoundStateT stateType) { return GetRoundRefByindex(GetIndexOfKnownRoundStateType(stateType)); }
-    internal RoundStateContextT module& GetRoundRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Rounds[index]; }
-
-    internal bool GetRoundJoinable(int index) { return !GetRoundRefByindex(index).DenyJoin; }
-    internal bool GetRoundIsEnding(int index) { return GetRoundRefByindex(index).IsEnding; }
-    internal bool GetRoundDefined(int index) { return GetRoundRefByindex(index).Defined; }
-
-    /* Casting / Conversions */
-
-    internal int GetIndexOfKnownRoundStateType(KnownRoundStateT stateType) { return (int)stateType; }
-
-    // Returns STATENONE if the round timer is not known.
-    internal KnownRoundStateT GetKnownRoundStateTypeByIndex(int index)
-    {
-        static KnownRoundStateT collection[] = { STATEPREGAME, STATESTARTING, STATECOUNTDOWN, STATEPLAYING, STATEENDING, STATEVOTING };
-        foreach(KnownRoundStateT item; collection)
-        {
-            if (index != item)
-                continue;
-
-            return item;
-        }
-
-        return STATENONE;
-    }
-
-    internal str GetRoundStateIndexAsString(int index)
-    {
-        static str collection[] = { "Pregame", "Starting", "Countdown", "Playing", "Ending", "Voting" };
-        KnownRoundStateT knownRoundState = GetKnownRoundStateTypeByIndex(index);
-        if (knownRoundState != STATENONE)
-            return collection[index];
-
-        // No known round state, return custom and the index.
-        return "Custom (" + str(index) + ")";
+        Round::DefineRoundByKnown(Round::STATEPREGAME, false, false);
+        Round::DefineRoundByKnown(Round::STATESTARTING, false, false);
+        Round::DefineRoundByKnown(Round::STATECOUNTDOWN, false, false);
+        Round::DefineRoundByKnown(Round::STATEPLAYING, true, false);
+        Round::DefineRoundByKnown(Round::STATEENDING, true, true);
+        Round::DefineRoundByKnown(Round::STATEVOTING, true, true);
     }
 }
 

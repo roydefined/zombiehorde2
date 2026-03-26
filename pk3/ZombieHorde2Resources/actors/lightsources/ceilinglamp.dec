@@ -1,0 +1,127 @@
+actor ZH2CeilingLamp : ZH2SwitchableLightSource 22009
+{
+    tag "Ceiling Lamp"
+    scale .75
+
+    height 25
+    radius 16
+    health 1
+
+    mass 0x7FFFFFFF
+
+    +SOLID
+    +SHOOTABLE
+    +NOBLOOD
+    +NOGRAVITY
+    +SPAWNCEILING
+    +FORCEYBILLBOARD
+
+    States
+    {
+        Spawn:
+        Active:
+            CLMP A 1 nodelay bright light("ZH2CeilingLampLight") A_SpawnItemEx("ZH2CeilingLampFlare", 0, 0, 2)
+            loop
+
+        Inactive:
+            CLMP B 1
+            wait
+
+        Death:
+            TNT1 A 0 A_SpawnItem("ZH2BrokenCeilingLamp")
+            TNT1 A 0 A_SpawnItem("ZH2CeilingLampBrokenFX")
+            TNT1 A 0 A_SpawnItem("ZH2CeilingLampBrokenGlassSpawner")
+            stop
+    }
+}
+
+actor ZH2CeilingLampFlare : ZH2LightSourceLensFlare
+{
+    yscale .3
+    xscale 1.4
+
+    States
+    {
+        Spawn:
+            LFLR B 1 nodelay Bright
+            stop
+    }
+}
+
+actor ZH2CeilingLampBrokenFX
+{
+    +NOINTERACTION
+    +CLIENTSIDEONLY
+    +NOTIMEFREEZE
+    states
+    {
+        spawn:
+            TNT1 A 0 nodelay A_PlaySound("ZH2CeilingLamp/break")
+            stop
+    }
+}
+
+actor ZH2CeilingLampBrokenGlassSpawner
+{
+    +NOINTERACTION
+    +CLIENTSIDEONLY
+    +NOTIMEFREEZE
+    states
+    {
+        spawn:
+            TNT1 AAAAAAAAAAAAAAAAAAAAAAAA 0 nodelay A_SpawnItemEx("ZH2CeilingLampGlassShard", random(-16, 16), random(-16, 16), -25, Frandom(-1.5, 1.5), Frandom(-1.5, 1.5), Frandom(0.5, 4.0), random(0, 359))
+            stop
+    }
+}
+
+actor ZH2BrokenCeilingLamp
+{
+    +FORCEYBILLBOARD
+    +NOINTERACTION
+    +CLIENTSIDEONLY
+
+    scale .75
+    states
+    {
+        spawn:
+            CLMP B -1
+    }
+}
+
+actor ZH2CeilingLampGlassShard
+{
+    +MISSILE
+    -NOGRAVITY
+    +NOBLOCKMAP
+    +THRUACTORS
+    +FORCEXYBILLBOARD
+    +CLIENTSIDEONLY
+    +DONTSPLASH
+
+    states
+    {
+        Spawn:
+            TNT1 A 0 nodelay A_SetScale(Frandom(0.1, 0.8), Frandom(0.1, 0.4))
+            SGSA ABCDABCDABCDABCDABCD 4 A_JumpIf(WaterLevel > 0, "underwater")
+        DeSpawn:
+            SGSA ABCD 2 A_Fadeout(.4)
+            loop
+
+        // Underwater Fade out
+        Underwater:
+            SGSA "########" 2 A_ChangeVelocity(velx/1.4, vely/1.4, velz/1.1, CVF_REPLACE)
+        UnderwaterEnd:
+            SGSA "########" 2 A_Fadeout(.05)
+            loop
+
+        // Death fade out
+        Death:
+            TNT1 A 0 A_SetTranslucent(1.0)
+            SGSA A 0 A_SetTics(random(30, 80))
+
+        // Fade out
+        Death.Rest:
+            SGSA A 1 A_Fadeout(.01)
+            loop
+    }
+}

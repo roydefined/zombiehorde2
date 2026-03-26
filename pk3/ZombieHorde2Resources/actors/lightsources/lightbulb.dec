@@ -1,0 +1,92 @@
+actor ZH2LightBulb : ZH2SwitchableLightSource 22010
+{
+    tag "Light Bulb"
+    scale .75
+    height 17
+    radius 4
+    health 1
+    mass 0x7FFFFFFF
+
+    +SOLID
+    +NOBLOOD
+    +SHOOTABLE
+    +NOGRAVITY
+    +SPAWNCEILING
+    +FORCEYBILLBOARD
+
+    States
+    {
+        Spawn:
+        Active:
+            BULB A 1 nodelay bright light("ZH2LightBulbLight") A_SpawnItemEx("ZH2LightBulbFlare", 0, 0, 2)
+            loop
+
+        Inactive:
+            BULB B 1
+            wait
+
+        Death:
+            TNT1 A 0 A_SpawnItem("ZH2BrokenLightBulb")
+            TNT1 A 0 A_SpawnItem("ZH2LightBulbBrokenFX")
+            TNT1 A 0 A_SpawnItem("ZH2LightBulbBrokenGlassSpawner")
+            stop
+    }
+}
+
+actor ZH2LightBulbFlare : ZH2LightSourceLensFlare
+{
+    scale .3
+
+    States
+    {
+        Spawn:
+            LFLR B 1 nodelay bright
+            stop
+    }
+}
+
+actor ZH2LightBulbBrokenFX
+{
+    +NOINTERACTION
+    +CLIENTSIDEONLY
+    +NOTIMEFREEZE
+
+    states
+    {
+        spawn:
+            TNT1 A 0 nodelay A_PlaySound("ZH2LightBulb/break")
+            stop
+    }
+}
+
+actor ZH2LightBulbBrokenGlassSpawner
+{
+    +NOINTERACTION
+    +CLIENTSIDEONLY
+    +NOTIMEFREEZE
+
+    states
+    {
+        spawn:
+            TNT1 AAAAAA 0 nodelay A_SpawnItemEx("ZH2LightBulbGlassShard", random(-8, 8), random(-8, 8), -25, Frandom(-1.5, 1.5), Frandom(-1.5, 1.5), Frandom(0.5, 4.0), random(0, 359))
+            stop
+    }
+}
+
+actor ZH2BrokenLightBulb
+{
+    +FORCEYBILLBOARD
+    +NOINTERACTION
+    +CLIENTSIDEONLY
+
+    scale .75
+    states
+    {
+        spawn:
+            BULB B -1
+    }
+}
+
+actor ZH2LightBulbGlassShard : ZH2CeilingLampGlassShard
+{
+}

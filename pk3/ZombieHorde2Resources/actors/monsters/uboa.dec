@@ -1,0 +1,70 @@
+actor ZH2Uboa : ZH2Monster 20119
+{
+	//$NotAngled
+
+	Speed 20
+	Radius 16
+	Height 56
+	Health 5000
+	PainChance 180
+
+	Mass 0x7fffffff
+	scale .75
+	meleedamage 9999
+	meleerange 64
+
+	BloodType "ZH2UboaBlood"
+
+	Obituary "%o was scared to death by Uboa."
+	SeeSound "ZH2Uboa/see"
+	PainSound "ZH2Uboa/pain"
+	DeathSound "ZH2Uboa/death"
+
+	+FLOORCLIP
+	+FASTER
+	+FASTMELEE
+	-CANNOTPUSH
+	+FLOORHUGGER
+	+DROPOFF
+	+BRIGHT
+	+LOOKALLAROUND
+
+	States
+	{
+		Spawn.Clear:
+			TNT1 A 0 A_ClearTarget
+			UBOA AAAAAAAAAAAAAAAA 1 A_Wander
+		Spawn:
+			UBOA A 1 NoDelay A_Wander
+			TNT1 A 0 A_look
+			loop
+
+		See:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_gettargetiszombie") == true, "Spawn.Clear")
+			UBOA A 1 A_Chase
+			loop
+
+		Melee:
+			TNT1 A 0 A_FaceTarget
+			UBOA B 10 A_MeleeAttack
+			goto See
+
+		Pain:
+			UBOA B 4 A_Pain
+			goto See
+
+		Death:
+			UBOA A 8
+			UBOA B 2 A_Scream
+			UBOA A 2
+			UBOA B 2 A_NoBlocking
+			UBOA A 2
+			UBOA B 4 A_FadeOut(0.2)
+			wait
+	}
+}
+
+actor ZH2UboaBlood : ZH2HumanBlood
+{
+	Translation "0:255=%[0.00,0.00,0.00]:[0.00,0.00,0.00]"
+}

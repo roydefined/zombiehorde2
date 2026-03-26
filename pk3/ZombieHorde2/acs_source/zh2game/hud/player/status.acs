@@ -62,6 +62,7 @@ strict namespace Hud
         BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
 
         // Right side
+        // TODO: This is a whole different part of the HUD and should be moved.
         PrepareHud(
             BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX() - 80.0,
             BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 40.0,
@@ -80,6 +81,7 @@ strict namespace Hud
         }
 
         // Call hook for this part of the HUD.
+        PrepareHud(baseX, baseY, true);
         _hudHookData.Type = HUDHOOK_PLAYERSTATUS;
         Hook::Call(Hook::HOOK_CLIENTDRAWHUD, _hudHookData);
     }
@@ -259,7 +261,7 @@ strict namespace Hud
         _hudStates[5] = Power::GetHasPower(Power::POWERPANICKING);
         _hudStates[6] = Power::GetHasPower(Power::POWERHUMANIMMUNITY);
         _hudStates[7] = Power::GetHasPower(Power::POWERZOMBIEPROTECT);
-        _hudStates[8] = Player::GetThruActorsState() != Player::STATE_DEFAULT;
+        _hudStates[8] = SpaceUtil::GetThruActorsState() != SpaceUtil::STATE_DEFAULT;
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
 
