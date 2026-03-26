@@ -148,24 +148,24 @@ script "ToggleWeather" (void) clientside
 Script "FlareLocker" (int whatfloor)
 {
 	if(Player::GetIsZombie())
-	{
 		terminate;
-	}
 
-	if(!Flaresleft[whatfloor]){
+	if(!Flaresleft[whatfloor])
+	{
 		delay(10);
 		InteractionMessage("\caThere are no more flares.");
 		LocalAmbientSound("sound/itemfail1", 128);
 		terminate;
 	}
-	if(CheckInventory("FlareSpawn") == 2){
+	if(CheckInventory(FLARE_ITEM) == 2)
+	{
 		InteractionMessage("You have enough flares.");
 		LocalAmbientSound("sound/itemfail1", 128);
 		terminate;
 	}
 
 	InteractionMessage("You got a flare.");
-	GiveInventory("FlareSpawn", 1);
+	GiveInventory(FLARE_ITEM, 1);
 	LocalAmbientSound("sound/itemget1", 128);
 	Flaresleft[whatfloor]--;
 }
@@ -256,9 +256,14 @@ Script 999 (void)
 Script 5 (void)
 {
 	if(Player::GetIsHuman())
-		ThingSound(1, "sound/guitarriff", 127);
+	{
+        ThingSound(1, "sound/guitarriff", 127);
+        Delay(35 * 5);
+    }
 	else
-		InteractionMessage("Zombies don't know how to rock.");
+	{
+        InteractionMessage("Zombies don't know how to rock.");
+    }
 }
 
 // vending machines
