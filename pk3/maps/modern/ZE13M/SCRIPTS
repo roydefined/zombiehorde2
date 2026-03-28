@@ -123,7 +123,20 @@ script "OnOpen" open
     TranslucentLine(90, 0, 0);
 
 	// Determine if the blue/red jewels should already be set.
-	SyncJewelAlreadySet(Random(0, 20) == 20, Random(0, 20) == 20);
+	// Randomize if 0. Otherwise set based on the flow value.
+	int flow = GetCVar("sv_zh2_ze13mflow");
+	if (flow == 0)
+	{
+		redJewelAlreadyPlaced = Random(0, 10) == 10;
+		blueJewelAlreadyPlaced = Random(0, 10) == 10;
+	}
+	else
+	{
+		redJewelAlreadyPlaced = (flow & 1 << 0) != 0;
+		blueJewelAlreadyPlaced = (flow & 1 << 1) != 0;
+	}
+
+	SyncJewelAlreadySet();
 	if (blueJewelAlreadyPlaced)
 	{
 		Door_Close(45, 10);
@@ -519,22 +532,19 @@ script "CastleJewelDebug" (void) CLIENTSIDE
 //
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-function void SyncJewelAlreadySet(bool blueSet, bool redSet)
+function void SyncJewelAlreadySet()
 {
 	if (!BCSUtils::IsServer()) {
 		Logger::LogError(LOGSOURCE, "SyncJewelState was called clientside.");
 		return;
 	}
 
-	blueJewelAlreadyPlaced = blueSet;
-	redJewelAlreadyPlaced = redSet;
-
 	// Do not sync when not in a network game.
 	if (!IsNetworkGame()) {
 		return;
 	}
 
-	int pack = BCSUtils::PackShorts(blueSet, redSet);
+	int pack = BCSUtils::PackShorts(blueJewelAlreadyPlaced, redJewelAlreadyPlaced);
 	BCSUtils::SyncVariable(SYNC_JEWELALREADYPLACED, pack);
 
 	// Receive on all clients.

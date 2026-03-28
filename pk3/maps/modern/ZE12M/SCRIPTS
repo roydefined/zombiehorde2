@@ -83,23 +83,28 @@ script "OnOpen" open
     //SetGlobalZombieTeleports(1);
 
 	// Determine the game to run.
-	// In a developmental environment, this can instead be done with switches which will be available.
-	if (Environment::IsDevelopment())
+	// Randomize if 0.
+	int flow = GetCVar("sv_zh2_ze12mflow");
+	if (flow == 0)
 	{
-		Logger::LogBold("Please press one of the switches in order to choose the game.");
-	}
-	else
-	{
-		if (Random(0, 8) == 8) {
-			SetNonLinearGame();
-		}
-		else
+		switch(Random(0, 8))
 		{
-			SetLinearGame(Random(0, 5) >= 1);
-		}
+			case 0:
+				flow = 1;
 
-		Floor_LowerToLowest(43, 999);
+			case 1:
+			case 2:
+				flow = 2;
+
+			default:
+				flow = 3;
+		}
 	}
+
+	if (flow == 1)
+		SetNonLinearGame();
+	else
+		SetLinearGame(flow == 3);
 
 	// Scrolling of the quicksand.
 	// These are specific angles.
@@ -121,33 +126,6 @@ script "OnOpen" open
 	TranslucentLine(2, 0);
 	TranslucentLine(3, 0);
 	TranslucentLine(5, 0);
-}
-
-// Switch used to set the game type in development mode.
-script "SwitchSetGame"(int game)
-{
-	if (!Environment::IsDevelopment())
-		terminate;
-
-	if (mapGameType != 0)
-	{
-		terminate;
-	}
-
-	if (game == 1)
-	{
-		SetLinearGame(false);
-	}
-	else if (game == 2)
-	{
-		SetLinearGame(true);
-	}
-	else
-	{
-		SetNonLinearGame();
-	}
-
-	Floor_LowerToLowest(43, 999);
 }
 
 script "StartTrigger" (void) CLIENTSIDE
