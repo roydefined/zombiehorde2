@@ -10,21 +10,75 @@ strict namespace TeleportUtil
     #define TELEPORT_TEMPSPOTTID 1800
 
     enum TeleportFlagsT : int
-	{
-        // Spawn teleport for on the source, target or both.
-		TELEPORT_FOGSOURCE = 1 << 0,
-		TELEPORT_FOGTARGET = 1 << 1,
-		TELEPORT_FOGBOTH = TELEPORT_FOGSOURCE | TELEPORT_FOGTARGET,
+    {
+        // Spawn teleport fog on the source, target or both.
+        TELEPORT_FOGSOURCE = 1 << 0,
+        TELEPORT_FOGTARGET = 1 << 1,
+        TELEPORT_FOGBOTH = TELEPORT_FOGSOURCE | TELEPORT_FOGTARGET,
 
-        // Keep the velocity that existed on the player before teleporting.
-		TELEPORT_KEEPVELOCITY = 1 << 2,
+        // Keep the horizontal XY velocity.
+        TELEPORT_KEEPHORIZONTALVELOCITY = 1 << 2,
+
+        // Keep the vertical Z velocity.
+        TELEPORT_KEEPVERTICALVELOCITY = 1 << 3,
+
+        // Keep both horizontal and vertical velocity.
+        TELEPORT_KEEPVELOCITY = TELEPORT_KEEPHORIZONTALVELOCITY | TELEPORT_KEEPVERTICALVELOCITY,
 
         // Use the angle used by the target spot.
-		TELEPORT_USETARGETANGLE = 1 << 3,
+        TELEPORT_USETARGETANGLE = 1 << 4,
 
-        // Keep the height relative to the floor.
-		TELEPORT_KEEPHEIGHT = 1 << 4,
-	};
+        // Keep the height relative to the destination.
+        TELEPORT_KEEPRELATIVEHEIGHT = 1 << 5,
+
+        // Use the teleport spot height.
+        TELEPORT_USETELEPORTSPOTHEIGHT = 1 << 6,
+
+        // Rotate horizontal velocity so it matches the target angle orientation.
+        TELEPORT_ORIENTVELOCITYTOTARGETANGLE = 1 << 7,
+
+
+        /* Profiles */
+
+        // Preserve full momentum and relative height.
+        TELEPORT_PROFILE_PORTAL =
+            TELEPORT_KEEPVELOCITY |
+            TELEPORT_KEEPRELATIVEHEIGHT,
+
+        // Teleport that also rotates horizontal momentum to the target angle.
+        TELEPORT_PROFILE_PORTALORIENTED =
+            TELEPORT_KEEPVELOCITY |
+            TELEPORT_KEEPRELATIVEHEIGHT |
+            TELEPORT_ORIENTVELOCITYTOTARGETANGLE,
+
+        // Teleport to a spot using its angle and height.
+        TELEPORT_PROFILE_TELEPORTSPOT =
+            TELEPORT_USETARGETANGLE |
+            TELEPORT_USETELEPORTSPOTHEIGHT,
+
+        // Teleport to a spot with fog.
+        TELEPORT_PROFILE_TELEPORTSPOTFOG =
+            TELEPORT_USETARGETANGLE |
+            TELEPORT_USETELEPORTSPOTHEIGHT |
+            TELEPORT_FOGBOTH,
+
+        // Keep all movement, rotate horizontal movement, use target angle and place relative to the teleport spot height.
+        TELEPORT_PROFILE_MOMENTUM =
+            TELEPORT_KEEPVELOCITY |
+            TELEPORT_USETARGETANGLE |
+            TELEPORT_USETELEPORTSPOTHEIGHT |
+            TELEPORT_KEEPRELATIVEHEIGHT |
+            TELEPORT_ORIENTVELOCITYTOTARGETANGLE,
+
+        // Same as momentum profile, but with fog.
+        TELEPORT_PROFILE_MOMENTUMFOG =
+            TELEPORT_KEEPVELOCITY |
+            TELEPORT_USETARGETANGLE |
+            TELEPORT_USETELEPORTSPOTHEIGHT |
+            TELEPORT_KEEPRELATIVEHEIGHT |
+            TELEPORT_ORIENTVELOCITYTOTARGETANGLE |
+            TELEPORT_FOGBOTH,
+    };
 
     extern void TeleportAreaBetween(int targetTidMin, int targetTidMax, int area = 90, int flags = 0);
     extern void PlayerTeleportAreaBetween(int sourceId, int targetTidMin, int targetTidMax, int area = 90, int flags = 0);
