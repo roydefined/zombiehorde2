@@ -8,29 +8,28 @@
 #include "acs_source/zh2game.h.acs"
 
 // Used for synchronization
-#define SYNC_MAPSTATE 100
+#define SYNC_MAPPROGRESSSTATE 100
 #define SYNC_PILLARSTATE 101
 
-// Indicates the finished pillars
-bool pillarDone[4];
+internal enum MapGameTypeT
+{
+	GAMETYPE_LINEAR,
+	GAMETYPE_QUICKLINEAR,
+	GAMETYPE_NONLINEAR,
+};
 
-// The tids used for the lens flare on each pillar.
-int pillarTids[4] = { 3, 2, 5, 1 };
+internal enum MapProgressStateT
+{
+	STATE_PLAYINGOUTSIDE,
+	STATE_PLAYINGINSIDE,
+	STATE_ENDING,
+	STATE_ENDED,
+};
 
-// This specifies the gameType that is being played.
-#define GAMETYPE_LINEAR 0
-#define GAMETYPE_QUICKLINEAR 1
-#define GAMETYPE_NONLINEAR 2
-int mapGameType;
-
-// The state type of the map.
-// Used during synchronization to indicate if the music should be played to joining players.
-#define MAPSTATE_NONE 0
-#define MAPSTATE_ENDING 1
-#define MAPSTATE_ENDED 2
-
-// The actual map state.
-int mapState = MAPSTATE_NONE;
+internal bool _pillarDone[4];
+internal int _pillarTids[4] = { 3, 2, 5, 1 };
+internal int _gameType = GAMETYPE_LINEAR;
+internal int _mapProgressState = STATE_PLAYINGOUTSIDE;
 
 #define LOGSOURCE "Map"
 
@@ -42,7 +41,8 @@ script "OnEnterClient" enter clientside
 script "OnOpenClient" open clientside
 {
 	ClientSyncActivePillars();
-	ClientSyncMapState();
+	ClientSyncMapProgressState();
+
 	if(!ACS_NamedExecute("FinalMusicLoop", 0))
 	{
 		Logger::LogError(LOGSOURCE, "Failed to start FinalMusicLoop");
@@ -68,7 +68,25 @@ script "OnOpenClient" open clientside
 
 script "OnOpen" open
 {
-	Delay(const: 1);
+	// Unset the beam opacity to appear later.
+	TranslucentLine(1, 0);
+	TranslucentLine(2, 0);
+	TranslucentLine(3, 0);
+	TranslucentLine(5, 0);
+
+	// Scrolling of the quicksand.
+	Scroll_Floor(48, -15, -80, SCROLL_AND_CARRY);
+	Scroll_Floor(49, -80, -80, SCROLL_AND_CARRY);
+	Scroll_Floor(50, -80, -15, SCROLL_AND_CARRY);
+	Scroll_Floor(51, -80,  15, SCROLL_AND_CARRY);
+	Scroll_Floor(52, -80,  80, SCROLL_AND_CARRY);
+	Scroll_Floor(53, -15,  80, SCROLL_AND_CARRY);
+	Scroll_Floor(54,  15,  80, SCROLL_AND_CARRY);
+	Scroll_Floor(55,  80,  80, SCROLL_AND_CARRY);
+	Scroll_Floor(56,  80,  15, SCROLL_AND_CARRY);
+	Scroll_Floor(57,  80, -15, SCROLL_AND_CARRY);
+	Scroll_Floor(58,  80, -80, SCROLL_AND_CARRY);
+	Scroll_Floor(59,  15, -80, SCROLL_AND_CARRY);
 
 	// Resists
 	// TODO: Support the additional parameter?
@@ -80,10 +98,10 @@ script "OnOpen" open
 	Resist::CreateResist(40, "\cjReach the burial chamber", "%t \ciseconds left"); //, RESISTTYPEPLAIN);
 
 	// TODO: Support
-    //SetGlobalZombieTeleports(1);
+	//SetGlobalZombieTeleports(1);
 
 	// Determine the game to run.
-	// Randomize if 0.
+	// Randomize if 0. Do a randomized switch with chance for certain flows.
 	int flow = GetCVar("sv_zh2_ze12mflow");
 	if (flow == 0)
 	{
@@ -105,82 +123,67 @@ script "OnOpen" open
 		SetNonLinearGame();
 	else
 		SetLinearGame(flow == 3);
-
-	// Scrolling of the quicksand.
-	// These are specific angles.
-	Scroll_Floor(48, -15, -80, SCROLL_AND_CARRY);
-	Scroll_Floor(49, -80, -80, SCROLL_AND_CARRY);
-	Scroll_Floor(50, -80, -15, SCROLL_AND_CARRY);
-	Scroll_Floor(51, -80,  15, SCROLL_AND_CARRY);
-	Scroll_Floor(52, -80,  80, SCROLL_AND_CARRY);
-	Scroll_Floor(53, -15,  80, SCROLL_AND_CARRY);
-	Scroll_Floor(54,  15,  80, SCROLL_AND_CARRY);
-	Scroll_Floor(55,  80,  80, SCROLL_AND_CARRY);
-	Scroll_Floor(56,  80,  15, SCROLL_AND_CARRY);
-	Scroll_Floor(57,  80, -15, SCROLL_AND_CARRY);
-	Scroll_Floor(58,  80, -80, SCROLL_AND_CARRY);
-	Scroll_Floor(59,  15, -80, SCROLL_AND_CARRY);
-
-	// Unset the beam opacity to appear later.
-	TranslucentLine(1, 0);
-	TranslucentLine(2, 0);
-	TranslucentLine(3, 0);
-	TranslucentLine(5, 0);
 }
 
-script "StartTrigger" (void) CLIENTSIDE
+script "StartTrigger" clientside
 {
 	static bool _startTriggerRun;
-	if (_startTriggerRun) {
+	if (_startTriggerRun)
 		terminate;
-	}
 
 	_startTriggerRun = true;
 	SetActivator(-1);
 	ClearLineSpecial();
 
+	// Only run if we aren't ending yet.
+	if (_mapProgressState == STATE_ENDING || _mapProgressState == STATE_ENDED)
+		terminate;
+
 	Music::SetDefaultMusic("d_egypt2");
-    Music::PlayDefaultMusic();
+	Music::PlayDefaultMusic();
+
+	// The rest only makes sense if we didn't open the pyramid yet
+	if (_mapProgressState != STATE_PLAYINGOUTSIDE)
+		terminate;
 
 	delay(18);
 
-	int stayTime = BCSUtils::cond(mapGameType == GAMETYPE_LINEAR, 3.75, 5.75);
+	int stayTime = _gameType == GAMETYPE_LINEAR ? 3.75 : 5.75;
 
 	SetHudSize(640, 480, FALSE);
-    SetFont("smallfont");
-    HudMessage(s:"You must activate all four pillars"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 42.0, stayTime + 0.25, 1.0, 0.5);
+	SetFont("smallfont");
+	HudMessage(s:"You must activate all four pillars"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 42.0, stayTime + 0.25, 1.0, 0.5);
 	delay(9);
 	HudMessage(s:"on each cardinal direction in order to open the pyramid"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 52.0, stayTime, 1.0, 0.5);
 
 	delay(35 * 2);
-	if (mapGameType == GAMETYPE_QUICKLINEAR)
-	{
+
+	// Extra message with some gamemodes.
+	if (_gameType == GAMETYPE_QUICKLINEAR)
 		HudMessage(s:"You're in luck! Some of the pillars are already active."; HUDMSG_FADEOUT, 0, CR_GREEN, 320.0, 62.0, 4.5, 0.5);
-	}
-	if (mapGameType == GAMETYPE_NONLINEAR)
-	{
+	else if (_gameType == GAMETYPE_NONLINEAR)
 		HudMessage(s:"The desert is in your favour. You can freely move to any pillar!"; HUDMSG_FADEOUT, 0, CR_GREEN, 320.0, 62.0, 4.5, 0.5);
-	}
+}
+
+internal void TriggerBeaconActivateAmbience()
+{
+	AmbientSound("world/beacon1", 127);
 }
 
 // The general function to activate a beacon.
 // If silent is `true`, do not play the ambient sound.
-function void TriggerBeaconActive (int tag, bool silent)
+internal void ActivateBeacon(int index)
 {
+	int tag = _pillarTids[index];
 	TranslucentLine(tag, 128, true);
 
-	if (!silent) {
-		AmbientSound("world/beacon1", 127);
-	}
-
+	// Call directly to the client offline.
 	if (!IsNetworkGame())
-	{
-		TriggerBeaconActiveClient(tag);
-	}
+		ActivateBeaconClient(index);
 
 	// Open up the pillar if all four are activated.
 	// The quick game type will have a seperate resist first.
-	if (GetPillarsDoneCount() == 4 && mapGameType != GAMETYPE_QUICKLINEAR)
+	if (GetPillarsDoneCount() == 4 && _gameType != GAMETYPE_QUICKLINEAR)
 	{
 		floor_lowerinstant(28, 0, 2048);
 		ceiling_lowerinstant(28, 0, 2048);
@@ -188,20 +191,23 @@ function void TriggerBeaconActive (int tag, bool silent)
 	}
 }
 
-function void TriggerBeaconActiveClient (int tag)
+internal void ActivateBeaconClient (int index)
 {
+	int tag = _pillarTids[index];
 	Thing_Activate(tag);
 
 	// Activate the Light flare at the pyramid with the first finished beacon.
-	if (GetPillarsDoneCount() == 1) {
+	if (GetPillarsDoneCount() == 1)
 		Thing_Activate(4);
-	}
 }
 
 // Enables the zombie teleports after 10 seconds, and the shortcut after another 5 seconds. Called after the last pillar was activated.
-script "PyramidOpened"(void)
+script "PyramidOpened"
 {
 	Delay(35 * 3);
+
+	_mapProgressState = STATE_PLAYINGINSIDE;
+	SyncMapProgressState();
 
 	SetHudSize(640, 480, FALSE);
 	AmbientSound("world/reveal1", 127);
@@ -222,24 +228,25 @@ script "PyramidOpened"(void)
 
 // Resist to open the pyramid.
 // Specific to the quick linear game type.
-script "OpenPyramidResist" (void)
+script "OpenPyramidResist"
 {
-	if(mapGameType != GAMETYPE_QUICKLINEAR) {
+	if(_gameType != GAMETYPE_QUICKLINEAR)
 		terminate;
-	}
 
-    static bool hasRun;
-	if (hasRun) {
+	static bool hasRun;
+	if (hasRun)
 		terminate;
-	}
+
 	hasRun = true;
 
-    SetActivator(-1);
+	SetActivator(-1);
 	Delay(Resist::StartResistByIndex(4));
 
-    floor_lowerinstant(28, 0, 2048);
+	floor_lowerinstant(28, 0, 2048);
 	ceiling_lowerinstant(28, 0, 2048);
 
+	_mapProgressState = STATE_PLAYINGINSIDE;
+	SyncMapProgressState();
 
 	SetHudSize(640, 480, FALSE);
 	AmbientSound("world/reveal1", 127);
@@ -260,23 +267,23 @@ script "EnterPyramid" (void) clientside
 	if (!BCSUtils::IsOpenGL())
 	{
 		for(int i=0; i<999; ++i)
-        {
-            Light_RaiseByValue(i, 80);
-            sector_setfade(i, 0, 0, 0);
-        }
+		{
+			Light_RaiseByValue(i, 80);
+			sector_setfade(i, 0, 0, 0);
+		}
 	}
 }
 
 function int GetPillarsDoneCount(void)
 {
-	return pillarDone[0] + pillarDone[1] + pillarDone[2] + pillarDone[3];
+	return _pillarDone[0] + _pillarDone[1] + _pillarDone[2] + _pillarDone[3];
 }
 
 Script "FinalResist" (void)
 {
-    SetActivator(-1);
+	SetActivator(-1);
 
-    int y = 40.0;
+	int y = 40.0;
 
 	SetHudSize(640, 480, FALSE);
 	SetFont("BIGFONT");
@@ -288,31 +295,33 @@ Script "FinalResist" (void)
 	delay(18);
 	HudMessageBold(s:"A curse is about to befall the area!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, y, 2.0, 0.5, 0.5);
 	HudMessageBold(s:"Take shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, y+15.0, 2.0, 0.5, 0.5);
-    Delay(35*3);
-    ACS_NamedExecute("FinalMusic",0,0,0,0);
+	Delay(35*3);
+	ACS_NamedExecute("FinalMusic",0,0,0,0);
 	Delay(Resist::StartResistByIndex(5));
 	Generic_Ceiling(31, 16, 128, 5, 16);
 	tagwait(31);
 	delay(35);
-    SetFont("BIGFONT");
-    HudMessageBold(s:"The curse is here"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, y, 5.0, 3.0);
-    Delay(35);
-	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i) {
-		if (Game::GetPlayerIsSafe(i) || !PlayerInGame(i)) {
+	SetFont("BIGFONT");
+	HudMessageBold(s:"The curse is here"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, y, 5.0, 3.0);
+	Delay(35);
+	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+	{
+		if (Game::GetPlayerIsSafe(i) || !PlayerInGame(i))
 			continue;
-		}
 
 		NamedExecuteClientScript("DeathQuake", i);
 	}
 
 	delay(35*4+18);
-    Game::KillUnsafePlayers();
+	Game::KillUnsafePlayers();
 }
 
 // The earthquake to trigger on clients that did not make it.
-script "DeathQuake" (void) {
+script "DeathQuake"
+{
 	FadeTo(0, 0, 0, 1.0, 4.0);
-	for (int i = 1; i < 4; i++) {
+	for (int i = 1; i < 4; i++)
+	{
 		Radius_Quake2(ActivatorTID(), i, 35, 0, 1, "");
 		delay(35);
 	}
@@ -324,49 +333,54 @@ script "DeathQuake" (void) {
 
 // Called just before the final resist.
 // Handles setting the map's state which is useful for the final music to run properly.
-Script "FinalMusic" (void)
+Script "FinalMusic"
 {
-    Delay(525);
-	SyncMapState(MAPSTATE_ENDING);
-    Delay(1100);
-	SyncMapState(MAPSTATE_ENDED);
+	Delay(525);
+
+	_mapProgressState = STATE_ENDING;
+	SyncMapProgressState();
+
+	Delay(1100);
+
+	_mapProgressState = STATE_ENDED;
+	SyncMapProgressState();
 }
 
 // Runs clientside on players to avoid issues with the music cutting of prematurely.
-script "FinalMusicLoop" (void) clientside
+script "FinalMusicLoop" clientside
 {
 	SetActivator(-1);
-	if (mapState != MAPSTATE_ENDING)
+	if (_mapProgressState != STATE_ENDING)
 	{
 		delay(const: 1);
 		restart;
 	}
 
 	Music::SetMusic("d_egypt3", 0);
-    Delay(1225);
+	Delay(1225);
 	Music::SetMusic("", 0);
 }
 
-script "BridgeBlockpoint" (void)
+script "BridgeBlockpoint"
 {
-    Logger::LogBold(StrParam(n:0, s:"\c- has lowered the bridges! They will raise in 10 seconds"));
+	Logger::LogBold(StrParam(n:0, s:"\c- has lowered the bridges! They will raise in 10 seconds"));
 
-    SetActivator(-1);
-    ClearLineSpecial();
+	SetActivator(-1);
+	ClearLineSpecial();
 
-    floor_lowerbyvalue(25, 8, 120);
-    ceiling_lowerbyvalue(25, 8, 120);
-    delay(35*10);
+	floor_lowerbyvalue(25, 8, 120);
+	ceiling_lowerbyvalue(25, 8, 120);
+	delay(35*10);
 
-    floor_raisebyvalue(25, 8, 120);
-    ceiling_raisebyvalue(25, 8, 120);
+	floor_raisebyvalue(25, 8, 120);
+	ceiling_raisebyvalue(25, 8, 120);
 }
 
 // For debugging.
-script "PillarDebug" (void) CLIENTSIDE
+script "PillarDebug" clientside
 {
 	if (!Environment::IsDevelopment())
-        terminate;
+		terminate;
 
 	while(true)
 	{
@@ -379,65 +393,17 @@ script "PillarDebug" (void) CLIENTSIDE
 		SetHudSize(640, 480, FALSE);
 		SetFont("smallfont");
 
-		HudMessage(s:"Map state: ", d:mapState; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 50.0, 0.03);
-		HudMessage(s:"Eastern pillar active: ", d:pillarDone[0]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 60.0, 0.03);
-		HudMessage(s:"Northern pillar active: ", d:pillarDone[1]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 70.0, 0.03);
-		HudMessage(s:"Western pillar active: ", d:pillarDone[2]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 80.0, 0.03);
-		HudMessage(s:"Southern pillar active: ", d:pillarDone[3]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 90.0, 0.03);
+		HudMessage(s:"Map state: ", d:_mapProgressState; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 50.0, 0.03);
+		HudMessage(s:"Eastern pillar active: ", d:_pillarDone[0]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 60.0, 0.03);
+		HudMessage(s:"Northern pillar active: ", d:_pillarDone[1]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 70.0, 0.03);
+		HudMessage(s:"Western pillar active: ", d:_pillarDone[2]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 80.0, 0.03);
+		HudMessage(s:"Southern pillar active: ", d:_pillarDone[3]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 90.0, 0.03);
 
 		Delay(const: 1);
 	}
 }
 
-// -------------------------------------------
-//
-// MAP STATE SYNC
-//
-// -------------------------------------------
 
-function void SyncMapState(int state)
-{
-	if (!BCSUtils::IsServer()) {
-		Logger::LogError(LOGSOURCE, "SyncMapState was called clientside.");
-		return;
-	}
-
-	mapState = state;
-
-	// Do not sync when not in a network game.
-	if (!IsNetworkGame()) {
-		return;
-	}
-
-	BCSUtils::SyncVariable(SYNC_MAPSTATE, state);
-
-	// Receive on all clients.
-	if (!ACS_NamedExecuteAlways("SyncMapState_Client", 0)) {
-		Logger::LogError(LOGSOURCE, "Failed to execute SyncMapState_Client.");
-	}
-}
-
-script "SyncMapState_Client" (void) clientside
-{
-	ClientSyncMapState();
-}
-
-// Called clientside to fetch the synced state.
-function void ClientSyncMapState(void)
-{
-	if (!BCSUtils::IsClient()) {
-		Logger::LogError(LOGSOURCE, "ClientSyncMapState was called serverside.");
-		return;
-	}
-
-	// Do not sync when not in a network game.
-	if (!IsNetworkGame()) {
-		return;
-	}
-
-	mapState = BCSUtils::GetSyncVarDefault(SYNC_MAPSTATE, MAPSTATE_NONE);
-	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced map state to client: ", d:mapState, s:"."));
-}
 
 // -------------------------------------------
 //
@@ -447,7 +413,7 @@ function void ClientSyncMapState(void)
 
 // Sets up a linear game mode by changing the map.
 // If quick is `true`, three pillars will prematurely raise as was done with the last version made by DrDoctor.
-function void SetLinearGame(bool quick)
+internal void SetLinearGame(bool quick)
 {
 	// General linedef changes
 	Line_SetBlocking(22, BLOCK_PLAYERS, 0);
@@ -464,10 +430,12 @@ function void SetLinearGame(bool quick)
 	SetLineBlocking(4, BLOCK_PLAYERS);
 	Floor_RaiseByValue(3, 10, 40);
 
-	if (!quick) {
+	if (!quick)
+	{
 		Floor_LowerByValue(21, 999, 200);
 	}
-	if (quick) {
+	if (quick)
+	{
 		Floor_RaiseByValue(7, 999, 100);
 		Line_SetBlocking(77, BLOCK_PLAYERS, 0);
 	}
@@ -507,8 +475,8 @@ function void SetLinearGame(bool quick)
 		// North
 		floor_LowerByValue(44, 16, 112);
 		floor_raisebyvalue(5, 8, 128);
-		pillarDone[1] = true;
-		TriggerBeaconActive(pillarTids[1], true);
+		_pillarDone[1] = true;
+		ActivateBeacon(1);
 
 		// West
 		ceiling_raisebyvalue(43, 64, 108);
@@ -516,24 +484,24 @@ function void SetLinearGame(bool quick)
 		Floor_LowerByValue(18, 999, 120);
 		floor_raisebyvalue(17, 8, 48);
 		floor_raisebyvalue(11, 8, 48 + 128);
-		pillarDone[2] = true;
-		TriggerBeaconActive(pillarTids[2], true);
+		_pillarDone[2] = true;
+		ActivateBeacon(2);
 
 		// South
 		floor_raisebyvalue(32, 8, 64);
 		floor_raisebyvalue(10, 8, 64 + 128);
-		pillarDone[3] = true;
-		TriggerBeaconActive(pillarTids[3], true);
+		_pillarDone[3] = true;
+		ActivateBeacon(3);
 
 		SyncActivePillars();
 	}
 
-	mapGameType = BCSUtils::cond(quick, GAMETYPE_QUICKLINEAR, GAMETYPE_LINEAR);
+	_gameType = quick ? GAMETYPE_QUICKLINEAR : GAMETYPE_LINEAR;
 	Logger::LogDebug(LOGSOURCE, "The game has been initialized as a linear game.");
 }
 
 // Sets up a non linear game mode by changing the map.
-function void SetNonLinearGame(void)
+internal void SetNonLinearGame()
 {
 	Line_SetBlocking(6, BLOCK_PLAYERS, 0);
 
@@ -551,7 +519,7 @@ function void SetNonLinearGame(void)
 	ChangeCeiling(72, "F_SKY1");
 	ChangeCeiling(38, "F_SKY1");
 
-	mapGameType = GAMETYPE_NONLINEAR;
+	_gameType = GAMETYPE_NONLINEAR;
 	Logger::LogDebug(LOGSOURCE, "The game has been initialized as a non-linear game.");
 }
 
@@ -562,123 +530,158 @@ function void SetNonLinearGame(void)
 // -------------------------------------------
 
 
-script "BeaconEastResist" (void)
+script "BeaconEastResist"
 {
-    if(pillarDone[0]) {
+	if(_pillarDone[0])
 		terminate;
-	}
-    pillarDone[0] = true;
 
-    SetActivator(-1);
-	SetHudSize(640, 480, FALSE);
-	SetFont("smallfont");
-
-	Delay(Resist::StartResistByIndex(0));
-
-    floor_raisebyvalue(8,16,408);
-    floor_raisebyvalue(9,16,536);
-
-	// Only lowered in linear game types
-	if (mapGameType == GAMETYPE_LINEAR || mapGameType == GAMETYPE_QUICKLINEAR) {
-		floor_LowerByValue(36, 32, 150);
-	}
-
-    tagwait(9);
-	delay(35);
-
-	TriggerBeaconActive(pillarTids[0], false);
-	SyncActivePillars();
-}
-
-script "BeaconNorthResist" (void)
-{
-    if(pillarDone[1]) {
-		terminate;
-	}
-    pillarDone[1] = true;
-
-    SetActivator(-1);
-	SetHudSize(640, 480, FALSE);
-	SetFont("smallfont");
-
-	Delay(Resist::StartResistByIndex(1));
-
-    floor_raisebyvalue(5, 8, 128);
-
-	// Only lowered in linear gamemodes
-	if (mapGameType == GAMETYPE_LINEAR) {
-		floor_LowerByValue(44, 16, 112);
-	}
-
-    tagwait(5);
-	delay(35);
-
-    TriggerBeaconActive(pillarTids[1], false);
-	SyncActivePillars();
-}
-
-script "BeaconWestResist" (void)
-{
-    //clearLineSpecial is possible here but not used because the teleports also rely on this array.
-    if(pillarDone[2]) {
-		terminate;
-	}
-    pillarDone[2] = true;
+	_pillarDone[0] = true;
 
 	SetActivator(-1);
 	SetHudSize(640, 480, FALSE);
 	SetFont("smallfont");
 
+	Delay(Resist::StartResistByIndex(0));
+
+	floor_raisebyvalue(8,16,408);
+	floor_raisebyvalue(9,16,536);
+
+	// Only lowered in linear game types
+	if (_gameType == GAMETYPE_LINEAR || _gameType == GAMETYPE_QUICKLINEAR)
+		floor_LowerByValue(36, 32, 150);
+
+	tagwait(9);
+	delay(35);
+
+	TriggerBeaconActivateAmbience();
+	ActivateBeacon(0);
+	SyncActivePillars();
+}
+
+script "BeaconNorthResist"
+{
+	if(_pillarDone[1])
+		terminate;
+
+	_pillarDone[1] = true;
+
+	SetActivator(-1);
+	SetHudSize(640, 480, FALSE);
+	SetFont("smallfont");
+
+	Delay(Resist::StartResistByIndex(1));
+
+	floor_raisebyvalue(5, 8, 128);
+
+	// Only lowered in linear gamemodes
+	if (_gameType == GAMETYPE_LINEAR)
+		floor_LowerByValue(44, 16, 112);
+
+	tagwait(5);
+	delay(35);
+
+	TriggerBeaconActivateAmbience();
+	ActivateBeacon(1);
+	SyncActivePillars();
+}
+
+script "BeaconWestResist"
+{
+	if(_pillarDone[2])
+		terminate;
+
+	_pillarDone[2] = true;
+
+	SetActivator(-1);
+	SetHudSize(640, 480, false);
+	SetFont("smallfont");
+
 	Delay(Resist::StartResistByIndex(2));
 
-    door_open(42,128);
+	door_open(42,128);
 	floor_raisebyvalue(17, 8, 48);
 	floor_raisebyvalue(11, 8, 48 + 128);
 
 	// Only risen in linear game types
-	if (mapGameType == GAMETYPE_LINEAR) {
+	if (_gameType == GAMETYPE_LINEAR) {
 		ceiling_raisebyvalue(43, 64, 108);
 		ceiling_raisebyvalue(23, 64, 88);
 		Floor_LowerByValue(18, 999, 120);
 	}
 
 	TagWait(11);
-    delay(35);
+	delay(35);
 
-	TriggerBeaconActive(pillarTids[2], false);
+	TriggerBeaconActivateAmbience();
+	ActivateBeacon(2);
 	SyncActivePillars();
 }
 
-script "BeaconSouthResist" (void)
+script "BeaconSouthResist"
 {
-    if(pillarDone[3]) {
+	if(_pillarDone[3])
 		terminate;
-	}
-    pillarDone[3] = true;
 
-    SetActivator(-1);
+	_pillarDone[3] = true;
+
+	SetActivator(-1);
 	SetHudSize(640, 480, FALSE);
 	SetFont("smallfont");
 
 	Delay(Resist::StartResistByIndex(3));
 
-    /*SpawnspotForced("Explosion", 29, 0, 0);
-    AmbientSound("REVEAL",127);*/
+	/*SpawnspotForced("Explosion", 29, 0, 0);
+	AmbientSound("REVEAL",127);*/
 
 	floor_raisebyvalue(32, 8, 64);
-    floor_raisebyvalue(10, 8, 64 + 128);
+	floor_raisebyvalue(10, 8, 64 + 128);
 
 	// Only lowered in linear game types
-	if (mapGameType == GAMETYPE_LINEAR) {
+	if (_gameType == GAMETYPE_LINEAR) {
 		Floor_LowerByValue(3, 10, 40);
 		SetLineBlocking(4, BLOCK_NOTHING);
 	}
 
-    tagwait(10);
+	tagwait(10);
 	delay(35);
 
-	TriggerBeaconActive(pillarTids[3], false);
+	TriggerBeaconActivateAmbience();
+	ActivateBeacon(3);
 	SyncActivePillars();
+}
+
+// -------------------------------------------
+//
+// MAP STATE SYNC
+//
+// -------------------------------------------
+
+internal void SyncMapProgressState()
+{
+	VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+	if (!IsNetworkGame())
+		return;
+
+	BCSUtils::SyncVariable(SYNC_MAPPROGRESSSTATE, _mapProgressState);
+	ACS_NamedExecuteAlways("SyncMapProgressState_Client", 0);
+}
+
+script "SyncMapProgressState_Client" clientside
+{
+	ClientSyncMapProgressState();
+}
+
+// Called clientside to fetch the synced state.
+internal void ClientSyncMapProgressState()
+{
+	VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+	if (!IsNetworkGame())
+		return;
+
+	_mapProgressState = BCSUtils::GetSyncVarDefault(SYNC_MAPPROGRESSSTATE, STATE_PLAYINGOUTSIDE);
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced map state to client: ", d:_mapProgressState, s:"."));
 }
 
 // -------------------------------------------
@@ -688,20 +691,15 @@ script "BeaconSouthResist" (void)
 // -------------------------------------------
 
 // Synchronizes the current active pillars with clients.
-function void SyncActivePillars(void)
+internal void SyncActivePillars()
 {
 	if (IsNetworkGame())
-	{
 		return;
-	}
 
-	int value = BCSUtils::PackBytes(pillarDone[0], pillarDone[1], pillarDone[2], pillarDone[3]);
+	int value = BCSUtils::PackBytes(_pillarDone[0], _pillarDone[1], _pillarDone[2], _pillarDone[3]);
 	BCSUtils::SyncVariable(SYNC_PILLARSTATE, value);
 
-	// Receive on all clients.
-	if (!ACS_NamedExecuteAlways("SyncActivePillars_Client", 0)) {
-		Logger::LogError(LOGSOURCE, "Failed to execute SyncBaseTID_Client.");
-	}
+	ACS_NamedExecuteAlways("SyncActivePillars_Client", 0);
 }
 
 script "SyncActivePillars_Client"(void) clientside
@@ -710,27 +708,27 @@ script "SyncActivePillars_Client"(void) clientside
 }
 
 // Called clientside to synchronize the active pillars.
-function void ClientSyncActivePillars(void)
+internal void ClientSyncActivePillars()
 {
 	int value = BCSUtils::GetSyncVarDefault(SYNC_PILLARSTATE, 0);
-	if (!pillarDone[0] && BCSUtils::UnpackByte1(value)) {
-		pillarDone[0] = true;
-		TriggerBeaconActiveClient(pillarTids[0]);
-	}
-	if (!pillarDone[1] && BCSUtils::UnpackByte2(value)) {
-		pillarDone[1] = true;
-		TriggerBeaconActiveClient(pillarTids[1]);
-	}
-	if (!pillarDone[2] && BCSUtils::UnpackByte3(value)) {
-		pillarDone[2] = true;
-		TriggerBeaconActiveClient(pillarTids[2]);
-	}
-	if (!pillarDone[3] && BCSUtils::UnpackByte4(value)) {
-		pillarDone[3] = true;
-		TriggerBeaconActiveClient(pillarTids[3]);
-	}
+	_pillarDone[0] = BCSUtils::UnpackByte1(value);
+	_pillarDone[1] = BCSUtils::UnpackByte2(value);
+	_pillarDone[2] = BCSUtils::UnpackByte3(value);
+	_pillarDone[3] = BCSUtils::UnpackByte4(value);
 
-	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced active pillars to client: ", d:value, s:"."));
+	if (_pillarDone[0])
+		ActivateBeaconClient(0);
+
+	if (_pillarDone[1])
+		ActivateBeaconClient(1);
+
+	if (_pillarDone[2])
+		ActivateBeaconClient(2);
+
+	if (_pillarDone[3])
+		ActivateBeaconClient(3);
+
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced active pillars to client: ", d:_pillarDone[0], s:", ", d:_pillarDone[1], s:", ", d:_pillarDone[2], s:", ", d:_pillarDone[3], s:"."));
 }
 
 #undef LOGSOURCE
