@@ -46,9 +46,10 @@ strict namespace Admin
         str logMessageTo;
         buildmsg(logMessageTo = StrParam())
         {
+            // Also write who set the player as an admin unless it was themselves.
             Append(s:"\cfYou have been " + (set ? "added" : "removed") + " as an admin player");
-            if (activatorId == -1) Append(s:"!");
-            else Append(s:" by (\cd" + str(activatorId) + "\cj) " + BCSUTILS::PlayerName(activatorId) + "!");
+            if (activatorId == -1 || activatorId == id) Append(s:"!");
+            else Append(s:" by " + BCSUTILS::PlayerName(activatorId) + "!");
         }
 
         str logMessageExcept;
