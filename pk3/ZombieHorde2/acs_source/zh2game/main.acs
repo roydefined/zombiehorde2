@@ -594,10 +594,14 @@ strict namespace ZH2Game
         return !Environment::DevelopmentPlayerCap() || PlayerIsBot(id) || PlayerCount() - Utils::PlayingBotCount() <= DEV_PLAYERCAP_COUNT;
     }
 
-    // Returns `true` if the player canJoin.
+    // Returns `true` if the player can join.
+    // NOTE: `Timer() == 0` works around an issue with `GAMEEVENT_PLAYERJOINS`.
+    // The event is triggered so early that the state of a previous map still exists.
+    // This can cause the checks in this function from failing because it assumed the round is being played, for example.
+    // This means queued players won't join. The workaround is checking if we just started the map like we do now.
     internal bool GetPlayerCanJoin(int id)
     {
-        return AllowPlayerJoin(id) || Round::GetRoundJoinable(Round::GetActiveRoundStateIndex());
+        return AllowPlayerJoin(id) || Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()) || Timer() == 0;
     }
 
     // Note this is not always emptied in the game.
