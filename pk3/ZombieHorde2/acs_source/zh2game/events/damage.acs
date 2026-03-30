@@ -19,6 +19,10 @@ strict namespace Event
         int damage = Event::GetReceiveData(2);
         bool targetDied = Event::GetReceiveData(3);
 
+        // Don't count damage if we damaged ourselves.
+        if (Identity::GetTid(ConsolePlayerNumber()) == tid)
+            terminate;
+
         Damage::AddTotalDamage(tid, damage, targetDied);
         DamageFeedback::SetTidDamaged(tid, damage, targetDied);
     }
