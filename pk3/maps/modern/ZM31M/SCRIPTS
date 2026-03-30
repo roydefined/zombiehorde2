@@ -133,20 +133,28 @@ Script "OnOpen" open
 		ChangeFloor(sectorTag, "SNOW");
 	}
 
-	// Delay until we're halfway through the main time, then trigger a random event.
-	// NOTE: Changed to a static time for now, since the timer is very short.
-	//int gameTime = RoundTimer::GetPlayingTicsLeft() / 2;
-	int gameTime = 35 * 90;
-
-	while (--gameTime) {
+	int gameTime = GetCvar("sv_zh2_zm31meventtics");
+	while (--gameTime)
 		delay(1);
-	}
 
 	// Events
-	str scriptName = BCSUtils::cond(random(0, 3) > 0, "Events_Night", "Events_Nuke");
-	if (!ACS_NamedExecute(scriptName, 0)) {
-		Logger::LogError(LOGSOURCE, StrParam(s:"Failed to call script ", s:scriptName, s:"."));
+	int eventIndex = GetCVar("sv_zh2_zm31mevent");
+	if (eventIndex == 0)
+	{
+		eventIndex = Random(1, 3);
 	}
+
+	// TODO: The event scripts should not be plural (e.g. `Event_Night`).
+	str event;
+	switch(eventIndex)
+	{
+		case 2: event = "Events_Night"; break;
+		case 3: event = "Events_Nuke"; break;
+		default: return;
+	}
+
+	if (!ACS_NamedExecute(event, 0))
+		Logger::LogError(LOGSOURCE, StrParam(s:"Failed to call script ", s:event, s:"."));
 }
 
 Script "OnOpenClient" Open CLIENTSIDE
