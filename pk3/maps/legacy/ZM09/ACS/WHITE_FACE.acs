@@ -1,0 +1,238 @@
+//Whiteface
+/*#library "whitefac"
+#include "zcommon.acs"
+#import "music_pl.acs"
+#import "zm09_gen.acs"
+*/
+
+int debug_wf_speed=0;
+int debug_wf_scrpt_stck=0;
+int debug_wf_vsble=false;
+
+script 35 (void){//White Face Script
+    int rnd=0;
+    int snd=0;
+    int i=0;
+    delay(5);
+	debug_wf_scrpt_stck=1;
+    while(i<10){
+    ReplaceTextures("CONS1_5","ITEX20");
+    ReplaceTextures("ITEXE10","ITEXE33");
+    ReplaceTextures("ITEXE11","ITEXE33");
+    ReplaceTextures("ITEXE12","ITEXE29");
+    ReplaceTextures("ITEXE13","ITEXE41");
+    ReplaceTextures("ITEXE14","ITEXE41");
+    ReplaceTextures("IBMNU6","ITEX25");
+    ReplaceTextures("IBMNU5","ITEX25");
+    ReplaceTextures("IBMNU4","ITEX25");
+    ReplaceTextures("IBMNU3","ITEX25");
+    ReplaceTextures("IBMNU2","ITEX25");
+    ReplaceTextures("IBMNU1","ITEX25");
+    ReplaceTextures("COMPTALL","ITEXE45");
+        i++;
+        delay(10);
+    }
+}
+
+
+script 40 (int qnt){//Kid Laught in some areas
+    int i=0;
+    int k;
+    while(i<=qnt){
+        k=random(0,100);
+        if(k==50){
+            activatorsound("ELAUGHT",255);
+            i=qnt;
+        }
+        else{
+            k=random(0,100);
+        }
+        i++;
+    }
+}
+
+
+
+script 41 (int X) clientside{//White Face scirpt: Change the map + Ravishing vision
+    int i=0;
+    int k=90;
+    int j;
+    if(ConsolePlayerNumber() != PlayerNumber()) Terminate;
+    if(x==1){//I'm scared kill
+        ACS_Terminate(30,0);
+        ACS_Terminate(31,0);
+        ACS_Terminate(32,0);
+        ACS_Terminate(33,0);
+        ACS_Terminate(34,0);
+        generator1=0;
+        generator2=0;
+        ReplaceTextures("ITEX20","ITEX24");
+        ReplaceTextures("ITEXE29","ITEXE50");
+        ReplaceTextures("ITEXE33","ITEXE51");
+        ReplaceTextures("ITEXE45","ITEXE53");
+        ReplaceTextures("ITEXE41","ITEXE52");
+        SetLineTexture(157,SIDE_FRONT ,TEXTURE_BOTTOM ,"ITEXE55");
+        SetLineTexture(134,SIDE_FRONT ,TEXTURE_MIDDLE  ,"ITEXE54");
+        SetLineTexture(135,SIDE_FRONT ,TEXTURE_MIDDLE  ,"ITEXE54");
+        SetLineTexture(136,SIDE_FRONT ,TEXTURE_MIDDLE  ,"ITEXE54");
+        SetLineTexture(137,SIDE_FRONT ,TEXTURE_MIDDLE  ,"ITEXE54");
+        SetLineTexture(158,SIDE_FRONT ,TEXTURE_MIDDLE   ,"ITEXE54");
+        SetLineTexture(83,SIDE_FRONT ,TEXTURE_MIDDLE  ,"ITEXE54");
+        SetLineTexture(84,SIDE_FRONT ,TEXTURE_MIDDLE  ,"ITEXE54");
+        SetLineTexture(85,SIDE_FRONT ,TEXTURE_MIDDLE  ,"ITEXE54");
+        SetLineTexture(159,SIDE_FRONT ,TEXTURE_MIDDLE  ,"ITEXE54");
+        HudMessagebold(s:""; HUDMSG_PLAIN , 800, 0, 0.5, 0,0,0, 0);
+        delay(35*5);
+        SetMusic("suicide");
+        Music_Played=IMSCARED_MUSIC;
+        delay(35);
+
+        BCSUtils::HudSetFont("BIGFONT");
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetTextColor(CR_YELLOW);
+        BCSUtils::HudSetScale(0.8);
+        BCSUtils::HudSetDisappearTime(3.0);
+        BCSUtils::HudSetStayTime(13.5);
+
+        BCSUtils::HudSetAppearTime(1.5);
+        BCSUtils::HudSetPoint(320.0, 240.0);
+        BCSUtils::HudDrawText(0, "I am sorry, I just wanted a new friend. You and I are going to be great friends");
+
+        BCSUtils::HudSetAppearTime(4.5);
+        BCSUtils::HudSetPoint(320.0, 250.0);
+        BCSUtils::HudDrawText(0, "Well, this is my bedroom");
+
+        BCSUtils::HudSetAppearTime(7.5);
+        BCSUtils::HudSetPoint(320.0, 260.0);
+        BCSUtils::HudDrawText(0, "Please watch me playing the hunter game with the rest of that unsightly humans");
+
+        BCSUtils::HudSetAppearTime(10.5);
+        BCSUtils::HudSetPoint(320.0, 270.0);
+        BCSUtils::HudDrawText(0, "Dont worry, I will only kill that ugly humans");
+
+        BCSUtils::HudSetAppearTime(13.5);
+        BCSUtils::HudSetPoint(320.0, 280.0);
+        BCSUtils::HudDrawText(0, "but not zombies, because they are not fun to kill and will want your brain");
+
+        BCSUtils::HudSetAppearTime(16.5);
+        BCSUtils::HudSetPoint(320.0, 290.0);
+        BCSUtils::HudDrawText(0, "AND ONLY ME CAN TOUCH YOUR BRAIN!!!");
+
+
+        delay(35*9);
+        x=2;
+        for(x=49;x<=53;x++){
+            thing_remove(x);
+            Thing_SetSpecial(x,0,255,0,0);
+        }Thing_SetSpecial(86,0,255,0,0);
+        Thing_SetSpecial(88,0,255,0,0);
+        spawnspot("IMSCARED",132,0,0);
+        thing_remove(132);
+        x=0;
+        while(x<200){        
+            if(x!=131 && x!=100 && x!=1) Light_ChangeToValue(x,-100);
+            x++;
+            delay(1);
+        }
+        Thing_SetSpecial(138,0,255,0,0);
+        j=170;//timer
+        k=0;
+        while(true){
+            x=random(0,7);
+            if(x==0)     spawn("DeadMarine",random(-2263.18,-367.978),random(-1199.85,-429.914),300.0,151,0);//red key spam place
+            else if(x==1)spawn("DeadMarine",random(-3218.18,792.0),random(-4871.85,-429.914),300.0,151,0);//Outside area + second/fist floor red house
+            else if(x==2)spawn("DeadMarine",random(0.18,2500.0),random(1000.85,1500.914),385.0,151,0);//Big generator
+            else if(x==3)spawn("DeadMarine",random(2143.18,4000.0),random(2400.85,3790.914),450.0,151,0);//Hell area
+            else if(x==4)spawn("DeadMarine",random(-1009.18,-460.0),random(-225.85,720.914),66.0,151,0);//Entering cave
+            else if(x==5)spawn("DeadMarine",random(-90.18,2668.0),random(1000.85,1500.914),520.0,151,0);//Big generator
+            else if(x==6)spawn("DeadMarine",random(-320.18,1700.0),random(320.85,850.914),300.0,151,0);//Blue key spot
+            else if(x==7)spawn("DeadMarine",random(3947.18,5727.0),random(-2000.85,-230.914),402.0,151,0);//Third floor
+            thingsound(151,"player/male/death1",255);
+            delay(j);
+            k++;
+            if(k==5){
+                j--;
+                k=0;
+            }thing_changetid(151,0);
+        }
+    }else if(x==2){//ravishing kill
+        changecamera(100,1,0);
+        fadeto(255,255,255,1.0,0.5);
+        delay(35);
+        changecamera(100,0,0);
+        fadeto(255,255,255,0.0,0.5);
+        delay(35*3);
+        changecamera(100,1,0);
+    }else if(x==4){//White face scary spam
+        x=random(0,1000);
+        if(x>=500 && x<=570) acs_execute(43,0,0,0,0);
+    }
+}
+
+
+script 43 (int spot) clientside{//White Face third floor trick
+    int k=90;
+    int i=100;
+    int j;
+	int TEXT1,TEXT2,TEXT3;
+	int light1,light2,light3;
+	if(spot==true){
+		TEXT1="JNROCK13"; TEXT2="BBRWZ04"; TEXT3="WOODN2";
+		light1=119;light2=118;light3=113;
+	}else{
+		TEXT1="ITEXE17"; TEXT2="N_ROCK13"; TEXT3="BROCK41";
+		light1=139;light2=140;light3=141;
+		i=random(0,300);
+        if(i<100 || i>=125) terminate;
+	}if(ConsolePlayerNumber() != PlayerNumber()) Terminate;
+    if(k>=90){
+        ReplaceTextures(TEXT1,"SP_FACE2");
+        ReplaceTextures(TEXT2,"FIREBLU2");
+        ReplaceTextures(TEXT3,"N_SKIN03");
+        spawnspot("imscared",115,116,0);
+        spawnspot("Dead_Baby",117,200,0);
+        localsetmusic("FUCKED");
+        while(k<=237){
+            if(i>=59){
+                thingsound(117,"KIDSND",255);
+                i=-1;
+            }j=random(0,255);
+            Light_ChangeToValue(light1,j);
+            Light_ChangeToValue(light2,j);
+            Light_ChangeToValue(light3,j);
+            k++;
+            i++;
+            delay(1);
+        }
+        Local_SetLastMusic();
+        ReplaceTextures("SP_FACE2",TEXT1);
+        ReplaceTextures("FIREBLU2",TEXT2);
+        ReplaceTextures("N_SKIN03",TEXT3);
+        if(spot==true){
+			Light_ChangeToValue(light1,112);        
+			Light_ChangeToValue(light2,104);        
+			Light_ChangeToValue(light3,112);
+        }else{
+            Light_ChangeToValue(light1,104);            
+			Light_ChangeToValue(light2,96);            
+			Light_ChangeToValue(light3,88);
+        }thing_remove(116);
+        thing_remove(200);
+        delay(70);
+        activatorsound("ELAUGHT",255);
+    }   
+}
+
+script 44 (void){//White Face attack script
+    SetHudSize(640,480,1);
+    SetFont("ISCAR");
+    activatorsound("SOULFUCK",255);
+    HudMessage(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, 0.5, 0.5,5.0,0, 0.2);
+    teleport(102,0,0);
+    acs_execute(41,0,1,0,0);
+    SetFont("SMALLFONT");
+}
+
+script 46 (int tid, int speed){//White Face set speed
+		SetActorProperty(tid,APROP_Speed,speed << 16);
+}

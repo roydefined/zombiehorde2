@@ -1,0 +1,232 @@
+int zm09_menu_options[5];
+#define MENU_ACTIVE 1
+#define MENU_CLOSE  0
+
+#define RAIN_DISTANCE_IND 0 // 0 - 4
+#define RAIN_SOUND_IND 1 // 1 = disable
+#define RAIN_DETAILS_IND 2 // X // 0 - 4
+#define NEDM_ALLOW  3 // 0 enable
+#define REFLECTION_ALLOW 4 // 1 = disable
+
+int men_pX[5]={483.0  ,563.0  ,643.0  ,723.0 ,803.0};//fixed positons of the menu
+int men_pY[5]={241.0,331.0,421.0,511.0,591.0};//fixed positions of the menu
+int men_selected[5]={2,0,2,0,0};//can be changed
+int men_max_opt[5]={4,1,4,1,1};//fixed information
+int men_selected_tid[5]={505,499,496,493,490};//fixed information
+int men_size = 4;//fixed information
+
+int zm09_strsettings[8]={"ULTRA LOW","LOW","MEDIUM","HIGH","ULTRA","EXTREME","ON","OFF"};//CHECK IF CAN BE DELETED
+int menu_zm09;//CHECK IF CAN BE DELETED
+
+// START Simplified settings.
+script "zm09help" (void) NET clientside {
+    str message = StrParam(
+    s:"====================================",
+    s:"\cfQUICK HELP GUIDE FOR ZM09.",
+    s:"- \czCommand 'pukename setting_block_nedm 1' blocks NEDM (type 0 instead to allow).",
+    s:"- \cf(PERFORMANCE) \cd Command 'pukename setting_reflection 1' to disable map reflection (type 0 instead to enable).",
+    s:"- \cf(PERFORMANCE) \cd Command 'pukename setting_rainfall_distance X' configures how far the rain will go from you (0 [low] to 5 [high]).",
+    s:"- \cf(PERFORMANCE) \cd Command 'pukename setting_rainfall_quality X' configures how detailed the rain be rendered (0 [low] to 5 [high]).",
+    s:"",
+    s:"- \czCommand 'puke 48' for classic settings for ZM09.",
+    s:"- \czCommand 'puke 62'\cf for map tutorial (offline only).",
+    s:"",
+    s:" DEBUG SETTINGS",
+    s:"puke 67 shows map statistics",
+    s:"====================================",
+    s:"Check console for options");
+    printbold(s:message);
+}
+
+script "setting_allow_nedm" (int value) NET clientside {
+    zm09_consolemenu_set_option(value, NEDM_ALLOW, 0);
+}
+
+script "setting_rainfall_distance" (int value) NET clientside {
+    zm09_consolemenu_set_option(value, RAIN_DISTANCE_IND, 0);
+}
+
+script "setting_rainfall_quality" (int value) NET clientside {
+    zm09_consolemenu_set_option(value - 1, RAIN_DETAILS_IND, -1);
+}
+
+script "setting_reflection" (int value) NET clientside {
+    zm09_consolemenu_set_option(value, REFLECTION_ALLOW, 0);
+}
+
+// END Simplified settings
+
+script 48 (void) NET clientside{//Rainfall menu
+  int menu=MENU_ACTIVE;
+  int selected_menu = 0;
+  zm09_update_settings();
+  AmbientSound("menu/activate",127);
+  SetHudSize(1360,768,1);
+  SETFONT("IBMMENU");
+  HudMessageBold(s:"A";HUDMSG_PLAIN,543,0,680.0,384.0,0,0,0);
+  zm09_menu_render();
+  zm09_menu_render_options(selected_menu);
+  while(menu==MENU_ACTIVE){
+    SETFONT("IBMSELEC");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,men_selected_tid[selected_menu],0,men_pX[men_selected[selected_menu]],men_pY[selected_menu],0,0,0);
+    if(GetPlayerInput(-1, INPUT_BUTTONS)==BT_LEFT || GetPlayerInput(-1, INPUT_BUTTONS)==BT_MOVELEFT){
+        if(men_selected[selected_menu] > 0){
+            men_selected[selected_menu]--;
+            AmbientSound("menu/change",127);
+            zm09_save_settings();
+        }
+    }
+    else if(GetPlayerInput(-1, INPUT_BUTTONS)==BT_RIGHT || GetPlayerInput(-1, INPUT_BUTTONS)==BT_MOVERIGHT){
+        if(men_max_opt[selected_menu]>men_selected[selected_menu]){
+            men_selected[selected_menu]++;
+            AmbientSound("menu/change",127);
+            zm09_save_settings();
+        }
+    }
+    else if(GetPlayerInput(-1, INPUT_BUTTONS)==BT_FORWARD){
+        if(selected_menu>0){
+            selected_menu--;
+            zm09_menu_render_options(selected_menu);
+            AmbientSound("menu/cursor",127);
+            zm09_save_settings();
+        }
+    }
+    else if(GetPlayerInput(-1, INPUT_BUTTONS)==BT_BACK){
+        if(men_size>selected_menu){
+            selected_menu++;
+            zm09_menu_render_options(selected_menu);
+            AmbientSound("menu/cursor",127);
+            zm09_save_settings();
+        }
+    }
+    else if(GetPlayerInput(-1, INPUT_BUTTONS)==BT_USE) menu=MENU_CLOSE;
+    delay(5);
+   }
+   zm09_menu_close();
+   AmbientSound("switches/exitbutn",127);
+}
+
+function void zm09_menu_print(void){
+	SETFONT("SMALLFONT");
+ HudMessagebold(s:zm09_menu_print_color(1),s:"Rain Distance:",s:zm09_strsettings[weather_quality+1]; HUDMSG_PLAIN, 545, CR_UNTRANSLATED, 0.5, 0.46+hud_resize(),0,0, 0);
+	SETFONT("SMALLFONT");
+ HudMessagebold(s:zm09_menu_print_color(2),s:"Rain Sound:",s:zm09_strsettings[7-rain_sound]; HUDMSG_PLAIN, 546, CR_UNTRANSLATED, 0.5, 0.48+hud_resize()*2,0,0, 0);
+	SETFONT("SMALLFONT");
+ HudMessagebold(s:zm09_menu_print_color(3),s:"Rain Quality:",s:zm09_strsettings[rain_detail+1]; HUDMSG_PLAIN, 547, CR_UNTRANSLATED, 0.5, 0.5+hud_resize()*3,0,0, 0);
+	SETFONT("SMALLFONT");
+ HudMessagebold(s:zm09_menu_print_color(4),s:"NEDM Enable:",s:zm09_strsettings[nedm_desactive+6]; HUDMSG_PLAIN, 548, CR_UNTRANSLATED, 0.5, 0.52+hud_resize()*4,0,0, 0);
+	SETFONT("SMALLFONT");
+ HudMessagebold(s:zm09_menu_print_color(5),s:"Reflection Enable:",s:zm09_strsettings[7-reflection_actived]; HUDMSG_PLAIN, 549, CR_UNTRANSLATED, 0.5, 0.54+hud_resize()*5,0,0, 0);
+	SETFONT("SMALLFONT");
+ HudMessagebold(s:zm09_menu_print_color(6),s:"Music Quality:",s:zm09_strsettings[(music_quality+1)*2-1],s:" need addon for high"; HUDMSG_PLAIN, 550, CR_UNTRANSLATED, 0.5, 0.56+hud_resize()*5,0,0, 0);
+}
+
+function void zm09_menu_render(void){
+    //MENU 1
+    //505 para o bot�o
+    SETFONT("IBMRAIN1");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,504,0,men_pX[0],men_pY[0],0,0,0);
+    SETFONT("IBMRAIN2");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,503,0,men_pX[1],men_pY[0],0,0,0);
+    SETFONT("IBMRAIN3");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,502,0,men_pX[2],men_pY[0],0,0,0);
+    SETFONT("IBMRAIN4");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,501,0,men_pX[3],men_pY[0],0,0,0);
+    SETFONT("IBMRAIN5");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,500,0,men_pX[4],men_pY[0],0,0,0);
+    //MENU 2
+    //499 para o bot�o
+    SETFONT("IBMSND");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,498,0,men_pX[0],men_pY[1],0,0,0);
+    SETFONT("IBMSNDNO");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,497,0,men_pX[1],men_pY[1],0,0,0);
+    //MENU 3
+    // 496 para o bot�o
+    SETFONT("IBMRAIN1");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,495,0,men_pX[0],men_pY[2],0,0,0);
+    SETFONT("IBWAA0");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,494,0,men_pX[4],men_pY[2],0,0,0);
+    //MENU 4
+    // 493 para o bot�o
+    SETFONT("IBMOK");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,492,0,men_pX[0],men_pY[3],0,0,0);
+    SETFONT("IBMX");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,491,0,men_pX[1],men_pY[3],0,0,0);
+    //MENU 4
+    // 490 para o bot�o
+    SETFONT("IBMOK");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,489,0,men_pX[0],men_pY[4],0,0,0);
+    SETFONT("IBMX");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,488,0,men_pX[1],men_pY[4],0,0,0);
+}
+
+function void zm09_menu_render_options(INT selected_menu){
+    SETFONT("IBMSETED");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,505,0,men_pX[men_selected[0]],men_pY[0],0,0,0);
+    SETFONT("IBMSETED");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,499,0,men_pX[men_selected[1]],men_pY[1],0,0,0);
+    SETFONT("IBMSETED");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,496,0,men_pX[men_selected[2]],men_pY[2],0,0,0);
+    SETFONT("IBMSETED");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,493,0,men_pX[men_selected[3]],men_pY[3],0,0,0);
+    SETFONT("IBMSETED");
+    HudMessageBold(s:"A";HUDMSG_PLAIN,490,0,men_pX[men_selected[4]],men_pY[4],0,0,0);
+    SETFONT("IBMSELEC");
+//    HudMessageBold(s:"A";HUDMSG_PLAIN,men_selected_tid[selected_menu],0,men_pX[men_selected[selected_menu]],men_pY[selected_menu],0,0,0);
+
+}
+
+function void zm09_menu_close(void){
+ for(int i=488;i<506;i++){
+    setfont("normalfont");
+    HudMessageBold(s:" ";HUDMSG_PLAIN,i,0,men_pX[men_selected[0]],men_pY[0],0,0,0);
+ } 
+ HudMessageBold(s:" ";HUDMSG_PLAIN,543,0,0.5,0.5,0,0,0);
+}
+
+function void zm09_save_settings(void){
+    int x;
+//Funcion adapts the old save data to the new menu system
+    weather_quality=men_selected[0]-1;
+    if(men_selected[1]==1)
+        rain_sound=false;
+    else
+        rain_sound=true;
+    if(rain_sound==false) 
+        thing_deactivate(144);
+    else if(rainfall_actived==true)
+        thing_activate(144);
+    rain_detail=men_selected[2]-1;
+    if(men_selected[3]==1)
+        nedm_desactive=0;
+    else
+        nedm_desactive=1;
+    if(men_selected[4]==1){
+        reflection_actived=false;
+		Sector_SetPlaneReflection (149, 0, 0);
+		Sector_SetPlaneReflection (3, 0, 0);
+		Sector_SetPlaneReflection (153, 0, 0);
+		AmbientSound("menu/change",127);	
+	}
+    else{
+        reflection_actived=1;
+		Sector_SetPlaneReflection (149, 66, 0);
+		Sector_SetPlaneReflection (3, 44, 0);
+		Sector_SetPlaneReflection (153, 44, 0);
+		AmbientSound("menu/change",127);
+	}
+    x = (music_quality+1)*10000+(rain_detail+2)*1000+(rain_sound+2)*100+(weather_quality+2)*10+(nedm_desactive+2+reflection_actived*2);
+    SetCvar("x_zh_zm09",x);
+}
+
+function void zm09_consolemenu_set_option(int value, int option, int min)
+{
+    if ( value < min || value > men_max_opt[option])
+    {
+        printbold(s:"invalid parameter, it should be between ", d: min, s:" and ", d: men_max_opt[option]);
+        return;
+    }
+    men_selected[option] = value;
+
+    zm09_save_settings();
+}

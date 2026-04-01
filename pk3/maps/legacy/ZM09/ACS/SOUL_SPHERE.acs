@@ -1,0 +1,85 @@
+int total_players=0;
+int soulsphere_damage=2.0;
+
+script 18 (void){
+ setresultvalue(soulsphere_damage);
+}
+
+script 22 open {//End Selector can spawn one or two soulspheres
+    int victim=0;
+    int ending;
+    //INT GETOUT2=FALSE;
+    int soul_hatee=0;
+    int i=0,j=0;
+    int shorter_distance;
+    int k=0;
+    int input=0;
+    delay(1);
+    ending=random(0,100);
+    total_players=Game::HumanCount();
+    k=GetCvar("x_zh_zm09_to");
+    SetCvar("x_zh_zm09_to",k+total_players);
+    if(ending<=30)//if ending <= 30% do
+    {
+        // wait for 4 Minutes
+		delay(35*60*4);
+        Music_Played=SOULSPHERE_MUSIC;
+        play_zm09_music();  
+        delay(350);
+        input=GetCvar("x_zh_zm09_sf");
+        if(Game::HumanCount()+Game::ZombieCount()>=20){
+            SpawnSpot ("ghouldemon",25,114,24);
+            input++;
+        }
+        SpawnSpot ("ghouldemon",76,114,24);
+        SetCvar("x_zh_zm09_sf",input+1);
+        while(true){
+            i=0;
+            shorter_distance=2147483647;
+            while( i < BCSUtils::MAX_PLAYERS){
+                if(PlayerInGame(i)){
+                    j=ibm_distance (100,i+PLAYER_TID);
+                        if(j<shorter_distance){
+                            shorter_distance=j;
+                            soul_hatee=i;
+                        }
+                }
+                delay(1);
+                i++;
+            }
+            ghoul_target=soul_hatee;
+            Thing_Hate(114, Identity::GetTid(soul_hatee), 6);
+            soulsphere_damage=get_soulspheredamage(soul_hatee);
+            while(PlayerInGame(soul_hatee)) 
+            {
+                delay(35);
+            }
+        delay(1);
+        }
+    }
+}
+
+function int get_soulspheredamage(int target){
+    int output=2.0;
+    int i;
+    if(Player::GetPlayerIsZombie(target)){
+        i = Game::ZombieCount();
+        if(i <= 2)
+            output=100;
+        else if(i <= 4)
+            output=150;
+        else
+            output=random(188,225);
+        SetActorProperty(114,APROP_Speed,36.0);
+    }else{
+        i=Game::HumanCount();
+        if(i <= 2)
+            output = 2;
+        else if(i <= 4)
+            output = 3;
+        else
+            output=random(4,7);
+        SetActorProperty(114,APROP_Speed,24.0);
+    }
+    return output;
+}
