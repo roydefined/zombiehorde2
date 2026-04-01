@@ -206,6 +206,14 @@ strict namespace ZH2Game
         if (IsNetworkGame())
             IO::ParseCurrentMapLump();
 
+        // HACK-ish; we must wait for the server to parse the lumps or the code below won't work.
+        // This worked before because of the wait system, but that is no longer needed with the BUSY keyword.
+        // However, since this script seemingly runs before it's parsed we can't find the gamemode.
+        // This is not an issue online because we parse the map lump clientside in that case.
+        // TODO: Find a better way.
+        if (!IsNetworkGame())
+            Delay(const: 1);
+
         // We now iterate the resulting list of items, splitting them into three separate collections which makes iterating them much easier.
         // TODO: This should be exported to its own function. Or perhaps be removed altogether.
         Item::ItemCollectionContextT global:PERSISTINGGAMECONTEXTINDEX& collection = ZH2Game::PersistingGameContext.ItemCollection;
@@ -221,14 +229,6 @@ strict namespace ZH2Game
 
             collection.HasSplitItems = true;
         }
-
-        // HACK-ish; we must wait for the server to parse the gamemode or the gamemode code below won't work.
-        // This worked before because of the wait system, but that is no longer needed with the BUSY keyword.
-        // However, since this script seemingly runs before it's parsed we can't find the gamemode.
-        // This is not an issue online because we parse the map lump clientside in that case.
-        // TODO: Find a better way.
-        if (!IsNetworkGame())
-            Delay(const: 1);
 
         // Set the current game mode if we have it set.
         str gameMode = Map::GetCurrentMapGameMode();
