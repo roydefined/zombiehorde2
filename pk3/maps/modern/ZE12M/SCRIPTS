@@ -8,8 +8,9 @@
 #include "acs_source/zh2game.h.acs"
 
 // Used for synchronization
-#define SYNC_MAPPROGRESSSTATE 100
-#define SYNC_PILLARSTATE 101
+#define SYNC_GAMETYPE 100
+#define SYNC_MAPPROGRESSSTATE 101
+#define SYNC_PILLARSTATE 102
 
 internal enum MapGameTypeT
 {
@@ -33,13 +34,9 @@ internal int _mapProgressState = STATE_PLAYINGOUTSIDE;
 
 #define LOGSOURCE "Map"
 
-script "OnEnterClient" enter clientside
-{
-	PlaySound(0, "ambient/wind1", CHAN_UI, 1.0, true);
-}
-
 script "OnOpenClient" open clientside
 {
+	ClientSyncGameType();
 	ClientSyncActivePillars();
 	ClientSyncMapProgressState();
 
@@ -123,6 +120,8 @@ script "OnOpen" open
 		SetNonLinearGame();
 	else
 		SetLinearGame(flow == 3);
+
+	SyncGameType();
 }
 
 script "StartTrigger" clientside
@@ -197,8 +196,7 @@ internal void ActivateBeaconClient (int index)
 	Thing_Activate(tag);
 
 	// Activate the Light flare at the pyramid with the first finished beacon.
-	if (GetPillarsDoneCount() == 1)
-		Thing_Activate(4);
+	Thing_Activate(4);
 }
 
 // Enables the zombie teleports after 10 seconds, and the shortcut after another 5 seconds. Called after the last pillar was activated.
@@ -253,20 +251,17 @@ script "OpenPyramidResist"
 	HudMessageBold(s:"The top into the pyramid has been opened."; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 50.0, 2.0, 0.5);
 }
 
-// Small teleport script that fixes the fade inside the pyramid for software users, disables the wind sound and also disables the pillar icons.
+// Small teleport script that fixes the fade inside the pyramid for software users.
 script "EnterPyramid" (void) clientside
 {
-	if(ConsolePlayerNumber() != PlayerNumber()) {
+	if(ConsolePlayerNumber() != PlayerNumber())
 		terminate;
-	}
 
-	// TODO: Won't stop the wind sound.
-	StopSound(0, CHAN_UI);
-	SoundVolume(0, CHAN_UI, 0.0);
+	BCSUtils::SetActivatorToConsolePlayer();
 
 	if (!BCSUtils::IsOpenGL())
 	{
-		for(int i=0; i<999; ++i)
+		for(int i=0; i < 999; ++i)
 		{
 			Light_RaiseByValue(i, 80);
 			sector_setfade(i, 0, 0, 0);
@@ -652,6 +647,40 @@ script "BeaconSouthResist"
 
 // -------------------------------------------
 //
+// GAME TYPE SYNC
+//
+// -------------------------------------------
+
+internal void SyncGameType()
+{
+	VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+	if (!IsNetworkGame())
+		return;
+
+	BCSUtils::SyncVariable(SYNC_GAMETYPE, _gameType);
+	ACS_NamedExecuteAlways("SyncGameType_Client", 0);
+}
+
+script "SyncGameType_Client" clientside
+{
+	ClientSyncGameType();
+}
+
+// Called clientside to fetch the synced state.
+internal void ClientSyncGameType()
+{
+	VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+	if (!IsNetworkGame())
+		return;
+
+	_gameType = BCSUtils::GetSyncVarDefault(SYNC_GAMETYPE, GAMETYPE_LINEAR);
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced game type to client: ", d:_gameType, s:"."));
+}
+
+// -------------------------------------------
+//
 // MAP STATE SYNC
 //
 // -------------------------------------------
@@ -693,7 +722,7 @@ internal void ClientSyncMapProgressState()
 // Synchronizes the current active pillars with clients.
 internal void SyncActivePillars()
 {
-	if (IsNetworkGame())
+	if (!IsNetworkGame())
 		return;
 
 	int value = BCSUtils::PackBytes(_pillarDone[0], _pillarDone[1], _pillarDone[2], _pillarDone[3]);
