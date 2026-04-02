@@ -199,6 +199,26 @@ internal void ActivateBeaconClient (int index)
 	Thing_Activate(4);
 }
 
+// General map teleport that uses a different id based on map flow.
+script "MapTeleport" (raw linearTid, raw quickLinearTid, raw nonLinearTid)
+{
+	int teleportTid;
+	switch(_gameType)
+	{
+		case GAMETYPE_QUICKLINEAR:
+			teleportTid = quickLinearTid;
+			break;
+		case GAMETYPE_NONLINEAR:
+			teleportTid = nonLinearTid;
+			break;
+		default:
+			teleportTid = linearTid;
+			break;
+	}
+
+	TeleportUtil::TeleportArea(teleportTid, 32, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
+}
+
 // Enables the zombie teleports after 10 seconds, and the shortcut after another 5 seconds. Called after the last pillar was activated.
 script "PyramidOpened"
 {
