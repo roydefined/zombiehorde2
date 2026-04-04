@@ -1,4 +1,4 @@
-actor ZH2VenusStatue : ZH2Obstacle 22018
+actor ZH2VenusStatueSpawner : ZH2Obstacle 22018
 {
     //$Sprite VENUA0
 
@@ -9,6 +9,24 @@ actor ZH2VenusStatue : ZH2Obstacle 22018
 
     height 140
     Tag "Venus statue"
+
+    states
+    {
+        Spawn:
+            TNT1 A 0 nodelay A_JumpIf(args[0] != 0, 2)
+            TNT1 A 0 A_SpawnItem("ZH2VenusStatue1")
+            stop
+            TNT1 A 0 A_JumpIf(args[0] != 1, 2)
+            TNT1 A 0 A_SpawnItem("ZH2VenusStatue2")
+            stop
+            TNT1 A 0 A_SpawnItem("ZH2VenusStatue3")
+            stop
+    }
+}
+
+actor ZH2VenusStatue1
+{
+    height 140
 
     Mass 0x7ffffff
     Health 0x7FFFFFFF
@@ -21,13 +39,24 @@ actor ZH2VenusStatue : ZH2Obstacle 22018
     states
     {
         Spawn:
-            TNT1 A 0 nodelay A_JumpIf(args[0] != 0, 1)
-            goto Spawn.Rest
-            TNT1 B 0 A_JumpIf(args[0] != 1, 1)
-            goto Spawn.Rest
-            TNT1 C 0
+            VENU A -1
+    }
+}
 
-        Spawn.Rest:
-            VENU "#" -1
+actor ZH2VenusStatue2 : ZH2VenusStatue1
+{
+    states
+    {
+        Spawn:
+            VENU B -1
+    }
+}
+
+actor ZH2VenusStatue3 : ZH2VenusStatue1
+{
+    states
+    {
+        Spawn:
+            VENU C -1
     }
 }
