@@ -13,9 +13,7 @@
 #define HUDID_INTERACTION 60
 
 // The TID that is used for synchronising the event state
-#define SYNC_EVENTSTATE 100
-#define SYNC_NIGHTTIMESTAMP 101
-#define SYNC_NUKETIMESTAMP 102
+#define SYNC_EVENT 100
 
 // Temperature min/max amount and hud id
 #define TEMPERATURE_MIN 28
@@ -28,6 +26,36 @@
 #define TEMPERATURE_TIC_WATER 28
 #define TEMPERATURE_TIC_WARM 18
 
+#define EVENT_NIGHT_STARTTICS 35 * 30
+#define EVENT_NUKE_STARTTICS 35 * 36
+
+internal struct NukeBoundaryRockT
+{
+	int SectorTag;
+	int Height;
+};
+
+internal struct ElevatorTagsT
+{
+	int PolyTagRight;
+	int PolyRightAngle;
+	int DingSoundAndSourceTeleportTag;
+	int SourceSectorTag;
+	int TempTargetTeleportTag;
+	int TempTargetSectorTag;
+	int TargetTeleportTag;
+};
+
+internal enum
+{
+	EVENTSTATE_NONE,
+	EVENTSTATE_NIGHT,
+	EVENTSTATE_NUKE
+};
+
+internal int _eventState = EVENTSTATE_NONE;
+internal int _eventStartTimestamp = 0;
+
 // `_consoleClientTemperature` is synchronized clientside from the main temperature loop.
 internal int _consoleClientTemperature;
 
@@ -35,16 +63,6 @@ internal int _consoleClientTemperature;
 // Also has a clientsided synchronized value that indicates if the console client is warm.
 internal int _isWarm[BCSUtils::MAX_PLAYERS];
 internal int _consoleClientIsWarm;
-
-// Current event state
-// Event state is synchronized to clients.
-#define EVENTSTATE_NONE 0
-#define EVENTSTATE_NIGHT 1
-#define EVENTSTATE_NUKE 2
-internal int _eventState = EVENTSTATE_NONE;
-
-internal int _nightModeStartTimestamp = 0;
-internal int _nukeExplosionTimestamp = 0;
 
 internal bool _isInBunker[BCSUtils::MAX_PLAYERS],
 			  _consoleClientIsInBunker;
@@ -61,12 +79,6 @@ internal bool _guardhouseUnlocked,
 internal bool _inToxicRoom[BCSUtils::MAX_PLAYERS],
 			  _inDeconterminationRoom[BCSUtils::MAX_PLAYERS];
 
-internal struct NukeBoundaryRockT
-{
-	int SectorTag;
-	int Height;
-};
-
 internal NukeBoundaryRockT _nukeBoundaryRocks[6] =
 {
 	{ 36, 176 },
@@ -81,19 +93,6 @@ internal NukeBoundaryRockT _nukeBoundaryRocks[6] =
 // Map amrkers that show where to hide.
 internal int _shelterMarkers[2] = {
 	37, 38
-};
-
-/* ELEVATOR */
-
-internal struct ElevatorTagsT
-{
-	int PolyTagRight;
-	int PolyRightAngle;
-	int DingSoundAndSourceTeleportTag;
-	int SourceSectorTag;
-	int TempTargetTeleportTag;
-	int TempTargetSectorTag;
-	int TargetTeleportTag;
 };
 
 internal int _inElevator[BCSUtils::MAX_PLAYERS];
@@ -184,9 +183,7 @@ Script "OnOpen" open
 
 Script "OnOpenClient" Open CLIENTSIDE
 {
-	ClientSyncEventState();
-	ClientSyncNightModeTimestamp();
-	ClientSyncNukeTimestamp();
+	ClientSyncEvent();
 
 	Hook::Register(Hook::HOOK_CLIENTDRAWHUD, OnDrawTemperatureGaugeHud);
 
@@ -219,10 +216,7 @@ Script "OnOpenClient" Open CLIENTSIDE
 		ChangeFloor(49, "-");
 	}
 
-	if (!ACS_NamedExecute("FrozenDebug", 0))
-	{
-		Logger::LogError(LOGSOURCE, "Failed to invoke FrozenDebug");
-	}
+	ACS_NamedExecute("FrozenDebug", 0);
 }
 
 script "enter" enter
@@ -232,7 +226,8 @@ script "enter" enter
 
 script "enterClient" enter clientside
 {
-	while(BCSUtils::IsAlive()) {
+	while(BCSUtils::IsAlive())
+	{
 		TemperatureTickClient();
 		Delay(const: 1);
 	}
@@ -399,27 +394,51 @@ script "FrozenDebug" clientside
 		SetHudSize(640, 480, FALSE);
 		SetFont("smallfont");
 
-		str currentEvent = BCSUtils::cond(_eventState == EVENTSTATE_NONE, "none",
-			BCSUtils::cond(_eventState == EVENTSTATE_NIGHT, "night",
-				"nuke"));
+		str message;
+		buildmsg(message = StrParam())
+		{
+			str currentEvent;
+			switch(_eventState)
+			{
+				case EVENTSTATE_NIGHT:
+					currentEvent = "night";
+					break;
+				case EVENTSTATE_NUKE:
+					currentEvent = "nuke";
+					break;
+				default:
+					currentEvent = "none";
+					break;
+			}
 
-		int nightFallsIn = BCSUtils::cond(_eventState == EVENTSTATE_NIGHT, _nightModeStartTimestamp - Timer(), 0);
-		str nightFallen = BCSUtils::cond(NightHasFallen(), "true", "false");
+			Append(s:"Current event: ", s:currentEvent, s:"\n");
 
-		int nukeExplosionIn = BCSUtils::cond(_eventState == EVENTSTATE_NUKE, _nukeExplosionTimestamp - Timer(), 0);
+			if (_eventStartTimestamp != 0)
+			{
+				int elapsed = Timer() - _eventStartTimestamp;
+				Append(s:"Elapsed since event start: ", d:elapsed, s:"\n");
+			}
 
-		str warm = BCSUtils::cond(_consoleClientIsWarm, "true", "false");
-		str inBunker = BCSUtils::cond(_consoleClientIsInBunker, "true", "false");
+			if (_eventState == EVENTSTATE_NIGHT)
+			{
+				Append(s:"Night falls in: ", d:GetTicsUntilNightFallen(), s:"\n");
+				Append(s:"Night has fallen: ", s:(NightHasFallen() ? "true" : "false"), s:"\n");
+			}
 
-		HudMessage(s:"Current event: ", s:currentEvent; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 45.0, 0.03);
+			if (_eventState == EVENTSTATE_NUKE)
+			{
+				Append(s:"Nuke explosion in: ", d:GetTicsUntilExplosion(), s:"\n");
+				Append(s:"Nuke has dropped: ", s:(NukeHasDropped() ? "true" : "false"), s:"\n");
+			}
 
-		HudMessage(s:"Night falls in: ", d:nightFallsIn; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 60.0, 0.03);
-		HudMessage(s:"Night has fallen: ", s:nightFallen; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 70.0, 0.03);
+			str warm = _consoleClientIsWarm ? "true" : "false";
+			Append(s:"Is warm: ", s:warm, s:"\n");
 
-		HudMessage(s:"Nuke explosion in: ", d:nukeExplosionIn; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 85.0, 0.03);
+			str inBunker = _consoleClientIsInBunker ? "true" : "false";
+			Append(s:"Is in bunker: ", s:inBunker, s:"\n");
+		}
 
-		HudMessage(s:"Is warm: ", s:warm; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 100.0, 0.03);
-		HudMessage(s:"Is in bunker: ", s:inBunker; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 110.0, 0.03);
+		HudMessage(s:message; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 45.0, 0.03);
 		Delay(const: 1);
 	}
 }
@@ -684,75 +703,35 @@ script "Elevator_client" (void) clientside
 		Log(s:"The lifts have been locked down for quarantine.");
 }
 
-
-/*
-** -----------------------------------------------------------------------------
-** EVENT STATE
-** -----------------------------------------------------------------------------
-*/
-
-internal void SetEventState(int state)
-{
-	Logger::LogDebug(LOGSOURCE, StrParam(s:"Setting event state to ", d:state));
-
-	_eventState = state;
-	SyncEventState();
-}
-
-internal void SyncEventState()
-{
-	VALIDATE_IS_SERVERSIDE_FUNCTION();
-
-	if (!IsNetworkGame())
-		return;
-
-	BCSUtils::SyncVariable(SYNC_EVENTSTATE, _eventState);
-	ACS_NamedExecuteAlways("SyncEventState_Client", 0);
-}
-
-script "SyncEventState_Client" clientside
-{
-	ClientSyncEventState();
-}
-
-// Called clientside to fetch the synced state.
-internal void ClientSyncEventState()
-{
-	VALIDATE_IS_CLIENTSIDE_FUNCTION();
-
-	if (!IsNetworkGame())
-		return;
-
-	int state = BCSUtils::GetSyncVarDefault(SYNC_EVENTSTATE, EVENTSTATE_NONE);
-	_eventState = state;
-
-	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced event state client: ", d:_eventState));
-}
-
 /*
 ** -----------------------------------------------------------------------------
 ** EVENTS - Night
 ** -----------------------------------------------------------------------------
 */
 
-// Return true if night has fallen.
-internal bool NightHasFallen()
-{
-	return _eventState == EVENTSTATE_NIGHT
-		&& _nightModeStartTimestamp < Utils::GetSynchronizedTimer();
-}
-
 // Nighttime event
 Script "Event_Night"
 {
-	_nightModeStartTimestamp = Timer() + 35 * 30;
-	SetEventState(EVENTSTATE_NIGHT);
-	SyncNightModeTimestamp();
-	ACS_NamedExecuteAlways("Event_Night_client", 0);
+	if (_eventState != EVENTSTATE_NONE)
+		terminate;
+
+	_eventState = EVENTSTATE_NIGHT;
+	_eventStartTimestamp = Timer();
+	SyncEvent();
+
+	// Note: we don't run a loop as soon as the map starts, as anybody that joins after this script starts should see the changes immediately.
+	ACS_NamedExecute("Event_Night_client", 0);
 }
 
 Script "Event_Night_client" clientside
 {
+	// Safety guard, to ensure that we received all info necessary to run the event.
+	while (_eventState != EVENTSTATE_NIGHT
+		|| _eventStartTimestamp == 0)
+	{
+		delay(const: 1);
+	}
+
 	int fadeValue  = 156,
 		colorValue = 255;
 
@@ -761,8 +740,8 @@ Script "Event_Night_client" clientside
 	HudMessage(s:"Night approaches"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 100.0, 5.0, 1.0, 5.0);
 
 	delay(35 * 3);
-	Music::SetDefaultMusic("");
-	Music::PlayDefaultMusic();
+	Music::SetMusic("");
+	Music::SetDefaultMusic("SUBZERO");
 	delay(35 * 8);
 
 	while (--fadeValue > 20 && --colorValue)
@@ -778,37 +757,20 @@ Script "Event_Night_client" clientside
 		delay(5);
 	}
 
-	Music::SetDefaultMusic("SUBZERO");
 	Music::PlayDefaultMusic();
 }
 
-internal void SyncNightModeTimestamp()
+internal bool NightHasFallen()
 {
-	VALIDATE_IS_SERVERSIDE_FUNCTION();
-
-	if (!IsNetworkGame())
-		return;
-
-	BCSUtils::SyncVariable(SYNC_NIGHTTIMESTAMP, _nightModeStartTimestamp);
-	ACS_NamedExecuteAlways("ClientSyncNightModeTimestamp_Client", 0);
+	return _eventState == EVENTSTATE_NIGHT && GetTicsUntilNightFallen() == 0;
 }
 
-script "ClientSyncNightModeTimestamp_Client" clientside
+internal int GetTicsUntilNightFallen()
 {
-	ClientSyncNightModeTimestamp();
-}
+	if (_eventState != EVENTSTATE_NIGHT)
+		return 0;
 
-internal void ClientSyncNightModeTimestamp()
-{
-	VALIDATE_IS_CLIENTSIDE_FUNCTION();
-
-	if (!IsNetworkGame())
-		return;
-
-	int timeStamp = BCSUtils::GetSyncVarDefault(SYNC_NIGHTTIMESTAMP, 0);
-	_nightModeStartTimestamp = timeStamp;
-
-	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced night mode time stamp: ", d:_nightModeStartTimestamp));
+	return BCSUtils::Max(_eventStartTimestamp + EVENT_NIGHT_STARTTICS - Utils::GetSynchronizedTimer(), 0);
 }
 
 /*
@@ -819,15 +781,19 @@ internal void ClientSyncNightModeTimestamp()
 
 Script "Event_Nuke"
 {
-	_nukeExplosionTimestamp = Timer() + 35 * 36;
-	SetEventState(EVENTSTATE_NUKE);
-	SyncNukeExplosionTimestamp();
-	ACS_NamedExecuteAlways("Event_Nuke_client", 0);
+	if (_eventState != EVENTSTATE_NONE)
+		terminate;
 
-	while(_nukeExplosionTimestamp > Timer())
-	{
+	_eventState = EVENTSTATE_NUKE;
+	_eventStartTimestamp = Timer();
+	SyncEvent();
+
+	// Note: we don't run a loop as soon as the map starts, as anybody that joins after this script starts should see the changes immediately.
+	ACS_NamedExecute("Event_Nuke_client", 0);
+
+	int waitTics = EVENT_NUKE_STARTTICS;
+	while(--waitTics)
 		Delay(const: 1);
-	}
 
 	// Delay before the nuke truly hits
 	Delay(35 * 11);
@@ -866,27 +832,23 @@ Script "Event_Nuke"
 
 Script "Event_Nuke_client" clientside
 {
+	// Safety guard, to ensure that we received all info necessary to run the event.
+	while (_eventState != EVENTSTATE_NUKE
+		|| _eventStartTimestamp == 0)
+	{
+		delay(const: 1);
+	}
+
 	SetActivatorToPlayer(ConsolePlayerNumber());
 
-	int startTime = Timer();
-	int timeUntilExplosion = BCSUtils::INT_MAX;
+	int passedTime = 0;
+
 	Music::SetDefaultMusic("");
 	Music::PlayDefaultMusic();
 
-	while(timeUntilExplosion > 0)
+	while(GetTicsUntilExplosion())
 	{
 		SetHudSize(640, 480, FALSE);
-
-		int passedTime = Timer() - startTime;
-		timeUntilExplosion = _nukeExplosionTimestamp - Utils::GetSynchronizedTimer();
-
-		// Debug
-		if (Environment::IsDevelopment() && GetUserCVar(ConsolePlayerNumber(), "cl_zh2_zm31mdebug"))
-		{
-			setFont("smallfont");
-			HudMessage(s:"Passed nuke time: ", d:passedTime; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 125.0, 0.03);
-			HudMessage(s:"Time until nuke explosion: ", d:timeUntilExplosion; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 135.0, 0.03);
-		}
 
 		// Alarm every four seconds.
 		if (passedTime % (35 * 4) == 0)
@@ -932,7 +894,7 @@ Script "Event_Nuke_client" clientside
 		if(passedTime > 35 * 10 + 18)
 		{
 			setFont("smallfont");
-			HudMessage(s:"Explosion in: ", s:Utils::FormatTics(timeUntilExplosion, true); HUDMSG_PLAIN, 0, CR_WHITE, 320.0, 120.0, BCSUtils::HUDTIC);
+			HudMessage(s:"Explosion in: ", s:Utils::FormatTics(GetTicsUntilExplosion(), true); HUDMSG_PLAIN, 0, CR_WHITE, 320.0, 120.0, BCSUtils::HUDTIC);
 		}
 
 		// Display safety markers on map avery tic after 6 seconds.
@@ -956,6 +918,7 @@ Script "Event_Nuke_client" clientside
 			}
 		}
 
+		passedTime++;
 		Delay(const: 1);
 	}
 
@@ -1009,35 +972,18 @@ script "Event_Nuke_Final_client" clientside
 		Thing_Remove(_shelterMarkers[i]);
 }
 
-internal void SyncNukeExplosionTimestamp()
+internal bool NukeHasDropped()
 {
-	VALIDATE_IS_SERVERSIDE_FUNCTION();
-
-	if (!IsNetworkGame())
-		return;
-
-	BCSUtils::SyncVariable(SYNC_NUKETIMESTAMP, _nukeExplosionTimestamp);
-	ACS_NamedExecuteAlways("SyncNukeTimestamp_Client", 0);
+	return _eventState == EVENTSTATE_NUKE && GetTicsUntilExplosion() == 0;
 }
 
-script "SyncNukeTimestamp_Client" clientside
+internal int GetTicsUntilExplosion()
 {
-	ClientSyncNukeTimestamp();
+	if (_eventState != EVENTSTATE_NUKE)
+		return 0;
+
+	return BCSUtils::Max(_eventStartTimestamp + EVENT_NUKE_STARTTICS - Utils::GetSynchronizedTimer(), 0);
 }
-
-function void ClientSyncNukeTimestamp()
-{
-	VALIDATE_IS_CLIENTSIDE_FUNCTION();
-
-	if (!IsNetworkGame())
-		return;
-
-	int timeStamp = BCSUtils::GetSyncVarDefault(SYNC_NUKETIMESTAMP, 0);
-	_nukeExplosionTimestamp = timeStamp;
-
-	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced nuke drop time stamp: ", d:_nukeExplosionTimestamp));
-}
-
 
 /*
 ** -----------------------------------------------------------------------------
@@ -1273,6 +1219,45 @@ internal void SynchronizeTemperature(int amount)
 internal void SynchronizeWarm(int warm)
 {
 	NamedExecuteClientScript("WarmSync", PlayerNumber(), warm);
+}
+
+
+/*
+** -----------------------------------------------------------------------------
+** EVENT STATE SYNC
+** -----------------------------------------------------------------------------
+*/
+
+internal void SyncEvent()
+{
+	VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+	if (!IsNetworkGame())
+		return;
+
+	BCSUtils::SyncVariable(SYNC_EVENT, _eventState);
+	BCSUtils::SyncVariable(SYNC_EVENT + 1, _eventStartTimestamp);
+
+	ACS_NamedExecuteAlways("SyncEvent_Client", 0);
+}
+
+script "SyncEvent_Client" clientside
+{
+	ClientSyncEvent();
+}
+
+// Called clientside to fetch the synced state.
+internal void ClientSyncEvent()
+{
+	VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+	if (!IsNetworkGame())
+		return;
+
+	_eventState = BCSUtils::GetSyncVarDefault(SYNC_EVENT, EVENTSTATE_NONE);
+	_eventStartTimestamp = BCSUtils::GetSyncVarDefault(SYNC_EVENT + 1, 0);
+
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced event state client: ", d:_eventState, s:", event start timestamp: ", d:_eventStartTimestamp));
 }
 
 #undef LOGSOURCE
