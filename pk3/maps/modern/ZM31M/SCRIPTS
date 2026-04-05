@@ -871,15 +871,15 @@ Script "Event_Nuke_client" clientside
 		delay(const: 1);
 	}
 
-	SetActivatorToPlayer(ConsolePlayerNumber());
-
+	int timeLeft = EVENT_NUKE_STARTTICS;
 	int passedTime = 0;
 
 	Music::SetDefaultMusic("");
 	Music::PlayDefaultMusic();
 
-	while(GetTicsUntilExplosion())
+	while(timeLeft--)
 	{
+		BCSUtils::SetActivatorToConsolePlayer();
 		SetHudSize(640, 480, FALSE);
 
 		// Alarm every four seconds.
@@ -1116,7 +1116,7 @@ internal void DrawFrostScreen(int x, int y, int id)
 
 	// Always show the last graphic if outside at night or in water.
 	bool inWater = BCSUtils::GetActorWaterLevel(ActivatorTID()) > 0;
-	if (!GetIsCold() && (NightHasFallen() || inWater))
+	if (GetIsCold() && (NightHasFallen() || inWater))
 		graphicIndex = 4;
 
 	if (graphicIndex == 0)
