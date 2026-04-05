@@ -27,6 +27,7 @@
 
 #define TEMPERATURE_ISCOLD_ITEM "ZH2ZM31MIsCold"
 #define TEMPERATURE_VALUE_ITEM "ZH2ZM31MTemperature"
+#define IN_BUNKER_ITEM "ZH2ZM31MIsInBunker"
 
 #define EVENT_NIGHT_STARTTICS 35 * 30
 #define EVENT_NUKE_STARTTICS 35 * 36
@@ -57,9 +58,6 @@ internal enum
 
 internal int _eventState = EVENTSTATE_NONE;
 internal int _eventStartTimestamp = 0;
-
-internal bool _isInBunker[BCSUtils::MAX_PLAYERS],
-			  _consoleClientIsInBunker;
 
 // Used with the temperature gauge, which hooks on the HUD.
 internal Hud::HudHookDataT? _hudHookDataRef;
@@ -371,23 +369,21 @@ Script 20 (int index)
 }
 
 // Bunker teleport system
-script "SetInBunker" (int enterBunker, int targetTid)
+script "SetInBunker" (int inBunker, int targetTid)
 {
-	_isInBunker[PlayerNumber()] = enterBunker;
+	SetIsInBunker(inBunker);
 	Teleport_NoFog(targetTid);
 
-	// Apply velocity if entering, otherwise it's removed.
-	if (enterBunker)
+	// Apply velocity if entering, otherwise the teleporting removes it.
+	if (inBunker)
 		SetActorVelocity(ActivatorTID(), 0, 0, GetActorVelZ(ActivatorTID()), FALSE, FALSE);
 
-	NamedExecuteClientScript("SetInBunker_Client", PlayerNumber(), enterBunker);
+	NamedExecuteClientScript("SetInBunker_Client", PlayerNumber(), inBunker);
 }
 
-script "SetInBunker_Client" (int enterBunker) clientside
+script "SetInBunker_Client" (int inBunker) clientside
 {
-	_consoleClientIsInBunker = enterBunker;
-
-	if (enterBunker)
+	if (inBunker)
 		Weather::StartEmitterWeather(Weather::EMITTERWEATHER_DUST);
 	else
 		Weather::StopEmitterWeather(Weather::EMITTERWEATHER_DUST);
@@ -451,12 +447,32 @@ script "FrozenDebug" clientside
 			Append(s:"Temperature: ", d:GetTemperature(), s:"\n");
 			Append(s:"Next temperature update: ", d:(_nextTemperatureTic - Timer()), s:"\n");
 
-			Append(s:"Is in bunker: ", s:(_consoleClientIsInBunker ? "true" : "false"), s:"\n");
+			Append(s:"Is in bunker: ", s:(GetIsInBunker() ? "true" : "false"), s:"\n");
 		}
 
 		HudMessage(s:message; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 45.0, 0.03);
 		Delay(const: 1);
 	}
+}
+
+internal bool GetIsInBunker()
+{
+	return GetPlayerIsInBunker(PlayerNumber());
+}
+
+internal bool GetPlayerIsInBunker(int id)
+{
+	return CheckActorInventory(Identity::GetTid(id), IN_BUNKER_ITEM);
+}
+
+internal void SetIsInBunker(bool value)
+{
+	SetPlayerIsInBunker(PlayerNumber(), value);
+}
+
+internal void SetPlayerIsInBunker(int id, bool value)
+{
+	BCSUtils::SetActorInventory(Identity::GetTid(id), IN_BUNKER_ITEM, value);
 }
 
 /*
@@ -827,7 +843,7 @@ Script "Event_Nuke"
 	// TODO: Use safety API
 	for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
 	{
-		if (!PlayerInGame(i) || _isInBunker[i])
+		if (!PlayerInGame(i) || GetPlayerIsInBunker(i))
 			continue;
 
 		int tid = Identity::GetTid(i);
@@ -896,7 +912,7 @@ Script "Event_Nuke_client" clientside
 		// Inform of shelter after 6 seconds.
 		if (passedTime == 35 * 6)
 		{
-			if (!_consoleClientIsInBunker)
+			if (!GetIsInBunker())
 			{
 				setFont("smallfont");
 				HudMessage(s:"Seek shelter in the indicated bunkers"; HUDMSG_TYPEON, 0, CR_WHITE, 320.0, 120.0, 2.0, 0.04, 1.0);
@@ -914,7 +930,7 @@ Script "Event_Nuke_client" clientside
 		}
 
 		// Display safety markers on map avery tic after 6 seconds.
-		if(passedTime > 35 * 6 && !_consoleClientIsInBunker)
+		if(passedTime > 35 * 6 && !GetIsInBunker())
 		{
 			BCSUtils::HudResetState();
 			BCSUtils::HudSetCameraActor(0);
@@ -926,7 +942,7 @@ Script "Event_Nuke_client" clientside
 			{
 				int tag = _shelterMarkers[i];
 
-				if (BCSUtils::ActorDistance2D(0, tag) < 1000.0 || _consoleClientIsInBunker)
+				if (BCSUtils::ActorDistance2D(0, tag) < 1000.0 || GetIsInBunker())
 					continue;
 
 				BCSUtils::HudSetPoint3D(GetActorX(tag), GetActorY(tag), GetActorZ(tag)+150.0);
@@ -938,10 +954,7 @@ Script "Event_Nuke_client" clientside
 		Delay(const: 1);
 	}
 
-	if (!_consoleClientIsInBunker)
-	{
-		FadeTo(150, 20, 20, 1.0, 0);
-	}
+	ACS_NamedExecute("Event_Nuke_Fade_client", 0);
 
 	// Spawn nuke, red atmosphere, and remove clouds which actually also mess with the nuke's flare.
 	SetLevelAtmosphere(10, 255, 10);
@@ -950,11 +963,6 @@ Script "Event_Nuke_client" clientside
 	ChangeFloor(49, "-");
 	Radius_Quake2(0, 1, 35*5, 0, 1, "");
 	delay(35);
-
-	if (!_consoleClientIsInBunker)
-	{
-		FadeTo(0, 0, 0, 0, 8.0);
-	}
 
 	delay(35*2);
 	for (i = 2; i <= 4; ++i)
@@ -966,10 +974,17 @@ Script "Event_Nuke_client" clientside
 	Radius_Quake2(0, i, 35*3, 0, 1, "");
 }
 
+script "Event_Nuke_Fade_client" clientside
+{
+	FadeTo(150, 20, 20, 1.0, 0);
+	delay(35);
+	FadeTo(0, 0, 0, 0, 8.0);
+}
+
 script "Event_Nuke_Final_client" clientside
 {
 	SetActivatorToPlayer(ConsolePlayerNumber());
-	if (!_consoleClientIsInBunker)
+	if (!GetIsInBunker())
 	{
 		AmbientSound("sound/nukeexplosion", 255);
 		delay(6);
@@ -1048,7 +1063,7 @@ internal raw OnDrawTemperatureGaugeHud(void[]* data)
 	if (_hudHookDataRef.Type != Hud::HUDHOOK_PLAYERSTATUS)
 		return 0;
 
-	if (_consoleClientIsInBunker)
+	if (GetIsInBunker())
 		return 0;
 
 	if (Player::GetIsZombie())
