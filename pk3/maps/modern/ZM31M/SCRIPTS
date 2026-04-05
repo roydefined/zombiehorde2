@@ -9,22 +9,24 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-// Base TID for anything related to displaying a message when interacting with the map.
 #define HUDID_INTERACTION 60
-
-// The TID that is used for synchronising the event state
-#define SYNC_EVENT 100
-
-// Temperature min/max amount and hud id
-#define TEMPERATURE_MIN 28
-#define TEMPERATURE_MAX 37
 #define HUDID_TEMPERATURE 50
 
-// Temperature checks in tics based on how cold it is.
+// The TID that is used for synchronising the event
+#define SYNC_EVENT 100
+
+// Note: The base is the base value shown (and lowest value).
+#define TEMPERATURE_MAX 9
+#define TEMPERATURE_BASE 28
+
+// Tics below indicates the delay between temperature changes used.
 #define TEMPERATURE_TIC_NORMAL 35 * 4
 #define TEMPERATURE_TIC_NIGHT 35 * 2
 #define TEMPERATURE_TIC_WATER 28
 #define TEMPERATURE_TIC_WARM 18
+
+#define TEMPERATURE_ISCOLD_ITEM "ZH2ZM31MIsCold"
+#define TEMPERATURE_VALUE_ITEM "ZH2ZM31MTemperature"
 
 #define EVENT_NIGHT_STARTTICS 35 * 30
 #define EVENT_NUKE_STARTTICS 35 * 36
@@ -56,14 +58,6 @@ internal enum
 internal int _eventState = EVENTSTATE_NONE;
 internal int _eventStartTimestamp = 0;
 
-// `_consoleClientTemperature` is synchronized clientside from the main temperature loop.
-internal int _consoleClientTemperature;
-
-// Indicates if players are "warm", i.e. inside or next to fire.
-// Also has a clientsided synchronized value that indicates if the console client is warm.
-internal int _isWarm[BCSUtils::MAX_PLAYERS];
-internal int _consoleClientIsWarm;
-
 internal bool _isInBunker[BCSUtils::MAX_PLAYERS],
 			  _consoleClientIsInBunker;
 
@@ -78,6 +72,8 @@ internal bool _guardhouseUnlocked,
 // player in toxic reactor room / decontermination room
 internal bool _inToxicRoom[BCSUtils::MAX_PLAYERS],
 			  _inDeconterminationRoom[BCSUtils::MAX_PLAYERS];
+
+internal int _nextTemperatureTic;
 
 internal NukeBoundaryRockT _nukeBoundaryRocks[6] =
 {
@@ -221,11 +217,17 @@ Script "OnOpenClient" Open CLIENTSIDE
 
 script "enter" enter
 {
+	SetIsCold(CheckActorCeilingTexture(ActivatorTid(), "F_SKY1"));
+	SetTemperature(TEMPERATURE_MAX);
+
 	ACS_NamedExecuteAlways("TemperatureLoop", 0);
 }
 
 script "enterClient" enter clientside
 {
+	// Small delay to give the state some time to prepare.
+	delay(const: 5);
+
 	while(BCSUtils::IsAlive())
 	{
 		TemperatureTickClient();
@@ -385,7 +387,7 @@ script "FrozenDebug" clientside
 
 	while(true)
 	{
-		if (GetUserCVar(ConsolePlayerNumber(), "cl_zh2_zm31mdebug") == 0)
+		if (!BCSUtils::SetActivatorToConsolePlayer() || GetCVar("cl_zh2_zm31mdebug") == 0)
 		{
 			Delay(const: 1);
 			continue;
@@ -431,11 +433,11 @@ script "FrozenDebug" clientside
 				Append(s:"Nuke has dropped: ", s:(NukeHasDropped() ? "true" : "false"), s:"\n");
 			}
 
-			str warm = _consoleClientIsWarm ? "true" : "false";
-			Append(s:"Is warm: ", s:warm, s:"\n");
+			Append(s:"Is cold: ", s:(GetIsCold() ? "true" : "false"), s:"\n");
+			Append(s:"Temperature: ", d:GetTemperature(), s:"\n");
+			Append(s:"Next temperature update: ", d:(_nextTemperatureTic - Timer()), s:"\n");
 
-			str inBunker = _consoleClientIsInBunker ? "true" : "false";
-			Append(s:"Is in bunker: ", s:inBunker, s:"\n");
+			Append(s:"Is in bunker: ", s:(_consoleClientIsInBunker ? "true" : "false"), s:"\n");
 		}
 
 		HudMessage(s:message; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 45.0, 0.03);
@@ -1003,7 +1005,7 @@ internal void TemperatureTickClient()
 
 	// Client is in water
 	bool inWater = BCSutils::GetActorWaterLevel(ActivatorTID()) > 0;
-	if (!_consoleClientIsWarm && inWater)
+	if (GetIsCold() && inWater)
 	{
 		SetHudSize(640, 480, false);
 		SetFont("smallfont");
@@ -1011,7 +1013,7 @@ internal void TemperatureTickClient()
 	}
 
 	// Inform client to get warm
-	else if (!_consoleClientIsWarm && NightHasFallen())
+	else if (GetIsCold() && NightHasFallen())
 	{
 		SetHudSize(640, 480, false);
 		SetFont("smallfont");
@@ -1035,22 +1037,27 @@ internal raw OnDrawTemperatureGaugeHud(void[]* data)
 	if (_consoleClientIsInBunker)
 		return 0;
 
+	if (Player::GetIsZombie())
+		return 0;
+
 	Hud::SetRelativePoint(160.0, -80.0);
 	BCSUtils::HudDrawImage(HUDID_TEMPERATURE + 4, "TEMPICON");
 
+	int temperature = GetTemperature() + TEMPERATURE_BASE;
+
 	// Flicker effect for the value.
-	if (_consoleClientTemperature == TEMPERATURE_MIN && Timer() % 10 >= 5)
+	if (temperature == 0 && Timer() % 10 >= 5)
 		return 0;
 
-	int color = _consoleClientTemperature > 32
+	int color = temperature > 32
 		? CR_WHITE
-		: _consoleClientTemperature > 30
+		: temperature > 30
 			? CR_YELLOW
 			: CR_RED;
 
 	Hud::SetRelativePoint(176.0, -85.0);
 	BCSUtils::HudSetTextColor(color);
-	BCSUtils::HudDrawText(HUDID_TEMPERATURE + 5, str((int)_consoleClientTemperature));
+	BCSUtils::HudDrawText(HUDID_TEMPERATURE + 5, str((int)temperature));
 	return 0;
 }
 
@@ -1058,18 +1065,20 @@ internal void DrawFrostScreen(int x, int y, int id)
 {
 	// The values at which the graphics are going to be displayed.
 	static int frostGraphicValues[4] = {
-		35, 33, 31, 29
+		7, 5, 3, 1
 	};
 
 	// Update every three tics.
 	if (Timer() % 3 != 0)
 		return;
 
+	int temperature = GetTemperature();
+
 	// Determine graphic.
 	int graphicIndex = 0;
 	for (int i = lengthof(frostGraphicValues) - 1; i >= 0; --i)
 	{
-		if (_consoleClientTemperature > frostGraphicValues[i])
+		if (temperature > frostGraphicValues[i])
 			continue;
 
 		graphicIndex = i + 1;
@@ -1078,7 +1087,7 @@ internal void DrawFrostScreen(int x, int y, int id)
 
 	// Always show the last graphic if outside at night or in water.
 	bool inWater = BCSUtils::GetActorWaterLevel(ActivatorTID()) > 0;
-	if (!_consoleClientIsWarm && (NightHasFallen() || inWater))
+	if (!GetIsCold() && (NightHasFallen() || inWater))
 		graphicIndex = 4;
 
 	if (graphicIndex == 0)
@@ -1088,17 +1097,46 @@ internal void DrawFrostScreen(int x, int y, int id)
 	HudMessage(s:"a"; HUDMSG_FADEINOUT | HUDMSG_ADDBLEND, 0, CR_UNTRANSLATED, 240.0, 240.0, 0.0, 0.5, 0.1);
 }
 
-// Called to synchronize the current temperature to the client.
-script "TemperatureSync" (int amount) clientside
+internal int GetTemperature()
 {
-	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synchronizing temperature to ", d:amount));
-	_consoleClientTemperature = amount;
+	return GetPlayerTemperature(PlayerNumber());
 }
 
-script "WarmSync" (int warm) clientside
+internal int GetPlayerTemperature(int id)
 {
-	Logger::LogDebug(LOGSOURCE, StrParam(s:"Marking self as ", s:BCSUtils::cond(warm, "warm", "cold"), s:"."));
-	_consoleClientIsWarm = warm;
+	return CheckActorInventory(Identity::GetTid(id), TEMPERATURE_VALUE_ITEM);
+}
+
+internal void SetTemperature(int value)
+{
+	SetPlayerTemperature(PlayerNumber(), value);
+}
+
+internal void SetPlayerTemperature(int id, int value)
+{
+	BCSUtils::SetActorInventory(Identity::GetTid(id), TEMPERATURE_VALUE_ITEM, value);
+}
+
+
+
+internal bool GetIsCold()
+{
+	return GetPlayerIsCold(PlayerNumber());
+}
+
+internal bool GetPlayerIsCold(int id)
+{
+	return CheckActorInventory(Identity::GetTid(id), TEMPERATURE_ISCOLD_ITEM);
+}
+
+internal void SetIsCold(bool value)
+{
+	SetPlayerIsCold(PlayerNumber(), value);
+}
+
+internal void SetPlayerIsCold(int id, bool value)
+{
+	BCSUtils::SetActorInventory(Identity::GetTid(id), TEMPERATURE_ISCOLD_ITEM, value);
 }
 
 /*
@@ -1110,56 +1148,32 @@ script "WarmSync" (int warm) clientside
 // Mark the player as inside/outside depending on lineside.
 script "SetPlayerWarm"
 {
-	bool warm = LineSide() == LINE_FRONT;
-	_isWarm[PlayerNumber()] = warm;
-	SynchronizeWarm(warm);
-}
-
-internal bool GetIsWarm(int playerId)
-{
-	return _isWarm[playerId];
+	SetIsCold(LineSide() != LINE_FRONT);
 }
 
 // Main loop, runs on each client.
 // This script handles the behavior of the temperature timer and ensures it increments/decrements.
 script "TemperatureLoop"
 {
-	int nextTemperatureTic = Timer() + TEMPERATURE_TIC_NORMAL;
-	bool lastTicWarm = false;
+	_nextTemperatureTic = Timer() + TEMPERATURE_TIC_NORMAL;
+
 	bool firstDamageTic = false;
+	bool isColdLast = GetIsCold();
 
-	// Sync initial value. Also keep track of last value for synchronization.
-	int temperature = TEMPERATURE_MAX;
-	int lastTemperature = TEMPERATURE_MAX;
-	SynchronizeTemperature(temperature);
-
-	while(BCSUtils::IsAlive())
+	while(true)
 	{
-		// Game ended.
-		if (Round::GetGameIsEnding())
+		if (!BCSUtils::IsAlive() || Player::GetIsZombie() || Round::GetGameIsEnding())
 		{
 			Delay(const: 1);
 			continue;
 		}
 
-		// Zombies are not affected by the temperature.
-		// Make sure the temperature is reset.
-		if (Player::GetIsZombie()) {
-
-			if (temperature != TEMPERATURE_MAX) {
-				temperature = TEMPERATURE_MAX;
-				SynchronizeTemperature(temperature);
-			}
-
-			Delay(const: 1);
-			continue;
-		}
-
-		bool warm = GetIsWarm(PlayerNumber());
-		bool inWater = BCSUtils::GetActorWaterLevel(ActivatorTID()) > 0;
+		int temperature = GetTemperature();
+		bool isCold = GetIsCold();
+		bool isInWater = BCSUtils::GetActorWaterLevel(ActivatorTID()) > 0;
 
 		// Hurt the player every 5 tics if they are at minimum temperature.
-		if (temperature == TEMPERATURE_MIN && !warm)
+		if (temperature == 0 && isCold)
 		{
 			if (!firstDamageTic)
 			{
@@ -1177,50 +1191,32 @@ script "TemperatureLoop"
 		firstDamageTic = false;
 
 		// Check if the next tic passed.
-		if (nextTemperatureTic > Timer())
+		if (_nextTemperatureTic > Timer())
 		{
 			Delay(const: 1);
 			continue;
 		}
 
-		// If the player's situation changed and they changed inside state, ignore the changes in the next tic.
-		if (lastTicWarm == warm)
+		// Change temperature if the player's situation is the same.
+		if (isColdLast == isCold)
 		{
-			// If the player is inside, add temperature. Otherwise take it.
-			temperature += BCSUtils::cond(warm, 1, -1);
-			temperature = BCSUtils::clamp(temperature, TEMPERATURE_MIN, TEMPERATURE_MAX);
-
-			if (temperature != lastTemperature)
-			{
-				SynchronizeTemperature(temperature);
-			}
+			temperature += isCold ? -1 : 1;
+			temperature = BCSUtils::clamp(temperature, 0, TEMPERATURE_MAX);
+			SetTemperature(temperature);
 		}
 
-		// Determine next tic to check based on the player's state.
-		// If outside at night, the next tic happens quicker.
-		int addedTics = BCSUtils::cond(warm,
-			TEMPERATURE_TIC_WARM,
-			BCSUtils::cond(inWater,
-				TEMPERATURE_TIC_WATER, BCSUtils::cond(NightHasFallen(),
-					TEMPERATURE_TIC_NIGHT, TEMPERATURE_TIC_NORMAL)));
+		int nextTic;
+		if (!isCold) nextTic = TEMPERATURE_TIC_WARM;
+		else if (isInWater) nextTic = TEMPERATURE_TIC_WATER;
+		else if (NightHasFallen()) nextTic = TEMPERATURE_TIC_NIGHT;
+		else nextTic = TEMPERATURE_TIC_NORMAL;
 
-		nextTemperatureTic = Timer() + addedTics;
-		lastTicWarm = warm;
-		lastTemperature = temperature;
+		_nextTemperatureTic = Timer() + nextTic;
+		isColdLast = isCold;
+
 		Delay(const: 1);
 	}
 }
-
-internal void SynchronizeTemperature(int amount)
-{
-	NamedExecuteClientScript("TemperatureSync", PlayerNumber(), amount);
-}
-
-internal void SynchronizeWarm(int warm)
-{
-	NamedExecuteClientScript("WarmSync", PlayerNumber(), warm);
-}
-
 
 /*
 ** -----------------------------------------------------------------------------
