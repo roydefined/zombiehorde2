@@ -235,6 +235,20 @@ script "enterClient" enter clientside
 	}
 }
 
+// When players turn zombie their temperature must reset in case they revert later on.
+script "zm31m_internal_event_playerspeciechanged" (raw packetRaw)
+{
+	Event::ReceivePlayerSpecieChanged((str)packetRaw);
+	int id = Event::GetReceiveData(0);
+	int specie = Event::GetReceiveData(1);
+
+	if (specie == Player::SPECIEZOMBIE)
+	{
+		SetPlayerIsCold(id, false);
+		SetPlayerTemperature(id, TEMPERATURE_MAX);
+	}
+}
+
 /*
 ** -----------------------------------------------------------------------------
 ** General scripts
