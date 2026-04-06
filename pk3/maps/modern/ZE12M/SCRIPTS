@@ -21,6 +21,7 @@ internal enum MapGameTypeT
 
 internal enum MapProgressStateT
 {
+	STATE_NONE,
 	STATE_PLAYINGOUTSIDE,
 	STATE_PLAYINGINSIDE,
 	STATE_ENDING,
@@ -30,7 +31,7 @@ internal enum MapProgressStateT
 internal bool _pillarDone[4];
 internal int _pillarTids[4] = { 3, 2, 5, 1 };
 internal int _gameType = GAMETYPE_LINEAR;
-internal int _mapProgressState = STATE_PLAYINGOUTSIDE;
+internal int _mapProgressState = STATE_NONE;
 
 #define LOGSOURCE "Map"
 
@@ -54,6 +55,13 @@ script "OnOpenClient" open clientside
 	SpawnSpot("ZH2ZE12MMarkerEast", 84);
 	SpawnSpot("ZH2ZE12MMarkerSouth", 85);
 	SpawnSpot("ZH2ZE12MMarkerWest", 86);
+
+	// Late joiners must get the correct music.
+	if (_mapProgressState != STATE_NONE)
+	{
+		Music::SetDefaultMusic("D_EGYPT2");
+		Music::PlayDefaultMusic();
+	}
 
 	delay(70);
 
@@ -124,25 +132,39 @@ script "OnOpen" open
 	SyncGameType();
 }
 
-script "StartTrigger" clientside
+script "StartTrigger"
 {
-	static bool _startTriggerRun;
-	if (_startTriggerRun)
+	NamedExecuteClientScript("StartTrigger_Client", PlayerNumber());
+
+	// Map state must advance if we didn't do so already.
+	if (_mapProgressState == STATE_NONE)
+	{
+		_mapProgressState = STATE_PLAYINGOUTSIDE;
+		SyncMapProgressState();
+
+		// Tell all spectators to change music.
+		ACS_NamedExecute("UpdateSpectatorMusic", 0);
+	}
+}
+
+script "StartTrigger_Client" clientside
+{
+	static bool hasRun;
+	if (hasRun)
 		terminate;
 
-	_startTriggerRun = true;
+	hasRun = true;
 	SetActivator(-1);
-	ClearLineSpecial();
 
 	// Only run if we aren't ending yet.
 	if (_mapProgressState == STATE_ENDING || _mapProgressState == STATE_ENDED)
 		terminate;
 
-	Music::SetDefaultMusic("d_egypt2");
+	Music::SetDefaultMusic("D_EGYPT2");
 	Music::PlayDefaultMusic();
 
 	// The rest only makes sense if we didn't open the pyramid yet
-	if (_mapProgressState != STATE_PLAYINGOUTSIDE)
+	if (_mapProgressState == STATE_PLAYINGINSIDE)
 		terminate;
 
 	delay(18);
@@ -161,7 +183,16 @@ script "StartTrigger" clientside
 	if (_gameType == GAMETYPE_QUICKLINEAR)
 		HudMessage(s:"You're in luck! Some of the pillars are already active."; HUDMSG_FADEOUT, 0, CR_GREEN, 320.0, 62.0, 4.5, 0.5);
 	else if (_gameType == GAMETYPE_NONLINEAR)
-		HudMessage(s:"The desert is in your favour. You can freely move to any pillar!"; HUDMSG_FADEOUT, 0, CR_GREEN, 320.0, 62.0, 4.5, 0.5);
+		HudMessage(s:"The desert is in your favor. You can freely move to any pillar!"; HUDMSG_FADEOUT, 0, CR_GREEN, 320.0, 62.0, 4.5, 0.5);
+}
+
+script "UpdateSpectatorMusic" clientside
+{
+	if (!PlayerIsSpectator(ConsolePlayerNumber()))
+		terminate;
+
+	Music::SetDefaultMusic("D_EGYPT2");
+	Music::PlayDefaultMusic();
 }
 
 internal void TriggerBeaconActivateAmbience()
@@ -371,7 +402,7 @@ script "FinalMusicLoop" clientside
 		restart;
 	}
 
-	Music::SetMusic("d_egypt3", 0);
+	Music::SetMusic("D_EGYPT3", 0);
 	Delay(1225);
 	Music::SetMusic("", 0);
 }
@@ -547,10 +578,11 @@ internal void SetNonLinearGame()
 
 script "BeaconEastResist"
 {
-	if(_pillarDone[0])
+	static bool hasRun;
+	if (hasRun)
 		terminate;
 
-	_pillarDone[0] = true;
+	hasRun = true;
 
 	SetActivator(-1);
 	SetHudSize(640, 480, FALSE);
@@ -568,6 +600,7 @@ script "BeaconEastResist"
 	tagwait(9);
 	delay(35);
 
+	_pillarDone[0] = true;
 	TriggerBeaconActivateAmbience();
 	ActivateBeacon(0);
 	SyncActivePillars();
@@ -575,10 +608,11 @@ script "BeaconEastResist"
 
 script "BeaconNorthResist"
 {
-	if(_pillarDone[1])
+	static bool hasRun;
+	if (hasRun)
 		terminate;
 
-	_pillarDone[1] = true;
+	hasRun = true;
 
 	SetActivator(-1);
 	SetHudSize(640, 480, FALSE);
@@ -595,6 +629,7 @@ script "BeaconNorthResist"
 	tagwait(5);
 	delay(35);
 
+	_pillarDone[1] = true;
 	TriggerBeaconActivateAmbience();
 	ActivateBeacon(1);
 	SyncActivePillars();
@@ -602,10 +637,11 @@ script "BeaconNorthResist"
 
 script "BeaconWestResist"
 {
-	if(_pillarDone[2])
+	static bool hasRun;
+	if (hasRun)
 		terminate;
 
-	_pillarDone[2] = true;
+	hasRun = true;
 
 	SetActivator(-1);
 	SetHudSize(640, 480, false);
@@ -627,6 +663,7 @@ script "BeaconWestResist"
 	TagWait(11);
 	delay(35);
 
+	_pillarDone[2] = true;
 	TriggerBeaconActivateAmbience();
 	ActivateBeacon(2);
 	SyncActivePillars();
@@ -634,10 +671,11 @@ script "BeaconWestResist"
 
 script "BeaconSouthResist"
 {
-	if(_pillarDone[3])
+	static bool hasRun;
+	if (hasRun)
 		terminate;
 
-	_pillarDone[3] = true;
+	hasRun = true;
 
 	SetActivator(-1);
 	SetHudSize(640, 480, FALSE);
@@ -660,6 +698,7 @@ script "BeaconSouthResist"
 	tagwait(10);
 	delay(35);
 
+	_pillarDone[3] = true;
 	TriggerBeaconActivateAmbience();
 	ActivateBeacon(3);
 	SyncActivePillars();
@@ -729,7 +768,7 @@ internal void ClientSyncMapProgressState()
 	if (!IsNetworkGame())
 		return;
 
-	_mapProgressState = BCSUtils::GetSyncVarDefault(SYNC_MAPPROGRESSSTATE, STATE_PLAYINGOUTSIDE);
+	_mapProgressState = BCSUtils::GetSyncVarDefault(SYNC_MAPPROGRESSSTATE, STATE_NONE);
 	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced map state to client: ", d:_mapProgressState, s:"."));
 }
 
