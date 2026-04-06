@@ -27,6 +27,7 @@
 
 #define TEMPERATURE_ISCOLD_ITEM "ZH2ZM31MIsCold"
 #define TEMPERATURE_VALUE_ITEM "ZH2ZM31MTemperature"
+#define TEMPERATURE_NEXTTIC_ITEM "ZH2ZM31MNextTemperatureTic"
 #define IN_BUNKER_ITEM "ZH2ZM31MIsInBunker"
 
 #define EVENT_NIGHT_STARTTICS 35 * 30
@@ -71,7 +72,10 @@ internal bool _guardhouseUnlocked,
 internal bool _inToxicRoom[BCSUtils::MAX_PLAYERS],
 			  _inDeconterminationRoom[BCSUtils::MAX_PLAYERS];
 
-internal int _nextTemperatureTic;
+// Temperature
+internal bool _firstDamageTic[BCSUtils::MAX_PLAYERS];
+internal bool _isColdLast[BCSUtils::MAX_PLAYERS];
+internal bool _hasExplainedTemperature;
 
 internal NukeBoundaryRockT _nukeBoundaryRocks[6] =
 {
@@ -211,23 +215,26 @@ Script "OnOpenClient" Open CLIENTSIDE
 	}
 
 	ACS_NamedExecute("FrozenDebug", 0);
+	ACS_NamedExecute("TemperatureLoop", 0);
 }
 
 script "enter" enter
 {
 	SetIsCold(CheckActorCeilingTexture(ActivatorTid(), "F_SKY1"));
 	SetTemperature(TEMPERATURE_MAX);
-
-	ACS_NamedExecuteAlways("TemperatureLoop", 0);
 }
 
 script "enterClient" enter clientside
 {
+	if (ConsolePlayerNumber() != PlayerNumber())
+		terminate;
+
 	// Small delay to give the state some time to prepare.
 	delay(const: 5);
 
 	while(BCSUtils::IsAlive())
 	{
+		BCSUtils::SetActivatorToConsolePlayer();
 		TemperatureTickClient();
 		Delay(const: 1);
 	}
@@ -321,14 +328,8 @@ Script "UnlockLabs"
 	Logger::LogBold(StrParam(n:0, s:" has cleared the quarantine. Elevators are now activated."));
 	AmbientSound("world/reveal1", 255);
 	door_open(35, 8);
-	_labUnlocked = true;
-	ACS_NamedExecuteAlways("labUnlocked_client", 0);
-}
 
-// TODO: Proper sync.
-script "labUnlocked_client" clientside
-{
-	_labUnlocked = TRUE;
+	_labUnlocked = true;
 }
 
 // Guardhouse unlocks after entering it after a while
@@ -427,7 +428,7 @@ script "FrozenDebug" clientside
 
 			if (_eventStartTimestamp != 0)
 			{
-				int elapsed = Timer() - _eventStartTimestamp;
+				int elapsed = Utils::GetSynchronizedTimer() - _eventStartTimestamp;
 				Append(s:"Elapsed since event start: ", d:elapsed, s:"\n");
 			}
 
@@ -445,7 +446,7 @@ script "FrozenDebug" clientside
 
 			Append(s:"Is cold: ", s:(GetIsCold() ? "true" : "false"), s:"\n");
 			Append(s:"Temperature: ", d:GetTemperature(), s:"\n");
-			Append(s:"Next temperature update: ", d:(_nextTemperatureTic - Timer()), s:"\n");
+			Append(s:"Next temperature update: ", d:(GetNextTemperatureTic() - Utils::GetSynchronizedTimer()), s:"\n");
 
 			Append(s:"Is in bunker: ", s:(GetIsInBunker() ? "true" : "false"), s:"\n");
 		}
@@ -619,18 +620,31 @@ script "TogglePlayerElevatorId" (int elevatorId)
 // Main elevator logic. Parameters indicate pressed elevator id, target elevator id, and wether the button inside the elevator was pressed.
 script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 {
-	int playerId = PlayerNumber();
-
-	// Checks when the elevator may not be used
-	if (_eventState == EVENTSTATE_NUKE
-		|| !_labUnlocked
-		|| (Player::GetIsZombie() && !pressedInside)
-		|| _elevatorInUse[elevatorId])
+	if(Player::GetIsZombie() && !pressedInside)
 	{
-		NamedExecuteClientScript("Elevator_client", playerId);
+		Chat::SendSelfActivator("Brainz...?");
 		terminate;
 	}
 
+	if(_eventState == EVENTSTATE_NUKE)
+	{
+		Logger::LogActivator("The lift circuits are fried by the nuke. The elevator can not be used.");
+		terminate;
+	}
+
+	if(!_labUnlocked)
+	{
+		Logger::LogActivator("The lifts have been locked down for quarantine.");
+		terminate;
+	}
+
+	if(_elevatorInUse[elevatorId])
+	{
+		Logger::LogActivator("The elevator is currently in use.");
+		terminate;
+	}
+
+	int id = PlayerNumber();
 	SetActivator(-1);
 
 	// Elevator is now in use
@@ -662,16 +676,30 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 	PolyWait(polyLeftTag);
 
 	// Stop here if a zombie called from the inside.
-	if (Player::GetPlayerIsZombie(playerId) && pressedInside)
+	if (Player::GetPlayerIsZombie(id) && pressedInside)
+	{
+		_elevatorInUse[elevatorId] = false;
+		_elevatorInUse[targetElevatorId] = false;
 		terminate;
+	}
 
 	// Check if elevator or target elevator have occupands.
 	if (!Anybody_inElevator(elevatorId) && !Anybody_inElevator(targetElevatorId))
+	{
+		_elevatorInUse[elevatorId] = false;
+		_elevatorInUse[targetElevatorId] = false;
 		terminate;
+	}
 
 	// Rest of the logic happends on both sides.
 	ACS_NamedExecuteAlways("ElevatorLogic2", 0, elevatorId, targetElevatorId);
 	ACS_NamedExecuteAlways("ElevatorLogic2", 0, targetElevatorId, elevatorId);
+
+	delay(35 * 11);
+
+	// Elevators no longer in use.
+	_elevatorInUse[elevatorId] = false;
+	_elevatorInUse[targetElevatorId] = false;
 }
 
 script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
@@ -705,10 +733,6 @@ script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
 	Polyobj_OR_Move(polyLeftTag, 5, polyRightAngle, 32);
 	PolyWait(polyRightTag);
 	PolyWait(polyLeftTag);
-
-	// Elevators no longer in use.
-	_elevatorInUse[elevatorId] = false;
-	_elevatorInUse[targetElevatorId] = false;
 }
 
 internal bool Anybody_inElevator(int elevatorId)
@@ -723,16 +747,6 @@ internal bool Anybody_inElevator(int elevatorId)
 	}
 
 	return false;
-}
-
-script "Elevator_client" (void) clientside
-{
-	if(Player::GetIsZombie())
-		Chat::SendSelf("Brainz...?");
-	else if(_eventState == EVENTSTATE_NUKE)
-		Log(s:"The lift circuits are fried by the nuke. The elevator can not be used.");
-	else if(!_labUnlocked)
-		Log(s:"The lifts have been locked down for quarantine.");
 }
 
 /*
@@ -1050,6 +1064,18 @@ internal void TemperatureTickClient()
 		HudMessage(s:"Caution! It is very cold at night, get somewhere warm!"; HUDMSG_FADEOUT, HUDID_INTERACTION + 1, CR_YELLOW, 320.0, 400.0, 5.0, 0.6, 0.6);
 	}
 
+	// Explain the temperature system once when we go below maximum temperature.
+	if (!_hasExplainedTemperature && GetTemperature() < TEMPERATURE_MAX)
+	{
+		_hasExplainedTemperature = true;
+
+		setFont("smallfont");
+		SetHudSize(640, 480, FALSE);
+		HudMessage(s:"Careful, this place is freezing!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 360.0, 5.0, 1.0, 5.0);
+		HudMessage(s:"Either stay inside, or make sure you find warm places."; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 370.0, 5.0, 1.0, 5.0);
+		HudMessage(s:"Keep your body temperature above \cf28 degrees \cjat all times."; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 380.0, 5.0, 1.0, 5.0);
+	}
+
 	SetHudSize(480, 480, 0);
 	DrawFrostScreen(240.0, 240.0, HUDID_TEMPERATURE);
 }
@@ -1073,21 +1099,21 @@ internal raw OnDrawTemperatureGaugeHud(void[]* data)
 	Hud::SetRelativePoint(160.0, -80.0);
 	BCSUtils::HudDrawImage(HUDID_TEMPERATURE + 4, "TEMPICON");
 
-	int temperature = GetTemperature() + TEMPERATURE_BASE;
+	int temperature = GetTemperature();
 
 	// Flicker effect for the value.
 	if (temperature == 0 && Timer() % 10 >= 5)
 		return 0;
 
-	int color = temperature > 32
+	int color = temperature > 5
 		? CR_WHITE
-		: temperature > 30
+		: temperature > 3
 			? CR_YELLOW
 			: CR_RED;
 
 	Hud::SetRelativePoint(176.0, -85.0);
 	BCSUtils::HudSetTextColor(color);
-	BCSUtils::HudDrawText(HUDID_TEMPERATURE + 5, str((int)temperature));
+	BCSUtils::HudDrawText(HUDID_TEMPERATURE + 5, str((int)(temperature + TEMPERATURE_BASE)));
 	return 0;
 }
 
@@ -1149,6 +1175,28 @@ internal void SetPlayerTemperature(int id, int value)
 
 
 
+internal int GetNextTemperatureTic()
+{
+	return GetPlayerNextTemperatureTic(PlayerNumber());
+}
+
+internal int GetPlayerNextTemperatureTic(int id)
+{
+	return CheckActorInventory(Identity::GetTid(id), TEMPERATURE_NEXTTIC_ITEM);
+}
+
+internal void SetNextTemperatureTic(int value)
+{
+	SetPlayerNextTemperatureTic(PlayerNumber(), value);
+}
+
+internal void SetPlayerNextTemperatureTic(int id, int value)
+{
+	BCSUtils::SetActorInventory(Identity::GetTid(id), TEMPERATURE_NEXTTIC_ITEM, value);
+}
+
+
+
 internal bool GetIsCold()
 {
 	return GetPlayerIsCold(PlayerNumber());
@@ -1181,68 +1229,61 @@ script "SetPlayerWarm"
 	SetIsCold(LineSide() != LINE_FRONT);
 }
 
-// Main loop, runs on each client.
+// Main loop of the temperature system.
 // This script handles the behavior of the temperature timer and ensures it increments/decrements.
 script "TemperatureLoop"
 {
-	_nextTemperatureTic = Timer() + TEMPERATURE_TIC_NORMAL;
-
-	bool firstDamageTic = false;
-	bool isColdLast = GetIsCold();
-
 	while(true)
 	{
-		if (!BCSUtils::IsAlive() || Player::GetIsZombie() || Round::GetGameIsEnding())
+		for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
 		{
-			Delay(const: 1);
-			continue;
-		}
+			int tid = Identity::GetTid(i);
 
-		int temperature = GetTemperature();
-		bool isCold = GetIsCold();
-		bool isInWater = BCSUtils::GetActorWaterLevel(ActivatorTID()) > 0;
+			if (!BCSUtils::ActorIsAlive(tid) || Player::GetPlayerIsZombie(i) || Round::GetGameIsEnding())
+				continue;
 
-		// Hurt the player every 5 tics if they are at minimum temperature.
-		if (temperature == 0 && isCold)
-		{
-			if (!firstDamageTic)
+			int temperature = GetPlayerTemperature(i);
+			bool isCold = GetPlayerIsCold(i);
+			bool isInWater = BCSUtils::GetActorWaterLevel(tid) > 0;
+
+			// Hurt the player every 5 tics if they are at minimum temperature.
+			if (temperature == 0 && isCold)
 			{
-				firstDamageTic = true;
-				Logger::LogActivator("You are freezing to death! Seek shelter.");
+				if (!_firstDamageTic[i])
+				{
+					_firstDamageTic[i] = true;
+					Logger::LogTo(i, "You are freezing to death! Seek shelter.");
+				}
+
+				if (Timer() % 5 == 0)
+					Thing_damage2(tid, 1, "silent");
+
+				continue;
 			}
 
-			if (Timer() % 5 == 0)
-				Thing_damage2(ActivatorTID(), 1, "silent");
+			_firstDamageTic[i] = false;
 
-			Delay(const: 1);
-			continue;
+			// Check if the next tic passed.
+			if (GetPlayerNextTemperatureTic(i) > Timer())
+				continue;
+
+			// Change temperature if the player's situation is the same.
+			if (_isColdLast[i] == isCold)
+			{
+				temperature += isCold ? -1 : 1;
+				temperature = BCSUtils::clamp(temperature, 0, TEMPERATURE_MAX);
+				SetPlayerTemperature(i, temperature);
+			}
+
+			int nextTic;
+			if (!isCold) nextTic = TEMPERATURE_TIC_WARM;
+			else if (isInWater) nextTic = TEMPERATURE_TIC_WATER;
+			else if (NightHasFallen()) nextTic = TEMPERATURE_TIC_NIGHT;
+			else nextTic = TEMPERATURE_TIC_NORMAL;
+
+			SetPlayerNextTemperatureTic(i, Timer() + nextTic);
+			_isColdLast[i] = isCold;
 		}
-
-		firstDamageTic = false;
-
-		// Check if the next tic passed.
-		if (_nextTemperatureTic > Timer())
-		{
-			Delay(const: 1);
-			continue;
-		}
-
-		// Change temperature if the player's situation is the same.
-		if (isColdLast == isCold)
-		{
-			temperature += isCold ? -1 : 1;
-			temperature = BCSUtils::clamp(temperature, 0, TEMPERATURE_MAX);
-			SetTemperature(temperature);
-		}
-
-		int nextTic;
-		if (!isCold) nextTic = TEMPERATURE_TIC_WARM;
-		else if (isInWater) nextTic = TEMPERATURE_TIC_WATER;
-		else if (NightHasFallen()) nextTic = TEMPERATURE_TIC_NIGHT;
-		else nextTic = TEMPERATURE_TIC_NORMAL;
-
-		_nextTemperatureTic = Timer() + nextTic;
-		isColdLast = isCold;
 
 		Delay(const: 1);
 	}
