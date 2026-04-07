@@ -129,6 +129,22 @@ script "OnOpenClient" open clientside
 	}
 }
 
+// Handles giving rewards when uboa dies.
+script "OnEvent" (raw type, raw damage, raw unused) event
+{
+	if (type != GAMEEVENT_ACTOR_DAMAGED)
+		terminate;
+
+	if (!BCSUtils::StrEquals(GetActorClass(ActivatorTID()), "ZH2Uboa"))
+		terminate;
+
+	int targetHealth = BCSUtils::GetActorHealth(0);
+	bool targetDied = targetHealth - damage <= 0;
+
+	if (targetDied)
+		ACS_NamedExecute("UboaDied", 0);
+}
+
 script "ToggleWeather" (void) clientside
 {
 	if (ConsolePlayerNumber() != PlayerNumber())
@@ -237,11 +253,21 @@ Script "TurnOffGenerator" (void)
 	}
 }
 
-// Uboa death script (gotta lower this to a lower number or named script
-// this might conflict with the source code, being so high
-Script 999 (void)
+// TODO: Uboa used to drop Jack's guns on death
+Script "UboaDied"
 {
-	setmusic("UBOADEAD",0,0);
+	static bool hasRun;
+	if (hasRun)
+		terminate;
+
+	hasRun = true;
+
+	Music::SetDefaultMusic("UBOADEAD");
+	Music::PlayDefaultMusic();
+
+	// TODO: Uboa used to also trigger the same death as an angel.
+	//AmbientSound("OHSHI5", 127);
+
 	radius_quake(128,1000,0,500,90);
 	HudMessageBold(s:"Someone has slain Uboa!"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
 	delay(17);
