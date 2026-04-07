@@ -162,8 +162,9 @@ Script 10 (void) // Activing Red generator
 {
 	SetFont("BIGFONT");
 	HudmessageBold(s:"\cgRED \ccgenerator activated !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 6.0, 3.5);
-	SpawnSpotFacing("ZH2LegacyZM18Generator",70,4555);
+	ACS_NamedExecute("Summon_Generator_Effect", 0, 70, 4555);
 	delay(35*2);
+	SetFont("SMALLFONT");
 	PrintBold(s:"What will it spawn ?");
 	delay(35*9);
 	if( Redgenerator <= 80)
@@ -191,11 +192,11 @@ Script 10 (void) // Activing Red generator
 		switch(random(1,2))
 		{
 			case 1:
-				SpawnSpotFacing(WEAPON_JACKSGUN_NAME, 70, 0);
+				SpawnSpotFacing(WEAPON_JACKSGUN_SPAWN_NAME, 70, 0);
 				PrintBold(s:"it dropped a Jacksgun !");
 				break;
 			case 2:
-				SpawnSpotFacing(WEAPON_DOUBLESHOTGUN_NAME, 70, 0);
+				SpawnSpotFacing(WEAPON_DOUBLESHOTGUN_SPAWN_NAME, 70, 0);
 				PrintBold(s:"it dropped a doubleshotgun !");
 				break;
 
@@ -223,15 +224,15 @@ Script 10 (void) // Activing Red generator
 	}
 	ACS_Execute(55,0,30,0,0);
 	Thing_Remove(70);
-	Thing_Remove(4555);
 }
 
 Script 11 (void) // Activing Blue generator
 {
 	SetFont("BIGFONT");
 	HudmessageBold(s:"\chBLUE \ccgenerator activated !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 6.0, 3.5);
-	SpawnSpotFacing("ZH2LegacyZM18Generator",71,4556);
+	ACS_NamedExecute("Summon_Generator_Effect", 0, 71, 4556);
 	delay(35*2);
+	SetFont("SMALLFONT");
 	PrintBold(s:"What will it spawn ?");
 	delay(35*9);
 	if( Bluegenerator <= 80)
@@ -259,11 +260,11 @@ Script 11 (void) // Activing Blue generator
 		switch(random(1,2))
 		{
 			case 1:
-				SpawnSpotFacing(WEAPON_JACKSGUN_NAME, 71, 0);
+				SpawnSpotFacing(WEAPON_JACKSGUN_SPAWN_NAME, 71, 0);
 				PrintBold(s:"it dropped a Jacksgun !");
 				break;
 			case 2:
-				SpawnSpotFacing(WEAPON_DOUBLESHOTGUN_NAME, 71, 0);
+				SpawnSpotFacing(WEAPON_DOUBLESHOTGUN_SPAWN_NAME, 71, 0);
 				PrintBold(s:"it dropped a doubleshotgun !");
 				break;
 
@@ -291,15 +292,15 @@ Script 11 (void) // Activing Blue generator
 	}
 	ACS_Execute(55,0,31,0,0);
 	Thing_Remove(71);
-	Thing_Remove(4556);
 }
 
 Script 12 (void) // Activing Yellow generator
 {
 	SetFont("BIGFONT");
 	HudmessageBold(s:"YELLOW \ccgenerator activated !"; HUDMSG_FADEOUT, 1, CR_YELLOW, 0.5, 0.1, 6.0, 3.5);
-	SpawnSpotFacing("ZH2LegacyZM18Generator",72,4557);
+	ACS_NamedExecute("Summon_Generator_Effect", 0, 72, 4557);
 	delay(35*2);
+	SetFont("SMALLFONT");
 	PrintBold(s:"What will it spawn ?");
 	delay(35*9);
 	if( Yellowgenerator <= 80)
@@ -327,11 +328,11 @@ Script 12 (void) // Activing Yellow generator
 		switch(random(1,2))
 		{
 			case 1:
-				SpawnSpotFacing(WEAPON_JACKSGUN_NAME, 72, 0);
+				SpawnSpotFacing(WEAPON_JACKSGUN_SPAWN_NAME, 72, 0);
 				PrintBold(s:"it dropped a Jacksgun !");
 				break;
 			case 2:
-				SpawnSpotFacing(WEAPON_DOUBLESHOTGUN_NAME, 72, 0);
+				SpawnSpotFacing(WEAPON_DOUBLESHOTGUN_SPAWN_NAME, 72, 0);
 				PrintBold(s:"it dropped a doubleshotgun !");
 				break;
 
@@ -360,15 +361,15 @@ Script 12 (void) // Activing Yellow generator
 	}
 	ACS_Execute(55,0,32,0,0);
 	Thing_Remove(72);
-	Thing_Remove(4557);
 }
 
 Script 13 (void) // Activing Neutral generator
 {
 	SetFont("BIGFONT");
 	HudmessageBold(s:"NEUTRAL generator activated !"; HUDMSG_FADEOUT, 1, CR_WHITE, 0.5, 0.1, 6.0, 3.5);
-	SpawnSpotFacing("ZH2LegacyZM18Generator",73,4558);
+	ACS_NamedExecute("Summon_Generator_Effect", 0, 73, 4558);
 	delay(35*2);
+	SetFont("SMALLFONT");
 	PrintBold(s:"What will it spawn ?");
 	delay(35*9);
 	if( Neutralgenerator <= 80)
@@ -396,11 +397,11 @@ Script 13 (void) // Activing Neutral generator
 		switch(random(1,2))
 		{
 			case 1:
-				SpawnSpotFacing(WEAPON_JACKSGUN_NAME, 73, 0);
+				SpawnSpotFacing(WEAPON_JACKSGUN_SPAWN_NAME, 73, 0);
 				PrintBold(s:"it dropped a Jacksgun !");
 				break;
 			case 2:
-				SpawnSpotFacing(WEAPON_DOUBLESHOTGUN_NAME, 73, 0);
+				SpawnSpotFacing(WEAPON_DOUBLESHOTGUN_SPAWN_NAME, 73, 0);
 				PrintBold(s:"it dropped a doubleshotgun !");
 				break;
 
@@ -428,19 +429,23 @@ Script 13 (void) // Activing Neutral generator
 	}
 	ACS_Execute(55,0,33,0,0);
 	Thing_Remove(73);
-	Thing_Remove(4558);
+}
+
+script "Summon_Generator_Effect"(raw spotTid, raw tid) clientside
+{
+	SpawnSpotFacing("ZH2LegacyZM18Generator", spotTid, tid);
+	delay(35 * 11);
+	Thing_Remove(tid);
 }
 
 // Experience
-// ZH2: Due to the inclusion of the zombieman, I am temporarily disabling this script until I have a fitting replacement.
+// ZH2: This script has replaced the zombieman with dogs from ZM20.
 Script 14 (void)
 {
-    Print(s:"Experience CZR-332 is out of order.");
-	terminate;
-
     Print(s:"Begining experience CZR-332 !");
-    //SpawnSpotFacing("ZombieMan",37,14030); // TODO: Rename
-    //SpawnSpotFacing("Uboa",38,14031);  // TODO: Rename
+    //SpawnSpotFacing("ZombieMan",37,14030);
+	SpawnSpotFacing("ZH2LegacyZM20HunterDog",37,14030);
+	SpawnSpotFacing("ZH2LegacyUboa",38,14031);
     SetActorProperty(14030, APROP_Friendly, 1);
     delay(35*1);
     Floor_LowerbyValue(39,10,118);
