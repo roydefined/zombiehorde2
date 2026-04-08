@@ -82,16 +82,14 @@ Script "Resist3" (void)
 
     Polyobj_Move(1, 7, 128, 128);
 	Polyobj_Move(2, 7, 0, 128);
-	SoundSequenceOnPolyObj(1, "ZH2LiftDoor1");
-	SoundSequenceOnPolyObj(2, "ZH2LiftDoor1");
+	ACS_NamedExecute("LiftDoorSound", 0, 1, 2);
 
 	PolyWait(1);
 	Delay(35*2);
 
 	Polyobj_Move(1, 7, 0, 128);
 	Polyobj_Move(2, 7, 128, 128);
-	SoundSequenceOnPolyObj(1, "ZH2LiftDoor1");
-	SoundSequenceOnPolyObj(2, "ZH2LiftDoor1");
+	ACS_NamedExecute("LiftDoorSound", 0, 1, 2);
 
 	PolyWait(1);
 
@@ -121,8 +119,7 @@ Script "Resist3" (void)
 
 	Polyobj_Move(3, 7, 128, 128);
 	Polyobj_Move(4, 7, 0, 128);
-	SoundSequenceOnPolyObj(3, "ZH2LiftDoor1");
-	SoundSequenceOnPolyObj(4, "ZH2LiftDoor1");
+	ACS_NamedExecute("LiftDoorSound", 0, 3, 4);
 
 	PolyWait(3);
 	Delay(35*2);
@@ -131,10 +128,8 @@ Script "Resist3" (void)
 
 	Polyobj_Move(6, 10, 192, 100);
 	Polyobj_Move(7, 10, 64, 100);
-	SoundSequenceOnPolyObj(6, "ReactorDoor");
-	SoundSequenceOnPolyObj(7, "ReactorDoor");
+	ACS_NamedExecute("ReactorDoorSound", 0, 6, 7);
 }
-
 
 Script "FinalResist" (void)
 {
@@ -160,8 +155,7 @@ Script "FinalResist" (void)
 
 	Polyobj_Move(8, 7, 0, 80);
 	Polyobj_Move(9, 7, 128, 80);
-	SoundSequenceOnPolyObj(8, "ReactorDoor");
-	SoundSequenceOnPolyObj(9, "ReactorDoor");
+	ACS_NamedExecute("LiftDoorSound", 0, 8, 9);
 
 	Delay(35*2);
 
@@ -173,6 +167,19 @@ Script "FinalResist" (void)
     delay(35);
 
     Game::KillUnsafePlayers();
+}
+
+// `SoundSequenceOnPolyObj` has no networking and as such this must be clientside to work.
+script "ReactorDoorSound"(int tid1, int tid2) clientside
+{
+	SoundSequenceOnPolyObj(tid1, "ReactorDoor");
+	SoundSequenceOnPolyObj(tid2, "ReactorDoor");
+}
+
+script "LiftDoorSound"(int tid1, int tid2) clientside
+{
+	SoundSequenceOnPolyObj(tid1, "ZH2LiftDoor1");
+	SoundSequenceOnPolyObj(tid2, "ZH2LiftDoor1");
 }
 
 Script "Lava_Teleport" (int teleportTid, int noDamage)
