@@ -450,9 +450,12 @@ strict namespace ZH2Game
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_death_client\" for player " + str(PlayerNumber()) + ".");
 
-        // Dispose team indicator unless we're the one that died.
+        // Dispose some features run on other clients and not ourselves.
         if (PlayerNumber() != ConsolePlayerNumber())
+        {
             Game::DisposeTeamIndicator();
+            Player::DisposeTranslucentActor(ActivatorTid());
+        }
 
         // Only run the rest on the dying client.
         if (ConsolePlayerNumber() != PlayerNumber())
