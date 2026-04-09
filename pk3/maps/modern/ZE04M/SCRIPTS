@@ -184,22 +184,14 @@ script "DeloreanSpeedOMeter"
 	// Start blocking players from getting on the delorean.
 	SetLineBlocking(33, BLOCK_CREATURES);
 
-	// Start teleporting safe players.
-	for(i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
-	{
-		if (!PlayerInGame(i))
-			continue;
-
-		SetActivatorToPlayer(i);
-
-		if(!Game::GetIsSafe())
-			continue;
-
-		ACS_NamedExecuteAlways("TeleportToSafety", 0, i);
-	}
+	// For players that are safe we flash an effect clientside.
+	ACS_NamedExecute("SafetyFlash", 0);
 
 	SetActivator(-1);
 	Delay(21);
+
+	// For players that are not safe we do a camera effect.
+	ACS_NamedExecute("CliffCamera", 0);
 
 	// Start teleporting non-safe players.
 	for(i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
@@ -209,13 +201,18 @@ script "DeloreanSpeedOMeter"
 
 		SetActivatorToPlayer(i);
 
+		// If safe
 		if(Game::GetIsSafe())
+		{
+			if(Player::GetIsHuman())
+				TeleportUtil::TeleportArea(800, 200, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOT);
+			else
+				TeleportUtil::TeleportArea(900, 200, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOT);
 			continue;
+		}
 
-
-		ChangeCamera(26, 0, 0);
+		// For players that are not safe.
 		TeleportUtil::TeleportArea(700, 120, TeleportUtil::TELEPORT_USETELEPORTSPOTHEIGHT);
-
 		ThrustThing(64, 100, 0, ActivatorTID());
 		ThrustThingZ(ActivatorTID(), 20, 0, 0);
 	}
@@ -256,9 +253,7 @@ script "DeloreanSpeedOMeter"
 
 	Delay(35);
 	Game::KillUnsafePlayers();
-	Delay(35*5);
 
-	ChangeCamera(0, 1, 0);
 }
 
 internal raw OnDrawDeloreanSpeedHud(void[]* data)
@@ -288,23 +283,44 @@ internal raw OnDrawDeloreanSpeedHud(void[]* data)
     return 0;
 }
 
-script "TeleportToSafety" (int playerId)
+script "SafetyFlash" clientside
 {
-	SetActivatorToPlayer(playerId);
+	BCSUtils::SetActivatorToConsolePlayer();
 
+	// Camera must be on somebody that is safe.
+	int tid = CheckPlayerCamera(ConsolePlayerNumber());
+	if (!Identity::IsValidTid(tid))
+		terminate;
+
+	if(!Game::GetPlayerIsSafe(Identity::GetId(tid)))
+		terminate;
+
+	// The player the client looks at is safe, do the effect.
 	FadeTo(255, 255, 0, 1.0, 0.2);
 	Delay(7);
 	FadeTo(255, 255, 0, 0.0, 0.2);
 	Delay(7);
 	FadeTo(255, 255, 0, 1.0, 0.2);
 	Delay(7);
-
-	if(Player::GetIsHuman())
-		TeleportUtil::TeleportArea(800, 200, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOT);
-	else
-		TeleportUtil::TeleportArea(900, 200, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOT);
-
 	FadeTo(255, 255, 0, 0.0, 0.2);
+}
+
+script "CliffCamera" clientside
+{
+	BCSUtils::SetActivatorToConsolePlayer();
+
+	// Camera must be on somebody that is not safe.
+	int tid = CheckPlayerCamera(ConsolePlayerNumber());
+	if (!Identity::IsValidTid(tid))
+		terminate;
+
+	if(Game::GetPlayerIsSafe(Identity::GetId(tid)))
+		terminate;
+
+	// The player the client looks at is not safe, do the effect.
+	ChangeCamera(26, 0, 0);
+	delay(35 * 8);
+	ChangeCamera(0, 1, 0);
 }
 
 // Delorean music trigger that plays on the client if the Delorean is about to teleport.
