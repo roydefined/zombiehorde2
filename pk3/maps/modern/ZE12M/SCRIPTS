@@ -35,42 +35,6 @@ internal int _mapProgressState = STATE_NONE;
 
 #define LOGSOURCE "Map"
 
-script "OnOpenClient" open clientside
-{
-	ClientSyncGameType();
-	ClientSyncActivePillars();
-	ClientSyncMapProgressState();
-
-	if(!ACS_NamedExecute("FinalMusicLoop", 0))
-	{
-		Logger::LogError(LOGSOURCE, "Failed to start FinalMusicLoop");
-	}
-
-	if (!ACS_NamedExecute("PillarDebug", 0))
-	{
-		Logger::LogError(LOGSOURCE, "Failed to invoke PillarDebug");
-	}
-
-	SpawnSpot("ZH2ZE12MMarkerNorth", 83);
-	SpawnSpot("ZH2ZE12MMarkerEast", 84);
-	SpawnSpot("ZH2ZE12MMarkerSouth", 85);
-	SpawnSpot("ZH2ZE12MMarkerWest", 86);
-
-	// Late joiners must get the correct music.
-	if (_mapProgressState != STATE_NONE)
-	{
-		Music::SetDefaultMusic("D_EGYPT2");
-		Music::PlayDefaultMusic();
-	}
-
-	delay(70);
-
-	// Logo
-	SetHudSize(640, 480, FALSE);
-	SetFont("ze12logo");
-	HudMessageBold(s:"a"; HUDMSG_FADEINOUT, 0, 0, 320.0, 80.0, 1.0, 3.0, 2.0);
-}
-
 script "OnOpen" open
 {
 	// Unset the beam opacity to appear later.
@@ -129,7 +93,41 @@ script "OnOpen" open
 	else
 		SetLinearGame(flow == 3);
 
+	// HACK: Why does this map not want to properly synchronize when we changemap to it?
+	// We have to delay to ensure we get the data properly. Yet on maps like ZE13M we do the same thing and it works fine.
+	Delay(const: 25);
+	
 	SyncGameType();
+	SyncActivePillars();
+}
+
+script "OnOpenClient" open clientside
+{
+	ClientSyncGameType();
+	ClientSyncActivePillars();
+	ClientSyncMapProgressState();
+
+	ACS_NamedExecute("FinalMusicLoop", 0);
+	ACS_NamedExecute("PillarDebug", 0);
+
+	SpawnSpot("ZH2ZE12MMarkerNorth", 83);
+	SpawnSpot("ZH2ZE12MMarkerEast", 84);
+	SpawnSpot("ZH2ZE12MMarkerSouth", 85);
+	SpawnSpot("ZH2ZE12MMarkerWest", 86);
+
+	// Late joiners must get the correct music.
+	if (_mapProgressState != STATE_NONE)
+	{
+		Music::SetDefaultMusic("D_EGYPT2");
+		Music::PlayDefaultMusic();
+	}
+
+	delay(70);
+
+	// Logo
+	SetHudSize(640, 480, FALSE);
+	SetFont("ze12logo");
+	HudMessageBold(s:"a"; HUDMSG_FADEINOUT, 0, 0, 320.0, 80.0, 1.0, 3.0, 2.0);
 }
 
 script "StartTrigger"
@@ -173,17 +171,17 @@ script "StartTrigger_Client" clientside
 
 	SetHudSize(640, 480, FALSE);
 	SetFont("smallfont");
-	HudMessage(s:"You must activate all four pillars"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 42.0, stayTime + 0.25, 1.0, 0.5);
+	HudMessageBold(s:"You must activate all four pillars"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 42.0, stayTime + 0.25, 1.0, 0.5);
 	delay(9);
-	HudMessage(s:"on each cardinal direction in order to open the pyramid"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 52.0, stayTime, 1.0, 0.5);
+	HudMessageBold(s:"on each cardinal direction in order to open the pyramid"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 52.0, stayTime, 1.0, 0.5);
 
 	delay(35 * 2);
 
 	// Extra message with some gamemodes.
 	if (_gameType == GAMETYPE_QUICKLINEAR)
-		HudMessage(s:"You're in luck! Some of the pillars are already active."; HUDMSG_FADEOUT, 0, CR_GREEN, 320.0, 62.0, 4.5, 0.5);
+		HudMessageBold(s:"You're in luck! Some of the pillars are already active."; HUDMSG_FADEOUT, 0, CR_GREEN, 320.0, 62.0, 4.5, 0.5);
 	else if (_gameType == GAMETYPE_NONLINEAR)
-		HudMessage(s:"The desert is in your favor. You can freely move to any pillar!"; HUDMSG_FADEOUT, 0, CR_GREEN, 320.0, 62.0, 4.5, 0.5);
+		HudMessageBold(s:"The desert is in your favor. You can freely move to any pillar!"; HUDMSG_FADEOUT, 0, CR_GREEN, 320.0, 62.0, 4.5, 0.5);
 }
 
 script "UpdateSpectatorMusic" clientside
@@ -439,12 +437,18 @@ script "PillarDebug" clientside
 		SetHudSize(640, 480, FALSE);
 		SetFont("smallfont");
 
-		HudMessage(s:"Map state: ", d:_mapProgressState; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 50.0, 0.03);
-		HudMessage(s:"Eastern pillar active: ", d:_pillarDone[0]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 60.0, 0.03);
-		HudMessage(s:"Northern pillar active: ", d:_pillarDone[1]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 70.0, 0.03);
-		HudMessage(s:"Western pillar active: ", d:_pillarDone[2]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 80.0, 0.03);
-		HudMessage(s:"Southern pillar active: ", d:_pillarDone[3]; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 90.0, 0.03);
+		str message;
+		buildmsg(message = StrParam())
+		{
+			Append(s:"Map state: ", d:_mapProgressState, s:"\n");
+			Append(s:"Game type: ", d:_gameType, s:"\n");
+			Append(s:"Northern pillar active: ", s:(_pillarDone[1] ? "true" : "false"), s:"\n");
+			Append(s:"Eastern pillar active: ", s:(_pillarDone[0] ? "true" : "false"), s:"\n");
+			Append(s:"Southern pillar active: ", s:(_pillarDone[3] ? "true" : "false"), s:"\n");
+			Append(s:"Western pillar active: ", s:(_pillarDone[2] ? "true" : "false"), s:"\n");
+		}
 
+		HudMessage(s:message; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 50.0, 0.03);
 		Delay(const: 1);
 	}
 }
@@ -538,8 +542,6 @@ internal void SetLinearGame(bool quick)
 		floor_raisebyvalue(10, 8, 64 + 128);
 		_pillarDone[3] = true;
 		ActivateBeacon(3);
-
-		SyncActivePillars();
 	}
 
 	_gameType = quick ? GAMETYPE_QUICKLINEAR : GAMETYPE_LINEAR;
@@ -781,6 +783,8 @@ internal void ClientSyncMapProgressState()
 // Synchronizes the current active pillars with clients.
 internal void SyncActivePillars()
 {
+	VALIDATE_IS_SERVERSIDE_FUNCTION();
+
 	if (!IsNetworkGame())
 		return;
 
@@ -790,7 +794,7 @@ internal void SyncActivePillars()
 	ACS_NamedExecuteAlways("SyncActivePillars_Client", 0);
 }
 
-script "SyncActivePillars_Client"(void) clientside
+script "SyncActivePillars_Client" clientside
 {
 	ClientSyncActivePillars();
 }
@@ -798,6 +802,11 @@ script "SyncActivePillars_Client"(void) clientside
 // Called clientside to synchronize the active pillars.
 internal void ClientSyncActivePillars()
 {
+	VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+	if (!IsNetworkGame())
+		return;
+
 	int value = BCSUtils::GetSyncVarDefault(SYNC_PILLARSTATE, 0);
 	_pillarDone[0] = BCSUtils::UnpackByte1(value);
 	_pillarDone[1] = BCSUtils::UnpackByte2(value);
