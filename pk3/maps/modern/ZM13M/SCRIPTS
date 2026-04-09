@@ -7,10 +7,22 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
+#define SYNC_MAPTYPE 100
+
+internal enum
+{
+	MAPTYPE_EVENING,
+	MAPTYPE_DAYTIME,
+};
+
+internal int _mapType  = MAPTYPE_EVENING;
+
 bool jacks = true;
 bool tele = false;
 
-script "OnOpen" OPEN
+#define LOGSOURCE "Map"
+
+script "OnOpen" open
 {
 	// River that pulls the player east.
 	scroll_ceiling(41, 100, 0, 2);
@@ -26,51 +38,58 @@ script "OnOpen" OPEN
 	SpawnSpot("ZH2LegacyCaveKey", Random(132, 135));
 
 	// Small change for the other music to play.
-	if (Random(0, 5) == 5)
-	{
-		Music::SetDefaultMusic("STRANGE");
-        Music::PlayDefaultMusic();
+	_mapType = Random(0, 5) == 5 ? MAPTYPE_DAYTIME : MAPTYPE_EVENING;
+	SyncMapType();
+}
 
+script "OnOpenClient" open clientside
+{
+	ClientSyncMapType();
+
+	if (_mapType == MAPTYPE_DAYTIME)
+	{
 		ChangeSky("SUNSSKY1", "SUNSSKY1");
+
+		Music::SetDefaultMusic("STRANGE");
+		Music::PlayDefaultMusic();
 	}
 	else
 	{
-		Music::SetDefaultMusic("STRANGE2");
-        Music::PlayDefaultMusic();
-
 		ChangeSky("SUNSSKY2", "SUNSSKY2");
+		Weather::StartEmitterWeather(Weather::EMITTERWEATHER_RAIN);
 
-        Weather::StartEmitterWeather(Weather::EMITTERWEATHER_RAIN);
+		Music::SetDefaultMusic("STRANGE2");
+		Music::PlayDefaultMusic();
 	}
 }
 
-script "SwitchJammed" (void)
+script "SwitchJammed"
 {
-    Chat::SendSelfActivator("This switch seems to be jammed.");
+	Chat::SendSelfActivator("This switch seems to be jammed.");
 }
 
-script 3 (void)
+script 3
 {
-    pillar_open(26,2,45,40);
-    pillar_open(27,2,60,50);
-    floor_lowerbyvalue(28,1,8);
-    ceiling_raisebyvalue(28,1,13);
-    pillar_open(29,2,5,55);
-    pillar_open(30,2,15,25);
+	pillar_open(26,2,45,40);
+	pillar_open(27,2,60,50);
+	floor_lowerbyvalue(28,1,8);
+	ceiling_raisebyvalue(28,1,13);
+	pillar_open(29,2,5,55);
+	pillar_open(30,2,15,25);
 }
 script 4 (void) //prison entrance
 {
-    setactivator(-1);
-    floor_lowerbyvalue(60,255,3);
-    floor_raisebyvalue(59,20,118);
-    tagwait(59);
-    delay(175);
-    floor_lowerbyvalue(59,9,118);
-    tagwait(59);
-    delay(35);
-    floor_raisebyvalue(60,1,3);
-    tagwait(60);
-    delay(5);
+	setactivator(-1);
+	floor_lowerbyvalue(60,255,3);
+	floor_raisebyvalue(59,20,118);
+	tagwait(59);
+	delay(175);
+	floor_lowerbyvalue(59,9,118);
+	tagwait(59);
+	delay(35);
+	floor_raisebyvalue(60,1,3);
+	tagwait(60);
+	delay(5);
 }
 
 script "BookcaseNote" (void) CLIENTSIDE
@@ -97,14 +116,14 @@ script "CellarDoor" (void)
 	}
 
 	if (!opened)
-    {
+	{
 		Logger::LogBold(StrParam(s:BCSUtils::PlayerName(PlayerNumber()), s:" has opened the wine cellar."));
 		AmbientSound("ambient/reveal1", 127);
 		ActivatorSound("sequence/lift1door", 127);
 		opened = true;
 	}
 
-    Polyobj_Move(1, 12, 0, 56);
+	Polyobj_Move(1, 12, 0, 56);
 	Delay(35 * 5);
 	Polyobj_Move(1, 12, 128, 56);
 	Delay(35 * 2);
@@ -127,17 +146,17 @@ script "TeleportToJacks" (void) // Secret teleport to jacksgun
 {
 	static bool jacksActivated;
 
-    if (jacksActivated)
+	if (jacksActivated)
 	{
 		Log(s:"someone activated this already...");
 		terminate;
-    }
+	}
 
-    if (Player::GetIsZombie()){
+	if (Player::GetIsZombie()){
 		terminate;
-    }
+	}
 
-    teleport(61,0,0);
+	teleport(61,0,0);
 	Floor_LowerByValue(143, 2, 56);
 	jacksActivated = true;
 }
@@ -145,40 +164,40 @@ script "TeleportToJacks" (void) // Secret teleport to jacksgun
 script "FruitPicker" (void)
 {
 	static bool fruitTaken[BCSUtils::MAX_PLAYERS];
-    if(Player::GetIsZombie())
+	if(Player::GetIsZombie())
 	{
 		terminate;
-    }
+	}
 
-    else if(fruitTaken[PlayerNumber()])
+	else if(fruitTaken[PlayerNumber()])
 	{
 		terminate;
-    }
+	}
 
 	fruitTaken[PlayerNumber()] = true;
-    switch(Random(1,5))
+	switch(Random(1,5))
 	{
-        case 1:
+		case 1:
 			healthing(15);
 			Chat::SendSelfActivator("Mmm, tasty!");
 			break;
 
-        case 2:
+		case 2:
 			healthing(25);
 			Chat::SendSelfActivator("Damn, that's good!");
 			break;
 
-        case 3:
+		case 3:
 			healthing(10);
 			Chat::SendSelfActivator("Not half bad...");
 			break;
 
-        case 4:
+		case 4:
 			healthing(5);
 			Chat::SendSelfActivator("Urgh! it's rotten.");
 			break;
 
-        case 5:
+		case 5:
 			healthing(20);
 			Chat::SendSelfActivator("I want some more!");
 			break;
@@ -187,9 +206,9 @@ script "FruitPicker" (void)
 
 script 11 (void)
 {
-    if(Player::GetIsHuman()){
+	if(Player::GetIsHuman()){
 		teleport(0,39,0);
-    }
+	}
 }
 
 script "DoorLocked" (void) CLIENTSIDE
@@ -199,7 +218,7 @@ script "DoorLocked" (void) CLIENTSIDE
 		terminate;
 	}
 
-    Chat::SendSelfActivator("It is locked from the other side.");
+	Chat::SendSelfActivator("It is locked from the other side.");
 }
 
 script "ClockInteraction" (void) CLIENTSIDE
@@ -209,16 +228,53 @@ script "ClockInteraction" (void) CLIENTSIDE
 		terminate;
 	}
 
-    Chat::SendSelfActivator("Tick... tock...");
+	Chat::SendSelfActivator("Tick... tock...");
 }
 
 script 14(void)
 {
-    if(getactorZ(0) < 800 * 65536) teleport_nofog(134);
+	if(getactorZ(0) < 800 * 65536) teleport_nofog(134);
 }
 
 script 24(void)
 {
-    floor_movetovalue(0,64,1296,0);
-    line_setblocking(66,0,4);
+	floor_movetovalue(0,64,1296,0);
+	line_setblocking(66,0,4);
 }
+
+/*
+** -----------------------------------------------------------------------------
+** MAP TYPE SYNC
+** -----------------------------------------------------------------------------
+*/
+
+internal void SyncMapType()
+{
+	VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+	if (!IsNetworkGame())
+		return;
+
+	BCSUtils::SyncVariable(SYNC_MAPTYPE, _mapType);
+	ACS_NamedExecuteAlways("SyncMapType_Client", 0);
+}
+
+script "SyncMapType_Client" clientside
+{
+	ClientSyncMapType();
+}
+
+// Called clientside to fetch the synced state.
+internal void ClientSyncMapType()
+{
+	VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+	if (!IsNetworkGame())
+		return;
+
+	_mapType = BCSUtils::GetSyncVarDefault(SYNC_MAPTYPE, MAPTYPE_EVENING);
+
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced map type client: ", d:_mapType));
+}
+
+#undef LOGSOURCE
