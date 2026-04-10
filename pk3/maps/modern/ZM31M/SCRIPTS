@@ -39,7 +39,7 @@ internal struct NukeBoundaryRockT
 	int Height;
 };
 
-internal struct ElevatorTagsT
+internal struct ElevatorDataT
 {
 	int PolyTagRight;
 	int PolyRightAngle;
@@ -48,6 +48,7 @@ internal struct ElevatorTagsT
 	int TempTargetTeleportTag;
 	int TempTargetSectorTag;
 	int TargetTeleportTag;
+	bool IsInBunker;
 };
 
 internal enum
@@ -97,11 +98,11 @@ internal int _inElevator[BCSUtils::MAX_PLAYERS];
 internal bool _elevatorInUse[4];
 
 // Elevator data
-internal ElevatorTagsT _elevatorTags[4] = {
-	{ 1, 192, 31, 53, 50, 54, 34 },
-	{ 3, 192, 34, 55, 21, 32, 31 },
-	{ 5, 128, 36, 30, 22, 33, 39 },
-	{ 7, 128, 39, 56, 52, 51, 36 }
+internal ElevatorDataT _elevatorData[4] = {
+	{ 1, 192, 31, 53, 50, 54, 34, false },
+	{ 3, 192, 34, 55, 21, 32, 31, true },
+	{ 5, 128, 36, 30, 22, 33, 39, false },
+	{ 7, 128, 39, 56, 52, 51, 36, true }
 };
 
 #define LOGSOURCE "Map"
@@ -155,6 +156,8 @@ Script "OnOpen" open
 		Floor_MoveToValue(sectorTag, 999, 0);
 		ChangeFloor(sectorTag, "SNOW");
 	}
+
+	ACS_NamedExecute("TemperatureLoop", 0);
 
 	int gameTime = GetCvar("sv_zh2_zm31meventtics");
 	while (--gameTime)
@@ -215,13 +218,28 @@ Script "OnOpenClient" Open CLIENTSIDE
 	}
 
 	ACS_NamedExecute("FrozenDebug", 0);
-	ACS_NamedExecute("TemperatureLoop", 0);
 }
 
 script "enter" enter
 {
+	ACS_NamedExecuteAlways("enter_respawn", 0);
+}
+
+script "respawn" enter
+{
+	ACS_NamedExecuteAlways("enter_respawn", 0);
+}
+
+script "enter_respawn"
+{
 	SetIsCold(CheckActorCeilingTexture(ActivatorTid(), "F_SKY1"));
 	SetTemperature(TEMPERATURE_MAX);
+
+	_inElevator[PlayerNumber()] = 0;
+	_inToxicRoom[PlayerNumber()] = false;
+	_inDeconterminationRoom[PlayerNumber()] = false;
+
+	SetIsInBunker(false);
 }
 
 script "enterClient" enter clientside
@@ -283,9 +301,7 @@ script 2 (int messageIndex)
 		// The guardhouse door is unlocked and will open like normal.
 		if (messageIndex == 3)
 		{
-			Door_Open(7, 32);
-			delay(35*4);
-			Door_Close(7, 32);
+			Door_Raise(7, 32, 140);
 		}
 
 		terminate;
@@ -323,6 +339,14 @@ Script "UnlockLabs"
 		delay(35);
 		terminate;
 	}
+
+	ACS_NamedExecute("UnlockLabs_Rest", 0);
+}
+
+Script "UnlockLabs_Rest"
+{
+	SetFont("smallfont");
+	SetHudSize(640, 480, FALSE);
 
 	ClearLineSpecial();
 	Logger::LogBold(StrParam(n:0, s:" has cleared the quarantine. Elevators are now activated."));
@@ -626,7 +650,7 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 		terminate;
 	}
 
-	if(_eventState == EVENTSTATE_NUKE)
+	if(NukeHasDropped())
 	{
 		Logger::LogActivator("The lift circuits are fried by the nuke. The elevator can not be used.");
 		terminate;
@@ -652,16 +676,16 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 	_elevatorInUse[targetElevatorId] = true;
 
 	// Elevator sound.
-	int dingSoundTag = _elevatorTags[elevatorId].DingSoundAndSourceTeleportTag;
+	int dingSoundTag = _elevatorData[elevatorId].DingSoundAndSourceTeleportTag;
 	ThingSound(dingSoundTag, "sound/ding1", 127);
 	Delay(35);
 
-	Logger::LogDebug(LOGSOURCE, StrParam(s:"Start elevator logic. Elevator id: ", d:elevatorId, s:", target elevatorId", d:targetElevatorId));
+	Logger::LogDebug(LOGSOURCE, StrParam(s:"Start elevator logic. Elevator id: ", d:elevatorId, s:", target elevatorId: ", d:targetElevatorId));
 
 	// Open doors.
-	int polyRightTag = _elevatorTags[elevatorId].PolyTagRight;
+	int polyRightTag = _elevatorData[elevatorId].PolyTagRight;
 	int polyLeftTag = polyRightTag++;
-	int polyRightAngle = _elevatorTags[elevatorId].PolyRightAngle;
+	int polyRightAngle = _elevatorData[elevatorId].PolyRightAngle;
 	int polyLeftAngle = polyRightAngle + 128;
 	Polyobj_OR_Move(polyRightTag, 5, polyRightAngle, 32);
 	Polyobj_OR_Move(polyLeftTag, 5, polyLeftAngle, 32);
@@ -684,7 +708,7 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 	}
 
 	// Check if elevator or target elevator have occupands.
-	if (!Anybody_inElevator(elevatorId) && !Anybody_inElevator(targetElevatorId))
+	if (!GetElevatorHasOccupands(elevatorId) && !GetElevatorHasOccupands(targetElevatorId))
 	{
 		_elevatorInUse[elevatorId] = false;
 		_elevatorInUse[targetElevatorId] = false;
@@ -705,11 +729,11 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
 {
 	// Move to a temporary room.
-	int sourceTag = _elevatorTags[elevatorId].DingSoundAndSourceTeleportTag;
-	int sourceSectorTag = _elevatorTags[elevatorId].SourceSectorTag;
-	int tempDestTag = _elevatorTags[elevatorId].TempTargetTeleportTag;
-	int tempDestSectorTag = _elevatorTags[elevatorId].TempTargetSectorTag;
-	int destTag = _elevatorTags[elevatorId].TargetTeleportTag;
+	int sourceTag = _elevatorData[elevatorId].DingSoundAndSourceTeleportTag;
+	int sourceSectorTag = _elevatorData[elevatorId].SourceSectorTag;
+	int tempDestTag = _elevatorData[elevatorId].TempTargetTeleportTag;
+	int tempDestSectorTag = _elevatorData[elevatorId].TempTargetSectorTag;
+	int destTag = _elevatorData[elevatorId].TargetTeleportTag;
 	delay(35*2);
 	TeleportInSector(sourceSectorTag, sourceTag, tempDestTag, 0);
 	PlaySound(tempDestTag, "sound/lift1", CHAN_AUTO, 1.0);
@@ -717,10 +741,18 @@ script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
 	TeleportInSector(tempDestSectorTag, tempDestTag, destTag, 0);
 	ThingSound(destTag, "sound/ding1", 127);
 
+	// Set occupands in the elevator as in/outside the bunker
+	bool isInBunker = _elevatorData[targetElevatorId].IsInBunker;
+	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+	{
+		if (GetPlayerIsInElevator(i, elevatorId))
+			SetPlayerIsInBunker(i, isInBunker);
+	}
+
 	// Open doors.
-	int polyRightTag = _elevatorTags[targetElevatorId].PolyTagRight;
+	int polyRightTag = _elevatorData[targetElevatorId].PolyTagRight;
 	int polyLeftTag = polyRightTag++;
-	int polyRightAngle = _elevatorTags[targetElevatorId].PolyRightAngle;
+	int polyRightAngle = _elevatorData[targetElevatorId].PolyRightAngle;
 	int polyLeftAngle = polyRightAngle + 128;
 	Polyobj_OR_Move(polyRightTag, 5, polyRightAngle, 32);
 	Polyobj_OR_Move(polyLeftTag, 5, polyLeftAngle, 32);
@@ -735,18 +767,23 @@ script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
 	PolyWait(polyLeftTag);
 }
 
-internal bool Anybody_inElevator(int elevatorId)
+internal bool GetElevatorHasOccupands(int elevatorId)
 {
 	// Check if anybody has entered the elevator.
 	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
 	{
-		if (!PlayerInGame(i) || _inElevator[i] != elevatorId)
+		if (!GetPlayerIsInElevator(i, elevatorId))
 			continue;
 
 		return true;
 	}
 
 	return false;
+}
+
+internal bool GetPlayerIsInElevator(int id, int elevatorId)
+{
+	return PlayerInGame(id) && _inElevator[id] == elevatorId;
 }
 
 /*
@@ -991,6 +1028,15 @@ Script "Event_Nuke_client" clientside
 
 script "Event_Nuke_Fade_client" clientside
 {
+	// Camera must be on somebody that is in the bunker.
+	int tid = CheckPlayerCamera(ConsolePlayerNumber());
+	if (!Identity::IsValidTid(tid))
+		terminate;
+
+	if (GetPlayerIsInBunker(Identity::GetId(tid)))
+		terminate;
+
+	// Player is not in the bunker.
 	FadeTo(150, 20, 20, 1.0, 0);
 	delay(35);
 	FadeTo(0, 0, 0, 0, 8.0);
