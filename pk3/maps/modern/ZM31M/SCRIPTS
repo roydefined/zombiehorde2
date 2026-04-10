@@ -163,11 +163,27 @@ Script "OnOpen" open
 	while (--gameTime)
 		delay(1);
 
-	// Events
+	// Events. In case of random pick:
+	// - Night: 2/6
+	// - Nuke:  1/6
+	// - Nothing: 3/6
 	int eventIndex = GetCVar("sv_zh2_zm31mevent");
 	if (eventIndex == 0)
 	{
-		eventIndex = Random(1, 3);
+		int chance = Random(0, 5);
+		switch(chance)
+		{
+			case 0:
+			case 1:
+				eventIndex = 2;
+				break;
+			case 2:
+				eventIndex = 3;
+				break;
+			default:
+				eventIndex = 1;
+				break;
+		}
 	}
 
 	str event;
