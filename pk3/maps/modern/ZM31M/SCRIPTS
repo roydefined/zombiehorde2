@@ -32,6 +32,7 @@
 
 #define EVENT_NIGHT_STARTTICS 35 * 30
 #define EVENT_NUKE_STARTTICS 35 * 36
+#define EVENT_NUKE_BLOWOVERTICS 35 * 11
 
 internal struct NukeBoundaryRockT
 {
@@ -69,7 +70,7 @@ internal bool _guardhouseUnlocked,
 			  _crossRoomUnlocked,
 			  _labUnlocked;
 
-// player in toxic reactor room / decontermination room
+// Player in toxic reactor room / decontermination room
 internal bool _inToxicRoom[BCSUtils::MAX_PLAYERS],
 			  _inDeconterminationRoom[BCSUtils::MAX_PLAYERS];
 
@@ -483,8 +484,9 @@ script "FrozenDebug" clientside
 
 			if (_eventState == EVENTSTATE_NUKE)
 			{
-				Append(s:"Nuke explosion in: ", d:GetTicsUntilExplosion(), s:"\n");
+				Append(s:"Nuke explosion in: ", d:GetTicsUntilDrop(), s:"\n");
 				Append(s:"Nuke has dropped: ", s:(NukeHasDropped() ? "true" : "false"), s:"\n");
+				Append(s:"Nuke has blown over: ", s:(NukeHasBlownOver() ? "true" : "false"), s:"\n");
 			}
 
 			Append(s:"Is cold: ", s:(GetIsCold() ? "true" : "false"), s:"\n");
@@ -648,11 +650,12 @@ script "ToxicRoomTrigger"
 // Trigger the player as outside / inside an elevator
 script "TogglePlayerElevatorId" (int elevatorId)
 {
+	// Note, as the elevator ids are zero-indexed, we must add 1 here to ensure we actually know when somebody is _not_ in the elevator.
 	bool entersElevator = LineSide() == LINE_FRONT;
 	if (entersElevator)
 	{
 		Logger::LogDebug(LOGSOURCE, StrParam(s:"Player ", n:0, s:" has entered elevator ", d:elevatorId));
-		_inElevator[PlayerNumber()] = elevatorId;
+		SetPlayerIsInElevator(PlayerNumber(), elevatorId);
 		terminate;
 	}
 
@@ -663,22 +666,37 @@ script "TogglePlayerElevatorId" (int elevatorId)
 // Main elevator logic. Parameters indicate pressed elevator id, target elevator id, and wether the button inside the elevator was pressed.
 script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 {
-	if(Player::GetIsZombie() && !pressedInside)
-	{
-		Chat::SendSelfActivator("Brainz...?");
-		terminate;
-	}
 
-	if(NukeHasDropped())
-	{
-		Logger::LogActivator("The lift circuits are fried by the nuke. The elevator can not be used.");
-		terminate;
-	}
+	bool isInBunker = _elevatorData[elevatorId].IsInBunker;
 
-	if(!_labUnlocked)
+	// Checks should never prevent players from getting out of an elevator.
+	if (!pressedInside)
 	{
-		Logger::LogActivator("The lifts have been locked down for quarantine.");
-		terminate;
+		// Can't do this one, because then players can just hide in the elevator forever.
+		//if(Player::GetIsZombie())
+		//{
+		//	Chat::SendSelfActivator("Brainz...?");
+		//	terminate;
+		//}
+
+		// These checks have all also been moved downwards to make sure the doors can open after the nuke to avoid camping.
+		//if(NukeHasDropped())
+		//{
+		//	Logger::LogActivator("The lift circuits are fried by the nuke. The elevator can not be used.");
+		//	terminate;
+		//}
+
+		//if (isInBunker && _eventState == EVENTSTATE_NUKE)
+		//{
+		//	Logger::LogActivator("Don't go back up! You're safe down here from the nuke.");
+		//	terminate;
+		//}
+
+		if(!_labUnlocked)
+		{
+			Logger::LogActivator("The lifts have been locked down for quarantine.");
+			terminate;
+		}
 	}
 
 	if(_elevatorInUse[elevatorId])
@@ -715,22 +733,36 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 
 	Polyobj_OR_Move(polyRightTag, 5, polyLeftAngle, 32);
 	Polyobj_OR_Move(polyLeftTag, 5, polyRightAngle, 32);
-	PolyWait(polyRightTag);
-	PolyWait(polyLeftTag);
 
-	// Stop here if a zombie called from the inside.
-	if (Player::GetPlayerIsZombie(id) && pressedInside)
+	// Stop here if we pressed from the inside.
+	if (pressedInside)
 	{
 		_elevatorInUse[elevatorId] = false;
 		_elevatorInUse[targetElevatorId] = false;
 		terminate;
 	}
 
+	PolyWait(polyRightTag);
+	PolyWait(polyLeftTag);
+
 	// Check if elevator or target elevator have occupands.
 	if (!GetElevatorHasOccupands(elevatorId) && !GetElevatorHasOccupands(targetElevatorId))
 	{
 		_elevatorInUse[elevatorId] = false;
 		_elevatorInUse[targetElevatorId] = false;
+		terminate;
+	}
+
+	// Can't use the elevator after the nuke has blow over.
+	if(NukeHasBlownOver() && isInBunker)
+	{
+		for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+		{
+			if (!PlayerInGame(i) || !GetPlayerIsInElevator(i, elevatorId))
+				continue;
+
+			Logger::LogTo(i, "The elevator does not respond. The nuke must have fried its circuits.");
+		}
 		terminate;
 	}
 
@@ -754,18 +786,50 @@ script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
 	int tempDestSectorTag = _elevatorData[elevatorId].TempTargetSectorTag;
 	int destTag = _elevatorData[elevatorId].TargetTeleportTag;
 	delay(35*2);
-	TeleportInSector(sourceSectorTag, sourceTag, tempDestTag, 0);
-	PlaySound(tempDestTag, "sound/lift1", CHAN_AUTO, 1.0);
-	delay(35*5);
-	TeleportInSector(tempDestSectorTag, tempDestTag, destTag, 0);
-	ThingSound(destTag, "sound/ding1", 127);
 
-	// Set occupands in the elevator as in/outside the bunker
-	bool isInBunker = _elevatorData[targetElevatorId].IsInBunker;
+	// Move all players in the elevator to the new one.
 	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
 	{
 		if (GetPlayerIsInElevator(i, elevatorId))
-			SetPlayerIsInBunker(i, isInBunker);
+			TeleportInSector(sourceSectorTag, sourceTag, tempDestTag, false, Identity::GetTid(i));
+	}
+
+	PlaySound(tempDestTag, "sound/lift1", CHAN_AUTO, 1.0);
+	delay(35*5);
+
+	// Move all players from the temporary elevator to the final one.
+	// This one doesn't need a special check since we're in a temporary room anyway.
+	TeleportInSector(tempDestSectorTag, tempDestTag, destTag, false);
+
+	ThingSound(destTag, "sound/ding1", 127);
+
+	bool targetIsInBunker = _elevatorData[targetElevatorId].IsInBunker;
+
+	// Set occupands in the elevator as in/outside the bunker
+	for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+	{
+		if (GetPlayerIsInElevator(i, elevatorId))
+			SetPlayerIsInBunker(i, targetElevatorId);
+	}
+
+	// Failsafe, anybody that just took this elevator will die when the nuke dropped.
+	if (NukeHasBlownOver() && !targetIsInBunker)
+	{
+		for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+		{
+			if (!PlayerInGame(i) || !GetPlayerIsInElevator(i, elevatorId))
+				continue;
+
+			int tid = Identity::GetTid(i);
+			Thing_Damage(tid, 10000, MOD_EXIT);
+		}
+	}
+
+	// Switch players into the new elevator
+	for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+	{
+		if (GetPlayerIsInElevator(i, elevatorId))
+			SetPlayerIsInElevator(i, targetElevatorId);
 	}
 
 	// Open doors.
@@ -802,7 +866,12 @@ internal bool GetElevatorHasOccupands(int elevatorId)
 
 internal bool GetPlayerIsInElevator(int id, int elevatorId)
 {
-	return PlayerInGame(id) && _inElevator[id] == elevatorId;
+	return PlayerInGame(id) && _inElevator[id] == elevatorId + 1;
+}
+
+internal void SetPlayerIsInElevator(int id, int elevatorId)
+{
+	_inElevator[PlayerNumber()] = elevatorId + 1;
 }
 
 /*
@@ -898,7 +967,7 @@ Script "Event_Nuke"
 		Delay(const: 1);
 
 	// Delay before the nuke truly hits
-	Delay(35 * 11);
+	Delay(EVENT_NUKE_BLOWOVERTICS);
 
 	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
 	{
@@ -996,7 +1065,7 @@ Script "Event_Nuke_client" clientside
 		if(passedTime > 35 * 10 + 18)
 		{
 			setFont("smallfont");
-			HudMessage(s:"Explosion in: ", s:Utils::FormatTics(GetTicsUntilExplosion(), true); HUDMSG_PLAIN, 0, CR_WHITE, 320.0, 120.0, BCSUtils::HUDTIC);
+			HudMessage(s:"Explosion in: ", s:Utils::FormatTics(GetTicsUntilDrop(), true); HUDMSG_PLAIN, 0, CR_WHITE, 320.0, 120.0, BCSUtils::HUDTIC);
 		}
 
 		// Display safety markers on map avery tic after 6 seconds.
@@ -1013,7 +1082,8 @@ Script "Event_Nuke_client" clientside
 			{
 				int tag = _shelterMarkers[i];
 
-				if (BCSUtils::ActorDistance2D(0, tag) < 1000.0 || GetIsInBunker())
+				fixed distance = BCSUtils::ActorDistance2D(0, tag);
+				if (distance < 1000.0 || distance > 12000.0 || GetIsInBunker())
 					continue;
 
 				BCSUtils::HudSetPoint3D(GetActorX(tag), GetActorY(tag), GetActorZ(tag)+150.0);
@@ -1088,15 +1158,28 @@ script "Event_Nuke_Final_client" clientside
 
 internal bool NukeHasDropped()
 {
-	return _eventState == EVENTSTATE_NUKE && GetTicsUntilExplosion() == 0;
+	return _eventState == EVENTSTATE_NUKE && GetTicsUntilDrop() == 0;
 }
 
-internal int GetTicsUntilExplosion()
+internal int GetTicsUntilDrop()
 {
 	if (_eventState != EVENTSTATE_NUKE)
 		return 0;
 
 	return BCSUtils::Max(_eventStartTimestamp + EVENT_NUKE_STARTTICS - Utils::GetSynchronizedTimer(), 0);
+}
+
+internal bool NukeHasBlownOver()
+{
+	return _eventState == EVENTSTATE_NUKE && GetTicsUntilBlowOver() == 0;
+}
+
+internal int GetTicsUntilBlowOver()
+{
+	if (_eventState != EVENTSTATE_NUKE)
+		return 0;
+
+	return BCSUtils::Max(_eventStartTimestamp + EVENT_NUKE_STARTTICS + EVENT_NUKE_BLOWOVERTICS - Utils::GetSynchronizedTimer(), 0);
 }
 
 /*
