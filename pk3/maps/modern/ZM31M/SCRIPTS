@@ -30,6 +30,9 @@
 #define TEMPERATURE_NEXTTIC_ITEM "ZH2ZM31MNextTemperatureTic"
 #define IN_BUNKER_ITEM "ZH2ZM31MIsInBunker"
 
+#define AT_ELEVATOR_DOORS_ITEM "ZH2ZM31MAtElevatorDoors"
+#define IN_ELEVATOR_ITEM "ZH2ZM31MInElevator"
+
 #define EVENT_NIGHT_STARTTICS 35 * 30
 #define EVENT_NUKE_STARTTICS 35 * 36
 #define EVENT_NUKE_BLOWOVERTICS 35 * 11
@@ -50,6 +53,7 @@ internal struct ElevatorDataT
 	int TempTargetSectorTag;
 	int TargetTeleportTag;
 	bool IsInBunker;
+	int CrushThrustAngle;
 };
 
 internal enum
@@ -95,15 +99,14 @@ internal int _shelterMarkers[2] = {
 	37, 38
 };
 
-internal int _inElevator[BCSUtils::MAX_PLAYERS];
 internal bool _elevatorInUse[4];
 
 // Elevator data
 internal ElevatorDataT _elevatorData[4] = {
-	{ 1, 192, 31, 53, 50, 54, 34, false },
-	{ 3, 192, 34, 55, 21, 32, 31, true },
-	{ 5, 128, 36, 30, 22, 33, 39, false },
-	{ 7, 128, 39, 56, 52, 51, 36, true }
+	{ 1, 192, 31, 53, 50, 54, 34, false, 128 },
+	{ 3, 192, 34, 55, 21, 32, 31, true, 128 },
+	{ 5, 128, 36, 30, 22, 33, 39, false, 64 },
+	{ 7, 128, 39, 56, 52, 51, 36, true, 64 }
 };
 
 #define LOGSOURCE "Map"
@@ -255,7 +258,9 @@ script "enter_respawn"
 	SetIsCold(CheckActorCeilingTexture(ActivatorTid(), "F_SKY1"));
 	SetTemperature(TEMPERATURE_MAX);
 
-	_inElevator[PlayerNumber()] = 0;
+	UnsetPlayerIsInElevator(PlayerNumber());
+	UnsetPlayerIsAtElevatorDoors(PlayerNumber());
+
 	_inToxicRoom[PlayerNumber()] = false;
 	_inDeconterminationRoom[PlayerNumber()] = false;
 
@@ -494,6 +499,9 @@ script "FrozenDebug" clientside
 			Append(s:"Next temperature update: ", d:(GetNextTemperatureTic() - Utils::GetSynchronizedTimer()), s:"\n");
 
 			Append(s:"Is in bunker: ", s:(GetIsInBunker() ? "true" : "false"), s:"\n");
+
+			Append(s:"Is at elevator doors: ", d:CheckActorInventory(ActivatorTid(), AT_ELEVATOR_DOORS_ITEM), s:"\n");
+			Append(s:"Is in elevator: ", d:CheckActorInventory(ActivatorTid(), IN_ELEVATOR_ITEM), s:"\n");
 		}
 
 		HudMessage(s:message; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 45.0, 0.03);
@@ -650,24 +658,40 @@ script "ToxicRoomTrigger"
 // Trigger the player as outside / inside an elevator
 script "TogglePlayerElevatorId" (int elevatorId)
 {
-	// Note, as the elevator ids are zero-indexed, we must add 1 here to ensure we actually know when somebody is _not_ in the elevator.
 	bool entersElevator = LineSide() == LINE_FRONT;
 	if (entersElevator)
 	{
 		Logger::LogDebug(LOGSOURCE, StrParam(s:"Player ", n:0, s:" has entered elevator ", d:elevatorId));
+
+		UnsetPlayerIsAtElevatorDoors(PlayerNumber());
 		SetPlayerIsInElevator(PlayerNumber(), elevatorId);
+
 		terminate;
 	}
 
 	Logger::LogDebug(LOGSOURCE, StrParam(s:"Player ", n:0, s:" has exited the elevator"));
-	_inElevator[PlayerNumber()] = 0;
+
+	UnsetPlayerIsInElevator(PlayerNumber());
+	SetPlayerIsAtElevatorDoors(PlayerNumber(), elevatorId);
+}
+
+script "TogglePlayerAtElevatorDoorsId" (int elevatorId)
+{
+	bool entersElevator = LineSide() == LINE_FRONT;
+	if (entersElevator)
+	{
+		SetPlayerIsAtElevatorDoors(PlayerNumber(), elevatorId);
+		terminate;
+	}
+
+	UnsetPlayerIsAtElevatorDoors(PlayerNumber());
 }
 
 // Main elevator logic. Parameters indicate pressed elevator id, target elevator id, and wether the button inside the elevator was pressed.
 script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 {
-
 	bool isInBunker = _elevatorData[elevatorId].IsInBunker;
+	bool targetIsInBunker = _elevatorData[targetElevatorId].IsInBunker;
 
 	// Checks should never prevent players from getting out of an elevator.
 	if (!pressedInside)
@@ -734,16 +758,23 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 	Polyobj_OR_Move(polyRightTag, 5, polyLeftAngle, 32);
 	Polyobj_OR_Move(polyLeftTag, 5, polyRightAngle, 32);
 
+	ACS_NamedExecuteAlways("CrushPlayersBetweenDoors", 0, elevatorId);
+
 	// Stop here if we pressed from the inside.
 	if (pressedInside)
 	{
+		delay(35);
+
 		_elevatorInUse[elevatorId] = false;
 		_elevatorInUse[targetElevatorId] = false;
 		terminate;
 	}
 
-	PolyWait(polyRightTag);
-	PolyWait(polyLeftTag);
+	// To avoid the elevators not working because people block it, we should not wait for these to close.
+	//PolyWait(polyRightTag);
+	//PolyWait(polyLeftTag);
+
+	delay(35 * 2);
 
 	// Check if elevator or target elevator have occupands.
 	if (!GetElevatorHasOccupands(elevatorId) && !GetElevatorHasOccupands(targetElevatorId))
@@ -763,14 +794,59 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 
 			Logger::LogTo(i, "The elevator does not respond. The nuke must have fried its circuits.");
 		}
+
+		_elevatorInUse[elevatorId] = false;
+		_elevatorInUse[targetElevatorId] = false;
 		terminate;
 	}
 
-	// Rest of the logic happends on both sides.
+	// Remaining logic to move the elevators on both sides.
 	ACS_NamedExecuteAlways("ElevatorLogic2", 0, elevatorId, targetElevatorId);
 	ACS_NamedExecuteAlways("ElevatorLogic2", 0, targetElevatorId, elevatorId);
 
-	delay(35 * 11);
+	// This must match the inner delay in ElevatorLogic2
+	delay(35 * 8);
+
+	// Failsafe, anybody that just took the elevator going outside the bunker will die when the nuke dropped.
+	if (NukeHasBlownOver())
+	{
+		int killElevatorId = isInBunker ? elevatorId : targetElevatorId;
+		for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+		{
+			if (!PlayerInGame(i) || !GetPlayerIsInElevator(i, killElevatorId))
+				continue;
+
+			int tid = Identity::GetTid(i);
+			Thing_Damage(tid, 10000, MOD_EXIT);
+		}
+	}
+
+	// Set occupands in the elevator as in/outside the bunker
+	for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+	{
+		if (PlayerInGame(i))
+		{
+			printbold(d:i, s:": elevator id: ", d:elevatorId, s:", new in bunker: ", d:targetIsInBunker, s:", in elevator: ",d:GetPlayerIsInElevator(i, elevatorId));
+		}
+
+		if (PlayerInGame(i) && GetPlayerIsInElevator(i, elevatorId))
+			SetPlayerIsInBunker(i, targetIsInBunker);
+
+		else if (PlayerInGame(i) && GetPlayerIsInElevator(i, targetElevatorId))
+			SetPlayerIsInBunker(i, isInBunker);
+	}
+
+	// Switch players into the new elevator
+	for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+	{
+		if (GetPlayerIsInElevator(i, elevatorId))
+			SetPlayerIsInElevator(i, targetElevatorId);
+		else if (GetPlayerIsInElevator(i, targetElevatorId))
+			SetPlayerIsInElevator(i, elevatorId);
+	}
+
+	// Remaining time to close the doors, plus 1 second to close them fully.
+	delay(35 * 4 + 35);
 
 	// Elevators no longer in use.
 	_elevatorInUse[elevatorId] = false;
@@ -785,7 +861,7 @@ script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
 	int tempDestTag = _elevatorData[elevatorId].TempTargetTeleportTag;
 	int tempDestSectorTag = _elevatorData[elevatorId].TempTargetSectorTag;
 	int destTag = _elevatorData[elevatorId].TargetTeleportTag;
-	delay(35*2);
+	delay(35*3);
 
 	// Move all players in the elevator to the new one.
 	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
@@ -803,35 +879,6 @@ script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
 
 	ThingSound(destTag, "sound/ding1", 127);
 
-	bool targetIsInBunker = _elevatorData[targetElevatorId].IsInBunker;
-
-	// Set occupands in the elevator as in/outside the bunker
-	for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-	{
-		if (GetPlayerIsInElevator(i, elevatorId))
-			SetPlayerIsInBunker(i, targetElevatorId);
-	}
-
-	// Failsafe, anybody that just took this elevator will die when the nuke dropped.
-	if (NukeHasBlownOver() && !targetIsInBunker)
-	{
-		for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-		{
-			if (!PlayerInGame(i) || !GetPlayerIsInElevator(i, elevatorId))
-				continue;
-
-			int tid = Identity::GetTid(i);
-			Thing_Damage(tid, 10000, MOD_EXIT);
-		}
-	}
-
-	// Switch players into the new elevator
-	for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-	{
-		if (GetPlayerIsInElevator(i, elevatorId))
-			SetPlayerIsInElevator(i, targetElevatorId);
-	}
-
 	// Open doors.
 	int polyRightTag = _elevatorData[targetElevatorId].PolyTagRight;
 	int polyLeftTag = polyRightTag++;
@@ -846,8 +893,29 @@ script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
 
 	Polyobj_OR_Move(polyRightTag, 5, polyLeftAngle, 32);
 	Polyobj_OR_Move(polyLeftTag, 5, polyRightAngle, 32);
-	PolyWait(polyRightTag);
-	PolyWait(polyLeftTag);
+
+	ACS_NamedExecuteAlways("CrushPlayersBetweenDoors", 0, elevatorId);
+
+	// Don't wait here either, doors will properly reopen if recalled anyway.
+	//PolyWait(polyRightTag);
+	//PolyWait(polyLeftTag);
+}
+
+script "CrushPlayersBetweenDoors"(int elevatorId)
+{
+	Delay(35);
+
+	int angle = _elevatorData[elevatorId].CrushThrustAngle;
+	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+	{
+		if (!PlayerInGame(i) || !GetPlayerIsAtElevatorDoors(i, elevatorId))
+			continue;
+
+		int tid = Identity::GetTid(i);
+		Thing_Damage(tid, 20, MOD_CRUSH);
+		ThrustThing(angle, 10, false, tid);
+		Logger::LogTo(i, "You got crushed by the elevator doors, careful!");
+	}
 }
 
 internal bool GetElevatorHasOccupands(int elevatorId)
@@ -864,14 +932,35 @@ internal bool GetElevatorHasOccupands(int elevatorId)
 	return false;
 }
 
-internal bool GetPlayerIsInElevator(int id, int elevatorId)
+internal bool GetPlayerIsAtElevatorDoors(int id, int value)
 {
-	return PlayerInGame(id) && _inElevator[id] == elevatorId + 1;
+	return CheckActorInventory(Identity::GetTid(id), AT_ELEVATOR_DOORS_ITEM) == (value + 1);
 }
 
-internal void SetPlayerIsInElevator(int id, int elevatorId)
+internal void SetPlayerIsAtElevatorDoors(int id, int value)
 {
-	_inElevator[PlayerNumber()] = elevatorId + 1;
+	BCSUtils::SetActorInventory(Identity::GetTid(id), AT_ELEVATOR_DOORS_ITEM, value + 1);
+}
+
+internal void UnsetPlayerIsAtElevatorDoors(int id)
+{
+	BCSUtils::SetActorInventory(Identity::GetTid(id), AT_ELEVATOR_DOORS_ITEM, 0);
+}
+
+
+internal bool GetPlayerIsInElevator(int id, int value)
+{
+	return CheckActorInventory(Identity::GetTid(id), IN_ELEVATOR_ITEM) == value + 1;
+}
+
+internal void SetPlayerIsInElevator(int id, int value)
+{
+	BCSUtils::SetActorInventory(Identity::GetTid(id), IN_ELEVATOR_ITEM, value + 1);
+}
+
+internal void UnsetPlayerIsInElevator(int id)
+{
+	BCSUtils::SetActorInventory(Identity::GetTid(id), IN_ELEVATOR_ITEM, 0);
 }
 
 /*
@@ -1124,6 +1213,8 @@ script "Event_Nuke_Fade_client" clientside
 
 	if (GetPlayerIsInBunker(Identity::GetId(tid)))
 		terminate;
+
+	SetActivator(tid);
 
 	// Player is not in the bunker.
 	FadeTo(150, 20, 20, 1.0, 0);
