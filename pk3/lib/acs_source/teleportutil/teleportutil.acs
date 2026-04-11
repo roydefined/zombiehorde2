@@ -1,0 +1,271 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "TeleportUtil"
+
+strict namespace TeleportUtil
+{
+    void TeleportAreaBetween(int targetTidMin, int targetTidMax, int area = 90, int flags = 0)
+    {
+        // Since thruactors requires a valid player we only support players for now.
+        // This is because of the tic system that runs only on players.
+        int sourceId = PlayerNumber();
+        if (sourceId == -1)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + " only supports players for now.");
+            return;
+        }
+
+        PlayerTeleportAreaBetween(sourceId, targetTidMin, targetTidMax, area, flags);
+    }
+
+    // Note: uses PlayerTeleportArea with a set of tids.
+    void PlayerTeleportAreaBetween(int sourceId, int targetTidMin, int targetTidMax, int area = 90, int flags = 0)
+    {
+        VALIDATE_ID_VALID_FUNCTION(sourceId);
+
+        if (targetTidMin >= targetTidMax)
+        {
+            targetTidMin = targetTidMax;
+            Logger::LogWarning(LOGSOURCE, __FUNCTION__ + ": targetTidMin should be lower than targetTidMax");
+        }
+
+        int targetTid = targetTidMin;
+        while (targetTid <= targetTidMax)
+        {
+            if (!IsTIDUsed(targetTid))
+            {
+                Logger::LogError(LOGSOURCE, "Failed to teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj): target tid \cd" + str(targetTid) + "\cj does not exist.");
+                targetTid++;
+                continue;
+            }
+
+            Logger::LogDebug(LOGSOURCE, "Start try teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj) to tid \cd" + str(targetTid) + "\cj.");
+            if (!TryTeleportPlayerArea(sourceId, targetTid, area, flags))
+            {
+                Logger::LogDebug(LOGSOURCE, "End try teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj). No space.");
+                targetTid++;
+                continue;
+            }
+
+            Logger::LogDebug(LOGSOURCE, "End try teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj). Teleport was successful.");
+            return;
+        }
+
+        if (!IsTIDUsed(targetTidMin))
+        {
+            Logger::LogError(LOGSOURCE, "Failed to teleport unsolid player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj): fallback target tid \cd" + str(targetTidMin) + "\cj does not exist.");
+            return;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Teleport unsolid player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj).");
+        TeleportUnsolidPlayer(sourceId, targetTidMin, flags);
+    }
+
+    void TeleportArea(int targetTid, int area = 90, int flags = 0)
+    {
+        // Since thruactors requires a valid player we only support players for now.
+        // This is because of the tic system that runs only on players.
+        int sourceId = PlayerNumber();
+        if (sourceId == -1)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + " only supports players for now.");
+            return;
+        }
+
+        PlayerTeleportArea(sourceId, targetTid, area, flags);
+    }
+
+    void PlayerTeleportArea(int sourceId, int targetTid, int area = 90, int flags = 0)
+    {
+        VALIDATE_ID_VALID_FUNCTION(sourceId);
+
+        if (!IsTIDUsed(targetTid))
+        {
+            Logger::LogError(LOGSOURCE, "Failed to teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj): target tid \cd" + str(targetTid) + "\cj does not exist.");
+            return;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Start try teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj) to tid \cd" + str(targetTid) + "\cj.");
+
+        // If false, we failed to get a position without telefragging. So instead make the player unsolid.
+        if (!TryTeleportPlayerArea(sourceId, targetTid, area, flags))
+        {
+            Logger::LogDebug(LOGSOURCE, "End try teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj). No space. Teleporting as unsolid.");
+            TeleportUnsolidPlayer(sourceId, targetTid, flags);
+            return;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "End try teleport player " + BCSUtils::PlayerName(sourceId) + " (\cd" + str(sourceId) + "\cj). Teleport was successful.");
+    }
+
+    internal bool TryTeleportPlayerArea(int sourceId, int targetTid, int area, int flags)
+    {
+        if (!IsTIDUsed(targetTid))
+        {
+            Logger::LogError(LOGSOURCE, "TryTeleportPlayerArea failed: target tid \cd" + str(targetTid) + "\cj does not exist.");
+            return false;
+        }
+
+        int sourceTid = Identity::GetTid(sourceId);
+
+        fixed baseX = GetActorX(targetTid),
+              baseY = GetActorY(targetTid),
+              baseZ = GetActorZ(targetTid);
+
+        fixed x = baseX,
+              y = baseY,
+              z = baseZ;
+
+        fixed height = GetActorProperty(sourceTid, APROP_HEIGHT),
+              radius = GetActorProperty(sourceTid, APROP_RADIUS),
+              angle = GetActorAngle(targetTid);
+
+        int tries = TELEPORT_TRYCOUNT;
+        while (tries--)
+        {
+            // No space, pick a new position within the given area and try again.
+            if (!SpaceUtil::GetXYZHasSpace(x, y, z, height, radius))
+            {
+                x = baseX + fixed(Random(-area, area));
+                y = baseY + fixed(Random(-area, area));
+                z = baseZ + fixed(Random(0, area));
+                continue;
+            }
+
+            // Found space!
+            TeleportActorToXYZ(sourceTid, x, y, z, angle, flags);
+            return true;
+        }
+
+        return false;
+    }
+
+    internal void TeleportUnsolidPlayer(int sourceId, int targetTid, int flags)
+    {
+        if (!IsTIDUsed(targetTid))
+        {
+            Logger::LogError(LOGSOURCE, "TeleportUnsolidPlayer failed: target tid \cd" + str(targetTid) + "\cj does not exist.");
+            return;
+        }
+
+        int sourceTid = Identity::GetTid(sourceId);
+        fixed x = GetActorX(targetTid),
+              y = GetActorY(targetTid),
+              z = GetActorZ(targetTid);
+
+        fixed angle = GetActorAngle(targetTid);
+
+        SpaceUtil::SetPlayerThruActors(sourceId, true);
+        TeleportActorToXYZ(sourceTid, x, y, z, angle, flags);
+        SpaceUtil::SetPlayerThruActors(sourceId, false);
+    }
+
+    internal void TeleportActorToXYZ(int sourceTid, fixed x, fixed y, fixed z, fixed angle, int flags)
+    {
+        str packet = Packet::New();
+        packet = Packet::Append(packet, sourceTid);
+        packet = Packet::Append(packet, x);
+        packet = Packet::Append(packet, y);
+        packet = Packet::Append(packet, z);
+        packet = Packet::Append(packet, angle);
+        packet = Packet::Append(packet, flags);
+
+        ACS_NamedExecuteWithResult("zh2_internal_teleportxyz", packet);
+    }
+
+    // Note we don't use SetActorPosition here to do the actual teleport since it doesn't guarantee a teleport.
+    // We only use it afterwards when a specific height adjustment is requested. We already teleported by then.
+    script "zh2_internal_teleportxyz"(raw packet)
+    {
+        packet = Packet::Read(packet);
+        int sourceTid = Packet::Value;
+
+        packet = Packet::Read(packet);
+        fixed x = Packet::Value;
+
+        packet = Packet::Read(packet);
+        fixed y = Packet::Value;
+
+        packet = Packet::Read(packet);
+        fixed z = Packet::Value;
+
+        packet = Packet::Read(packet);
+        fixed angle = Packet::Value;
+
+        packet = Packet::Read(packet);
+        int flags = Packet::Value;
+
+        fixed sourceX = GetActorX(sourceTid),
+              sourceY = GetActorY(sourceTid),
+              sourceZ = GetActorZ(sourceTid),
+              sourceFloorZ = GetActorFloorZ(sourceTid);
+
+        fixed sourceAngle = GetActorAngle(sourceTid),
+              sourceVelX = GetActorVelX(sourceTid),
+              sourceVelY = GetActorVelY(sourceTid),
+              sourceVelZ = GetActorVelZ(sourceTid),
+              sourceRelativeHeight = sourceZ - sourceFloorZ;
+
+        bool fogSource = (flags & TELEPORT_FOGSOURCE) == TELEPORT_FOGSOURCE,
+             fogTarget = (flags & TELEPORT_FOGTARGET) == TELEPORT_FOGTARGET,
+             keepHorizontalVelocity = (flags & TELEPORT_KEEPHORIZONTALVELOCITY) == TELEPORT_KEEPHORIZONTALVELOCITY,
+             keepVerticalVelocity = (flags & TELEPORT_KEEPVERTICALVELOCITY) == TELEPORT_KEEPVERTICALVELOCITY,
+             useTargetAngle = (flags & TELEPORT_USETARGETANGLE) == TELEPORT_USETARGETANGLE,
+             keepRelativeHeight = (flags & TELEPORT_KEEPRELATIVEHEIGHT) == TELEPORT_KEEPRELATIVEHEIGHT,
+             useTeleportSpotHeight = (flags & TELEPORT_USETELEPORTSPOTHEIGHT) == TELEPORT_USETELEPORTSPOTHEIGHT,
+             orientVelocityToTargetAngle = (flags & TELEPORT_ORIENTVELOCITYTOTARGETANGLE) == TELEPORT_ORIENTVELOCITYTOTARGETANGLE;
+
+        if (fogSource)
+            SpawnForced("TeleportFog", sourceX, sourceY, sourceZ, 0, 0);
+
+        SpawnForced("MapSpot", x, y, z, TELEPORT_TEMPSPOTTID, 0);
+        TeleportOther(sourceTid, TELEPORT_TEMPSPOTTID, 0);
+        Thing_Remove(TELEPORT_TEMPSPOTTID);
+
+        fixed targetZ = GetActorZ(sourceTid);
+
+        if (useTeleportSpotHeight)
+            targetZ = z;
+
+        if (keepRelativeHeight)
+            targetZ += sourceRelativeHeight;
+
+        SetActorPosition(sourceTid, GetActorX(sourceTid), GetActorY(sourceTid), targetZ, false);
+
+        if (fogTarget)
+        {
+            SpawnForced(
+                "TeleportFog", GetActorX(sourceTid), GetActorY(sourceTid), GetActorZ(sourceTid), 0, 0);
+        }
+
+        fixed newVelX = 0.0,
+              newVelY = 0.0,
+              newVelZ = 0.0;
+
+        if (keepHorizontalVelocity)
+        {
+            newVelX = sourceVelX;
+            newVelY = sourceVelY;
+
+            if (orientVelocityToTargetAngle)
+            {
+                fixed deltaAngle = angle - sourceAngle;
+                BCSUtils::RotateVector(newVelX, newVelY, deltaAngle);
+                newVelX = BCSUtils::r1;
+                newVelY = BCSUtils::r2;
+            }
+        }
+
+        if (keepVerticalVelocity)
+            newVelZ = sourceVelZ;
+
+        SetActorVelocity(sourceTid, newVelX, newVelY, newVelZ, false, false);
+
+        if (useTargetAngle)
+            SetActorAngle(sourceTid, angle);
+    }
+}
+
+#undef LOGSOURCE

@@ -1,12 +1,24 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from utils import setup_logging, get_root
+from logger import setup_logging
+from utils import get_root
 
 # === Remove map editor files ===
 # Deletes Doombuilder map artifacts:
 # - *.dbs
-# - *.backup1 / *.backup2 / *.backup3
+# - *.backup<NUMBER>   (e.g. .backup1, .backup12)
+# - *.autosave<NUMBER> (e.g. .autosave1, .autosave42)
+# Note this script DOES ensure that the extension has a number suffix after it in case of renames.
+
+def _has_numeric_suffix_extension(path: Path, prefix: str) -> bool:
+    suffix = path.suffix
+    if not suffix.startswith(f".{prefix}"):
+        return False
+
+    remainder = suffix[len(f".{prefix}"):]
+    return remainder.isdigit()
+
 
 def main():
     setup_logging()
@@ -25,31 +37,34 @@ def main():
         mapdir = project_path / "maps"
 
         if not mapdir.exists():
-            logging.info(f'[INFO] Skipping "{project_name}". No "maps/" directory found.\n')
+            logging.info(f'Skipping "{project_name}". No "maps/" directory found.\n')
             continue
 
-        logging.info(f"[PROJECT] {project_name}")
+        logging.info(f"Project: {project_name}")
 
         # Remove *.dbs
         for dbs_file in mapdir.glob("*.dbs"):
-            logging.info(f'  Deleting "{dbs_file.name}"...')
+            logging.info(f'Deleting "{dbs_file.name}"...')
             try:
                 dbs_file.unlink()
             except Exception:
-                logging.error(f'  [FAIL] Could not delete "{dbs_file.name}"')
+                logging.error(f'Could not delete "{dbs_file.name}"')
 
-        # Remove *.backup1/2/3
-        for ext in ("*.backup1", "*.backup2", "*.backup3"):
-            for backup_file in mapdir.glob(ext):
-                logging.info(f'  Deleting "{backup_file.name}"...')
+        # Remove *.backup<NUMBER> and *.autosave<NUMBER>
+        for candidate in mapdir.iterdir():
+            if not candidate.is_file():
+                continue
+
+            if _has_numeric_suffix_extension(candidate, "backup") or _has_numeric_suffix_extension(candidate, "autosave"):
+                logging.info(f'Deleting "{candidate.name}"...')
                 try:
-                    backup_file.unlink()
+                    candidate.unlink()
                 except Exception:
-                    logging.error(f'  [FAIL] Could not delete "{backup_file.name}"')
+                    logging.error(f'Could not delete "{candidate.name}"')
 
         logging.info("")
 
-    logging.info("[DONE] All map editor files cleaned.")
+    logging.info("All map editor files cleaned.")
 
 
 if __name__ == "__main__":

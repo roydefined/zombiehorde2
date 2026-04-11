@@ -1,0 +1,166 @@
+bool rainfall_actived=false;
+int reflection_actived=true;
+bool rain_sound=true;
+int  rain_detail=0;
+int zm09_weather=0;
+int weather_quality=0;
+
+
+int pos_player_x;
+int pos_player_y;
+int pos_player_z;
+	
+int valid_rain_posz=0;
+	
+script 47 (void) clientside{// Rainfall Script, Long Distance rain
+
+    int tid =unusedTID(1000,2000);
+    int tid_player; //player tid
+    int posx; //Player posx   a before
+    int posy; //Player posy   b before
+    int posZ; //Player posz   c before
+	//posx,y,z are the player position
+    int x,y,z,c; // replaces x_heigh, y_heigh, z_heigh
+	// x,y,z are the position where the rain drop will spawn
+    int i=0;
+    int j=0;
+    int inc_i =1.0;
+    int distance = 10;
+    int loop_size=0;
+    int rnd=0;
+    int jMAX;
+    int k=0;
+    int cnt=0;
+	int failed_to_validate=false;
+	if(rain_sound==1)thing_activate(144);
+    while(true){//START RAINFALL LOOP
+		tid_player = consoleplayernumber()+PLAYER_TID;
+        //Get Player Position
+        posx = getactorx(tid_player); //Player posx
+        posy = getactory(tid_player); //Player posy
+        posZ = getactorz(tid_player); //Player posz
+        //Check how far the rainfall will go
+        if     (weather_quality==-1){jMAX=4;}  
+        else if(weather_quality==0) {jMAX=7;}
+        else if(weather_quality==1) {jMAX=10;}
+        else if(weather_quality==2) {jMAX=14;}
+        else if(weather_quality==3) {jMAX=22;}
+        else if(weather_quality==4) {jMAX=28;}
+        j=0;
+        k=0;
+        inc_i =1.0;
+        distance = 10;
+        delay(1);
+        rnd=0;
+        while(j<jMAX){
+            k++;
+            if(k>4) k=4;
+            switch(j){
+                case 4:
+                case 6:
+                case 10:
+                case 20:
+                    delay(1);
+                    break;
+            }
+            rnd+=40.0;
+            i=0;
+            cnt=0;
+            while(i<=1.0){// 1.0 = MAX fixed point angle
+              x=sin(i)*distance+posx+random(-rnd,rnd);
+              y=cos(i)*distance+posy+random(-rnd,rnd);
+                cnt++;
+				//Get a valid z area 1086.0 , 790.0 and 558.0 are the three fixed f_sky sizes on the hole map
+				z=1068.0;//1040.0;
+				spawn("mapspot",x,y,z,tid,0);
+				if(thingcount(T_NONE,tid)==0){
+					z=772.0;//744.0;
+					spawn("mapspot",x,y,z,tid,0);				
+					if(thingcount(T_NONE,tid)==0){
+						z=540.0;//512.0;
+						spawn("mapspot",x,y,z,tid,0);
+						//print(d:thingcount(T_NONE,tid), s:" ",d:CheckActorCeilingTexture(tid_player, "F_SKY1"));
+					}//else it's not a skybox area, or there's nothing on that area
+				}
+				if (CheckActorCeilingTexture(tid, "F_SKY1")){    //the new area is on a sky? then get the sky position
+                    if (rain_detail == -1)
+                    {
+                        Spawn_Raindrop_by_detail(-30, 50, tid);
+                    }
+					else if (rain_detail == 0)
+                    {
+                        Spawn_Raindrop_by_detail(10, 50, tid);
+                    }
+                    else if (rain_detail == 1)
+                    {
+                        Spawn_Raindrop_by_detail(20, 85, tid);
+                    }
+                    else if (rain_detail == 2)
+                    {
+                        Spawn_Raindrop_by_detail(40, 100, tid);
+                    }
+					else
+                    {
+                        Spawn_Raindrop_by_detail(50, 120, tid);
+                    }
+				}
+				thing_remove(tid);
+			        //print(s:"X:",f:x,s:"\nY:",f:y,s:"\nZ:",f:z,s:"\ni:",f:i, s:"\n inc i:",f:inc_i, s:"\n j:",d:j,s:"\n player tid:",d:tid_player,s:" pos x:",f:posx, s:" posy:", f:posy, s:" posz:",f:posz);
+				i+=inc_i; // varia a quantidade de objetos em um espa o
+			      //  delay(35);
+				//}
+			}
+				
+            if(distance<=960){
+                rnd+=50.0;
+                distance= distance*2;
+            }else{
+                distance= distance+100.0;
+                rnd+=100.0;
+            }j++;
+            if( inc_i>=0.03125 ) {//0.0625
+               inc_i =inc_i/2;
+            }
+            
+        }
+    }//END RAINFALL LOOP
+}
+
+script 49 open {//Weather selector
+    delay(50);
+    zm09_weather=random(1,100);
+    if(zm09_weather>=50 && zm09_weather<=65){
+        rainfall_actived=true;
+        SETFONT("SMALLFONT");
+        Light_ChangeToValue(23,90);
+        Sector_Setcolor(23,128,128,128);
+        Light_ChangeToValue(142,90);
+        Sector_Setcolor(142,128,128,128);
+        Light_ChangeToValue(143,64);
+        Sector_Setcolor(143,128,128,128);
+        ReplaceTextures("IBMTE2","SKYFOG0",NOT_MIDDLE);
+        Light_ForceLightning(0);
+        acs_execute(47,0,0,0,0);
+    }
+}
+script 50 LIGHTNING {//RAIN SCRIPT
+    Delay(Random(20, 200));
+    AmbientSound("thunder",127);
+}
+
+function void Spawn_Raindrop_by_detail(int min, int max, int tid) 
+{
+    int chance = random(min, max);
+    if (chance < 35)
+    {
+        spawnspot("LegacyZM09Raindrop",tid,0,0);
+    }
+    else if (chance < 70)
+    {
+        spawnspot("raindrop2",tid,0,0);
+    }
+    else
+    {
+        spawnspot("raindrop3",tid,0,0);
+    }
+}

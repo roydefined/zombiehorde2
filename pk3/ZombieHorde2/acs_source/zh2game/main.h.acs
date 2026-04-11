@@ -2,9 +2,10 @@
     #error This file must be #included.
 #endif
 
-#include "preprocess.h.acs"
+#include "preprocessor/specie.h.acs"
 #include "common.h.acs"
 
+#include "environment/environment.h.acs"
 #include "debug/debug.h.acs"
 #include "game/game.h.acs"
 #include "sync/sync.h.acs"
@@ -15,6 +16,8 @@
 #include "feature/feature.h.acs"
 #include "gameloop/gameloop.h.acs"
 #include "roundtimer/roundtimer.h.acs"
+#include "damage/damage.h.acs"
+#include "damagefeedback/damagefeedback.h.acs"
 #include "settings/settings.h.acs"
 #include "shuffle/shuffle.h.acs"
 #include "music/music.h.acs"
@@ -32,9 +35,6 @@
 strict namespace ZH2Game
 {
     #define PERSISTINGGAMECONTEXTINDEX 1
-
-    #define SCRIPT_ENTER_RESPAWN_NAME "zh2_internal_enter_respawn"
-    #define SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME "zh2_internal_enter_respawn_clientside"
 
     internal enum TranslucentAlliesT : int
     {
@@ -56,6 +56,31 @@ strict namespace ZH2Game
         DROPBEHAVIOUR_ONLY_REGULAR_ZOMBIES,
         DROPBEHAVIOUR_NEVER,
     };
+
+    internal enum DamageFeedbackMarkerShowTypeT : int
+    {
+        DAMAGEFEEDBACK_MARKER_SHOW_NONE,
+        DAMAGEFEEDBACK_MARKER_SHOW_HITS,
+        DAMAGEFEEDBACK_MARKER_SHOW_KILLS,
+        DAMAGEFEEDBACK_MARKER_SHOW_BOTH,
+    };
+
+    internal enum DamageFeedbackCounterShowTypeT : int
+    {
+        DAMAGEFEEDBACK_COUNTER_SHOW_NONE,
+        DAMAGEFEEDBACK_COUNTER_SHOW_DAMAGE,
+        DAMAGEFEEDBACK_COUNTER_SHOW_KILLS,
+        DAMAGEFEEDBACK_COUNTER_SHOW_BOTH,
+    };
+
+
+    internal enum DamageFeedbackNumberShowTypeT : int
+    {
+        DAMAGEFEEDBACK_NUMBER_SHOW_NONE,
+        DAMAGEFEEDBACK_NUMBER_SHOW_TOTAL,
+        DAMAGEFEEDBACK_NUMBER_SHOW_INDIVIDUAL,
+    };
+
 
     internal enum PlayerDeathTypeT : int
     {
@@ -151,10 +176,6 @@ strict namespace ZH2Game
         int OwnedWeaponItems[MAX_ITEMS];
         int OwnedWeaponCount;
 
-        // Clientside and serverside handled. Not synched.
-        // Stores received data from events, which has been unpacked.
-        Event::EventReceiveContextT EventReceiveContext;
-
         // Clientside, not synchronized.
         Obituary::ObituaryCollectionContextT ObituaryCollectionContext;
 
@@ -221,6 +242,12 @@ strict namespace ZH2Game
         // Required in order to properly unset the state back to making allies opaque and hiding indicators when disabled.
         bool TranslucentAlliesEnabled;
         bool TeamIndicatorsEnabled;
+
+        // Clientside, tracks total damage done to an actor on a frame.
+        Damage::DamageTotalContextT DamageTotalContext;
+
+        // Clientside, holds info regarding damage feedback to inform the player.
+        DamageFeedback::DamageFeedbackInfoT DamageFeedbackInfo;
     };
 
     // General game info. Persisting between rounds.
@@ -303,10 +330,6 @@ strict namespace ZH2Game
 
         // Serverside. Indicates the source of damage for the player.
         Player::DamageSourceT DamageSources[MAX_DAMAGE_SOURCES];
-
-        // Serverside. Indicates if the player is explicitly allowed to walk through other actors.
-        // A tertiary state exists for returning to default.
-        Player::PlayerThruActorsStateT ThruActorsState;
     };
 
     // General player info. Persisting between rounds.
@@ -315,7 +338,4 @@ strict namespace ZH2Game
         bool IsAdmin;
         bool PreviouslyInitialZombie;
     };
-
-    extern str GetServersideAwaiter();
-    extern str GetClientsideAwaiter();
 }

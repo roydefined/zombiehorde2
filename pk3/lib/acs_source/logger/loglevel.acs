@@ -39,11 +39,11 @@ strict namespace Logger
                         : BCSUtils::IsServerOnly() ? OWNERSERVER
                         : OWNERNONE;
 
-        str messagePacket = Packet::Packet_New();
-        messagePacket = Packet::Packet_AppendStr(messagePacket, source);
-        messagePacket = Packet::Packet_Append(messagePacket, (int)logLevel, Packet::PACKET_WORD);
-        messagePacket = Packet::Packet_Append(messagePacket, (int)owner, Packet::PACKET_WORD);
-        messagePacket = Packet::Packet_AppendStr(messagePacket, message);
+        str messagePacket = Packet::New();
+        messagePacket = Packet::AppendStr(messagePacket, source);
+        messagePacket = Packet::Append(messagePacket, (int)logLevel);
+        messagePacket = Packet::Append(messagePacket, (int)owner);
+        messagePacket = Packet::AppendStr(messagePacket, message);
 
         // When logged serverside, we also want to perform buffering and logging through rcon.
         if (BCSUtils::IsServerOnly())
@@ -58,7 +58,7 @@ strict namespace Logger
             return;
         }
 
-        if(!NamedSendNetworkString("LoggerLib_LogPacketOnClientInt", messagePacket))
+        if(!Packet::Send("LoggerLib_LogPacketOnClientInt", messagePacket))
             PrintError("Failed to invoke LoggerLib_LogPacketOnClientInt. Message packet: '" + messagePacket + "'.");
     }
 

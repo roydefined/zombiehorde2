@@ -1,0 +1,67 @@
+actor ZH2GoldSpawner : ZH2Currency 12010
+{
+    //$Sprite GOLDA0
+
+    //$Arg0 Type
+    //$Arg0Tooltip Specifies the type of gold to spawn.
+    //$Arg0Type 11
+    //$Arg0Enum { 0 = "Gold coin (1)"; 1 = "Golden chest (5)"; }
+
+    Height 8
+    Radius 8
+    Tag "Gold"
+
+    States
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_JumpIf(args[0] == 1, 2)
+            TNT1 A 0 A_SpawnItem("ZH2GoldCoin")
+            Stop
+            TNT1 A 0 A_SpawnItem("ZH2GoldChest")
+            Stop
+    }
+}
+
+actor ZH2GoldCoin : CustomInventory
+{
+    Inventory.PickupSound "item/cash"
+
+    +NOGRAVITY
+
+    States
+    {
+        Spawn:
+            TNT1 A 0 NoDelay A_Jump (171, "Frame1", "Frame2", "Frame3")
+
+        Frame1:
+            GOLD ABCD 6 bright
+            loop
+
+        Frame2:
+            GOLD ABCD 5 bright
+            loop
+
+        Frame3:
+            GOLD ABCD 4 bright
+            loop
+
+        Pickup:
+            TNT1 A 0 A_GiveInventory("ZH2EgyptCash", 1)
+            Stop
+    }
+}
+
+actor ZH2GoldChest : CustomInventory
+{
+    Inventory.PickupSound "item/cash"
+
+    States
+    {
+        Spawn:
+            CASH A -1
+
+        Pickup:
+            TNT1 A 0 A_GiveInventory("ZH2EgyptCash", 5)
+            Stop
+    }
+}

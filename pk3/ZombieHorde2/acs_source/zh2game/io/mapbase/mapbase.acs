@@ -8,14 +8,11 @@ strict namespace IO
 {
     internal void ParseMapDefLumps()
     {
-        if (!ACS_NamedExecute(SCRIPT_PARSE_PERSISTING_MAP_POSITION_DEFS, 0))
-        {
-            Logger::LogError(LOGSOURCE, "Parser for map position defs could not be started. Script failed to execute.");
-            return;
-        }
+        ACS_NamedExecuteWithResult(SCRIPT_PARSE_PERSISTING_MAP_POSITION_DEFS);
     }
 
-    script SCRIPT_PARSE_PERSISTING_MAP_POSITION_DEFS
+    // NOTE: This script is `BUSY` and will not trigger a runaway error.
+    script SCRIPT_PARSE_PERSISTING_MAP_POSITION_DEFS BUSY
     {
         if (ZH2Game::PersistingGameContext.MapBaseCollection.Initialized) terminate;
 
@@ -35,10 +32,6 @@ strict namespace IO
                 ParseMapLumpPositions(LumpReadString(startIndex, 0), startIndex);
             }
             LumpClose(startIndex);
-
-            // Runaway error script prevention.
-            // TODO: Remove and replace with the `BUSY` flag when supported.
-            Delay(const: 1);
         }
 
         Logger::LogDebug(LOGSOURCE, "Finished parsing map base data.");
@@ -48,7 +41,7 @@ strict namespace IO
     internal void ParseMapLumpPositions(str buffer, int mapLumpIndex)
     {
         // Logger::LogDebug(LOGSOURCE, "\cd" + MAPDEFLUMPNAME + "\cj Buffer: \cd" + buffer + "\cj.");
-        
+
         int handle = Tokenizer::RentTokenizer(buffer);
         if (handle == -1) return;
 
@@ -60,7 +53,7 @@ strict namespace IO
             // Logger::LogDebug(LOGSOURCE, "\cd" + MAPDEFLUMPNAME + "\cj symbol: \cd" + Tokenizer::GetSymbol(handle) + "\cj.");
             if (ParseMapPosition(handle, mapLumpIndex))
                 continue;
-            
+
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAPDEFLUMPNAME + ": '" + Tokenizer::GetSymbol(handle) + "'.");
             Tokenizer::ReturnTokenizer(handle);
             return;
@@ -68,7 +61,7 @@ strict namespace IO
 
         Tokenizer::ReturnTokenizer(handle);
     }
-    
+
     internal bool ParseMapPosition(int handle, int lumpIndex)
     {
         if (BCSUTILS::StrToLower(Tokenizer::GetSymbol(handle)) != "map") return false;
@@ -84,7 +77,7 @@ strict namespace IO
         int braceLevel = Tokenizer::GetBraceLevel(handle);
         if (!Tokenizer::ExpectNextChar(handle, '{'))
             return false;
-        
+
         Tokenizer::Next(handle);
         str symbol = Tokenizer::GetSymbol(handle);
 
@@ -96,7 +89,7 @@ strict namespace IO
         if (mapBaseCollection.Count == lengthof(mapBaseCollection.Collection))
         {
             Logger::LogWarning(LOGSOURCE, "Maximum parse supported map count of \cd" + str(mapBaseCollection.Count) +" \cjreached. Additional maps won't be included.");
-            
+
             while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
                 Tokenizer::Next(handle);
             return true;
@@ -110,13 +103,14 @@ strict namespace IO
                 continue;
 
             if (Tokenizer::ParseBodyAsEmpty(handle, symbol, "events")
-                || Tokenizer::ParseBodyAsEmpty(handle, symbol, "resists"))
+                || Tokenizer::ParseBodyAsEmpty(handle, symbol, "resists")
+                || Tokenizer::ParseBodyAsEmpty(handle, symbol, "weatherprofiles"))
                 continue;
 
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAPDEFLUMPNAME + " base data of map " + mapLump + ": '" + symbol + "'.");
             return false;
         }
-            
+
         int endOffset = Tokenizer::GetPosition(handle);
 
         mapBaseCollection.Collection[mapBaseCollection.Count].MapLump = mapLump;

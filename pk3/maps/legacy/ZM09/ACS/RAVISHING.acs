@@ -1,0 +1,160 @@
+//GLOBAL VARS
+int stuck_test=0;
+int ghoul_invtest=0;
+int user_ghoulactivesound=0;
+int timer_GHOUL=0;
+int user_invisible=0;
+int user_ghoulinvisible=0;
+int out_invisible=0;
+int ghoul_hate=0;
+int script_test=0;
+int sound_toplay=0;
+int ravishing_script;
+
+
+script 8 (void){//Ravishing Script : Attack
+//	print_developer(1,"Ravishing Attacked - script 8",0,0,0,0,0);
+    ravishing_script=8;
+    zm09_dev2=8;
+    stuck_test=0;
+    ghoul_invtest=0;
+    user_ghoulactivesound=0;
+    timer_GHOUL=0;
+    user_invisible=0;
+    user_ghoulinvisible=0;
+    timer_GHOUL=0;
+    user_ghoulinvisible=0;
+    if(out_invisible==0) out_invisible=50;
+    SetActorProperty(100,APROP_Speed,16.0);
+}
+
+script 9 (int x){//Ravishing Script : Check monster require change status
+    ravishing_script=9;
+    ghoul_hate=x;
+    zm09_dev2=9;
+    script_test=1;
+    if(user_invisible==true && user_ghoulinvisible==false && ghoul_invtest==false)
+    {
+        user_ghoulinvisible=true;
+        ghoul_invtest=true;
+        SetActorProperty(100,APROP_Speed,26.0);
+    }
+    else if(user_invisible==0 && user_ghoulinvisible==0 && ghoul_invtest==1)
+    {
+        user_ghoulinvisible=2;
+        ghoul_invtest=false;
+        SetActorProperty(100,APROP_Speed,16.0);
+    }
+    setresultvalue(user_ghoulinvisible);
+    delay(1);
+    user_ghoulinvisible=false;
+    
+}
+script 10 (VOID){//Ravishing Script: Dormaint script
+//	print_developer(1,"Reset Ravishing Code - script 10",0,0,0,0,0);
+    ravishing_script=10;
+    zm09_dev2=10;
+    stuck_test=0;
+    user_ghoulactivesound=0;
+    ghoul_invtest=0;
+    timer_GHOUL=0;
+    user_invisible=0;
+    timer_GHOUL=0;
+    user_ghoulinvisible=0;
+    SetActorProperty(100,APROP_Speed,16.0);
+}
+
+script 11 (void){//Ravishing Script: main code
+    ravishing_script=11;
+    int pos_x=0,pos_y=0,pos_z=0;
+    while(true){
+        zm09_dev2=true;
+        if(pos_x==getactorx(100) && pos_y==getactory(100) && pos_z==getactorz(100)){
+            stuck_test++;
+        }else{   
+            stuck_test=0;
+            pos_x=getactorx(100);
+            pos_y=getactory(100);
+            pos_z=getactorz(100);
+        }if(stuck_test==50){
+//			print_developer(1,"Ravishing is Stucked, starting, getting out... - script 11",0,0,0,0,0);
+            user_invisible=1;
+            user_ghoulinvisible=0;
+            ghoul_invtest=0;
+            timer_GHOUL=0;
+            
+        }if(out_invisible>0){
+            SetActorProperty(100,APROP_Speed,16.0);
+        }if(timer_GHOUL>=16 && user_invisible==true){
+            user_invisible=false;
+            timer_GHOUL=0;
+            SetActorProperty(100,APROP_Speed,16.0);
+        }else if(timer_GHOUL>=7 && user_invisible==false){
+            timer_GHOUL=0;
+            user_invisible=true;
+        }if(user_invisible==true)
+        {
+            sound_toplay=1;
+        }else sound_toplay=0;
+        if(out_invisible>0) out_invisible--;
+        script_test=0;
+        delay(1);    
+    }
+}
+
+script 12 (void){//Ravishing Script: Sound Effects
+   while(true){
+       ravishing_script=12;
+       if(sound_toplay==0){
+            while(user_ghoulactivesound<4 && user_invisible==0){
+                  user_ghoulactivesound++;
+                  delay(35);
+            }
+            timer_GHOUL++;
+            user_ghoulactivesound=false;
+            if(user_invisible==true) ThingSound(100,"EFF5",127);
+            else if(user_ghoulinvisible==false) ThingSound(100,"EFF10",127);
+//			print_developer(1,"Ravishing Played a Sound - script 12",0,0,0,0,0);
+        }
+        else{
+            while(user_ghoulactivesound<2 && user_invisible==true){
+               user_ghoulactivesound++;
+               delay(35);
+            }
+            timer_GHOUL++;
+            user_ghoulactivesound=0;
+           if(user_invisible==true) ThingSound(100,"EFF5",127);
+           else if(user_ghoulinvisible==false) ThingSound(100,"EFF10",127);
+//		   print_developer(1,"Ravishing Played a Sound - script 12",0,0,0,0,0);
+       }
+       delay(1);
+     }
+}
+
+script 13 (void){//Ravishing Script: Summon ravishing and other resources
+    int input=GetCvar("x_zh_zm09_ra");
+    SetCvar("x_zh_zm09_ra",input+1);
+    ravishing_script=13;
+    delay(random(350,700));
+    SetFont("BIGFONT");
+    ThingSound(77,"IBMEFF3",127);
+    generator1=0;
+    acs_execute(34,0,generator1*10+generator2,0,0);
+    Thing_remove(96);
+    HudMessageBold(s:"\nPRIMARY GENERATOR IS NOW DESTROYED"; HUDMSG_FADEOUT, 980, CR_RED, 0.5, 0.2, 9.8, 0.5);
+    delay(50);
+    ThingSound(97,"IBMEFF3",127);
+    delay(50);
+    ThingSound(97,"IBMEFF2",127);
+    Music_Played=RAVISHING_MUSIC;
+    play_zm09_music();
+    SpawnSpot ("ravishingBETA",25,100,24);
+    acs_execute(4,0,1,0,0);
+    delay(35);
+
+    while(Round::GetGameIsEnding() == false)
+    {
+        delay(10);
+    }
+    Thing_Deactivate(100);
+}

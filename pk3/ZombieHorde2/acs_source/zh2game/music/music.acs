@@ -17,8 +17,16 @@ strict namespace Music
 
     void SetDefaultMusic(str track, int order = 0)
     {
-        SetCVarString(CVAR_SYNC_RADIO_NAME, track);
-        SetCVar(CVAR_SYNC_RADIO_ORDER, order);
+        if (BCSUtils::IsServer())
+        {
+            SetCVarString(CVAR_SERVER_SYNC_DEFAULTMAPMUSIC_NAME, track);
+            SetCVar(CVAR_SERVER_SYNC_DEFAULTMAPMUSIC_ORDER, order);
+        }
+        else
+        {
+            SetUserCVarString(ConsolePlayerNumber(), CVAR_CLIENT_SYNC_DEFAULTMAPMUSIC_NAME, track);
+            SetUserCVar(ConsolePlayerNumber(), CVAR_CLIENT_SYNC_DEFAULTMAPMUSIC_ORDER, order);
+        }
     }
 
     void PlayDefaultMusic()
@@ -28,7 +36,16 @@ strict namespace Music
 
     internal str GetDefaultMusicTrack()
     {
-        str track = GetCVarString(CVAR_SYNC_RADIO_NAME);
+        str track;
+        if (BCSUtils::IsServer())
+        {
+            track = GetCVarString(CVAR_SERVER_SYNC_DEFAULTMAPMUSIC_NAME);
+        }
+        else
+        {
+            track = GetCVarString(CVAR_CLIENT_SYNC_DEFAULTMAPMUSIC_NAME);
+        }
+
         if (track == "")
             return "*";
 
@@ -37,9 +54,18 @@ strict namespace Music
 
     internal int GetDefaultMusicOrder()
     {
-        int order = GetCvar(CVAR_SYNC_RADIO_ORDER);
+        int order;
+        if (BCSUtils::IsServer())
+        {
+            order = GetCvar(CVAR_SERVER_SYNC_DEFAULTMAPMUSIC_ORDER);
+        }
+        else
+        {
+            order = GetCvar(CVAR_CLIENT_SYNC_DEFAULTMAPMUSIC_ORDER);
+        }
+
         return order;
     }
 }
 
-#undef LOGSOURCE 
+#undef LOGSOURCE

@@ -1,0 +1,133 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Chat"
+
+strict namespace Chat
+{
+    void SendSelf(str message)
+    {
+        SendActor(ActivatorTid(), message);
+    }
+
+    void SendActor(int tid, str message)
+    {
+        // Call directly clientside.
+        if (BCSUtils::IsClient())
+        {
+            str name = GetChatMessageSourceName(tid);
+            SendChatMessageClientside(name, message);
+            return;
+        }
+
+        str packet = Packet::New();
+        packet = Packet::Append(packet, tid);
+        packet = Packet::AppendStr(packet, message);
+
+		if(!Packet::Send("zh2_internal_chat_receiveclient", packet))
+			Logger::LogError(LOGSOURCE, __FUNCTION__ + ": message could not be delivered.");
+    }
+
+    void SendSelfActivator(str message)
+    {
+        SendActorActivator(ActivatorTid(), message);
+    }
+
+    void SendActorActivator(int tid, str message)
+    {
+        // Extra check to ensure the activator is the console client when the function is ran clientside.
+        if (BCSUtils::IsClient() && PlayerNumber() != ConsolePlayerNumber())
+        {
+            Logger::LogWarning(LOGSOURCE, __FUNCTION__ + ": when called clientside the activator should be the console player number. Message: \"" + message + "\"");
+            return;
+        }
+
+        SendActorTo(PlayerNumber(), tid, message);
+    }
+
+
+    void SendSelfTo(int id, str message)
+    {
+        SendActorTo(id, ActivatorTid(), message);
+    }
+
+    void SendActorTo(int id, int tid, str message)
+    {
+        // This function should not be called clientside. If it does, the target should be the console player.
+        if (BCSUtils::IsClient() && id != ConsolePlayerNumber())
+        {
+            Logger::LogWarning(LOGSOURCE, __FUNCTION__ + ": when called clientside the target id should be the console player number. Id: " + str(id) + ". Message: \"" + message + "\"");
+            return;
+        }
+
+        // Call directly clientside.
+        if (BCSUtils::IsClient())
+        {
+            str name = GetChatMessageSourceName(tid);
+            SendChatMessageClientside(name, message);
+            return;
+        }
+
+        str packet = Packet::New();
+        packet = Packet::Append(packet, tid);
+        packet = Packet::AppendStr(packet, message);
+
+		if(!Packet::Send("zh2_internal_chat_receiveclient", packet, id))
+			Logger::LogError(LOGSOURCE, __FUNCTION__ + ": message could not be delivered to id " + str(id) + ".");
+    }
+
+    script "zh2_internal_chat_receiveclient" (raw packetRaw) clientside
+    {
+        str packet = (str)packetRaw;
+
+        packet = Packet::Read(packet);
+        int tid = Packet::Value;
+
+        packet = Packet::ReadStr(packet);
+        str message = Packet::Value;
+
+        str name = GetChatMessageSourceName(tid);
+        SendChatMessageClientside(name, message);
+    }
+
+    internal str GetChatMessageSourceName(int tid)
+    {
+        // Actor is a player
+        if (Identity::IsValidTID(tid))
+            return BCSUtils::PlayerName(Identity::GetId(tid));
+
+        // Nothing to check
+        if (!BCSUtils::ActorIsAlive(tid))
+            return "???";
+
+        str name = GetActorProperty(tid, APROP_NAMETAG);
+        if (name == (str)0 || name == "")
+            name = GetActorClass(tid);
+
+        return name;
+    }
+
+    internal void SendChatMessageClientside(str name, str message)
+    {
+        // Skip the sound if the user doesn't display messages.
+        // They do need to show in the console.
+
+        if (ZH2Lib::GetShowMessages())
+        {
+            int chatSoundCvar = ZH2Lib::GetChatSound();
+            if (chatSoundCvar != 0)
+            {
+                // 1 and 3 both use misc/chat
+                str chatSound = chatSoundCvar == 2
+                    ? "misc/chat2" : "misc/chat";
+
+                AmbientSound(chatSound, 255);
+            }
+        }
+
+		Log(s:"\c*", s:name, s:"\c*: ", s:message);
+    }
+}
+
+#undef LOGSOURCE

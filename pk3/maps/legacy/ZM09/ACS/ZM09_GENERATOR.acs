@@ -1,0 +1,136 @@
+int generator1=1;
+int generator2=0;
+
+int phase_light_name[4]={"phaselight1","phaselight3","phaselight1","phaselight2"};
+script 19 (void){//Generator Script
+    int light_spotid=40,i;
+    int light_id=49;
+    Thing_Activate(44);
+    spawnspot("steamspawner",130,0,0);
+    ThingSound(40,"IBMEFF2",127);
+    ThingSound(40,"IBMEFF1",127);
+    teleportother(53,44,0);
+    while(light_Spotid<=43){
+        ThingSound(light_spotid,"IBMEFF1",127);
+        for(i=0;i<4;i++){
+            thing_remove(light_id);
+            SpawnSpot(phase_light_name[i],light_spotid,light_id,0);
+            delay(5);
+        }light_spotid++;
+        light_id++;
+        delay(35);
+    }generator2=1;
+    acs_execute(34,0,generator1*10+generator2,0,0);
+    delay(150);
+    Light_changetovalue(80,255);
+    Light_changetovalue(81,255);
+    acs_execute(42,0,1);
+}
+
+
+script 25 open clientside{//Flicker blue computer room
+    int brightlevel=255;
+    while(true){
+        if(generator1==1 && generator2==0){
+            if(brightlevel>100) brightlevel=random(0,100);
+            else brightlevel=random(101,255);
+            Light_ChangeToValue(80,brightlevel);
+            Light_changetovalue(81,brightlevel);
+        }else if(generator1==0 && generator2==0){
+            Light_ChangeToValue(80,112);
+            Light_changetovalue(81,112);
+        }else{
+            Light_ChangeToValue(80,255);
+            Light_changetovalue(81,255);
+        }delay(random(1,10));
+    }
+}
+
+int script_34_adress[10]={49,50,51,52,86,88,145,125,126,103};
+script 34 (int action) clientside { //LIGHT effected by ravishing, lava and generator on
+    int arg1=100,arg2=100,arg3=100;
+    int posy;
+    int i=122,j=0;
+    int effect=0;
+    if (getplayerrender()==OPENGL_PLAYER)
+    {
+        if(action==1){
+            while(true){/*--------------------------------------------------------------------
+                while(arg1<=135)
+                {
+                    j=0;while(j<=6){ Thing_SetSpecial(script_34_adress[j],0,arg1,arg2,arg3); j++;}
+                    arg1+=5;arg2+=5;arg3+=5;
+                    delay(1);       
+                }
+                while(arg1>=30)
+                {
+                    j=0;while(j<=6){ Thing_SetSpecial(script_34_adress[j],0,arg1,arg2,arg3); j++;}
+                    arg1-=5;arg2-=5;arg3-=5;
+                    delay(1);       
+                }
+            delay(1);
+            }--------------------------------------------------------------------*/
+                effect=random(0,1000);
+                if(effect<=300 || effect>=400){
+                    arg1=random(0,50);
+                    for(j=0;j<=6;j++){
+                        Thing_SetSpecial(script_34_adress[j],0,arg1,arg1,arg1);
+                    }delay(random(1,9));
+                    arg1=random(50,160);
+                    for(j=0;j<=6;j++){Thing_SetSpecial(script_34_adress[j],0,arg1,arg1,arg1);}
+                    delay(random(1,9));
+                }else if(effect<=350){
+                    for(j=0;j<=6;j++){Thing_SetSpecial(script_34_adress[j],0,0,0,0);}
+                    delay(random(15,50));
+                }
+                else{
+                    for(j=0;j<=6;j++){Thing_SetSpecial(script_34_adress[j],0,0,0,0);}
+                    delay(random(60,150));
+                }
+            }
+            while(arg1<=135)
+                {
+                    j=0;while(j<=6){ Thing_SetSpecial(script_34_adress[j],0,arg1,arg2,arg3); j++;}
+                    arg1+=5;arg2+=5;arg3+=5;
+                    delay(1);       
+                }
+            //----------------------------------------------------NEW
+        }
+        else if(action==11){
+                arg1=255;arg2=255;arg3=255;
+                j=0;while(j<=6){ Thing_SetSpecial(script_34_adress[j],0,arg1,arg2,arg3); j++;}
+                generator2=1;
+        }
+        else if(action==0){
+                j=0;while(j<=6){ Thing_SetSpecial(script_34_adress[j],0,0,0,0); j++;}
+        }
+        delay(1);
+    }
+    else
+    {
+        if(action==true)
+        {
+            while(true)
+            {
+                while(arg1<=135){
+                    for(i=7;i<10;i++, arg1+=5)Light_ChangeToValue(script_34_adress[i],arg1);
+                    delay(1);       
+                }
+                while(arg1>=30){
+                    for(i=7;i<10;i++, arg1-=5)Light_ChangeToValue(script_34_adress[i],arg1);
+                    delay(1);       
+                }
+                delay(1);
+            }
+        }
+        else if(action==11){
+                arg1=255;
+                for(i=7;i<10;i++)Light_ChangeToValue(script_34_adress[i],arg1);
+                generator2=1;
+        }
+        else if(action==0){
+                for(i=7;i<10;i++, arg1-=5)Light_ChangeToValue(script_34_adress[i],arg1);
+        }
+        delay(1);
+    }
+}

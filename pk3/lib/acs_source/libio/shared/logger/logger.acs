@@ -9,33 +9,29 @@ strict namespace LibIO
     void ParseLoggerDefClientside()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
-        if (!ACS_NamedExecute(SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_CLIENTSIDE, 0))
-        {
-            Logger::LogError(LOGSOURCE, "Parser for logger def could not be started on the client. Script failed to execute.");
-            return;
-        }
+        ACS_NamedExecuteWithResult("zh2_internal_parse_logger_defs_client");
     }
 
     void ParseLoggerDefServerside()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
-        if (!ACS_NamedExecute(SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_SERVERSIDE, 0))
-        {
-            Logger::LogError(LOGSOURCE, "Parser for logger def could not be started on the server. Script failed to execute.");
-            return;
-        }
+        ACS_NamedExecuteWithResult("zh2_internal_parse_logger_defs_server");
     }
 
-    script SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_CLIENTSIDE clientside
+    script "zh2_internal_parse_logger_defs_client" clientside
     {
-        if (ZH2Lib::PersistingLibContext.LogContext.IsParsedClientside) terminate;
+        if (ZH2Lib::PersistingLibContext.LogContext.IsParsedClientside)
+            terminate;
+
         ParseLogDefCore();
         ZH2Lib::PersistingLibContext.LogContext.IsParsedClientside = true;
     }
 
-    script SCRIPT_PARSE_PERSISTING_LOGGER_DEFS_SERVERSIDE
+    script "zh2_internal_parse_logger_defs_server"
     {
-        if (ZH2Lib::PersistingLibContext.LogContext.IsParsedServerside) terminate;
+        if (ZH2Lib::PersistingLibContext.LogContext.IsParsedServerside)
+            terminate;
+
         ParseLogDefCore();
         ZH2Lib::PersistingLibContext.LogContext.IsParsedServerside = true;
     }

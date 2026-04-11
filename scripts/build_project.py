@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from utils import setup_logging, get_paths, copy_file, run_cmd
+from logger import setup_logging
+from utils import get_paths, copy_file, run_cmd
 
 # === Zombie Horde 2 project build script ===
 # This script copies over the previously packed ACSUtils files and puts them inside the library project.
@@ -40,7 +41,7 @@ def main():
     ]
 
     # Build BCSUtils source.
-    logging.info("[bcsutils]")
+    logging.info("Building BCSUtils.")
     run_cmd([
         str(bcc),
         str(paths["lib_src"] / "bcsutils.acs"),
@@ -48,7 +49,7 @@ def main():
     ])
 
     # Build lib source.
-    logging.info("[lib]")
+    logging.info("Building library.")
     run_cmd(
         [str(bcc)]
         + include_lib
@@ -60,7 +61,7 @@ def main():
     )
 
     # Build core source.
-    logging.info("[core]")
+    logging.info("Building core.")
     run_cmd(
         [str(bcc)]
         + include_core
@@ -71,7 +72,7 @@ def main():
         ]
     )
 
-    logging.info("SUCCESS")
+    logging.info("Finished building.")
 
 
 if __name__ == "__main__":

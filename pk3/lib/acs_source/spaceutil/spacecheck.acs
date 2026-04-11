@@ -1,0 +1,93 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "SpaceUtil"
+
+strict namespace SpaceUtil
+{
+    // This holds the relative positions of the spots where we check for space when we want to turn off ThruActors on a player.
+    // Center + 4 bottom corners + 4 top corners.
+    internal fixed _mapspotRelativeCoordinates[9][3];
+
+    internal bool GetHasSpace()
+    {
+        return GetPlayerHasSpace(PlayerNumber());
+    }
+
+    internal bool GetPlayerHasSpace(int id)
+    {
+        return GetActorHasSpace(Identity::GetTid(id));
+    }
+
+    internal bool GetActorHasSpace(int tid)
+    {
+        fixed x = GetActorX(tid),
+              y = GetActorY(tid),
+              z = GetActorZ(tid);
+
+        fixed height = GetActorProperty(tid, APROP_HEIGHT);
+        fixed radius = GetActorProperty(tid, APROP_RADIUS);
+
+        return GetXYZHasSpace(x, y, z, height, radius);
+    }
+
+
+    internal bool GetXYZHasSpace(fixed x, fixed y, fixed z, fixed height, fixed radius)
+    {
+        // Center
+        _mapspotRelativeCoordinates[0][0] = 0.0;
+        _mapspotRelativeCoordinates[0][1] = 0.0;
+        _mapspotRelativeCoordinates[0][2] = height * 0.5;
+
+        // Bottom corners
+        _mapspotRelativeCoordinates[1][0] = radius;
+        _mapspotRelativeCoordinates[1][1] = radius;
+        _mapspotRelativeCoordinates[1][2] = 0.0;
+
+        _mapspotRelativeCoordinates[2][0] = -radius;
+        _mapspotRelativeCoordinates[2][1] = radius;
+        _mapspotRelativeCoordinates[2][2] = 0.0;
+
+        _mapspotRelativeCoordinates[3][0] = -radius;
+        _mapspotRelativeCoordinates[3][1] = -radius;
+        _mapspotRelativeCoordinates[3][2] = 0.0;
+
+        _mapspotRelativeCoordinates[4][0] = radius;
+        _mapspotRelativeCoordinates[4][1] = -radius;
+        _mapspotRelativeCoordinates[4][2] = 0.0;
+
+        // Top corners
+        _mapspotRelativeCoordinates[5][0] = radius;
+        _mapspotRelativeCoordinates[5][1] = radius;
+        _mapspotRelativeCoordinates[5][2] = height;
+
+        _mapspotRelativeCoordinates[6][0] = -radius;
+        _mapspotRelativeCoordinates[6][1] = radius;
+        _mapspotRelativeCoordinates[6][2] = height;
+
+        _mapspotRelativeCoordinates[7][0] = -radius;
+        _mapspotRelativeCoordinates[7][1] = -radius;
+        _mapspotRelativeCoordinates[7][2] = height;
+
+        _mapspotRelativeCoordinates[8][0] = radius;
+        _mapspotRelativeCoordinates[8][1] = -radius;
+        _mapspotRelativeCoordinates[8][2] = height;
+
+        for (int i = 0; i < lengthof(_mapspotRelativeCoordinates); ++i)
+        {
+            fixed relativeX = x + _mapspotRelativeCoordinates[i][0],
+                  relativeY = y + _mapspotRelativeCoordinates[i][1],
+                  relativeZ = z + _mapspotRelativeCoordinates[i][2];
+
+            if (!Spawn(THRUACTORS_CHECKSPOT_NAME, relativeX, relativeY, relativeZ, THRUACTORS_CHECKSPOT_TID, 0))
+                return false;
+
+            Thing_Remove(THRUACTORS_CHECKSPOT_TID);
+        }
+
+        return true;
+    }
+}
+
+#undef LOGSOURCE

@@ -4,21 +4,20 @@
 
 #include "resist.acs"
 #include "events.acs"
+#include "weather.acs"
 
 strict namespace IO
 {
     internal void ParseCurrentMapLump()
     {
-        if (!ACS_NamedExecute(SCRIPT_PARSE_CURRENT_MAP_DEFS, 0))
-        {
-            Logger::LogError(LOGSOURCE, "Parser for current map defs could not be started. Script failed to execute.");
-            return;
-        }
+        ACS_NamedExecuteWithResult(SCRIPT_PARSE_CURRENT_MAP_DEFS);
     }
 
     // Note unlike the other scripts this is transient and will be done between maps.
     // Therefore no explicit initialization is checked.
-    script SCRIPT_PARSE_CURRENT_MAP_DEFS
+
+    // NOTE: This script is `BUSY` and will not trigger a runaway error.
+    script SCRIPT_PARSE_CURRENT_MAP_DEFS BUSY
     {
         if (ZH2Game::GameContext.ParsedMapDetails) terminate;
 
@@ -102,7 +101,8 @@ strict namespace IO
 
             if (Tokenizer::ParseBodyAsEmpty(handle, symbol, "properties")
                 || ParseResistCollection(handle, mapLump, symbol)
-                || ParseEventCollection(handle, mapLump, symbol))
+                || ParseEventCollection(handle, mapLump, symbol)
+                || ParseWeatherProfiles(handle, mapLump, symbol))
             {
                 // Optional comma.
                 Tokenizer::Next(handle, false);

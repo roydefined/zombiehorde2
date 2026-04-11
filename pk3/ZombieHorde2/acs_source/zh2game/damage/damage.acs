@@ -1,0 +1,101 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Damage"
+
+strict namespace Damage
+{
+    internal void FlushClient()
+    {
+        int size = GetTotalDamageSize();
+        if (size == 0)
+            return;
+
+        for (int i = 0; i < size; ++i)
+        {
+            // Send total damage to the client.
+            DamageTotalItemContextT module& context = ZH2Game::GameContext.DamageTotalContext.Collection[i];
+            Event::SendActorDamagedClientTotal(context.Tid, context.Damage, context.IsKill);
+            context.Tid = 0;
+            context.Damage = 0;
+            context.IsKill = false;
+        }
+
+        SetTotalDamageSize(0);
+    }
+
+    internal void SetTotalDamage(int tid, int damage, bool isKill)
+    {
+        int index = GetTotalDamageIndexByTid(tid);
+
+        // If the index is -1 we need to add a new index. But there does need to be space.
+        // Otherwise we'll just ignore it.
+        if (index == -1)
+        {
+            index = GetTotalDamageSize();
+
+            if (index == DAMAGETOTAL_CLIENT_MAX_SIZE)
+                return;
+
+            SetTotalDamageSize(index + 1);
+            ZH2Game::GameContext.DamageTotalContext.Collection[index].Tid = tid;
+        }
+
+        ZH2Game::GameContext.DamageTotalContext.Collection[index].Damage = damage;
+
+        // Just in case another piece of damage hits that didn't kill that frame, this ensures we do pass the correct information.
+        if (isKill)
+        {
+            ZH2Game::GameContext.DamageTotalContext.Collection[index].IsKill = true;
+        }
+    }
+
+    internal void AddTotalDamage(int tid, int damage, bool isKill)
+    {
+        SetTotalDamage(tid, GetTotalDamage(tid) + damage, isKill);
+    }
+
+    internal int GetTotalDamage(int tid)
+    {
+        int index = GetTotalDamageIndexByTid(tid);
+        if (index == -1)
+            return 0;
+
+        return ZH2Game::GameContext.DamageTotalContext.Collection[index].Damage;
+    }
+
+    internal bool GetDamageIsKill(int tid)
+    {
+        int index = GetTotalDamageIndexByTid(tid);
+        if (index == -1)
+            return false;
+
+        return ZH2Game::GameContext.DamageTotalContext.Collection[index].IsKill;
+    }
+
+    internal void SetTotalDamageSize(int size)
+    {
+        ZH2Game::GameContext.DamageTotalContext.Size = size;
+    }
+
+    internal int GetTotalDamageSize()
+    {
+        return ZH2Game::GameContext.DamageTotalContext.Size;
+    }
+
+    internal int GetTotalDamageIndexByTid(int tid)
+    {
+        for (int i = 0; i < GetTotalDamageSize(); ++i)
+        {
+            if (ZH2Game::GameContext.DamageTotalContext.Collection[i].Tid != tid)
+                continue;
+
+            return i;
+        }
+
+        return -1;
+    }
+}
+
+#undef LOGSOURCE

@@ -1,0 +1,228 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace LibIO
+{
+    internal bool ParseAmbientWeatherBlock(int handle, str identifyingSymbol, bool setPersisting)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "ambientweather"))
+            return false;
+
+        Tokenizer::Next(handle, false);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for weather type whilst parsing ambient weather: '" + Tokenizer::GetSymbol(handle) + "'. Symbol should be of type string.");
+            return false;
+        }
+
+        str weatherType = Tokenizer::GetSymbol(handle);
+        int index = AmbientWeatherTypeToIndex(weatherType);
+
+        if (_parsedAmbientWeatherContext.Index == -1)
+        {
+            Tokenizer::SetErrored(handle, "Invalid weather type provided whilst parsing ambient weather: '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        _parsedAmbientWeatherContext.Index = index;
+
+        // If `setPersisting` is false we want to provide the values that are currently set for the current transient info we have.
+        // This is useful for mappers to set only part of the new values.
+        if (!setPersisting)
+        {
+            _parsedAmbientWeatherContext.Enabled = Weather::GetTransientAmbientWeatherEnabled(index);
+            _parsedAmbientWeatherContext.Sound = Weather::GetTransientAmbientWeatherSound(index);
+            _parsedAmbientWeatherContext.ShelteredSound = Weather::GetTransientAmbientWeatherShelteredSound(index);
+            _parsedAmbientWeatherContext.Radius = Weather::GetTransientAmbientWeatherRadius(index);
+            _parsedAmbientWeatherContext.ShelteredRadius = Weather::GetTransientAmbientWeatherShelteredRadius(index);
+            _parsedAmbientWeatherContext.Delay = Weather::GetTransientAmbientWeatherDelay(index);
+        }
+        else
+        {
+            _parsedAmbientWeatherContext.Enabled = false;
+            _parsedAmbientWeatherContext.Sound = (raw)0;
+            _parsedAmbientWeatherContext.ShelteredSound = (raw)0;
+            _parsedAmbientWeatherContext.Radius = 0;
+            _parsedAmbientWeatherContext.ShelteredRadius = 0;
+            _parsedAmbientWeatherContext.Delay = 0;
+        }
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseAmbientWeatherBlockEnabled(handle, symbol)
+                || ParseAmbientWeatherBlockSound(handle, symbol)
+                || ParseAmbientWeatherBlockShelteredSound(handle, symbol)
+                || ParseAmbientWeatherBlockRadius(handle, symbol)
+                || ParseAmbientWeatherBlockShelteredRadius(handle, symbol)
+                || ParseAmbientWeatherBlockDelay(handle, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing ambient weather profile: '" + symbol + "'.");
+            return false;
+        }
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LOGSOURCE, "New ambient weather parsed under index \cd" + str(_parsedAmbientWeatherContext.Index) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseAmbientWeatherBlockEnabled(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "enabled"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseBooleanOrNumbericValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for Enabled is not a correct value. Expected boolean or numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        bool value = parsedValue != 0;
+        _parsedAmbientWeatherContext.Enabled = value;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed IsEnabled: \cd" + str(value) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseAmbientWeatherBlockSound(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "sound"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        str symbol = Tokenizer::GetSymbol(handle);
+        _parsedAmbientWeatherContext.Sound = symbol;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed Sound: \cd" + symbol + "\cj.");
+        return true;
+    }
+
+    internal bool ParseAmbientWeatherBlockShelteredSound(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "shelteredsound"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        str symbol = Tokenizer::GetSymbol(handle);
+        _parsedAmbientWeatherContext.ShelteredSound = symbol;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed ShelteredSound: \cd" + symbol + "\cj.");
+        return true;
+    }
+
+    internal bool ParseAmbientWeatherBlockRadius(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "radius"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for Radius is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        _parsedAmbientWeatherContext.Radius = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed Radius: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseAmbientWeatherBlockShelteredRadius(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "shelteredradius"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for ShelteredRadius is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        _parsedAmbientWeatherContext.ShelteredRadius = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed ShelteredRadius: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseAmbientWeatherBlockDelay(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "delay"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for Delay is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        _parsedAmbientWeatherContext.Delay = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed Delay: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    // HACK: Can't use `static str` here due to a compiler bug.
+    str ambientWeatherTypes[] = { "rain", "legacywind", "wind" };
+    internal int AmbientWeatherTypeToIndex(str weatherType)
+    {
+        for (int i = 0; i < lengthof(ambientWeatherTypes); ++i)
+        {
+            if (BCSUTILS::StrIEquals(weatherType, ambientWeatherTypes[i]))
+                return i;
+        }
+
+        return -1;
+    }
+}

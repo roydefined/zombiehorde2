@@ -50,9 +50,14 @@ strict namespace Player
             if (!BCSUTILS::ActorIsAlive(tid))
                 continue;
 
-            SetActorProperty(tid, APROP_ALPHA, 1.0);
-            SetActorProperty(tid, APROP_RENDERSTYLE, STYLE_NORMAL);
+            DisposeTranslucentActor(tid);
         }
+    }
+
+    internal void DisposeTranslucentActor(int tid)
+    {
+        SetActorProperty(tid, APROP_ALPHA, 1.0);
+        SetActorProperty(tid, APROP_RENDERSTYLE, STYLE_NORMAL);
     }
 
     // Handles actually setting the alpha values on all actors.
@@ -84,8 +89,7 @@ strict namespace Player
             // If we are spectating this player, then we should always remove the effect.
             if (cameraTid == tid)
             {
-                SetActorProperty(tid, APROP_ALPHA, 1.0);
-                SetActorProperty(tid, APROP_RENDERSTYLE, STYLE_NORMAL);
+                DisposeTranslucentActor(tid);
                 continue;
             }
 
@@ -93,8 +97,7 @@ strict namespace Player
             // Infection/curing also adjusts properly this way.
             if (Player::GetPlayerSpecie(i) != specie)
             {
-                SetActorProperty(tid, APROP_ALPHA, 1.0);
-                SetActorProperty(tid, APROP_RENDERSTYLE, STYLE_NORMAL);
+                DisposeTranslucentActor(tid);
                 continue;
             }
 

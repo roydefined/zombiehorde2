@@ -1,0 +1,93 @@
+actor ZH2CeilingLight : ZH2SwitchableLightSource 22011
+{
+    tag "Ceiling light"
+    scale .75
+    height 8
+    radius 4
+    health 1
+    mass 0x7FFFFFFF
+
+    +SOLID
+    +NOBLOOD
+    +SHOOTABLE
+    +NOGRAVITY
+    +SPAWNCEILING
+    +FORCEYBILLBOARD
+
+    States
+    {
+        Spawn:
+        Active:
+            CLHT A 1 nodelay bright light("ZH2CeilingLightLight") A_SpawnItemEx("ZH2CeilingLensFlare", 0, 0, 3)
+            loop
+
+        Inactive:
+            CLHT A 1
+            wait
+
+        Death:
+            TNT1 A 0 A_SpawnItem("ZH2BrokenCeilingLight")
+            TNT1 A 0 A_SpawnItem("ZH2CeilingLightBrokenFX")
+            TNT1 A 0 A_SpawnItem("ZH2CeilingLightBrokenGlassSpawner")
+            stop
+    }
+}
+
+actor ZH2CeilingLensFlare : ZH2LightSourceLensFlare
+{
+    yscale .2
+    xscale .6
+
+    States
+    {
+        Spawn:
+            LFLR B 1 nodelay bright
+            stop
+    }
+}
+
+actor ZH2CeilingLightBrokenFX
+{
+    +NOINTERACTION
+    +CLIENTSIDEONLY
+    +NOTIMEFREEZE
+
+    states
+    {
+        spawn:
+            TNT1 A 0 nodelay A_PlaySound("ZH2CeilingLight/break")
+            stop
+    }
+}
+
+actor ZH2CeilingLightBrokenGlassSpawner
+{
+    +NOINTERACTION
+    +CLIENTSIDEONLY
+    +NOTIMEFREEZE
+
+    states
+    {
+        spawn:
+            TNT1 AAAAAA 0 nodelay A_SpawnItemEx("ZH2CeilingLightGlassShard", random(-8, 8), random(-8, 8), -25, Frandom(-1.5, 1.5), Frandom(-1.5, 1.5), Frandom(0.5, 4.0), random(0, 359))
+            stop
+    }
+}
+
+actor ZH2BrokenCeilingLight
+{
+    +FORCEYBILLBOARD
+    +NOINTERACTION
+    +CLIENTSIDEONLY
+
+    scale .75
+    states
+    {
+        spawn:
+            CLHT A -1
+    }
+}
+
+actor ZH2CeilingLightGlassShard : ZH2CeilingLampGlassShard
+{
+}

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from utils import setup_logging, get_root, run_cmd, map_to_mod_folder
+from logger import setup_logging
+from utils import get_root, run_cmd, map_to_mod_folder
 
 # === Pack maps from pk3/maps/ into .wad files ===
 # Supports optional --no-source (to exclude the map sources).
@@ -43,9 +44,9 @@ def pack_single_map(tool: Path, map_path: Path, out_wad: Path,
     try:
         run_cmd(args)
     except SystemExit:
-        logging.error(f"  [FAIL] Failed to pack {map_name}")
+        logging.error(f"Failed to pack {map_name}")
     else:
-        logging.info(f"  [OK] Packed {map_name}")
+        logging.info(f"Packed {map_name}")
     finally:
         if tmp_endmap:
             safe_delete(map_path / "ENDMAP")
@@ -69,10 +70,10 @@ def main():
     outroot = root / "pk3"
 
     if not tool.exists():
-        raise SystemExit(f'[ERROR] gdcc-ar-wad.exe not found at "{tool}"')
+        raise SystemExit(f'gdcc-ar-wad.exe not found at "{tool}"')
 
     if not mapfolder.exists():
-        raise SystemExit(f'[ERROR] Source directory "{mapfolder}" does not exist.')
+        raise SystemExit(f'Source directory "{mapfolder}" does not exist.')
 
     # Compile maps first
     logging.info("Compiling maps...\n")
@@ -87,7 +88,7 @@ def main():
         outdir = outroot / map_to_mod_folder(project_name) / "maps"
         outdir.mkdir(parents=True, exist_ok=True)
 
-        logging.info(f"[PROJECT] {project_name}")
+        logging.info(f"Project: {project_name}")
 
         # Iterate maps inside project
         for map_path in sorted(p for p in project_path.iterdir() if p.is_dir()):
@@ -103,7 +104,7 @@ def main():
     run_cmd(["python", str(root / "scripts" / "delete_map_behaviors.py")])
     logging.info("")
 
-    logging.info("[DONE] All projects packed successfully.")
+    logging.info("All projects packed successfully.")
 
 
 if __name__ == "__main__":

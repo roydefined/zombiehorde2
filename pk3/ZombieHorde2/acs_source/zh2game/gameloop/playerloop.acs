@@ -21,8 +21,16 @@ strict namespace GameLoop
             Player::PanicTic();
             Player::ZombieTauntTic();
             Player::NameTic();
-            Player::ThruActorsTics();
+
+            if (SpaceUtil::SpaceUtilTic())
+                Sync::SyncPlayers();
+
             Game::TicActivatorZombieTeleport();
+
+            // Call hook for this tic.
+            _playerTicHookData.Id = id;
+            Hook::Call(Hook::HOOK_SERVERPLAYERTIC, _playerTicHookData);
+
             Delay(const: 1);
         }
         Logger::LogDebug(LOGSOURCE, "Player loop ended for id \cd" + str(id) + "\cj.");
@@ -35,7 +43,7 @@ strict namespace GameLoop
         while(true)
         {
             // Note, must be in the loop, or it will fail online.
-            if (!SetActivatorToPlayer(ConsolePlayerNumber()))
+            if (!BCSUtils::SetActivatorToConsolePlayer())
             {
                 Delay(const: 1);
                 continue;
@@ -53,9 +61,14 @@ strict namespace GameLoop
             Player::HeartbeatTicClient();
             Player::LastHeartbeatTicClient();
             Player::TranslucentAlliesTicClient();
+            DamageFeedback::DamageFeedbackTicClient();
             Game::ClientDeathCamTic();
             Game::TeamIndicatorTicClient();
             Footstep::FootstepTicClient();
+            Damage::FlushClient();
+
+            // Call hook for this tic.
+            Hook::Call(Hook::HOOK_CLIENTTIC, null);
 
             Delay(const: 1);
         }

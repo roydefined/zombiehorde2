@@ -16,39 +16,43 @@ strict namespace Debug
     script "zh2_action_syncall" net
     {
         // Can't be called when not offline, not in development and we are not admin.
-        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
+        if (!IsNetworkGame() && !Environment::IsDevelopment() && !Admin::GetIsAdmin())
         {
             Logger::LogActivator("You're not allowed to call sync scripts.");
             terminate;
         }
 
         Sync::SyncAll(false);
+        LibSync::SyncAll(false);
         Logger::LogActivator("Sync all triggered.");
     }
 
     script "zh2_action_callclientsyncall" net
     {
         // Can't be called when not offline, not in development and we are not admin.
-        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
+        if (!IsNetworkGame() && !Environment::IsDevelopment() && !Admin::GetIsAdmin())
         {
             Logger::LogActivator("You're not allowed to call sync scripts.");
             terminate;
         }
 
         Sync::CallClientSyncAll();
+        LibSync::CallClientSyncAll();
         Logger::LogActivator("Call client sync all triggered.");
     }
 
     script "zh2_action_clientsyncall" net clientside
     {
         // Can't be called when not offline, not in development and we are not admin.
-        if (!IsNetworkGame() && !IsDevelopment() && !Admin::GetIsAdmin())
+        if (!IsNetworkGame() && !Environment::IsDevelopment() && !Admin::GetIsAdmin())
         {
             Logger::LogActivator("You're not allowed to call sync scripts.");
             terminate;
         }
 
-        Sync::SynAllClientside();
+        Sync::SyncAllClientside();
+        LibSync::SyncAllClientside();
+
         Logger::LogActivator("Sync all clientside triggered.");
     }
 }

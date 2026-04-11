@@ -8,6 +8,7 @@ strict namespace ZH2Game
     {
         switch(type)
         {
+            case GAMEEVENT_PLAYERJOINS: SetResultValue((int)OnPlayerJoins(arg1)); terminate;
             case GAMEEVENT_PLAYERCONNECT: OnPlayerConnect(arg1); terminate;
             case GAMEEVENT_ACTOR_DAMAGED_PREMOD: SetResultValue(OnActorPreModifiedDamage(arg1, arg2)); terminate;
             case GAMEEVENT_ACTOR_DAMAGED: OnActorDamaged(arg1, arg2); terminate;
@@ -15,6 +16,24 @@ strict namespace ZH2Game
             case GAMEEVENT_ACTOR_SPAWNED: OnActorSpawned(arg1); terminate;
             case GAMEEVENT_CHAT: SetResultValue((int)OnChat(arg1)); terminate;
         }
+    }
+
+    internal bool OnPlayerJoins(int id)
+    {
+        // Forced player cap is enabled and the player must join within the cap.
+        if (!GetPlayerIsWithinPlayerCap(id))
+        {
+            Logger::LogTo(id, "This development build enforces a maximum player cap of " + str(DEV_PLAYERCAP_COUNT) + ". Please use a compatible, non-development version of Zombie Horde 2 to lift this limit.");
+            return false;
+        }
+
+        // The game must be in a state where players can join.
+        bool canJoin = GetPlayerCanJoin(id);
+        if (!canJoin)
+            Logger::LogTo(id, "You will join the next map.");
+
+        Logger::LogDebug(LOGSOURCE, "Can player \cd" + str(id) + "\cj join: \cd" + (canJoin ? "true" : "false") + "\cj.");
+        return canJoin;
     }
 
     internal void OnPlayerConnect(int id)
@@ -64,8 +83,8 @@ strict namespace ZH2Game
         {
             // We enable, then immediately disable this.
             // The system will safely unset the player back when able.
-            Player::SetPlayerThruActors(attackedId, true);
-            Player::SetPlayerThruActors(attackedId, false);
+            SpaceUtil::SetPlayerThruActors(attackedId, true);
+            SpaceUtil::SetPlayerThruActors(attackedId, false);
             return 0;
         }
 
@@ -130,10 +149,14 @@ strict namespace ZH2Game
     internal void OnActorDamaged(int damage, str damageType)
     {
         int targetId = PlayerNumber();
+        int targetTid = ActivatorTid();
         bool targetIsMonster = (ClassifyActor(0) & ACTOR_MONSTER) != 0;
 
         int targetHealth = BCSUtils::GetActorHealth(0);
         bool targetDied = targetHealth - damage <= 0;
+
+        // Extra variable that returns how much damage we actually dealth in case of death
+        int dealtDamage = targetDied ? targetHealth : damage;
 
         str targetName;
         if (targetId != -1)
@@ -269,6 +292,10 @@ strict namespace ZH2Game
             if (sourceId != -1 && targetId != -1 && weapon != (str)0)
                 Game::TriggerWeaponKickback(sourceId, targetId, damage, weapon);
         }
+
+        // Send damage feedback to the source if they're a player.
+        if (sourceId != -1)
+            Event::SendActorDamaged(sourceId, targetTid, dealtDamage, targetDied);
 
         // Below is only for deaths of other players.
         if (!targetDied || targetIsMonster)

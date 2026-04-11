@@ -1,0 +1,215 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace DamageFeedback
+{
+    // Constants for the damage number palette translations
+    #define DAMAGE_NUMBER_PALETTE_WHITE_INDEX 50000
+    #define DAMAGE_NUMBER_PALETTE_YELLOW_INDEX 50001
+    #define DAMAGE_NUMBER_PALETTE_RED_INDEX 50002
+
+    // Constant defines the spacing of numbers between eachother.
+    #define DAMAGE_NUMBER_DIGIT_SPACING_BASE 8.0
+
+    #define DAMAGE_NUMBER_VELOCITY_Z_MIN 0.3
+    #define DAMAGE_NUMBER_VELOCITY_Z_MAX 2.0
+
+    #define DAMAGE_NUMBER_GRAVITY_MIN 0.02
+    #define DAMAGE_NUMBER_GRAVITY_MAX 0.08
+
+    #define DAMAGE_NUMBER_SCALE_MIN 0.30
+    #define DAMAGE_NUMBER_SCALE_MAX 0.60
+
+    #define DAMAGE_NUMBER_LIFETIME_TICS_MIN 18
+    #define DAMAGE_NUMBER_LIFETIME_TICS_MAX 35 + 18
+
+    internal void InitializeDamageNumbersClient()
+    {
+        CreateTranslation(DAMAGE_NUMBER_PALETTE_WHITE_INDEX, 0:0=0:0, 87:87=4:4);
+        CreateTranslation(DAMAGE_NUMBER_PALETTE_YELLOW_INDEX, 0:0=0:0, 87:87=163:163);
+        CreateTranslation(DAMAGE_NUMBER_PALETTE_RED_INDEX, 0:0=0:0, 87:87=184:184);
+    }
+
+    internal void UpdateDamageNumbers()
+    {
+        for (int i = 0; i < MAX_DAMAGE_NUMBERS; ++i)
+        {
+            DamageFeedbackNumberInfoT module& numberInfo = GetDamageNumberInfo(i);
+            if (!numberInfo.Set)
+                continue;
+
+            int lived = Timer() - numberInfo.SpawnTic;
+            int lifetime = DAMAGE_NUMBER_LIFETIME_TICS_MIN
+                + int(fixed(DAMAGE_NUMBER_LIFETIME_TICS_MAX - DAMAGE_NUMBER_LIFETIME_TICS_MIN) * numberInfo.Ratio);
+
+            // Has the lifetime expired?
+            if (lived >= lifetime)
+            {
+                RemoveDigit(numberInfo);
+                continue;
+            }
+
+            fixed fadeRatio = fixed(lived) / fixed(lifetime);
+            fixed alpha = 1.0 - fadeRatio;
+
+            // Apply alpha to all digits
+            for (int i = 0; i < numberInfo.NumberCount; ++i)
+            {
+                int digitTid = numberInfo.Tid + 1 + i;
+                SetActorProperty(digitTid, APROP_ALPHA, alpha);
+            }
+
+            // Read the scale of the first digit and determine the spacing.
+            fixed scale = GetActorProperty(numberInfo.Tid + 1, APROP_SCALEX);
+            fixed spacing = DAMAGE_NUMBER_DIGIT_SPACING_BASE * scale;
+
+            // Position the numbers in a way so they will always be centered relative to the master actor.
+            fixed baseY = (fixed(numberInfo.NumberCount - 1) * spacing) / 2.0;
+
+            for (int j = 0; j < numberInfo.NumberCount; ++j)
+            {
+                int digitTid = numberInfo.Tid + 1 + j;
+
+                fixed offsetY = baseY - (fixed(j) * spacing);
+
+                SetActivator(digitTid);
+                Warp(numberInfo.Tid, 0.0, offsetY, 0.0, 0.0, WARPF_NOCHECKPOSITION | WARPF_STOP);
+            }
+        }
+
+        BCSUtils::SetActivatorToConsolePlayer();
+    }
+
+    internal void AddIndividualDamageNumberOnActor(int tid, int damage)
+    {
+        // Configured not to show, or we don't show individual numbers.
+        if (ZH2Game::GetClDamageFeedbackNumberShowType() != ZH2Game::DAMAGEFEEDBACK_NUMBER_SHOW_INDIVIDUAL)
+            return;
+
+        AddDamageNumberOnActor(tid, damage);
+    }
+
+    internal void AddTotalDamageNumberOnActor(int tid, int damage)
+    {
+        // Configured not to show, or we don't show total numbers.
+        if (ZH2Game::GetClDamageFeedbackNumberShowType() != ZH2Game::DAMAGEFEEDBACK_NUMBER_SHOW_TOTAL)
+            return;
+
+        AddDamageNumberOnActor(tid, damage);
+    }
+
+    internal void AddDamageNumberOnActor(int tid, int damage)
+    {
+        int numberCount = 1;
+        int tmp = damage;
+
+        // Let's assume we can't hit over 10 digits worth of damage for now.
+        while (tmp >= 10 && numberCount < 10)
+        {
+            tmp /= 10;
+            ++numberCount;
+        }
+
+        fixed x = GetActorX(tid) + Math::FRandom(-10.0, 10.0),
+              y = GetActorY(tid) + Math::FRandom(-10.0, 10.0),
+              z = GetActorZ(tid) + Math::FRandom( 56.0, 64.0);
+
+        int masterTid = UniqueTid();
+        SpawnForced("ZH2DamageNumberMaster", x, y, z, masterTid, 0);
+
+        // The translation to provide to the numbers.
+        int yellowColorThreshold = ZH2Game::GetDamageFeedbackYellowDamageNumberThreshold();
+        int redColorThreshold = ZH2Game::GetDamageFeedbackRedDamageNumberThreshold();
+        int translationIndex = damage >= redColorThreshold
+            ? DAMAGE_NUMBER_PALETTE_RED_INDEX
+            : damage >= yellowColorThreshold
+                ? DAMAGE_NUMBER_PALETTE_YELLOW_INDEX
+                : DAMAGE_NUMBER_PALETTE_WHITE_INDEX;
+
+        for (int i = 0; i < numberCount; ++i)
+        {
+            int digitTid = masterTid + 1 + i;
+
+            SpawnForced("ZH2DamageNumber", x, y, z, digitTid, 0);
+
+            int div = 1;
+            int power = (numberCount - 1) - i;
+            while (power-- > 0)
+                div *= 10;
+
+            int digitNumber = (damage / div) % 10;
+            SetThingSpecial(digitTid, 0, digitNumber);
+            Thing_SetTranslation(digitTid, translationIndex);
+        }
+
+        // The cap is the highest number we assume before the value is using the max value of the constants below.
+        int capValue = ZH2Game::GetDamageFeedbackRatioDamageCap();
+
+        int cappedDamage = damage;
+        if (cappedDamage > capValue)
+            cappedDamage = capValue;
+
+        fixed ratio = fixed(cappedDamage) / fixed(capValue);
+
+        fixed velZ = DAMAGE_NUMBER_VELOCITY_Z_MAX - (ratio * (DAMAGE_NUMBER_VELOCITY_Z_MAX - DAMAGE_NUMBER_VELOCITY_Z_MIN));
+        fixed grav = DAMAGE_NUMBER_GRAVITY_MAX - (ratio * (DAMAGE_NUMBER_GRAVITY_MAX - DAMAGE_NUMBER_GRAVITY_MIN));
+        fixed scale = DAMAGE_NUMBER_SCALE_MIN + (ratio * (DAMAGE_NUMBER_SCALE_MAX - DAMAGE_NUMBER_SCALE_MIN));
+
+        SetActorVelocity(masterTid, 0.0, 0.0, velZ, false, false);
+        SetActorProperty(masterTid, APROP_GRAVITY, grav);
+
+        // Apply scale to all digit actors
+        for (int i = 0; i < numberCount; ++i)
+        {
+            int digitTid = masterTid + 1 + i;
+
+            SetActorProperty(digitTid, APROP_SCALEX, scale);
+            SetActorProperty(digitTid, APROP_SCALEY, scale);
+        }
+
+        SetNextDamageNumberInfo(masterTid, numberCount, ratio);
+    }
+
+    internal void SetNextDamageNumberInfo(int tid, int numberCount, fixed ratio)
+    {
+        int index = GetDamageNumberIndex() + 1;
+        index %= MAX_DAMAGE_NUMBERS;
+        SetDamageNumberIndex(index);
+
+        DamageFeedbackNumberInfoT module& numberInfo = GetDamageNumberInfo(index);
+
+        // Remove an existing damage number from this slot to overwrite.
+        if (numberInfo.Set)
+            RemoveDigit(numberInfo);
+
+        numberInfo.Set = true;
+        numberInfo.SpawnTic = Timer();
+        numberInfo.Tid = tid;
+        numberInfo.NumberCount = numberCount;
+        numberInfo.Ratio = ratio;
+    }
+
+    internal void RemoveDigit(DamageFeedbackNumberInfoT module& numberInfo)
+    {
+        Thing_Remove(numberInfo.Tid);
+        for (int i = 0; i < numberInfo.NumberCount; ++i)
+            Thing_Remove(numberInfo.Tid + 1 + i);
+        numberInfo.Set = false;
+    }
+
+    internal void SetDamageNumberIndex(int index)
+    {
+        ZH2Game::GameContext.DamageFeedbackInfo.DamageNumberIndex = index;
+    }
+
+    internal int GetDamageNumberIndex()
+    {
+        return ZH2Game::GameContext.DamageFeedbackInfo.DamageNumberIndex;
+    }
+
+    internal DamageFeedbackNumberInfoT module& GetDamageNumberInfo(int index)
+    {
+        return ZH2Game::GameContext.DamageFeedbackInfo.DamageNumbers[index];
+    }
+}

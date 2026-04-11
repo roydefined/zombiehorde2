@@ -1,0 +1,252 @@
+Compatibility notice
+------------------------------------------------
+
+As of beta 4 Zombie Horde 2 will require Zandronum 3.3 in order to load and play.
+New features have been added exclusive to this version.
+The mod will NOT load anymore on Zandronum 3.2/3.2.1 because of this.
+
+New features
+------------------------------------------------
+
+ * * New modern maps! * *
+A collection of new modern maps have been added and can now be played! These include 5 remade maps, being ZE02M, ZE04M, ZE12M, ZE13M, and ZM13M.
+A completely new map has also been added. This map is Frozen Fear, on map slot ZM31M. This map is made by DrDoctor, and I have put significant work into finishing it.
+This map is massive and implements many features DrDoctor wished to include before he gave the map to me.
+One of the many new features this map contains is a temperature system. This map is incredibly cold, staying too long will freeze you to death!
+Alongside this the map also contains two events. I won't tell anything about these events, but what I do want to tell is that these events change how the map works.
+When an event starts, part of the map will be blocked or and traversing it will become significantly more difficult. Watch out when it happens and plan accordingly!
+
+Other than that the other remade maps have also been significantly improved of course.
+The remade version of ZE12, Menouthis, and ZE13, Castlevania, now have a special gameplay feature added to them.
+At random, these maps will change the flow of their map. Castlevania has a small change where it might have preplaced gems, making it easier for humans.
+Menouthis on the other hand introduces 3 different map flows which will be picked at random.
+These three flows each play the map significantly different than the other. Make sure you keep an eye out on what flow is being played!
+
+ZM06M is one more map that has been added to this new beta. However, I want to spend some more time on this map to make it as good as possible.
+There are still some parts that need ironing out, and to prevent a rushed finish I've decided to postpone this map a bit.
+
+ * * ZM09 now supported! * *
+Support has now been added for ZM09, which is Abandoned Mines by IBM5155! This map took a bit longer due to its size, but thanks to IBM himself helping me
+with the migration, it has now been included in full. This map has seen a few changes to its ACS to make things work a bit better, mostly to modernize things a bit.
+Other than this this map is exactly how you expect it and enjoyed it for all those years.
+
+ * * New damage feedback system * *
+A new system has been added which improves the feedback towards players when it comes to damaging other actors.
+The player can now configure multiple features on their end:
+- Configure drawing a hitmarker when damaging or killing an actor. This hitmarker will be white for damage, and red for kills.
+- Configure playing a sound when damaging or killing an actor. This sound will vary depending on if the damage kills the actor.
+- Configure showing dealth damage to actors on the HUD. This damage will accumulate over time, depending on the configured length, and stops showing after a while.
+- Configure showing damage numbers on the actor you damage. These damage numbers will change grow in size, gravity and color the bigger the damage.
+  Additionally, the player can configure showing the damage numbers as individual damage or total damage.
+  Individual damage means that each puff counts as a separate number. This changes how the shotgun shows damage, for example.
+
+ * * New weather system! * *
+Or well, it's not "new" new. The mod has had a weather system since its first version.
+However, this version was very basic, only spawning some rain or snow for some maps that already had them.
+
+The weather system has been extended from just being rain and snow. It now has three weather categories: emitter weather, randomized weather and ambient weather.
+Emitter weather covers the weather that spawns particles like rain and snow. This now also spawns dust and sparks (like when you're in a volcano).
+Randomized weather is an addition to emitter weather which would spawn randomized effects. This runs together with the eventbus. Currently thunder is a randomized weather type.
+Lastly, ambient weather is a sound system to combine with other weather. This covers rain sounds, and two types of wind; modern wind and legacy wind.
+The ambient weather is a pretty advanced system which works using spots that track the player's surroundings. That way it determines if sounds should play.
+
+MAP changes
+------------------------------------------------
+
+- [ZE02]: Replaced the ladders with pillars at the start of the map, as zh-fixes had. Climbing up is pretty much impossible for zombies in normal circumstances.
+          Hopefully this improves the balance of the map a bit.
+- [ZE05]: The lift has been made significantly faster.
+- [ZE07]: More teleport destinations were added to the final teleporter.
+- [ZE16]: Added some "Actor hits floor" actors to fill in the big hole next to the safezone.
+- [ZE20]: Fixed an issue with spawned crates after the first resist being the wrong texture.
+- [ZE22]: Fixed an issue where players can jump over the fence out of the safezone, but this didn't remove them as safe.
+- [ZE23]: Made the cross secret harder to get.
+- [ZE27]: Added some venting at the first outside area just before the fallen tree.
+          Players can go back up this way, which avoids humans camping at the top part of the map.
+- [ZE30]: Fixed two instances where players can get stuck behind boxes.
+- [ZM01]: Fixed a glide spot.
+		  Also nerfed a spot in the bottom left area with some metal grating.
+- [ZM02]: The other side of the river is no longer reachable.
+- [ZM03]: It is no longer possible to push barrels into the camera room.
+		  Additionally, the jump in the hangar has been made easier.
+- [ZM11]: This map has gotten some updates to its geometry to fix an issue where bad overlapping linedefs caused the map to break when edited.
+          This should not affect the map visually too much, though some very specific bushes might have been moved a bit.
+          Additionally, a glide spot was fixed on this map.
+          Lastly, the teleport spot that teleports a player in front of the Jack's gun room now has linedefs blocking barrels.
+- [ZM13]: The game will now announce if a player picks up the cross, similar to how Castlevania Part 1 does it.
+- [ZM14]: Fixed a glide spot in the top right part of the map.
+- [ZM17]: Added a z-tele spot for zombies.
+- [ZM18]: Fixed various inconsistent lighting on doors on this map. Inconsistent flickering and/or sizing has been fixed.
+          Some hedgehogs in the outside area to nerf it a bit for humans.
+          The generators found on this map have seen various fixes: The effect that plays when it's turned on now properly disappears,
+          some of the print messages have had their fonts fixed and the items spawned now use the proper actors.
+          Lastly, the "experience" that you can find north of the map has been readded. It will now match four dogs against Uboa in a fight.
+- [ZM19]: Removed the OP spot in the library room. The metal bars no longer exist.
+- [ZM25]: Fixed issues with bad lighting in night mode in certain sectors.
+          Fixed the text indication the Good, Bad and Ugly players being the wrong players.
+
+API changes
+------------------------------------------------
+
+ * * New hook system for mappers to hook logic into the mod * *
+A new system has been added which allows modders to hook custom logic into their maps. This system is very different from the eventbus, and much more advanced.
+You're adviced to check the wiki on how hooks work: https://zombiehorde.wiki.gg/wiki/Using_Hooks
+In short, hooks are a performance-oriented feature where you can hook onto code that runs every tic or more.
+Think drawing the hud, or logic running on a specific joined player. This allows mappers to more finely control logic that requires this knowledge.
+Where most things work fine with using the eventbus, this system will be used for those specific tic-based behaviors you might want.
+The hook system currently supports:
+- `HOOK_CLIENTDRAWHUD`, which runs clientside for each hud part drawn.
+- `HOOK_CLIENTTIC`, which runs clientside when the client tics.
+- `HOOK_SERVERTIC`, which runs serverside when the server tics.
+- `HOOK_SERVERPLAYERTIC`, which runs serverside when a player tics. This means it runs for each individual player.
+
+ * * New events * *
+New events have been added. These have been added to support damage feedback better.
+Events:
+- `actordamaged`, which will trigger when an actor received damage. This event works similary to the Zandronum event, but with the benefit of being send clientside.
+- `actordamagedclienttotal`, which runs clientside and sends information about the total damage done that tic by the client.
+
+ * * New Chat system API * *
+New functions have been added to allow sending chat messages through ACS.
+These are not real messages, but there should not be a distinct difference between them from other messages.
+The aim of having these is to allow for mappers to send messages from other actors, or to simulate chatting.
+The functions require an actor's TID to identify the source of the chat message.
+You will be able to find the possible functions on the wiki: https://zombiehorde.wiki.gg/wiki/Category:Chat_Namespace
+
+ * * Libbcs support * *
+Support has been added for libbcs, which is part of BCC: https://github.com/zeta-group/zt-bcc
+Support for libbcs is required for various features to be possible, including the hook system.
+It is now possible to use function references, dynamic allocation and much more now that it has been added.
+This will bring many new features in the future, both performance wise and gameplay wise.
+Mappers can also use this library now, if they dare to do so.
+
+ * * Packet system updates * *
+Updates have been made to the packet system. The library, which is made by TDRR, now uses the latest version: https://github.com/TDRRmk2/acs-libs/tree/main/paketlib
+This update improves the packet system functionality and fixes several bugs that were related to the old system that Zombie Horde 2 suffered from.
+Note the API has changed and all functions must now use a different signature.
+
+ * * Weather system API update * *
+As mentioned above the weather system is now a working system that mappers can use.
+This system has two contexts, serverside and clientside. You can work in both, where serverside runs for everybody and clientside only for the given client.
+This makes it a very easy-to-use system, and you can very easily define default weather for your maps.
+You can do this by either enablign weather by default using your map's lump, or by using the available functions.
+Additionally, you can also update properties such as the emitter weather's spawn count and delay to spawn more/less frequent weather.
+
+ * * New Environment namespace * *
+Two new functions are now available from the `Environment` namespace:
+- bool IsDevelopment();
+- bool IsProduction();
+These functions can be useful for mappers who wish to implement some debugging to their map.
+When using these functions with devbuilds, you can implement custom logic that will be removed once an official build is used.
+As you can expect the devbuilds will enable development behavior, whereas this is removed in official builds.
+
+ * * New SpaceUtil namespace * *
+A collection of functions have been externed in the SpaceUtil namespace and can now be used.
+These functions handle logic towards implementing anti-telefragging, and you can now use the following functions to track their state:
+- PlayerThruActorsStateT GetThruActorsState();
+- PlayerThruActorsStateT GetPlayerThruActorsState(int id);
+Note these were externed for the mod to pass behavior between libraries.
+They're not very useful for mappers.
+Also note some other functions also got externed but these are for internal use.
+
+ * * Round namespace function change * *
+The function `GetGameIsPregameOrPlaying` was changed to `GetGameIsPregame` and now only returns if the pregame is being played.
+
+ * * New RoundTimer namespace functions * *
+New functions have been added from the `RoundTimer` namespace.
+These all help mappers to determine the time played/left in a specific round type.
+- `int GetPlayingTicsElapsed()` - Return the elapsed playing tics.
+- `int GetPlayingTicsLeft()` - Return the remaining playing tics.
+- `int GetEndingTicsElapsed()` - Return the elapsed ending tics.
+- `int GetEndingTicsLeft()` - Return the remaining ending tics.
+
+ * * New TeleportUtil namespace functions * *
+New functions have been added from the `TeleportUtil` namespace.
+These are special teleport functions with build in anti-telefrag support.
+Consider using these over traditional teleport functions.
+The functions take an area, which is used to test space to teleport to.
+This means the actual spot coordinates are likely not used when there's no space.
+Additionally, the "Between" versions take a min and max TID (inclusive) to test more area on different spots.
+Should there be no space, then the player teleports to the tid (or min TID) whilst unsolid.
+- `void TeleportAreaBetween(int targetTidMin, int targetTidMax, int area = 90, int flags = 0)`
+- `void PlayerTeleportAreaBetween(int sourceId, int targetTidMin, int targetTidMax, int area = 90, int flags = 0)`
+- `void TeleportArea(int targetTid, int area = 90, int flags = 0)`
+- `void PlayerTeleportArea(int sourceId, int targetTid, int area = 90, int flags = 0)`
+
+ * * New Hud namespace function * *
+A new function was added which allows mappers to make proper use of the new Hook system when hooking onto HUD draws.
+The function allows you to set a relative point in a space to draw at.
+This function will support offsetting and scaling that might be done on the HUD.
+- `void SetRelativePoint(fixed x = 0.0, fixed y = 0.0)`
+
+ * * New Util namespace functions * *
+Two new functions have been added which allows you to more easily check if a player is moving.
+This removes the need to manually check button input.
+Additionally, the functions ensure that players send full button info, which is required (though currently this is always forced by the mod)
+- `bool GetIsMoving()`
+- `bool GetPlayerIsMoving (int id)`
+
+Resources changes
+------------------------------------------------
+
+ * * New COMTEX texture pack * *
+A new texturepack was added, called the COMTEX texture pack.
+This texture pack, created by Foxhead/Thfpjct, contains different categories implementing a very large amount of textures.
+I've decided to add this texture pack a while ago because I think this mod would benefit a lot from having a collection of handpicked textures.
+The mod has always relied a lot on what maps themselves bring to the table, and this is always very specific to what the map needs.
+The great thing about this texture pack is that it contains a very large amount of texture variations which is great for the map variation Zombie Horde 2 has.
+I would like to improve some more on the textures this way, possible also extending some specific areas that miss textures.
+By doing this I hope to bring more appeal to mapping for ZH2 and to introduce a new personality to more modern maps, differentiating it from legacy maps.
+Additionally, textures in this texture pack have the additional feature of supporting brightmaps!
+Hopefully more brightmaps can be added to Zombie Horde 2 in the future, but it's a nice start to have them here.
+
+ * * New actors * *
+A big collection of new actors now exists and can be used with this release. These actors have all been added for the new modern maps.
+These actors aim to provide better versions of existing actors, and there are also new actors or variations of actors that can be used.
+For the sake of relevancy and size the actors have not been explained here. However, it's very easy to find out what new actors have been added.
+The mod's actor list will be displayed as actual actors and not "legacy" or "replaced" actors like a lot of actors currently do.
+This way you can view the many new light sources, obstacles or otherwise decoration that have now been added.
+The mod will still differentiate many actors as "old" or "replaced" for the time being while a migration is happening.
+Eventually the intention is for actors to come with a Legacy, Doom or Modern variant to choose between. There's no wrong choice, it depends on your map.
+Later on this will be more clear but because we're in the middle of it this might seem somewhat confusing at first.
+
+ * * New sounds * *
+Alongside the new actors the new maps also implement numerous new sounds. Same as with the actors it makes no sense to list them all here.
+However, do note this also includes a collection of new ambient sounds that can be placed on the map to improve the ambience of those maps.
+
+ * * Vegetation textures * *
+One specific thing I'd like to mention is how with this beta the vegetation that can be placed on a map now also exists as a placeable texture.
+This allows for improved performance on maps that rely on a higher number of vegetation to be placed on the map.
+This is noticeable on the new modern maps like ZE04M, ZE13M and ZM13M, which all implement a large number of vegetation on the map.
+These benefit greatly from this feature, and it is adviced to place vegetation as textures if you don't have to rely on billboarding from actors.
+
+Other mod changes
+------------------------------------------------
+
+- The EventBus will now use `CheckScript` function to ensure scripts used for callbacks exist.
+- The reward system will now use `CheckScript` function to ensure restrict/give scripts exist.
+- Added support for the new `BUSY` keyword in heavy scripts. This will cause the game to start much quicker as extra delays are now removed.
+- Additionally with the `BUSY` keyword being supported, this allows the mod to have an improved startup time. It now runs all logic in a single tic instead of being delayed.
+- The wait preprocessor functions have been removed. These are no longer required now that the mod starts up in a single tic.
+- The mod now uses a new feature to lock the mod into the cooperative gamemode. You can no longer switch gamemodes, and as such the mod no longer checks for this either.
+- Improved player join flow with `GAMEEVENT_PLAYERJOINS`. Join feedback is now much better when you're not allowed to join during the round.
+- Hopefully fixed several bugs related to the packet system having a bug. These bugs did not show up any more and were expected to be caused by corrupted packet data.
+  - Weapon tracers sometimes didn't spawn at the player, or shot into a completely different direction.
+  - Same as above, but for weapon bubbles underwater which used a similar system.
+  - The damage feedback total damage often didn't show the correct number (which was added this version too, but it was affected briefly).
+  - The blood system sometimes didn't spawn blood at the zombie that got hit, or it spawned at a completely different location.
+- The gold coin actor of ZE12 now grants a generic coin rather than itself, being `ZH2EgyptCash`, constant value `CURRENCY_CASH_NAME`. The coins on ZE12M also give this generic coin, meaning both will count towards the same currency.
+- The collectable gold coins now have its max cap raised from 50 to 100.
+- Added a bandaid fix to the tokenizer nor properly parsing 'z' characters in lumps. This originates from an issue with ACSUtils, which will be fixed later.
+- Added `ZH2LegacyCaveKey` string to the mod under constant `KEY_CAVEKEY`.
+- Suit of armor sprites have been changed from SUITA0 to ARMOA0.
+- Fixed an issue with fencing being invisible on ZM06. The actual fence texture had an issue.
+- Fixed flares not properly turning off its sound when it depletes.
+- The music system now separates default music between server and client. This also fixes a bug where setting default music clientside didn't work properly.
+- Fixed an issue where dying allies would retain their translucency on death, without them ever turning opaque again.
+- Removed a duplicate `SUPPORT2` definition which caused the texture to break.
+- Updated the editor project with two new actors to ignore.
+- Fixed the heartbeat effect players have when low on health not working before the game started.
+- Fix leaky strings in the admin menu.
+- Improved how the different menudef tabs looks like. Many labels have also been changed and some that were too wide were made smaller.
+- CVar `cl_zh2_enableantitelefragsystem` has been renamed to `sv_zh2_enableantitelefragsystem` and now works as a server cvar.

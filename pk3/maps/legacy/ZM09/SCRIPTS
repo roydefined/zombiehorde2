@@ -1,0 +1,690 @@
+/* ABANDONED MINES
+
+    CREATED BY:IBM5155
+
+========================
+copyrights:you may use any script here on your mod IF you credit me on the start of the script.
+
+models acepted:
+1)
+script x(){//SCRIPT CREATED BY IBM5155
+...
+}
+
+2)
+SCRIPT x(){
+//SCRIPT CREATED BY IBM5155
+...
+}
+
+3)
+script x(){//TEXT
+//SCRIPT CREATED BY IBM5155
+}
+
+4)
+script x OPEN CLIENTSIDE{
+//SCRIPT CREATED BY IBM5155
+}
+/*
+
+
+
+/* ABANDONED MINES:
+ Version:1.x
+
+ =====================SCRIPT LIST=======================
+ script number  type  description
+ 1 - OPEN - MAIN SCRIPT
+ 2 - INT X  - Red door Switches
+ 3 - OPEN CLIENTSIDE - spark enable/disable
+ 4 - INT WHO, INT CODE -  White Face/Ravishing AI core
+ 5 - VOID - ?
+ 6 - VOID - Lava Script
+ 7 - VOID - 50% Right code door open on cave
+ 8 - VOID - Ravishing Script : Attack <!> TO BE DELETED <!>
+ 9 - INT X - Ravishing Script : Check monster require change status <!> TO BE DELETED <!>
+ 10 - VOID - Ravishing Script: Dormaint script <!> TO BE DELETED <!>
+ 11 - VOID - Ravishing Script: main code  <!> TO BE DELETED <!>
+ 12 - VOID - Ravishing Script: Sound Effects <!> TO BE DELETED <!>
+ 13 - VOID - Ravishing Script: Summon ravishing and other resources
+ 14 - VOID - Generic Locked Door Mensage/Sound
+ 15 - VOID - Lava Script: Mensage/sound Effect
+ 16 - INT ACTION - Lava Script: Mensage/sound Effect
+ 17 - VOID - Unlock Teleport Door
+ 18 - VOID - Tells to soulsphere what's the dammage value to be made
+ 19 - VOID - Generator Script
+ 20 - INT DOOR - Super Shotgun Little Door open/Winery Door Open
+ 21 - INT WHITE FACE MUSIC
+ 22 - OPEN - End Selector can spawn one or two soulspheres
+ 23 - int type, int arg1, int arg2 - Update the clientside from who called the debug command
+ 24 - OPEN - INTRO
+ 25 - OPEN - Flicker blue computer room
+ 26 - OPEN - Update server side functions to clientside
+ 27 - OPEN - Switch Code display core
+ 28
+ 29 - INT INPUT - Nedm Script: Switch counter to allow nedm
+ 30 - VOID - NEDM code spam
+ 31 - VOID - Nedm Code:Cat see
+ 32 - int x - ? change camera to whiteface <!> TO BE REMOVED <!>
+ 33 - int light, int var - Nedm colored lights
+ 34 - int action - LIGHT effected by ravishing, lava and generator on
+ 35 - VOID - White Face Script <!> TO BE REMOVED <!>
+ 36 - VOID - Developer Script unlock
+ 37 - VOID - Developer script loop
+ 38 - int x - Miners dead description
+ 39 - VOID - Remove water on blue key door
+ 40 - int qnt - Kid Laught in some areas
+ 41 - int x - White Face scirpt: Change the map + Ravishing vision
+ 42 - int x - Software Render lights
+ 43 - int spot - White Face third floor/mine trick
+ 44 - VOID - White Face attack script
+ 45 - VOID - Third floor table room random events
+ 46 - VOID White Face Speed Set Script <!> NEW <!>
+ 47 - VOID - Rainfall script
+ 48 - VOID - Rainfall menu
+ 49 - OPEN - Weather selector
+ 50 - LIGHTNING - RAIN SCRIPT
+ 51 - VOID - Piano script
+ 52 - VOID - Generic Locked Door Mensage/Sound
+ 53 - OPEN - Abandoned Igor's Castle"
+ 54 - OPEN - Abandoned Igor's Castle"
+ 55 - VOID - TUTORIAL NEDM
+ 56 - VOID - TUTORIAL RED KEY CARD
+ 57 - VOID - TUTORIAL WINERY KEY
+ 58 - VOID - TUTORIAL: DISABLE NEDM
+ 59 - VOID - TUTORIAL HOW TO UP FRAMERATES DISABLING REFLECTION...
+ 60 - VOID - TUTORIAL HOW TO UP FRAMERATES LOWERING RAIN...
+ 61 - VOID - TUTORIAL HOW TO MAKE THE RIGHT CODE
+ 62 - VOID - TUTORIAL
+ 63 - DEATH - ZM09 STATISTICS
+ 64 - int who - REGISTER IS SOMEONE DISCONNECTED
+ 65 - VOID - Update clientside statistics
+ 66 - int action,int data1,int data2 - update clientside statistics
+ 67 - VOID - show statistics
+ 68 - int type_human - only actived when 100% right code, or 0% right code
+ 69 - VOID NET - show some statistics
+ 70 - VOID - Secret, im not going to tell it
+ 71 - int script number - debug, stop a script
+ 72 - another secret
+*/
+
+
+/*
+-Fixed: Piano sounds were not being played when it rains
+-Fixed: the zm09 menu are better acesseed.
+-Fixed: white face tracker script, for some reason he got stucked :s
+-Fixed: Menu '>' symbol is overwritten by '-' when there're more than 1 player.
+-Failed scale the menu for fit better on low resolutions/high
+-Fixed: rainfall always on the map
+-Fixed: reflective effect isn´t disable when the map starts and your setting is reflective off
+-Modified:Ravishing flicker lights are more intensive.
+-Modified:Dynamic lights inside the house.
+*/
+
+#pragma raw include on
+#pragma raw define on
+
+#include "zcommon.acs"
+#import "acs_source/bcsutils.acs"
+
+#include "acs_source/zh2lib.h.acs"
+#include "acs_source/zh2game.h.acs"
+
+
+#define PLAYER_TID 600
+#define SPAWN_LAVA 0
+#define OPENGL_PLAYER 1
+#define SOFTWARE_PLAYER 0
+#define active true
+#define ASPECT_4_3 (4.0 / 3)
+#define ASPECT_5_4 1.25
+#define ASPECT_16_9 (16.0 / 9)
+#define ASPECT_16_10 1.6
+
+int user_ghoulinvisiblecount=0;
+int zm09_dev2=0;
+int debug_zm09;
+
+int used_tids[11]={49,50,51,52,59,62,63,66,114,116,122};
+bool debug_locker=0;
+
+
+#include "ACS\music_Player.acs"
+#include "ACS\NEDM.acs"
+
+#include "ACS\rainfall.acs"
+#include "ACS\monsters_ai.acs"
+#include "ACS\soul_sphere.acs"
+
+#include "ACS\distance.acs"
+#include "ACS\zm09_generator.acs"
+#include "ACS\zm09_code.acs"
+#include "ACS\zm09_functions.acs"
+#include "ACS\zm09_settings.acs"
+#include "ACS\zm09_color.acs"
+#include "ACS\zm09_tutorial.acs"
+#include "ACS\Ravishing.acs"
+#include "ACS\white_face.acs"
+#include "ACS\zm09_database.acs"
+#include "ACS\ZM09_developer.acs"
+
+
+ script 1 open{//MAIN SCRIPT
+    int getout=FALSE;
+    int i=0;
+    i=GetCvar("x_zh_zm09_cn");
+    SetCvar("x_zh_zm09_cn",i+1);
+    i=0;
+    nedm_code=random(0,3);
+    while(i<=10){
+        thing_remove(used_tids[i]);i++;
+    }Thing_Deactivate(44);
+    thing_deactivate(144);
+    secret_select();
+    secret_select_help();
+    red_keyspawn();
+    winery_key_spawn();
+    acs_execute(42,0,0,0,0);
+    while(getout==FALSE){
+        if(Game::HumanCount()==1 && Game::ZombieCount()>=1){
+                getout=TRUE;
+                Music_Played=LAST_HUMAN_MUSIC;
+                play_zm09_music();
+        }delay(35);
+    }while(Round::GetGameIsPregame() || Round::GetGameIsPlaying())delay(35);
+    if(Game::ZombieCount()==0){
+        getout=GetCvar("x_zh_zm09_hw");
+        SetCvar("x_zh_zm09_hw",getout+1);
+    }
+    else{
+        getout=GetCvar("x_zh_zm09_ww");
+        SetCvar("x_zh_zm09_ww",getout+1);
+    }
+}
+
+
+
+script 3 OPEN clientside
+{//spark enable/disable
+	if(generator1==true || generator2==true)
+ {
+    Thing_Activate (154);
+    if(generator2==false)
+        Thing_Activate (155);
+ }
+	delay(70);
+	restart;
+}
+
+
+SCRIPT 5 (void){//???
+    spawn("ShortGreenColumn",-2677.0, -3169.0, 211.0,0,0);
+}
+
+
+int teste=0;
+
+Script 14 (void) clientside{//Generic Locked Door Mensage/Sound
+    if(ConsolePlayerNumber() != PlayerNumber()) Terminate;
+    Print(s:"That door is locked.");
+    ActivatorSound("sound/locked1", 127);
+    delay(15);
+}
+
+script 16 (void){//Teleport script, avoid telefrag
+    if(ThingCountSector(T_NONE,0,28)==2) teleport(38,0,0);
+}
+
+script 17 (void){//Unlock Teleport Door
+    if(tele_active==1){
+        tele_active++;
+        SetFont("BIGFONT");
+        HudMessageBold(s:"a door is now unlocked"; HUDMSG_FADEOUT, 998, CR_YELLOW, 0.5, 0.5, 5.5, 0.5);
+        AmbientSound("world/reveal1",127);
+        door_open(64,25);
+    }
+}
+
+script 20 (int door){//Super Shotgun Little Door open
+    activatorsound("EFF11",255);
+    delay(35);
+    if(door==1)
+        door_open(146,30);
+    else{
+        door_open(69,13);
+        spawnspot("ZH2WeaponDoubleShotgunSpawn",68,0,0);
+    }
+}
+
+script 24 open clientside{//INTRO
+    zm09_update_settings();
+    printbold(s:"============================================================\n|ZM09 - ABANDONED MINES - CREATED BY IBM5155\n============================================================\n					/!\ OpenGL required /!\ \n					\!/ Playable on soft\!/ \nZM09 V1.65");
+    printbold(s:"SPECIAL THANKS TO:\n-ESTAR\n-Ijon Tichy\n-Slave2theLight\n-Torn City author\n-Ivan Zanotti\n-Dusk\n-IVAN\n-HexaDoken\n-Cruduxy\n-Popsoap\n-Mr.Fiat\n-FUSED\n-'Monolith' for the piano sound\n-'Mojang' for the rain sound\n-'Imscared - A Pixelated Nightmare' for the white face idea");
+    printbold(s:"");
+    printbold(s:"FAST HELP\n-The red key card spawn randomly everywhere, there'll be no specific place for spawn\n-on the computer room on the red door sector, there'll be sometimes a display with number, this number have a secret code, if you discover the secret of the code you'll know the right code to put on the switches\n-One of the third floor rooms are haunted, so look out when entering there\n-To activate NEDM you'll need to make the right code outside, and then press 2 switches inside cade X times\n-Ravishing and White-Face don't kill zombies, so have fun being a zombie\n-Soulphere is as dangerous for humans as for zombies\n-if you're laging, down the map settings writing puke 48 here");
+    printbold(s:"");
+    printbold(s:"Additional map info are available by typing 'pukename zm09help' on console");
+    printbold(s:"");
+
+
+    BCSUtils::HudSetFont("SmallFont");
+    BCSUtils::HudSetVirtualSize(640.0, 480.0);
+    BCSUtils::HudSetTextColor(CR_WHITE);
+    BCSUtils::HudSetAppearTime(1.5);
+    BCSUtils::HudSetStayTime(15.0);
+    BCSUtils::HudSetDisappearTime(1.5);
+    BCSUtils::HudSetScale(0.8);
+    BCSUtils::HudSetPoint(320.0, 400.0);
+    BCSUtils::HudDrawText(0, "\cj'pukename zm09help'\cd on console for more info/settings.");
+    delay(200);
+
+    BCSUtils::HudSetFont("ConsoleFont");
+    BCSUtils::HudSetVirtualSize(640.0, 480.0);
+    BCSUtils::HudSetTextColor(CR_RED);
+    BCSUtils::HudSetAppearTime(2.0);
+    BCSUtils::HudSetStayTime(9.0);
+    BCSUtils::HudSetDisappearTime(1.5);
+    BCSUtils::HudSetPoint(600.0, 135.0);
+    BCSUtils::HudDrawText(0, "ABANDONED MINES");
+
+    delay(70);
+
+    BCSUtils::HudSetFont("ConsoleFont");
+    BCSUtils::HudSetVirtualSize(640.0, 480.0);
+    BCSUtils::HudSetTextColor(CR_WHITE);
+    BCSUtils::HudSetAppearTime(2.5);
+    BCSUtils::HudSetStayTime(7.0);
+    BCSUtils::HudSetDisappearTime(1.5);
+    BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);        
+    BCSUtils::HudSetPoint(650.0, 145.0);
+    BCSUtils::HudDrawText(0, "AUTHOR:IBM5155");
+
+
+    // REPLACEMENT TEST
+}
+
+
+
+
+script 32 (int x) NET clientside
+{
+    if(thingcount(t_none,playernumber()+600)==0)
+        changecamera(100,playernumber(),0);
+}
+
+script 38 (int x) clientside{//Miners dead description
+    if(x==1)    print(s:"Ravick\nwa born in 08/04/1980\nDead in 06/03/2007\nUnknow death, his body was founded on the mine, with a mensage to not going back or others would die, the suspects are it was James spirit that killed he, with a hellish pet");
+    else if(x==2)    print(s:"735 miners died with unknow reasons on the mines and on the houses near mine, all the dead bodies were buried inside a little wood room, and it was sealed with land, noone could enter on it\nFor dangerous reasons, all the mines areas and houses were evacuated and abandoned to avoid more deaths");
+    else    print(s:"James\nWas born in 06/05/1975\nDead in 06/03/1983\nSuicide\nchildren with mental problens");
+}
+
+script 39 (void){//Remove water on blue key door
+    Ceiling_lowerbyvalue(104,30,1248);
+}
+
+script 42 (int x) clientside{//Software Render lights
+    if(getplayerrender()==SOFTWARE_PLAYER){
+        if(x==false){
+            Light_ChangeToValue(125,255);
+            Light_ChangeToValue(126,166);
+            Light_ChangeToValue(103,166);
+            ChangeFloor(3,"FLAT20");
+        }
+        else if(x==true) Light_ChangeToValue(47,255);
+    }
+}
+
+script 45 (void){//Third floor table room random events
+    int x=random(0,100);
+    switch(x){
+    case 0:
+    case 15:
+    case 20:
+    case 25:
+    case 30:
+        acs_execute(43,0,1,0,0);
+        break;
+    case 35:
+    case 40:
+            giveinventory("IMSCAREDACTIVE",1);
+            break;
+    case 45:
+    case 46:
+    case 47:
+    case 48:
+        ambientsound("ELAUGHT",255);
+        break;
+    }
+}
+
+int piano_touched=0;
+
+script 51 (void){//Piano script
+    int i=random(0,10);
+    if(piano_touched>=random(20,50)){
+        thingsound(150,"riff3",127);
+        print(s:"\cfahhhhh, this sound is so annoying, I will make you stop ");
+        delay(45);
+        thingsound(150,"ELAUGHT",127);
+        delay(100);
+        giveinventory("IMSCAREDACTIVE",1);
+        piano_touched=0;
+    }else{
+
+        if(i<=5) thingsound(150,"riff1",127);
+        else thingsound(150,"riff2",127);
+        piano_touched++;
+    }if(piano_touched==24) door_open(146,30);
+    delay(90);
+}
+
+Script 52 (void) clientside{//Generic Locked Door Mensage/Sound
+    if(ConsolePlayerNumber() != PlayerNumber()) Terminate;
+    Print(s:"Noone can enter on Igor's abandoned castle");
+    ActivatorSound("sound/locked1", 127);
+    delay(15);
+}
+
+script 53 open clientside{//Abandoned Igor's Castle"
+    while(true){
+        delay(200);
+        thingsound(160,"LORDIGOR",255);
+        delay(1);
+    }
+}
+script 54 open clientside{//Abandoned Igor's Castle"
+    int i=0;
+    while(true){
+        i=random(0,255);
+        if(i<60){
+            i=random(1,3);
+            switch(i){
+            case 1:thingsound(160,"TCLTFIR1",255);break;
+            case 2:thingsound(160,"TCLTFIR2",255);break;
+            case 3:thingsound(160,"TCLTFIR3",255);break;
+            }
+        }
+        delay(random(200,300));
+    }
+}
+
+script 72 open clientside{
+    int pos_x=0;
+    int pos_y=0;
+    int x=0;
+    int pl_number=0;
+    delay(random(350,3500));
+    while(true){
+        x=random(0,10000);
+        pl_number = random(0,64);
+        if(x>=100 && x<=800 && pl_number == ConsolePlayerNumber()){
+            pos_x=0;
+            pos_y=0;
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI01",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI02",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI03",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI04",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI05",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI06",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI07",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI08",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI09",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI10",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI11",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI12",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI13",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI14",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI15",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI16",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI17",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI18",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI19",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI20",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI21",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI22",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI23",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI24",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI25",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI26",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI27",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI28",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI29",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI30",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI31",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI32",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI33",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI34",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI35",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI36",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI37",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI38",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI39",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI40",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI41",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI42",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI43",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI44",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI45",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI46",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI47",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI48",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI49",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI50",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI51",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI52",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI53",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+            delay(1);
+            ibm_desenha_tela_cheia(1,"IBMSPI54",HUDMSG_PLAIN,300,CR_WHITE,0,0);
+        }
+        else
+            delay(100);
+    }
+}
+
+function void winery_key_spawn(void){
+    int test=random(1,7);
+    if(test<=4){
+        switch(test){
+            case 1:
+                TeleportOther(70,71,0);
+                break;
+            case 2:
+                TeleportOther(70,72,0);
+                break;
+            case 3:
+                TeleportOther(70,73,0);
+                break;
+            case 4:
+                TeleportOther(70,74,0);
+                break;
+        }
+    }
+}
+
+function int secret_in(int position){
+    return secret[position];
+}
+
+function int ibm_desenha_tela_cheia(int resolucao,int imagem,int tipo,  int id,int tempo_espera, int tempo_aparecer, int tempo_desaparecer)
+{
+    //-----------640x480
+    if (resolucao==1 && getaspectratio()==ASPECT_4_3)
+    {
+        sethudsize(640,480,0);
+        SetFont(imagem);
+        Hudmessage(s:"a"; tipo, id, CR_WHITE, 320.0, 240.0, tempo_espera, tempo_aparecer, tempo_desaparecer);
+        return 0;
+    }
+    else if(resolucao==1 && getaspectratio()==ASPECT_16_9)
+    {
+        sethudsize(480,480,0);
+        SetFont(imagem);
+        Hudmessage(s:"a"; tipo, id, CR_WHITE, 240.0, 240.0, tempo_espera, tempo_aparecer, tempo_desaparecer);
+        return 0;
+    }
+    else if(resolucao==1 && getaspectratio()==ASPECT_16_10)
+    {
+        sethudsize(534,480,0);
+        SetFont(imagem);
+        Hudmessage(s:"a"; tipo, id, CR_WHITE, 267.0, 240.0, tempo_espera,tempo_aparecer, tempo_desaparecer);
+        return 0;
+    }
+    //-------------800x600
+    if (resolucao==2 && getaspectratio()==ASPECT_4_3)
+    {
+        sethudsize(800,600,0);
+        SetFont(imagem);
+        Hudmessage(s:"a"; tipo, id, CR_WHITE, 400.0, 300.0, tempo_espera, tempo_aparecer, tempo_desaparecer);
+        return 0;
+    }
+    else if(resolucao==2 && getaspectratio()==ASPECT_16_9)
+    {
+        sethudsize(600,600,0);
+        SetFont(imagem);
+        Hudmessage(s:"a"; tipo, id, CR_WHITE, 300.0, 300.0, tempo_espera, tempo_aparecer, tempo_desaparecer);
+        return 0;
+    }
+    else if(resolucao==2 && getaspectratio()==ASPECT_16_10)
+    {
+        sethudsize(667,600,0);
+        Hudmessage(s:"a"; tipo, id, CR_WHITE, 334.0, 300.0, tempo_espera, tempo_aparecer, tempo_desaparecer);
+        SetFont(imagem);
+        return 0;
+    }
+    //-------------1280x780
+    else if(resolucao==3 && getaspectratio()==ASPECT_4_3)
+    {
+        sethudsize(1280,780,0);
+        SetFont(imagem);
+        Hudmessage(s:"a"; tipo, id, CR_WHITE, 640.0, 390.0, tempo_espera, tempo_aparecer, tempo_desaparecer);
+        return 0;
+    }
+    else if(resolucao==3 && getaspectratio()==ASPECT_16_9)
+    {
+        sethudsize(960,780,0);
+        SetFont(imagem);
+        Hudmessage(s:"a"; tipo, id, CR_WHITE, 480.0, 390.0, tempo_espera, tempo_aparecer, tempo_desaparecer);
+        return 0;
+    }
+    else if(resolucao==3 && getaspectratio()==ASPECT_16_10)
+    {
+        sethudsize(1068,780,0);
+        SetFont(imagem);
+        Hudmessage(s:"a"; tipo, 1, CR_WHITE, 534.0, 390.0, tempo_espera, tempo_aparecer, tempo_desaparecer);
+        return 0;
+    }
+    else if(resolucao<1 || resolucao>3)
+    {
+        print(s:"image size not suported");
+        return -1;
+    }
+    else if(getaspectratio()!=ASPECT_16_10 || getaspectratio()!=ASPECT_16_9 || getaspectratio()!=ASPECT_4_3)
+    {
+        print(s:"aspect ratio not suported");
+        return -2;
+    }
+    return -3;
+
+}
+
+function int getaspectratio(void)
+{
+	int width = getcvar("vid_defwidth");
+	int height = getcvar("vid_defheight");
+	int nowidescreen = getcvar("vid_nowidescreen");
+	int tft = getcvar("vid_tft");
+	int aspect = getcvar("vid_aspect");
+	switch(aspect)
+	{
+		case 1:	return ASPECT_16_9;
+		case 2:	return ASPECT_16_10;
+		case 3:	return ASPECT_4_3;
+		case 4:	return ASPECT_5_4;
+	}
+	if(nowidescreen)
+	{
+		if(!tft)
+			return ASPECT_4_3;
+		if(fixedmul(height<<16, fixeddiv(5.0, 4.0)) == width<<16)
+			return ASPECT_5_4;
+		else
+			return ASPECT_4_3;
+	}
+	if(abs((abs(fixedmul(height<<16, fixeddiv(16.0, 9.0)))>>16) - width) < 10)
+	{
+		return ASPECT_16_9;
+	}
+	if(abs((abs(fixedmul(height<<16, fixeddiv(16.0, 10.0)))>>16) - width) < 60)
+	{
+		if((width == 320 && height == 200) || (width == 640 && height == 400))
+			return ASPECT_4_3;
+		return ASPECT_16_10;
+	}
+	if(fixedmul(height<<16, fixeddiv(5.0, 4.0))>>16 == width && tft)
+	{
+		return ASPECT_5_4;
+	}
+	return ASPECT_4_3;
+}
+
+function int abs (int x)
+{
+    if (x < 0)
+        return -x;
+
+    return x;
+}
