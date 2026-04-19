@@ -582,7 +582,13 @@ Script "Resist3" (void)
 
 	Delay(35*3);
 	Delay(Resist::StartResistByIndex(2));
-	Generic_Ceiling(31, 16, 128, 5, 16);
+	//Generic_Ceiling(31, 16, 128, 5, 16);
+
+	// 2 is Hexen crushing mode.
+	Ceiling_LowerAndCrush(31, 16, 500, 2);
+	Tagwait(31);
+	Ceiling_LowerByValueTimes8(31, 16, 1);
+
 	Delay(35*3);
 	SetFont("BIGFONT");
 	HudMessageBold(s:"Death is here"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 40.0, 5.0, 3.0);
@@ -689,7 +695,18 @@ Script "WardLoop"
 script "LockDiningRoom"
 {
 	Logger::LogBold(StrParam(s:BCSUtils::PlayerName(PlayerNumber()), s:"\c- has locked the dining room."));
-	Generic_Ceiling(35, 64, 128, 5, 16);
+
+	//Generic_Ceiling(35, 64, 128, 5, 16);
+	ACS_NamedExecute("LockDiningRoom_OpenSideDoor", 0);
+
+	Ceiling_LowerAndCrush(35, 64, 5, 2);
+	Tagwait(35);
+	Ceiling_LowerByValueTimes8(35, 64, 1);
+}
+
+// Separate script so we don't wait for the door to close.
+script "LockDiningRoom_OpenSideDoor"
+{
 	delay(35*10);
 	door_open(18, 20);
 }
