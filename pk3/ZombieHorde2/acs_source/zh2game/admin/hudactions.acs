@@ -210,6 +210,9 @@ strict namespace Admin
 
         // Make sure to reset it again.
         Game::SetForceSpawnSpecie(Player::SPECIENONE);
+
+        // If enabled, teleport the player in front of the admin.
+        TryMoveNewSpawnInFront();
     }
 
     internal void AdminAddZombieBotClientside()
@@ -235,6 +238,30 @@ strict namespace Admin
 
         // Make sure to reset it again.
         Game::SetForceSpawnSpecie(Player::SPECIENONE);
+
+        // If enabled, teleport the player in front of the admin.
+        TryMoveNewSpawnInFront();
+    }
+
+    internal void TryMoveNewSpawnInFront()
+    {
+        if (!ZH2Game::GetClAdminSpawnBotInFront(PlayerNumber()))
+            return;
+
+        int tid = Identity::GetTid(Game::GetLastJoinedPlayerId());
+
+        if (!IsTIDUsed(tid))
+        {
+            Logger::LogError(LOGSOURCE, "Tid not valid to move in front of admin: " + str(tid) + ".");
+            return;
+        }
+
+        fixed angle = GetActorAngle(0),
+              x = GetActorX(0) + FixedMul(ADMIN_SPAWNBOTFRONTDISTANCE, cos(angle)),
+              y = GetActorY(0) + FixedMul(ADMIN_SPAWNBOTFRONTDISTANCE, sin(angle)),
+              z = GetActorZ(0);
+
+        SetActorPosition(tid, x, y, z, false);
     }
 
     internal void AdminRemoveBotClientside()
