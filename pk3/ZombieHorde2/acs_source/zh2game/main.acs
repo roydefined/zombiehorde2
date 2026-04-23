@@ -43,11 +43,6 @@ strict namespace ZH2Game
     internal GameContextT GameContext;
     global PersistingGameContextT PERSISTINGGAMECONTEXTINDEX: PersistingGameContext;
 
-    // This is used for joining players/bots to force them to a specific specie.
-    // This is specifically used for the admin to add bots of specific species.
-    // If not set, we default to humans.
-    internal Player::PlayerSpecieT _forceSpecie;
-
     script "zh2_internal_open" open
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_open\"");
@@ -483,11 +478,12 @@ strict namespace ZH2Game
 
         // Set specie, possibly forced to a specific specie.
         // SPECIENONE defaults to SPECIEHUMAN.
-        if (_forceSpecie == Player::SPECIENONE)
-            _forceSpecie = Player::SPECIEHUMAN;
+        Player::PlayerSpecieT specie = Game::GetForceSpawnSpecie();
+        if (specie == Player::SPECIENONE)
+            specie = Player::SPECIEHUMAN;
 
         // TODO: Abstract into a repurposable functions
-        if (_forceSpecie == Player::SPECIEHUMAN)
+        if (specie == Player::SPECIEHUMAN)
         {
             // Ensure all zombie weapons are taken.
             // This ensures that all weapons are correctly taken on this initial morph when the map changed.
@@ -512,7 +508,7 @@ strict namespace ZH2Game
             // Ensure we always start with the shotgun to avoid weird behaviour.
             SetWeapon(WEAPON_SHOTGUN_NAME);
         }
-        else if (_forceSpecie == Player::SPECIEZOMBIE)
+        else if (specie == Player::SPECIEZOMBIE)
         {
             // Ensure all human weapons are taken.
             // This ensures that all weapons are correctly taken on this initial morph when the map changed.
@@ -525,8 +521,6 @@ strict namespace ZH2Game
             Player::GiveZombieInventory();
             Power::RecalculatePowers();
         }
-
-        _forceSpecie = Player::SPECIENONE;
 
         Player::SetState(Player::STATEPLAYING);
 

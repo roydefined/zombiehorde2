@@ -198,13 +198,18 @@ strict namespace Admin
         if (!GetIsAdmin()) terminate;
         if (BCSUtils::ClientCount() == BCSUtils::MAX_PLAYERS) terminate;
 
-        // Force next joining player (so the bot) to be a zombie.
-        ZH2Game::_forceSpecie = Player::SPECIEHUMAN;
+        // Force next joining player (so the bot) to be a human.
+        Game::SetForceSpawnSpecie(Player::SPECIEHUMAN);
 
         // Can fail for reasons, but also if the map has bot nodes disabled.
         // For now let's not explicitly log an error.
         if (AddBot("", 0))
             Logger::LogBold("\cjAn \cfadmin \cjhas added a human.");
+
+        delay(const: 1);
+
+        // Make sure to reset it again.
+        Game::SetForceSpawnSpecie(Player::SPECIENONE);
     }
 
     internal void AdminAddZombieBotClientside()
@@ -219,12 +224,17 @@ strict namespace Admin
         if (BCSUtils::ClientCount() == BCSUtils::MAX_PLAYERS) terminate;
 
         // Force next joining player (so the bot) to be a zombie.
-        ZH2Game::_forceSpecie = Player::SPECIEZOMBIE;
+        Game::SetForceSpawnSpecie(Player::SPECIEZOMBIE);
 
         // Can fail for reasons, but also if the map has bot nodes disabled.
         // For now let's not explicitly log an error.
         if (AddBot("", 0))
             Logger::LogBold("\cjAn \cfadmin \cjhas added a zombie.");
+
+        delay(const: 1);
+
+        // Make sure to reset it again.
+        Game::SetForceSpawnSpecie(Player::SPECIENONE);
     }
 
     internal void AdminRemoveBotClientside()
