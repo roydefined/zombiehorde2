@@ -119,6 +119,8 @@ strict namespace Admin
         if (!GetIsAdmin()) terminate;
         if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING) terminate;
 
+        SetActivator(-1);
+
         Game::KillUnsafePlayers();
         Logger::LogBold("\cjAn \cfadmin \cjhas killed all unsafe players!");
     }
@@ -134,6 +136,8 @@ strict namespace Admin
         if (!GetIsAdmin()) terminate;
         VALIDATE_ID_VALID_SCRIPT(id);
         if (!BCSUtils::ActorIsAlive(Identity::GetTID(id))) terminate;
+
+        SetActivator(-1);
 
         Game::KillPlayer(id, false);
         Logger::LogBold("\cf" + BCSUTILS::PlayerName(id) + "\cj has been killed by an \cfadmin\cj!");
