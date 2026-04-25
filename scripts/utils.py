@@ -51,6 +51,8 @@ def get_paths():
     root = get_root()
     return {
         "bcc": root / "tools" / "Zt-bcc_x86" / "zt-bcc.exe",
+        "zandronum": root / "tools" / "Zandronum_x64" / "zandronum.exe",
+        "iwad": root / "tools" / "Zandronum_x64" / "fakeiwad.wad",
 
         # ACSUtils
         "acsutils_dist": root / "modules" / "acsutils" / "dist",
