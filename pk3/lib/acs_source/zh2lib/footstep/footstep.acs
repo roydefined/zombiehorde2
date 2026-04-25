@@ -55,13 +55,15 @@ strict namespace Footstep
         if (GetPlayerLastStepTimestamp(id) > Timer())
             return;
 
-        SetPlayerLastStepTimestamp(id, Timer() + TriggerFootstep(tid));
+        SetPlayerLastStepTimestamp(id, Timer() + TriggerFootstep(id));
     }
 
     // Main method to trigger the step.
     // Returns the number of tics to wait until we trigger a new footstep.
-    internal int TriggerFootstep(int tid)
+    internal int TriggerFootstep(int id)
     {
+        int tid = Identity::GetTid(id);
+
         // Scaled volume and delay based on what the actor's velocity is.
         // We also take into account if the player is currently crouched.
         fixed viewHeight = GetActorProperty(tid, APROP_ViewHeight);
@@ -77,11 +79,25 @@ strict namespace Footstep
         int stepVolume = BCSUtils::Ifloor(12.0 * actorSpeed * crouchedModifier),
             stepDelay  = BCSUtils::Ifloor(18.0 - actorSpeed / 2.0);
 
-        str texture = GetActorFloorTexture(tid);
 
         // Find a valid definition.
+        // Performance improvement: if the last texture matches the current one then we just use the last definition.
+        // Getting the definition is a bit of work which is better skipped.
+        str texture = GetActorFloorTexture(tid);
+        int definition;
+
+        if (texture == GetPlayerLastTexture(id))
+        {
+            definition = GetPlayerLastDefinition(id);
+        }
+        else
+        {
+            definition = GetStepDefinition(texture);
+            SetPlayerLastTexture(id, texture);
+            SetPlayerLastDefinition(id, definition);
+        }
+
         // If -1, we fall back to a default sound as nothing is defined.
-        int definition = GetStepDefinition(texture);
         if (definition == -1)
         {
             ThingSound(tid, "terrainstep/DEFAULT", stepVolume);
@@ -156,6 +172,26 @@ strict namespace Footstep
     internal void SetPlayerLastStepTimestamp(int id, int value)
     {
         Zh2Lib::LibContext.Players[id].FootstepState.LastStepTimestamp = value;
+    }
+
+    internal str GetPlayerLastTexture(int id)
+    {
+        return Zh2Lib::LibContext.Players[id].FootstepState.LastTexture;
+    }
+
+    internal void SetPlayerLastTexture(int id, str value)
+    {
+        Zh2Lib::LibContext.Players[id].FootstepState.LastTexture = value;
+    }
+
+    internal int GetPlayerLastDefinition(int id)
+    {
+        return Zh2Lib::LibContext.Players[id].FootstepState.LastDefinition;
+    }
+
+    internal void SetPlayerLastDefinition(int id, int value)
+    {
+        Zh2Lib::LibContext.Players[id].FootstepState.LastDefinition = value;
     }
 }
 
