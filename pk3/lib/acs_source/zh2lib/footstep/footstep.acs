@@ -52,10 +52,10 @@ strict namespace Footstep
             return;
 
         // Check if we should play the next step of this client.
-        if (ZH2Lib::LibContext.StepTimestamps[id] > Timer())
+        if (GetPlayerLastStepTimestamp(id) > Timer())
             return;
 
-        ZH2Lib::LibContext.StepTimestamps[id] = Timer() + TriggerFootstep(tid);
+        SetPlayerLastStepTimestamp(id, Timer() + TriggerFootstep(tid));
     }
 
     // Main method to trigger the step.
@@ -146,6 +146,16 @@ strict namespace Footstep
         }
 
         return -1;
+    }
+
+    internal int GetPlayerLastStepTimestamp(int id)
+    {
+        return Zh2Lib::LibContext.Players[id].FootstepState.LastStepTimestamp;
+    }
+
+    internal void SetPlayerLastStepTimestamp(int id, int value)
+    {
+        Zh2Lib::LibContext.Players[id].FootstepState.LastStepTimestamp = value;
     }
 }
 
