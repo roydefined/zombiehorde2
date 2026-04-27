@@ -50,6 +50,10 @@ strict namespace Hud
         DrawCalculatedFactors();
 
         PrepareHud(
+            baseX + 160.0, baseY - 120.0, true);
+        DrawZombieTeleportsLeft();
+
+        PrepareHud(
             baseX + HUD_STATES_RADIUS + 5.0, baseY - 75.0, true);
         DrawHudStates();
 
@@ -246,6 +250,36 @@ strict namespace Hud
         }
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+    }
+
+    internal void DrawZombieTeleportsLeft()
+    {
+        if (!ZH2Game::GetAllowZombieTeleporting())
+            return;
+
+        if (!Player::GetIsZombie())
+            return;
+
+        if (Game::GetCurrentZombieTeleportSpotTid() == 0)
+            return;
+
+        str graphic = ConsolePlayerSkinToZombieTeleportGraphic();
+        int left = Game::GetZombieTeleportsLeft();
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawImage(--_drawnHudId, graphic);
+        DebugDraw();
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudSetAlpha(0.8);
+
+        HudSetPointInternal(5.0, -3.0);
+        BCSUtils::HudDrawText(--_drawnHudId, str(left));
+        DebugDraw();
+
+        BCSUtils::HudSetAlpha(1.0);
     }
 
     internal void DrawHudStates()
