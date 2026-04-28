@@ -86,13 +86,16 @@ strict namespace ZH2Game
         IO::ParseModDefLumpsServerside();
         IO::ParseMapDefLumps();
 
-        // Initialize library
-        // Weather must initialize before we parse the map.
-        Weather::InitializeServer();
-
         // Parse non-persisting data now.
         Logger::LogDebug(LOGSOURCE, "Start parsing non-persisting data (server).");
         IO::ParseCurrentMapLump();
+
+        // Initialize library components.
+        // Weather must initialize before we parse the map.
+        Weather::InitializeServer();
+
+        // Initialize core components.
+        Game::InitializeZombieTeleport();
 
         // Now the loop starts because we have loaded everything.
         GameLoop::StartServerLoop();

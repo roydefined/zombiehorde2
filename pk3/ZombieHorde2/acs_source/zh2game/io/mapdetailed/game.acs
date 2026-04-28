@@ -1,0 +1,114 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    internal bool ParseGameBlock(int handle, str mapLump, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "game")) return false;
+
+        Logger::LogDebug(LOGSOURCE, "Start parse map game block for \cd" + mapLump + ".");
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the bracket level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseZombieTeleportDefaultTid(handle, symbol)
+                || ParseZombieTeleportEnabled(handle, symbol)
+                || ParseOverrideMaxZombieTeleports(handle, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing game block for " + mapLump + ": '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Parsed map game block \cd" + mapLump + ".");
+        return true;
+    }
+
+    internal bool ParseZombieTeleportDefaultTid(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "defaultzombieteleporttid"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) == Tokenizer::TEQ)
+            Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for DefaultZombieTeleportTid is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        Game::SetCurrentZombieTeleportSpotTid(parsedValue);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed DefaultZombieTeleportTid: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseZombieTeleportEnabled(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "zombieteleportenabled"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseBooleanOrNumbericValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for ZombieTeleportEnabled is not a correct value. Expected boolean or numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        bool value = parsedValue != 0;
+        ZH2Game::GameContext.LumpReadSetZombieTeleportingEnabled = value;
+
+        if (ZH2Game::GameContext.LumpReadSetZombieTeleportingEnabledSet)
+            Logger::LogWarning(LOGSOURCE, "Parsing duplicate value for ZombieTeleportEnabled.");
+        else
+            ZH2Game::GameContext.LumpReadSetZombieTeleportingEnabledSet = true;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed ZombieTeleportEnabled: \cd" + str(value) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseOverrideMaxZombieTeleports(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "overridemaxzombieteleports"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) == Tokenizer::TEQ)
+            Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for OverrideMaxZombieTeleports is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        Game::SetOverrideMaxZombieTeleports(parsedValue);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed OverrideMaxZombieTeleports: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+}

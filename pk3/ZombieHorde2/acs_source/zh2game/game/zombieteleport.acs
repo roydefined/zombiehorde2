@@ -8,6 +8,23 @@ strict namespace Game
     // This variable tracks that tid.
     internal int _initialZombieTeleportSpawnSpotTid = 0;
 
+    internal void InitializeZombieTeleport()
+    {
+        int initialZombieTeleportSpotTid = GetInitialZombieTeleportSpotTid();
+
+        // Set the default tid as the active teleport if we don't have something else set already (through lump reading for example).
+        if (initialZombieTeleportSpotTid != 0 && GetCurrentZombieTeleportSpotTid() == 0)
+            SetCurrentZombieTeleportSpotTid(initialZombieTeleportSpotTid);
+
+        // Do we need to enable zombie teleporting?
+        // Prioritize lump read data, otherwise enable if the current spot tid is the initial tid.
+        // Otherwise we either have no spots or we defined a custom tag that should not be enabled yet.
+        if (ZH2Game::GameContext.LumpReadSetZombieTeleportingEnabledSet)
+            SetZombieTeleportingEnabled(ZH2Game::GameContext.LumpReadSetZombieTeleportingEnabled);
+        else if (initialZombieTeleportSpotTid != 0 && GetCurrentZombieTeleportSpotTid() == initialZombieTeleportSpotTid)
+            SetZombieTeleportingEnabled(true);
+    }
+
     internal void TicActivatorZombieTeleport()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
@@ -30,24 +47,23 @@ strict namespace Game
         SetZombieTeleportTics(0);
         Teleport(GetCurrentZombieTeleportSpotTid());
         Logger::LogActivator("Teleports left: " + str(GetZombieTeleportsLeft()) + ".");
+
+        Sync::SyncGame();
     }
 
     // Note, the activator of this function must be an zombie teleport spot.
     // It is assumed that this is the case when entering this function since it's checked beforehand.
     internal void TrackZombieTeleportSpot()
     {
-        // Determine a tid for initial zombie spawn spots if not yet defined.
-        if (_initialZombieTeleportSpawnSpotTid == 0)
-        {
-            _initialZombieTeleportSpawnSpotTid = UniqueTID();
-            SetCurrentZombieTeleportSpotTid(_initialZombieTeleportSpawnSpotTid);
-        }
-
-        // Get the tid or use the defined initial zombie teleport spot tid if 0.
+        // Get the TID. If the TID is 0 it will be part of the default set of enabled zombie teleport spots.
         int tid = ActivatorTID();
         if (tid == 0)
         {
-            tid = _initialZombieTeleportSpawnSpotTid;
+            // Determine a tid for the default spots.
+            if (GetInitialZombieTeleportSpotTid() == 0)
+                SetInitialZombieTeleportSpotTid(UniqueTID());
+
+            tid = GetInitialZombieTeleportSpotTid();
             Thing_ChangeTID(0, tid);
         }
 
@@ -99,9 +115,7 @@ strict namespace Game
             return;
         }
 
-        // No tid set to teleport to.
-        int teleportTid = GetCurrentZombieTeleportSpotTid();
-        if (teleportTid == 0)
+        if (!GetZombieTeleportingEnabled())
         {
             Logger::LogActivator("You can't teleport currently.");
             return;
@@ -111,16 +125,33 @@ strict namespace Game
         SetZombieTeleportTics(ZH2Game::GetZombieTeleportSeconds() * 35);
     }
 
-    // TODO: Expose so it can be used.
-    internal void SetCurrentZombieTeleportSpotTid(int tid)
+    void SetCurrentZombieTeleportSpotTid(int tid)
     {
-        // TODO: Validate the tid is a valid zombie teleport spot.
+        if (!IsTIDUsed(tid))
+        {
+            Logger::LogError(LOGSOURCE, "Zombie teleport spot tid " + str(tid) + " is not used.");
+            return;
+        }
+
         ZH2Game::GameContext.CurrentZombieTeleportSpotTid = tid;
     }
 
-    internal int GetCurrentZombieTeleportSpotTid()
+    int GetCurrentZombieTeleportSpotTid()
     {
         return ZH2Game::GameContext.CurrentZombieTeleportSpotTid;
+    }
+
+    bool GetZombieTeleportingEnabled()
+    {
+        return ZH2Game::GameContext.ZombieTeleportingEnabled;
+    }
+
+    void SetZombieTeleportingEnabled(bool enabled)
+    {
+        ZH2Game::GameContext.ZombieTeleportingEnabled = enabled;
+
+        if (BCSUtils::IsServerOnly())
+            Sync::SyncGame();
     }
 
     internal bool GetIsZombieTeleporting()
@@ -176,7 +207,37 @@ strict namespace Game
 
     internal int GetPlayerZombieTeleportsLeft(int id)
     {
-        return BCSUtils::Max(0, ZH2Game::GetMaxZombieTeleports() - ZH2Game::GameContext.Players[id].ZombieTeleportsUsed);
+        return BCSUtils::Max(0, GetMaxZombieTeleports() - GetPlayerZombieTeleportsUsed(id));
+    }
+
+    internal void SetZombieTeleportsLeft(int value)
+    {
+        SetPlayerZombieTeleportsLeft(PlayerNumber(), value);
+    }
+
+    internal void SetPlayerZombieTeleportsLeft(int id, int value)
+    {
+        SetPlayerZombieTeleportsUsed(id, BCSUtils::Max(0, value - GetMaxZombieTeleports()));
+    }
+
+    internal int GetZombieTeleportsUsed()
+    {
+        return GetPlayerZombieTeleportsUsed(PlayerNumber());
+    }
+
+    internal int GetPlayerZombieTeleportsUsed(int id)
+    {
+        return ZH2Game::GameContext.Players[id].ZombieTeleportsUsed;
+    }
+
+    internal void SetZombieTeleportsUsed(int value)
+    {
+        SetPlayerZombieTeleportsUsed(PlayerNumber(), value);
+    }
+
+    internal void SetPlayerZombieTeleportsUsed(int id, int value)
+    {
+        ZH2Game::GameContext.Players[id].ZombieTeleportsUsed = value;
     }
 
     internal void IncrementUsedZombieTeleports()
@@ -187,5 +248,33 @@ strict namespace Game
     internal void IncrementPlayerUsedZombieTeleports(int id)
     {
         ZH2Game::GameContext.Players[id].ZombieTeleportsUsed++;
+    }
+
+    int GetInitialZombieTeleportSpotTid()
+    {
+        return _initialZombieTeleportSpawnSpotTid;
+    }
+
+    internal void SetInitialZombieTeleportSpotTid(int value)
+    {
+        _initialZombieTeleportSpawnSpotTid = value;
+    }
+
+    void SetOverrideMaxZombieTeleports(int value)
+    {
+        ZH2Game::GameContext.OverrideMaxZombieTeleportsSet = true;
+        ZH2Game::GameContext.OverrideMaxZombieTeleportsCount = value;
+
+        if (BCSUtils::IsServerOnly())
+            Sync::SyncGame();
+    }
+
+    // Returns the max number of allowed teleports.
+    // This returns the overridden count if set, or the cvar otherwise.
+    int GetMaxZombieTeleports()
+    {
+        return ZH2Game::GameContext.OverrideMaxZombieTeleportsSet
+            ? ZH2Game::GameContext.OverrideMaxZombieTeleportsCount
+            : ZH2Game::GetMaxZombieTeleports();
     }
 }
