@@ -30,6 +30,8 @@ strict namespace Game
         SetZombieTeleportTics(0);
         Teleport(GetCurrentZombieTeleportSpotTid());
         Logger::LogActivator("Teleports left: " + str(GetZombieTeleportsLeft()) + ".");
+
+        Sync::SyncGame();
     }
 
     // Note, the activator of this function must be an zombie teleport spot.
@@ -140,6 +142,9 @@ strict namespace Game
     void SetZombieTeleportingEnabled(bool enabled)
     {
         ZH2Game::GameContext.ZombieTeleportingEnabled = enabled;
+
+        if (BCSUtils::IsServerOnly())
+            Sync::SyncGame();
     }
 
     internal bool GetIsZombieTeleporting()
@@ -195,7 +200,37 @@ strict namespace Game
 
     internal int GetPlayerZombieTeleportsLeft(int id)
     {
-        return BCSUtils::Max(0, ZH2Game::GetMaxZombieTeleports() - ZH2Game::GameContext.Players[id].ZombieTeleportsUsed);
+        return BCSUtils::Max(0, ZH2Game::GetMaxZombieTeleports() - GetPlayerZombieTeleportsUsed(id));
+    }
+
+    internal void SetZombieTeleportsLeft(int value)
+    {
+        SetPlayerZombieTeleportsLeft(PlayerNumber(), value);
+    }
+
+    internal void SetPlayerZombieTeleportsLeft(int id, int value)
+    {
+        SetPlayerZombieTeleportsUsed(id, BCSUtils::Max(0, value - ZH2Game::GetMaxZombieTeleports()));
+    }
+
+    internal int GetZombieTeleportsUsed()
+    {
+        return GetPlayerZombieTeleportsUsed(PlayerNumber());
+    }
+
+    internal int GetPlayerZombieTeleportsUsed(int id)
+    {
+        return ZH2Game::GameContext.Players[id].ZombieTeleportsUsed;
+    }
+
+    internal void SetZombieTeleportsUsed(int value)
+    {
+        SetPlayerZombieTeleportsUsed(PlayerNumber(), value);
+    }
+
+    internal void SetPlayerZombieTeleportsUsed(int id, int value)
+    {
+        ZH2Game::GameContext.Players[id].ZombieTeleportsUsed = value;
     }
 
     internal void IncrementUsedZombieTeleports()

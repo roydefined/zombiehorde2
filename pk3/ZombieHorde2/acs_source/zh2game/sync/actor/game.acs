@@ -11,6 +11,7 @@ strict namespace Sync
         int syncId = SYNC_GAME;
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing general game state through actors. Sync id: " + str(syncId) + "."));
 
+        syncId = SyncWriteZombieTeleport(syncId);
         syncId = SyncWriteZombieAbilities(syncId);
         syncId = SyncWriteOtherGameData(syncId);
 
@@ -34,6 +35,7 @@ strict namespace Sync
         int syncId = SYNC_GAME;
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading general game on client through actors. Sync id: " + str(syncId) + "."));
 
+        syncId = SyncReadZombieTeleport(syncId);
         syncId = SyncReadZombieAbilities(syncId);
         syncId = SyncReadOtherGameData(syncId);
 
@@ -43,6 +45,36 @@ strict namespace Sync
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Synced general game to client."));
         VERIFY_SYNCID(syncId, SYNC_GAME, SYNC_GAME_LENGTH);
+    }
+
+    internal int SyncWriteZombieTeleport(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing zombie teleport data through actors. Sync id: " + str(syncId) + "."));
+
+        BCSUtils::SyncVariable(--syncId, Game::GetZombieTeleportingEnabled());
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            BCSUtils::SyncVariable(--syncId, Game::GetPlayerZombieTeleportsUsed(i));
+        }
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing zombie teleport data through actors."));
+        return syncId;
+    }
+
+    internal int SyncReadZombieTeleport(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading zombie teleport data on client through actors. Sync id: " + str(syncId) + "."));
+
+        Game::SetZombieTeleportingEnabled(BCSUtils::GetSyncVarDefault(--syncId, false));
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            Game::SetPlayerZombieTeleportsUsed(i, BCSUtils::GetSyncVarDefault(--syncId, 0));
+        }
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing zombie teleport data to client."));
+        return syncId;
     }
 
     internal int SyncWriteZombieAbilities(int syncId)
