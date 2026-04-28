@@ -8,6 +8,17 @@ strict namespace Game
     // This variable tracks that tid.
     internal int _initialZombieTeleportSpawnSpotTid = 0;
 
+    internal void InitializeZombieTeleport()
+    {
+        // Set the default tid as the active teleport if we don't have something else set already (through lump reading for example).
+        if (_initialZombieTeleportSpawnSpotTid != 0 && GetCurrentZombieTeleportSpotTid() == 0)
+            SetCurrentZombieTeleportSpotTid(_initialZombieTeleportSpawnSpotTid);
+
+        // Enable zombie teleporting if we have a tid set.
+        if (GetCurrentZombieTeleportSpotTid() != 0)
+            SetZombieTeleportingEnabled(true);
+    }
+
     internal void TicActivatorZombieTeleport()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
@@ -42,22 +53,12 @@ strict namespace Game
         int tid = ActivatorTID();
         if (tid == 0)
         {
-            bool isFirst = _initialZombieTeleportSpawnSpotTid == 0;
-
             // Determine a tid for the default spots.
-            if (isFirst)
-            {
+            if (_initialZombieTeleportSpawnSpotTid == 0)
                 _initialZombieTeleportSpawnSpotTid = UniqueTID();
-            }
 
             tid = _initialZombieTeleportSpawnSpotTid;
             Thing_ChangeTID(0, tid);
-
-            if (isFirst)
-            {
-                SetCurrentZombieTeleportSpotTid(_initialZombieTeleportSpawnSpotTid);
-                SetZombieTeleportingEnabled(true);
-            }
         }
 
         // Validate the spot is not already defined, which is possible when we have multiple possible spots to teleport to under the tid.
