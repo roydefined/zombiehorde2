@@ -21,7 +21,8 @@ strict namespace IO
         while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
         {
             str symbol = Tokenizer::GetSymbol(handle);
-            if (ParseZombieTeleportDefaultTid(handle, symbol))
+            if (ParseZombieTeleportDefaultTid(handle, symbol)
+                || ParseZombieTeleportEnabled(handle, symbol))
             {
                 // Optional comma.
                 Tokenizer::Next(handle, false);
@@ -57,8 +58,33 @@ strict namespace IO
         int parsedValue = (int)Tokenizer::GetParsedValue();
         Game::SetCurrentZombieTeleportSpotTid(parsedValue);
 
-        printbold(d:parsedValue);
         Logger::LogDebug(LOGSOURCE, "Parsed DefaultZombieTeleportTid: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseZombieTeleportEnabled(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "zombieteleportenabled"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseBooleanOrNumbericValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for ZombieTeleportEnabled is not a correct value. Expected boolean or numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        bool value = parsedValue != 0;
+        ZH2Game::GameContext.LumpReadSetZombieTeleportingEnabled = value;
+
+        if (ZH2Game::GameContext.LumpReadSetZombieTeleportingEnabledSet)
+            Logger::LogWarning(LOGSOURCE, "Parsing duplicate value for ZombieTeleportEnabled.");
+        else
+            ZH2Game::GameContext.LumpReadSetZombieTeleportingEnabledSet = true;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed ZombieTeleportEnabled: \cd" + str(value) + "\cj.");
         return true;
     }
 }

@@ -14,8 +14,12 @@ strict namespace Game
         if (_initialZombieTeleportSpawnSpotTid != 0 && GetCurrentZombieTeleportSpotTid() == 0)
             SetCurrentZombieTeleportSpotTid(_initialZombieTeleportSpawnSpotTid);
 
-        // Enable zombie teleporting if we have a tid set.
-        if (GetCurrentZombieTeleportSpotTid() != 0)
+        // Do we need to enable zombie teleporting?
+        // Prioritize lump read data, otherwise enable if the current spot tid is the initial tid.
+        // Otherwise we either have no spots or we defined a custom tag that should not be enabled yet.
+        if (ZH2Game::GameContext.LumpReadSetZombieTeleportingEnabledSet)
+            SetZombieTeleportingEnabled(ZH2Game::GameContext.LumpReadSetZombieTeleportingEnabled);
+        else if (_initialZombieTeleportSpawnSpotTid != 0 && GetCurrentZombieTeleportSpotTid() == _initialZombieTeleportSpawnSpotTid)
             SetZombieTeleportingEnabled(true);
     }
 
