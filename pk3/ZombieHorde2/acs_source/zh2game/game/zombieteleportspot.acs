@@ -36,20 +36,26 @@ strict namespace Game
     // It is assumed that this is the case when entering this function since it's checked beforehand.
     internal void TrackZombieTeleportSpot()
     {
-        // Determine a tid for initial zombie spawn spots if not yet defined.
-        if (_initialZombieTeleportSpawnSpotTid == 0)
-        {
-            _initialZombieTeleportSpawnSpotTid = UniqueTID();
-            SetCurrentZombieTeleportSpotTid(_initialZombieTeleportSpawnSpotTid);
-            SetZombieTeleportingEnabled(true);
-        }
-
-        // Get the tid or use the defined initial zombie teleport spot tid if 0.
+        // Get the TID. If the TID is 0 it will be part of the default set of enabled zombie teleport spots.
         int tid = ActivatorTID();
         if (tid == 0)
         {
+            bool isFirst = _initialZombieTeleportSpawnSpotTid == 0;
+
+            // Determine a tid for the default spots.
+            if (isFirst)
+            {
+                _initialZombieTeleportSpawnSpotTid = UniqueTID();
+            }
+
             tid = _initialZombieTeleportSpawnSpotTid;
             Thing_ChangeTID(0, tid);
+
+            if (isFirst)
+            {
+                SetCurrentZombieTeleportSpotTid(_initialZombieTeleportSpawnSpotTid);
+                SetZombieTeleportingEnabled(true);
+            }
         }
 
         // Validate the spot is not already defined, which is possible when we have multiple possible spots to teleport to under the tid.
