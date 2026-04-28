@@ -1,7 +1,35 @@
+MAP changes
+------------------------------------------------
+
+- [ZE12M]: The map now allows zombies to teleport to the pyramid entrance when it has opened. This does not work on the quick linear gametype.
 
 API changes
 ------------------------------------------------
 
+ * * New game block in MAPDEF lumps * *
+Maps can now define a new game block in which configuration for the general game can be configured.
+This block is purely serverside and serves as a way for maps to configure specific game rules.
+In this case it was added for configuring zombie teleports, but more will appear in the future.
+
+ * * Extended support for zombie teleport API * *
+More support has been added for the zombie teleport system, giving mappers more control over how their map supports it.
+The system still provides the default zombie teleport spots, but you can now extend this with different sets that can be enabled conditionally.
+Furthermore you can now also control if teleporting is enabled as a whole, and you can configure the maximum allowed teleports allowed on your map.
+The maximum amount overrides the cvar value defined by the server, and you can also unset this if you want to revert back to the cvar value.
+The new API exposes numerous functions that mappers can use to control the zombie teleport system to their taste:
+- `void SetCurrentZombieTeleportSpotTid(int tid)`
+- `int GetCurrentZombieTeleportSpotTid()`
+- `void SetZombieTeleportingEnabled(bool enabled)`
+- `bool GetZombieTeleportingEnabled()`
+- `int GetInitialZombieTeleportSpotTid()`
+- `void SetOverrideMaxZombieTeleports(int value)`
+- `int GetMaxZombieTeleports()`
+Lastly, lump reading has been extended and the new game block allows you to set the following things:
+- The current zombie teleport tid to use.
+- Whether teleporting is enabled in general (this can also disable the default behavior of it being on if you have spots with tid 0).
+- The maximum number of allowed teleports.
+ 
+Other changes:
 - Removed LogMessageLevel from the list of externed functions of the Logger namespace.
 - `Music::SetMusic` has been renamed to `Music::PlayMusic` to better reflect the fact it plays the music, rather than just sets it.
 - The ZH2 library has had multiple namespace renamed with a refactor in its folder structure. Many namespaces are no longer prefixed with `Lib` as code and include conflicts no longer exists.
