@@ -41,6 +41,7 @@ strict namespace Game
         {
             _initialZombieTeleportSpawnSpotTid = UniqueTID();
             SetCurrentZombieTeleportSpotTid(_initialZombieTeleportSpawnSpotTid);
+            SetZombieTeleportingEnabled(true);
         }
 
         // Get the tid or use the defined initial zombie teleport spot tid if 0.
@@ -99,9 +100,7 @@ strict namespace Game
             return;
         }
 
-        // No tid set to teleport to.
-        int teleportTid = GetCurrentZombieTeleportSpotTid();
-        if (teleportTid == 0)
+        if (!GetZombieTeleportingEnabled())
         {
             Logger::LogActivator("You can't teleport currently.");
             return;
@@ -111,16 +110,30 @@ strict namespace Game
         SetZombieTeleportTics(ZH2Game::GetZombieTeleportSeconds() * 35);
     }
 
-    // TODO: Expose so it can be used.
-    internal void SetCurrentZombieTeleportSpotTid(int tid)
+    void SetCurrentZombieTeleportSpotTid(int tid)
     {
-        // TODO: Validate the tid is a valid zombie teleport spot.
+        if (!IsTIDUsed(tid))
+        {
+            Logger::LogError(LOGSOURCE, "Zombie teleport spot tid " + str(tid) + " is not used.");
+            return;
+        }
+
         ZH2Game::GameContext.CurrentZombieTeleportSpotTid = tid;
     }
 
-    internal int GetCurrentZombieTeleportSpotTid()
+    int GetCurrentZombieTeleportSpotTid()
     {
         return ZH2Game::GameContext.CurrentZombieTeleportSpotTid;
+    }
+
+    bool GetZombieTeleportingEnabled()
+    {
+        return ZH2Game::GameContext.ZombieTeleportingEnabled;
+    }
+
+    void SetZombieTeleportingEnabled(bool enabled)
+    {
+        ZH2Game::GameContext.ZombieTeleportingEnabled = enabled;
     }
 
     internal bool GetIsZombieTeleporting()
