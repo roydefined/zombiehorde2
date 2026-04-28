@@ -1,0 +1,64 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    internal bool ParseGameBlock(int handle, str mapLump, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "game")) return false;
+
+        Logger::LogDebug(LOGSOURCE, "Start parse map game block for \cd" + mapLump + ".");
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the bracket level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseZombieTeleportDefaultTid(handle, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing game block for " + mapLump + ": '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Parsed map game block \cd" + mapLump + ".");
+        return true;
+    }
+
+    internal bool ParseZombieTeleportDefaultTid(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "defaultzombieteleporttid"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) == Tokenizer::TEQ)
+            Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for DefaultZombieTeleportTid is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        Game::SetCurrentZombieTeleportSpotTid(parsedValue);
+
+        printbold(d:parsedValue);
+        Logger::LogDebug(LOGSOURCE, "Parsed DefaultZombieTeleportTid: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+}
