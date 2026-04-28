@@ -205,7 +205,7 @@ strict namespace Game
 
     internal int GetPlayerZombieTeleportsLeft(int id)
     {
-        return BCSUtils::Max(0, ZH2Game::GetMaxZombieTeleports() - GetPlayerZombieTeleportsUsed(id));
+        return BCSUtils::Max(0, GetMaxZombieTeleports() - GetPlayerZombieTeleportsUsed(id));
     }
 
     internal void SetZombieTeleportsLeft(int value)
@@ -215,7 +215,7 @@ strict namespace Game
 
     internal void SetPlayerZombieTeleportsLeft(int id, int value)
     {
-        SetPlayerZombieTeleportsUsed(id, BCSUtils::Max(0, value - ZH2Game::GetMaxZombieTeleports()));
+        SetPlayerZombieTeleportsUsed(id, BCSUtils::Max(0, value - GetMaxZombieTeleports()));
     }
 
     internal int GetZombieTeleportsUsed()
@@ -246,5 +246,20 @@ strict namespace Game
     internal void IncrementPlayerUsedZombieTeleports(int id)
     {
         ZH2Game::GameContext.Players[id].ZombieTeleportsUsed++;
+    }
+
+    internal void SetOverrideMaxZombieTeleports(int value)
+    {
+        ZH2Game::GameContext.OverrideMaxZombieTeleportsSet = true;
+        ZH2Game::GameContext.OverrideMaxZombieTeleportsCount = value;
+    }
+
+    // Returns the max number of allowed teleports.
+    // This returns the overridden count if set, or the cvar otherwise.
+    internal int GetMaxZombieTeleports()
+    {
+        return ZH2Game::GameContext.OverrideMaxZombieTeleportsSet
+            ? ZH2Game::GameContext.OverrideMaxZombieTeleportsCount
+            : ZH2Game::GetMaxZombieTeleports();
     }
 }
