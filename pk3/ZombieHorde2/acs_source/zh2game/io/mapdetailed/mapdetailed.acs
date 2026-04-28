@@ -107,7 +107,11 @@ strict namespace IO
             if (ParseResistCollection(handle, mapLump, symbol)
                 || ParseEventCollection(handle, mapLump, symbol)
                 || ParseWeatherProfiles(handle, mapLump, symbol)
-                || ParseGameBlock(handle, mapLump, symbol))
+
+                // The game block is purely serverside.
+                || (
+                    BCSUtils::IsServer() && ParseGameBlock(handle, mapLump, symbol)
+                ))
             {
                 // Optional comma.
                 Tokenizer::Next(handle, false);
