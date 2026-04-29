@@ -111,6 +111,36 @@ strict namespace Game
         fixed Factor;
     };
 
+    internal struct ZombieTeleportContextT
+    {
+        // Initial zombie teleport spots have tid 0, but we need these to get an actual tid to work properly.
+        // This variable tracks that tid.
+        int InitialZombieTeleportSpawnSpotTid;
+
+        int ZombieTeleportSpots[MAX_ZOMBIETELEPORTSPOTS];
+        int ZombieTeleportSpotCount;
+
+        // The current tid of the zombie teleport spot(s) to use.
+        int CurrentZombieTeleportSpotTid;
+
+        // Indicates if zombie teleporting is enabled.
+        bool ZombieTeleportingEnabled;
+
+        // Indicated from lump reading if we manually enabled/disabled zombie teleports rather than having it work automatically.
+        bool LumpReadSetZombieTeleportingEnabledSet;
+        bool LumpReadSetZombieTeleportingEnabled;
+
+        // Sets the overridden value specifying the maximum number of allowed zombie teleports.
+        // If unset, `sv_zh2_maxzombieteleports` is used instead.
+        bool OverrideMaxZombieTeleportsSet;
+        int OverrideMaxZombieTeleportsCount;
+    };
+
+    internal struct PlayerZombieTeleportContextT
+    {
+        int ZombieTeleportsUsed;
+    };
+
     extern void KillUnsafePlayers();
 
     extern void SetIsSafe(bool safe);
