@@ -39,20 +39,27 @@ strict namespace Hud
         int playerId = Identity::GetId(targetTid);
         int id = HUDID_IDENTITY;
 
-        Player::PlayerSpecieT specieSelf = Player::GetSpecie();
-
         BCSUtils::HudSetCenterText(true);
         BCSUtils::HudSetDisappearTime(0.5);
 
-        HudSetPointInternal();
-        BCSUtils::HudSetFont("SmallFont");
-        BCSUtils::HudDrawText(--id, BCSUtils::PlayerName(playerId));
-        DebugDraw();
+        ZH2Game::IdentifyPlayerTypeT identifyType = ZH2Game::GetClIdentifyPlayerType();
+        if (identifyType == ZH2Game::IDENTIFY_PLAYER_NAME || identifyType == ZH2Game::IDENTIFY_PLAYER_BOTH)
+        {
+            HudSetPointInternal();
+            BCSUtils::HudSetFont("SmallFont");
+            BCSUtils::HudDrawText(--id, BCSUtils::PlayerName(playerId));
+            DebugDraw();
+        }
 
         // Do not draw the specie until the round started.
         if (!Round::GetGameIsPlaying())
             return;
 
+        if (identifyType != ZH2Game::IDENTIFY_PLAYER_SPECIE && identifyType != ZH2Game::IDENTIFY_PLAYER_BOTH)
+            return;
+
+
+        Player::PlayerSpecieT specieSelf = Player::GetSpecie();
         Player::PlayerSpecieT specie = Player::GetPlayerSpecie(playerId);
         str specieLabel = Player::GetSpecieIndexAsString(specie);
 
