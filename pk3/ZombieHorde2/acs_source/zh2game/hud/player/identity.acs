@@ -8,7 +8,8 @@ strict namespace Hud
 
     internal void DrawIdentity()
     {
-        if (!ZH2Game::GetIdentifyPlayers())
+        ZH2Game::IdentifyPlayerSpecieTypeT identifyPlayerType = ZH2Game::GetClIdentifyPlayers();
+        if (!ZH2Game::GetSvIdentifyPlayers() || identifyPlayerType == ZH2Game::IDENTIFY_PLAYER_OFF)
             return;
 
         BCSUtils::HudResetState();
@@ -23,10 +24,10 @@ strict namespace Hud
             BCSUtils::HudBottom() - 70.0,
             false);
 
-        DrawTargetIdentity();
+        DrawTargetIdentity(identifyPlayerType);
     }
 
-    internal void DrawTargetIdentity()
+    internal void DrawTargetIdentity(ZH2Game::IdentifyPlayerSpecieTypeT identifyPlayerType)
     {
         // Check for a player target, or stop.
         int targetTid = PickActor(0, GetActorAngle(0), GetActorPitch(0), HUD_IDENTITY_MAX_PICK_RANGE, 0, MF_SHOOTABLE, ML_BLOCKEVERYTHING | ML_BLOCKHITSCAN, PICKAF_RETURNTID);
@@ -37,23 +38,39 @@ strict namespace Hud
             return;
 
         int playerId = Identity::GetId(targetTid);
-        int id = HUDID_IDENTITY;
 
         Player::PlayerSpecieT specieSelf = Player::GetSpecie();
+        Player::PlayerSpecieT specie = Player::GetPlayerSpecie(playerId);
+        bool match = specieSelf == specie;
+
+        if (identifyPlayerType != ZH2Game::IDENTIFY_PLAYER_ALL
+            && (identifyPlayerType == ZH2Game::IDENTIFY_PLAYER_ONLY_SAME && !match)
+            || (identifyPlayerType == ZH2Game::IDENTIFY_PLAYER_ONLY_OTHER && match))
+        {
+            return;
+        }
+
+        int id = HUDID_IDENTITY;
 
         BCSUtils::HudSetCenterText(true);
         BCSUtils::HudSetDisappearTime(0.5);
 
-        HudSetPointInternal();
-        BCSUtils::HudSetFont("SmallFont");
-        BCSUtils::HudDrawText(--id, BCSUtils::PlayerName(playerId));
-        DebugDraw();
+        ZH2Game::IdentifyPlayerTypeT identifyType = ZH2Game::GetClIdentifyPlayerType();
+        if (identifyType == ZH2Game::IDENTIFY_PLAYER_NAME || identifyType == ZH2Game::IDENTIFY_PLAYER_BOTH)
+        {
+            HudSetPointInternal();
+            BCSUtils::HudSetFont("SmallFont");
+            BCSUtils::HudDrawText(--id, BCSUtils::PlayerName(playerId));
+            DebugDraw();
+        }
 
         // Do not draw the specie until the round started.
         if (!Round::GetGameIsPlaying())
             return;
 
-        Player::PlayerSpecieT specie = Player::GetPlayerSpecie(playerId);
+        if (identifyType != ZH2Game::IDENTIFY_PLAYER_SPECIE && identifyType != ZH2Game::IDENTIFY_PLAYER_BOTH)
+            return;
+
         str specieLabel = Player::GetSpecieIndexAsString(specie);
 
         BCSUtils::HudSetFont("SmallFont");
