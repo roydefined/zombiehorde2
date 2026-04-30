@@ -7,6 +7,8 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
+#define KORAXANDDSPARIL_TID 100
+
 int resists[5] = {0, 0, 0, 0, 0};
 int secretSwitch = 0;
 int secretSwitch2 = 0;
@@ -289,7 +291,7 @@ script 10 (void) // Secret
         Light_ChangeToValue(96, 144);
         Light_ChangeToValue(104, 144);
         Sector_SetGravity(96, 1, 0);
-        Thing_Activate(100);
+        Thing_Activate(KORAXANDDSPARIL_TID);
         delay(3*35);
         Ceiling_MoveToValue(82, 65535, 1, 1);
         Floor_MoveToValue(82, 65535, 2, 1);
@@ -335,7 +337,7 @@ script 10 (void) // Secret
             delay(1);
         }
 
-        TeleportOther(100, 132, 0); // Teleport Korax and D'Sparil
+        TeleportOther(KORAXANDDSPARIL_TID, 132, 0); // Teleport Korax and D'Sparil
 
         Fadeto(100, 100, 100, 0.0, 1.0);
         delay(35);
@@ -406,13 +408,13 @@ script 13 (void)
     ACS_ExecuteAlways(15, 0, 0, 0, 0);
 
     int killerId = -1;
-    while(ThingCountName("ZH2LegacyZe24KoraxAndDsparil", 100)) // Korax and D'Sparil is alive
+    while(ThingCountName("ZH2LegacyZe24KoraxAndDsparil", KORAXANDDSPARIL_TID)) // Korax and D'Sparil is alive
     {
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- health: ", d:GetActorProperty(100, APROP_Health), s:""; HUDMSG_FADEOUT, 997, CR_WHITE, 0.05, 0.85, 10.0, 2.0); // Display health
-        
+        HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- health: ", d:GetActorProperty(KORAXANDDSPARIL_TID, APROP_Health), s:""; HUDMSG_FADEOUT, 997, CR_WHITE, 0.05, 0.85, 10.0, 2.0); // Display health
+
         // The last target will be the killer.
-        if (SetActivatorToTarget(100))
+        if (SetActivatorToTarget(KORAXANDDSPARIL_TID))
         {
             killerId = PlayerNumber();
             SetActivator(-1);
@@ -452,34 +454,34 @@ script 15 (void)
 {
     int KMessage = 0;
 
-    while(ThingCountName("ZH2LegacyZe24KoraxAndDsparil", 100)) // Korax and D'Sparil is living
+    while(ThingCountName("ZH2LegacyZe24KoraxAndDsparil", KORAXANDDSPARIL_TID)) // Korax and D'Sparil is living
     {
         switch(KMessage)
         {
             case 0:
-                Logger::LogBold("\cmKorax\cd: Greetings, mortal are you ready to die ?");
+                Chat::SendActor(KORAXANDDSPARIL_TID, "Greetings, mortal are you ready to die ?");
                 AmbientSound("KoraxVoiceGreetings", 127);
                 Delay(70);
                 AmbientSound("KoraxVoiceReady", 127);
                 break;
             case 1:
-                Logger::LogBold("\cmKorax\cd: My servants can smell your blood human.");
+                Chat::SendActor(KORAXANDDSPARIL_TID, "My servants can smell your blood human.");
                 AmbientSound("KoraxVoiceBlood", 127);
                 break;
             case 2:
-                Logger::LogBold("\cmKorax\cd: You have play this game too long mortal. I think i shall remove you from the board.");
+                Chat::SendActor(KORAXANDDSPARIL_TID, "You have play this game too long mortal. I think i shall remove you from the board.");
                 AmbientSound("KoraxVoiceGame", 127);
                 Delay(140);
                 AmbientSound("KoraxVoiceBoard", 127);
                 break;
             case 3:
-                Logger::LogBold("\cmKorax\cd: Worship me, and may be merciful. Then again maybe not");
+                Chat::SendActor(KORAXANDDSPARIL_TID, "Worship me, and may be merciful. Then again maybe not");
                 AmbientSound("KoraxVoiceWorship", 127);
                 Delay(175);
                 AmbientSound("KoraxVoiceMaybe", 127);
                 break;
             case 4:
-                Logger::LogBold("\cmKorax\cd: Are you strong enough to face your own master ?");
+                Chat::SendActor(KORAXANDDSPARIL_TID, "Are you strong enough to face your own master ?");
                 AmbientSound("KoraxVoiceStrong", 127);
                 Delay(70);
                 AmbientSound("KoraxVoiceFace", 127);
