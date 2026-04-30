@@ -63,8 +63,21 @@ strict namespace ZH2Game
     internal int GetShownInventoryItems() { return BCSUTILS::Clamp(GetCvar("cl_zh2_showninventoryitems"), 1, 11); }
     internal bool GetWrapInventoryItems() { return (bool)GetCvar("cl_zh2_wrapinventoryitems"); }
 
-    internal bool GetClIdentifyPlayers() { return (bool)GetCvar("cl_zh2_identifyplayers"); }
     internal bool GetSvIdentifyPlayers() { return (bool)GetCvar("sv_zh2_identifyplayers"); }
+    internal IdentifyPlayerSpecieTypeT GetClIdentifyPlayers()
+    {
+        switch (BCSUTILS::Clamp(GetCVar("cl_zh2_identifyplayers"), 0, 3))
+        {
+            case 1:
+                return IDENTIFY_PLAYER_ALL;
+            case 2:
+                return IDENTIFY_PLAYER_ONLY_SAME;
+            case 3:
+                return IDENTIFY_PLAYER_ONLY_OTHER;
+            default:
+                return IDENTIFY_PLAYER_OFF;
+        }
+    }
     internal IdentifyPlayerTypeT GetClIdentifyPlayerType()
     {
         switch (BCSUTILS::Clamp(GetCVar("cl_zh2_identifyplayertype"), 0, 2))
