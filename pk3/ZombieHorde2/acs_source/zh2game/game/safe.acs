@@ -51,4 +51,30 @@ strict namespace Game
 
         return ZH2Game::GameContext.Players[id].SafeContext.Slots[slot].Safe;
     }
+
+    internal void SetSafeHidden(bool hidden, int slot = 0, bool broadcast = true)
+    {
+        if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": slot " + str(slot) + " is not valid.");
+            return;
+        }
+
+        ZH2Game::GameContext.SafeContext.Slots[slot].Hidden = hidden;
+        Logger::LogDebug(LOGSOURCE, "Safe slot \cd" + str(slot) + "\cj is now \cd" + (hidden ? "hidden" : "visible") + "\cj.");
+
+        if (broadcast)
+            Sync::SyncPlayers();
+    }
+
+    internal bool GetSafeHidden(int slot = 0)
+    {
+        if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": slot " + str(slot) + " is not valid.");
+            return false;
+        }
+
+        return ZH2Game::GameContext.SafeContext.Slots[slot].Hidden;
+    }
 }

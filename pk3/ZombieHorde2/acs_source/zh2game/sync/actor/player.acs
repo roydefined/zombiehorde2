@@ -130,6 +130,23 @@ strict namespace Sync
     {
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing safe packs through actors. Sync id: " + str(syncId) + "."));
 
+        int hiddenPack = 0;
+
+        for (int slot = 0; slot < MAX_SAFETY_SLOTS; ++slot)
+        {
+            if (ZH2Game::GameContext.SafeContext.Slots[slot].Hidden)
+                hiddenPack |= 1 << slot;
+        }
+
+        if (hiddenPack != 0)
+        {
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "Hidden pack written: \cd" + StrParam(b:hiddenPack) + "\cj (" + str(hiddenPack) + ")"));
+        }
+
+        BCSUtils::SyncVariable(--syncId, hiddenPack);
+
         int pack = 0;
         bool hasValue = false;
 
@@ -150,7 +167,7 @@ strict namespace Sync
                 {
                     Logger::LogDebug(LOGSOURCE,
                         FormatLog(SYNC_CATEGORY,
-                            "Pack written: \cd" + StrParam(b:pack) + "\cj (" + str(pack) + ")"));
+                            "Safe pack written: \cd" + StrParam(b:pack) + "\cj (" + str(pack) + ")"));
                 }
 
                 BCSUtils::SyncVariable(--syncId, pack);
@@ -168,6 +185,21 @@ strict namespace Sync
     {
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading safe packs on client through actors. Sync id: " + str(syncId) + "."));
 
+        int hiddenPack = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+        if (hiddenPack != 0)
+        {
+            Logger::LogDebug(LOGSOURCE,
+                FormatLog(SYNC_CATEGORY,
+                    "Hidden pack read: \cd" + StrParam(b:hiddenPack) + "\cj (" + str(hiddenPack) + ")"));
+        }
+
+        for (int slot = 0; slot < MAX_SAFETY_SLOTS; ++slot)
+        {
+            bool hidden = (hiddenPack & (1 << slot)) != 0;
+            ZH2Game::GameContext.SafeContext.Slots[slot].Hidden = hidden;
+        }
+
         int pack = 0;
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
@@ -180,7 +212,7 @@ strict namespace Sync
                 {
                     Logger::LogDebug(LOGSOURCE,
                         FormatLog(SYNC_CATEGORY,
-                            "Pack read: \cd" + StrParam(b:pack) + "\cj (" + str(pack) + ")"));
+                            "Safe pack read: \cd" + StrParam(b:pack) + "\cj (" + str(pack) + ")"));
                 }
             }
 
