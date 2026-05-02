@@ -9,12 +9,12 @@ strict namespace Game
 
     void SetPlayerIsSafe(int id, bool safe, bool broadcast = true)
     {
-        ZH2Game::GameContext.Players[id].Safe = safe;
+        ZH2Game::GameContext.Players[id].SafeContext.Slots[0].Safe = safe;
         Logger::LogDebug(LOGSOURCE, BCSUTILS::PlayerName(id) + " (\cd" + str(id) + "\cj) \cd" + (safe ? "entered" : "left") + "\cj the safe zone.");
 
-        bool firstTime = safe && !ZH2Game::GameContext.Players[id].FirstTimeSafe;
+        bool firstTime = safe && !ZH2Game::GameContext.Players[id].SafeContext.Slots[0].FirstTimeSafe;
         if (safe)
-            ZH2Game::GameContext.Players[id].FirstTimeSafe = true;
+            ZH2Game::GameContext.Players[id].SafeContext.Slots[0].FirstTimeSafe = true;
 
         Event::SendPlayerSafe(id, safe, firstTime);
 
@@ -25,6 +25,6 @@ strict namespace Game
     bool GetIsSafe() { return GetPlayerIsSafe(PlayerNumber()); }
     bool GetPlayerIsSafe(int id)
     {
-        return ZH2Game::GameContext.Players[id].Safe;
+        return ZH2Game::GameContext.Players[id].SafeContext.Slots[0].Safe;
     }
 }
