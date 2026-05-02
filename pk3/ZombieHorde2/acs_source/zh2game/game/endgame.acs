@@ -35,40 +35,71 @@ strict namespace Game
 
     /* DIFFERENT KILL METHODS TO KILL ONE OR MORE SPECIES. */
 
-    internal void KillHumans() { KillSpecies(Player::SPECIEHUMAN, false); }
-    internal void KillZombies() { KillSpecies(Player::SPECIEZOMBIE, false); }
-    internal void KillUnsafeHumans() { KillSpecies(Player::SPECIEHUMAN, true); }
-    internal void KillUnsafeZombies() { KillSpecies(Player::SPECIEZOMBIE, true); }
+    internal void KillHumans() { KillSpecies(Player::SPECIEHUMAN); }
+    internal void KillZombies() { KillSpecies(Player::SPECIEZOMBIE); }
+    internal void KillUnsafeHumans(int slot = 0) { KillUnsafeSpecies(Player::SPECIEHUMAN, slot); }
+    internal void KillUnsafeZombies(int slot = 0) { KillUnsafeSpecies(Player::SPECIEZOMBIE, slot); }
 
-    void KillUnsafePlayers()
+    void KillUnsafePlayers(int slot = 0)
     {
-        KillUnsafeHumans();
-        KillUnsafeZombies();
+        KillUnsafeHumans(slot);
+        KillUnsafeZombies(slot);
     }
 
-    internal void KillSpecies(Player::PlayerSpecieT specie, bool checkIsSafe = true)
+    internal void KillSpecies(Player::PlayerSpecieT specie)
     {
         for (int i = 0; i < BCSUTILS::MAX_PLAYERS; i++)
         {
             if (!PlayerInGame(i) || Player::GetPlayerSpecie(i) != specie)
                 continue;
 
-            KillPlayer(i, checkIsSafe);
+            KillPlayer(i);
         }
     }
 
-    internal void KillPlayer(int id, bool checkIsSafe)
+    internal void KillUnsafeSpecies(Player::PlayerSpecieT specie, int slot = 0)
+    {
+        if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": slot " + str(slot) + " is not valid.");
+            return;
+        }
+
+        for (int i = 0; i < BCSUTILS::MAX_PLAYERS; i++)
+        {
+            if (!PlayerInGame(i) || Player::GetPlayerSpecie(i) != specie)
+                continue;
+
+            KillUnsafePlayer(i, slot);
+        }
+    }
+
+    internal void KillPlayer(int id)
     {
         int tid = Identity::GetTID(id);
         if (!PlayerInGame(id) || !BCSUtils::ActorIsAlive(tid)) return;
 
-        if (checkIsSafe && GetPlayerIsSafe(id))
+        // TODO: Ability to specify kill type.
+        Thing_Damage(tid, /* BCSUtils::INT_MAX */ 999999, MOD_EXIT);
+    }
+
+    internal void KillUnsafePlayer(int id, int slot = 0)
+    {
+        int tid = Identity::GetTID(id);
+        if (!PlayerInGame(id) || !BCSUtils::ActorIsAlive(tid)) return;
+
+        if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
         {
-            Logger::LogDebug(LOGSOURCE, "Player not killed. Player id " + str(id) + " is safe.");
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": slot " + str(slot) + " is not valid.");
             return;
         }
 
-        // TODO: Ability to specify kill type.
-        Thing_Damage(tid, /* BCSUtils::INT_MAX */ 999999, MOD_EXIT);
+        if (GetPlayerIsSafe(id, slot))
+        {
+            Logger::LogDebug(LOGSOURCE, "Player not killed. Player id " + str(id) + " is safe in slot " + str(slot) + ".");
+            return;
+        }
+
+        KillPlayer(id);
     }
 }
