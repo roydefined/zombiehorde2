@@ -9,6 +9,18 @@ strict namespace Game
 
     void SetPlayerIsSafe(int id, bool safe, int slot = 0, bool broadcast = true)
     {
+        if (!Identity::IsValidID(id))
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": player id " + str(id) + " is not valid.");
+            return;
+        }
+
+        if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": slot " + str(slot) + " is not valid.");
+            return;
+        }
+
         ZH2Game::GameContext.Players[id].SafeContext.Slots[slot].Safe = safe;
         Logger::LogDebug(LOGSOURCE, BCSUTILS::PlayerName(id) + " (\cd" + str(id) + "\cj) \cd" + (safe ? "entered" : "left") + "\cj the safe zone.");
 
@@ -25,6 +37,18 @@ strict namespace Game
     bool GetIsSafe(int slot = 0) { return GetPlayerIsSafe(PlayerNumber(), slot); }
     bool GetPlayerIsSafe(int id, int slot = 0)
     {
+        if (!Identity::IsValidID(id))
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": player id " + str(id) + " is not valid.");
+            return false;
+        }
+
+        if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": slot " + str(slot) + " is not valid.");
+            return false;
+        }
+
         return ZH2Game::GameContext.Players[id].SafeContext.Slots[slot].Safe;
     }
 }
