@@ -287,7 +287,16 @@ strict namespace Hud
         static str graphics[MAX_HUD_STATES] = { "ST_SAFE", "ST_CAFF", "ST_DAMFC", "ST_JUMP", "ST_SPEED", "ST_PANIC", "ST_CURE", "ST_HINV", "ST_UNSOL" };
 
         // Update states before drawing.
-        _hudStates[0] = Game::GetIsSafe();
+        // Safety is special as it has multiple slots. If we have at least one non-hidden safety slot set to `true`, it passes.
+        _hudStates[0] = false;
+        for (int i = 0; i < MAX_SAFETY_SLOTS; ++i)
+        {
+            if (Game::GetIsSafe(i) && !Game::GetSafeHidden(i))
+            {
+                _hudStates[0] = true;
+                break;
+            }
+        }
         _hudStates[1] = Power::GetHasPower(Power::POWERCAFFEINE);
         _hudStates[2] = Power::GetHasPower(Power::POWERREWARDHUMANWEAPONUPGRADE);
         _hudStates[3] = Power::GetHasPower(Power::POWERREWARDZOMBIEJUMP);
