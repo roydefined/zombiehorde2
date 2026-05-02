@@ -130,20 +130,37 @@ strict namespace Sync
     {
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing safe packs through actors. Sync id: " + str(syncId) + "."));
 
-        // Each player takes 1 bit to indicate true/false, 64 players = 64 bits = 2x 32-bit integers.
-        // Note value 3 is not yet used since we only use up to value 2 for the specie.
-        // Who knows, maybe I can add a fourth one?
+        int pack = 0;
+        bool hasValue = false;
+
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
-            bool safe = Game::GetPlayerIsSafe(i);
-            BitMath::SetBit64(BitMath::GetBitPack1(), BitMath::GetBitPack2(), i, safe);
+            for (int slot = 0; slot < MAX_SAFETY_SLOTS; ++slot)
+            {
+                if (ZH2Game::GameContext.Players[i].SafeContext.Slots[slot].Safe)
+                {
+                    pack |= 1 << (((i % 2) * MAX_SAFETY_SLOTS) + slot);
+                    hasValue = true;
+                }
+            }
+
+            if (i % 2 == 1)
+            {
+                if (hasValue)
+                {
+                    Logger::LogDebug(LOGSOURCE,
+                        FormatLog(SYNC_CATEGORY,
+                            "Pack written: \cd" + StrParam(b:pack) + "\cj (" + str(pack) + ")"));
+                }
+
+                BCSUtils::SyncVariable(--syncId, pack);
+
+                pack = 0;
+                hasValue = false;
+            }
         }
 
-        // Store back for syncing
-        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack1());
-        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack2());
-
-        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing safe packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2())));
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing safe packs through actors."));
         return syncId;
     }
 
@@ -151,13 +168,27 @@ strict namespace Sync
     {
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading safe packs on client through actors. Sync id: " + str(syncId) + "."));
 
-        int pack1 = BCSUtils::GetSyncVarDefault(--syncId, 0);
-        int pack2 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack = 0;
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
-            bool safe = bool(BitMath::GetBit64(pack1, pack2, i));
-            ZH2Game::GameContext.Players[i].SafeContext.Slots[0].Safe = safe;
+            if (i % 2 == 0)
+            {
+                pack = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+                if (pack != 0)
+                {
+                    Logger::LogDebug(LOGSOURCE,
+                        FormatLog(SYNC_CATEGORY,
+                            "Pack read: \cd" + StrParam(b:pack) + "\cj (" + str(pack) + ")"));
+                }
+            }
+
+            for (int slot = 0; slot < MAX_SAFETY_SLOTS; ++slot)
+            {
+                bool safe = (pack & (1 << (((i % 2) * MAX_SAFETY_SLOTS) + slot))) != 0;
+                ZH2Game::GameContext.Players[i].SafeContext.Slots[slot].Safe = safe;
+            }
         }
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing safe packs to client."));
