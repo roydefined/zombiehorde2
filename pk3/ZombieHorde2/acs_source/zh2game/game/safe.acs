@@ -34,6 +34,39 @@ strict namespace Game
             Sync::SyncPlayers();
     }
 
+    void SetAllPlayersSafe(bool safe, int slot = 0, bool broadcast = true)
+    {
+        SetAllHumansSafe(safe, slot, false);
+        SetAllZombiesSafe(safe, slot, false);
+
+        if (broadcast)
+            Sync::SyncPlayers();
+    }
+
+    void SetAllHumansSafe(bool safe, int slot = 0, bool broadcast = true) { SetAllSpeciesSafe(Player::SPECIEHUMAN, safe, slot, broadcast); }
+    void SetAllZombiesSafe(bool safe, int slot = 0, bool broadcast = true) { SetAllSpeciesSafe(Player::SPECIEZOMBIE, safe, slot, broadcast); }
+
+    internal void SetAllSpeciesSafe(Player::PlayerSpecieT specie, bool safe, int slot = 0, bool broadcast = true)
+    {
+        for (int i = 0; i < BCSUTILS::MAX_PLAYERS; i++)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            int tid = Identity::GetTID(i);
+            if (!BCSUTILS::ActorIsAlive(tid))
+                continue;
+
+            if (Player::GetPlayerSpecie(i) != specie)
+                continue;
+
+            SetPlayerIsSafe(i, safe, slot, false);
+        }
+
+        if (broadcast)
+            Sync::SyncPlayers();
+    }
+
     bool GetIsSafe(int slot = 0) { return GetPlayerIsSafe(PlayerNumber(), slot); }
     bool GetPlayerIsSafe(int id, int slot = 0)
     {
