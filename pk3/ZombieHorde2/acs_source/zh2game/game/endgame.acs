@@ -37,10 +37,10 @@ strict namespace Game
 
     internal void KillHumans() { KillSpecies(Player::SPECIEHUMAN); }
     internal void KillZombies() { KillSpecies(Player::SPECIEZOMBIE); }
-    internal void KillUnsafeHumans(int slot = 0) { KillUnsafeSpecies(Player::SPECIEHUMAN, slot); }
-    internal void KillUnsafeZombies(int slot = 0) { KillUnsafeSpecies(Player::SPECIEZOMBIE, slot); }
+    internal void KillUnsafeHumans(int slot = -1) { KillUnsafeSpecies(Player::SPECIEHUMAN, slot); }
+    internal void KillUnsafeZombies(int slot = -1) { KillUnsafeSpecies(Player::SPECIEZOMBIE, slot); }
 
-    void KillUnsafePlayers(int slot = 0)
+    void KillUnsafePlayers(int slot = -1)
     {
         KillUnsafeHumans(slot);
         KillUnsafeZombies(slot);
@@ -57,9 +57,9 @@ strict namespace Game
         }
     }
 
-    internal void KillUnsafeSpecies(Player::PlayerSpecieT specie, int slot = 0)
+    internal void KillUnsafeSpecies(Player::PlayerSpecieT specie, int slot = -1)
     {
-        if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
+        if (slot < -1 || slot >= MAX_SAFETY_SLOTS)
         {
             Logger::LogError(LOGSOURCE, __FUNCTION__ + ": slot " + str(slot) + " is not valid.");
             return;
@@ -83,18 +83,23 @@ strict namespace Game
         Thing_Damage(tid, /* BCSUtils::INT_MAX */ 999999, MOD_EXIT);
     }
 
-    internal void KillUnsafePlayer(int id, int slot = 0)
+    internal void KillUnsafePlayer(int id, int slot = -1)
     {
         int tid = Identity::GetTID(id);
         if (!PlayerInGame(id) || !BCSUtils::ActorIsAlive(tid)) return;
 
-        if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
+        if (slot < -1 || slot >= MAX_SAFETY_SLOTS)
         {
             Logger::LogError(LOGSOURCE, __FUNCTION__ + ": slot " + str(slot) + " is not valid.");
             return;
         }
 
-        if (GetPlayerIsSafe(id, slot))
+        if (slot == -1 && GetPlayerIsSafeAny(id))
+        {
+            Logger::LogDebug(LOGSOURCE, "Player not killed. Player id " + str(id) + " is safe.");
+            return;
+        }
+        else if (slot != -1 && GetPlayerIsSafe(id, slot))
         {
             Logger::LogDebug(LOGSOURCE, "Player not killed. Player id " + str(id) + " is safe in slot " + str(slot) + ".");
             return;

@@ -85,6 +85,24 @@ strict namespace Game
         return ZH2Game::GameContext.Players[id].SafeContext.Slots[slot].Safe;
     }
 
+    bool GetIsSafeAny() { return GetPlayerIsSafeAny(PlayerNumber()); }
+    bool GetPlayerIsSafeAny(int id)
+    {
+        if (!Identity::IsValidID(id))
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": player id " + str(id) + " is not valid.");
+            return false;
+        }
+
+        for (int i = 0; i < MAX_SAFETY_SLOTS; ++i)
+        {
+            if (ZH2Game::GameContext.Players[id].SafeContext.Slots[i].Safe)
+                return true;
+        }
+
+        return false;
+    }
+
     internal void SetSafeHidden(bool hidden, int slot = 0, bool broadcast = true)
     {
         if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
