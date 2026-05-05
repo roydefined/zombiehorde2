@@ -19,8 +19,6 @@ int Nyan = 0;
 int lift = 3;
 int Nyaned = 0;
 int redkeyspawn;
-bool toxins[BCSUtils::MAX_PLAYERS];
-bool Final[BCSUtils::MAX_PLAYERS];
 
 
 //==========================---World scripts---==========================
@@ -55,6 +53,19 @@ script 29 (void)
 	PrintBold(n:0, s:"\cj is a wallrunner!");
 	HealThing(200, 200);
 	Door_raise(89,15,0);
+}
+
+//---------------------------------------- [ZH2] Special safety script
+
+// The script marks the player as safe using either slot 0 or 2 depending on map state.
+// Slot 2 is hidden and will be used instead if the secret ending has started.
+// Reason being is that at this point the safezone is no longer safe, and player must move.
+script "enter_safezone"
+{
+	if (Secret_Activated)
+		Game::SetIsSafe(Lineside() == LINE_FRONT, 2);
+	else
+		Game::SetIsSafe(Lineside() == LINE_FRONT, 0);
 }
 
 //----------------------------------------zombie river teleporter + Human instakill
@@ -446,6 +457,21 @@ Script 30 (void)
 				SetFont("BIGFONT");
 				HudmessageBold(s:"Secret Ending ACTIVATED"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.30, 3.5, 0.5);
 				Log(s:"Secret Ending has been Activated!");
+
+				// [ZH2] Move all current safe players to slot 2
+				for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+				{
+					if (Game::GetPlayerIsSafe(i, 0))
+					{
+						Game::SetPlayerIsSafe(i, false, 0, false);
+						Game::SetPlayerIsSafe(i, true, 2, false);
+					}
+				}
+
+				// Bit of a hack but we don't have a good way to sync the game again if we never broadcast changes.
+				// So just call SetPlayerIsSafe one more time.
+				Game::SetPlayerIsSafe(0, false, 0, false);
+
 				delay(5*35);
 				acs_execute(17,0,0,0,0);
 				break;
@@ -571,7 +597,7 @@ script 22 (void)
 	SpawnSpot ("ZH2LegacyZE15SteamSpawner", 81,0,128);//West
 	SpawnSpot ("ZH2LegacyZE15SteamSpawner", 82,0,64);//north
 	AmbientSound("world/gas1", 100);
-	Acs_execute(35,0,0,0,0);
+	Game::KillUnsafePlayers(3);
 	delay(8*37);
 	Thing_Remove (62);//Removes the steam actors because they cause afterlag for the players.
 	Thing_Remove (76);
@@ -583,37 +609,12 @@ script 22 (void)
 	Thing_Remove (82);
 }
 
-script 23 (void)
-{
-    if(LineSide()) Toxins[PlayerNumber()] = 1;
-    else Toxins[PlayerNumber()] = 0;
-}
-
-/*Script 23 (void)//Old Toxins kill script
-{
-        Toxins[PlayerNumber()] = True;
-}
-
-Script 24 (void)
-{
-        Toxins[PlayerNumber()] = False;
-}*/
-
 script 28 (void)//Second resist vent trap.
 {
 	Ceiling_LowerByValue(110, 55, 6*8);
 	TagWait(83);
 	delay(15*37);
 	Ceiling_raiseByValue(110, 55, 6*8);
-}
-
-script 35 (void)//toxin damager
-{
-	for(int i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
-	{
-		if(PlayerInGame(i) && !Toxins[i])
-			Thing_Damage(Identity::GetTid(i), 10000, MOD_EXIT);
-	}
 }
 
 // Zombie has escaped message.
@@ -696,24 +697,9 @@ script 37 (void)//Final resist
 	fadeto(0,0,0, 1.0, 0.75);
 	delay(30*2);
 	setlinespecial(10,9,0,0,0,0,0);
-	Acs_execute(39,0,0,0,0);
+	Game::KillUnsafePlayers(1);
 	delay(25);
 	fadeto(0,0,0, 0, 0.75);
-}
-
-Script 38 (void)
-{
-	Final[PlayerNumber()] = LineSide() == LINE_FRONT;
-}
-
-// final damager
-script 39 (void)
-{
-	for(int i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
-	{
-		if(PlayerInGame(i) && !Final[i])
-			Thing_Damage(Identity::GetTid(i), 10000, MOD_EXIT);
-	}
 }
 
 Script 41 (void)
