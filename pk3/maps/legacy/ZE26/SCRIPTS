@@ -13,7 +13,6 @@ bool SecretDone = FALSE;
 bool ItsToLateForSecret = FALSE;
 bool UnknowForceActivated = FALSE;
 bool ZombieFailed = FALSE;
-Bool SecretRoomReached[BCSUtils::MAX_PLAYERS];
 
 Script 1 OPEN
 {
@@ -639,11 +638,7 @@ script 66 (void) // Secret Resist from right
 	Delay(35*3);
 	AmbientSound("world/volcano1", 127);
 	Delay(35);
-	for(int i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
-	{
-		if(!SecretRoomReached[i])
-			Thing_Damage(Identity::GetTid(i), 10000, MOD_EXIT);
-	}
+	Game::KillUnsafePlayers(1);
 }
 
 Script 67 (void) // Secret Teleport
@@ -691,12 +686,6 @@ Script 72 (void) // Other Butchers
 	ThrustThing(192,20,0,563);
 	Thing_ChangeTID(563,0);
 	restart;
-}
-
-script 76 (void) // Thanks kgsws for this
-{
-	if(LineSide()) SecretRoomReached[PlayerNumber()] = 1;
-	else SecretRoomReached[PlayerNumber()] = 0;
 }
 
 Script 77 (void) // Opening secret room at right
