@@ -25,6 +25,8 @@
 
 #define MAX_END_TRACKS 6
 
+#define MAX_SAFETY_SLOTS 16
+
 // Team indicators
 #define TEAM_INDICATOR_NAME "ZH2TeamIndicator"
 #define TEAM_INDICATOR_UNKNOWN_STATE "spawn.unknown"
@@ -141,12 +143,43 @@ strict namespace Game
         int ZombieTeleportsUsed;
     };
 
-    extern void KillUnsafePlayers();
+    internal struct SafeContextT
+    {
+        SafeSlotContextT Slots[MAX_SAFETY_SLOTS];
+    };
 
-    extern void SetIsSafe(bool safe);
-    extern void SetPlayerIsSafe(int id, bool safe, bool broadcast = true);
-    extern bool GetIsSafe();
-    extern bool GetPlayerIsSafe(int id);
+    internal struct SafeSlotContextT
+    {
+        // Synched.
+        // If a slot is hidden, it won't visually broadcast through the obituary system, or the HUD.
+        bool Hidden;
+    };
+
+    internal struct PlayerSafeContextT
+    {
+        PlayerSafeSlotContextT Slots[MAX_SAFETY_SLOTS];
+    };
+
+    internal struct PlayerSafeSlotContextT
+    {
+        // Safe is synched. Indicates if a player reached the safezone.
+        // FirstTimeSafe is serverside and indicates if the player has reached safety before.
+        bool Safe;
+        bool FirstTimeSafe;
+    };
+
+    extern void KillUnsafePlayers(int slot = -1);
+
+    extern void SetIsSafe(bool safe, int slot = 0, bool broadcast = true);
+    extern void SetPlayerIsSafe(int id, bool safe, int slot = 0, bool broadcast = true);
+    extern bool GetIsSafe(int slot = 0);
+    extern bool GetPlayerIsSafe(int id, int slot = 0);
+    extern bool GetIsSafeAny();
+    extern bool GetPlayerIsSafeAny(int id);
+
+    extern void SetAllPlayersSafe(bool safe, int slot = 0, bool broadcast = true);
+    extern void SetAllHumansSafe(bool safe, int slot = 0, bool broadcast = true);
+    extern void SetAllZombiesSafe(bool safe, int slot = 0, bool broadcast = true);
 
     extern int HumanCount(bool includeDead = false);
     extern int ZombieCount(bool includeDead = false);

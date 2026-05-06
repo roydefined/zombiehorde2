@@ -108,20 +108,20 @@ strict namespace Admin
         Logger::LogBold("\cjAn \cfadmin \cjhas resumed the timer!");
     }
 
-    internal void AdminKillUnsafePlayersClientSide()
+    internal void AdminKillUnsafePlayersClientSide(int slot)
     {
-        if (!NamedRequestScriptPuke("zh2_internal_menu_action_kill_unsafe_players"))
+        if (!NamedRequestScriptPuke("zh2_internal_menu_action_kill_unsafe_players", slot))
             Logger::LogError(LOGSOURCE, "Failed to call admin kill unsafe players.");
     }
 
-    script "zh2_internal_menu_action_kill_unsafe_players" (int addTics) net
+    script "zh2_internal_menu_action_kill_unsafe_players" (int slot) net
     {
         if (!GetIsAdmin()) terminate;
         if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING) terminate;
 
         SetActivator(-1);
 
-        Game::KillUnsafePlayers();
+        Game::KillUnsafePlayers(slot);
         Logger::LogBold("\cjAn \cfadmin \cjhas killed all unsafe players!");
     }
 
@@ -139,7 +139,7 @@ strict namespace Admin
 
         SetActivator(-1);
 
-        Game::KillPlayer(id, false);
+        Game::KillPlayer(id);
         Logger::LogBold("\cf" + BCSUTILS::PlayerName(id) + "\cj has been killed by an \cfadmin\cj!");
     }
 
