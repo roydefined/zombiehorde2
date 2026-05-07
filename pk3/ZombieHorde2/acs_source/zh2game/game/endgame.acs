@@ -74,13 +74,17 @@ strict namespace Game
         }
     }
 
-    internal void KillPlayer(int id)
+    void Kill(int modifier = MOD_UNKNOWN)
+    {
+        KillPlayer(PlayerNumber(), modifier);
+    }
+
+    void KillPlayer(int id, int modifier = MOD_UNKNOWN)
     {
         int tid = Identity::GetTID(id);
         if (!PlayerInGame(id) || !BCSUtils::ActorIsAlive(tid)) return;
 
-        // TODO: Ability to specify kill type.
-        Thing_Damage(tid, /* BCSUtils::INT_MAX */ 999999, MOD_EXIT);
+        Thing_Damage(tid, /* BCSUtils::INT_MAX */ 999999, modifier);
     }
 
     internal void KillUnsafePlayer(int id, int slot = -1)
@@ -105,6 +109,6 @@ strict namespace Game
             return;
         }
 
-        KillPlayer(id);
+        KillPlayer(id, MOD_EXIT);
     }
 }
