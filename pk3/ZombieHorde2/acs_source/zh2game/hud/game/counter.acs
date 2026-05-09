@@ -11,12 +11,15 @@ strict namespace Hud
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetTextColor(CR_WHITE);
 
+        fixed addY = DrawPlayerCounters();
+        DrawStatCounters(addY);
+    }
+
+    internal fixed DrawPlayerCounters()
+    {
         int humanCount = Game::HumanCount();
         int zombieCount = Game::ZombieCount();
-        int kills = Player::GetZombieKills();
-        int infects = Player::GetInfects();
 
-        // The vertical offset will change depending on if the counter exists.
         fixed y = 0.0;
 
         if (humanCount > 0)
@@ -52,6 +55,14 @@ strict namespace Hud
 
             y += 20.0;
         }
+
+        return y;
+    }
+
+    internal void DrawStatCounters(fixed y)
+    {
+        int kills = Player::GetZombieKills();
+        int infects = Player::GetInfects();
 
         if (kills > 0)
         {
