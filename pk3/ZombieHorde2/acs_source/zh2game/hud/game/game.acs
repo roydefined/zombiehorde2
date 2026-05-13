@@ -17,7 +17,6 @@ strict namespace Hud
         BCSUtils::HudResetState();
         BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
 
         PrepareHud(
             320.0,
@@ -29,12 +28,22 @@ strict namespace Hud
         // Do not draw the counters unless there are more than two players playing.
         if (PlayerCount() >= 2)
         {
+            BCSUtils::HudSetTextColor(CR_WHITE);
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+
             PrepareHud(
-                BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX() - 110.0,
-                BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 180.0,
+                BCSUtils::HudLeft() - ZH2Game::GetHudPlayerStatusOffsetX() + 60.0,
+                BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 10.0,
                 true);
 
-            DrawCounters();
+            DrawPlayerCounters();
+
+            PrepareHud(
+                BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX() - 190.0,
+                BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 120.0,
+                true);
+
+            DrawStatCounters();
         }
     }
 }
