@@ -4,7 +4,7 @@
 
 strict namespace Hud
 {
-    internal void DrawPlayerCounters()
+    internal void DrawPlayerCounters(Player::ZombieSkinTypeT skinType)
     {
         int humanCount = Game::HumanCount();
         int zombieCount = Game::ZombieCount();
@@ -19,7 +19,7 @@ strict namespace Hud
             DebugDraw();
 
             HudSetPointInternal(-10.0, 2.0);
-            BCSUtils::HudDrawImage(--_drawnHudId, "HUD_CHUM");
+            BCSUtils::HudDrawImage(--_drawnHudId, "HUDCHUMN");
             DebugDraw();
 
             HudSetPointInternal(8.0, 2.0);
@@ -31,12 +31,27 @@ strict namespace Hud
 
         if (zombieCount > 0)
         {
+            // NOTE: Initial not currently working because we don't check initial zombies by design.
+            str zombieGraphic;
+            switch(skinType)
+            {
+                case Player::ZOMBIESKIN_INITIAL:
+                    zombieGraphic = "HUDCZOMI";
+                    break;
+                case Player::ZOMBIESKIN_REGULAR:
+                    zombieGraphic = "HUDCZOMR";
+                    break;
+                case Player::ZOMBIESKIN_OLD:
+                    zombieGraphic = "HUDCZOMO";
+                    break;
+            }
+
             HudSetPointInternal(x - 15.0, 0.0);
             BCSUtils::HudDrawImage(--_drawnHudId, "HUDZBACK");
             DebugDraw();
 
             HudSetPointInternal(x - 10.0, 2.0);
-            BCSUtils::HudDrawImage(--_drawnHudId, "HUD_CZOM");
+            BCSUtils::HudDrawImage(--_drawnHudId, zombieGraphic);
             DebugDraw();
 
             HudSetPointInternal(x + 8.0, 2.0);
@@ -45,7 +60,7 @@ strict namespace Hud
         }
     }
 
-    internal void DrawStatCounters()
+    internal void DrawStatCounters(Player::ZombieSkinTypeT skinType)
     {
         int kills = Player::GetZombieKills();
         int infects = Player::GetInfects();
@@ -61,8 +76,23 @@ strict namespace Hud
 
         if (kills > 0)
         {
+            // NOTE: Initial not currently working because we don't check initial zombies by design.
+            str zombieGraphic;
+            switch(skinType)
+            {
+                case Player::ZOMBIESKIN_INITIAL:
+                    zombieGraphic = "HUDKCZMI";
+                    break;
+                case Player::ZOMBIESKIN_REGULAR:
+                    zombieGraphic = "HUDKCZMR";
+                    break;
+                case Player::ZOMBIESKIN_OLD:
+                    zombieGraphic = "HUDKCZMO";
+                    break;
+            }
+
             HudSetPointInternal(-10.0, 0.0);
-            BCSUtils::HudDrawImage(--_drawnHudId, "HUD_CZKL");
+            BCSUtils::HudDrawImage(--_drawnHudId, zombieGraphic);
             DebugDraw();
 
             HudSetPointInternal(8.0, 0.0);
@@ -75,7 +105,7 @@ strict namespace Hud
         if (infects > 0)
         {
             HudSetPointInternal(x - 10.0, 0.0);
-            BCSUtils::HudDrawImage(--_drawnHudId, "HUD_CINF");
+            BCSUtils::HudDrawImage(--_drawnHudId, "HUDCINFC");
             DebugDraw();
 
             HudSetPointInternal(x + 8.0, 0.0);
