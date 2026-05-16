@@ -25,6 +25,12 @@ Script 1 OPEN
 	Thing_Move(108,random(109,110),1);
 	Thing_Move(111,random(112,113),1);
 	Thing_Move(114,random(115,116),1);
+
+	// [ZH2] Check if we force a specific gate to be opened
+	int flow = GetCVar("sv_zh2_ze26flow");
+	if (flow != 0)
+		ACS_Execute(3, 0, flow, false);
+
 	delay(100);
 	SetHudSize(640, 400, 0);
 	Setfont("dbigfont");
@@ -50,9 +56,9 @@ script 2 (void) // Lowering pillars the Cave
 	Floor_Lowerbyvalue(1,60,752);
 }
 
-Script 3 ( int Typ )
+Script 3 (raw typ, raw announce)
 {
-	If ( typ == 1 )
+	if ( typ == 1 )
 	{
 		if (GateOpen  == FALSE )
 		{
@@ -63,14 +69,12 @@ Script 3 ( int Typ )
 			Radius_Quake(2, 210, 0, 10, 701);
 			ACS_ExecuteAlways(70,0,1,0,0);
 			delay(35);
-			SetFont("BIGFONT");
-			HudmessageBold(n:0, s:" \ckhas lowered the right gate !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 3.0, 2.5);
-			delay(35*5);
-			Music::PlayMusic("D_SCAR");
-			SETFONT("SmallFont");
-			HudMessageBold(s:"Welcome to \cdScarlet's Castle\cd, there is a safe place at the end, you need hurry to reach it."; HUDMSG_FADEOUT, 0, CR_Green, 0.5, 0.20, 8.0, 4.0);
-			delay(35*10);
-			PrintBold(s:"Follow the arrows on the floor if you are lost.");
+
+			if (announce)
+			{
+				SetFont("BIGFONT");
+				HudmessageBold(n:0, s:" \ckhas lowered the right gate !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 3.0, 2.5);
+			}
 		}
 	}
 	If ( typ == 2 )
@@ -84,16 +88,31 @@ Script 3 ( int Typ )
 			Radius_Quake(2, 210, 0, 10, 701);
 			ACS_ExecuteAlways(70,0,2,0,0);
 			delay(35);
-			SetFont("BIGFONT");
-			HudmessageBold(n:0, s:" \ckhas lowered the left gate !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 3.0, 2.5);
-			delay(35*5);
-			Music::PlayMusic("D_SCAR");
-			SETFONT("SmallFont");
-			HudMessageBold(s:"Welcome to \cdScarlet's Castle\cd, there is a safe place at the end, you need hurry to reach it."; HUDMSG_FADEOUT, 0, CR_Green, 0.5, 0.20, 8.0, 4.0);
-			delay(35*10);
-			PrintBold(s:"Follow the arrows on the floor if you are lost.");
+
+			if (announce)
+			{
+				SetFont("BIGFONT");
+				HudmessageBold(n:0, s:" \ckhas lowered the left gate !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 3.0, 2.5);
+			}
 		}
 	}
+}
+
+// Music will start on first entry.
+script "enter_castle"
+{
+	static bool hasRun;
+
+	if (hasRun)
+		terminate;
+
+	hasRun = true;
+
+	Music::PlayMusic("D_SCAR");
+	SetFont("SmallFont");
+	HudMessageBold(s:"Welcome to \cdScarlet's Castle\cd, there is a safe place at the end, you need hurry to reach it."; HUDMSG_FADEOUT, 0, CR_Green, 0.5, 0.20, 8.0, 4.0);
+	delay(35*10);
+	PrintBold(s:"Follow the arrows on the floor if you are lost.");
 }
 
 script 4 (void) // Closing the
