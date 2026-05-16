@@ -4,7 +4,7 @@
 
 strict namespace Player
 {
-    // Replaces common textures only shown in software mode, unless the user is rendering using OpenGL.
+    // Replaces common textures only shown in software mode.
     internal void EnsureSoftwareModeTexturesRemoved()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
@@ -15,7 +15,16 @@ strict namespace Player
         if (!ZH2Game::GetRemoveSoftwareTextures())
             return;
 
-        ReplaceTextures("3DOUTLIN", "", NOT_BOTTOM | NOT_TOP | NOT_FLOOR | NOT_CEILING);
-        ReplaceTextures("3DOUTLI2", "", NOT_BOTTOM | NOT_TOP | NOT_FLOOR | NOT_CEILING);
+        // Replace using lump reading.
+        // We don't replace `3DOUTLIN` and `3DOUTLI2` because maps actually do use these textures.
+        //ReplaceTextures("3DOUTLIN", "", NOT_BOTTOM | NOT_TOP | NOT_FLOOR | NOT_CEILING);
+        //ReplaceTextures("3DOUTLI2", "", NOT_BOTTOM | NOT_TOP | NOT_FLOOR | NOT_CEILING);
+
+        for (int i = 0; i < ZH2Game::GameContext.SoftwareTextureContext.Size; ++i)
+        {
+            str name = ZH2Game::GameContext.SoftwareTextureContext.Textures[i].Name;
+            int flags = ZH2Game::GameContext.SoftwareTextureContext.Textures[i].Flags;
+            ReplaceTextures(name, "", flags);
+        }
     }
 }

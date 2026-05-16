@@ -7,6 +7,7 @@
 #include "weather.acs"
 #include "game.acs"
 #include "safety.acs"
+#include "softwaretextures.acs"
 
 strict namespace IO
 {
@@ -112,6 +113,10 @@ strict namespace IO
                 // The game and safety blocks are purely serverside.
                 || BCSUtils::IsServer() &&
                     (ParseGameBlock(handle, mapLump, symbol) || ParseSafety(handle, mapLump, symbol))
+
+                // software-specific textures is purely clientside
+                || BCSUtils::IsClient() &&
+                    (ParseSoftwareTextures(handle, mapLump, symbol))
                 )
             {
                 // Optional comma.
