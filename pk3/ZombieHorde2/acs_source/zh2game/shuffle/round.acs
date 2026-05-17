@@ -6,13 +6,18 @@ strict namespace Shuffle
 {
     script "zh2_internal_shuffle_compareinitials" (int left, int _)
     {
+        int id = _context.Buffer[left];
+        bool previously = Player::GetPlayerInitialZombiePreviously(id);
+        bool lastMap = Player::GetPlayerInitialZombieLastMap(id);
+
         SetResultValue(
-            int(!Player::GetPlayerInitialZombiePreviously(_context.Buffer[left])));
+            int(!previously && !lastMap));
     }
 
     internal bool ShuffleByNotPreviouslyInitialZombieComparer(int id)
     {
-        return !Player::GetPlayerInitialZombiePreviously(id);
+        return !Player::GetPlayerInitialZombiePreviously(id)
+            && !Player::GetPlayerInitialZombieLastMap(id);
     }
 
     internal void ShuffleByNotPreviouslyInitialZombie()

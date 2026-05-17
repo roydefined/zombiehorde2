@@ -13,9 +13,17 @@ strict namespace Round
         // Minimum of 1 zombie, and 1 added every configured number of players.
         int totalZombies = PlayerCount() / ZH2Game::GetPlayersPerInitial() + 1;
 
+        // Pick players at random to be initial zombie.
+        // The shuffle will pick based on being picked previously, or the last map.
         Shuffle::ShuffleByNotPreviouslyInitialZombie();
         int size = Shuffle::GetRelevantSize();
+
         DetermineInitialZombiesCore(size, totalZombies);
+
+        // Set all current zombies as the last map zombies.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            Player::SetPlayerInitialZombieLastMap(i, Player::GetPlayerInitialZombie(i));
+
         return totalZombies;
     }
 
@@ -28,6 +36,7 @@ strict namespace Round
             int id = Shuffle::GetIndexValue(i);
             Player::SetPlayerInitialZombie(id, true);
             Player::SetPlayerInitialZombiePreviously(id, true);
+            Player::SetPlayerInitialZombieLastMap(id, true);
             requiredCount--;
         }
 
