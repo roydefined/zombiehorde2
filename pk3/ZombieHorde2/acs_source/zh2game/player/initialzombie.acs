@@ -30,29 +30,22 @@ strict namespace Player
         return ZH2Game::GameContext.Players[id].IsInitialZombie;
     }
 
-    internal void SetPreviouslyInitialZombie(bool set) { SetPlayerPreviouslyInitialZombie(PlayerNumber(), set); }
-    internal void SetPlayerPreviouslyInitialZombie(int id, bool set)
+    internal void SetInitialZombiePreviously(bool set) { SetPlayerInitialZombiePreviously(PlayerNumber(), set); }
+    internal void SetPlayerInitialZombiePreviously(int id, bool set)
     {
-        if (!Identity::IsValidID(id))
-        {
-            Logger::LogError(LOGSOURCE, "Unable to set player as previously initial zombie. Id " + str(id) + " is not valid.");
-            return;
-        }
+        VALIDATE_ID_VALID_FUNCTION(id);
 
-        if (GetPlayerPreviouslyInitialZombie(id) == set) return;
+        if (GetPlayerInitialZombiePreviously(id) == set)
+            return;
+
         ZH2Game::PersistingGameContext.Players[id].PreviouslyInitialZombie = set;
         Logger::LogDebug(LOGSOURCE, (set ? "Added" : "Removed") + " (\cd" + str(id) + "\cj) \cd" + BCSUTILS::PlayerName(id) + "\cj as a previously initial zombie.");
     }
 
-    internal bool GetPreviouslyInitialZombie() { return GetPlayerPreviouslyInitialZombie(PlayerNumber()); }
-    internal bool GetPlayerPreviouslyInitialZombie(int id)
+    internal bool GetInitialZombiePreviously() { return GetPlayerInitialZombiePreviously(PlayerNumber()); }
+    internal bool GetPlayerInitialZombiePreviously(int id)
     {
-        if (!Identity::IsValidID(id))
-        {
-            Logger::LogError(LOGSOURCE, "Unable to get player as previously initial zombie. Id " + str(id) + " is not valid.");
-            return false;
-        }
-
+        VALIDATE_ID_VALID_FUNCTION_RETURN(id, false);
         return ZH2Game::PersistingGameContext.Players[id].PreviouslyInitialZombie;
     }
 
@@ -71,7 +64,7 @@ strict namespace Player
             }
 
             bool check = previous
-                ? GetPlayerPreviouslyInitialZombie(i)
+                ? GetPlayerInitialZombiePreviously(i)
                 : GetPlayerInitialZombie(i);
             if (!check) continue;
 
