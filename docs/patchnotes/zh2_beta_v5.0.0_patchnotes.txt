@@ -27,6 +27,29 @@ Maps will now indicate these settings exist if relevant and users can configure 
 On top of that, servers can now also configure a few new settings that fit these map-specific settings.
 The specific changes made for maps to support these new menus have been listed below in map changes.
 
+ * * Initial zombie pick system improvements * *
+The system used to pick initial zombies has seen several improvements.
+One of the major issues often reported was the fact players could get picked twice in a row.
+To avoid making the explanation too confusing, the game uses a sort of queue. Everybody gets picked once, and then the queue resets.
+But nothing remembers who got picked last then. This means players could get picked again after getting picked last time.
+One of the improvements is that the game now remembers who got picked last in this case, and the player will not get picked again.
+
+However, this isn't a single change. The game now supports 6 new pick settings!
+These can be manages with the new cvar `sv_zh2_initialpickmethod`. These values are:
+0: Randomized - No special logic at all. Anybody can get picked at any time.
+1: Remember last map - Also barely any logic. We only remember who got picked last, and you won't get picked again then.
+2: Pick everybody once - The old setting before this version. We pick everybody at least once, and then we reset it. We do not remember who got picked last here.
+3: Pick everybody once, but also remember last map - This is the one where we pick everybody once but also remember the last picks. The best of both worlds.
+
+However, that's not all. We have two more options. AqwerfNet came witht he suggestion for a new pick type, where we instead use weight.
+The idea is each player holds a number. The higher the number, the bigger the chance you get picked. The number resets when you get picked.
+You might see how this works very well as we no longer have to worry about resetting.
+This new feature comes in 2 more settings:
+4: Use weight picking - The main feature. Pick based on chance, with a higher chance the longer you haven't been picked.
+5: Use weight picking, but never pick somebody twice in a row - This one actually sets your weight lower so you never get a chance to get picked twice in a row. Basically the same as remembering the last map.
+
+The default is now to use the weight system, but remembering the last map. The rest exists to tweak the game, or to revert back to the previous system if needed.
+
 Map changes
 ------------------------------------------------
 
