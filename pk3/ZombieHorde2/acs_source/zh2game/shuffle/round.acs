@@ -6,22 +6,39 @@ strict namespace Shuffle
 {
     script "zh2_internal_shuffle_compareinitials" (int left, int _)
     {
-        SetResultValue(
-            int(!Player::GetPlayerPreviouslyInitialZombie(_context.Buffer[left])));
+        int id = _context.Buffer[left];
+
+        bool checkPrevious = _sortArgs[0];
+        bool checkLastMap = _sortArgs[1];
+
+        SetResultValue(int(PlayerCanGetPicked(id, checkPrevious, checkLastMap)));
     }
 
-    internal bool ShuffleByNotPreviouslyInitialZombieComparer(int id)
+    internal bool ShufflePickNextInitialZombiesComparer(int id)
     {
-        return !Player::GetPlayerPreviouslyInitialZombie(id);
+        bool checkPrevious = _sortArgs[0];
+        bool checkLastMap = _sortArgs[1];
+        return PlayerCanGetPicked(id, checkPrevious, checkLastMap);
     }
 
-    internal void ShuffleByNotPreviouslyInitialZombie()
+    internal bool PlayerCanGetPicked(int id, bool checkPrevious, bool checkLastMap)
+    {
+        bool previously = checkPrevious && Player::GetPlayerInitialZombiePreviously(id);
+        bool lastMap = checkLastMap && Player::GetPlayerInitialZombieLastMap(id);
+
+        return !previously && !lastMap;
+    }
+
+    internal void ShufflePickNextInitialZombies(bool checkPrevious, bool checkLastMap)
     {
         // This function is explicitly used for playing players.
         PrepareBufferPlayers(SHUFFLEPLAYING);
 
+        _sortArgs[0] = checkPrevious;
+        _sortArgs[1] = checkLastMap;
+
         BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_compareinitials", "zh2_internal_shuffle_swapbufferitems");
-        UpdateRelevantBufferSize(ShuffleByNotPreviouslyInitialZombieComparer);
+        UpdateRelevantBufferSize(ShufflePickNextInitialZombiesComparer);
         BCSUtils::ShuffleArray(0, _context.BufferRelevantSize, "zh2_internal_shuffle_swapbufferitems");
     }
 }

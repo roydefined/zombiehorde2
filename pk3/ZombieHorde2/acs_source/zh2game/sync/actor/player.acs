@@ -15,7 +15,8 @@ strict namespace Sync
         syncId = SyncWriteSafe(syncId);
         syncId = SyncWriteSpecies(syncId);
         syncId = SyncWriteThruActors(syncId);
-        syncId = SyncWritePreviouslyInitialZombies(syncId);
+        syncId = SyncWriteInitialZombiePreviously(syncId);
+        syncId = SyncWriteInitialZombieLastMap(syncId);
         syncId = SyncWriteInitialZombies(syncId);
         syncId = SyncWriteZombieInfections(syncId);
         syncId = SyncWriteHumanKills(syncId);
@@ -44,7 +45,8 @@ strict namespace Sync
         syncId = SyncReadSafe(syncId);
         syncId = SyncReadSpecies(syncId);
         syncId = SyncReadThruActors(syncId);
-        syncId = SyncReadPreviouslyInitialZombies(syncId);
+        syncId = SyncReadInitialZombiePreviously(syncId);
+        syncId = SyncReadInitialZombieLastMap(syncId);
         syncId = SyncReadInitialZombies(syncId);
         syncId = SyncReadZombieInfections(syncId);
         syncId = SyncReadHumanKills(syncId);
@@ -464,13 +466,13 @@ strict namespace Sync
         return syncId;
     }
 
-    internal int SyncWritePreviouslyInitialZombies(int syncId)
+    internal int SyncWriteInitialZombiePreviously(int syncId)
     {
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing previously initial zombie packs through actors. Sync id: " + str(syncId) + "."));
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
-            BitMath::SetBit64(BitMath::GetBitPack1(), BitMath::GetBitPack2(), i, Player::GetPlayerPreviouslyInitialZombie(i));
+            BitMath::SetBit64(BitMath::GetBitPack1(), BitMath::GetBitPack2(), i, Player::GetPlayerInitialZombiePreviously(i));
         }
 
         BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack1());
@@ -480,7 +482,7 @@ strict namespace Sync
         return syncId;
     }
 
-    internal int SyncReadPreviouslyInitialZombies(int syncId)
+    internal int SyncReadInitialZombiePreviously(int syncId)
     {
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading previously initial zombie packs on client through actors. Sync id: " + str(syncId) + "."));
 
@@ -489,10 +491,42 @@ strict namespace Sync
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
-            ZH2Game::PersistingGameContext.Players[i].PreviouslyInitialZombie = bool(BitMath::GetBit64(pack1, pack2, i));
+            ZH2Game::PersistingGameContext.Players[i].InitialPickContext.InitialZombiePreviously = bool(BitMath::GetBit64(pack1, pack2, i));
         }
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing previously initial zombie packs to client."));
+        return syncId;
+    }
+
+    internal int SyncWriteInitialZombieLastMap(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing last map initial zombie packs through actors. Sync id: " + str(syncId) + "."));
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            BitMath::SetBit64(BitMath::GetBitPack1(), BitMath::GetBitPack2(), i, Player::GetPlayerInitialZombieLastMap(i));
+        }
+
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack2());
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing last map initial zombie packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj."));
+        return syncId;
+    }
+
+    internal int SyncReadInitialZombieLastMap(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading last map initial zombie packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        int pack1 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            ZH2Game::PersistingGameContext.Players[i].InitialPickContext.InitialZombieLastMap = bool(BitMath::GetBit64(pack1, pack2, i));
+        }
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing last map initial zombie packs to client."));
         return syncId;
     }
 

@@ -8,15 +8,6 @@ strict namespace Round
     // In the future I will support the ability to allocate these to allow for more, but this requires an extra library.
     #define MAX_ROUNDSTATES 20
 
-    internal struct RoundStateContextT
-    {
-        // Set to `true` if we defined the round state index.
-        bool defined;
-
-        bool DenyJoin;
-        bool IsEnding;
-    };
-
     // A known round state is a round state that the mod has build in, which is different from a custom round state which does not.
     // The support is all the same, but this is easier for the mod because we can use this enum for clarity.
     enum KnownRoundStateT : int
@@ -31,6 +22,34 @@ strict namespace Round
 
         STATEENDING = 18,
         STATEVOTING = 19,
+    };
+
+    internal struct RoundStateContextT
+    {
+        // Set to `true` if we defined the round state index.
+        bool defined;
+
+        bool DenyJoin;
+        bool IsEnding;
+    };
+
+    struct InitialPickContextT
+    {
+        // Holds data about if the player has been an initial zombie before.
+        // Different pick methods exist, explained below.
+
+        // Picking based on boolean states tracking who actually got picked before in order.
+        // "Previously" marks them as being initial currently or a past map.
+        // "LastMap" marks them as being initial specifically on the last map.
+        // The big difference is "Previously" is reset when the list resets, and "LastMap" resets every next map.
+        // This combined ensures players are picked at least once, and never twice in a row (which is what "LastMap" ensures).
+        bool InitialZombiePreviously;
+        bool InitialZombieLastMap;
+
+        // Alternative method of picking initial zombies, based on weight.
+        // The higher the weight, the higher the chance to get picked.
+        // If -1, the player can't get picked.
+        int PickWeight;
     };
 
     extern bool GetGameIsPregame();

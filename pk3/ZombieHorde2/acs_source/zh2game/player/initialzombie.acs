@@ -30,30 +30,61 @@ strict namespace Player
         return ZH2Game::GameContext.Players[id].IsInitialZombie;
     }
 
-    internal void SetPreviouslyInitialZombie(bool set) { SetPlayerPreviouslyInitialZombie(PlayerNumber(), set); }
-    internal void SetPlayerPreviouslyInitialZombie(int id, bool set)
+    internal void SetInitialZombiePreviously(bool set) { SetPlayerInitialZombiePreviously(PlayerNumber(), set); }
+    internal void SetPlayerInitialZombiePreviously(int id, bool set)
     {
-        if (!Identity::IsValidID(id))
-        {
-            Logger::LogError(LOGSOURCE, "Unable to set player as previously initial zombie. Id " + str(id) + " is not valid.");
-            return;
-        }
+        VALIDATE_ID_VALID_FUNCTION(id);
 
-        if (GetPlayerPreviouslyInitialZombie(id) == set) return;
-        ZH2Game::PersistingGameContext.Players[id].PreviouslyInitialZombie = set;
+        if (GetPlayerInitialZombiePreviously(id) == set)
+            return;
+
+        ZH2Game::PersistingGameContext.Players[id].InitialPickContext.InitialZombiePreviously = set;
         Logger::LogDebug(LOGSOURCE, (set ? "Added" : "Removed") + " (\cd" + str(id) + "\cj) \cd" + BCSUTILS::PlayerName(id) + "\cj as a previously initial zombie.");
     }
 
-    internal bool GetPreviouslyInitialZombie() { return GetPlayerPreviouslyInitialZombie(PlayerNumber()); }
-    internal bool GetPlayerPreviouslyInitialZombie(int id)
+    internal bool GetInitialZombiePreviously() { return GetPlayerInitialZombiePreviously(PlayerNumber()); }
+    internal bool GetPlayerInitialZombiePreviously(int id)
     {
-        if (!Identity::IsValidID(id))
-        {
-            Logger::LogError(LOGSOURCE, "Unable to get player as previously initial zombie. Id " + str(id) + " is not valid.");
-            return false;
-        }
+        VALIDATE_ID_VALID_FUNCTION_RETURN(id, false);
+        return ZH2Game::PersistingGameContext.Players[id].InitialPickContext.InitialZombiePreviously;
+    }
 
-        return ZH2Game::PersistingGameContext.Players[id].PreviouslyInitialZombie;
+    internal void SetInitialZombieLastMap(bool set) { SetPlayerInitialZombieLastMap(PlayerNumber(), set); }
+    internal void SetPlayerInitialZombieLastMap(int id, bool set)
+    {
+        VALIDATE_ID_VALID_FUNCTION(id);
+
+        if (GetPlayerInitialZombieLastMap(id) == set)
+            return;
+
+        ZH2Game::PersistingGameContext.Players[id].InitialPickContext.InitialZombieLastMap = set;
+        Logger::LogDebug(LOGSOURCE, (set ? "Added" : "Removed") + " (\cd" + str(id) + "\cj) \cd" + BCSUTILS::PlayerName(id) + "\cj as a last map initial zombie.");
+    }
+
+    internal bool GetInitialZombieLastMap() { return GetPlayerInitialZombieLastMap(PlayerNumber()); }
+    internal bool GetPlayerInitialZombieLastMap(int id)
+    {
+        VALIDATE_ID_VALID_FUNCTION_RETURN(id, false);
+        return ZH2Game::PersistingGameContext.Players[id].InitialPickContext.InitialZombieLastMap;
+    }
+
+    internal void SetInitialZombiePickWeight(int weight) { SetPlayerInitialZombiePickWeight(PlayerNumber(), weight); }
+    internal void SetPlayerInitialZombiePickWeight(int id, int weight)
+    {
+        VALIDATE_ID_VALID_FUNCTION(id);
+
+        if (GetPlayerInitialZombiePickWeight(id) == weight)
+            return;
+
+        ZH2Game::PersistingGameContext.Players[id].InitialPickContext.PickWeight = weight;
+        Logger::LogDebug(LOGSOURCE, "Set initial zombie pick weight for (\cd" + str(id) + "\cj) \cd" + BCSUTILS::PlayerName(id) + "\cj to \cd" + str(weight) + "\cj.");
+    }
+
+    internal int GetInitialZombiePickWeight() { return GetPlayerInitialZombiePickWeight(PlayerNumber()); }
+    internal int GetPlayerInitialZombiePickWeight(int id)
+    {
+        VALIDATE_ID_VALID_FUNCTION_RETURN(id, 0);
+        return ZH2Game::PersistingGameContext.Players[id].InitialPickContext.PickWeight;
     }
 
     // Internal because I don't want to expose this when it has `bool` previous.
@@ -71,7 +102,7 @@ strict namespace Player
             }
 
             bool check = previous
-                ? GetPlayerPreviouslyInitialZombie(i)
+                ? GetPlayerInitialZombiePreviously(i)
                 : GetPlayerInitialZombie(i);
             if (!check) continue;
 
