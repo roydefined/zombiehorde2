@@ -1,0 +1,29 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Weight
+{
+    internal void PrepareWeightsPickInitialZombies()
+    {
+        Weight::PrepareWeights();
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            if (!BCSUtils::ActorIsAlive(Identity::GetTID(i)))
+                continue;
+
+            // Note: required as we reset the weights with every pick.
+            if (Player::GetPlayerInitialZombie(i))
+                continue;
+
+            // Add 1 or players have no weight initially and can't be picked.
+            Weight::AddWeight(i, Player::GetPlayerInitialZombiePickWeight(i) + 1);
+        }
+
+        Weight::FinalizeWeights();
+    }
+}

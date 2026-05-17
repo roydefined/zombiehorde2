@@ -35,13 +35,21 @@ strict namespace Round
 
     struct InitialPickContextT
     {
-        // Holds data about if the player has been an initial zombie.
+        // Holds data about if the player has been an initial zombie before.
+        // Different pick methods exist, explained below.
+
+        // Picking based on boolean states tracking who actually got picked before in order.
         // "Previously" marks them as being initial currently or a past map.
         // "LastMap" marks them as being initial specifically on the last map.
         // The big difference is "Previously" is reset when the list resets, and "LastMap" resets every next map.
         // This combined ensures players are picked at least once, and never twice in a row (which is what "LastMap" ensures).
         bool InitialZombiePreviously;
         bool InitialZombieLastMap;
+
+        // Alternative method of picking initial zombies, based on weight.
+        // The higher the weight, the higher the chance to get picked.
+        // If -1, the player can't get picked.
+        int PickWeight;
     };
 
     extern bool GetGameIsPregame();

@@ -13,16 +13,81 @@ strict namespace Round
         ZH2Game::InitialZombiePickMethodT pickMethod = ZH2Game::GetInitialZombiePickMethod();
         bool checkPrevious = pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE || pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE_AND_REMEMBER_LAST_MAP;
         bool checkLastMap = pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_REMEMBER_LAST_MAP || pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE_AND_REMEMBER_LAST_MAP;
+        bool useWeight = pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_WEIGHT;
 
         // Minimum of 1 zombie, and 1 added every configured number of players.
         int totalZombies = PlayerCount() / ZH2Game::GetPlayersPerInitial() + 1;
 
+        if (useWeight)
+        {
+            return DetermineInitialZombiesWeightBased(totalZombies);
+        }
+        else
+        {
+            return DetermineInitialZombiesStateBased(totalZombies, checkPrevious, checkLastMap);
+        }
+    }
+
+    internal int DetermineInitialZombiesWeightBased(int totalZombies)
+    {
+        Logger::LogDebug(LOGSOURCE, "Picking weighted initial zombies. Required count: \cd" + str(totalZombies) + "\cj.");
+
+        int requiredCount = totalZombies;
+
+        while (requiredCount > 0)
+        {
+            Weight::PrepareWeightsPickInitialZombies();
+
+            // Should not happen. The weight system should contain enough players.
+            if (!Weight::HasWeights())
+            {
+                Logger::LogError(LOGSOURCE, "Unable to pick initial zombie. No weighted players exist.");
+                break;
+            }
+
+            // We should always get a valid id.
+            int id = Weight::Next(-1);
+            if (id == -1)
+            {
+                Logger::LogError(LOGSOURCE, "Unable to pick initial zombie. Weight system returned no player.");
+                break;
+            }
+
+            Player::SetPlayerInitialZombie(id, true);
+
+            // While these two are not relevant with weight-based picking, it helps with debugging and also in case the pick method changes.
+            Player::SetPlayerInitialZombiePreviously(id, true);
+            Player::SetPlayerInitialZombieLastMap(id, true);
+
+            requiredCount--;
+        }
+
+        // Reset the weight of all current initial zombies.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            if (!BCSUtils::ActorIsAlive(Identity::GetTID(i)))
+                continue;
+
+            if (Player::GetPlayerInitialZombie(i))
+                Player::SetPlayerInitialZombiePickWeight(i, 0);
+            else
+                Player::SetPlayerInitialZombiePickWeight(i, Player::GetPlayerInitialZombiePickWeight(i) + 1);
+        }
+
+        return totalZombies;
+    }
+
+    internal int DetermineInitialZombiesStateBased(int totalZombies, bool checkPrevious, bool checkLastMap)
+    {
         // Pick players at random to be initial zombie.
         // The shuffle will pick based on being picked previously, or the last map.
         Shuffle::ShufflePickNextInitialZombies(checkPrevious, checkLastMap);
         int size = Shuffle::GetRelevantSize();
 
-        DetermineInitialZombiesCore(size, totalZombies, checkPrevious, checkLastMap);
+        DetermineInitialZombiesStateBasedCore(size, totalZombies, checkPrevious, checkLastMap);
 
         // Set all current zombies as the last map zombies.
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
@@ -31,7 +96,7 @@ strict namespace Round
         return totalZombies;
     }
 
-    internal void DetermineInitialZombiesCore(int size, int requiredCount, bool checkPrevious, bool checkLastMap)
+    internal void DetermineInitialZombiesStateBasedCore(int size, int requiredCount, bool checkPrevious, bool checkLastMap)
     {
         Logger::LogDebug(LOGSOURCE, "Picking initial zombies. Required count: \cd" + str(requiredCount) + "\cj. Relevant buffer size: \cd" + str(size) + "\cj.");
 
@@ -62,7 +127,7 @@ strict namespace Round
                 return;
             }
 
-            DetermineInitialZombiesCore(size, requiredCount, checkPrevious, checkLastMap);
+            DetermineInitialZombiesStateBasedCore(size, requiredCount, checkPrevious, checkLastMap);
         }
     }
 }
