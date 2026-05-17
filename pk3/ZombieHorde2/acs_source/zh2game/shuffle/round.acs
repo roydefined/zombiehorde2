@@ -11,17 +11,22 @@ strict namespace Shuffle
         bool checkPrevious = _sortArgs[0];
         bool checkLastMap = _sortArgs[1];
 
-        bool previously = checkPrevious && Player::GetPlayerInitialZombiePreviously(id);
-        bool lastMap = checkLastMap && Player::GetPlayerInitialZombieLastMap(id);
-
-        SetResultValue(
-            int(!previously && !lastMap));
+        SetResultValue(int(PlayerCanGetPicked(id, checkPrevious, checkLastMap)));
     }
 
     internal bool ShufflePickNextInitialZombiesComparer(int id)
     {
-        return !Player::GetPlayerInitialZombiePreviously(id)
-            && !Player::GetPlayerInitialZombieLastMap(id);
+        bool checkPrevious = _sortArgs[0];
+        bool checkLastMap = _sortArgs[1];
+        return PlayerCanGetPicked(id, checkPrevious, checkLastMap);
+    }
+
+    internal bool PlayerCanGetPicked(int id, bool checkPrevious, bool checkLastMap)
+    {
+        bool previously = checkPrevious && Player::GetPlayerInitialZombiePreviously(id);
+        bool lastMap = checkLastMap && Player::GetPlayerInitialZombieLastMap(id);
+
+        return !previously && !lastMap;
     }
 
     internal void ShufflePickNextInitialZombies(bool checkPrevious, bool checkLastMap)
