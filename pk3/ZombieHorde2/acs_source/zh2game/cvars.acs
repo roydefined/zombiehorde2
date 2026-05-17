@@ -30,6 +30,23 @@ strict namespace ZH2Game
     internal int GetEndOfRoundRewardCount() { return BCSUTILS::Clamp(GetCvar("sv_zh2_endofroundrewardcount"), 0, 64); }
     internal bool GetEndOfRoundRewardSafePlayers() { return (bool)GetCvar("sv_zh2_endofroundrewardsafeplayers"); }
 
+    // Game - Round
+    internal InitialZombiePickMethodT GetInitialZombiePickMethod()
+    {
+        switch(BCSUTILS::Clamp(GetCVar("sv_zh2_initialpickmethod"), 0, 3))
+        {
+            case 0:
+                return INITIALZOMBIEPICKMETHOD_ALWAYS_RANDOM;
+            case 1:
+                return INITIALZOMBIEPICKMETHOD_REMEMBER_LAST_MAP;
+            case 2:
+                return INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE;
+            default:
+                return INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE_AND_REMEMBER_LAST_MAP;
+        }
+    }
+
+
     // Game - Obituary
     internal bool GetSvEnableObituaries() { return (bool)GetCvar("sv_zh2_enableobituaries"); }
     internal bool GetClEnableObituaries(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_enableobituaries"); }

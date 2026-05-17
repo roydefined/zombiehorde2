@@ -10,15 +10,19 @@ strict namespace Round
     // Whatever the case, the final list will contain the players that have been picked.
     internal int DetermineInitialZombies()
     {
+        ZH2Game::InitialZombiePickMethodT pickMethod = ZH2Game::GetInitialZombiePickMethod();
+        bool checkPrevious = pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE || pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE_AND_REMEMBER_LAST_MAP;
+        bool checkLastMap = pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_REMEMBER_LAST_MAP || pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE_AND_REMEMBER_LAST_MAP;
+
         // Minimum of 1 zombie, and 1 added every configured number of players.
         int totalZombies = PlayerCount() / ZH2Game::GetPlayersPerInitial() + 1;
 
         // Pick players at random to be initial zombie.
         // The shuffle will pick based on being picked previously, or the last map.
-        Shuffle::ShuffleByNotPreviouslyInitialZombie();
+        Shuffle::ShufflePickNextInitialZombies(checkPrevious, checkLastMap);
         int size = Shuffle::GetRelevantSize();
 
-        DetermineInitialZombiesCore(size, totalZombies);
+        DetermineInitialZombiesCore(size, totalZombies, checkPrevious, checkLastMap);
 
         // Set all current zombies as the last map zombies.
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
@@ -27,7 +31,7 @@ strict namespace Round
         return totalZombies;
     }
 
-    internal void DetermineInitialZombiesCore(int size, int requiredCount)
+    internal void DetermineInitialZombiesCore(int size, int requiredCount, bool checkPrevious, bool checkLastMap)
     {
         Logger::LogDebug(LOGSOURCE, "Picking initial zombies. Required count: \cd" + str(requiredCount) + "\cj. Relevant buffer size: \cd" + str(size) + "\cj.");
 
@@ -47,7 +51,7 @@ strict namespace Round
             for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
                 Player::SetPlayerInitialZombiePreviously(i, Player::GetPlayerInitialZombie(i));
 
-            Shuffle::ShuffleByNotPreviouslyInitialZombie();
+            Shuffle::ShufflePickNextInitialZombies(checkPrevious, checkLastMap);
             int size = Shuffle::GetRelevantSize();
 
             // Fail safe. This will trigger when all players have been an initial zombie in the round.
@@ -58,7 +62,7 @@ strict namespace Round
                 return;
             }
 
-            DetermineInitialZombiesCore(size, requiredCount);
+            DetermineInitialZombiesCore(size, requiredCount, checkPrevious, checkLastMap);
         }
     }
 }

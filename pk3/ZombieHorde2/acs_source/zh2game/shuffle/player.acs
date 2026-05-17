@@ -8,7 +8,7 @@ strict namespace Shuffle
     {
         int tid = Identity::GetTid(left);
         SetResultValue(
-            int(!CheckActorInventory(tid, (str)_sortArg)));
+            int(!CheckActorInventory(tid, (str)_sortArgs[0])));
     }
 
     // Shuffling supports three types, which might be hardcoded by shuffle functions, or can be configured.
@@ -35,7 +35,7 @@ strict namespace Shuffle
     internal bool ShuffleByNotOwningItemComparer(int id)
     {
         int tid = Identity::GetTID(id);
-        return !CheckActorInventory(tid, (str)_sortArg);
+        return !CheckActorInventory(tid, (str)_sortArgs[0]);
     }
 
     // Shuffles players based on whether or not they own the given item.
@@ -46,7 +46,7 @@ strict namespace Shuffle
         // This function is explicitly used for living players (obviously).
         PrepareBufferPlayers(SHUFFLEPLAYING);
 
-        _sortArg = item;
+        _sortArgs[0] = item;
         BCSUtils::SortArray(0, _context.BufferIteratorSize, "zh2_internal_shuffle_comparenotowningitem", "zh2_internal_shuffle_swapbufferitems");
         UpdateRelevantBufferSize(ShuffleByNotOwningItemComparer);
         BCSUtils::ShuffleArray(0, _context.BufferRelevantSize, "zh2_internal_shuffle_swapbufferitems");
