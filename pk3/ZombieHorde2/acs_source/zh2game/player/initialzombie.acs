@@ -121,4 +121,93 @@ strict namespace Player
     {
         return InitialsCountInternal(true, includeDead);
     }
+
+    internal fixed GetInitialZombiePickChance()
+    {
+        return GetPlayerInitialZombiePickChance(PlayerNumber());
+    }
+
+    internal fixed GetPlayerInitialZombiePickChance(int id)
+    {
+        ZH2Game::InitialZombiePickMethodT pickMethod = ZH2Game::GetInitialZombiePickMethod();
+
+        bool useWeight = pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_WEIGHT
+            || pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_WEIGHT_AND_REMEMBER_LAST_MAP;
+
+        bool checkPrevious = pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE
+            || pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE_AND_REMEMBER_LAST_MAP;
+
+        bool checkLastMap = pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_REMEMBER_LAST_MAP
+            || pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE_AND_REMEMBER_LAST_MAP
+            || pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_WEIGHT_AND_REMEMBER_LAST_MAP;
+
+        if (useWeight)
+            return GetPlayerInitialZombiePickChanceWeight(id, checkLastMap);
+
+        return GetPlayerInitialZombiePickChanceStateBased(id, checkPrevious, checkLastMap);
+    }
+
+    internal fixed GetPlayerInitialZombiePickChanceStateBased(int id, bool checkPrevious, bool checkLastMap)
+    {
+        if (checkLastMap && GetPlayerInitialZombieLastMap(id))
+            return 0.0;
+
+        if (checkPrevious && GetPlayerInitialZombiePreviously(id))
+            return 0.0;
+
+        int eligiblePlayers = 0;
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            if (checkLastMap && GetPlayerInitialZombieLastMap(i))
+                continue;
+
+            if (checkPrevious && GetPlayerInitialZombiePreviously(i))
+                continue;
+
+            eligiblePlayers++;
+        }
+
+        if (eligiblePlayers == 0)
+            return 0.0;
+
+        return 1.0 / fixed(eligiblePlayers);
+    }
+
+    internal fixed GetPlayerInitialZombiePickChanceWeight(int id, bool checkLastMap)
+    {
+        if (checkLastMap && GetPlayerInitialZombieLastMap(id))
+            return 0.0;
+
+        int playerWeight = GetPlayerInitialZombiePickWeight(id) + 1;
+
+        if (playerWeight <= 0)
+            return 0.0;
+
+        int totalWeight = 0;
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            if (checkLastMap && GetPlayerInitialZombieLastMap(i))
+                continue;
+
+            int weight = GetPlayerInitialZombiePickWeight(i) + 1;
+
+            if (weight <= 0)
+                continue;
+
+            totalWeight += weight;
+        }
+
+        if (totalWeight == 0)
+            return 0.0;
+
+        return fixed(playerWeight) / fixed(totalWeight);
+    }
 }
