@@ -8,11 +8,7 @@ strict namespace Hud
     {
         int id = HUDID_PICKCHANCE;
 
-        fixed pickChance = Player::GetInitialZombiePickChance();
-        int percentage = int(pickChance * 100.0);
-
         BCSUtils::HudSetFont("SmallFont");
-        BCSUtils::HudSetTextColor(CR_WHITE);
         BCSUtils::HudSetCenterText(true);
 
         BCSUtils::HudSetStayTime(0.5);
@@ -21,14 +17,18 @@ strict namespace Hud
         str message;
         buildmsg(message = StrParam())
         {
-            if (pickChance <= 0.0)
-            {
-                Append(s:"You are safe from being picked as an initial zombie.");
-            }
+            fixed pickChance = Player::GetInitialZombiePickChance();
+
+            if (pickChance == 0.0)
+                Append(s:"\cjYou are safe from being picked");
+            else if (pickChance == 1.0)
+                Append(s:"\cgYou will be picked this round");
 
             else
             {
-                Append(s:"Initial zombie pick chance: ");
+                int percentage = int(pickChance * 100.0);
+
+                Append(s:"\cjInitial zombie pick chance: ");
                 Append(s:GetPickChanceColorCode(pickChance));
                 Append(d:percentage);
                 Append(s:"%");
@@ -45,7 +45,7 @@ strict namespace Hud
         if (chance <= 0.10) return "\cd";
         if (chance <= 0.20) return "\ch";
         if (chance <= 0.35) return "\ci";
-        if (chance <= 0.50) return "\ca";
+        if (chance <= 0.50) return "\cg";
         return "\cr";
     }
 }
