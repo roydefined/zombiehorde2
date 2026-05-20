@@ -154,26 +154,49 @@ strict namespace Player
         if (checkLastMap && GetPlayerInitialZombieLastMap(id))
             return 0.0;
 
-        if (GetPlayerInitialZombiePreviously(id))
-            return 0.0;
+        int requiredCount = EligibleInitialZombieCount();
 
-        int eligiblePlayers = 0;
+        // Players that can currently be picked without resetting the list.
+        int currentEligiblePlayers = 0;
+
+        // Players that can be picked after resetting the previous-picked list.
+        int resetEligiblePlayers = 0;
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             if (!PlayerInGame(i))
                 continue;
 
+            // Last map protected players are never eligible.
             if (checkLastMap && GetPlayerInitialZombieLastMap(i))
                 continue;
 
+            // This player can be picked after a reset.
+            resetEligiblePlayers++;
+
+            // Skip players already picked previously for the current pool.
             if (GetPlayerInitialZombiePreviously(i))
                 continue;
 
-            eligiblePlayers++;
+            currentEligiblePlayers++;
         }
 
-        return fixed(EligibleInitialZombieCount()) / fixed(eligiblePlayers);
+        // Player is currently eligible without requiring a reset.
+        if (!GetPlayerInitialZombiePreviously(id))
+        {
+            // If the game needs at least this many zombies,
+            // every currently eligible player is guaranteed.
+            if (requiredCount >= currentEligiblePlayers)
+                return 1.0;
+
+            return fixed(requiredCount) / fixed(currentEligiblePlayers);
+        }
+
+        // Player is only eligible if the previous-picked list resets.
+        int remainingCount = requiredCount - currentEligiblePlayers;
+
+        // Chance after the reset.
+        return fixed(remainingCount) / fixed(resetEligiblePlayers - currentEligiblePlayers);
     }
 
     internal fixed GetPlayerInitialZombiePickChanceRandom(int id)
