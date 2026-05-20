@@ -122,6 +122,12 @@ strict namespace Player
         return InitialsCountInternal(true, includeDead);
     }
 
+    internal int EligibleInitialZombieCount()
+    {
+        // Minimum of 1 zombie, and 1 added every configured number of players.
+        return PlayerCount() / ZH2Game::GetPlayersPerInitial() + 1;
+    }
+
     internal fixed GetInitialZombiePickChance()
     {
         return GetPlayerInitialZombiePickChance(PlayerNumber());
@@ -167,7 +173,7 @@ strict namespace Player
             eligiblePlayers++;
         }
 
-        return 1.0 / fixed(eligiblePlayers);
+        return fixed(EligibleInitialZombieCount()) / fixed(eligiblePlayers);
     }
 
     internal fixed GetPlayerInitialZombiePickChanceRandom(int id)
@@ -182,7 +188,7 @@ strict namespace Player
             eligiblePlayers++;
         }
 
-        return 1.0 / fixed(eligiblePlayers);
+        return fixed(EligibleInitialZombieCount()) / fixed(eligiblePlayers);
     }
 
     internal fixed GetPlayerInitialZombiePickChanceWeight(int id, bool checkLastMap)
@@ -213,9 +219,6 @@ strict namespace Player
             totalWeight += weight;
         }
 
-        if (totalWeight == 0)
-            return 0.0;
-
-        return fixed(playerWeight) / fixed(totalWeight);
+        return fixed(playerWeight * EligibleInitialZombieCount()) / fixed(totalWeight);
     }
 }
