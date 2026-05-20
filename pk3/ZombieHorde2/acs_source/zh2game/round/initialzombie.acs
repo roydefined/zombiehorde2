@@ -11,29 +11,107 @@ strict namespace Round
     internal int DetermineInitialZombies()
     {
         ZH2Game::InitialZombiePickMethodT pickMethod = ZH2Game::GetInitialZombiePickMethod();
-        bool checkPrevious = pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE || pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE_AND_REMEMBER_LAST_MAP;
-        bool checkLastMap = pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_REMEMBER_LAST_MAP || pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_PICK_EVERYBODY_ONCE_AND_REMEMBER_LAST_MAP;
-        bool useWeight = pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_WEIGHT || pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_WEIGHT_AND_REMEMBER_LAST_MAP;
-        bool weightCheckLastMap = pickMethod == ZH2Game::INITIALZOMBIEPICKMETHOD_WEIGHT_AND_REMEMBER_LAST_MAP;
+        bool rememberLastMap = ZH2Game::GetInitialPickRememberLastMap();
 
         // Minimum of 1 zombie, and 1 added every configured number of players.
         int totalZombies = PlayerCount() / ZH2Game::GetPlayersPerInitial() + 1;
 
-        if (useWeight)
+        switch (pickMethod)
         {
-            return DetermineInitialZombiesWeightBased(totalZombies, weightCheckLastMap);
+            case ZH2Game::INITIALZOMBIEPICKMETHOD_LEGACY:
+                DetermineInitialZombiesLegacy(totalZombies, rememberLastMap);
+                break;
+            case ZH2Game::INITIALZOMBIEPICKMETHOD_WEIGHT:
+                DetermineInitialZombiesWeight(totalZombies, rememberLastMap);
+                break;
+            default:
+                DetermineInitialZombiesRandom(totalZombies);
+                break;
         }
-        else
+
+        return totalZombies;
+    }
+
+    internal void DetermineInitialZombiesLegacy(int totalZombies, bool checkLastMap)
+    {
+        // Pick players at random to be initial zombie.
+        // The shuffle will pick based on being picked previously, or the last map.
+        Shuffle::ShufflePickNextInitialZombies(true, checkLastMap);
+        int size = Shuffle::GetRelevantSize();
+
+        DetermineInitialZombiesLegacyCore(size, totalZombies, checkLastMap);
+
+        // Set all current zombies as the last map zombies.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            Player::SetPlayerInitialZombieLastMap(i, Player::GetPlayerInitialZombie(i));
+    }
+
+    internal void DetermineInitialZombiesLegacyCore(int size, int requiredCount, bool checkLastMap)
+    {
+        Logger::LogDebug(LOGSOURCE, "Picking initial zombies through legacy picking. Required count: \cd" + str(requiredCount) + "\cj. Relevant buffer size: \cd" + str(size) + "\cj.");
+
+        for (int i = 0; i < size && requiredCount > 0; ++i)
         {
-            return DetermineInitialZombiesStateBased(totalZombies, checkPrevious, checkLastMap);
+            int id = Shuffle::GetIndexValue(i);
+            Player::SetPlayerInitialZombie(id, true);
+            Player::SetPlayerInitialZombiePreviously(id, true);
+            Player::SetPlayerInitialZombieLastMap(id, true);
+            requiredCount--;
+        }
+
+        // If the buffer was smaller than the required count, we have picked everybody at least once.
+        // In this case we reset the list into the current state of selected initial zombies and restart the function.
+        if (requiredCount != 0)
+        {
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+                Player::SetPlayerInitialZombiePreviously(i, Player::GetPlayerInitialZombie(i));
+
+            Shuffle::ShufflePickNextInitialZombies(true, checkLastMap);
+            int size = Shuffle::GetRelevantSize();
+
+            // Fail safe. This will trigger when all players have been an initial zombie in the round.
+            // This is impossible unless you actively call this function multiple times.
+            if (size == 0)
+            {
+                Logger::LogError(LOGSOURCE, "Unable to pick additional initial zombies.");
+                return;
+            }
+
+            DetermineInitialZombiesLegacyCore(size, requiredCount, checkLastMap);
         }
     }
 
-    internal int DetermineInitialZombiesWeightBased(int totalZombies, bool checkLastMap)
+    internal void DetermineInitialZombiesRandom(int requiredCount)
     {
-        Logger::LogDebug(LOGSOURCE, "Picking weighted initial zombies. Required count: \cd" + str(totalZombies) + "\cj.");
+        // Pick players at random to be initial zombie.
+        // Randomized doesn't use any extra stuff for picking zombies.
+        Shuffle::ShufflePickNextInitialZombies(false, false);
+        int size = Shuffle::GetRelevantSize();
 
-        int requiredCount = totalZombies;
+        Logger::LogDebug(LOGSOURCE, "Picking initial zombies through randomized picking. Required count: \cd" + str(requiredCount) + "\cj. Relevant buffer size: \cd" + str(size) + "\cj.");
+
+        for (int i = 0; i < size && requiredCount > 0; ++i)
+        {
+            int id = Shuffle::GetIndexValue(i);
+            Player::SetPlayerInitialZombie(id, true);
+
+            // While these two are not relevant with randomized picking, it helps with debugging and also in case the pick method changes.
+            Player::SetPlayerInitialZombiePreviously(id, true);
+            Player::SetPlayerInitialZombieLastMap(id, true);
+            requiredCount--;
+        }
+
+        // Should never happen with randomized picking.
+        if (requiredCount != 0)
+        {
+            Logger::LogError(LOGSOURCE, "Failed to pick enough zombies.");
+            return;
+        }
+    }
+
+    internal void DetermineInitialZombiesWeight(int requiredCount, bool checkLastMap)
+    {
+        Logger::LogDebug(LOGSOURCE, "Picking weighted initial zombies. Required count: \cd" + str(requiredCount) + "\cj.");
 
         while (requiredCount > 0)
         {
@@ -80,59 +158,6 @@ strict namespace Round
                 Player::SetPlayerInitialZombiePickWeight(i, pickedTargetWeight);
             else
                 Player::SetPlayerInitialZombiePickWeight(i, Player::GetPlayerInitialZombiePickWeight(i) + 1);
-        }
-
-        return totalZombies;
-    }
-
-    internal int DetermineInitialZombiesStateBased(int totalZombies, bool checkPrevious, bool checkLastMap)
-    {
-        // Pick players at random to be initial zombie.
-        // The shuffle will pick based on being picked previously, or the last map.
-        Shuffle::ShufflePickNextInitialZombies(checkPrevious, checkLastMap);
-        int size = Shuffle::GetRelevantSize();
-
-        DetermineInitialZombiesStateBasedCore(size, totalZombies, checkPrevious, checkLastMap);
-
-        // Set all current zombies as the last map zombies.
-        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-            Player::SetPlayerInitialZombieLastMap(i, Player::GetPlayerInitialZombie(i));
-
-        return totalZombies;
-    }
-
-    internal void DetermineInitialZombiesStateBasedCore(int size, int requiredCount, bool checkPrevious, bool checkLastMap)
-    {
-        Logger::LogDebug(LOGSOURCE, "Picking initial zombies. Required count: \cd" + str(requiredCount) + "\cj. Relevant buffer size: \cd" + str(size) + "\cj.");
-
-        for (int i = 0; i < size && requiredCount > 0; ++i)
-        {
-            int id = Shuffle::GetIndexValue(i);
-            Player::SetPlayerInitialZombie(id, true);
-            Player::SetPlayerInitialZombiePreviously(id, true);
-            Player::SetPlayerInitialZombieLastMap(id, true);
-            requiredCount--;
-        }
-
-        // If the buffer was smaller than the required count, we have picked everybody at least once.
-        // In this case we reset the list into the current state of selected initial zombies and restart the function.
-        if (requiredCount != 0)
-        {
-            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-                Player::SetPlayerInitialZombiePreviously(i, Player::GetPlayerInitialZombie(i));
-
-            Shuffle::ShufflePickNextInitialZombies(checkPrevious, checkLastMap);
-            int size = Shuffle::GetRelevantSize();
-
-            // Fail safe. This will trigger when all players have been an initial zombie in the round.
-            // This is impossible unless you actively call this function multiple times.
-            if (size == 0)
-            {
-                Logger::LogError(LOGSOURCE, "Unable to pick additional initial zombies.");
-                return;
-            }
-
-            DetermineInitialZombiesStateBasedCore(size, requiredCount, checkPrevious, checkLastMap);
         }
     }
 }
