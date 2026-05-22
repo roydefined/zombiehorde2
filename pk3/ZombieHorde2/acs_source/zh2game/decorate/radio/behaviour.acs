@@ -6,23 +6,26 @@ strict namespace Decorate
 {
     script "zh2_dec_radio_cyclemusic" (raw direction) net clientside
     {
-      if (GetRadioCollectionSize() == 0) terminate;
+    if (GetRadioCollectionSize() == 0) terminate;
 
-      ZH2Game::GameContext.RadioCurrentlySelectedIndex += (int)direction;
-      if (ZH2Game::GameContext.RadioCurrentlySelectedIndex < 0) ZH2Game::GameContext.RadioCurrentlySelectedIndex = BCSUtils::Max(GetRadioCollectionSize() - 1, 0);
-      if (ZH2Game::GameContext.RadioCurrentlySelectedIndex >= GetRadioCollectionSize()) ZH2Game::GameContext.RadioCurrentlySelectedIndex = 0;
+    ZH2Game::GameContext.RadioCurrentlySelectedIndex += (int)direction;
+    if (ZH2Game::GameContext.RadioCurrentlySelectedIndex < 0) ZH2Game::GameContext.RadioCurrentlySelectedIndex = BCSUtils::Max(GetRadioCollectionSize() - 1, 0);
+    if (ZH2Game::GameContext.RadioCurrentlySelectedIndex >= GetRadioCollectionSize()) ZH2Game::GameContext.RadioCurrentlySelectedIndex = 0;
     }
 
     script "zh2_dec_radio_stopmusic" net clientside
     {
-          SetMusic("");
+        SetMusic("");
     }
 
     script "zh2_dec_radio_setcurrentmusic" net clientside
     {
         // We have no tracks, no point in changing.
         if (Decorate::GetRadioCollectionSize() == 0)
+        {
+            Logger::LogActivator("You don't have any music tracks.");
             terminate;
+        }
 
         int trackIndex = GetClientRadioCurrentlySelectedIndex();
         str track = GetRadioTrackLumpName(trackIndex);
@@ -36,21 +39,22 @@ strict namespace Decorate
 
     script "zh2_internal_radio_settrack" (int trackIndex) net
     {
-      if (!CheckWeapon(WEAPON_RADIO_NAME)) terminate;
+        if (!CheckWeapon(WEAPON_RADIO_NAME))
+            terminate;
 
-      // Avoid spamming radio music changes.
-      int ticsLeft = GetRadioTrackCooldownTicsLeft();
-      if (ticsLeft > 0)
-      {
-        int secondsLeft = int(BCSUtils::Ceil(fixed(ticsLeft) / 35.0));
-        str secondsPlural = secondsLeft == 1 ? "" : "s";
-        Logger::LogActivator("The music recently changed, so the track change won't be shared. Try again in " + str(secondsLeft) + " second" + secondsPlural + ".");
-        terminate;
-      }
+        // Avoid spamming radio music changes.
+        int ticsLeft = GetRadioTrackCooldownTicsLeft();
+        if (ticsLeft > 0)
+        {
+            int secondsLeft = int(BCSUtils::Ceil(fixed(ticsLeft) / 35.0));
+            str secondsPlural = secondsLeft == 1 ? "" : "s";
+            Logger::LogActivator("The music recently changed, so the track change won't be shared. Try again in " + str(secondsLeft) + " second" + secondsPlural + ".");
+            terminate;
+        }
 
-      UpdateRadioTrackCooldown();
+        UpdateRadioTrackCooldown();
 
-      if (!ACS_NamedExecuteAlways("zh2_internal_radio_settracktoclient", 0, trackIndex, PlayerNumber()))
+        if (!ACS_NamedExecuteAlways("zh2_internal_radio_settracktoclient", 0, trackIndex, PlayerNumber()))
             Logger::LogError(LOGSOURCE, "Failed to call zh2_internal_radio_settracktoclient");
     }
 
