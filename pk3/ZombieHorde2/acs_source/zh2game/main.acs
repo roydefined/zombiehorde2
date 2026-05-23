@@ -87,13 +87,12 @@ strict namespace ZH2Game
         IO::ParseModDefLumpsServerside();
         IO::ParseMapDefLumps();
 
+        // Weather must prepare internal default data before we parse the map which sets its own defaults.
+        Weather::PrepareDefaultsServer();
+
         // Parse non-persisting data now.
         Logger::LogDebug(LOGSOURCE, "Start parsing non-persisting data (server).");
         IO::ParseCurrentMapLump();
-
-        // Initialize library components.
-        // Weather must initialize before we parse the map.
-        Weather::InitializeServer();
 
         // Initialize core components.
         Game::InitializeZombieTeleport();
@@ -263,7 +262,7 @@ strict namespace ZH2Game
 
         // Fully sync up the client.
         Sync::SyncAllClientside();
-        Sync::SyncAllClientside();
+        Sync::LibSyncAllClientside();
 
         Settings::UpdateCurrentClientSettings();
 
