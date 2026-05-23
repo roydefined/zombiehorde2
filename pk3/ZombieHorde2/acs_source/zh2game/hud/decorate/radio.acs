@@ -8,66 +8,93 @@ strict namespace Hud
 
     internal void DrawRadioHud()
     {
-        // No tracks to display.
-        if (Decorate::GetRadioCollectionSize() == 0)
-            return;
+        int size = Decorate::GetRadioCollectionSize();
 
-        // Adjust the start index to stay within bounds.
         int currentIndex = Decorate::GetClientRadioCurrentlySelectedIndex();
         int endDrawIndex = GetEndDrawIndex(_startDrawIndex);
 
-        if (_startDrawIndex > currentIndex)
+        // Adjust the start index to stay within bounds.
+        // Best to always make sure these are in bounds in case the user manually pukes a script.
+        if (size != 0)
         {
-            _startDrawIndex = currentIndex;
-            endDrawIndex = GetEndDrawIndex(_startDrawIndex);
-        }
+            if (_startDrawIndex > currentIndex)
+            {
+                _startDrawIndex = currentIndex;
+                endDrawIndex = GetEndDrawIndex(_startDrawIndex);
+            }
 
-        if (endDrawIndex <= currentIndex)
-        {
-            _startDrawIndex = BCSUtils::Max(0, currentIndex - WEAPON_RADIO_MAXDRAWNTRACKS + 1);
-            endDrawIndex = GetEndDrawIndex(_startDrawIndex);
+            if (endDrawIndex <= currentIndex)
+            {
+                _startDrawIndex = BCSUtils::Max(0, currentIndex - WEAPON_RADIO_MAXDRAWNTRACKS + 1);
+                endDrawIndex = GetEndDrawIndex(_startDrawIndex);
+            }
         }
 
         if (!CheckWeapon(WEAPON_RADIO_NAME))
             return;
 
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+
+        HudSetPointInternal(6.0, 0.0);
+        BCSUtils::HudDrawImage(--_drawnHudId, HUD_RADIOHEADER_GRAPHIC);
+
+        HudSetPointInternal(20.0, 0.0);
+        BCSUtils::HudDrawText(--_drawnHudId, "Track list");
+        DebugDraw();
+
+        BCSUtils::HudSetFont("SmallFont");
+
         // The vertical offset will move down with each track.
-        fixed addY = 0.0;
+        fixed addY = 28.0;
+
+        // No tracks to display.
+        if (size == 0)
+        {
+            BCSUtils::HudSetTextColor(CR_YELLOW);
+
+            HudSetPointInternal(20.0, addY);
+            BCSUtils::HudDrawText(--_drawnHudId, "No tracks to display. Add some!");
+            DebugDraw();
+            return;
+        }
+
+        addY += 4.0;
 
         for (int i = _startDrawIndex; i < endDrawIndex; ++i)
         {
-            BCSUtils::HudSetTextColor(i == currentIndex ? CR_GREEN : CR_WHITE);
-            BCSUtils::HudSetFont("BigFont");
+            HudSetPointInternal(-5.0, addY);
+            BCSUtils::HudDrawImage(--_drawnHudId, i == currentIndex ? HUD_RADIOTRACKSELECTED_GRAPHIC : HUD_RADIOTRACK_GRAPHIC);
 
-            HudSetPointInternal(0.0, addY);
-            BCSUtils::HudDrawText(--_drawnHudId, str(i + 1) + ". " + Decorate::GetRadioTrackName(i));
+            HudSetPointInternal(20.0, addY + 2.0);
+            BCSUtils::HudDrawText(--_drawnHudId, Decorate::GetRadioTrackName(i));
             DebugDraw();
 
-            str author = Decorate::GetRadioTrackAuthor(i);
-            if ((raw)author != 0 && author != "")
-            {
-                addY += 15.0;
+            addY += 30.0;
+        }
 
-                BCSUtils::HudSetTextColor(CR_GRAY);
-                BCSUtils::HudSetFont("SmallFont");
+        addY -= 4.0;
 
-                HudSetPointInternal(0.0, addY);
-                BCSUtils::HudDrawText(--_drawnHudId, "By " + author);
-            }
+        str author = Decorate::GetRadioTrackAuthor(currentIndex);
+        if ((raw)author != 0 && author != "")
+        {
+            BCSUtils::HudSetTextColor(CR_GRAY);
+            BCSUtils::HudSetFont("SmallFont");
 
-            str remark = Decorate::GetRadioTrackRemark(i);
-            if ((raw)remark != 0 && remark != "")
-            {
-                addY += 10.0;
+            HudSetPointInternal(20.0, addY);
+            BCSUtils::HudDrawText(--_drawnHudId, "By " + author);
 
-                BCSUtils::HudSetTextColor(CR_GRAY);
-                BCSUtils::HudSetFont("SmallFont");
+            addY += 10.0;
+        }
 
-                HudSetPointInternal(0.0, addY);
-                BCSUtils::HudDrawText(--_drawnHudId, remark);
-            }
+        str remark = Decorate::GetRadioTrackRemark(currentIndex);
+        if ((raw)remark != 0 && remark != "")
+        {
+            BCSUtils::HudSetTextColor(CR_GRAY);
+            BCSUtils::HudSetFont("SmallFont");
 
-            addY += 20.0;
+            HudSetPointInternal(20.0, addY);
+            BCSUtils::HudDrawText(--_drawnHudId, remark);
         }
     }
 

@@ -20,6 +20,18 @@ strict namespace Decorate
     internal str GetRadioTrackAuthor(int index) { return ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[index].Author; }
     internal str GetRadioTrackRemark(int index) { return ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[index].Remark; }
 
+    internal int GetRadioTrackIndexByLumpName(str lump, bool caseInsensitive = true)
+    {
+        bool function(str, str)& comparer = caseInsensitive ? BCSUtils::StrIEquals : BCSUtils::StrEquals;
+        for (int i = 0; i < GetRadioCollectionSize(); ++i)
+        {
+            if (comparer(GetRadioTrackLumpName(i), lump))
+                return i;
+        }
+
+        return -1;
+    }
+
     // Cooldown
     internal void UpdateRadioTrackCooldown()
     {

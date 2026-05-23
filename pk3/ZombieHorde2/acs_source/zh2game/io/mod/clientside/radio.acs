@@ -2,6 +2,10 @@
     #error This file must be #included.
 #endif
 
+// !!DEPRECATED!!
+// The parsing of radio blocks has been moved into a separate lump.
+// Users should use that block instead. This path will keep working.
+
 strict namespace IO
 {
     internal bool ParseRadio(int handle, str identifyingSymbol)
@@ -9,132 +13,7 @@ strict namespace IO
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "radio"))
             return false;
 
-        Logger::LogDebug(LOGSOURCE, "Start parsing radio tracks.");
-
-        int braceLevel = Tokenizer::GetBraceLevel(handle);
-        if (!Tokenizer::ExpectNextChar(handle, '{'))
-            return false;
-
-        Tokenizer::Next(handle);
-
-        // While the brace level does not match the end level, we keep parsing.
-        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
-        {
-            if (ParseRadioTrack(handle))
-                continue;
-
-            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing radio tracks: '" + Tokenizer::GetSymbol(handle) + "'.");
-            return false;
-        }
-
-        // Peek next character, see if we have a comma.
-        // These are optional and if so, make sure to skip it.
-        Tokenizer::Next(handle, false);
-        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
-            Tokenizer::Next(handle, false);
-
-        Logger::LogDebug(LOGSOURCE, "Finished parsing radio tracks.");
-        return true;
-    }
-
-    internal bool ParseRadioTrack(int handle)
-    {
-        if (!BCSUTILS::StrIEquals(Tokenizer::GetSymbol(handle), "track"))
-            return false;
-
-        Logger::LogDebug(LOGSOURCE, "Start parsing single radio track.");
-        Tokenizer::Next(handle);
-
-        // Expecting a string-like type for the name
-        Tokenizer::TokenTypeT token = Tokenizer::GetToken(handle);
-        if (token != Tokenizer::TSYMBOL && token != Tokenizer::TSTRING)
-        {
-            Tokenizer::SetErrored(handle, "Expected symbol or string for track, received '" + Tokenizer::GetSymbol(handle) + "'.");
-            return false;
-        }
-
-        str lumpName = Tokenizer::GetSymbol(handle);
-
-        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TLBRACE)) return false;
-        Tokenizer::Next(handle);
-
-        // No more room for more items. Log a warning and skip the remaining body.
-        int count = ZH2Game::PersistingGameContext.RadioTrackCollection.Size;
-        if (count >= MAX_RADIO_TRACKS)
-        {
-            Logger::LogWarning(LOGSOURCE, "The maximum number of radio tracks was reached (" + str(count) + ").");
-            Tokenizer::ParseRemainingBodyAsEmpty(handle);
-            return true;
-        }
-
-        // As long as we are inside this body, parse properties and insert them into the new item.
-        int braceLevel = Tokenizer::GetBraceLevel(handle);
-        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) == braceLevel)
-        {
-            str symbol = Tokenizer::GetSymbol(handle);
-            if (ParseName(handle, symbol)
-                || ParseAuthor(handle, symbol)
-                || ParseRemark(handle, symbol))
-            {
-                // Optional comma.
-                Tokenizer::Next(handle, false);
-                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
-                    Tokenizer::Next(handle, false);
-
-                continue;
-            }
-
-            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing a radio track: '" + Tokenizer::GetSymbol(handle) + "'.");
-            return false;
-        }
-
-        Decorate::RadioTrackContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[ZH2Game::PersistingGameContext.RadioTrackCollection.Size];
-        context.LumpName = lumpName;
-
-        // Optional comma.
-        Tokenizer::Next(handle, false);
-        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
-            Tokenizer::Next(handle, false);
-
-        // TODO: Log data
-        Logger::LogDebug(LOGSOURCE, "Finished parsing radio track: \cd" + context.lumpName + "\cj.");
-        ZH2Game::PersistingGameContext.RadioTrackCollection.Size++;
-        return true;
-    }
-
-    internal bool ParseName(int handle, str identifyingSymbol)
-    {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, "name")) return false;
-        Tokenizer::Next(handle);
-
-        Decorate::RadioTrackContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[ZH2Game::PersistingGameContext.RadioTrackCollection.Size];
-        context.Name = Tokenizer::GetSymbol(handle);
-
-        Logger::LogDebug(LOGSOURCE, "Parsed radio track name: \cd" + context.Name + "\cj.");
-        return true;
-    }
-
-    internal bool ParseAuthor(int handle, str identifyingSymbol)
-    {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, "author")) return false;
-        Tokenizer::Next(handle);
-
-        Decorate::RadioTrackContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[ZH2Game::PersistingGameContext.RadioTrackCollection.Size];
-        context.Author = Tokenizer::GetSymbol(handle);
-
-        Logger::LogDebug(LOGSOURCE, "Parsed radio track author: \cd" + context.Author + "\cj.");
-        return true;
-    }
-
-    internal bool ParseRemark(int handle, str identifyingSymbol)
-    {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, "remark")) return false;
-        Tokenizer::Next(handle);
-
-        Decorate::RadioTrackContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[ZH2Game::PersistingGameContext.RadioTrackCollection.Size];
-        context.Remark = Tokenizer::GetSymbol(handle);
-
-        Logger::LogDebug(LOGSOURCE, "Parsed radio track remark: \cd" + context.Remark + "\cj.");
-        return true;
+        Logger::LogWarning(LOGSOURCE, "Parsing radio tracks through a " + MODDEFLUMPNAME + " lump has been deprecated! Use the new " + RADIODEFLUMPNAME + " lump instead.");
+        return ParseRadioBlock(handle);
     }
 }
