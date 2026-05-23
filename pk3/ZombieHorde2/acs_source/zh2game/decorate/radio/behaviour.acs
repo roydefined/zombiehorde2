@@ -103,18 +103,59 @@ strict namespace Decorate
         }
 
         int trackIndex = GetRadioTrackIndexByLumpName(lump);
+        bool ignore = ZH2Game::GetIgnoreRadioMusic();
 
         // Do we have this track?
         if (trackIndex == -1)
         {
-            Logger::LogActivator(BCSUtils::PlayerName(sourceId) + " is playing " + trackMessage + "\cj, but you don't have this track. You can add it under the lump \cd" + lump + " \cjto play it.");
+            bool playRandom = ZH2Game::GetTrackNotFoundPlayRandom() && !ignore;
+
+            trackIndex = Random(0, GetRadioCollectionSize() - 1);
+            lump = GetRadioTrackLumpName(trackIndex);
+            name = GetRadioTrackName(trackIndex);
+            author = GetRadioTrackAuthor(trackIndex);
+
+            str message;
+            buildmsg(message = StrParam())
+            {
+                Append(s:BCSUtils::PlayerName(sourceId));
+                Append(s:" is playing ");
+                Append(s:trackMessage);
+                Append(s:"\cj, but you don't have this track.");
+
+                if (playRandom)
+                {
+                    Append(s:"Now playing \cd");
+                    Append(s:name);
+                    if ((raw)author != 0 && author != "")
+                    {
+                        Append(s:"\cj by \cd");
+                        Append(s:author);
+                    }
+                    Append(s:"\cj.");
+                }
+                else
+                {
+                    Append(s:"You can add it under the lump \cd");
+                    Append(s:lump);
+                    Append(s:" \cjto play it.");
+                }
+            }
+
+            Logger::LogActivator(message);
+
+            if (playRandom)
+            {
+                SetClientCurrentRadioTrackIndex(trackIndex);
+                SetMusic(lump);
+            }
+
             terminate;
         }
 
         Logger::LogActivator(BCSUtils::PlayerName(sourceId) + " is now playing " + trackMessage + "\cj.");
 
-        // If not the source, possible ignore this change.
-        if (ZH2Game::GetIgnoreRadioMusic())
+        if (ignore)
         {
             Logger::LogActivator("You've chosen to ignore this track.");
             terminate;
