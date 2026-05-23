@@ -83,17 +83,21 @@ strict namespace Decorate
         packet = Packet::ReadStr(packet);
         str author = Packet::Value;
 
-        str trackMessage;
-        buildmsg(trackMessage = StrParam())
+        str BuildTrackMessage(str name, str author)
         {
-            Append(s:"\cd");
-            Append(s:name);
-            if ((raw)author != 0 && author != "")
+            return buildmsg(StrParam())
             {
-                Append(s:"\cj by \cd");
-                Append(s:author);
+                Append(s:"\cd");
+                Append(s:name);
+                if ((raw)author != 0 && author != "")
+                {
+                    Append(s:"\cj by \cd");
+                    Append(s:author);
+                }
             }
         }
+
+        str trackMessage = BuildTrackMessage(name, author);
 
         // We're the source. Log a message and leave because we already changed tracks.
         if (sourceId == ConsolePlayerNumber())
@@ -102,37 +106,57 @@ strict namespace Decorate
             terminate;
         }
 
-        int trackIndex = GetRadioTrackIndexByLumpName(lump);
         bool ignore = ZH2Game::GetIgnoreRadioMusic();
+        bool playRandom = ZH2Game::GetTrackNotFoundPlayRandom();
 
-        // Do we have this track?
-        if (trackIndex == -1)
+        if (Decorate::GetRadioCollectionSize() == 0)
         {
-            bool playRandom = ZH2Game::GetTrackNotFoundPlayRandom() && !ignore;
-
-            trackIndex = Random(0, GetRadioCollectionSize() - 1);
-            lump = GetRadioTrackLumpName(trackIndex);
-            name = GetRadioTrackName(trackIndex);
-            author = GetRadioTrackAuthor(trackIndex);
-
             str message;
             buildmsg(message = StrParam())
             {
                 Append(s:BCSUtils::PlayerName(sourceId));
-                Append(s:" is playing ");
+                Append(s:" is now playing ");
                 Append(s:trackMessage);
+
+                if (ignore)
+                    Append(s:"\cj. You've chosen to ignore this track.");
+                else
+                    Append(s:"\cj, but you don't have any music tracks.");
+            }
+
+            Logger::LogActivator(message);
+            terminate;
+        }
+
+        int trackIndex = GetRadioTrackIndexByLumpName(lump);
+
+        // Possible random track if we didn't find the track we wanted.
+        int replaceTrackIndex = Random(0, GetRadioCollectionSize() - 1);
+        str replaceLump = GetRadioTrackLumpName(trackIndex);
+        str replaceName = GetRadioTrackName(trackIndex);
+        str replaceAuthor = GetRadioTrackAuthor(trackIndex);
+        str replaceTrackMessage = BuildTrackMessage(replaceName, replaceAuthor);
+
+        str message;
+        buildmsg(message = StrParam())
+        {
+            Append(s:BCSUtils::PlayerName(sourceId));
+            Append(s:" is now playing ");
+            Append(s:trackMessage);
+
+            if (ignore)
+            {
+                Append(s:"\cj. You've chosen to ignore this track.");
+            }
+            else if (trackIndex == -1)
+            {
                 Append(s:"\cj, but you don't have this track.");
 
                 if (playRandom)
                 {
-                    Append(s:"Now playing \cd");
-                    Append(s:name);
-                    if ((raw)author != 0 && author != "")
-                    {
-                        Append(s:"\cj by \cd");
-                        Append(s:author);
-                    }
-                    Append(s:"\cj.");
+                    Append(s:" Playing \cd");
+                    Append(s:replaceTrackMessage);
+                    Append(s:"\cj instead.");
                 }
                 else
                 {
@@ -141,27 +165,26 @@ strict namespace Decorate
                     Append(s:" \cjto play it.");
                 }
             }
-
-            Logger::LogActivator(message);
-
-            if (playRandom)
+            else
             {
-                SetClientCurrentRadioTrackIndex(trackIndex);
-                SetMusic(lump);
+                Append(s:"\cj.");
             }
-
-            terminate;
         }
 
-        Logger::LogActivator(BCSUtils::PlayerName(sourceId) + " is now playing " + trackMessage + "\cj.");
+        Logger::LogActivator(message);
 
         if (ignore)
-        {
-            Logger::LogActivator("You've chosen to ignore this track.");
             terminate;
-        }
 
-        SetClientCurrentRadioTrackIndex(trackIndex);
-        SetMusic(lump);
+        if (playRandom && trackIndex == -1)
+        {
+            SetClientCurrentRadioTrackIndex(replaceTrackIndex);
+            SetMusic(replaceLump);
+        }
+        else
+        {
+            SetClientCurrentRadioTrackIndex(trackIndex);
+            SetMusic(lump);
+        }
     }
 }
