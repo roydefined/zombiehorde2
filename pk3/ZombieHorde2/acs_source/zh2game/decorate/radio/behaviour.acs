@@ -32,16 +32,23 @@ strict namespace Decorate
         }
 
         int trackIndex = GetClientRadioCurrentlySelectedIndex();
-        str track = GetRadioTrackLumpName(trackIndex);
-
-        SetMusic(track);
         SetClientCurrentRadioTrackIndex(trackIndex);
 
-        if (!NamedRequestScriptPuke("zh2_internal_radio_settrack", trackIndex))
+        str lump = GetRadioTrackLumpName(trackIndex);
+        str name = GetRadioTrackName(trackIndex);
+        str author = GetRadioTrackAuthor(trackIndex);
+        SetMusic(lump);
+
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, lump);
+        packet = Packet::AppendStr(packet, name);
+        packet = Packet::AppendStr(packet, author);
+
+        if(!Packet::Send("zh2_internal_radio_settrack", packet))
             Logger::LogError(LOGSOURCE, "Failed to call internal set radio track.");
     }
 
-    script "zh2_internal_radio_settrack" (int trackIndex) net
+    script "zh2_internal_radio_settrack" (raw packet) net
     {
         if (!CheckWeapon(WEAPON_RADIO_NAME))
             terminate;
@@ -58,37 +65,53 @@ strict namespace Decorate
 
         UpdateRadioTrackCooldown();
 
-        if (!ACS_NamedExecuteAlways("zh2_internal_radio_settracktoclient", 0, trackIndex, PlayerNumber()))
+        if (!Packet::Send("zh2_internal_radio_settracktoclient", packet))
             Logger::LogError(LOGSOURCE, "Failed to call zh2_internal_radio_settracktoclient");
     }
 
-    script "zh2_internal_radio_settracktoclient" (raw rawTrackIndex, raw rawSourceId) clientside
+    script "zh2_internal_radio_settracktoclient" (raw packet) clientside
     {
+        int sourceId = PlayerNumber();
         BCSUtils::SetActivatorToConsolePlayer();
 
-        int trackIndex = (int)rawTrackIndex;
-        int sourceId = (int)rawSourceId;
+        packet = Packet::ReadStr(packet);
+        str lump = Packet::Value;
 
-        str author = GetRadioTrackAuthor(trackIndex);
-        str trackBroadcast = "\cd" + GetRadioTrackName(trackIndex);
-        if ((raw)author != 0 && author != "")
-            trackBroadcast += "\cj by \cd" + author + "\cj.";
+        packet = Packet::ReadStr(packet);
+        str name = Packet::Value;
+
+        packet = Packet::ReadStr(packet);
+        str author = Packet::Value;
+
+        str trackMessage;
+        buildmsg(trackMessage = StrParam())
+        {
+            Append(s:"\cd");
+            Append(s:name);
+            if ((raw)author != 0 && author != "")
+            {
+                Append(s:"\cj by \cd");
+                Append(s:author);
+            }
+        }
 
         // We're the source. Log a message and leave because we already changed tracks.
         if (sourceId == ConsolePlayerNumber())
         {
-            Logger::LogActivator("Now playing " + trackBroadcast);
+            Logger::LogActivator("Now playing " + trackMessage + "\cj.");
             terminate;
         }
+
+        int trackIndex = GetRadioTrackIndexByLumpName(lump);
 
         // Do we have this track?
-        if (trackIndex < 0 || trackIndex >= GetRadioCollectionSize())
+        if (trackIndex == -1)
         {
-            Logger::LogActivator(BCSUtils::PlayerName(sourceId) + " is playing radio music, but you don't have a matching track number.");
+            Logger::LogActivator(BCSUtils::PlayerName(sourceId) + " is playing " + trackMessage + "\cj, but you don't have this track. You can add it under the lump \cd" + lump + " \cjto play it.");
             terminate;
         }
 
-        Logger::LogActivator(BCSUtils::PlayerName(sourceId) + " is now playing " + trackBroadcast);
+        Logger::LogActivator(BCSUtils::PlayerName(sourceId) + " is now playing " + trackMessage + "\cj.");
 
         // If not the source, possible ignore this change.
         if (ZH2Game::GetIgnoreRadioMusic())
@@ -97,9 +120,7 @@ strict namespace Decorate
             terminate;
         }
 
-        str track = GetRadioTrackLumpName(trackIndex);
-
-        SetMusic(track);
         SetClientCurrentRadioTrackIndex(trackIndex);
+        SetMusic(lump);
     }
 }
