@@ -6,11 +6,15 @@ strict namespace Decorate
 {
     script "zh2_dec_radio_cyclemusic" (raw direction) net clientside
     {
-    if (GetRadioCollectionSize() == 0) terminate;
+        if (GetRadioCollectionSize() == 0)
+            terminate;
 
-    ZH2Game::GameContext.RadioCurrentlySelectedIndex += (int)direction;
-    if (ZH2Game::GameContext.RadioCurrentlySelectedIndex < 0) ZH2Game::GameContext.RadioCurrentlySelectedIndex = BCSUtils::Max(GetRadioCollectionSize() - 1, 0);
-    if (ZH2Game::GameContext.RadioCurrentlySelectedIndex >= GetRadioCollectionSize()) ZH2Game::GameContext.RadioCurrentlySelectedIndex = 0;
+        if (ZH2Game::GetInvertRadioNavigation())
+            direction = -direction;
+
+        ZH2Game::GameContext.RadioCurrentlySelectedIndex += (int)direction;
+        if (ZH2Game::GameContext.RadioCurrentlySelectedIndex < 0) ZH2Game::GameContext.RadioCurrentlySelectedIndex = BCSUtils::Max(GetRadioCollectionSize() - 1, 0);
+        if (ZH2Game::GameContext.RadioCurrentlySelectedIndex >= GetRadioCollectionSize()) ZH2Game::GameContext.RadioCurrentlySelectedIndex = 0;
     }
 
     script "zh2_dec_radio_stopmusic" net clientside
