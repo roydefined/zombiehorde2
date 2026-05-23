@@ -6,6 +6,9 @@ strict namespace Decorate
 {
     script "zh2_dec_radio_cyclemusic" (raw direction) net clientside
     {
+        if (PlayerNumber() != ConsolePlayerNumber())
+            terminate;
+
         if (GetRadioCollectionSize() == 0)
             terminate;
 
@@ -19,11 +22,17 @@ strict namespace Decorate
 
     script "zh2_dec_radio_stopmusic" net clientside
     {
+        if (PlayerNumber() != ConsolePlayerNumber())
+            terminate;
+
         SetMusic("");
     }
 
     script "zh2_dec_radio_setcurrentmusic" net clientside
     {
+        if (PlayerNumber() != ConsolePlayerNumber())
+            terminate;
+
         // We have no tracks, no point in changing.
         if (Decorate::GetRadioCollectionSize() == 0)
         {
@@ -132,9 +141,9 @@ strict namespace Decorate
 
         // Possible random track if we didn't find the track we wanted.
         int replaceTrackIndex = Random(0, GetRadioCollectionSize() - 1);
-        str replaceLump = GetRadioTrackLumpName(trackIndex);
-        str replaceName = GetRadioTrackName(trackIndex);
-        str replaceAuthor = GetRadioTrackAuthor(trackIndex);
+        str replaceLump = GetRadioTrackLumpName(replaceTrackIndex);
+        str replaceName = GetRadioTrackName(replaceTrackIndex);
+        str replaceAuthor = GetRadioTrackAuthor(replaceTrackIndex);
         str replaceTrackMessage = BuildTrackMessage(replaceName, replaceAuthor);
 
         str message;
