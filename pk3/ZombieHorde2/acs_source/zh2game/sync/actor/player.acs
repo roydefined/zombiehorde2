@@ -17,6 +17,7 @@ strict namespace Sync
         syncId = SyncWriteThruActors(syncId);
         syncId = SyncWriteInitialZombiePreviously(syncId);
         syncId = SyncWriteInitialZombieLastMap(syncId);
+        syncId = SyncWriteInitialZombiePickWeights(syncId);
         syncId = SyncWriteInitialZombies(syncId);
         syncId = SyncWriteZombieInfections(syncId);
         syncId = SyncWriteHumanKills(syncId);
@@ -47,6 +48,7 @@ strict namespace Sync
         syncId = SyncReadThruActors(syncId);
         syncId = SyncReadInitialZombiePreviously(syncId);
         syncId = SyncReadInitialZombieLastMap(syncId);
+        syncId = SyncReadInitialZombiePickWeights(syncId);
         syncId = SyncReadInitialZombies(syncId);
         syncId = SyncReadZombieInfections(syncId);
         syncId = SyncReadHumanKills(syncId);
@@ -529,6 +531,68 @@ strict namespace Sync
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing last map initial zombie packs to client."));
         return syncId;
     }
+
+    internal int SyncWriteInitialZombiePickWeights(int syncId)
+{
+    Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing initial zombie pick weight packs through actors. Sync id: " + str(syncId) + "."));
+
+    int pack = 0;
+
+    for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+    {
+        int weight = Player::GetPlayerInitialZombiePickWeight(i);
+
+        // Pick weight is expected to be between -1 / 254.
+        // While it's technically possible to exceed this, the chance is miniscule.
+        if (weight < -1)
+        {
+            Logger::LogWarning(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Initial zombie pick weight for player \cd" + str(i) + "\cj is below -1. Clamping to -1."));
+            weight = -1;
+        }
+
+        if (weight > MAX_INITIAL_ZOMBIE_PICK_WEIGHT)
+        {
+            Logger::LogWarning(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Initial zombie pick weight for player \cd" + str(i) + "\cj is above " + str(MAX_INITIAL_ZOMBIE_PICK_WEIGHT) + ". Clamping to " + str(MAX_INITIAL_ZOMBIE_PICK_WEIGHT) + "."));
+            weight = MAX_INITIAL_ZOMBIE_PICK_WEIGHT;
+        }
+
+        int storedWeight = weight + 1;
+        pack |= storedWeight << ((i % SYNC_PLAYER_PICKWEIGHT_PLAYERS_PER_PACK) * 8);
+
+        if (i % SYNC_PLAYER_PICKWEIGHT_PLAYERS_PER_PACK == SYNC_PLAYER_PICKWEIGHT_PLAYERS_PER_PACK - 1)
+        {
+            BCSUtils::SyncVariable(--syncId, pack);
+            pack = 0;
+        }
+    }
+
+    if (BCSUtils::MAX_PLAYERS % SYNC_PLAYER_PICKWEIGHT_PLAYERS_PER_PACK != 0)
+        BCSUtils::SyncVariable(--syncId, pack);
+
+    Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing initial zombie pick weight packs through actors. Sync id: " + str(syncId) + "."));
+    return syncId;
+}
+
+internal int SyncReadInitialZombiePickWeights(int syncId)
+{
+    Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading initial zombie pick weight packs through actors. Sync id: " + str(syncId) + "."));
+
+    int pack = 0;
+
+    for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+    {
+        if (i % SYNC_PLAYER_PICKWEIGHT_PLAYERS_PER_PACK == 0)
+            pack = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+        int storedWeight = (pack >> ((i % SYNC_PLAYER_PICKWEIGHT_PLAYERS_PER_PACK) * 8)) & 255;
+        int weight = storedWeight - 1;
+
+        Player::SetPlayerInitialZombiePickWeight(i, weight);
+    }
+
+    Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished reading initial zombie pick weight packs through actors. Sync id: " + str(syncId) + "."));
+    return syncId;
+}
 
     #undef SYNC_CATEGORY
 }

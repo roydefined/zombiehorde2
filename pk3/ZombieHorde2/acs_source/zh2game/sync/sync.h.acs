@@ -16,13 +16,17 @@ strict namespace Sync
     // The length in this case is used to debug the result and to make sure the sync stays inbounds,
     // in case we sync more TIDs and possible lose data due to overflowing.
 
-    // NOTE: The range of TIDs is quite broad. None of these length match what we actually need.
-
     #define SYNC_BASE 50000
+
+    // Start of transient TID definitions
+    #define SYNC_PLAYER_PICKWEIGHT_PLAYERS_PER_PACK 4
+    #define SYNC_PLAYER_PICKWEIGHT_LENGTH (BCSUtils::MAX_PLAYERS / SYNC_PLAYER_PICKWEIGHT_PLAYERS_PER_PACK)
+
+    // Start of actual TID definitions
 
     // Player sync has at least three instances of 64 players needing their own sync tid.
     // We also require 32 ints from the safety slots (1 player requires 16 bits each at most)
-    #define SYNC_PLAYERS_LENGTH (BCSUtils::MAX_PLAYERS * 3 + 24) + 32
+    #define SYNC_PLAYERS_LENGTH (BCSUtils::MAX_PLAYERS * 3 + 24) + 32 + SYNC_PLAYER_PICKWEIGHT_LENGTH
     #define SYNC_PLAYERS SYNC_BASE + SYNC_PLAYERS_LENGTH
 
     #define SYNC_ROUNDTIMERS_LENGTH (MAX_TIMERS * 10)
