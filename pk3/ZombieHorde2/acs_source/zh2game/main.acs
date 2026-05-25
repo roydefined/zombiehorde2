@@ -160,26 +160,15 @@ strict namespace ZH2Game
             }
         }
 
-        Sync::SyncRoundState();
-        Sync::SyncTimers();
-        Sync::SyncResists();
+        // This tic helps when the server is working on initializing the map with many players.
+        // I've noticed the sync not always working when it takes a while to initialize.
 
-        // Required for the zombie abilities to be synched.
-        Sync::SyncGame();
-
-        // Resync admin list
-        Sync::SyncAdmins();
-
-        Sync::SyncWeather();
-
-        // After a moment, sync all players and allow them to sync themselves on enter.
-        Delay(const: 5);
-
+        // TODO: Both the tic and the boolean can be removed if we add a proper debounce system.
+        Delay(const: 1);
         ZH2Game::GameContext.DoSyncOnEnter = true;
-        Sync::SyncPlayers();
 
-        // Send the default values to the client.
-        Sync::SyncPowers();
+        Sync::SyncAll();
+        Sync::LibSyncAll();
     }
 
     script "zh2_internal_open_client" open clientside
