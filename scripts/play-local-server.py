@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
 import subprocess
+import sys
 import time
+
 from utils import get_root, get_paths
+
+# === Zombie Horde 2 local host launcher ===
+# This script starts a local host and client instance for quick multiplayer testing.
+# By default the server uses a host config, located at 'docs/zh2-host.cfg'.
+# This can be disabled by passing `--nohostconfig`.
+# Note doing so will make the script add `+addmap` parameters instead for the maps.
 
 PORT = "10666"
 
@@ -36,20 +44,30 @@ def get_map_args(root):
     return args
 
 
+def get_host_config_args(root):
+    return ["+exec", str(root / "docs" / "host.cfg")]
+
+
 def log_cmd(label, cmd):
     print(f"{label}:")
     print(" ".join(f'"{c}"' if " " in c else c for c in cmd))
     print("")
 
 
-def start_host(root, paths):
+def start_host(root, paths, use_host_config):
     cmd = [
         str(paths["zandronum"]),
         "-host", "1",
         "-iwad", str(paths["iwad"]),
         *get_file_args(root),
-        *get_map_args(root),
     ]
+
+    # Use the predefined host config by default.
+    # Otherwise generate map arguments dynamically.
+    if use_host_config:
+        cmd.extend(get_host_config_args(root))
+    else:
+        cmd.extend(get_map_args(root))
 
     log_cmd("Host command", cmd)
     return subprocess.Popen(cmd)
@@ -71,8 +89,12 @@ def main():
     root = get_root()
     paths = get_paths()
 
-    host = start_host(root, paths)
+    # Disable the host config when --nohostconfig is passed.
+    use_host_config = "--nohostconfig" not in sys.argv
 
+    host = start_host(root, paths, use_host_config)
+
+    # Give the server a short moment to initialize before joining.
     time.sleep(0.5)
 
     client = start_client(root, paths)
