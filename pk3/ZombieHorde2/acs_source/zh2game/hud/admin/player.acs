@@ -440,7 +440,14 @@ strict namespace Hud
     // TODO: Should split this by category maybe.
     internal void DrawItemSelectors(fixed addX, fixed addY, void function(int, int)& invoker)
     {
-        for (int i = 0; i < Item::GetItemCollectionSize(); ++i)
+        int total = Item::GetItemCollectionSize();
+        int page = ZH2Game::GameContext.HudContext.AdminItemSelectorListPage;
+        int totalPages = (total + ADMINHUD_ITEMSELECTORS_MAXLENGTH) / ADMINHUD_ITEMSELECTORS_MAXLENGTH;
+        int start = ADMINHUD_ITEMSELECTORS_MAXLENGTH * page;
+        int end = start + BCSUtils::Min(ADMINHUD_ITEMSELECTORS_MAXLENGTH, total - start);
+
+        int offset = 0;
+        for (int i = start; i < end; ++i)
         {
             // This will always exist as it is required.
             str label = Item::GetItemLabel(i);
@@ -449,14 +456,39 @@ strict namespace Hud
 
             BCSUtils::HudSetTextColor(CR_WHITE);
 
-            HudSetPointInternal(addX, addY + fixed(10 * i));
+            HudSetPointInternal(addX, addY + fixed(10 * offset));
             BCSUtils::HudDrawText(--_drawnHudId, label);
 
-            if (DrawClickableText(--_drawnHudId, addX + 200.0, addY + fixed(10 * i), 40.0, 10.0, "give"))
+            if (DrawClickableText(--_drawnHudId, addX + 200.0, addY + fixed(10 * offset), 40.0, 10.0, "give"))
                 invoker(i, 1);
 
-            if (DrawClickableText(--_drawnHudId, addX + 240.0, addY + fixed(10 * i), 40.0, 10.0, "take"))
+            if (DrawClickableText(--_drawnHudId, addX + 240.0, addY + fixed(10 * offset), 40.0, 10.0, "take"))
                 invoker(i, -1);
+
+            offset++;
+        }
+
+        addY = addY + fixed(10 * ADMINHUD_ITEMSELECTORS_MAXLENGTH) + 10.0;
+        if (DrawClickableText(--_drawnHudId, addX, addY, 40.0, 10.0, "prev"))
+        {
+            ZH2Game::GameContext.HudContext.AdminItemSelectorListPage--;
+            if (ZH2Game::GameContext.HudContext.AdminItemSelectorListPage == -1)
+            {
+                ZH2Game::GameContext.HudContext.AdminItemSelectorListPage = totalPages - 1;
+            }
+        }
+
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        HudSetPointInternal(addX + 50.0, addY);
+        BCSUtils::HudDrawText(--_drawnHudId, str(page + 1) + "/" + str(totalPages));
+
+        if (DrawClickableText(--_drawnHudId, addX + 100.0, addY, 40.0, 10.0, "next"))
+        {
+            ZH2Game::GameContext.HudContext.AdminItemSelectorListPage++;
+            if (ZH2Game::GameContext.HudContext.AdminItemSelectorListPage == totalPages)
+            {
+                ZH2Game::GameContext.HudContext.AdminItemSelectorListPage = 0;
+            }
         }
     }
 
