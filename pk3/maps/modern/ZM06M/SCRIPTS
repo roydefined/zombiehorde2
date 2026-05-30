@@ -21,6 +21,14 @@
 #define TAG_MAPSPOTCEILINGLAMP 57
 #define TAG_MAPSPOTLIGHTBULB 82
 
+// Uboa event
+#define UBOA_LIGHT_FADE_DELAY_EXTRA_MIN 5
+#define UBOA_LIGHT_FADE_DELAY_EXTRA_MAX 12
+#define UBOA_LIGHT_FADE_TICS_MIN 0
+#define UBOA_LIGHT_FADE_TICS_MAX 12
+#define UBOA_LIGHT_FADE_MIN 80
+#define UBOA_LIGHT_FADE_MAX 200
+
 // Spider event
 #define MAX_SPIDER 250
 #define MAX_SPIDERSPOT 4
@@ -32,6 +40,13 @@
 #define TAG_ANGEL 4001
 #define TAG_ANGELSPAWN 129
 #define MAX_ANGELS 5
+
+#define ANGELS_LIGHT_FADE_MIN 40
+#define ANGELS_LIGHT_FADE_MAX 210
+#define ANGELS_LIGHT_FADE_TICS_MIN 12
+#define ANGELS_LIGHT_FADE_TICS_MAX 35
+#define ANGELS_LIGHT_FADE_DELAY_EXTRA_MIN 5
+#define ANGELS_LIGHT_FADE_DELAY_EXTRA_MAX 18
 
 // Manage how many items to spawn when Uboa dies
 #define UBOA_DIED_JACKSGUN_SINGLE_BULLET_COUNT 6
@@ -67,6 +82,13 @@ bool eventTriggered = false;	  // Indicates an event has been triggered.
 bool angelsSpawned = false;		  // Indicates if the angels have been spawned. Checked byt he event to ensure there is anything to teleport, should it be called directly.
 int eventState = EVENTSTATE_NONE; // Synchronized with clients.
 
+// Angel context
+// We track the number spawned, and how many are left.
+// The one for the number left is used to determine when the event ends, but we also need to make sure they all spawned.
+#define ANGEL_SPAWNS_MAX 5
+internal bool _angelsSpawned;
+internal bool _angelsLeft = ANGEL_SPAWNS_MAX;
+
 bool doorcheck2flr;
 
 // Possible key position.
@@ -74,6 +96,13 @@ bool keySpot[6];
 
 // Flare spots.
 int Flaresleft[3] = { 10, 10, 10 };
+
+// All the tags of the relevant rooms that should have its color/light level changed
+internal int _roomTags[] = {
+	0, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23, 27,
+	31, 32, 40, 42, 43, 44, 47, 53, 54, 55, 58, 59, 68, 73, 74,
+	75, 76, 77, 78, 79, 81, 92, 93
+};
 
 #define LOGSOURCE "Map"
 
@@ -95,14 +124,8 @@ function void InteractionMessageBold(str message)
 // If red is the base level color, tag 62 needs only its first argument above 0.
 function void SetLevelAtmosphere (int red, int green, int blue)
 {
-	static int colorRooms[42] = {
-		0, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23, 27,
-		31, 32, 40, 42, 43, 44, 47, 53, 54, 55, 58, 59, 68, 73, 74,
-		75, 76, 77, 78, 79, 81, 92, 93
-	};
-
 	for(int i = 0; i < 42; i++){
-		Sector_Setcolor(colorRooms[i], red, green, blue);
+		Sector_Setcolor(_roomTags[i], red, green, blue);
 	}
 
 	Sector_Setcolor(62, red, 0, 0);
@@ -267,6 +290,12 @@ Script "TurnOffGenerator"
 		terminate;
 	}
 
+	if (!Player::GetIsHuman())
+	{
+		InteractionMessage("Brainz?");
+		terminate;
+	}
+
 	int eventIndex = GetCVar("sv_zh2_zm06mevent");
 
 	// Do not pick the event by chance if we have a preset index.
@@ -320,6 +349,9 @@ Script "UboaDied"
 
 	Music::SetDefaultMusic("UBOADEAD");
 	Music::PlayDefaultMusic();
+
+
+	SetEventState(EVENTSTATE_NONE);
 
 	AmbientSound("ZH2Uboa/death", 127);
 
@@ -403,15 +435,41 @@ Script "AngelDied"
 	//hasRun = true;
 
 	ACS_NamedExecuteAlways("AngelSpawnLoot", 0, GetActorX(0), GetActorY(0), GetActorZ(0));
+	_angelsLeft--;
 
 	radius_quake(20, 46, 0, 500, 0);
-	HudMessageBold(s:"One of the angels has died!"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+	HudMessageBold(s:GetAngelDeathMessage(_angelsLeft); HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+
+	if (_angelsLeft == 0)
+		SetEventState(EVENTSTATE_NONE);
+
 	delay(46);
 	radius_quake(16, 35, 0, 500, 0);
 	delay(35);
 	radius_quake(12, 35, 0, 500, 0);
 	delay(35);
 	radius_quake(8, 17, 0, 500, 0);
+}
+
+str GetAngelDeathMessage(int angelsLeft)
+{
+	switch (angelsLeft)
+	{
+		case 0:
+			return "The last angel has fallen.";
+
+		case 1:
+			return "Only one angel remains.";
+
+		case 2:
+			return "The host is weakening.";
+
+		case 3:
+			return "The heavens recoil.";
+
+		default:
+			return "An angel has fallen.";
+	}
 }
 
 Script "AngelSpawnLoot" (raw x, raw y, raw z)
@@ -705,7 +763,7 @@ script "Event_Disco_Client" (void) clientside
 ** -----------------------------------------------------------------------------
 */
 
-script "Event_Uboa" (void)
+script "Event_Uboa"
 {
 	if (eventState != EVENTSTATE_NONE)
 	{
@@ -753,14 +811,14 @@ script "Event_Uboa_Client" (void) clientside
 		delay(const: 1);
 	}
 
+	// Should not matter, just done in case scripts are being puked manually.
+	SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
+
 	Music::SetDefaultMusic(BCSUtils::cond(Random(0, 1), "FUCKED", "FUCKED2"));
 	Music::PlayDefaultMusic();
 
 	int startTimestamp = Timer();
-	int targetColor = 0;
-	int currentColor = DEFAULTLEVELCOLOR;
 
-	// TODO: From past testing it was determined that this might be incredibly laggy.
 	while(eventState == EVENTSTATE_UBOA)
 	{
 		if (Timer() - startTimestamp == 35 * 2)
@@ -768,16 +826,24 @@ script "Event_Uboa_Client" (void) clientside
 			Log(s:"Uboa has entered the hospital.");
 		}
 
-		if ((Timer() - startTimestamp) % 10 == 0)
+		int targetLightLevel = Random(UBOA_LIGHT_FADE_MIN, UBOA_LIGHT_FADE_MAX);
+		int fadeTics = Random(UBOA_LIGHT_FADE_TICS_MIN, UBOA_LIGHT_FADE_TICS_MAX);
+
+		for (int i = 0; i < lengthof(_roomTags); ++i)
 		{
-			targetColor = random(1,255);
+			Light_Fade(_roomTags[i], targetLightLevel, fadeTics);
 		}
 
-		int diff = (targetColor - currentColor) / 5;
-		currentColor += diff;
+		Delay(fadeTics + Random(UBOA_LIGHT_FADE_DELAY_EXTRA_MIN, UBOA_LIGHT_FADE_DELAY_EXTRA_MAX));
+	}
 
-		SetLevelAtmosphere(currentColor, currentColor, currentColor);
-		Delay(const: 1);
+	// Should not matter, just done in case scripts are being puked manually.
+	SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
+
+	// Can't really revert back to the defaults so just assume 128
+	for (i = 0; i < lengthof(_roomTags); ++i)
+	{
+		Light_Fade(_roomTags[i], 128, 35 * 10);
 	}
 }
 
@@ -1031,6 +1097,7 @@ Script "EnterAltar" (void)
 
 	delay(35*4);
 
+	// Not triggering the event if the player died.
 	if (!BCSUtils::ActorIsAlive(tid))
 	{
 		SetEventState(EVENTSTATE_NONE);
@@ -1070,26 +1137,21 @@ script "Event_Angels" (void)
 			SpawnSpot("ZH2Angel", TAG_ANGELSPAWN + i, TAG_ANGEL + i);
 	}
 
-	int angelCount = 0;
 	while(true)
 	{
-		// This is a small random count that becomes rarer to pass the more it passes.
-		while(random(0, 2 + angelCount))
-			delay(35 * random(5, 15));
+		delay(35 * (random(5, 15) * _angelsSpawned));
+
+		InteractionMessageBold(GetAngelSpawnMessage(_angelsSpawned));
 
 		// Teleport an angel.
-		teleportother(TAG_ANGEL + angelCount, Random(500, 517), 1);
-		InteractionMessageBold("\cgSomething has crossed from beyond...");
-		angelCount++;
+		teleportother(TAG_ANGEL + _angelsSpawned, Random(500, 517), 1);
+		_angelsSpawned++;
 
 		// Replace hospital and music on first spawn
-		if (angelCount == 1)
+		if (_angelsSpawned == 1)
 		{
 			SetEventState(EVENTSTATE_ANGELS);
 			ACS_NamedExecuteAlways("Event_Angels_Client", 0);
-
-			Music::SetDefaultMusic("ANGELS");
-			Music::PlayDefaultMusic();
 
 			// Replace hospital textures
 			SetActorState(TAG_MAPSPOTCEILINGLAMP, "inactive");
@@ -1114,35 +1176,60 @@ script "Event_Angels" (void)
 			SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "HORRFLR1");
 		}
 
-		Logger::LogDebug(LOGSOURCE, StrParam(s:"Angel count: ", d:angelCount));
+		Logger::LogDebug(LOGSOURCE, StrParam(s:"Angel count: ", d:_angelsSpawned));
 
-		// No more than 5 angels should leave.
-		if (angelCount == 5)
+		if (_angelsSpawned == ANGEL_SPAWNS_MAX)
 			terminate;
+	}
+}
+
+str GetAngelSpawnMessage(int angelsSpawned)
+{
+	switch (angelsSpawned)
+	{
+		case 0:
+			return "\cgSomething has crossed from beyond...";
+
+		case 1:
+			return "\cgAnother presence has crossed from beyond...";
+
+		case 2:
+			return "\cgThe veil is breaking...";
+
+		case 3:
+			return "\cgThe air grows heavy with unseen eyes...";
+
+		default:
+			return "\cgThe crossing will not stop...";
 	}
 }
 
 script "Event_Angels_Client" (void) clientside
 {
-	// TODO: Is this even required? Already handled serverside.
 	Music::SetDefaultMusic("ANGELS");
 	Music::PlayDefaultMusic();
 
 	int startTimestamp = Timer();
-	int targetColor = 0;
-	int currentColor = DEFAULTLEVELCOLOR;
 
 	while(eventState == EVENTSTATE_ANGELS)
 	{
-		if ((Timer() - startTimestamp) % 5 == 0)
+		int targetLightLevel = Random(ANGELS_LIGHT_FADE_MIN, ANGELS_LIGHT_FADE_MAX);
+		int fadeTics = Random(ANGELS_LIGHT_FADE_TICS_MIN, ANGELS_LIGHT_FADE_TICS_MAX);
+
+		for (int i = 0; i < lengthof(_roomTags); ++i)
 		{
-			targetColor = random(1, 150);
+			Light_Fade(_roomTags[i], targetLightLevel, fadeTics);
 		}
 
-		int diff = (targetColor - currentColor) / 3;
-		currentColor += diff;
+		Delay(fadeTics + Random(ANGELS_LIGHT_FADE_DELAY_EXTRA_MIN, ANGELS_LIGHT_FADE_DELAY_EXTRA_MAX));
+	}
 
-		SetLevelAtmosphere(currentColor, currentColor, currentColor);
-		Delay(const: 1);
+	// Should not matter, just done in case scripts are being puked manually.
+	SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
+
+	// Can't really revert back to the defaults so just assume 128.
+	for (i = 0; i < lengthof(_roomTags); ++i)
+	{
+		Light_Fade(_roomTags[i], 128, 35 * 10);
 	}
 }
