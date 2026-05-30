@@ -33,6 +33,18 @@
 #define TAG_ANGELSPAWN 129
 #define MAX_ANGELS 5
 
+// Manage how many items to spawn when Uboa dies
+#define UBOA_DIED_JACKSGUN_SINGLE_BULLET_COUNT 6
+#define UBOA_DIED_JACKSGUN_DOUBLE_BULLET_COUNT 3
+#define UBOA_DIED_JACKSGUN_WEAPON_COUNT 2
+
+// Configurable behavior to spawn the items
+#define UBOA_DIED_ITEM_SPAWN_DISTANCE_MIN 48.0
+#define UBOA_DIED_ITEM_SPAWN_DISTANCE_MAX 128.0
+#define UBOA_DIED_ITEM_SPAWN_HEIGHT_MIN 16.0
+#define UBOA_DIED_ITEM_SPAWN_HEIGHT_MAX 64.0
+#define UBOA_DIED_ITEM_SPAWN_DELAY 14
+
 // Possible events
 #define EVENTSTATE_NONE 0
 #define EVENTSTATE_DISCO 1
@@ -266,7 +278,6 @@ Script "TurnOffGenerator"
 	}
 }
 
-// TODO: Uboa used to drop Jack's guns on death
 Script "UboaDied"
 {
 	static bool hasRun;
@@ -275,11 +286,12 @@ Script "UboaDied"
 
 	hasRun = true;
 
+	ACS_NamedExecuteAlways("UboaSpawnLoot", 0, GetActorX(0), GetActorY(0), GetActorZ(0));
+
 	Music::SetDefaultMusic("UBOADEAD");
 	Music::PlayDefaultMusic();
 
-	// TODO: Uboa used to also trigger the same death as an angel.
-	//AmbientSound("OHSHI5", 127);
+	AmbientSound("ZH2Uboa/death", 127);
 
 	radius_quake(128,1000,0,500,90);
 	HudMessageBold(s:"Someone has slain Uboa!"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
@@ -289,6 +301,66 @@ Script "UboaDied"
 	radius_quake(64,35,0,500,80);
 	delay(35);
 	radius_quake(32,17,0,500,80);
+}
+
+Script "UboaSpawnLoot" (raw x, raw y, raw z)
+{
+	int singleBulletsSpawned = 0;
+	int doubleBulletsSpawned = 0;
+	int weaponsSpawned = 0;
+
+	// Manage the total count to spawn so we know when to break out
+	int totalAmount =
+		UBOA_DIED_JACKSGUN_SINGLE_BULLET_COUNT +
+		UBOA_DIED_JACKSGUN_DOUBLE_BULLET_COUNT +
+		UBOA_DIED_JACKSGUN_WEAPON_COUNT;
+
+	for (int i = 0; i < totalAmount; ++i)
+	{
+		// Note, always reassign or the value from the last iteration actually sticks.
+		str spawnName = (raw)0;
+
+		while (spawnName == (raw)0)
+		{
+			switch (random(0, 2))
+			{
+				case 0:
+					if (singleBulletsSpawned < UBOA_DIED_JACKSGUN_SINGLE_BULLET_COUNT)
+					{
+						spawnName = WEAPON_JACKSGUN_AMMOSINGLE_NAME;
+						++singleBulletsSpawned;
+					}
+					break;
+
+				case 1:
+					if (doubleBulletsSpawned < UBOA_DIED_JACKSGUN_DOUBLE_BULLET_COUNT)
+					{
+						spawnName = WEAPON_JACKSGUN_AMMODOUBLE_NAME;
+						++doubleBulletsSpawned;
+					}
+					break;
+
+				case 2:
+					if (weaponsSpawned < UBOA_DIED_JACKSGUN_WEAPON_COUNT)
+					{
+						spawnName = WEAPON_JACKSGUN_SPAWN_NAME;
+						++weaponsSpawned;
+					}
+					break;
+			}
+		}
+
+		fixed angle = Math::FRandom(0.0, 1.0);
+		fixed offsetX = FixedMul(cos(angle), Math::FRandom(UBOA_DIED_ITEM_SPAWN_DISTANCE_MIN, UBOA_DIED_ITEM_SPAWN_DISTANCE_MAX));
+		fixed offsetY = FixedMul(sin(angle), Math::FRandom(UBOA_DIED_ITEM_SPAWN_DISTANCE_MIN, UBOA_DIED_ITEM_SPAWN_DISTANCE_MAX));
+
+		fixed spawnX = x + offsetX;
+		fixed spawnY = y + offsetY;
+		fixed spawnZ = z + Math::FRandom(UBOA_DIED_ITEM_SPAWN_HEIGHT_MIN, UBOA_DIED_ITEM_SPAWN_HEIGHT_MAX);
+
+		SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
+		Delay(const: UBOA_DIED_ITEM_SPAWN_DELAY);
+	}
 }
 
 // guitar riff
