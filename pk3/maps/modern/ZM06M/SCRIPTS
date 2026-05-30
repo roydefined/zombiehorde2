@@ -45,6 +45,15 @@
 #define UBOA_DIED_ITEM_SPAWN_HEIGHT_MAX 64.0
 #define UBOA_DIED_ITEM_SPAWN_DELAY 14
 
+// Configurable behavior to spawn the items
+#define ANGEL_DIED_ITEM_SPAWN_DISTANCE_MIN 32.0
+#define ANGEL_DIED_ITEM_SPAWN_DISTANCE_MAX 96.0
+#define ANGEL_DIED_ITEM_SPAWN_HEIGHT_MIN 16.0
+#define ANGEL_DIED_ITEM_SPAWN_HEIGHT_MAX 48.0
+
+// Handles the see state of the angel to know when to scream next
+#define ANGEL_NEXT_SEE_SCREAM 35 * 6
+
 // Possible events
 #define EVENTSTATE_NONE 0
 #define EVENTSTATE_DISCO 1
@@ -147,14 +156,20 @@ script "OnEvent" (raw type, raw damage, raw unused) event
 	if (type != GAMEEVENT_ACTOR_DAMAGED)
 		terminate;
 
-	if (!BCSUtils::StrEquals(GetActorClass(ActivatorTID()), "ZH2Uboa"))
+	// We expect either Uboa or the Angel here to die.
+	bool isUboa = BCSUtils::StrEquals(GetActorClass(ActivatorTID()), "ZH2Uboa");
+	bool isAngel = BCSUtils::StrEquals(GetActorClass(ActivatorTID()), "ZH2Angel");
+	if (!isUboa && !isAngel)
 		terminate;
 
 	int targetHealth = BCSUtils::GetActorHealth(0);
 	bool targetDied = targetHealth - damage <= 0;
 
-	if (targetDied)
+	if (isUboa && targetDied)
 		ACS_NamedExecute("UboaDied", 0);
+
+	if (isAngel && targetDied)
+		ACS_NamedExecute("AngelDied", 0);
 }
 
 script "ToggleWeather" (void) clientside
@@ -171,6 +186,21 @@ script "ToggleWeather" (void) clientside
 	}
 
 	Weather::StartEmitterWeather(Weather::EMITTERWEATHER_SNOW);
+}
+
+// This simplifies the Angel's logic a lot by conditionally triggering its see behavior based on a timer.
+script "zh2_dec_angel_checksee"
+{
+	static int nextSeeTrigger;
+	if (nextSeeTrigger < Timer())
+	{
+		nextSeeTrigger = Timer() + ANGEL_NEXT_SEE_SCREAM;
+		SetResultValue((int)true);
+	}
+	else
+	{
+		SetResultValue((int)false);
+	}
 }
 
 Script "FlareLocker" (int whatfloor)
@@ -293,7 +323,7 @@ Script "UboaDied"
 
 	AmbientSound("ZH2Uboa/death", 127);
 
-	radius_quake(128,1000,0,500,90);
+	radius_quake(128,1000,0,500,0);
 	HudMessageBold(s:"Someone has slain Uboa!"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
 	delay(17);
 	radius_quake(128,70,0,500,80);
@@ -361,6 +391,46 @@ Script "UboaSpawnLoot" (raw x, raw y, raw z)
 		SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
 		Delay(const: UBOA_DIED_ITEM_SPAWN_DELAY);
 	}
+}
+
+Script "AngelDied"
+{
+	// This one can run multiple times as there are multiple angels.
+	//static bool hasRun;
+	//if (hasRun)
+	//	terminate;
+
+	//hasRun = true;
+
+	ACS_NamedExecuteAlways("AngelSpawnLoot", 0, GetActorX(0), GetActorY(0), GetActorZ(0));
+
+	radius_quake(20, 46, 0, 500, 0);
+	HudMessageBold(s:"One of the angels has died!"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+	delay(46);
+	radius_quake(16, 35, 0, 500, 0);
+	delay(35);
+	radius_quake(12, 35, 0, 500, 0);
+	delay(35);
+	radius_quake(8, 17, 0, 500, 0);
+}
+
+Script "AngelSpawnLoot" (raw x, raw y, raw z)
+{
+	void SpawnLoot(str spawnName)
+	{
+		fixed angle = Math::FRandom(0.0, 1.0);
+		fixed offsetX = FixedMul(cos(angle), Math::FRandom(ANGEL_DIED_ITEM_SPAWN_DISTANCE_MIN, ANGEL_DIED_ITEM_SPAWN_DISTANCE_MAX));
+		fixed offsetY = FixedMul(sin(angle), Math::FRandom(ANGEL_DIED_ITEM_SPAWN_DISTANCE_MIN, ANGEL_DIED_ITEM_SPAWN_DISTANCE_MAX));
+
+		fixed spawnX = x + offsetX;
+		fixed spawnY = y + offsetY;
+		fixed spawnZ = z + Math::FRandom(ANGEL_DIED_ITEM_SPAWN_HEIGHT_MIN, ANGEL_DIED_ITEM_SPAWN_HEIGHT_MAX);
+
+		SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
+	}
+
+	SpawnLoot(WEAPON_JACKSGUN_AMMODOUBLE_NAME);
+	SpawnLoot(WEAPON_JACKSGUN_SPAWN_NAME);
 }
 
 // guitar riff
