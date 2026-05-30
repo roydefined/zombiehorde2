@@ -217,7 +217,7 @@ Script "OpenGeneratorBox" (void)
 	clearlinespecial();
 }
 
-Script "TurnOffGenerator" (void)
+Script "TurnOffGenerator"
 {
 	if(eventTriggered)
 	{
@@ -225,31 +225,44 @@ Script "TurnOffGenerator" (void)
 		terminate;
 	}
 
-	int EventCase = random(0, 10);
-	switch(EventCase)
+	int eventIndex = GetCVar("sv_zh2_zm06mevent");
+
+	// Do not pick the event by chance if we have a preset index.
+	if (eventIndex == 0)
 	{
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-		case 4:
-			ACS_NamedExecute("Event_Disco", 0);
-			break;
+		switch(random(0, 10))
+		{
+			case 0:
+			case 1:
+			case 2:
+			case 3:
+			case 4:
+				eventIndex = 1;
+				break;
 
-		case 5:
-		case 6:
-		case 7:
-			ACS_NamedExecute("Event_Uboa", 0);
-			break;
+			case 5:
+			case 6:
+			case 7:
+				eventIndex = 2;
+				break;
 
-		case 8:
-		case 9:
-			ACS_NamedExecute("Event_Nightmare", 0);
-			break;
+			case 8:
+			case 9:
+				eventIndex = 3;
+				break;
 
-		case 10:
-			ACS_NamedExecute("Event_Spiders", 0);
-			break;
+			case 10:
+				eventIndex = 4;
+				break;
+		}
+	}
+
+	switch(eventIndex)
+	{
+		case 1: ACS_NamedExecute("Event_Disco", 0); break;
+		case 2: ACS_NamedExecute("Event_Uboa", 0); break;
+		case 3: ACS_NamedExecute("Event_Nightmare", 0); break;
+		case 4: ACS_NamedExecute("Event_Spiders", 0); break;
 	}
 }
 
