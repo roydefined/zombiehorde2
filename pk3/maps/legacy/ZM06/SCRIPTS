@@ -9,8 +9,9 @@
 
 #define DEFAULT_COLOR 64
 
+internal int _powerBoxUsed;
+
 int foundkey;
-int powerbox;
 int doorcheckbase;
 int doorcheck2flr;
 int baseflarecheck;
@@ -25,7 +26,6 @@ int boogieblue;
 Script "zm06_open" OPEN // Level setups
 {
 	foundkey=0;
-	powerbox=0;
 	doorcheckbase=0;
 	doorcheck2flr=0;
 	baseflarecheck=0;
@@ -259,182 +259,134 @@ Script 7 (void)
 	}
 }
 
-Script 8 (void)
 //generator
+Script 8
 {
-	if(powerbox ==1)
+	if(_powerBoxUsed)
 	{
 		HudMessage(s:"It no longer works."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+		terminate;
 	}
 
-	if(powerbox ==0)
+	int eventIndex = GetCVar("sv_zh2_zm06event");
+
+	if(eventIndex == 0)
 	{
-		switch(random(1,5))
+		switch(random(1, 5))
 		{
-			case 1://===========UBOA===============
-				powerbox =1;
-				thing_deactivate(56);
-				ActivatorSound("sound/powerstop",128);
-				SetActorState (57, "inactive");
-				SetActorState (82, "inactive");
-				Music::PlayMusic("FUCKED", 0);
-				ReplaceTextures ("KIDZWALL", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("GRAFFI00", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS17", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS20", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS21", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS23", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS24", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS25", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS26", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS27", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS28", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS29", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS30", random("KIDZWAL1","KIDZWAL2") , 0);
-				SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QUAKE2_2");
-				ReplaceTextures ("0690", "0691a" , 0);
-				ReplaceTextures ("0691", "0691a" , 0);
-				ReplaceTextures ("0694", "0880" , 0);
-				ReplaceTextures ("FLAT3", "OTHER001" , 0);
-				ReplaceTextures ("0_PAINT0", "" , 0);
-				SpawnSpot ("ZH2LegacyDeadBaby", 65);
-				SpawnSpot ("ZH2LegacyUboa", 80, 90);
-				Thing_remove(61);
-				acs_execute(18,0,0,0,0);
+			case 1:
+				eventIndex = 1;
 				break;
 
-			case 2://===========UBOA===============
-				powerbox =1;
-				thing_deactivate(56);
-				ActivatorSound("sound/powerstop",128);
-				SetActorState (57, "inactive");
-				SetActorState (82, "inactive");
-				Music::PlayMusic("FUCKED", 0);
-				ReplaceTextures ("KIDZWALL", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("GRAFFI00", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS17", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS20", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS21", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS23", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS24", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS25", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS26", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS27", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS28", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS29", random("KIDZWAL1","KIDZWAL2") , 0);
-				ReplaceTextures ("0_RUS30", random("KIDZWAL1","KIDZWAL2") , 0);
-				SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QUAKE2_2");
-				ReplaceTextures ("0690", "0691a" , 0);
-				ReplaceTextures ("0691", "0691a" , 0);
-				ReplaceTextures ("0694", "0880" , 0);
-				ReplaceTextures ("FLAT3", "OTHER001" , 0);
-				ReplaceTextures ("0_PAINT0", "" , 0);
-				SpawnSpot ("ZH2LegacyDeadBaby", 65);
-				SpawnSpot ("ZH2LegacyUboa", 80,90);
-				Thing_remove(61);
-				acs_execute(18,0,0,0,0);
+			case 2:
+			case 3:
+				eventIndex = 2;
 				break;
 
-			case 3: //===========DECAY===============
-				powerbox =1;
-				thing_activate(83);
-				thing_deactivate(56);
-				ActivatorSound("sound/powerstop",128);
-				SetActorState (57, "inactive");
-				SetActorState (82, "inactive");
-				Music::PlayMusic("scarymus", 0);
-				SetLineTexture(99, SIDE_FRONT, TEXTURE_MIDDLE, "SKSNAKE2");
-				SetLineTexture(99, SIDE_FRONT, TEXTURE_BOTTOM, "SKSNAKE2");
-				SetLineTexture(99, SIDE_FRONT, TEXTURE_TOP, "SKSNAKE2");
-				SetLineTexture(99, SIDE_BACK, TEXTURE_MIDDLE, "SKSNAKE2");
-				SetLineTexture(99, SIDE_BACK, TEXTURE_BOTTOM, "SKSNAKE2");
-				SetLineTexture(99, SIDE_BACK, TEXTURE_TOP, "SKSNAKE2");
-				SetLineTexture(100, SIDE_FRONT, TEXTURE_BOTTOM, "SKSNAKE2");
-				SetLineTexture(100, SIDE_FRONT, TEXTURE_TOP, "SKSNAKE2");
-				SetLineTexture(100, SIDE_BACK, TEXTURE_BOTTOM, "SKSNAKE2");
-				SetLineTexture(100, SIDE_BACK, TEXTURE_TOP, "SKSNAKE2");
-				SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QUAKE2_2");
-				ReplaceTextures ("0_RUS17", "0_RUS26" , 0);//green level
-				ReplaceTextures ("0_RUS20", "0_RUS27" , 0);//blue level
-				ReplaceTextures ("0_RUS21", "0_RUS28" , 0);//red level
-				ReplaceTextures ("0690", "0691" , 0);
-				ReplaceTextures ("0694", "0880" , 0);
-				ReplaceTextures ("0_PAINT0", "0_PAIN01" , 0);
-				ChangeFloor(58, "SFLR6_4");
-				ChangeCeiling(58, "SFLR6_4");
-				ChangeCeiling(59, "SFLR6_4");
-
-				// TODO
-				//SpawnSpot (random("DeadMarine","DeadShotgunguy"), 60);
-
-				Thing_remove(61);
-				floor_lowerbyvalue(77,32,8);
-				floor_lowerbyvalue(78,32,16);
-				ChangeFloor(77, "WSFLR6_4");
-				ChangeFloor(78, "WSFLR6_4");
-				ceiling_raisebyvalue(79,32,64);
-				door_open(81,32);
-				delay(1400);
-				ceiling_raisebyvalue(62,1,200);
-				break;
-
-			case 4: //===========DECAY===============
-				powerbox =1;
-				thing_activate(83);
-				thing_deactivate(56);
-				ActivatorSound("sound/powerstop",128);
-				SetActorState (57, "inactive");
-				SetActorState (82, "inactive");
-				Music::PlayMusic("scarymus", 0);
-				SetLineTexture(99, SIDE_FRONT, TEXTURE_MIDDLE, "SKSNAKE2");
-				SetLineTexture(99, SIDE_FRONT, TEXTURE_BOTTOM, "SKSNAKE2");
-				SetLineTexture(99, SIDE_FRONT, TEXTURE_TOP, "SKSNAKE2");
-				SetLineTexture(99, SIDE_BACK, TEXTURE_MIDDLE, "SKSNAKE2");
-				SetLineTexture(99, SIDE_BACK, TEXTURE_BOTTOM, "SKSNAKE2");
-				SetLineTexture(99, SIDE_BACK, TEXTURE_TOP, "SKSNAKE2");
-				SetLineTexture(100, SIDE_FRONT, TEXTURE_BOTTOM, "SKSNAKE2");
-				SetLineTexture(100, SIDE_FRONT, TEXTURE_TOP, "SKSNAKE2");
-				SetLineTexture(100, SIDE_BACK, TEXTURE_BOTTOM, "SKSNAKE2");
-				SetLineTexture(100, SIDE_BACK, TEXTURE_TOP, "SKSNAKE2");
-				SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QUAKE2_2");
-				ReplaceTextures ("0_RUS17", "0_RUS26" , 0);//green level
-				ReplaceTextures ("0_RUS20", "0_RUS27" , 0);//blue level
-				ReplaceTextures ("0_RUS21", "0_RUS28" , 0);//red level
-				ReplaceTextures ("0690", "0691" , 0);
-				ReplaceTextures ("0694", "0880" , 0);
-				ReplaceTextures ("0_PAINT0", "0_PAIN01" , 0);
-				ChangeFloor(58, "SFLR6_4");
-				ChangeCeiling(58, "SFLR6_4");
-				ChangeCeiling(59, "SFLR6_4");
-
-				// TODO
-				//SpawnSpot (random("DeadMarine","DeadShotgunguy"), 60);
-
-				Thing_remove(61);
-				floor_lowerbyvalue(77,32,8);
-				floor_lowerbyvalue(78,32,16);
-				ChangeFloor(77, "WSFLR6_4");
-				ChangeFloor(78, "WSFLR6_4");
-				ceiling_raisebyvalue(79,32,64);
-				door_open(81,32);
-				delay(1400);
-				ceiling_raisebyvalue(62,1,200);
-				break;
-
-			case 5: //==========HOLY SHIT IT'S DISCO!!!===============
-				powerbox =1;
-				jivetalk =1;
-				thing_deactivate(56);
-				ActivatorSound("sound/powerstop",128);
-				SetActorState (57, "disco");
-				SetActorState (82, "active");
-				Music::PlayMusic("DISCO", 0);
-				acs_execute(20,0,0,0,0);
-				delay (random(2400,4800));
-				acs_execute(21,0,0,0,0);
+			case 4:
+			case 5:
+				eventIndex = 3;
 				break;
 		}
 	}
+
+	switch(eventIndex)
+	{
+		case 1: ACS_NamedExecute("Event_Disco", 0); break;
+		case 2: ACS_NamedExecute("Event_Uboa", 0); break;
+		case 3: ACS_NamedExecute("Event_Decay", 0); break;
+	}
+}
+
+Script "Event_Uboa" (void)
+{
+	_powerBoxUsed = true;
+	thing_deactivate(56);
+	ActivatorSound("sound/powerstop", 128);
+	SetActorState(57, "inactive");
+	SetActorState(82, "inactive");
+	Music::PlayMusic("FUCKED", 0);
+	ReplaceTextures("KIDZWALL", random("KIDZWAL1", "KIDZWAL2"), 0);
+	ReplaceTextures("GRAFFI00", random("KIDZWAL1", "KIDZWAL2"), 0);
+	ReplaceTextures("0_RUS17", random("KIDZWAL1", "KIDZWAL2"), 0);
+	ReplaceTextures("0_RUS20", random("KIDZWAL1", "KIDZWAL2"), 0);
+	ReplaceTextures("0_RUS21", random("KIDZWAL1", "KIDZWAL2"), 0);
+	ReplaceTextures("0_RUS23", random("KIDZWAL1", "KIDZWAL2"), 0);
+	ReplaceTextures("0_RUS24", random("KIDZWAL1", "KIDZWAL2"), 0);
+	ReplaceTextures("0_RUS25", random("KIDZWAL1", "KIDZWAL2"), 0);
+	ReplaceTextures("0_RUS26", random("KIDZWAL1", "KIDZWAL2"), 0);
+	ReplaceTextures("0_RUS27", random("KIDZWAL1", "KIDZWAL2"), 0);
+	ReplaceTextures("0_RUS28", random("KIDZWAL1", "KIDZWAL2"), 0);
+	ReplaceTextures("0_RUS29", random("KIDZWAL1", "KIDZWAL2"), 0);
+	ReplaceTextures("0_RUS30", random("KIDZWAL1", "KIDZWAL2"), 0);
+	SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QUAKE2_2");
+	ReplaceTextures("0690", "0691a", 0);
+	ReplaceTextures("0691", "0691a", 0);
+	ReplaceTextures("0694", "0880", 0);
+	ReplaceTextures("FLAT3", "OTHER001", 0);
+	ReplaceTextures("0_PAINT0", "", 0);
+	SpawnSpot("ZH2LegacyDeadBaby", 65);
+	SpawnSpot("ZH2LegacyUboa", 80, 90);
+	Thing_Remove(61);
+	ACS_Execute(18, 0, 0, 0, 0);
+}
+
+Script "Event_Decay" (void)
+{
+	_powerBoxUsed = true;
+	Thing_Activate(83);
+	thing_deactivate(56);
+	ActivatorSound("sound/powerstop", 128);
+	SetActorState(57, "inactive");
+	SetActorState(82, "inactive");
+	Music::PlayMusic("scarymus", 0);
+	SetLineTexture(99, SIDE_FRONT, TEXTURE_MIDDLE, "SKSNAKE2");
+	SetLineTexture(99, SIDE_FRONT, TEXTURE_BOTTOM, "SKSNAKE2");
+	SetLineTexture(99, SIDE_FRONT, TEXTURE_TOP, "SKSNAKE2");
+	SetLineTexture(99, SIDE_BACK, TEXTURE_MIDDLE, "SKSNAKE2");
+	SetLineTexture(99, SIDE_BACK, TEXTURE_BOTTOM, "SKSNAKE2");
+	SetLineTexture(99, SIDE_BACK, TEXTURE_TOP, "SKSNAKE2");
+	SetLineTexture(100, SIDE_FRONT, TEXTURE_BOTTOM, "SKSNAKE2");
+	SetLineTexture(100, SIDE_FRONT, TEXTURE_TOP, "SKSNAKE2");
+	SetLineTexture(100, SIDE_BACK, TEXTURE_BOTTOM, "SKSNAKE2");
+	SetLineTexture(100, SIDE_BACK, TEXTURE_TOP, "SKSNAKE2");
+	SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QUAKE2_2");
+	ReplaceTextures("0_RUS17", "0_RUS26", 0);
+	ReplaceTextures("0_RUS20", "0_RUS27", 0);
+	ReplaceTextures("0_RUS21", "0_RUS28", 0);
+	ReplaceTextures("0690", "0691", 0);
+	ReplaceTextures("0694", "0880", 0);
+	ReplaceTextures("0_PAINT0", "0_PAIN01", 0);
+	ChangeFloor(58, "SFLR6_4");
+	ChangeCeiling(58, "SFLR6_4");
+	ChangeCeiling(59, "SFLR6_4");
+
+	// TODO
+	//SpawnSpot(random("DeadMarine", "DeadShotgunguy"), 60);
+
+	Thing_Remove(61);
+	Floor_LowerByValue(77, 32, 8);
+	Floor_LowerByValue(78, 32, 16);
+	ChangeFloor(77, "WSFLR6_4");
+	ChangeFloor(78, "WSFLR6_4");
+	Ceiling_RaiseByValue(79, 32, 64);
+	Door_Open(81, 32);
+	delay(1400);
+	Ceiling_RaiseByValue(62, 1, 200);
+}
+
+Script "Event_Disco" (void)
+{
+	_powerBoxUsed = true;
+	jivetalk = 1;
+	thing_deactivate(56);
+	ActivatorSound("sound/powerstop", 128);
+	SetActorState(57, "disco");
+	SetActorState(82, "active");
+	Music::PlayMusic("DISCO", 0);
+	ACS_Execute(20, 0, 0, 0, 0);
+	delay(random(2400, 4800));
+	ACS_Execute(21, 0, 0, 0, 0);
 }
 
 // Uboa teleport
