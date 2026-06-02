@@ -36,6 +36,24 @@
 #define TAG_SPIDERSPAWNMIN 100
 #define TAG_SPIDERSPAWNMAX 127
 
+// The min/max delay for the initial batch
+#define SPIDER_INITIAL_SPAWN_DELAY_MIN 30
+#define SPIDER_INITIAL_SPAWN_DELAY_MAX 60
+
+// The min/max delay for spiders that refill after other spiders died, after the initial batch.
+#define SPIDER_REFILL_SPAWN_DELAY_MIN 100
+#define SPIDER_REFILL_SPAWN_DELAY_MAX 140
+
+// Drop the item every nth death of a spider.
+#define SPIDER_KILL_GRENADE_INTERVAL 10
+#define SPIDER_KILL_JACKSGUN_INTERVAL 40
+#define SPIDER_KILL_DOUBLESHOTGUN_INTERVAL 60
+
+#define SPIDER_DIED_ITEM_SPAWN_DISTANCE_MIN 0.0
+#define SPIDER_DIED_ITEM_SPAWN_DISTANCE_MAX 4.0
+#define SPIDER_DIED_ITEM_SPAWN_HEIGHT_MIN 0.0
+#define SPIDER_DIED_ITEM_SPAWN_HEIGHT_MAX 4.0
+
 // Angel event
 #define TAG_ANGEL 4001
 #define TAG_ANGELSPAWN 129
@@ -88,6 +106,10 @@ int eventState = EVENTSTATE_NONE; // Synchronized with clients.
 #define ANGEL_SPAWNS_MAX 5
 internal bool _angelsSpawned;
 internal bool _angelsLeft = ANGEL_SPAWNS_MAX;
+
+// Spider context
+// Track total spider kills to reward players.
+internal int _spidersKilled;
 
 bool doorcheck2flr;
 
@@ -179,20 +201,33 @@ script "OnEvent" (raw type, raw damage, raw unused) event
 	if (type != GAMEEVENT_ACTOR_DAMAGED)
 		terminate;
 
-	// We expect either Uboa or the Angel here to die.
-	bool isUboa = BCSUtils::StrEquals(GetActorClass(ActivatorTID()), "ZH2Uboa");
-	bool isAngel = BCSUtils::StrEquals(GetActorClass(ActivatorTID()), "ZH2Angel");
-	if (!isUboa && !isAngel)
+	str actorClass = GetActorClass(ActivatorTID());
+
+	bool isUboa = BCSUtils::StrEquals(actorClass, "ZH2Uboa");
+	bool isAngel = BCSUtils::StrEquals(actorClass, "ZH2Angel");
+	bool isSpider = BCSUtils::StrEquals(actorClass, "ZH2SpiderRed")
+		|| BCSUtils::StrEquals(actorClass, "ZH2SpiderGreen")
+		|| BCSUtils::StrEquals(actorClass, "ZH2SpiderBlue")
+		|| BCSUtils::StrEquals(actorClass, "ZH2SpiderBlack")
+		|| BCSUtils::StrEquals(actorClass, "ZH2SpiderGray");
+
+	if (!isUboa && !isAngel && !isSpider)
 		terminate;
 
 	int targetHealth = BCSUtils::GetActorHealth(0);
 	bool targetDied = targetHealth - damage <= 0;
 
-	if (isUboa && targetDied)
+	if (!targetDied)
+		terminate;
+
+	if (isUboa)
 		ACS_NamedExecute("UboaDied", 0);
 
-	if (isAngel && targetDied)
+	if (isAngel)
 		ACS_NamedExecute("AngelDied", 0);
+
+	if (isSpider)
+		ACS_NamedExecuteAlways("SpiderDied", 0);
 }
 
 script "ToggleWeather" (void) clientside
@@ -497,6 +532,48 @@ Script "AngelSpawnLoot" (raw x, raw y, raw z)
 
 	SpawnLoot(WEAPON_JACKSGUN_AMMODOUBLE_NAME);
 	SpawnLoot(WEAPON_JACKSGUN_SPAWN_NAME);
+}
+
+Script "SpiderDied"
+{
+	_spidersKilled++;
+
+	fixed x = GetActorX(0),
+		  y = GetActorY(0),
+          z = GetActorZ(0);
+
+	if (_spidersKilled % SPIDER_KILL_GRENADE_INTERVAL == 0)
+	{
+		ACS_NamedExecuteWithResult("SpiderSpawnLoot", x, y, z, WEAPON_FIREGRENADE_SPAWN_NAME);
+	}
+
+	if (_spidersKilled % SPIDER_KILL_JACKSGUN_INTERVAL == 0)
+	{
+		HudMessageBold(s:"A spider has dropped something interesting"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+
+		ACS_NamedExecuteWithResult("SpiderSpawnLoot", x, y, z, WEAPON_JACKSGUN_SPAWN_NAME);
+		//ACS_NamedExecuteWithResult("SpiderSpawnLoot", x, y, z, WEAPON_JACKSGUN_AMMOSINGLE_NAME);
+	}
+
+	if (_spidersKilled % SPIDER_KILL_DOUBLESHOTGUN_INTERVAL == 0)
+	{
+		HudMessageBold(s:"A spider has dropped something interesting"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+
+		ACS_NamedExecuteWithResult("SpiderSpawnLoot", x, y, z, WEAPON_DOUBLESHOTGUN_SPAWN_NAME);
+	}
+}
+
+Script "SpiderSpawnLoot" (raw x, raw y, raw z, raw spawnName)
+{
+	fixed angle = Math::FRandom(0.0, 1.0);
+	fixed offsetX = FixedMul(cos(angle), Math::FRandom(SPIDER_DIED_ITEM_SPAWN_DISTANCE_MIN, SPIDER_DIED_ITEM_SPAWN_DISTANCE_MAX));
+	fixed offsetY = FixedMul(sin(angle), Math::FRandom(SPIDER_DIED_ITEM_SPAWN_DISTANCE_MIN, SPIDER_DIED_ITEM_SPAWN_DISTANCE_MAX));
+
+	fixed spawnX = x + offsetX;
+	fixed spawnY = y + offsetY;
+	fixed spawnZ = z + Math::FRandom(SPIDER_DIED_ITEM_SPAWN_HEIGHT_MIN, SPIDER_DIED_ITEM_SPAWN_HEIGHT_MAX);
+
+	SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
 }
 
 // guitar riff
@@ -1006,39 +1083,46 @@ script "Event_Spiders" (void)
 	SetLineTexture(66, SIDE_BACK, TEXTURE_MIDDLE, "WEBBIN04");
 	SetLineTexture(73, SIDE_FRONT, TEXTURE_MIDDLE, "WEBBIN08");
 
+	// This loop determines if each spot has had its initial count filled in. After each iteration we decrement.
+	// It's a bit of a loose check but each spot will have been iterated once when it reaches 0.
+	int initialSpidersLeft = MAX_SPIDERSPOT;
+
 	// A constant loop checking if there needs to be any refilling of spiders on each spot.
 	while(true)
 	{
-		int spawnTagMin = TAG_SPIDERSPAWNMIN;
-		int spawnTagMax = TAG_SPIDERSPAWNMAX;
-
-		// Failsafe
+		// Prevent the map from getting too many spiders.
+		// THis is an extra failsafe.
 		int totalSpiderCount = thingcountname("ZH2SpiderRed", 0)
 			+ thingcountname("ZH2SpiderGreen", 0)
 			+ thingcountname("ZH2SpiderBlue", 0)
 			+ thingcountname("ZH2SpiderBlack", 0)
 			+ thingcountname("ZH2SpiderGray", 0);
-		if (totalSpiderCount >= MAX_SPIDER) {
-			terminate;
-		}
 
-		for(int i = 0; i < spawnTagMax - spawnTagMin; i++)
+		if (totalSpiderCount >= MAX_SPIDER)
+			terminate;
+
+		for(int i = 0; i < TAG_SPIDERSPAWNMAX - TAG_SPIDERSPAWNMIN; i++)
 		{
 			int spiderCount = thingcountname("ZH2SpiderRed", TAG_SPIDER + i)
-			+ thingcountname("ZH2SpiderGreen", TAG_SPIDER + i)
-			+ thingcountname("ZH2SpiderBlue", TAG_SPIDER + i)
-			+ thingcountname("ZH2SpiderBlack", TAG_SPIDER + i)
-			+ thingcountname("ZH2SpiderGray", TAG_SPIDER + i);
+				+ thingcountname("ZH2SpiderGreen", TAG_SPIDER + i)
+				+ thingcountname("ZH2SpiderBlue", TAG_SPIDER + i)
+				+ thingcountname("ZH2SpiderBlack", TAG_SPIDER + i)
+				+ thingcountname("ZH2SpiderGray", TAG_SPIDER + i);
 
 			// Enough spiders on spot.
 			if (spiderCount >= MAX_SPIDERSPOT)
 				continue;
 
-			int spot = spawnTagMin + i;
+			int spot = TAG_SPIDERSPAWNMIN + i;
 			spawnspot("ZH2SpiderSpawner", spot, TAG_SPIDER + i);
 		}
 
-		delay(random(30, 60));
+		int tics = initialSpidersLeft > 0
+			? random(SPIDER_INITIAL_SPAWN_DELAY_MIN, SPIDER_INITIAL_SPAWN_DELAY_MAX)
+			: random(SPIDER_REFILL_SPAWN_DELAY_MIN, SPIDER_REFILL_SPAWN_DELAY_MAX);
+
+		delay(tics);
+		initialSpidersLeft--;
 	}
 }
 
