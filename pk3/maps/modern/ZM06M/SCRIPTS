@@ -1231,7 +1231,7 @@ script "Event_Angels" (void)
 
 	while(true)
 	{
-		delay(35 * (random(5, 15) * _angelsSpawned));
+		delay(35 * (random(10, 20) * _angelsSpawned));
 
 		InteractionMessageBold(GetAngelSpawnMessage(_angelsSpawned));
 
@@ -1298,6 +1298,12 @@ str GetAngelSpawnMessage(int angelsSpawned)
 
 script "Event_Angels_Client" (void) clientside
 {
+	// This wait until the client is aware of the new event.
+	while (eventState != EVENTSTATE_ANGELS)
+	{
+		delay(const: 1);
+	}
+
 	Music::SetDefaultMusic("ANGELS");
 	Music::PlayDefaultMusic();
 
