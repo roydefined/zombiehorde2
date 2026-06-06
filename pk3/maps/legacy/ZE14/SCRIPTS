@@ -7,22 +7,27 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-//Zombieladder script
+// [ZH2] Track last value for dynamic lights.
+internal bool _dynamicLightsEnabled;
 
-Script 55 (int onOff) NET CLIENTSIDE //Force lightning
+void SetDynamicLights(bool enable, bool message)
 {
-	If(onOff == 0)
+	if (!enable)
 	{
 		Thing_DeActivate(223);
 		Thing_DeActivate(32);
 		Thing_DeActivate(33);
 		Thing_DeActivate(170);
-		Log(s:"492 Map Dynamic Lights Deactivated, Type 'PUKE 55 1' to re-activate them!");
+
+		if (message)
+			Log(s:"492 Map Dynamic Lights Deactivated.");
 	}
 	else
 	{
 		Thing_Activate(223);
-		Log(s:"486 Map Dynamic Lights Activated");
+
+		if (message)
+			Log(s:"486 Map Dynamic Lights Activated.");
 	}
 }
 
@@ -57,7 +62,24 @@ Script 1 OPEN
 	Floor_LowerToLowest(168,5);
 	Ceiling_RaiseByValue(168,5,32);
 	Delay(35*5);
-	Print(s:"Bad framerate? Type 'PUKE 55 0' in console to remove a big part of the dynamic lights!");
+	Print(s:"Bad framerate? Remove a big part of the dynamic lights through the legacy map options.");
+}
+
+// [ZH2] Handle conditionally enabling/disabling dynamic lights based on the cvar.
+script "open_client" open clientside
+{
+	_dynamicLightsEnabled = GetUserCVar(ConsolePlayerNumber(), "cl_zh2_ze14_enabledynamiclights");
+	SetDynamicLights(_dynamicLightsEnabled, false);
+	while (true)
+	{
+		if (_dynamicLightsEnabled != GetUserCVar(ConsolePlayerNumber(), "cl_zh2_ze14_enabledynamiclights"))
+		{
+			SetDynamicLights(!_dynamicLightsEnabled, true);
+			_dynamicLightsEnabled = !_dynamicLightsEnabled;
+		}
+
+		delay(const: 1);
+	}
 }
 
 Script 2 (void)

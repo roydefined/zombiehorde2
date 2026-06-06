@@ -1,0 +1,56 @@
+actor ZH2WeaponJacksgunAmmoSpawnSingle : ZH2AmmunitionSpawn 30036
+{
+	Height 10
+	Radius 5
+	inventory.pickupmessage "Jack's gun bullet"
+	tag "Jack's gun bullet"
+
+	States
+	{
+		Spawn:
+			JCGF B -1
+
+		Pickup:
+			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, 1)
+			stop
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponJacksGun", 1, 1)
+			stop
+			TNT1 A 0 A_GiveInventory("ZH2WeaponJacksGunAmmo", 1)
+			stop
+	}
+}
+
+actor ZH2WeaponJacksgunAmmoSpawnDouble : ZH2AmmunitionSpawn 30037
+{
+	Height 10
+	Radius 5
+	inventory.pickupmessage "Jack's gun bullets"
+	tag "Jack's gun bullets"
+
+	States
+	{
+		Spawn:
+			JCGF C -1
+
+		Pickup:
+			TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, 1)
+			stop
+
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponJacksGun", 1, 1)
+			stop
+
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponJacksGunAmmo", 2, "Full")
+
+			// Spawn a single bullet if the player already has a bullet.
+			TNT1 A 0 A_JumpIfInventory("ZH2WeaponJacksGunAmmo", 1, 2)
+			TNT1 A 0 A_GiveInventory("ZH2WeaponJacksGunAmmo", 2)
+			stop
+			TNT1 A 0 A_SpawnItem("ZH2WeaponJacksgunAmmoSpawnSingle")
+			TNT1 A 0 A_GiveInventory("ZH2WeaponJacksGunAmmo", 1)
+			Stop
+
+		Full:
+			TNT1 A 0
+			fail
+	}
+}

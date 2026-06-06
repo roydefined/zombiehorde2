@@ -816,8 +816,7 @@ script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
 			if (!PlayerInGame(i) || !GetPlayerIsInElevator(i, killElevatorId))
 				continue;
 
-			int tid = Identity::GetTid(i);
-			Thing_Damage(tid, 10000, MOD_EXIT);
+            Game::KillPlayer(i, MOD_EXIT);
 		}
 	}
 
@@ -995,7 +994,7 @@ Script "Event_Night_client" clientside
 	HudMessage(s:"Night approaches"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 100.0, 5.0, 1.0, 5.0);
 
 	delay(35 * 3);
-	Music::SetMusic("");
+	Music::PlayMusic("");
 	Music::SetDefaultMusic("SUBZERO");
 	delay(35 * 8);
 
@@ -1063,14 +1062,12 @@ Script "Event_Nuke"
 
 	Delay(12);
 
-	// TODO: Use safety API
 	for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
 	{
 		if (!PlayerInGame(i) || GetPlayerIsInBunker(i))
 			continue;
 
-		int tid = Identity::GetTid(i);
-		Thing_Damage(tid, 10000, MOD_EXIT);
+        Game::KillPlayer(i, MOD_EXIT);
 	}
 
 	// Set boundaries by raising rocks
@@ -1350,6 +1347,7 @@ internal raw OnDrawTemperatureGaugeHud(void[]* data)
 
 	Hud::SetRelativePoint(176.0, -85.0);
 	BCSUtils::HudSetTextColor(color);
+	BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_TOP);
 	BCSUtils::HudDrawText(HUDID_TEMPERATURE + 5, str((int)(temperature + TEMPERATURE_BASE)));
 	return 0;
 }

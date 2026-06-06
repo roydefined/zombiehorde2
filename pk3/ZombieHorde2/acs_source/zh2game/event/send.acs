@@ -1,0 +1,231 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Event
+{
+    internal void SendInitialsChosen(int chosenCount)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTINITIALSCHOSEN);
+        packet = Packet::Append(packet, chosenCount);
+
+        for(int i = 0; i < BCSUTILS::MAX_PLAYERS; ++i)
+        {
+            if (Player::GetPlayerInitialZombie(i))
+                packet = Packet::Append(packet, i);
+        }
+
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendPlayerLeftRound(int id)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTPLAYERLEFTROUND);
+        packet = Packet::Append(packet, id);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendPlayerDied(int id, ZH2Game::PlayerDeathTypeT type)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTPLAYERDIED);
+        packet = Packet::Append(packet, id);
+        packet = Packet::Append(packet, type);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendPlayerKilledByPlayer(int killedId, int killerId, int itemIndex, bool addFireEffect, bool addAcidEffect)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTPLAYERKILLEDBYPLAYER);
+        packet = Packet::Append(packet, killedId);
+        packet = Packet::Append(packet, killerId);
+        packet = Packet::Append(packet, itemIndex);
+        packet = Packet::Append(packet, addFireEffect);
+        packet = Packet::Append(packet, addAcidEffect);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendPlayerKilledByMonster(int id, str monsterName)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTPLAYERKILLEDBYMONSTER);
+        packet = Packet::Append(packet, id);
+        packet = Packet::AppendStr(packet, monsterName);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendPlayerPreScratched(int attackedId, int attackerId)
+    {
+        str packet = Packet::New();
+
+        packet = Packet::AppendStr(packet, EVENTPLAYERPRESCRATCHED);
+        packet = Packet::Append(packet, attackedId);
+        packet = Packet::Append(packet, attackerId);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendPlayerScratched(int attackedId, int attackerId)
+    {
+        str packet = Packet::New();
+
+        packet = Packet::AppendStr(packet, EVENTPLAYERSCRATCHED);
+        packet = Packet::Append(packet, attackedId);
+        packet = Packet::Append(packet, attackerId);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendPlayerCured(int id, bool transformed, Game::CureSourceT source)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTPLAYERCURED);
+        packet = Packet::Append(packet, id);
+        packet = Packet::Append(packet, (int)transformed);
+        packet = Packet::Append(packet, source);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendPlayerInfected(int id, Game::InfectTypeT type, Game::InfectSourceT source)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTPLAYERINFECTED);
+        packet = Packet::Append(packet, id);
+        packet = Packet::Append(packet, type);
+        packet = Packet::Append(packet, source);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendPlayerSpecieChanged(int id, Player::PlayerSpecieT specie)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTPLAYERSPECIECHANGED);
+        packet = Packet::Append(packet, id);
+        packet = Packet::Append(packet, specie);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendPlayerSafe(int id, bool safe, int slot, bool firstTime)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTPLAYERSAFE);
+        packet = Packet::Append(packet, id);
+        packet = Packet::Append(packet, (int)safe);
+        packet = Packet::Append(packet, slot);
+        packet = Packet::Append(packet, (int)firstTime);
+
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendResistStarted(int index)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTRESISTSTARTED);
+        packet = Packet::Append(packet, index);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendResistElapsed(int index)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTRESISTELAPSED);
+        packet = Packet::Append(packet, index);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendResistStopped(int index)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTRESISTSTOPPED);
+        packet = Packet::Append(packet, index);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendRoundSwitched(int prevIndex, int newIndex)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTROUNDSWITCHED);
+        packet = Packet::Append(packet, prevIndex);
+        packet = Packet::Append(packet, newIndex);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendTimerStarted(int index)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTTIMERSTARTED);
+        packet = Packet::Append(packet, index);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendTimerStopped(int index)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTTIMERSTOPPED);
+        packet = Packet::Append(packet, index);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendTimerPaused(int index)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTTIMERPAUSED);
+        packet = Packet::Append(packet, index);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendTimerResumed(int index)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTTIMERRESUMED);
+        packet = Packet::Append(packet, index);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendTimerElapsed(int index)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTTIMERELAPSED);
+        packet = Packet::Append(packet, index);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendTimerSwitched(int prevIndex, int newIndex)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTTIMERSWITCHED);
+        packet = Packet::Append(packet, prevIndex);
+        packet = Packet::Append(packet, newIndex);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendPowerExpired(int id)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTPOWEREXPIRED);
+        packet = Packet::Append(packet, id);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendActorDamaged(int id, int tid, int damage, bool targetDied)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTACTORDAMAGED);
+        packet = Packet::Append(packet, id);
+        packet = Packet::Append(packet, tid);
+        packet = Packet::Append(packet, damage);
+        packet = Packet::Append(packet, targetDied);
+        EventBus::CallEvent(packet);
+    }
+
+    internal void SendActorDamagedClientTotal(int tid, int damage, bool targetDied)
+    {
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, EVENTACTORDAMAGEDCLIENTTOTAL);
+        packet = Packet::Append(packet, tid);
+        packet = Packet::Append(packet, damage);
+        packet = Packet::Append(packet, targetDied);
+        EventBus::CallEvent(packet);
+    }
+}

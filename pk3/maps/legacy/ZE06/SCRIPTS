@@ -10,14 +10,6 @@
 int FloorNumber = 31;
 int OutsideReached = 0;
 
-// Tracks if the player reached the lift.
-// The integer indicates which of the lift the player is in.
-// 1 = bottom left
-// 2 = bottom right
-// 3 = top left
-// 4 = top right
-int LiftReached[BCSUtils::MAX_PLAYERS];
-
 // [ZH2] Handles terminating the push scripts.
 bool terminateLiftPushScripts;
 
@@ -91,14 +83,8 @@ Script 3 (void) /* Waiting for the lift */
 	HudMessageBold(s:"\cGWarning : \cKNeurotoxins released in 69-70th floors!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 1.0, 1.0);
 	AmbientSound("world/gas1", 100);
 	Delay(35*2);
-	for(int i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
-	{
-		if(!LiftReached[i])
-		{
-			int tid = Identity::GetTid(i);
-			Thing_Damage(tid, 10000, MOD_EXIT);
-		}
-	}
+
+	Game::KillUnsafePlayers();
 
 	Delay(35*2);
 
@@ -145,7 +131,7 @@ Script "ze06_lift_ledge_pusher" (raw index, raw angle)
 				continue;
 
 			// Not in the lift the script is for.
-			if (LiftReached[i] != index)
+			if (!Game::GetPlayerIsSafe(i, index))
 				continue;
 
 			// Actor is not on the ledge (-168 is the hardcoded z position of the ledge)
@@ -218,11 +204,6 @@ Script 7 (void)  /* Lift sound */
 	restart;
 }
 
-Script "ze06_lift_enter" (raw index)
-{
-	LiftReached[PlayerNumber()] = LineSide() == LINE_FRONT ? index : 0;
-}
-
 Script 12 (void) /* 2nd teleport */
 {
 	SetActivator(-1);
@@ -239,7 +220,7 @@ Script 12 (void) /* 2nd teleport */
 			continue;
 
 		// Determine their lift index. 1 and 2 are the south ones.
-		int teleportTid = LiftReached[i] < 3
+		int teleportTid = Game::GetPlayerIsSafe(i, 1) || Game::GetPlayerIsSafe(i, 2)
 			// South
 			? 200
 			// North
@@ -288,7 +269,7 @@ Script 13 (void) /* Players get out of the shinra tower */
 	AmbientSound("world/gas1", 100);
 	Delay(35*5);
 
-	Game::KillUnsafePlayers();
+	Game::KillUnsafePlayers(0);
 }
 
 Script 14 OPEN /* Alert sound */
@@ -300,5 +281,5 @@ Script 14 OPEN /* Alert sound */
 
 Script 15 (void) // Falling
 {
-	Thing_Damage(0, 10000, MOD_FALLING);
+	Game::Kill(MOD_FALLING);
 }

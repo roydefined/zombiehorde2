@@ -10,6 +10,8 @@
 //overall definers
 #define SOFTWARE_PLAYER 0
 
+#define EXPERIMENT_TID 100
+
 Int TELE1 = 52;
 Int TELE2 = 62;
 Int TELE3 = 145;
@@ -35,7 +37,6 @@ bool script17_executed=false;
 bool script18_executed=false;
 
 //experiment
-bool Experiment_reached[BCSUtils::MAX_PLAYERS];
 bool Experiment_bunkerclosed=false;
 bool Experiment_activated=false;
 bool Experiment_camera=false;
@@ -49,10 +50,10 @@ script 1 OPEN
 	scroll_floor(181,128,100,0);
 	scroll_ceiling(181,-128,-100,0);
 
-	spawnspot("ZH2LegacyZe29KeycardWhite",random(248,251),0,0);
-	spawnspot("ZH2LegacyZe29KeycardRed",random(252,255),0,0);
-	spawnspot("ZH2LegacyZe29KeycardGreen",random(256,259),0,0);
-	spawnspot("ZH2LegacyZe29KeycardBlue",random(260,263),0,0);
+	spawnspot("ZH2LegacyZe29KeycardWhiteSpawn",random(248,251),0,0);
+	spawnspot("ZH2LegacyZe29KeycardRedSpawn",random(252,255),0,0);
+	spawnspot("ZH2LegacyZe29KeycardGreenSpawn",random(256,259),0,0);
+	spawnspot("ZH2LegacyZe29KeycardBlueSpawn",random(260,263),0,0);
 
 	delay(70);
 
@@ -210,8 +211,7 @@ script 14 (void) //experiment breathing
 
 script 15 (void) CLIENTSIDE //experiment speech
 {
-    AmbientSound("misc/chat",127);
-    Log(s:"\clExperiment\cd: Big mistake...");
+	Chat::SendActor(EXPERIMENT_TID, "Big mistake...");
 }
 
 script 18 (void) //zombie leaves spawn sound (this sound is unused in zh for some reason, it was in the past though)
@@ -248,26 +248,12 @@ script 21 (void)
 	delay(35);
 }
 
-
-script 24 (int x) //Safety
+// Secret safezone will only work if the final resist hasn't started.
+script "enter_secret_safezone"
 {
-    Switch(x)
-    {
-		// ZH2: Unused
-        Case 1: //normal ending
-        //if(LineSide()== LINE_FRONT) Reached[PlayerNumber()] = 1;
-        //else Reached[PlayerNumber()] = 0;
-        Break;
-
-        Case 2: //experiment
-        if(Experiment_bunkerclosed==true)terminate;
-        else if(LineSide()== LINE_FRONT) Experiment_reached[PlayerNumber()] = 1;
-        else Experiment_reached[PlayerNumber()] = 0;
-        Break;
-    }
+	if (!Experiment_bunkerclosed)
+		Game::SetIsSafe(LineSide() == LINE_FRONT, 1);
 }
-
-
 
 /*    --------------------    MINI RESISTS    --------------------    */
 
@@ -385,7 +371,7 @@ script 25 (int x) //Experiment
 
 		Case 2:
 			Experiment_activated = true;
-			Music::SetMusic("D_NULL");
+			Music::PlayMusic("D_NULL");
 			floor_lowertolowest(171,1);
 
 			delay(35);
@@ -467,7 +453,7 @@ script 25 (int x) //Experiment
 			delay(35*4);
 
 			ambientsound("sound/deepbell",255);
-			spawnspot("ZH2LegacyZe29Experiment",182,100,0);
+			spawnspot("ZH2LegacyZe29Experiment",182,EXPERIMENT_TID,0);
 			//acs_execute(12,0,random(0,1));
 			acs_execute(15,0,0,0,0);
 			Break;
@@ -651,7 +637,7 @@ SetActivator(-1);
 
     setfont("BIGFONT");
     HudMessagebold(s:"Fuse interrupted"; HUDMSG_FADEINOUT, 0, CR_RED, 0.5, 0.2, 1.0);
-    Music::SetMusic("D_NULL");
+    Music::PlayMusic("D_NULL");
 
     delay(18);
 
@@ -702,7 +688,7 @@ SetActivator(-1);
 
     delay(18);
 
-    Music::SetMusic("D_TUROK");
+    Music::PlayMusic("D_TUROK");
 
     delay(35*3);
 
@@ -786,7 +772,7 @@ SetActivator(-1);
     floor_lowerbyvalue(161,5,112);
     delay(35*3);
 
-    EndZEGameCanyonRun();
+    Game::KillUnsafePlayers();
 
     tagwait(158);
 
@@ -818,6 +804,9 @@ SetActivator(-1);
     SETFONT("SMALLFONT");
     HudMessageBold(s:"\ciReleasing gasses inside the control room"; HUDMSG_TYPEON, 0, CR_WHITE, 0.5, 0.17, 1.0);
 
+	// [ZH2] Secret safezone is no longer safe
+	Game::SetAllPlayersSafe(false, 1);
+
     delay(105);
 
     for(resist6 = resist6; resist6 > 0; resist6--)
@@ -829,24 +818,19 @@ SetActivator(-1);
             terminate;
         }
     }
-    {
-        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-        {
-			int tid = Identity::GetTid(i);
-            if(Experiment_reached[i])
-            {
-				Thing_Damage(tid, 10000, MOD_EXIT);
-				thingsound(tid, "world/gas1", 255);
-            }
 
-            //fadeto is a bitch because it doesnt use TIDs
-            if(PlayerInGame(i) && Experiment_reached[i])
-            {
-                SetActivator(tid);
-                fadeto(0, 100, 0, 1.0, 2.0);
-            }
-        }
-    }
+	for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+	{
+		int tid = Identity::GetTid(i);
+		if(PlayerInGame(i) && !Game::GetPlayerIsSafe(i, 0))
+		{
+			SetActivator(tid);
+			fadeto(0, 100, 0, 1.0, 2.0);
+			thingsound(tid, "world/gas1", 255);
+		}
+	}
+
+	Game::KillUnsafePlayers(0);
 }
 
 //-------------------------------------------------------
@@ -1033,15 +1017,6 @@ Script 23 (int Minutes, int Seconds) //timer for final resist
                     ResistMSG(ReturnValue, Reason1);
                     Delay(1);
                 }
-}
-
-function void EndZEGameCanyonRun (void) //modified endzegame()
-{
-    for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-	{
-		if(!game::GetPlayerIsSafe(i) && !Experiment_reached[i])
-			Thing_Damage(Identity::GetTid(i), 10000, MOD_EXIT);
-	}
 }
 
 function void MrResist (int restime, str whyresist, str color){ //custom resist

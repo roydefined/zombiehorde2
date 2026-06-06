@@ -43,7 +43,11 @@ strict namespace IO
         // Logger::LogDebug(LOGSOURCE, "\cd" + MAPDEFLUMPNAME + "\cj Buffer: \cd" + buffer + "\cj.");
 
         int handle = Tokenizer::RentTokenizer(buffer);
-        if (handle == -1) return;
+        if (handle == -1)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": failed to rent a tokenizer.");
+            return;
+        };
 
         Tokenizer::Next(handle, false);
 
@@ -55,8 +59,7 @@ strict namespace IO
                 continue;
 
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAPDEFLUMPNAME + ": '" + Tokenizer::GetSymbol(handle) + "'.");
-            Tokenizer::ReturnTokenizer(handle);
-            return;
+            break;
         }
 
         Tokenizer::ReturnTokenizer(handle);
@@ -104,7 +107,10 @@ strict namespace IO
 
             if (Tokenizer::ParseBodyAsEmpty(handle, symbol, "events")
                 || Tokenizer::ParseBodyAsEmpty(handle, symbol, "resists")
-                || Tokenizer::ParseBodyAsEmpty(handle, symbol, "weatherprofiles"))
+                || Tokenizer::ParseBodyAsEmpty(handle, symbol, "weatherprofiles")
+                || Tokenizer::ParseBodyAsEmpty(handle, symbol, "game")
+                || Tokenizer::ParseBodyAsEmpty(handle, symbol, "safety")
+                || Tokenizer::ParseBodyAsEmpty(handle, symbol, "softwaretextures"))
                 continue;
 
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAPDEFLUMPNAME + " base data of map " + mapLump + ": '" + symbol + "'.");

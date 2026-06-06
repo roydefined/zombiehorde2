@@ -25,6 +25,8 @@
 
 #define MAX_END_TRACKS 6
 
+#define MAX_SAFETY_SLOTS 16
+
 // Team indicators
 #define TEAM_INDICATOR_NAME "ZH2TeamIndicator"
 #define TEAM_INDICATOR_UNKNOWN_STATE "spawn.unknown"
@@ -111,13 +113,85 @@ strict namespace Game
         fixed Factor;
     };
 
-    extern void KillUnsafePlayers();
+    internal struct ZombieTeleportContextT
+    {
+        // Initial zombie teleport spots have tid 0, but we need these to get an actual tid to work properly.
+        // This variable tracks that tid.
+        int InitialZombieTeleportSpawnSpotTid;
 
-    extern void SetIsSafe(bool safe);
-    extern void SetPlayerIsSafe(int id, bool safe, bool broadcast = true);
-    extern bool GetIsSafe();
-    extern bool GetPlayerIsSafe(int id);
+        int ZombieTeleportSpots[MAX_ZOMBIETELEPORTSPOTS];
+        int ZombieTeleportSpotCount;
+
+        // The current tid of the zombie teleport spot(s) to use.
+        int CurrentZombieTeleportSpotTid;
+
+        // Indicates if zombie teleporting is enabled.
+        bool ZombieTeleportingEnabled;
+
+        // Indicated from lump reading if we manually enabled/disabled zombie teleports rather than having it work automatically.
+        bool LumpReadSetZombieTeleportingEnabledSet;
+        bool LumpReadSetZombieTeleportingEnabled;
+
+        // Sets the overridden value specifying the maximum number of allowed zombie teleports.
+        // If unset, `sv_zh2_maxzombieteleports` is used instead.
+        bool OverrideMaxZombieTeleportsSet;
+        int OverrideMaxZombieTeleportsCount;
+    };
+
+    internal struct PlayerZombieTeleportContextT
+    {
+        int ZombieTeleportsUsed;
+    };
+
+    internal struct SafeContextT
+    {
+        SafeSlotContextT Slots[MAX_SAFETY_SLOTS];
+    };
+
+    internal struct SafeSlotContextT
+    {
+        // Synched.
+        // If a slot is hidden, it won't visually broadcast through the obituary system, or the HUD.
+        bool Hidden;
+    };
+
+    internal struct PlayerSafeContextT
+    {
+        PlayerSafeSlotContextT Slots[MAX_SAFETY_SLOTS];
+    };
+
+    internal struct PlayerSafeSlotContextT
+    {
+        // Safe is synched. Indicates if a player reached the safezone.
+        // FirstTimeSafe is serverside and indicates if the player has reached safety before.
+        bool Safe;
+        bool FirstTimeSafe;
+    };
+
+    extern void KillUnsafePlayers(int slot = -1);
+    extern void Kill(int modifier = MOD_UNKNOWN);
+    extern void KillPlayer(int id, int modifier = MOD_UNKNOWN);
+
+    extern void SetIsSafe(bool safe, int slot = 0, bool broadcast = true);
+    extern void SetPlayerIsSafe(int id, bool safe, int slot = 0, bool broadcast = true);
+    extern bool GetIsSafe(int slot = 0);
+    extern bool GetPlayerIsSafe(int id, int slot = 0);
+    extern bool GetIsSafeAny();
+    extern bool GetPlayerIsSafeAny(int id);
+
+    extern void SetAllPlayersSafe(bool safe, int slot = 0, bool broadcast = true);
+    extern void SetAllHumansSafe(bool safe, int slot = 0, bool broadcast = true);
+    extern void SetAllZombiesSafe(bool safe, int slot = 0, bool broadcast = true);
 
     extern int HumanCount(bool includeDead = false);
     extern int ZombieCount(bool includeDead = false);
+
+    extern void SetCurrentZombieTeleportSpotTid(int tid);
+    extern int GetCurrentZombieTeleportSpotTid();
+    extern void SetZombieTeleportingEnabled(bool enabled);
+    extern bool GetZombieTeleportingEnabled();
+    extern int GetInitialZombieTeleportSpotTid();
+    extern void SetOverrideMaxZombieTeleports(int value);
+    extern void UnsetOverrideMaxZombieTeleports();
+    extern int GetMaxZombieTeleports();
 }

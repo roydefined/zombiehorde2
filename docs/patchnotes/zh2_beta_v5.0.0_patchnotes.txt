@@ -1,0 +1,212 @@
+New features
+------------------------------------------------
+
+ * * Identify player improvements * *
+Improvements have been made tot he identify player system!
+Server owners can now manage the feature globally with a new cvar `sv_zh2_identifyplayers`. By setting it to `false` you can turn it off.
+Clients now have two new additions to the identify player feature.
+First of all, enabling it can now optionally be based on the player's specie. CVar `cl_zh2_identifyplayers` now supports two more values indicating if we enable it for the same species, or other species specifically.
+Secondly, players can now also manage what to show by configuring `cl_zh2_identifyplayertype`. With this CVar you can configure if you want to show names, species, or both.
+This puts the feature more in line with new features in general and provides more control to players to configure it exactly how they want.
+
+ * * HUD improvements to the ammo and counters * *
+The HUD has been improved and now shows new graphics for the weapon ammo display and the counters.
+The weapon ammo display has been shown some love with a new background rendered for the ammo when the weapon has anything to show.
+Additionally, weapons with secondary ammo support draw another box to support this ammunition. This currently only applies to the riotgun.
+The counters used for general human and zombie count and the kills and infections count have also been updated.
+The counters have been moved, and the human and zombie counters can now be found underneath the player HUD part showing health, keys and other things.
+The kills and infections have been moved above the weapon ammo counter, fitting the new background that was also added as mentioned above.
+Additionally, all coutners now support a new background and font fitting to them, combining everything together into a neat display.
+
+ * * New map-specific menu settings * *
+The Zombie Horde 2 menu has been extended and now supports configuring settings specific to maps.
+A lot of maps have configuration specific to them and often they provide a way to configure them by puking a script or setting a cvar.
+However, this isn't always very clear, especially with a lot going on to achieve it, or a lot of cvars to pick from.
+Instead the menus will provide a more clear way to configure these settings, or to navigate to certain commands a map might implement.
+Maps will now indicate these settings exist if relevant and users can configure their features as needed.
+On top of that, servers can now also configure a few new settings that fit these map-specific settings.
+The specific changes made for maps to support these new menus have been listed below in map changes.
+
+ * * Initial zombie pick system improvements * *
+The system used to pick initial zombies has seen several improvements.
+One of the major issues often reported was the fact players could get picked twice in a row.
+The game can now remember who got picked last in this case, and the player will not get picked again.
+You can enable or disable this behavior with the cvar `sv_zh2_initialpickrememberlastmap`.
+
+However, this isn't a single change. The game now supports new pick settings!
+These can be manages with the new cvar `sv_zh2_initialpickmethod`. These values are:
+0: Randomized - No special logic at all. Anybody can get picked at any time.
+1: Legacy - Pick everybody once and then reset the list. This makes everybody a zombie once before they can be eligible again.
+2: Weight based - Pick based on chance, with a higher chance the longer you haven't been picked.
+
+The default is now to use the weight system, but to keep the previous map check disabled.
+The rest exists to tweak the game, or to revert back to the previous system if needed.
+Server hosts can tweak this as needed, enabling what they want.
+
+ * * New pick chance HUD feature * *
+Added alongside the new pick system improvements is a new addition to the HUD which provides insight on how big the chance is you will be picked as an initial zombie.
+This chance is based on the pick system used, accurately determining the chance you will be picked based on the number of players to pick that round.
+Additionally, the check will properly handle remembering picks from the last map, or previous picks in general, if applicable with the configuration.
+If the chance makes it clear you will or won't get picked, it will tell you with a clear message. Otherwise it will show a percentage.
+
+ * * New radio features and improvements * *
+Several new radio features and improvements have been added to make the radio much easier and better to use.
+To start off, the radio now supports its own lump. This makes it much easier to set up tracks instead of being tied to the mod specifically.
+The radio track list shown when wielding the radio has seen several improvements. It now supports new graphics, and the text has been positioned better.
+Players will now also be able to ivnert the navigation of the track list if they wish to do so. This can be done with `cl_zh2_invertradionavigation`.
+The radio system itself has also had many improvements internally. Players will now play music by name rather than index.
+This way playing specific music works a lot better if a player doesn't match the same list. This would cause issues with an index-based approach so this has now changed.
+Furthermore, players pass additional info of a track, and this makes it easier for other players to determine what is played. This is especially useful if you DON'T have the track!
+What happens now is that the game will tell you about the track, but it will also clearly inform you that you don't have it available (and now this specifically means the lumpname is not a valid track).
+The game will additionally tell you how to "fix" this by explaining what lump you require.
+Lastly, players who do not have a track that somebody else plays can now enable a setting to play a different track at random that they do have.
+This setting can be enabled with cvar `cl_zh2_tracknotfoundplayrandom`, which is enabled by default.
+
+ * * New Jack's Gun ammo * *
+The Jack's Gun has now been given its own ammunition to pick up in the mod. You can find single bullets or double bullets to pick up.
+You can only pick up ammunition if you own the weapon itself. Picking up double bullets will only yield 1 ammo, and the other one will be dropped again.
+You can find these starting on ZM06M, but as development goes on more places will be added where you can find the ammunition.
+
+Map changes
+------------------------------------------------
+
+- [ZE02]:  Removed old occurrences of 3d outlining textures which existed to show 3d floors to software users in very old engine versions.
+- [ZE04]:  Removed old occurrences of 3d outlining textures which existed to show 3d floors to software users in very old engine versions.
+- [ZE06]:  Updated to use the new slots in the safety system.
+- [ZE11]:  The map-specific options menu now supports configuration for this map. Configure whenever humans will get frozen when falling off the map.
+- [ZE14]:  The map-specific options menu now supports configuration for this map. Configure whenever dynamic lights are enabled or disable on this map.
+           The map itself has had changes around its code to support the changes of this map-specific menu to better support it instead of requiring manual labour.
+- [ZE15]:  Updated to use the new slots in the safety system.
+- [ZE17]:  Fix bad sector definition and an out of bounds actor.
+- [ZE21]:  The map has been run through map-consolidation and various off-grid vertices and issues have been fixed.
+- [ZE23]:  Updated to use the new slots in the safety system.
+- [ZE24]:  Korax and D'Sparil now chat using the new `Chat` namespace instead of through logging.
+- [ZE26]:  Updated to use the new slots in the safety system.
+           The map-specific options menu now supports configuration for this map. Configure the ability to force a specific side of the map to be opened.
+           The map itself has had changes around its code to support the changes of this map-specific menu to better support it.
+           Additionally, the map's music change and announcement have been moved outside of the script opening the gates. Instead it will trigger as soon as somebody enters the castle.
+- [ZE29]:  Updated to use the new slots in the safety system.
+           The map now supports the new Chat API for the secret monster.
+           The map has been run through map-consolidation and various off-grid vertices and issues have been fixed.
+- [ZE26]:  The map-specific options menu now supports configuration for this map.
+           A lot of changes have been made to support it, and players can now open both the main menu and the tutorial menu through it.
+           Additionally the statistics screen can also be opened, alongside a way to synchronize it to get the latest data.
+           The map itself has had numerous changes in its code, replacing existing strings suggesting the user to puke a script to instead open the menu.
+           Lastly, the quick help "zm09help" script has been turned off. This script was purely to help with configuring things for the map. Instead they can now use map-specific options, or the main menu.
+- [ZM02]:  Removed old occurrences of 3d outlining textures which existed to show 3d floors to software users in very old engine versions.
+- [ZM03]:  Removed old occurrences of 3d outlining textures which existed to show 3d floors to software users in very old engine versions.
+- [ZM12]:  Removed old occurrences of 3d outlining textures which existed to show 3d floors to software users in very old engine versions.
+- [ZM14]:  The map-specific options menu now supports configuration for this map. Configure whenever dynamic lights are enabled or disable on this map.
+           The map itself has had changes around its code to support the changes of this map-specific menu to better support it instead of requiring manual labour.
+- [ZM20]:  The map has been run through map-consolidation and various sector issues have been resolved.
+- [ZM25]:  Fix bad sector definition and an oud of bounds actor.
+- [ZM26]:  The map has been run through map-consolidation and various off-grid vertices and issues have been fixed.
+- [ZE02M]: Fixed a sector near spawn being inaccessible when was is supposed to be part of the accessible area.
+           Fixed an issue where the cargo lift did not play a sound when moving up.
+           Fixed an off-grid vertex.
+- [ZE03M]: The map has been run through map-consolidation and various off-grid vertices and issues have been fixed.
+- [ZE05M]: Fixed a few badly-closed sectors.
+- [ZE06M]: Updated to use the new slots in the safety system.
+           Fix issue where the first resist did not work correctly.
+- [ZE12M]: The map now allows zombies to teleport to the pyramid entrance when it has opened. This does not work on the quick linear gametype.
+           Fixed an issue with invalid and misaligned textures near the pyramis entrance.
+           The map-specific options menu now supports configuration for this map. Configure the flow type through it and whenever you as a client want to enable debug.
+           Fixed some stuck pottery.
+- [ZE13M]: The map-specific options menu now supports configuration for this map. Configure the flow type through it and whenever you as a client want to enable debug.
+- [ZM04M]: The map has been run through map-consolidation and various off-grid vertices and issues have been fixed.
+- [ZM21M]: Added the new SoftwareTextures block and render outlines on the 3d floor slope added in an earlier version to combat an OP spot.
+- [ZM31M]: The map-specific options menu now supports configuration for this map. Configure the event type and its delay through it and whenever you as a client want to enable debug.
+
+API changes
+------------------------------------------------
+
+ * * New game block in MAPDEF lumps * *
+Maps can now define a new game block in which configuration for the general game can be configured.
+This block is purely serverside and serves as a way for maps to configure specific game rules.
+In this case it was added for configuring zombie teleports, but more will appear in the future.
+
+ * * New SoftwareTextures block in MAPDEF lumps * *
+Maps can now define a new SoftwareTextures block in which they can configure software specific textures.
+Textures defined in this block will be removed in the case the user plays the game with the OpenGL renderer enabled.
+Additionally, each texture allows specifying what must be replaced. This property accepts `bottom`, `middle`, `top`, `floor` and `ceiling`.
+If a texture is defined but its replacement is not specified in the property, it remains on the map.
+
+ * * Extended support for zombie teleport API * *
+More support has been added for the zombie teleport system, giving mappers more control over how their map supports it.
+The system still provides the default zombie teleport spots, but you can now extend this with different sets that can be enabled conditionally.
+Furthermore you can now also control if teleporting is enabled as a whole, and you can configure the maximum allowed teleports allowed on your map.
+The maximum amount overrides the cvar value defined by the server, and you can also unset this if you want to revert back to the cvar value.
+The new API exposes numerous functions that mappers can use to control the zombie teleport system to their taste:
+- `void SetCurrentZombieTeleportSpotTid(int tid)`
+- `int GetCurrentZombieTeleportSpotTid()`
+- `void SetZombieTeleportingEnabled(bool enabled)`
+- `bool GetZombieTeleportingEnabled()`
+- `int GetInitialZombieTeleportSpotTid()`
+- `void SetOverrideMaxZombieTeleports(int value)`
+- `void UnsetOverrideMaxZombieTeleports()`
+- `int GetMaxZombieTeleports()`
+Lastly, lump reading has been extended and the new game block allows you to set the following things:
+- The current zombie teleport tid to use.
+- Whether teleporting is enabled in general (this can also disable the default behavior of it being on if you have spots with tid 0).
+- The maximum number of allowed teleports.
+
+ * * New slots and functions in safety system * *
+The safety system has been extended with a new slot feature. This allows you to mark players as safe in individual slots.
+This improves maps that have more than 1 safezone with the ability to now use the safety API for these other safezones.
+Maps default to slot 0 when you place a player into the safezone, but you can use up to 16 slots for your map.
+As an added bonus, safety slots can now be marked as "hidden". This will make slots not emit an obituary to players, nor will it show up on the HUD.
+Making a safety slot hidden is very useful when you make a zone that is considered safe against something, but you don't want to show this (e.g. an intermediate room that players walk through).
+The following functions were modified for this feature:
+- KillUnsafePlayers, now allows you to specify a slot that is considered safe. Defaults to -1 which means any safezone is safe.
+- SetIsSafe, SetPlayerIsSafe, GetIsSafe and GetPlayerIsSafe, also allows you to specify a slot.
+The following new functions were added:
+- GetIsSafeAny and GetPlayerIsSafeAny - Returns true if the player is safe in any slot.
+- SetAllPlayersSafe, SetAllHumansSafe and SetAllZombiesSafe, which works similar to SetIsSafe and SetIsPlayerSafe, but instead marks all players as safe/unsafe.
+
+ * * New kill functions * *
+Mappers can now use two new functions in the Game namespace: `Kill` and `KillPlayer`.
+These two functions simplify killing players by providing an easy-to-use function instead of setting up your own damage function.
+Additionally, the damage modifier is an optional parameter, defaulting to MOD_UNKNOWN, or "unknown".
+
+Other changes:
+- Removed LogMessageLevel from the list of externed functions of the Logger namespace.
+- `Music::SetMusic` has been renamed to `Music::PlayMusic` to better reflect the fact it plays the music, rather than just sets it.
+- The ZH2 library has had multiple namespace renamed with a refactor in its folder structure. Many namespaces are no longer prefixed with `Lib` as code and include conflicts no longer exists.
+- Added a new sound sequence that is completely silent.
+
+
+Other mod changes
+------------------------------------------------
+
+- Various resources in the mod have been compressed to reduce their size, saving on some space.
+- The keycards from ZE29 have been given a Doomednum. Additionally new key variants were added which can be picked up by anybody.
+  This change was an attempt to improve the key and have them work with `sv_sharedkeys` and the `give keys` command.
+  Sadly this has not succeeded. However, the change is useful for mappers so it was left in.
+- The game will now log an error if it fails to rent a tokenizer for lump parsing.
+- Added a new "admin" menu that will list admin-specific commands and configurations.
+- The enable/disable admin command has been moved to the new admin menu.
+- Add support for `cl_zh2_adminspawnbotinfront`, which when enabled will cause new bots spawned from the admin menu to spawn in front of the player rather than at a spawn spot.
+- Removed the kill credit admins would receive if they killed players through the admin menu.
+- Improved the performance of the footstep system. It will now remember the last floor you walked on, and reuses the definition found rather than looking it up each time.
+- The HUD has been improved with a new background for weapons. Some alignment fixes have also been made to them.
+- RadyRadio pack has been updated with the new radio lump.
+- New LegacyRadio and ModernRadio packs are now available alongside RadyRadio.
+- A possible fix was added that should improve how synchronization works on map start with many players. Notably the countdown timer should now be properly shown again instead of disappearing if many players are in the server.
+- The admin list has been improved and the item list shown when selecting a specific player or all players now comes with a paginator to fix the overflow that existed for a while because so many items got added.
+- Fixed the timers no longer showing in the debug HUD. The text now also has some better offsetting.
+- Fixed various issues related to the final heartbeat system.
+    - Fix issue where the final heartbeat would play before the map started
+    - Implemented a variable that was unused, which has the purpose of setting a proper delay for the next final heartbeat depending on if the client is the final human or somebody else is.
+    - Simplified the final heartbeat logic to not loop through 64 players constantly and do the same set of checks when they could just be done beforehand.
+- Fixed issues witht he player HUD not offsetting correctly when the offset changes through configuration.
+
+Repository changes
+------------------------------------------------
+
+- The repository has updated Zandronum to the latest version.
+- Added a hosting config file for server hosts in 'docs/'. It doesn't have much as the mod configures itself, so it mostly exists for reference.
+- A new Python script was added which allows for quickly hosting and joining a local server for testing with multiplayer behavior enabled.
+- A new Python script was added which allows for easily building a host config file with current maps.
+- The 'play-local-server.py' script has been updated to accept the new host config file by default. Passing `--nohostconfig` returns the old behavior.
+- The Zandronum folder now has a 'announcer', 'bots', 'postload' and 'skins' folder by default for items to be added under. These items are ignored by default.
+- The mod package folder now has a 'announcer' and 'bots' folder.

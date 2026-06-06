@@ -7,7 +7,7 @@
 #include "game/game.acs"
 #include "sync/sync.acs"
 #include "map/map.acs"
-#include "events/events.acs"
+#include "event/event.acs"
 #include "round/round.acs"
 #include "roundtimer/roundtimer.acs"
 #include "player/player.acs"
@@ -15,6 +15,7 @@
 #include "gameloop/gameloop.acs"
 #include "settings/settings.acs"
 #include "shuffle/shuffle.acs"
+#include "logger/logger.acs"
 #include "music/music.acs"
 #include "reward/reward.acs"
 #include "weight/weight.acs"
@@ -42,11 +43,6 @@ strict namespace ZH2Game
 {
     internal GameContextT GameContext;
     global PersistingGameContextT PERSISTINGGAMECONTEXTINDEX: PersistingGameContext;
-
-    // This is used for joining players/bots to force them to a specific specie.
-    // This is specifically used for the admin to add bots of specific species.
-    // If not set, we default to humans.
-    internal Player::PlayerSpecieT _forceSpecie;
 
     script "zh2_internal_open" open
     {
@@ -86,18 +82,20 @@ strict namespace ZH2Game
         // Note, these two parses should work concurrently and both rent a tokenizer for this.
         // Parse persisting data here.
         Logger::LogDebug(LOGSOURCE, "Start parsing persisting data (server).");
-        LibIO::ParseWeatherDefServerside();
-        LibIO::ParseLoggerDefServerside();
+        IO::ParseWeatherDefServerside();
+        IO::ParseLoggerDefServerside();
         IO::ParseModDefLumpsServerside();
         IO::ParseMapDefLumps();
 
-        // Initialize library
-        // Weather must initialize before we parse the map.
-        Weather::InitializeServer();
+        // Weather must prepare internal default data before we parse the map which sets its own defaults.
+        Weather::PrepareDefaultsServer();
 
         // Parse non-persisting data now.
         Logger::LogDebug(LOGSOURCE, "Start parsing non-persisting data (server).");
         IO::ParseCurrentMapLump();
+
+        // Initialize core components.
+        Game::InitializeZombieTeleport();
 
         // Now the loop starts because we have loaded everything.
         GameLoop::StartServerLoop();
@@ -162,26 +160,15 @@ strict namespace ZH2Game
             }
         }
 
-        Sync::SyncRoundState();
-        Sync::SyncTimers();
-        Sync::SyncResists();
+        // This tic helps when the server is working on initializing the map with many players.
+        // I've noticed the sync not always working when it takes a while to initialize.
 
-        // Required for the zombie abilities to be synched.
-        Sync::SyncGame();
-
-        // Resync admin list
-        Sync::SyncAdmins();
-
-        LibSync::SyncWeather();
-
-        // After a moment, sync all players and allow them to sync themselves on enter.
-        Delay(const: 5);
-
+        // TODO: Both the tic and the boolean can be removed if we add a proper debounce system.
+        Delay(const: 1);
         ZH2Game::GameContext.DoSyncOnEnter = true;
-        Sync::SyncPlayers();
 
-        // Send the default values to the client.
-        Sync::SyncPowers();
+        Sync::SyncAll();
+        Sync::LibSyncAll();
     }
 
     script "zh2_internal_open_client" open clientside
@@ -191,11 +178,12 @@ strict namespace ZH2Game
         Logger::LogDebug(LOGSOURCE, "Start parsing persisting data (client).");
 
         // Parse other persisting data here.
-        LibIO::ParseFootstepDefsClientside();
+        IO::ParseFootstepDefsClientside();
         IO::ParseModDefLumpsClientside();
+        IO::ParseRadioDefLumpsClientside();
         if (IsNetworkGame())
         {
-            LibIO::ParseLoggerDefClientside();
+            IO::ParseLoggerDefClientside();
             IO::ParseMapDefLumps();
         }
 
@@ -263,7 +251,7 @@ strict namespace ZH2Game
 
         // Fully sync up the client.
         Sync::SyncAllClientside();
-        LibSync::SyncAllClientside();
+        Sync::LibSyncAllClientside();
 
         Settings::UpdateCurrentClientSettings();
 
@@ -308,6 +296,7 @@ strict namespace ZH2Game
             terminate;
 
         Settings::BroadcastClientConsolidateSettings(false);
+        Player::EnsureSoftwareModeTexturesRemoved();
     }
 
     script "zh2_internal_enter" enter
@@ -483,11 +472,12 @@ strict namespace ZH2Game
 
         // Set specie, possibly forced to a specific specie.
         // SPECIENONE defaults to SPECIEHUMAN.
-        if (_forceSpecie == Player::SPECIENONE)
-            _forceSpecie = Player::SPECIEHUMAN;
+        Player::PlayerSpecieT specie = Game::GetForceSpawnSpecie();
+        if (specie == Player::SPECIENONE)
+            specie = Player::SPECIEHUMAN;
 
         // TODO: Abstract into a repurposable functions
-        if (_forceSpecie == Player::SPECIEHUMAN)
+        if (specie == Player::SPECIEHUMAN)
         {
             // Ensure all zombie weapons are taken.
             // This ensures that all weapons are correctly taken on this initial morph when the map changed.
@@ -512,7 +502,7 @@ strict namespace ZH2Game
             // Ensure we always start with the shotgun to avoid weird behaviour.
             SetWeapon(WEAPON_SHOTGUN_NAME);
         }
-        else if (_forceSpecie == Player::SPECIEZOMBIE)
+        else if (specie == Player::SPECIEZOMBIE)
         {
             // Ensure all human weapons are taken.
             // This ensures that all weapons are correctly taken on this initial morph when the map changed.
@@ -526,9 +516,8 @@ strict namespace ZH2Game
             Power::RecalculatePowers();
         }
 
-        _forceSpecie = Player::SPECIENONE;
-
         Player::SetState(Player::STATEPLAYING);
+        Game::SetLastJoinedPlayerId(PlayerNumber());
 
         // Set initial name. The player's loop will then track possible changes.
         Player::SetName(BCSUtils::PlayerName(PlayerNumber()));

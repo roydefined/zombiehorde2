@@ -4,6 +4,9 @@
 
 strict namespace ZH2Game
 {
+    // Admin
+    internal bool GetClAdminSpawnBotInFront(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_adminspawnbotinfront"); }
+
     // Game
     internal int GetMinimumClientCount() { return BCSUTILS::Clamp(GetCvar("sv_zh2_minimumclientcount"), 0, BCSUTILS::MAX_PLAYERS); }
     internal bool GetInfectTimeIncrease() { return (bool)GetCvar("sv_zh2_infecttimeincrease"); }
@@ -26,6 +29,22 @@ strict namespace ZH2Game
 
     internal int GetEndOfRoundRewardCount() { return BCSUTILS::Clamp(GetCvar("sv_zh2_endofroundrewardcount"), 0, 64); }
     internal bool GetEndOfRoundRewardSafePlayers() { return (bool)GetCvar("sv_zh2_endofroundrewardsafeplayers"); }
+
+    // Game - Round
+    internal InitialZombiePickMethodT GetInitialZombiePickMethod()
+    {
+        switch(BCSUTILS::Clamp(GetCVar("sv_zh2_initialpickmethod"), 0, 2))
+        {
+            case 1:
+                return INITIALZOMBIEPICKMETHOD_LEGACY;
+            case 2:
+                return INITIALZOMBIEPICKMETHOD_WEIGHT;
+            default:
+                return INITIALZOMBIEPICKMETHOD_RANDOM;
+        }
+    }
+    internal bool GetInitialPickRememberLastMap() { return (bool)GetCvar("sv_zh2_initialpickrememberlastmap"); }
+
 
     // Game - Obituary
     internal bool GetSvEnableObituaries() { return (bool)GetCvar("sv_zh2_enableobituaries"); }
@@ -59,7 +78,34 @@ strict namespace ZH2Game
     // Player
     internal int GetShownInventoryItems() { return BCSUTILS::Clamp(GetCvar("cl_zh2_showninventoryitems"), 1, 11); }
     internal bool GetWrapInventoryItems() { return (bool)GetCvar("cl_zh2_wrapinventoryitems"); }
-    internal bool GetIdentifyPlayers() { return (bool)GetCvar("cl_zh2_identifyplayers"); }
+
+    internal bool GetSvIdentifyPlayers() { return (bool)GetCvar("sv_zh2_identifyplayers"); }
+    internal IdentifyPlayerSpecieTypeT GetClIdentifyPlayers()
+    {
+        switch (BCSUTILS::Clamp(GetCVar("cl_zh2_identifyplayers"), 0, 3))
+        {
+            case 1:
+                return IDENTIFY_PLAYER_ALL;
+            case 2:
+                return IDENTIFY_PLAYER_ONLY_SAME;
+            case 3:
+                return IDENTIFY_PLAYER_ONLY_OTHER;
+            default:
+                return IDENTIFY_PLAYER_OFF;
+        }
+    }
+    internal IdentifyPlayerTypeT GetClIdentifyPlayerType()
+    {
+        switch (BCSUTILS::Clamp(GetCVar("cl_zh2_identifyplayertype"), 0, 2))
+        {
+            case 1:
+                return IDENTIFY_PLAYER_NAME;
+            case 2:
+                return IDENTIFY_PLAYER_SPECIE;
+            default:
+                return IDENTIFY_PLAYER_BOTH;
+        }
+    }
 
     internal bool GetAutoUseMedikits(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_autousemedikits"); }
     internal bool GetAutoUseKevlars(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_autousekevlars"); }
@@ -146,6 +192,8 @@ strict namespace ZH2Game
 
     // Player - Music
     internal bool GetIgnoreRadioMusic() { return (bool)GetCvar("cl_zh2_ignoreradiomusic"); }
+    internal bool GetInvertRadioNavigation() { return (bool)GetCvar("cl_zh2_invertradionavigation"); }
+    internal bool GetTrackNotFoundPlayRandom() { return (bool)GetCvar("cl_zh2_tracknotfoundplayrandom"); }
     internal bool GetIgnoreFullServerMusic() { return (bool)GetCvar("cl_zh2_ignorefullservermusic"); }
 
     // Player - Zombie
@@ -181,6 +229,9 @@ strict namespace ZH2Game
     internal int GetMinimumSprintAmount() { return BCSUTILS::Clamp(GetCvar("sv_zh2_minimumsprintamount"), 1, 1000); }
     internal bool GetAllowPanicking() { return (bool)GetCvar("sv_zh2_allowpanicking"); }
     internal int GetMaxPanicCount() { return BCSUTILS::Clamp(GetCvar("sv_zh2_maxpaniccount"), 1, 10); }
+
+    // Player - Features
+    internal bool GetRemoveSoftwareTextures() { return (bool)GetCvar("cl_zh2_removesoftwaretextures"); }
 
     // Hud
     internal bool GetDrawHud() { return (bool)GetCvar("cl_zh2_drawhud"); }

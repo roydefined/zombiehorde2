@@ -1,0 +1,182 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "emitter.acs"
+#include "randomized.acs"
+#include "ambient.acs"
+
+strict namespace IO
+{
+    // Parsed contexts for each weather type.
+    ParsedEmitterWeatherContextT _parsedEmitterWeatherContext;
+    ParsedRandomizedWeatherContextT _parsedRandomizedWeatherContext;
+    ParsedAmbientWeatherContextT _parsedAmbientWeatherContext;
+
+    script "zh2_internal_parse_weather_defs_server" busy
+    {
+        if (ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed)
+            terminate;
+
+        ParseWeatherLumps();
+        ZH2Lib::PersistingLibContext.WeatherContext.DefaultProfilesParsed = true;
+    }
+
+    // Parses all the weathdef lumps.
+    internal void ParseWeatherLumps()
+    {
+        int startIndex = -1;
+        while(true)
+        {
+            startIndex = LumpOpen("weathdef", startIndex);
+
+            if (startIndex == -1)
+                break;
+
+            if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) == 0)
+                continue;
+
+            ParseSingleWeatherLump(LumpReadString(startIndex, 0));
+            LumpClose(startIndex);
+        }
+    }
+
+    internal void ParseSingleWeatherLump(str buffer)
+    {
+        int handle = Tokenizer::RentTokenizer(buffer);
+        if (handle == -1)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": failed to rent a tokenizer.");
+            return;
+        };
+
+        Tokenizer::Next(handle, false);
+
+        while(Tokenizer::CanRead(handle))
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseWeatherProfile(handle, symbol, "defaultweatherprofiles", true))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing weather lump: '" + symbol + "'.");
+            break;
+        }
+
+        Tokenizer::ReturnTokenizer(handle);
+    }
+
+    // Externed for override behavior to be possible.
+    bool ParseWeatherProfile(int handle, str identifyingSymbol, str expectedSymbol, bool setPersisting)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, expectedSymbol)) return false;
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseEmitterWeatherBlock(handle, symbol, setPersisting))
+            {
+                HandleEmitterWeatherProfile(setPersisting);
+                continue;
+            }
+            if (ParseRandomizedWeatherBlock(handle, symbol, setPersisting))
+            {
+                HandleRandomizedWeatherProfile(setPersisting);
+                continue;
+            }
+            if (ParseAmbientWeatherBlock(handle, symbol, setPersisting))
+            {
+                HandleAmbientWeatherProfile(setPersisting);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + expectedSymbol + ": '" + symbol + "'.");
+            return false;
+        }
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+        return true;
+    }
+
+    internal void HandleEmitterWeatherProfile(bool setPersisting)
+    {
+        // I can't use a ref here because the data is missing. Compiler bug.
+        //Weather::EmitterWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.EmitterWeatherCollection[_parsedEmitterWeatherContext.Index];
+
+        if (setPersisting)
+        {
+            Weather::SetPersistingEmitterWeatherEnabled(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.Enabled);
+            Weather::SetPersistingEmitterWeatherSkyBehavior(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.SkyBehavior);
+            Weather::SetPersistingEmitterWeatherSpawnCount(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.SpawnCount);
+            Weather::SetPersistingEmitterWeatherSpawnDelay(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.SpawnDelay);
+            Weather::SetPersistingEmitterWeatherMinRadius(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MinRadius);
+            Weather::SetPersistingEmitterWeatherMaxRadius(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MaxRadius);
+            Weather::SetPersistingEmitterWeatherMinZpos(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MinZpos);
+            Weather::SetPersistingEmitterWeatherMaxZpos(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MaxZpos);
+        }
+        else
+        {
+            Weather::SetTransientEmitterWeatherEnabled(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.Enabled);
+            Weather::SetTransientEmitterWeatherSkyBehavior(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.SkyBehavior);
+            Weather::SetTransientEmitterWeatherSpawnCount(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.SpawnCount);
+            Weather::SetTransientEmitterWeatherSpawnDelay(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.SpawnDelay);
+            Weather::SetTransientEmitterWeatherMinRadius(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MinRadius);
+            Weather::SetTransientEmitterWeatherMaxRadius(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MaxRadius);
+            Weather::SetTransientEmitterWeatherMinZpos(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MinZpos);
+            Weather::SetTransientEmitterWeatherMaxZpos(_parsedEmitterWeatherContext.Index, _parsedEmitterWeatherContext.MaxZpos);
+        }
+    }
+
+    internal void HandleRandomizedWeatherProfile(bool setPersisting)
+    {
+        // I can't use a ref here because the data is missing. Compiler bug.
+        //Weather::RandomizedWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.RandomizedWeatherCollection[_parsedRandomizedWeatherContext.Index];
+
+        if (setPersisting)
+        {
+            Weather::SetPersistingRandomizedWeatherEnabled(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.Enabled);
+            Weather::SetPersistingRandomizedWeatherMinDelay(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.MinDelay);
+            Weather::SetPersistingRandomizedWeatherMaxDelay(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.MaxDelay);
+        }
+        else
+        {
+            Weather::SetTransientRandomizedWeatherEnabled(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.Enabled);
+            Weather::SetTransientRandomizedWeatherMinDelay(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.MinDelay);
+            Weather::SetTransientRandomizedWeatherMaxDelay(_parsedRandomizedWeatherContext.Index, _parsedRandomizedWeatherContext.MaxDelay);
+        }
+    }
+
+    internal void HandleAmbientWeatherProfile(bool setPersisting)
+    {
+        // I can't use a ref here because the data is missing. Compiler bug.
+        //Weather::AmbientWeatherContextT module& context = ZH2Lib::LibContext.WeatherContext.AmbientWeatherCollection[_parsedRandomizedWeatherContext.Index];
+
+        if (setPersisting)
+        {
+            Weather::SetPersistingAmbientWeatherEnabled(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Enabled);
+            Weather::SetPersistingAmbientWeatherSound(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Sound);
+            Weather::SetPersistingAmbientWeatherShelteredSound(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.ShelteredSound);
+            Weather::SetPersistingAmbientWeatherRadius(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Radius);
+            Weather::SetPersistingAmbientWeatherShelteredRadius(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.ShelteredRadius);
+            Weather::SetPersistingAmbientWeatherDelay(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Delay);
+        }
+        else
+        {
+            Weather::SetTransientAmbientWeatherEnabled(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Enabled);
+            Weather::SetTransientAmbientWeatherSound(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Sound);
+            Weather::SetTransientAmbientWeatherShelteredSound(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.ShelteredSound);
+            Weather::SetTransientAmbientWeatherRadius(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Radius);
+            Weather::SetTransientAmbientWeatherShelteredRadius(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.ShelteredRadius);
+            Weather::SetTransientAmbientWeatherDelay(_parsedAmbientWeatherContext.Index, _parsedAmbientWeatherContext.Delay);
+        }
+    }
+}

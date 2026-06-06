@@ -1,0 +1,142 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    #define SOFTWARE_TEXTURE_ALL NOT_BOTTOM | NOT_MIDDLE | NOT_TOP | NOT_FLOOR | NOT_CEILING
+
+    internal bool ParseSoftwareTextures(int handle, str mapLump, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "softwaretextures")) return false;
+
+        Logger::LogDebug(LOGSOURCE, "Start parse map software texture blocks for \cd" + mapLump + "\cj.");
+
+        int bracketLevel = Tokenizer::GetBracketLevel(handle);
+
+        if (!Tokenizer::ExpectNextChar(handle, '['))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBracketLevel(handle) != bracketLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+
+            if (!ParseSoftwareTextureBlock(handle, mapLump, symbol))
+                return false;
+
+            // Optional comma.
+            Tokenizer::Next(handle, false);
+            if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                Tokenizer::Next(handle, false);
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Parsed map software texture blocks \cd" + mapLump + ".");
+        return true;
+    }
+
+    internal bool ParseSoftwareTextureBlock(int handle, str mapLump, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "texture"))
+        {
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing software texture block for " + mapLump + ": '" + identifyingSymbol + "'. Expected Texture.");
+            return false;
+        }
+
+        Tokenizer::Next(handle);
+        str textureName = Tokenizer::GetSymbol(handle);
+
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        // No more room for more items. Log a warning and skip the remaining body.
+        int count = ZH2Game::GameContext.SoftwareTextureContext.Size;
+        if (count >= MAX_SOFTWARE_TEXTURES)
+        {
+            Logger::LogWarning(LOGSOURCE, "The maximum number of software textures was reached (" + str(count) + ").");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        int index = count;
+
+        ZH2Game::GameContext.SoftwareTextureContext.Size++;
+        ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Name = textureName;
+        ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Flags = SOFTWARE_TEXTURE_ALL;
+
+        Logger::LogDebug(LOGSOURCE, "Start parse software texture \cd" + textureName + "\cj block for \cd" + mapLump + ".");
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+
+        Tokenizer::Next(handle);
+
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) == braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+
+            if (ParseSoftwareTextureReplace(handle, mapLump, index, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing software texture block for " + mapLump + ": '" + symbol + "'.");
+            return false;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Parsed software texture \cd" + textureName + "\cj block for \cd" + mapLump + ".");
+        return true;
+    }
+
+    internal bool ParseSoftwareTextureReplace(int handle, str mapLump, int index, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "replace"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        while (Tokenizer::CanRead(handle) &&
+            Tokenizer::GetToken(handle) != Tokenizer::TCOMMA &&
+            Tokenizer::GetToken(handle) != Tokenizer::TRBRACE)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+
+            if (BCSUTILS::StrIEquals(symbol, "bottom"))
+            {
+                ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_BOTTOM;
+            }
+            else if (BCSUTILS::StrIEquals(symbol, "middle"))
+            {
+                ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_MIDDLE;
+            }
+            else if (BCSUTILS::StrIEquals(symbol, "top"))
+            {
+                ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_TOP;
+            }
+            else if (BCSUTILS::StrIEquals(symbol, "floor"))
+            {
+                ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_FLOOR;
+            }
+            else if (BCSUTILS::StrIEquals(symbol, "ceiling"))
+            {
+                ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_CEILING;
+            }
+            else
+            {
+                Tokenizer::SetErrored(handle, "Unknown replace type for " + mapLump + ": '" + symbol + "'.");
+                return false;
+            }
+
+            Logger::LogDebug(LOGSOURCE, "Parsed replace type \cd" + symbol + "\cj for texture \cd" + ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Name + "\cj.");
+
+            Tokenizer::Next(handle, false);
+        }
+
+        return true;
+    }
+}

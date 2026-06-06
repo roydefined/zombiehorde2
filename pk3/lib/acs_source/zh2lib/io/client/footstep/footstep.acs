@@ -1,0 +1,58 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "definition.acs"
+
+strict namespace IO
+{
+    void ParseFootstepDefsClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        ACS_NamedExecuteWithResult("zh2_internal_parse_footstep_defs_client");
+    }
+
+    script "zh2_internal_parse_footstep_defs_client" clientside
+    {
+        if (ZH2Lib::PersistingLibContext.StepContext.IsParsed)
+            terminate;
+
+        // Recursively load lumps and then parse them.
+        // Should this ever get heavy then it's save to add delays given that the mod has the awaiter implemented.
+        int startIndex = 0;
+        while(true)
+        {
+            startIndex = LumpOpen("stepdef", startIndex);
+            if (startIndex == -1) break;
+            if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) == 0) continue;
+            ParseStepDefLumpClientside(LumpReadString(startIndex, 0));
+            LumpClose(startIndex);
+        }
+
+        ZH2Lib::PersistingLibContext.StepContext.IsParsed = true;
+    }
+
+    internal void ParseStepDefLumpClientside(str buffer)
+    {
+        int handle = Tokenizer::RentTokenizer(buffer);
+        if (handle == -1)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": failed to rent a tokenizer.");
+            return;
+        };
+
+        Tokenizer::Next(handle, false);
+
+        while(Tokenizer::CanRead(handle))
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseStepDefinitions(handle, symbol))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing step definitions: '" + symbol + "'.");
+            break;
+        }
+
+        Tokenizer::ReturnTokenizer(handle);
+    }
+}

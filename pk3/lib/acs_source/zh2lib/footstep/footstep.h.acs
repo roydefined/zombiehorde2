@@ -1,0 +1,42 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define MAX_STEP_DEFINITIONS 200
+#define MIN_STEP_SPEED 4.0
+
+strict namespace Footstep
+{
+    struct PlayerFootstepStateT
+    {
+        int LastStepTimestamp;
+        str LastTexture;
+        int LastDefinition;
+    };
+
+    struct StepCollectionContextT
+    {
+        bool IsParsed;
+
+        StepContextT Collection[MAX_STEP_DEFINITIONS];
+        int Count;
+    };
+
+    struct StepContextT
+    {
+        // Note, the boolean initially defines if we have a range.
+        // From there we can check the start/end.
+        str Surface;
+        int SurfaceFrameStart;
+        int SurfaceFrameEnd;
+        bool HasRange;
+
+        bool Liquid;
+        str Sound;
+        fixed Volume;
+        str TerrainActor;
+    };
+
+    extern void FootstepTicClient();
+    extern int GetStepDefinition(str textureFull);
+}

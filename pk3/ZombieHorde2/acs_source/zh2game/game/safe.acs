@@ -4,27 +4,128 @@
 
 strict namespace Game
 {
-    void SetIsSafe(bool safe) { SetPlayerIsSafe(PlayerNumber(), safe); }
-    script "zh2_script_setissafe" { SetPlayerIsSafe(PlayerNumber(), LineSide() == LINE_FRONT); }
+    void SetIsSafe(bool safe, int slot = 0, bool broadcast = true) { SetPlayerIsSafe(PlayerNumber(), safe, slot, broadcast); }
+    script "zh2_script_setissafe" (raw slot) { SetPlayerIsSafe(PlayerNumber(), LineSide() == LINE_FRONT, slot); }
 
-    void SetPlayerIsSafe(int id, bool safe, bool broadcast = true)
+    void SetPlayerIsSafe(int id, bool safe, int slot = 0, bool broadcast = true)
     {
-        ZH2Game::GameContext.Players[id].Safe = safe;
-        Logger::LogDebug(LOGSOURCE, BCSUTILS::PlayerName(id) + " (\cd" + str(id) + "\cj) \cd" + (safe ? "entered" : "left") + "\cj the safe zone.");
+        if (!Identity::IsValidID(id))
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": player id " + str(id) + " is not valid.");
+            return;
+        }
 
-        bool firstTime = safe && !ZH2Game::GameContext.Players[id].FirstTimeSafe;
+        if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": slot " + str(slot) + " is not valid.");
+            return;
+        }
+
+        ZH2Game::GameContext.Players[id].SafeContext.Slots[slot].Safe = safe;
+        Logger::LogDebug(LOGSOURCE, BCSUTILS::PlayerName(id) + " (\cd" + str(id) + "\cj) \cd" + (safe ? "entered" : "left") + "\cj safe zone with slot \cd" + str(slot) + "\cj.");
+
+        bool firstTime = safe && !ZH2Game::GameContext.Players[id].SafeContext.Slots[slot].FirstTimeSafe;
         if (safe)
-            ZH2Game::GameContext.Players[id].FirstTimeSafe = true;
+            ZH2Game::GameContext.Players[id].SafeContext.Slots[slot].FirstTimeSafe = true;
 
-        Event::SendPlayerSafe(id, safe, firstTime);
+        Event::SendPlayerSafe(id, safe, slot, firstTime);
 
         if (broadcast)
             Sync::SyncPlayers();
     }
 
-    bool GetIsSafe() { return GetPlayerIsSafe(PlayerNumber()); }
-    bool GetPlayerIsSafe(int id)
+    void SetAllPlayersSafe(bool safe, int slot = 0, bool broadcast = true)
     {
-        return ZH2Game::GameContext.Players[id].Safe;
+        SetAllHumansSafe(safe, slot, false);
+        SetAllZombiesSafe(safe, slot, false);
+
+        if (broadcast)
+            Sync::SyncPlayers();
+    }
+
+    void SetAllHumansSafe(bool safe, int slot = 0, bool broadcast = true) { SetAllSpeciesSafe(Player::SPECIEHUMAN, safe, slot, broadcast); }
+    void SetAllZombiesSafe(bool safe, int slot = 0, bool broadcast = true) { SetAllSpeciesSafe(Player::SPECIEZOMBIE, safe, slot, broadcast); }
+
+    internal void SetAllSpeciesSafe(Player::PlayerSpecieT specie, bool safe, int slot = 0, bool broadcast = true)
+    {
+        for (int i = 0; i < BCSUTILS::MAX_PLAYERS; i++)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            int tid = Identity::GetTID(i);
+            if (!BCSUTILS::ActorIsAlive(tid))
+                continue;
+
+            if (Player::GetPlayerSpecie(i) != specie)
+                continue;
+
+            SetPlayerIsSafe(i, safe, slot, false);
+        }
+
+        if (broadcast)
+            Sync::SyncPlayers();
+    }
+
+    bool GetIsSafe(int slot = 0) { return GetPlayerIsSafe(PlayerNumber(), slot); }
+    bool GetPlayerIsSafe(int id, int slot = 0)
+    {
+        if (!Identity::IsValidID(id))
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": player id " + str(id) + " is not valid.");
+            return false;
+        }
+
+        if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": slot " + str(slot) + " is not valid.");
+            return false;
+        }
+
+        return ZH2Game::GameContext.Players[id].SafeContext.Slots[slot].Safe;
+    }
+
+    bool GetIsSafeAny() { return GetPlayerIsSafeAny(PlayerNumber()); }
+    bool GetPlayerIsSafeAny(int id)
+    {
+        if (!Identity::IsValidID(id))
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": player id " + str(id) + " is not valid.");
+            return false;
+        }
+
+        for (int i = 0; i < MAX_SAFETY_SLOTS; ++i)
+        {
+            if (ZH2Game::GameContext.Players[id].SafeContext.Slots[i].Safe)
+                return true;
+        }
+
+        return false;
+    }
+
+    internal void SetSafeHidden(bool hidden, int slot = 0, bool broadcast = true)
+    {
+        if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": slot " + str(slot) + " is not valid.");
+            return;
+        }
+
+        ZH2Game::GameContext.SafeContext.Slots[slot].Hidden = hidden;
+        Logger::LogDebug(LOGSOURCE, "Safe slot \cd" + str(slot) + "\cj is now \cd" + (hidden ? "hidden" : "visible") + "\cj.");
+
+        if (broadcast)
+            Sync::SyncPlayers();
+    }
+
+    internal bool GetSafeHidden(int slot = 0)
+    {
+        if (slot < 0 || slot >= MAX_SAFETY_SLOTS)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": slot " + str(slot) + " is not valid.");
+            return false;
+        }
+
+        return ZH2Game::GameContext.SafeContext.Slots[slot].Hidden;
     }
 }

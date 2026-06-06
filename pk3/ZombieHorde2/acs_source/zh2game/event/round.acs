@@ -1,0 +1,201 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Event
+{
+    script "zh2_internal_event_roundswitched" (raw packetStr)
+    {
+        str packet = (str)packetStr;
+        Event::ReceiveRoundSwitched(packet);
+        //int prevIndex = GetReceiveData(0);
+        int newIndex = GetReceiveData(1);
+
+        Logger::LogDebug(LOGSOURCE, "Round started: \cd" + Round::GetRoundStateIndexAsString(newIndex) + "\cj.");
+
+        // This even only handles known round types.
+        // If the starting round is not a known type, terminate.
+        Round::KnownRoundStateT roundType = Round::GetKnownRoundStateTypeByIndex(newIndex);
+        if (roundType == Round::StateNone)
+            terminate;
+
+        switch (roundType)
+        {
+            case Round::StatePlaying:
+            {
+                // Set up initial zombies.
+                int chosenZombieCount = Round::DetermineInitialZombies();
+
+                // Manage teleporting players to initial spawn spots.
+                int initialSpawnSpotIndex = 0;
+                int zombiesLeft = chosenZombieCount;
+
+                for(int i = 0; i < BCSUTILS::MAX_PLAYERS; ++i)
+                {
+                    if (!PlayerInGame(i))
+                        continue;
+
+                    int tid = Identity::GetTID(i);
+                    if (!BCSUTILS::ActorIsAlive(tid))
+                        continue;
+
+                    if (Player::GetPlayerInitialZombie(i))
+                    {
+                        Game::InfectPlayer(i, Game::INFECT_INITIAL, Game::INFECTSOURCE_ROUND);
+
+                        // Teleport to the initial spawn spot if defined.
+                        // Also make sure we reset the index if we are at the end of the index count.
+                        // TODO: Look into preventing the teleporting from telefragging.
+                        if (Game::GetInitialSpawnSpotCount() > 0)
+                        {
+                            int teleportTid = Game::GetInitialSpawnSpot(initialSpawnSpotIndex);
+                            Logger::LogDebug(LOGSOURCE, "Teleporting initial zombie \cd" + str(tid) + "\cj to \cd" + str(teleportTid) + "\cj.");
+
+                            if (teleportTid == -1)
+                                Logger::LogError(LOGSOURCE, "Initial zombie spawn spot under index " + str(initialSpawnSpotIndex) + " was not found.");
+
+                            else if (!IsTIDUsed(teleportTid))
+                                Logger::LogError(LOGSOURCE, "Initial zombie spawn spot with TID " + str(teleportTid) + " does not exist exist.");
+
+                            else
+                                TeleportOther(tid, teleportTid, 0);
+
+                            initialSpawnSpotIndex++;
+                            initialSpawnSpotIndex %= Game::GetInitialSpawnSpotCount();
+                        }
+                    }
+                }
+
+                // Send an event of the chosen initials.
+                Event::SendInitialsChosen(chosenZombieCount);
+                Sync::SyncPlayers();
+
+                // The match has started so we set the start tic.
+                Game::SetGameStartTicNow();
+                Sync::SyncGame();
+
+                Delay(const: 35);
+
+                // Timer is completely optional in escape maps, so the map developer is free to leave it out.
+                int index = RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERPLAYING);
+                if (RoundTimer::GetTimerDefined(index))
+                {
+                    RoundTimer::SetActiveTimerByKnownType(RoundTimer::TIMERPLAYING);
+                    RoundTimer::StartTimer(index);
+                }
+
+                Sync::SyncTimers();
+                Delay(const: 35 * 2);
+
+                // Log a message to players to inform them of their specie and their task.
+                Logger::LogToHumans("You are a human! Survive the zombie onslaught.");
+                Logger::LogToZombies("You are a zombie! Infect all humans.");
+
+                break;
+            }
+
+            case Round::StateEnding:
+            {
+                // This timer is required. If not set we log an error.
+                // TODO: Ideally if we started the match we inform the map developer of this.
+                int index = RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERENDING);
+                if (RoundTimer::GetTimerDefined(index))
+                {
+                    RoundTimer::SetActiveTimerByKnownType(RoundTimer::TIMERENDING);
+                    RoundTimer::StartTimer(index);
+
+                    Sync::SyncTimers();
+                    Sync::CallSyncTimersOnClients();
+                }
+                else Logger::LogError(LOGSOURCE, "Missing required ending timer.");
+
+                for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+                {
+                    if (!PlayerInGame(i))
+                        continue;
+
+                    int tid = Identity::GetTID(i);
+                    if (!BCSUTILS::ActorIsAlive(tid))
+                        continue;
+
+                    // Reset all powers. Removes excess visual noise.
+                    Power::ResetPlayerPowers(i);
+
+                    // Prevent from firing.
+                    // TODO: Look into where this can be unset again? Should the state change somehow.
+                    BCSUtils::SetActorInventory(tid, WEAPON_BLOCK_FIRING_ITEM, 1);
+                }
+
+                Sync::SyncPowers();
+
+                // Reward a random player.
+                Reward::GiveRandomPlayerRewardContainers(Reward::REWARDORBMINOR);
+
+                // The match has ended so we set the end tic.
+                Game::SetGameEndingTicNow();
+                Sync::SyncGame();
+
+                break;
+            }
+
+            case Round::STATEVOTING:
+            {
+                Game::SetGameVotingTicNow();
+                Sync::SyncGame();
+
+                // Reset the vote data.
+                // (even if there's nothing to reset we set initial indexes to -1 since 0 is a map index).
+                for (int i = 0; i < Map::GetVotedMapIndexSize(); ++i)
+                    Map::SetPlayerVotedMapIndex(i, -1);
+
+                Map::UpdateVotableMaps();
+                Sync::SyncMapVoting();
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+
+    script "zh2_internal_event_roundswitched_client" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceiveRoundSwitched(packet);
+        //int prevIndex = GetReceiveData(0);
+        int newIndex = GetReceiveData(1);
+
+        Logger::LogDebug(LOGSOURCE, "Round started (clientside): \cd" + Round::GetRoundStateIndexAsString(newIndex) + "\cj.");
+
+        // This even only handles known round types.
+        // If the starting round is not a known type, terminate.
+        Round::KnownRoundStateT roundType = Round::GetKnownRoundStateTypeByIndex(newIndex);
+        if (roundType == Round::StateNone)
+            terminate;
+
+        switch (roundType)
+        {
+            case Round::StateEnding:
+            {
+                Settings::CloseClientSettingsMenu();
+                Admin::DisableAdminHud();
+
+                // Online this is handled through the sync.
+                // TODO: Move this when adding the sync callback system.
+                if (!IsNetworkGame())
+                    Game::ClientBuildEnding();
+
+                break;
+            }
+
+            case Round::STATEVOTING:
+            {
+                // TODO: Move this when adding the sync callback system.
+                // Turn the cursor (back) on and lock the player.
+                Hud::SetCursorEnabled(true);
+                Player::LockMovement(true);
+                break;
+            }
+        }
+    }
+}

@@ -108,18 +108,20 @@ strict namespace Admin
         Logger::LogBold("\cjAn \cfadmin \cjhas resumed the timer!");
     }
 
-    internal void AdminKillUnsafePlayersClientSide()
+    internal void AdminKillUnsafePlayersClientSide(int slot)
     {
-        if (!NamedRequestScriptPuke("zh2_internal_menu_action_kill_unsafe_players"))
+        if (!NamedRequestScriptPuke("zh2_internal_menu_action_kill_unsafe_players", slot))
             Logger::LogError(LOGSOURCE, "Failed to call admin kill unsafe players.");
     }
 
-    script "zh2_internal_menu_action_kill_unsafe_players" (int addTics) net
+    script "zh2_internal_menu_action_kill_unsafe_players" (int slot) net
     {
         if (!GetIsAdmin()) terminate;
         if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING) terminate;
 
-        Game::KillUnsafePlayers();
+        SetActivator(-1);
+
+        Game::KillUnsafePlayers(slot);
         Logger::LogBold("\cjAn \cfadmin \cjhas killed all unsafe players!");
     }
 
@@ -135,7 +137,9 @@ strict namespace Admin
         VALIDATE_ID_VALID_SCRIPT(id);
         if (!BCSUtils::ActorIsAlive(Identity::GetTID(id))) terminate;
 
-        Game::KillPlayer(id, false);
+        SetActivator(-1);
+
+        Game::KillPlayer(id);
         Logger::LogBold("\cf" + BCSUTILS::PlayerName(id) + "\cj has been killed by an \cfadmin\cj!");
     }
 
@@ -198,13 +202,21 @@ strict namespace Admin
         if (!GetIsAdmin()) terminate;
         if (BCSUtils::ClientCount() == BCSUtils::MAX_PLAYERS) terminate;
 
-        // Force next joining player (so the bot) to be a zombie.
-        ZH2Game::_forceSpecie = Player::SPECIEHUMAN;
+        // Force next joining player (so the bot) to be a human.
+        Game::SetForceSpawnSpecie(Player::SPECIEHUMAN);
 
         // Can fail for reasons, but also if the map has bot nodes disabled.
         // For now let's not explicitly log an error.
         if (AddBot("", 0))
             Logger::LogBold("\cjAn \cfadmin \cjhas added a human.");
+
+        delay(const: 1);
+
+        // Make sure to reset it again.
+        Game::SetForceSpawnSpecie(Player::SPECIENONE);
+
+        // If enabled, teleport the player in front of the admin.
+        TryMoveNewSpawnInFront();
     }
 
     internal void AdminAddZombieBotClientside()
@@ -219,12 +231,41 @@ strict namespace Admin
         if (BCSUtils::ClientCount() == BCSUtils::MAX_PLAYERS) terminate;
 
         // Force next joining player (so the bot) to be a zombie.
-        ZH2Game::_forceSpecie = Player::SPECIEZOMBIE;
+        Game::SetForceSpawnSpecie(Player::SPECIEZOMBIE);
 
         // Can fail for reasons, but also if the map has bot nodes disabled.
         // For now let's not explicitly log an error.
         if (AddBot("", 0))
             Logger::LogBold("\cjAn \cfadmin \cjhas added a zombie.");
+
+        delay(const: 1);
+
+        // Make sure to reset it again.
+        Game::SetForceSpawnSpecie(Player::SPECIENONE);
+
+        // If enabled, teleport the player in front of the admin.
+        TryMoveNewSpawnInFront();
+    }
+
+    internal void TryMoveNewSpawnInFront()
+    {
+        if (!ZH2Game::GetClAdminSpawnBotInFront(PlayerNumber()))
+            return;
+
+        int tid = Identity::GetTid(Game::GetLastJoinedPlayerId());
+
+        if (!IsTIDUsed(tid))
+        {
+            Logger::LogError(LOGSOURCE, "Tid not valid to move in front of admin: " + str(tid) + ".");
+            return;
+        }
+
+        fixed angle = GetActorAngle(0),
+              x = GetActorX(0) + FixedMul(ADMIN_SPAWNBOTFRONTDISTANCE, cos(angle)),
+              y = GetActorY(0) + FixedMul(ADMIN_SPAWNBOTFRONTDISTANCE, sin(angle)),
+              z = GetActorZ(0);
+
+        SetActorPosition(tid, x, y, z, false);
     }
 
     internal void AdminRemoveBotClientside()

@@ -1,0 +1,162 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    internal bool ParseRandomizedWeatherBlock(int handle, str identifyingSymbol, bool setPersisting)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "randomizedweather"))
+            return false;
+
+        Tokenizer::Next(handle, false);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for weather type whilst parsing randomized weather: '" + Tokenizer::GetSymbol(handle) + "'. Symbol should be of type string.");
+            return false;
+        }
+
+        str weatherType = Tokenizer::GetSymbol(handle);
+        int index = RandomizedWeatherTypeToIndex(weatherType);
+
+        if (_parsedRandomizedWeatherContext.Index == -1)
+        {
+            Tokenizer::SetErrored(handle, "Invalid weather type provided whilst parsing randomized weather: '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        _parsedRandomizedWeatherContext.Index = index;
+
+        // If `setPersisting` is false we want to provide the values that are currently set for the current transient info we have.
+        // This is useful for mappers to set only part of the new values.
+        if (!setPersisting)
+        {
+            _parsedRandomizedWeatherContext.Enabled = Weather::GetTransientRandomizedWeatherEnabled(index);
+            _parsedRandomizedWeatherContext.MinDelay = Weather::GetTransientRandomizedWeatherMinDelay(index);
+            _parsedRandomizedWeatherContext.MaxDelay = Weather::GetTransientRandomizedWeatherMaxDelay(index);
+        }
+        else
+        {
+            _parsedRandomizedWeatherContext.Enabled = false;
+            _parsedRandomizedWeatherContext.MinDelay = 0;
+            _parsedRandomizedWeatherContext.MaxDelay = 0;
+        }
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseRandomizedWeatherBlockEnabled(handle, symbol)
+                || ParseRandomizedWeatherBlockMinDelay(handle, symbol)
+                || ParseRandomizedWeatherBlockMaxDelay(handle, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing randomized weather profile: '" + symbol + "'.");
+            return false;
+        }
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LOGSOURCE, "New randomized weather parsed under index \cd" + str(_parsedRandomizedWeatherContext.Index) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseRandomizedWeatherBlockEnabled(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "enabled"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseBooleanOrNumbericValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for Enabled is not a correct value. Expected boolean or numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        bool value = parsedValue != 0;
+        _parsedRandomizedWeatherContext.Enabled = value;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed IsEnabled: \cd" + str(value) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseRandomizedWeatherBlockMinDelay(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "mindelay"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for MinDelay is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        _parsedRandomizedWeatherContext.MinDelay = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed MinDelay: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseRandomizedWeatherBlockMaxDelay(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "maxdelay"))
+            return false;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TEQ))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for MaxDelay is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        _parsedRandomizedWeatherContext.MaxDelay = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed MaxDelay: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    // HACK: Can't use `static str` here due to a compiler bug.
+    str randomizedWeatherTypes[] = { "thunder" };
+    internal int RandomizedWeatherTypeToIndex(str weatherType)
+    {
+        for (int i = 0; i < 5; ++i)
+        {
+            if (BCSUTILS::StrIEquals(weatherType, randomizedWeatherTypes[i]))
+                return i;
+        }
+
+        return -1;
+    }
+}

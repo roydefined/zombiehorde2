@@ -23,7 +23,7 @@ strict namespace Hud
 
         // Base x and y offsets used by the hud elements.
         fixed baseX = BCSUtils::HudLeft() + ZH2Game::GetHudPlayerStatusOffsetX() + 30.0,
-              baseY = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 20.0;
+              baseY = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 30.0;
 
         PrepareHud(
             baseX, baseY, true);
@@ -50,6 +50,10 @@ strict namespace Hud
         DrawCalculatedFactors();
 
         PrepareHud(
+            baseX + 140.0, baseY - 100.0, true);
+        DrawZombieTeleportsLeft();
+
+        PrepareHud(
             baseX + HUD_STATES_RADIUS + 5.0, baseY - 75.0, true);
         DrawHudStates();
 
@@ -64,8 +68,15 @@ strict namespace Hud
         // Right side
         // TODO: This is a whole different part of the HUD and should be moved.
         PrepareHud(
-            BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX() - 80.0,
-            BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 40.0,
+            BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 80.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 80.0,
+            true);
+
+        DrawWeaponBackground();
+
+        PrepareHud(
+            BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 110.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 80.0,
             true);
 
         DrawWeaponIcon();
@@ -73,7 +84,7 @@ strict namespace Hud
         if (Player::GetIsZombie())
         {
             PrepareHud(
-                BCSUtils::HudRight() + ZH2Game::GetHudPlayerStatusOffsetX() - 80.0,
+                BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 80.0,
                 BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 220.0,
                 true);
 
@@ -248,12 +259,51 @@ strict namespace Hud
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
     }
 
+    internal void DrawZombieTeleportsLeft()
+    {
+        if (!ZH2Game::GetAllowZombieTeleporting())
+            return;
+
+        if (!Player::GetIsZombie())
+            return;
+
+        if (!Game::GetZombieTeleportingEnabled())
+            return;
+
+        str graphic = ConsolePlayerSkinToZombieTeleportGraphic();
+        int left = Game::GetZombieTeleportsLeft();
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawImage(--_drawnHudId, graphic);
+        DebugDraw();
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudSetAlpha(0.8);
+
+        HudSetPointInternal(5.0, -3.0);
+        BCSUtils::HudDrawText(--_drawnHudId, str(left));
+        DebugDraw();
+
+        BCSUtils::HudSetAlpha(1.0);
+    }
+
     internal void DrawHudStates()
     {
         static str graphics[MAX_HUD_STATES] = { "ST_SAFE", "ST_CAFF", "ST_DAMFC", "ST_JUMP", "ST_SPEED", "ST_PANIC", "ST_CURE", "ST_HINV", "ST_UNSOL" };
 
         // Update states before drawing.
-        _hudStates[0] = Game::GetIsSafe();
+        // Safety is special as it has multiple slots. If we have at least one non-hidden safety slot set to `true`, it passes.
+        _hudStates[0] = false;
+        for (int i = 0; i < MAX_SAFETY_SLOTS; ++i)
+        {
+            if (Game::GetIsSafe(i) && !Game::GetSafeHidden(i))
+            {
+                _hudStates[0] = true;
+                break;
+            }
+        }
         _hudStates[1] = Power::GetHasPower(Power::POWERCAFFEINE);
         _hudStates[2] = Power::GetHasPower(Power::POWERREWARDHUMANWEAPONUPGRADE);
         _hudStates[3] = Power::GetHasPower(Power::POWERREWARDZOMBIEJUMP);
@@ -308,9 +358,32 @@ strict namespace Hud
         }
     }
 
+    internal void DrawWeaponBackground()
+    {
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
+
+        // TODO: CheckWeapon check should come from a lump.
+        bool drawSecondaryBackground = CheckWeapon(WEAPON_RIOTGUN_NAME);
+        if (drawSecondaryBackground)
+        {
+            HudSetPointInternal(20.0, 8.0);
+            BCSUtils::HudDrawImage(--_drawnHudId, "HUDSBACK");
+            DebugDraw();
+        }
+
+        // TODO: CheckWeapon checks should come from a lump.
+        bool drawPrimaryBackground = !CheckWeapon(WEAPON_RADIO_NAME) && !CheckWeapon(WEAPON_CLAWS_NAME);
+        if (drawPrimaryBackground)
+        {
+            HudSetPointInternal();
+            BCSUtils::HudDrawImage(--_drawnHudId, "HUDPBACK");
+            DebugDraw();
+        }
+    }
+
     internal void DrawWeaponIcon()
     {
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
 
         str weaponIcon = "";
         if      (CheckWeapon(WEAPON_SHOTGUN_NAME)) weaponIcon = WEAPON_HUD_SKIN_SHOTGUN + str(CheckInventory(WEAPON_AMMO_SHOTGUN_NAME));
@@ -366,11 +439,11 @@ strict namespace Hud
         // This is a division of the total based on what fits in the gun.
         else if (CheckWeapon(WEAPON_RIOTGUN_NAME))
         {
-            HudSetPointInternal(-90.0, 0.0);
+            HudSetPointInternal(50.0, 8.0);
             BCSUtils::HudDrawImage(--_drawnHudId, WEAPON_HUD_SKIN_RIOTGUN_CLIP);
             DebugDraw();
 
-            HudSetPointInternal(-94.0, -4.0);
+            HudSetPointInternal(44.0, 8.0);
             BCSUtils::HudSetFont("SmallFont");
             BCSUtils::HudSetTextColor(CR_WHITE);
             BCSUtils::HudDrawText(--_drawnHudId, str(CheckInventory(WEAPON_AMMO_RIOTGUN_TOTAL_NAME)));

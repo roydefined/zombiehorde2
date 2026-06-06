@@ -1,0 +1,51 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawPickChance()
+    {
+        int id = HUDID_PICKCHANCE;
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetCenterText(true);
+
+        BCSUtils::HudSetStayTime(0.5);
+        BCSUtils::HudSetDisappearTime(0.5);
+
+        str message;
+        buildmsg(message = StrParam())
+        {
+            fixed pickChance = Player::GetInitialZombiePickChance();
+
+            if (pickChance == 0.0)
+                Append(s:"\cjYou are safe from being picked");
+            else if (pickChance == 1.0)
+                Append(s:"\cgYou will be picked this round");
+
+            else
+            {
+                int percentage = int(pickChance * 100.0);
+
+                Append(s:"\cjInitial zombie pick chance: ");
+                Append(s:GetPickChanceColorCode(pickChance));
+                Append(d:percentage);
+                Append(s:"%");
+            }
+        }
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawText(--id, message);
+        DebugDraw();
+    }
+
+    internal str GetPickChanceColorCode(fixed chance)
+    {
+        if (chance <= 0.10) return "\cd";
+        if (chance <= 0.20) return "\ch";
+        if (chance <= 0.35) return "\ci";
+        if (chance <= 0.50) return "\cg";
+        return "\cr";
+    }
+}

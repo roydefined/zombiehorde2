@@ -11,10 +11,10 @@ strict namespace Player
     // 2 = Critical health.
     internal int _heartbeatType = 0;
 
-    // Two timestamps, because we can have two separate heartbeats (different client, or locally)
-    internal int _nextHeartbeatFarTimestamp = 0;
     internal int _lastHeartbeatLocalTimestamp = 0;
     internal int _nextHeartbeatLocalTimestamp = 0;
+
+    internal int _nextHeartbeatLastTimestamp = 0;
 
     internal void HeartbeatTicClient()
     {
@@ -54,10 +54,32 @@ strict namespace Player
 
     internal void LastHeartbeatTicClient()
     {
+        if (Timer() < _nextHeartbeatLastTimestamp)
+            return;
+
+        // Map is not configured to play a heartbeat.
+        if (!GetPlayFinalHeartbeat())
+            return;
+
+        if (!ZH2Game::GetEnableFinalHeartbeat())
+            return;
+
+        if (Game::HumanCount() != 1)
+            return;
+
+        // The final heartbeat can only happen when the game is playing.
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
+            return;
+
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
-            if (PlayerInGame(i))
-                LastHeartbeatTicPlayerClient(i);
+            if (!PlayerInGame(i))
+                continue;
+
+            if (!Player::GetPlayerIsHuman(i))
+                continue;
+
+            LastHeartbeatTicPlayerClient(i);
         }
     }
 
@@ -68,39 +90,22 @@ strict namespace Player
         if (id == ConsolePlayerNumber() && ZH2Game::GetEnableHurtHeartbeat() && _heartbeatType != 0)
             return;
 
-        if (Timer() % (35 + 18) != 0)
-            return;
-
-        if (!ZH2Game::GetEnableFinalHeartbeat())
-            return;
-
-        if (Game::HumanCount() != 1)
-            return;
-
-        // Map is not configured to play a heartbeat.
-        if (!GetPlayFinalHeartbeat())
-            return;
-
-        if (!Player::GetPlayerIsHuman(id))
-            return;
-
-        // Ignore if the game ended.
-        if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
-            return;
-
         int tid = Identity::GetTid(id);
 
         // Console player has a different heartbeat and timestamp.
         if (id == ConsolePlayerNumber())
         {
             ThingSound(tid, "human/HEARTBEATLOCAL", 150);
+            _nextHeartbeatLastTimestamp = Timer() + 35;
+
+            // Also set variables for the hurt heartbeat when local, or it will overlap instantly with this heartbeat.
             _nextHeartbeatLocalTimestamp = Timer() + 35;
             _lastHeartbeatLocalTimestamp = Timer();
         }
         else
         {
             ThingSound(tid, "human/HEARTBEATFAR", 150);
-            _nextHeartbeatFarTimestamp = Timer() + 35 + 18;
+            _nextHeartbeatLastTimestamp = Timer() + 35 + 18;
         }
     }
 

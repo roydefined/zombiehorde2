@@ -1,0 +1,89 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Weather"
+
+#include "emitter.acs"
+#include "randomized.acs"
+#include "ambient.acs"
+#include "extern.acs"
+
+strict namespace Weather
+{
+    // Clientside state that determines if we must initialize/dispose ambient weather.
+    internal bool _ambientWeatherInitialized;
+
+    void PrepareDefaultsServer()
+    {
+        for (int i = 0; i < EMITTERWEATHER_COUNT; ++i)
+        {
+            SetTransientEmitterWeatherEnabled(i, GetPersistingEmitterWeatherEnabled(i));
+            SetTransientEmitterWeatherSkyBehavior(i, GetPersistingEmitterWeatherSkyBehavior(i));
+            SetTransientEmitterWeatherSpawnCount(i, GetPersistingEmitterWeatherSpawnCount(i));
+            SetTransientEmitterWeatherSpawnDelay(i, GetPersistingEmitterWeatherSpawnDelay(i));
+            SetTransientEmitterWeatherMinRadius(i, GetPersistingEmitterWeatherMinRadius(i));
+            SetTransientEmitterWeatherMaxRadius(i, GetPersistingEmitterWeatherMaxRadius(i));
+            SetTransientEmitterWeatherMinZpos(i, GetPersistingEmitterWeatherMinZpos(i));
+            SetTransientEmitterWeatherMaxZpos(i, GetPersistingEmitterWeatherMaxZpos(i));
+            SetTransientEmitterWeatherNextSpawnTic(i, GetPersistingEmitterWeatherNextSpawnTic(i));
+        }
+
+        for (int i = 0; i < RANDOMIZEDWEATHER_COUNT; ++i)
+        {
+            SetTransientRandomizedWeatherEnabled(i, GetPersistingRandomizedWeatherEnabled(i));
+            SetTransientRandomizedWeatherMinDelay(i, GetPersistingRandomizedWeatherMinDelay(i));
+            SetTransientRandomizedWeatherMaxDelay(i, GetPersistingRandomizedWeatherMaxDelay(i));
+        }
+
+        for (int i = 0; i < AMBIENTWEATHER_COUNT; ++i)
+        {
+            SetTransientAmbientWeatherEnabled(i, GetPersistingAmbientWeatherEnabled(i));
+            SetTransientAmbientWeatherSound(i, GetPersistingAmbientWeatherSound(i));
+            SetTransientAmbientWeatherShelteredSound(i, GetPersistingAmbientWeatherShelteredSound(i));
+            SetTransientAmbientWeatherRadius(i, GetPersistingAmbientWeatherRadius(i));
+            SetTransientAmbientWeatherShelteredRadius(i, GetPersistingAmbientWeatherShelteredRadius(i));
+            SetTransientAmbientWeatherDelay(i, GetPersistingAmbientWeatherDelay(i));
+        }
+    }
+
+    void TicClient()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        // Determine the client's current camera position to determine where the tic handles weather.
+        int cameraTid = CheckPlayerCamera(PlayerNumber());
+
+        bool enableWeatherGlobal = ZH2Lib::GetSvEnableWeather() && ZH2Lib::GetClEnableWeather();
+        bool emitterWeatherEnabled = ZH2Lib::GetClEnableEmitterWeather() && enableWeatherGlobal && cameraTid != -1;
+        bool randomizedWeatherEnabled = ZH2Lib::GetClEnableRandomizedWeather() && enableWeatherGlobal && cameraTid != -1;
+        bool ambientWeatherEnabled = ZH2Lib::GetClEnableAmbientWeather() && enableWeatherGlobal && cameraTid != -1;
+
+        // Ensure ambient weather is properly initialized/disposed.
+        if (_ambientWeatherInitialized != ambientWeatherEnabled)
+        {
+            if (ambientWeatherEnabled)
+                InitializeAmbientWeatherClient();
+            else
+                DisposeAmbientWeatherClient();
+
+            _ambientWeatherInitialized = ambientWeatherEnabled;
+        }
+
+        if (emitterWeatherEnabled)
+            TicEmitterWeather(cameraTid);
+
+        if (randomizedWeatherEnabled)
+            TicRandomizedWeather(cameraTid);
+
+        if (ambientWeatherEnabled)
+            TicAmbientWeather(cameraTid);
+    }
+
+    internal int TypeToIndex(int type)
+    {
+        return type - 1;
+    }
+}
+
+#undef LOGSOURCE

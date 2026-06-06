@@ -10,7 +10,7 @@
 #include "game/game.h.acs"
 #include "sync/sync.h.acs"
 #include "map/map.h.acs"
-#include "events/events.h.acs"
+#include "event/event.h.acs"
 #include "round/round.h.acs"
 #include "player/player.h.acs"
 #include "feature/feature.h.acs"
@@ -20,6 +20,7 @@
 #include "damagefeedback/damagefeedback.h.acs"
 #include "settings/settings.h.acs"
 #include "shuffle/shuffle.h.acs"
+#include "logger/logger.h.acs"
 #include "music/music.h.acs"
 #include "reward/reward.h.acs"
 #include "weight/weight.h.acs"
@@ -93,10 +94,40 @@ strict namespace ZH2Game
         DEATHTYPE_UNSAFE,
     };
 
+    internal enum IdentifyPlayerSpecieTypeT : int
+    {
+        IDENTIFY_PLAYER_OFF,
+        IDENTIFY_PLAYER_ALL,
+        IDENTIFY_PLAYER_ONLY_SAME,
+        IDENTIFY_PLAYER_ONLY_OTHER,
+    };
+
+    internal enum IdentifyPlayerTypeT : int
+    {
+        IDENTIFY_PLAYER_BOTH,
+        IDENTIFY_PLAYER_NAME,
+        IDENTIFY_PLAYER_SPECIE,
+    };
+
+    internal enum InitialZombiePickMethodT : int
+    {
+        INITIALZOMBIEPICKMETHOD_RANDOM,
+        INITIALZOMBIEPICKMETHOD_LEGACY,
+        INITIALZOMBIEPICKMETHOD_WEIGHT
+    };
+
     // General game info. Non-persisting between rounds.
     internal struct GameContextT
     {
         PlayerT Players[BCSUtils::MAX_PLAYERS];
+
+        // This is used for spawning players/bots to force them to a specific specie.
+        // If not set, we default to humans.
+        Player::PlayerSpecieT ForceSpawnSpecie;
+
+        // The last player id that joined the game.
+        // This can be used for callbacks that rely on a player joining, to then know which id they took.
+        int LastJoinedPlayerId;
 
         // This boolean indicates if there should be a sync of certain things when a player joins the game.
         // On map start we do not allow all things to sync to avoid possibly 64 players all syncing themselves.
@@ -139,14 +170,14 @@ strict namespace ZH2Game
         int RegularZombieMaxHealth;
         int RegularZombieMinHealth;
 
-        // Map specific initial spawn spots and zombie teleport spots.
+        // Map specific initial spawn spots.
         int InitialSpawnSpots[MAX_INITIALSPAWNSPOTS];
         int InitialSpawnSpotCount;
-        int ZombieTeleportSpots[MAX_ZOMBIETELEPORTSPOTS];
-        int ZombieTeleportSpotCount;
 
-        // The current tid of the zombie teleport spot(s) to use.
-        int CurrentZombieTeleportSpotTid;
+        Game::ZombieTeleportContextT ZombieTeleportContext;
+
+        // Clientside, hud specific features
+        Hud::HudContextT HudContext;
 
         // Not synched, a bitflag representing default zombie powers.
         // These are given to players switching to a zombie specie.
@@ -175,6 +206,8 @@ strict namespace ZH2Game
         int OwnedKeyCount;
         int OwnedWeaponItems[MAX_ITEMS];
         int OwnedWeaponCount;
+
+        Game::SafeContextT SafeContext;
 
         // Clientside, not synchronized.
         Obituary::ObituaryCollectionContextT ObituaryCollectionContext;
@@ -248,6 +281,9 @@ strict namespace ZH2Game
 
         // Clientside, holds info regarding damage feedback to inform the player.
         DamageFeedback::DamageFeedbackInfoT DamageFeedbackInfo;
+
+        // Clientside, maintains a list of textures to replace when the player renders using OpenGL.
+        Player::SoftwareTextureContextT SoftwareTextureContext;
     };
 
     // General game info. Persisting between rounds.
@@ -259,9 +295,10 @@ strict namespace ZH2Game
         // Note that the maps do not have their data loaded to preserve on memory usage if we end up with a lot of maps.
         // Instead we store the map name and from there we determine the lump index where we can find the relevant info.
 
-        // Indicates if the server/client has parsed the mod def files.
+        // Indicates if server/client parsed the specific lumps.
         bool ParsedModDefServerside;
         bool ParsedModDefClientside;
+        bool ParsedRadioDefLumpsclientside;
 
         // Serverside, indicates the cooldown until we trigger a full server event again.
         int FullServerCooldown;
@@ -292,10 +329,7 @@ strict namespace ZH2Game
         Player::PlayerSpecieT SpecieType;
         bool IsInitialZombie;
 
-        // Safe is synched. Indicates if a player reached the safezone.
-        // FirstTimeSafe is serverside and indicates if the player has reached safety before.
-        bool Safe;
-        bool FirstTimeSafe;
+        Game::PlayerSafeContextT SafeContext;
 
         // Serverside. If `true`, the join prevention depeding on round state is ignored on this player specifically.
         bool AlwaysAllowJoin;
@@ -304,8 +338,7 @@ strict namespace ZH2Game
         Player::PlayerPanicStateT PanicState;
         int PanicCount;
 
-        // Not synched.
-        int ZombieTeleportsUsed;
+        Game::PlayerZombieTeleportContextT ZombieTeleportContext;
 
         // Synched, a bitflag representing what zombie powers are enabled on this particular player.
         // NOTE: Not defaults! Might differentiate from the defaults.
@@ -336,6 +369,7 @@ strict namespace ZH2Game
     struct PersistingPlayerT
     {
         bool IsAdmin;
-        bool PreviouslyInitialZombie;
+
+        Round::InitialPickContextT InitialPickContext;
     };
 }

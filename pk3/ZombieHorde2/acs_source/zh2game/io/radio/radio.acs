@@ -1,0 +1,75 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "radiolist.acs"
+
+strict namespace IO
+{
+    internal void ParseRadioDefLumpsClientside()
+    {
+        ACS_NamedExecuteWithResult(SCRIPT_PARSE_RADIO_DEF_LUMPS_CLIENTSIDE);
+    }
+
+    // NOTE: This script is `BUSY` and will not trigger a runaway error.
+    script SCRIPT_PARSE_RADIO_DEF_LUMPS_CLIENTSIDE BUSY
+    {
+        if (ZH2Game::PersistingGameContext.ParsedRadioDefLumpsclientside)
+            terminate;
+
+        Logger::LogDebug(LOGSOURCE, "Begin parsing radio def lumps clientside.");
+
+        int startIndex = 0;
+        while(startIndex != -1)
+            startIndex = ParseRadioDefLumps(startIndex, false);
+
+        Logger::LogDebug(LOGSOURCE, "Finished parsing radio def lumps clientside.");
+        ZH2Game::PersistingGameContext.ParsedRadioDefLumpsclientside = true;
+    }
+
+    internal int ParseRadioDefLumps(int startIndex, bool isServerside)
+    {
+        startIndex = LumpOpen(RADIODEFLUMPNAME, startIndex);
+        if (startIndex == -1)
+        {
+            Logger::LogDebug(LOGSOURCE, "No more radio def lumps found.");
+            return startIndex;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Found radio def lump: \cd" + (str)LumpGetInfo(startIndex, LUMP_INFO_NAME) + "\cj.");
+        if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) == 0)
+        {
+            Logger::LogDebug(LOGSOURCE, "Radio def file is empty.");
+            return startIndex;
+        }
+
+        ParseRadioDefLump(LumpReadString(startIndex, 0));
+        LumpClose(startIndex);
+        return startIndex;
+    }
+
+    internal void ParseRadioDefLump(str buffer)
+    {
+        int handle = Tokenizer::RentTokenizer(buffer);
+        if (handle == -1)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": failed to rent a tokenizer.");
+            return;
+        };
+
+        Tokenizer::Next(handle, false);
+
+        while(Tokenizer::CanRead(handle))
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+
+            if (ParseRadioList(handle, symbol))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + RADIODEFLUMPNAME + ": '" + symbol + "'.");
+            break;
+        }
+
+        Tokenizer::ReturnTokenizer(handle);
+    }
+}

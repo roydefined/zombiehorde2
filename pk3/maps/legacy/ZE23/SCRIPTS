@@ -7,15 +7,15 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-int f = 1;
+bool canActivateSecret = true;
+bool secretTrollActive;
+bool secretActive;
+
 int k = 2;
 int l = 1;
 int s = 6;
 int t = 1;
 int v = 0;
-
-// Nacho Libre safezone
-int SecretSafezoneReached[BCSUtils::MAX_PLAYERS];
 
 // 5.75 base (all resists + z)
 // Z, R, T, R, T, R, R, S
@@ -190,9 +190,9 @@ Script 12 (void) // damn it leeroy!!!
 
 script 13 (void) // Music track
 {
-    Music::SetMusic ("NK_DAMI", 0);
+    Music::PlayMusic ("NK_DAMI", 0);
     delay(861); // 35*24 + 21
-    Music::SetMusic ("NK_DAM", 0);
+    Music::PlayMusic ("NK_DAM", 0);
 }
 
 Script 14 (void) // gate message
@@ -225,18 +225,18 @@ Script 16 (void) // final resist, endgame
 	HudMessageBold(s:"\crT-minus 3 seconds!!!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 3.0, 2.0);
 	delay(75); // 35*3 - 30
 	AmbientSound("world/nuke1", 111);
-	Game::KillUnsafePlayers();
+	Game::KillUnsafePlayers(0);
 	HudMessageBold(s:" "; HUDMSG_PLAIN, 116, CR_WHITE, 0, 0, 0);
 	HudMessageBold(s:" "; HUDMSG_PLAIN, 117, CR_WHITE, 0, 0, 0);
 	HudMessageBold(s:" "; HUDMSG_PLAIN, 118, CR_WHITE, 0, 0, 0);
 	ACS_execute(23, 0, 0, 0, 0);
-	Music::SetMusic ("NK_DAMO", 0);
+	Music::PlayMusic ("NK_DAMO", 0);
 }
 
 script 17 (void) // secret failsafe + warning!
 {
     delay(35*22);
-    f--;
+    canActivateSecret = false;
 	Generic_Floor(183, 164, 136, 0, 0);
     delay(35*8);
     AmbientSound("ambient/warning1", 111);
@@ -350,9 +350,16 @@ Script 21 (void) // Third resist - towers
 	Generic_Floor(61, 111, 120, 0, 8); // proximal gate
 }
 
+// First safezone can only be entered if the secret ending isn't active.
+script "enter_safezone"
+{
+	if (!secretActive)
+		Game::SetIsSafe(Lineside() == LINE_FRONT);
+}
+
 Script 22 (void) // secret end
 {
-    If (f == 1)
+    If (canActivateSecret || !secretActive)
     {
 		HudMessageBold(s:" "; HUDMSG_PLAIN, 116, CR_WHITE, 0, 0, 0);
 		HudMessageBold(s:" "; HUDMSG_PLAIN, 117, CR_WHITE, 0, 0, 0);
@@ -370,9 +377,14 @@ Script 22 (void) // secret end
 		Generic_Ceiling(149, 222, 152, 0, 8);
 		Generic_Floor(149, 222, 12, 0, 8);
 		spawnspot("ZH2LegacyFlareDisco", 145, 0, 0);
-		f--;
+		canActivateSecret = false;
+		secretActive = true;
+
+		// [ZH2] First safezone is no longer safe.
+		Game::SetAllPlayersSafe(false, 0);
+
 		delay(35);
-		Music::SetMusic("NK_NACHO", 0);
+		Music::PlayMusic("NK_NACHO", 0);
 		SetFont("BIGFONT");
 		HudmessageBold(s:"\cnHOLA NACHO!!!"; HUDMSG_PLAIN, 699, CR_white, 0.5, 0.35, 2.0);
 		delay(35*5);
@@ -394,46 +406,34 @@ Script 22 (void) // secret end
 		HudMessageBold(s:"\crRamses doesn't like your singing!!!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 3.0, 2.0);
 		delay(155); // =35*5 - 20
 		AmbientSound("world/nuke1", 111);
-		Music::SetMusic("D_NULL", 0);
+		Music::PlayMusic("D_NULL", 0);
 
-		for(int i = 0; i <= BCSUtils::MAX_PLAYERS; i++)
-		{
-			if(!SecretSafezoneReached[i])
-			{
-				int tid = Identity::GetTid(i);
-				Thing_Damage(tid, 10000, MOD_EXIT);
-			}
-		}
+		Game::KillUnsafePlayers(1);
 
 		ACS_execute(23, 0, 0, 0, 0);
 		delay (35*9);
 		Generic_Ceiling(172, 69, 8, 0, 8);
     }
-    Else if (f == 0)
+    Else if (!canActivateSecret)
     {
-		f--;
+		secretTrollActive = true;
 		SetFont("SMALLFONT");
 		Print(s:"Trololololol");
 		ThingSound (115, "sound/troll", 127);
 		delay (35*3);
-		f++;
+		secretTrollActive = false;
     }
-}
-
-script "ze23_nacho_safezone"
-{
-	SecretSafezoneReached[PlayerNumber()] = LineSide() == LINE_FRONT;
 }
 
 Script 23 (void) // RSOD
 {
-    if (!Game::GetIsSafe())
+    if (!Game::GetIsSafe(0))
     {
 		Fadeto (228, 12, 32, 1.0, 0);
 		delay(35);
 		Fadeto (0, 0, 0, 0, 4.0);
     }
-    else if (Game::GetIsSafe())
+    else if (Game::GetIsSafe(0))
     {
 		delay (35);
     }

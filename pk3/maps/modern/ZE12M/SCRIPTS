@@ -262,10 +262,14 @@ script "PyramidOpened"
 
 	delay(35 * 7);
 
-	// TODO: Support
-	//SetZombieTeleportSpotTid(8);
-	//LogMessageToHumans("Zombies can now teleport to the pyramid entrance.");
-	//LogMessageToZombies("You can now teleport to the pyramid entrance.");
+	Game::SetZombieTeleportingEnabled(true);
+
+	// TODO: Use constant value or cvar function
+	if ((bool)GetCvar("sv_zh2_allowzombieteleporting"))
+	{
+		Logger::LogToHumans("Zombies can now teleport to the pyramid entrance.");
+		Logger::LogToZombies("You can now teleport to the pyramid entrance.");
+	}
 
 	delay (35*5);
 
@@ -401,9 +405,9 @@ script "FinalMusicLoop" clientside
 		restart;
 	}
 
-	Music::SetMusic("D_EGYPT3", 0);
+	Music::PlayMusic("D_EGYPT3", 0);
 	Delay(1225);
-	Music::SetMusic("", 0);
+	Music::PlayMusic("", 0);
 }
 
 script "BridgeBlockpoint"

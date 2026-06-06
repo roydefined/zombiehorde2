@@ -1,0 +1,143 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Weather
+{
+    #define EMITTERWEATHER_COUNT 7
+    #define RANDOMIZEDWEATHER_COUNT 1
+    #define AMBIENTWEATHER_COUNT 3
+
+    #define AMBIENTWEATHER_RING_BASETID 30000
+    #define AMBIENTWEATHER_SPOTCOUNT 8
+
+    //#define AMBIENTWEATHER_RING_ACTOR "DebugDropAmbient"
+    #define AMBIENTWEATHER_RING_ACTOR "MapSpot"
+
+    //#define AMBIENTWEATHER_SOUND_ACTOR "DebugDropAmbientSound"
+    #define AMBIENTWEATHER_SOUND_ACTOR "MapSpot"
+
+    // Static radius for the sound ring.
+    #define AMBIENTWEATHER_SOUND_RING_RADIUS 800.0
+
+    // Lerp tuning for sound fade.
+    #define AMBIENTWEATHER_SOUND_LERP_FACTOR 0.20
+    #define AMBIENTWEATHER_SOUND_LERP_EPSILON 0.01
+
+    enum EmitterWeatherTypeT : int
+    {
+        EMITTERWEATHER_UNKNOWN,
+        EMITTERWEATHER_DEBUG,
+        EMITTERWEATHER_DEBUGSKY,
+        EMITTERWEATHER_DEBUGNOSKY,
+        EMITTERWEATHER_RAIN,
+        EMITTERWEATHER_SNOW,
+        EMITTERWEATHER_DUST,
+        EMITTERWEATHER_SPARK,
+    };
+
+    enum RandomizedWeatherTypeT : int
+    {
+        RANDOMIZEDWEATHER_UNKNOWN,
+        RANDOMIZEDWEATHER_THUNDER,
+    };
+
+    enum AmbientWeatherTypeT : int
+    {
+        AMBIENTWEATHER_UNKNOWN,
+        AMBIENTWEATHER_RAIN,
+        AMBIENTWEATHER_LEGACYWIND,
+        AMBIENTWEATHER_WIND,
+    };
+
+    enum EmitterWeatherSkyBehaviorT : int
+    {
+        EMITTERWEATHER_SKYBEHAVIOUR_UNKNOWN,
+        EMITTERWEATHER_SKYBEHAVIOUR_NONE,
+        EMITTERWEATHER_SKYBEHAVIOUR_REQUIRESKY,
+        EMITTERWEATHER_SKYBEHAVIOUR_REQUIRENOSKY,
+    };
+
+    struct WeatherContextT
+    {
+        // Map-specific overrides.
+        EmitterWeatherContextT EmitterWeatherCollection[EMITTERWEATHER_COUNT];
+        RandomizedWeatherContextT RandomizedWeatherCollection[RANDOMIZEDWEATHER_COUNT];
+        AmbientWeatherContextT AmbientWeatherCollection[AMBIENTWEATHER_COUNT];
+
+        // Clientsided tracking of the ambient weather volume.
+        // This will end up lerping the volume to the target value instead of doing it sudden.
+        // NOTE: Due to a limitation we can't put this in the actual collection.
+        fixed CurrentSoundVolume[AMBIENTWEATHER_COUNT * AMBIENTWEATHER_SPOTCOUNT];
+        fixed TargetSoundVolume[AMBIENTWEATHER_COUNT * AMBIENTWEATHER_SPOTCOUNT];
+
+        fixed CurrentShelteredSoundVolume[AMBIENTWEATHER_COUNT * AMBIENTWEATHER_SPOTCOUNT];
+        fixed TargetShelteredSoundVolume[AMBIENTWEATHER_COUNT * AMBIENTWEATHER_SPOTCOUNT];
+
+        // Tracks if a given ambient sound spot is currently playing.
+        // Same as above, working around the limitation.
+        bool SoundActive[AMBIENTWEATHER_COUNT * AMBIENTWEATHER_SPOTCOUNT];
+        bool ShelteredSoundActive[AMBIENTWEATHER_COUNT * AMBIENTWEATHER_SPOTCOUNT];
+    };
+
+    struct PersistingWeatherContextT
+    {
+        // Global defaults.
+        EmitterWeatherContextT EmitterWeatherCollection[EMITTERWEATHER_COUNT];
+        RandomizedWeatherContextT RandomizedWeatherCollection[RANDOMIZEDWEATHER_COUNT];
+        AmbientWeatherContextT AmbientWeatherCollection[AMBIENTWEATHER_COUNT];
+
+        // IO
+        bool DefaultProfilesParsed;
+    };
+
+    struct EmitterWeatherContextT
+    {
+        bool Enabled;
+        EmitterWeatherSkyBehaviorT SkyBehavior;
+        int SpawnCount;
+        int SpawnDelay;
+
+        int MinRadius;
+        int MaxRadius;
+        int MinZpos;
+        int MaxZpos;
+
+        // Clientside, tracks when to spawn the weather next.
+        int NextSpawnTic;
+    };
+
+    struct RandomizedWeatherContextT
+    {
+        bool Enabled;
+        int MinDelay;
+        int MaxDelay;
+
+        // Clientside, tracks when to spawn the weather next.
+        int NextSpawnTic;
+    };
+
+    struct AmbientWeatherContextT
+    {
+        bool Enabled;
+        str Sound;
+        str ShelteredSound;
+        int Radius;
+        int ShelteredRadius;
+        int Delay;
+    };
+
+    extern void PrepareDefaultsServer();
+    extern void TicClient();
+
+    extern void StartEmitterWeather(EmitterWeatherTypeT type);
+    extern void StopEmitterWeather(EmitterWeatherTypeT type);
+    extern void SetEmitterWeatherSpawnCount(EmitterWeatherTypeT type, int value);
+    extern void SetEmitterWeatherSpawnDelay(EmitterWeatherTypeT type, int value);
+
+    extern void StartRandomizedWeather(RandomizedWeatherTypeT type);
+    extern void StopRandomizedWeather(RandomizedWeatherTypeT type);
+
+    extern void StartAmbientWeather(AmbientWeatherTypeT type);
+    extern void StopAmbientWeather(AmbientWeatherTypeT type);
+}

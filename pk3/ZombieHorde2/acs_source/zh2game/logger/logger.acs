@@ -1,0 +1,28 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Logger"
+
+strict namespace Logger
+{
+    void LogToHumans(str message) { LogBoldToSpecies(Player::SPECIEHUMAN, message); }
+    void LogToZombies(str message) { LogBoldToSpecies(Player::SPECIEZOMBIE, message); }
+
+    internal void LogBoldToSpecies(Player::PlayerSpecieT specie, str message)
+    {
+        for (int i = 0; i < BCSUTILS::MAX_PLAYERS; ++i)
+        {
+            if (Player::GetPlayerSpecie(i) != specie)
+                continue;
+
+            int tid = Identity::GetTID(i);
+            if (!BCSUTILS::ActorIsAlive(tid))
+                continue;
+
+            Logger::LogTo(i, message);
+        }
+    }
+}
+
+#undef LOGSOURCE

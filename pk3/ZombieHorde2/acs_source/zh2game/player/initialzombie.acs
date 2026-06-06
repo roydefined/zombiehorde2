@@ -30,30 +30,61 @@ strict namespace Player
         return ZH2Game::GameContext.Players[id].IsInitialZombie;
     }
 
-    internal void SetPreviouslyInitialZombie(bool set) { SetPlayerPreviouslyInitialZombie(PlayerNumber(), set); }
-    internal void SetPlayerPreviouslyInitialZombie(int id, bool set)
+    internal void SetInitialZombiePreviously(bool set) { SetPlayerInitialZombiePreviously(PlayerNumber(), set); }
+    internal void SetPlayerInitialZombiePreviously(int id, bool set)
     {
-        if (!Identity::IsValidID(id))
-        {
-            Logger::LogError(LOGSOURCE, "Unable to set player as previously initial zombie. Id " + str(id) + " is not valid.");
-            return;
-        }
+        VALIDATE_ID_VALID_FUNCTION(id);
 
-        if (GetPlayerPreviouslyInitialZombie(id) == set) return;
-        ZH2Game::PersistingGameContext.Players[id].PreviouslyInitialZombie = set;
+        if (GetPlayerInitialZombiePreviously(id) == set)
+            return;
+
+        ZH2Game::PersistingGameContext.Players[id].InitialPickContext.InitialZombiePreviously = set;
         Logger::LogDebug(LOGSOURCE, (set ? "Added" : "Removed") + " (\cd" + str(id) + "\cj) \cd" + BCSUTILS::PlayerName(id) + "\cj as a previously initial zombie.");
     }
 
-    internal bool GetPreviouslyInitialZombie() { return GetPlayerPreviouslyInitialZombie(PlayerNumber()); }
-    internal bool GetPlayerPreviouslyInitialZombie(int id)
+    internal bool GetInitialZombiePreviously() { return GetPlayerInitialZombiePreviously(PlayerNumber()); }
+    internal bool GetPlayerInitialZombiePreviously(int id)
     {
-        if (!Identity::IsValidID(id))
-        {
-            Logger::LogError(LOGSOURCE, "Unable to get player as previously initial zombie. Id " + str(id) + " is not valid.");
-            return false;
-        }
+        VALIDATE_ID_VALID_FUNCTION_RETURN(id, false);
+        return ZH2Game::PersistingGameContext.Players[id].InitialPickContext.InitialZombiePreviously;
+    }
 
-        return ZH2Game::PersistingGameContext.Players[id].PreviouslyInitialZombie;
+    internal void SetInitialZombieLastMap(bool set) { SetPlayerInitialZombieLastMap(PlayerNumber(), set); }
+    internal void SetPlayerInitialZombieLastMap(int id, bool set)
+    {
+        VALIDATE_ID_VALID_FUNCTION(id);
+
+        if (GetPlayerInitialZombieLastMap(id) == set)
+            return;
+
+        ZH2Game::PersistingGameContext.Players[id].InitialPickContext.InitialZombieLastMap = set;
+        Logger::LogDebug(LOGSOURCE, (set ? "Added" : "Removed") + " (\cd" + str(id) + "\cj) \cd" + BCSUTILS::PlayerName(id) + "\cj as a last map initial zombie.");
+    }
+
+    internal bool GetInitialZombieLastMap() { return GetPlayerInitialZombieLastMap(PlayerNumber()); }
+    internal bool GetPlayerInitialZombieLastMap(int id)
+    {
+        VALIDATE_ID_VALID_FUNCTION_RETURN(id, false);
+        return ZH2Game::PersistingGameContext.Players[id].InitialPickContext.InitialZombieLastMap;
+    }
+
+    internal void SetInitialZombiePickWeight(int weight) { SetPlayerInitialZombiePickWeight(PlayerNumber(), weight); }
+    internal void SetPlayerInitialZombiePickWeight(int id, int weight)
+    {
+        VALIDATE_ID_VALID_FUNCTION(id);
+
+        if (GetPlayerInitialZombiePickWeight(id) == weight)
+            return;
+
+        ZH2Game::PersistingGameContext.Players[id].InitialPickContext.PickWeight = weight;
+        Logger::LogDebug(LOGSOURCE, "Set initial zombie pick weight for (\cd" + str(id) + "\cj) \cd" + BCSUTILS::PlayerName(id) + "\cj to \cd" + str(weight) + "\cj.");
+    }
+
+    internal int GetInitialZombiePickWeight() { return GetPlayerInitialZombiePickWeight(PlayerNumber()); }
+    internal int GetPlayerInitialZombiePickWeight(int id)
+    {
+        VALIDATE_ID_VALID_FUNCTION_RETURN(id, 0);
+        return ZH2Game::PersistingGameContext.Players[id].InitialPickContext.PickWeight;
     }
 
     // Internal because I don't want to expose this when it has `bool` previous.
@@ -71,7 +102,7 @@ strict namespace Player
             }
 
             bool check = previous
-                ? GetPlayerPreviouslyInitialZombie(i)
+                ? GetPlayerInitialZombiePreviously(i)
                 : GetPlayerInitialZombie(i);
             if (!check) continue;
 
@@ -89,5 +120,128 @@ strict namespace Player
     internal int PreviouslyInitialZombieCount(bool includeDead = false)
     {
         return InitialsCountInternal(true, includeDead);
+    }
+
+    internal int EligibleInitialZombieCount()
+    {
+        // Minimum of 1 zombie, and 1 added every configured number of players.
+        return PlayerCount() / ZH2Game::GetPlayersPerInitial() + 1;
+    }
+
+    internal fixed GetInitialZombiePickChance()
+    {
+        return GetPlayerInitialZombiePickChance(PlayerNumber());
+    }
+
+    internal fixed GetPlayerInitialZombiePickChance(int id)
+    {
+        ZH2Game::InitialZombiePickMethodT pickMethod = ZH2Game::GetInitialZombiePickMethod();
+        bool rememberLastMap = ZH2Game::GetInitialPickRememberLastMap();
+
+        switch (pickMethod)
+        {
+            case ZH2Game::INITIALZOMBIEPICKMETHOD_LEGACY:
+                return GetPlayerInitialZombiePickChanceLegacy(id, rememberLastMap);
+            case ZH2Game::INITIALZOMBIEPICKMETHOD_WEIGHT:
+                return GetPlayerInitialZombiePickChanceWeight(id, rememberLastMap);
+            default:
+                return GetPlayerInitialZombiePickChanceRandom(id);
+        }
+    }
+
+    internal fixed GetPlayerInitialZombiePickChanceLegacy(int id, bool checkLastMap)
+    {
+        if (checkLastMap && GetPlayerInitialZombieLastMap(id))
+            return 0.0;
+
+        int requiredCount = EligibleInitialZombieCount();
+
+        // Players that can currently be picked without resetting the list.
+        int currentEligiblePlayers = 0;
+
+        // Players that can be picked after resetting the previous-picked list.
+        int resetEligiblePlayers = 0;
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            // Last map protected players are never eligible.
+            if (checkLastMap && GetPlayerInitialZombieLastMap(i))
+                continue;
+
+            // This player can be picked after a reset.
+            resetEligiblePlayers++;
+
+            // Skip players already picked previously for the current pool.
+            if (GetPlayerInitialZombiePreviously(i))
+                continue;
+
+            currentEligiblePlayers++;
+        }
+
+        // Player is currently eligible without requiring a reset.
+        if (!GetPlayerInitialZombiePreviously(id))
+        {
+            // If the game needs at least this many zombies,
+            // every currently eligible player is guaranteed.
+            if (requiredCount >= currentEligiblePlayers)
+                return 1.0;
+
+            return fixed(requiredCount) / fixed(currentEligiblePlayers);
+        }
+
+        // Player is only eligible if the previous-picked list resets.
+        int remainingCount = requiredCount - currentEligiblePlayers;
+
+        // Chance after the reset.
+        return fixed(remainingCount) / fixed(resetEligiblePlayers - currentEligiblePlayers);
+    }
+
+    internal fixed GetPlayerInitialZombiePickChanceRandom(int id)
+    {
+        int eligiblePlayers = 0;
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            eligiblePlayers++;
+        }
+
+        return fixed(EligibleInitialZombieCount()) / fixed(eligiblePlayers);
+    }
+
+    internal fixed GetPlayerInitialZombiePickChanceWeight(int id, bool checkLastMap)
+    {
+        if (checkLastMap && GetPlayerInitialZombieLastMap(id))
+            return 0.0;
+
+        int playerWeight = GetPlayerInitialZombiePickWeight(id) + 1;
+
+        if (playerWeight <= 0)
+            return 0.0;
+
+        int totalWeight = 0;
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            if (checkLastMap && GetPlayerInitialZombieLastMap(i))
+                continue;
+
+            int weight = GetPlayerInitialZombiePickWeight(i) + 1;
+
+            if (weight <= 0)
+                continue;
+
+            totalWeight += weight;
+        }
+
+        return fixed(playerWeight * EligibleInitialZombieCount()) / fixed(totalWeight);
     }
 }
