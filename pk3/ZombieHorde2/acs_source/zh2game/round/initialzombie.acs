@@ -93,11 +93,22 @@ strict namespace Round
         {
             int id = Shuffle::GetIndexValue(i);
             Player::SetPlayerInitialZombie(id, true);
-
-            // While these two are not relevant with randomized picking, it helps with debugging and also in case the pick method changes.
-            Player::SetPlayerInitialZombiePreviously(id, true);
-            Player::SetPlayerInitialZombieLastMap(id, true);
             requiredCount--;
+        }
+
+        // Update everybody's legacy state.
+        // While these two are not relevant with randomized picking, it helps with debugging and also in case the pick method changes.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            if (!BCSUtils::ActorIsAlive(Identity::GetTID(i)))
+                continue;
+
+            bool isInitialZombie = Player::GetPlayerInitialZombie(i);
+            Player::SetPlayerInitialZombiePreviously(i, isInitialZombie);
+            Player::SetPlayerInitialZombieLastMap(i, isInitialZombie);
         }
 
         // Should never happen with randomized picking.
@@ -132,11 +143,6 @@ strict namespace Round
             }
 
             Player::SetPlayerInitialZombie(id, true);
-
-            // While these two are not relevant with weight-based picking, it helps with debugging and also in case the pick method changes.
-            Player::SetPlayerInitialZombiePreviously(id, true);
-            Player::SetPlayerInitialZombieLastMap(id, true);
-
             requiredCount--;
         }
 
@@ -144,7 +150,6 @@ strict namespace Round
         // (the weight system will always add 1 so it becomes 0 then).
         int pickedTargetWeight = checkLastMap ? -1 : 0;
 
-        // Reset the weight of all current initial zombies.
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             if (!PlayerInGame(i))
@@ -153,7 +158,17 @@ strict namespace Round
             if (!BCSUtils::ActorIsAlive(Identity::GetTID(i)))
                 continue;
 
-            if (Player::GetPlayerInitialZombie(i))
+
+            bool isInitialZombie = Player::GetPlayerInitialZombie(i);
+
+
+            // Update their legacy state.
+            // While these two are not relevant with weight-based picking, it helps with debugging and also in case the pick method changes.
+            Player::SetPlayerInitialZombiePreviously(i, isInitialZombie);
+            Player::SetPlayerInitialZombieLastMap(i, isInitialZombie);
+
+            // Reset the weight of initial zombies, and increase the weight for humans.
+            if (isInitialZombie)
                 Player::SetPlayerInitialZombiePickWeight(i, pickedTargetWeight);
             else
                 Player::SetPlayerInitialZombiePickWeight(i, Player::GetPlayerInitialZombiePickWeight(i) + 1);
