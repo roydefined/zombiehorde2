@@ -299,7 +299,20 @@ Script "FlareLocker" (int whatfloor)
 // Search the wall for a key.
 Script "CheckForKey" (int spot)
 {
-	if(!keySpot[spot]){
+	if (Player::GetIsZombie())
+	{
+		InteractionMessage("Dis not brainz...");
+		terminate;
+	}
+
+	if (CheckInventory(KEY_CAVEKEY))
+	{
+		InteractionMessage("You have already found the generator key.");
+		terminate;
+	}
+
+	if(!keySpot[spot])
+	{
 		InteractionMessage("Nothing there.");
 		terminate;
 	}
@@ -314,6 +327,12 @@ Script "CheckForKey" (int spot)
 
 Script "OpenGeneratorBox" (void)
 {
+	if (Player::GetIsZombie())
+	{
+		InteractionMessage("Brainz behind dis?");
+		terminate;
+	}
+
 	if(!CheckInventory(KEY_CAVEKEY))
 	{
 		InteractionMessage("It won't open, must be locked.");
@@ -335,9 +354,9 @@ Script "TurnOffGenerator"
 		terminate;
 	}
 
-	if (!Player::GetIsHuman())
+	if (Player::GetIsZombie())
 	{
-		InteractionMessage("Brainz?");
+		InteractionMessage("Switch for brainz?");
 		terminate;
 	}
 
