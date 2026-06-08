@@ -171,32 +171,33 @@ strict namespace Player
             if (checkLastMap && GetPlayerInitialZombieLastMap(i))
                 continue;
 
-            // This player can be picked after a reset.
+            // After reset, everybody that passes the last-map check is eligible again.
             resetEligiblePlayers++;
 
-            // Skip players already picked previously for the current pool.
+            // Before reset, previously picked players are excluded.
             if (GetPlayerInitialZombiePreviously(i))
                 continue;
 
             currentEligiblePlayers++;
         }
 
-        // Player is currently eligible without requiring a reset.
+        // Player is currently eligible without requiring a reset of the pool.
         if (!GetPlayerInitialZombiePreviously(id))
         {
-            // If the game needs at least this many zombies,
-            // every currently eligible player is guaranteed.
             if (requiredCount >= currentEligiblePlayers)
                 return 1.0;
 
             return fixed(requiredCount) / fixed(currentEligiblePlayers);
         }
 
-        // Player is only eligible if the previous-picked list resets.
-        int remainingCount = requiredCount - currentEligiblePlayers;
+        // If the current pool has enough players, the client will never be picked.
+        if (requiredCount <= currentEligiblePlayers)
+            return 0.0;
 
-        // Chance after the reset.
-        return fixed(remainingCount) / fixed(resetEligiblePlayers - currentEligiblePlayers);
+        // The picker first consumes the current pool, then resets and picks the remaining amount.
+        // So exclude that number from the remainder. This number will always be > 0 because of the above.
+        int remainingCount = requiredCount - currentEligiblePlayers;
+        return fixed(remainingCount) / fixed(resetEligiblePlayers);
     }
 
     internal fixed GetPlayerInitialZombiePickChanceRandom(int id)
