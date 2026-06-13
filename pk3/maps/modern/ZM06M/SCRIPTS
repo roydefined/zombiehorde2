@@ -121,7 +121,7 @@ int Flaresleft[3] = { 10, 10, 10 };
 
 // All the tags of the relevant rooms that should have its color/light level changed
 internal int _roomTags[] = {
-	0, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23, 27,
+	0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23, 27,
 	31, 32, 40, 42, 43, 44, 47, 53, 54, 55, 58, 59, 68, 73, 74,
 	75, 76, 77, 78, 79, 81, 92, 93
 };
@@ -146,9 +146,8 @@ function void InteractionMessageBold(str message)
 // If red is the base level color, tag 62 needs only its first argument above 0.
 function void SetLevelAtmosphere (int red, int green, int blue)
 {
-	for(int i = 0; i < 42; i++){
+	for(int i = 0; i < lengthof(_roomTags); i++)
 		Sector_Setcolor(_roomTags[i], red, green, blue);
-	}
 
 	Sector_Setcolor(62, red, 0, 0);
 }
@@ -299,7 +298,20 @@ Script "FlareLocker" (int whatfloor)
 // Search the wall for a key.
 Script "CheckForKey" (int spot)
 {
-	if(!keySpot[spot]){
+	if (Player::GetIsZombie())
+	{
+		InteractionMessage("Dis not brainz...");
+		terminate;
+	}
+
+	if (CheckInventory(KEY_CAVEKEY))
+	{
+		InteractionMessage("You have already found the generator key.");
+		terminate;
+	}
+
+	if(!keySpot[spot])
+	{
 		InteractionMessage("Nothing there.");
 		terminate;
 	}
@@ -314,6 +326,12 @@ Script "CheckForKey" (int spot)
 
 Script "OpenGeneratorBox" (void)
 {
+	if (Player::GetIsZombie())
+	{
+		InteractionMessage("Brainz behind dis?");
+		terminate;
+	}
+
 	if(!CheckInventory(KEY_CAVEKEY))
 	{
 		InteractionMessage("It won't open, must be locked.");
@@ -335,9 +353,9 @@ Script "TurnOffGenerator"
 		terminate;
 	}
 
-	if (!Player::GetIsHuman())
+	if (Player::GetIsZombie())
 	{
-		InteractionMessage("Brainz?");
+		InteractionMessage("Switch for brainz?");
 		terminate;
 	}
 

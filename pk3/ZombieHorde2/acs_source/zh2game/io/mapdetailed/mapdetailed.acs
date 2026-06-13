@@ -106,18 +106,33 @@ strict namespace IO
             if (Tokenizer::ParseBodyAsEmpty(handle, symbol, "properties"))
                 continue;
 
-            if (ParseResistCollection(handle, mapLump, symbol)
+            // Parsed on both sides.
+            bool parsed = ParseResistCollection(handle, mapLump, symbol)
                 || ParseEventCollection(handle, mapLump, symbol)
-                || ParseWeatherProfiles(handle, mapLump, symbol)
+                || ParseWeatherProfiles(handle, mapLump, symbol);
 
-                // The game and safety blocks are purely serverside.
-                || BCSUtils::IsServer() &&
-                    (ParseGameBlock(handle, mapLump, symbol) || ParseSafety(handle, mapLump, symbol))
+            // Game block is serverside
+            if (!parsed)
+            {
+                parsed = BCSUtils::IsServer() && ParseGameBlock(handle, mapLump, symbol)
+                    || BCSUtils::IsClientOnly() && Tokenizer::ParseBodyAsEmpty(handle, symbol, "game");
+            }
 
-                // software-specific textures is purely clientside
-                || BCSUtils::IsClient() &&
-                    (ParseSoftwareTextures(handle, mapLump, symbol))
-                )
+            // Safety block is serverside
+            if (!parsed)
+            {
+                parsed = BCSUtils::IsServer() && ParseSafety(handle, mapLump, symbol)
+                    || BCSUtils::IsClientOnly() && Tokenizer::ParseBodyAsEmpty(handle, symbol, "safety");
+            }
+
+            // SoftwareTextures block is clientside
+            if (!parsed)
+            {
+                parsed = BCSUtils::IsClient() && ParseSoftwareTextures(handle, mapLump, symbol)
+                    || BCSUtils::IsServerOnly() && Tokenizer::ParseBodyAsEmpty(handle, symbol, "softwaretextures");
+            }
+
+            if (parsed)
             {
                 // Optional comma.
                 Tokenizer::Next(handle, false);
