@@ -74,6 +74,33 @@ def get_paths():
         "version_target": root / "pk3" / "ZombieHorde2" / "acs_source" / "zh2game" / "environment" / "version.h.acs",
     }
 
+def get_version():
+    import re
+
+    version_file = get_paths()["version"]
+
+    if not version_file.exists():
+        raise FileNotFoundError(f"Version file does not exist: {version_file}")
+
+    version_text = version_file.read_text(encoding="utf-8").strip()
+    match = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$", version_text)
+
+    if not match:
+        raise ValueError(
+            f'Invalid version "{version_text}". '
+            'Expected format: major.minor.patch or major.minor.patch-suffix.'
+        )
+
+    major, minor, patch, suffix = match.groups()
+
+    return {
+        "major": major,
+        "minor": minor,
+        "patch": patch,
+        "suffix": suffix or "",
+        "version": f"{major}.{minor}.{patch}",
+        "text": version_text,
+    }
 
 # Helper function to copy over a file.
 def copy_file(src: Path, dest: Path):

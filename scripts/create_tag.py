@@ -1,16 +1,17 @@
+#!/usr/bin/env python3
 import subprocess
 import sys
-
-MAJOR = 5
-MINOR = 1
-PATCH = 0
-SUFFIX = "beta"
+from utils import get_version
 
 DELETE_EXISTING = "--delete" in sys.argv
 
-version = f"{MAJOR}.{MINOR}.{PATCH}"
-tag = f"v{version}-{SUFFIX}" if SUFFIX else f"v{version}"
-message = f"Zombie Horde 2 {SUFFIX} v{version}" if SUFFIX else f"Zombie Horde 2 v{version}"
+version_info = get_version()
+
+version = version_info["version"]
+suffix = version_info["suffix"]
+
+tag = f"v{version}-{suffix}" if suffix else f"v{version}"
+message = f"Zombie Horde 2 {suffix} v{version}" if suffix else f"Zombie Horde 2 v{version}"
 
 tag_exists = subprocess.run(
     ["git", "rev-parse", tag],

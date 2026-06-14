@@ -1,34 +1,12 @@
 #!/usr/bin/env python3
 import logging
-import re
 from logger import setup_logging
-from utils import get_paths, move_file
+from utils import get_paths, get_version, move_file
 
-# === Update mod version accross repository ===
+# === Update mod version across repository ===
 # This script reads the project version from version.txt, and updates relevant files to use this.
 # Currently, the following files are updated:
 # - version.h.acs in the mod's core.
-
-VERSION_PATTERN = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$")
-
-
-def parse_version(version_text: str):
-    match = VERSION_PATTERN.match(version_text)
-
-    if not match:
-        raise SystemExit(
-            f'[ERROR] Invalid version "{version_text}". '
-            'Expected format: major.minor.patch or major.minor.patch-suffix.'
-        )
-
-    major, minor, patch, suffix = match.groups()
-
-    return {
-        "major": major,
-        "minor": minor,
-        "patch": patch,
-        "suffix": suffix or "",
-    }
 
 
 def write_version_file(template_file, output_file, version):
@@ -52,24 +30,17 @@ def main():
     setup_logging()
     paths = get_paths()
 
-    version_file = paths["version"]
-    template_file = paths["version_template"]
-    build_file = paths["version_build"]
-    target_file = paths["version_target"]
+    version = get_version()
 
-    if not version_file.exists():
-        raise SystemExit(f'[ERROR] Version file "{version_file}" does not exist.')
+    logging.info(f'Version: {version["text"]}')
 
-    logging.info(f'Reading version from "{version_file}"...')
+    write_version_file(
+        paths["version_template"],
+        paths["version_build"],
+        version
+    )
 
-    version_text = version_file.read_text(encoding="utf-8").strip()
-
-    logging.info(f'Version: {version_text}')
-
-    version = parse_version(version_text)
-
-    write_version_file(template_file, build_file, version)
-    move_file(build_file, target_file)
+    move_file(paths["version_build"], paths["version_target"])
 
     logging.info("Version generation finished.")
 
