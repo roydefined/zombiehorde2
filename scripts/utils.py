@@ -69,8 +69,8 @@ def get_paths():
 
         # Versioning
         "version": root / "version.txt",
-        "version_template": root / "build" / "version.h.acs.template",
-        "version_build": root / "build" / "version.h.acs",
+        "version_template": root / "templates" / "version.h.acs.template",
+        "version_build": root / "templates" / "version.h.acs",
         "version_target": root / "pk3" / "ZombieHorde2" / "acs_source" / "zh2game" / "environment" / "version.h.acs",
     }
 
