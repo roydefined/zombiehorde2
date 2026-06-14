@@ -66,6 +66,12 @@ def get_paths():
         # Core
         "core_src": root / "pk3" / "ZombieHorde2" / "acs_source",
         "core_out": root / "pk3" / "ZombieHorde2" / "acs",
+
+        # Versioning
+        "version": root / "version.txt",
+        "version_template": root / "build" / "version.h.acs.template",
+        "version_build": root / "build" / "version.h.acs",
+        "version_target": root / "pk3" / "ZombieHorde2" / "acs_source" / "zh2game" / "environment" / "version.h.acs",
     }
 
 
@@ -81,6 +87,16 @@ def copy_file(src: Path, dest: Path):
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dest)
 
+def move_file(src: Path, dest: Path):
+    import shutil
+
+    if not src.exists():
+        raise FileNotFoundError(f"Source does not exist: {src}")
+
+    logging.info(f"Move {src.name} -> {dest}")
+
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(src), str(dest))
 
 # Helper function to run an executable.
 def run_cmd(cmd: list[str]):
