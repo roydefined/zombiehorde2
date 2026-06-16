@@ -53,7 +53,10 @@ strict namespace Sync
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeWeatherSyncedClientside();
             return;
+        }
 
         SyncWeatherActor();
 
@@ -80,10 +83,16 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncWeatherActorClientSide();
 
-        SyncWeatherActorClientSide();
+        FinalizeWeatherSyncedClientside();
+    }
+
+    internal void FinalizeWeatherSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_WEATHER);
     }
 }
 

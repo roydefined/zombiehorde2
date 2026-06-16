@@ -81,7 +81,10 @@ strict namespace Sync
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizePlayersSyncedClientside();
             return;
+        }
 
         SyncPlayersActor();
 
@@ -108,10 +111,16 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncPlayersActorClientSide();
 
-        SyncPlayersActorClientSide();
+        FinalizePlayersSyncedClientside();
+    }
+
+    internal void FinalizePlayersSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_PLAYERS);
     }
 
     /* TIMERS */
@@ -134,7 +143,10 @@ strict namespace Sync
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeTimersSyncedClientside();
             return;
+        }
 
         ACS_NamedExecute("zh2_internal_sync_timers_clientside", 0);
     }
@@ -148,10 +160,16 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncTimersActorClientside();
 
-        SyncTimersActorClientside();
+        FinalizeTimersSyncedClientside();
+    }
+
+    internal void FinalizeTimersSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_TIMERS);
     }
 
     /* RESISTS */
@@ -174,7 +192,10 @@ strict namespace Sync
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeResistsSyncedClientside();
             return;
+        }
 
         ACS_NamedExecute("zh2_internal_sync_resists_clientside", 0);
     }
@@ -188,10 +209,16 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncResistsActorClientside();
 
-        SyncResistsActorClientside();
+        FinalizeResistsSyncedClientside();
+    }
+
+    internal void FinalizeResistsSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_RESISTS);
     }
 
     /* ROUND */
@@ -214,7 +241,10 @@ strict namespace Sync
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeRoundStateSyncedClientside();
             return;
+        }
 
         ACS_NamedExecute("zh2_internal_sync_round_state_clientside", 0);
     }
@@ -228,10 +258,16 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncRoundStateActorClientside();
 
-        SyncRoundStateActorClientside();
+        FinalizeRoundStateSyncedClientside();
+    }
+
+    internal void FinalizeRoundStateSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_ROUNDSTATE);
     }
 
     /* POWERS */
@@ -254,7 +290,10 @@ strict namespace Sync
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizePowersSyncedClientside();
             return;
+        }
 
         ACS_NamedExecute("zh2_internal_sync_power_clientside", 0);
     }
@@ -268,10 +307,16 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncPowersActorClientSide();
 
-        SyncPowersActorClientSide();
+        FinalizePowersSyncedClientside();
+    }
+
+    internal void FinalizePowersSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_POWERS);
     }
 
     /* ADMIN */
@@ -294,7 +339,10 @@ strict namespace Sync
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeAdminsSyncedClientside();
             return;
+        }
 
         ACS_NamedExecute("zh2_internal_sync_admins_clientside", 0);
     }
@@ -308,10 +356,16 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncAdminsActorClientside();
 
-        SyncAdminsActorClientside();
+        FinalizeAdminsSyncedClientside();
+    }
+
+    internal void FinalizeAdminsSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_ADMINS);
     }
 
     /* GAME */
@@ -334,7 +388,10 @@ strict namespace Sync
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeGameSyncedClientside();
             return;
+        }
 
         ACS_NamedExecute("zh2_internal_sync_game_clientside", 0);
     }
@@ -348,10 +405,16 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncGameActorClientside();
 
-        SyncGameActorClientside();
+        FinalizeGameSyncedClientside();
+    }
+
+    internal void FinalizeGameSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_GAME);
     }
 
     /* MAP VOTING */
@@ -374,7 +437,10 @@ strict namespace Sync
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeMapVotingSyncedClientside();
             return;
+        }
 
         ACS_NamedExecute("zh2_internal_sync_mapvoting_clientside", 0);
     }
@@ -388,10 +454,16 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncMapVotingActorClientside();
 
-        SyncMapVotingActorClientside();
+        FinalizeMapVotingSyncedClientside();
+    }
+
+    internal void FinalizeMapVotingSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_MAPVOTING);
     }
 }
 
