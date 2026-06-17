@@ -5,12 +5,20 @@
 #define LOGSOURCE "Resist"
 
 #include "extensions.acs"
+#include "sync.acs"
 
 // Note:
 // - Resist ending tic will be -1 for inactive resists. If not, the resist is active.
 
 strict namespace Resist
 {
+    internal void InitializeClient()
+    {
+        Logger::LogDebug(LOGSOURCE, "Initializing clientside.");
+
+        EventBus::AddCallbackByScriptName(EVENTDATASYNCED, "zh2_internal_event_resistdatasynced");
+    }
+
     // Tic checks for any expired resists and stops them.
     // Additionally, an event will be called.
     internal void TicServer()
@@ -49,11 +57,6 @@ strict namespace Resist
         resist.InitialState.TimeReasonLabel = timeReasonLabel;
         resist.EndingTic = -1;
         resist.Defined = true;
-
-        // Offline we want to initialize this resist clientside immediately.
-        // TODO: Move this when adding the sync callback system.
-        if (!IsNetworkGame())
-            InitializeResistClientside(index);
 
         Logger::LogDebug(LOGSOURCE, "Created new resist at index \cd" + str(index) + "\cj. Length: \cd" + str(length) + "\cj. Top reason: \cd" + topReasonLabel + "\cj. Time reason: \cd" + timeReasonLabel + ".");
     }
