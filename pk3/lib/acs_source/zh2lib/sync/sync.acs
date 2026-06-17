@@ -20,9 +20,6 @@ strict namespace Sync
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
-
         Sync::SyncWeather(callSyncOnClients);
     }
 
@@ -30,18 +27,12 @@ strict namespace Sync
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
-
         Sync::CallSyncWeatherOnClients();
     }
 
     void LibSyncAllClientside()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
-
-        if (!IsNetworkGame())
-            return;
 
         Sync::SyncWeatherClientside();
     }
@@ -68,15 +59,13 @@ strict namespace Sync
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
-
-        ACS_NamedExecute("zh2_internal_sync_weather_clientside", 0);
+        if (IsNetworkGame())
+            ACS_NamedExecute("zh2_internal_sync_weather_clientside", 0);
     }
 
     script "zh2_internal_sync_weather_clientside" clientside
     {
-        SyncWeatherActorClientside();
+        SyncWeatherClientside();
     }
 
     void SyncWeatherClientside()
