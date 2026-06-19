@@ -8,6 +8,45 @@
 
 strict namespace Sync
 {
+    void LibFlushPendingSyncs()
+    {
+        int min = 0;
+        int max = MAX_LIB_SYNC_TYPES - 1;
+        for (int i = min; i <= max; ++i)
+        {
+            int tic = ZH2Lib::LibContext.SyncContext.FlushTic[i];
+            if (tic == 0 || tic > Timer())
+                continue;
+
+            ZH2Lib::LibContext.SyncContext.FlushTic[i] = 0;
+            switch(i)
+            {
+                case SYNCTYPE_WEATHER: SyncWeatherCore(); continue;
+
+                default:
+                    Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to flush sync index " + str(i) + " as it's not known.");
+                    continue;
+            }
+        }
+    }
+
+    internal void DoSync(int syncId)
+    {
+        int min = 0;
+        int max = MAX_LIB_SYNC_TYPES - 1;
+        if (syncId < min || syncId > max)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Invalid sync id " + str(syncId) + ". Id must be between " + str(min) + " and " + str(max) + " (inclusive).");
+            return;
+        }
+
+        // Already marked to sync.
+        if (ZH2Lib::LibContext.SyncContext.FlushTic[syncId] != 0)
+            return;
+
+        ZH2Lib::LibContext.SyncContext.FlushTic[syncId] = Timer() + 1;
+    }
+
     // Basic log formatter to include an additional sync category.
     internal str FormatLog(str category, str message)
     {
@@ -16,11 +55,11 @@ strict namespace Sync
 
     /* COMBINED */
 
-    void LibSyncAll(bool callSyncOnClients = true)
+    void LibSyncAll()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        Sync::SyncWeather(callSyncOnClients);
+        Sync::SyncWeather();
     }
 
     void CallClientLibSyncAll()
@@ -39,7 +78,7 @@ strict namespace Sync
 
     /* WEATHER */
 
-    void SyncWeather(bool callSyncOnClients = true)
+    void SyncWeather()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
@@ -49,10 +88,13 @@ strict namespace Sync
             return;
         }
 
-        SyncWeatherActor();
+        DoSync(SYNCTYPE_WEATHER);
+    }
 
-        if (callSyncOnClients)
-            CallSyncWeatherOnClients();
+    internal void SyncWeatherCore()
+    {
+        SyncWeatherActor();
+        CallSyncWeatherOnClients();
     }
 
     void CallSyncWeatherOnClients()

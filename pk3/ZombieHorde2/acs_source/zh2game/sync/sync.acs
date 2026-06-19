@@ -15,6 +15,57 @@
 
 strict namespace Sync
 {
+    void FlushPendingSyncs()
+    {
+        int min = 0;
+        int max = MAX_SYNC_TYPES - 1;
+        for (int i = min; i <= max; ++i)
+        {
+            int tic = ZH2Game::GameContext.SyncContext.FlushTic[i];
+            if (tic == 0 || tic > Timer())
+                continue;
+
+            ZH2Game::GameContext.SyncContext.FlushTic[i] = 0;
+
+            int index = i + MAX_LIB_SYNC_TYPES;
+            switch(index)
+            {
+                case SYNCTYPE_PLAYERS: SyncPlayersCore(); continue;
+                case SYNCTYPE_TIMERS: SyncTimersCore(); continue;
+                case SYNCTYPE_RESISTS: SyncResistsCore(); continue;
+                case SYNCTYPE_ROUNDSTATE: SyncRoundStateCore(); continue;
+                case SYNCTYPE_POWERS: SyncPowersCore(); continue;
+                case SYNCTYPE_ADMINS: SyncAdminsCore(); continue;
+                case SYNCTYPE_GAME: SyncGameCore(); continue;
+                case SYNCTYPE_MAPVOTING: SyncMapVotingCore(); continue;
+
+                default:
+                    Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to flush sync index " + str(index) + " (" + str(i) + " + " + str(MAX_LIB_SYNC_TYPES) + ") as it's not known.");
+                    continue;
+            }
+        }
+    }
+
+    internal void DoSync(int syncId)
+    {
+        // Remove whatever base the lib gave us so we now use zero-indexed ids.
+        syncId -= MAX_LIB_SYNC_TYPES;
+
+        int min = 0;
+        int max = MAX_SYNC_TYPES - 1;
+        if (syncId < min || syncId > max)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Invalid sync id " + str(syncId) + ". Id must be between " + str(min) + " and " + str(max) + " (inclusive).");
+            return;
+        }
+
+        // Already marked to sync.
+        if (ZH2Game::GameContext.SyncContext.FlushTic[syncId] != 0)
+            return;
+
+        ZH2Game::GameContext.SyncContext.FlushTic[syncId] = Timer() + 1;
+    }
+
     // Basic log formatter to include an additional sync category.
     internal str FormatLog(str category, str message)
     {
@@ -23,18 +74,18 @@ strict namespace Sync
 
     /* COMBINED */
 
-    internal void SyncAll(bool callSyncOnClients = true)
+    internal void SyncAll()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        Sync::SyncPlayers(callSyncOnClients);
-        Sync::SyncTimers(callSyncOnClients);
-        Sync::SyncResists(callSyncOnClients);
-        Sync::SyncRoundState(callSyncOnClients);
-        Sync::SyncPowers(callSyncOnClients);
-        Sync::SyncAdmins(callSyncOnClients);
-        Sync::SyncGame(callSyncOnClients);
-        Sync::SyncMapVoting(callSyncOnClients);
+        Sync::SyncPlayers();
+        Sync::SyncTimers();
+        Sync::SyncResists();
+        Sync::SyncRoundState();
+        Sync::SyncPowers();
+        Sync::SyncAdmins();
+        Sync::SyncGame();
+        Sync::SyncMapVoting();
     }
 
     internal void CallClientSyncAll()
@@ -67,7 +118,7 @@ strict namespace Sync
 
     /* PLAYERS */
 
-    internal void SyncPlayers(bool callSyncOnClients = true)
+    internal void SyncPlayers()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
@@ -77,10 +128,13 @@ strict namespace Sync
             return;
         }
 
-        SyncPlayersActor();
+        DoSync(SYNCTYPE_PLAYERS);
+    }
 
-        if (callSyncOnClients)
-            CallSyncPlayersOnClients();
+    internal void SyncPlayersCore()
+    {
+        SyncPlayersActor();
+        CallSyncPlayersOnClients();
     }
 
     internal void CallSyncPlayersOnClients()
@@ -114,7 +168,7 @@ strict namespace Sync
 
     /* TIMERS */
 
-    internal void SyncTimers(bool callSyncOnClients = true)
+    internal void SyncTimers()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
@@ -124,10 +178,13 @@ strict namespace Sync
             return;
         }
 
-        SyncTimersActor();
+        DoSync(SYNCTYPE_TIMERS);
+    }
 
-        if (callSyncOnClients)
-            CallSyncTimersOnClients();
+    internal void SyncTimersCore()
+    {
+        SyncTimersActor();
+        CallSyncTimersOnClients();
     }
 
     internal void CallSyncTimersOnClients()
@@ -161,7 +218,7 @@ strict namespace Sync
 
     /* RESISTS */
 
-    internal void SyncResists(bool callSyncOnClients = true)
+    internal void SyncResists()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
@@ -171,10 +228,13 @@ strict namespace Sync
             return;
         }
 
-        SyncResistsActor();
+        DoSync(SYNCTYPE_RESISTS);
+    }
 
-        if (callSyncOnClients)
-            CallSyncResistsOnClients();
+    internal void SyncResistsCore()
+    {
+        SyncResistsActor();
+        CallSyncResistsOnClients();
     }
 
     internal void CallSyncResistsOnClients()
@@ -208,7 +268,7 @@ strict namespace Sync
 
     /* ROUND */
 
-    internal void SyncRoundState(bool callSyncOnClients = true)
+    internal void SyncRoundState()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
@@ -218,10 +278,13 @@ strict namespace Sync
             return;
         }
 
-        SyncRoundStateActor();
+        DoSync(SYNCTYPE_ROUNDSTATE);
+    }
 
-        if (callSyncOnClients)
-            CallSyncRoundStateOnClients();
+    internal void SyncRoundStateCore()
+    {
+        SyncRoundStateActor();
+        CallSyncRoundStateOnClients();
     }
 
     internal void CallSyncRoundStateOnClients()
@@ -255,7 +318,7 @@ strict namespace Sync
 
     /* POWERS */
 
-    internal void SyncPowers(bool callSyncOnClients = true)
+    internal void SyncPowers()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
@@ -265,10 +328,13 @@ strict namespace Sync
             return;
         }
 
-        SyncPowersActor();
+        DoSync(SYNCTYPE_POWERS);
+    }
 
-        if (callSyncOnClients)
-            CallSyncPowersOnClients();
+    internal void SyncPowersCore()
+    {
+        SyncPowersActor();
+        CallSyncPowersOnClients();
     }
 
     internal void CallSyncPowersOnClients()
@@ -302,7 +368,7 @@ strict namespace Sync
 
     /* ADMIN */
 
-    internal void SyncAdmins(bool callSyncOnClients = true)
+    internal void SyncAdmins()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
@@ -312,10 +378,13 @@ strict namespace Sync
             return;
         }
 
-        SyncAdminsActor();
+        DoSync(SYNCTYPE_ADMINS);
+    }
 
-        if (callSyncOnClients)
-            CallSyncAdminsOnClients();
+    internal void SyncAdminsCore()
+    {
+        SyncAdminsActor();
+        CallSyncAdminsOnClients();
     }
 
     internal void CallSyncAdminsOnClients()
@@ -349,7 +418,7 @@ strict namespace Sync
 
     /* GAME */
 
-    internal void SyncGame(bool callSyncOnClients = true)
+    internal void SyncGame()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
@@ -359,10 +428,13 @@ strict namespace Sync
             return;
         }
 
-        SyncGameActor();
+        DoSync(SYNCTYPE_GAME);
+    }
 
-        if (callSyncOnClients)
-            CallSyncGameOnClients();
+    internal void SyncGameCore()
+    {
+        SyncGameActor();
+        CallSyncGameOnClients();
     }
 
     internal void CallSyncGameOnClients()
@@ -396,7 +468,7 @@ strict namespace Sync
 
     /* MAP VOTING */
 
-    internal void SyncMapVoting(bool callSyncOnClients = true)
+    internal void SyncMapVoting()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
@@ -406,10 +478,13 @@ strict namespace Sync
             return;
         }
 
-        SyncMapVotingActor();
+        DoSync(SYNCTYPE_MAPVOTING);
+    }
 
-        if (callSyncOnClients)
-            CallSyncMapVotingOnClients();
+    internal void SyncMapVotingCore()
+    {
+        SyncMapVotingActor();
+        CallSyncMapVotingOnClients();
     }
 
     internal void CallSyncMapVotingOnClients()
