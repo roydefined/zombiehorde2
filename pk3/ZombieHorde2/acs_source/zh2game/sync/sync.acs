@@ -28,26 +28,38 @@ strict namespace Sync
             ZH2Game::GameContext.SyncContext.FlushTic[i] = 0;
 
             int index = i + MAX_LIB_SYNC_TYPES;
-            switch(index)
-            {
-                case SYNCTYPE_PLAYERS: SyncPlayersCore(); continue;
-                case SYNCTYPE_TIMERS: SyncTimersCore(); continue;
-                case SYNCTYPE_RESISTS: SyncResistsCore(); continue;
-                case SYNCTYPE_ROUNDSTATE: SyncRoundStateCore(); continue;
-                case SYNCTYPE_POWERS: SyncPowersCore(); continue;
-                case SYNCTYPE_ADMINS: SyncAdminsCore(); continue;
-                case SYNCTYPE_GAME: SyncGameCore(); continue;
-                case SYNCTYPE_MAPVOTING: SyncMapVotingCore(); continue;
+            TriggerSyncCore(index);
+        }
+    }
 
-                default:
-                    Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to flush sync index " + str(index) + " (" + str(i) + " + " + str(MAX_LIB_SYNC_TYPES) + ") as it's not known.");
-                    continue;
-            }
+    internal void TriggerSyncCore(int syncId)
+    {
+        switch(syncId)
+        {
+            case SYNCTYPE_PLAYERS: SyncPlayersCore(); return;
+            case SYNCTYPE_TIMERS: SyncTimersCore(); return;
+            case SYNCTYPE_RESISTS: SyncResistsCore(); return;
+            case SYNCTYPE_ROUNDSTATE: SyncRoundStateCore(); return;
+            case SYNCTYPE_POWERS: SyncPowersCore(); return;
+            case SYNCTYPE_ADMINS: SyncAdminsCore(); return;
+            case SYNCTYPE_GAME: SyncGameCore(); return;
+            case SYNCTYPE_MAPVOTING: SyncMapVotingCore(); return;
+
+            default:
+                Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to flush sync index " + str(syncId) + " as it's not known.");
+                return;
         }
     }
 
     internal void DoSync(int syncId)
     {
+        // Buffering not enabled.
+        if (!ZH2Lib::GetUseSyncBuffer())
+        {
+            TriggerSyncCore(syncId);
+            return;
+        }
+
         // Remove whatever base the lib gave us so we now use zero-indexed ids.
         syncId -= MAX_LIB_SYNC_TYPES;
 

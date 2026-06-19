@@ -19,19 +19,31 @@ strict namespace Sync
                 continue;
 
             ZH2Lib::LibContext.SyncContext.FlushTic[i] = 0;
-            switch(i)
-            {
-                case SYNCTYPE_WEATHER: SyncWeatherCore(); continue;
+            TriggerSyncCore(i);
+        }
+    }
 
-                default:
-                    Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to flush sync index " + str(i) + " as it's not known.");
-                    continue;
-            }
+    internal void TriggerSyncCore(int syncId)
+    {
+        switch(syncId)
+        {
+            case SYNCTYPE_WEATHER: SyncWeatherCore(); return;
+
+            default:
+                Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to flush sync index " + str(syncId) + " as it's not known.");
+                return;
         }
     }
 
     internal void DoSync(int syncId)
     {
+        // Buffering not enabled.
+        if (!ZH2Lib::GetUseSyncBuffer())
+        {
+            TriggerSyncCore(syncId);
+            return;
+        }
+
         int min = 0;
         int max = MAX_LIB_SYNC_TYPES - 1;
         if (syncId < min || syncId > max)
