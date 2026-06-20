@@ -1,11 +1,27 @@
-Repository changes
+New features
 ------------------------------------------------
 
+* * New data sync callback system * *
+The way data is synchronized between server and clients has been improved with a new callback system.
+Previously the sync flow was scattered, but it has now been improved and a new event has been added that will be triggered whenever data is synchronized.
+Clients will now trigger this event as soon as data is set, including offline where generally this synchronization is skipped.
+This way there is now support for properly handling extra behavior when data has a finalize step, as has existed in various occasions.
+Previously this meant having to write duplicate code, but this is now gone.
+Additionally, sync data can now be debounced through buffers to reduce redundant work and traffic.
+Instead of sending sync data immediately every time, the new buffer collects it and sends it more efficiently.
+This behavior can be toggled with a setting to enable the new buffer, allowing hosts to opt in or revert to the previous behavior.
+Additionally, the sync system now supports configuring delays to better control when synchronization happens.
+A general sync delay can now be configured, and a separate initial sync delay can be set specifically for syncs on map start.
+This way the whole issue of doing duplicate sync calls is now completely fixed.
+
+Repository changes
+------------------------------------------------
 - The repository has more Python files for managing the project:
     - A Python script that handles the compression of sounds using ffmpeg.
     - A Python script that handles the compression of graphics using oxipng.
     - A Python script that handles the creation of tags on the current commit based on the current version.
     - A Python script that handles the updating of the mod version across multiple files to avoid having to updating multiple locations.
 - Moved contents used as templates from the build/ folder to the templates/ folder.
+- Renamed the 'pk3/lib' folder to 'pk3/libraries/ZombieHorde2Lib' and updated the project to point to its new location.
 - Added a version.txt file which will contain the current version of the mod. One of the new Python scripts will use this file as reference when updating.
 - Builds made of the mod through PubDoomer in this project are now in lowercase rather than PascalCase.
