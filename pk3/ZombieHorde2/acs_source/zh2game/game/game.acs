@@ -4,6 +4,7 @@
 
 #define LOGSOURCE "Game"
 
+#include "sync.acs"
 #include "ending.acs"
 #include "endgame.acs"
 #include "tip.acs"
@@ -28,6 +29,13 @@
 
 strict namespace Game
 {
+    internal void InitializeClient()
+    {
+        Logger::LogDebug(LOGSOURCE, "Initializing clientside.");
+
+        EventBus::AddCallbackByScriptName(EVENTDATASYNCED, "zh2_internal_event_gamedatasynced");
+    }
+
     internal void SetSurvivalDefaults()
     {
         Logger::LogDebug(LOGSOURCE, "Setting survival gamemode profile for game.");

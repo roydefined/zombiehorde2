@@ -8,6 +8,57 @@
 
 strict namespace Sync
 {
+    void LibFlushPendingSyncs()
+    {
+        int min = 0;
+        int max = MAX_LIB_SYNC_TYPES - 1;
+        for (int i = min; i <= max; ++i)
+        {
+            int tic = ZH2Lib::LibContext.SyncContext.FlushTic[i];
+            if (tic == 0 || tic > Timer())
+                continue;
+
+            ZH2Lib::LibContext.SyncContext.FlushTic[i] = 0;
+            TriggerSyncCore(i);
+        }
+    }
+
+    internal void TriggerSyncCore(int syncId)
+    {
+        switch(syncId)
+        {
+            case SYNCTYPE_WEATHER: SyncWeatherCore(); return;
+
+            default:
+                Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to flush sync index " + str(syncId) + " as it's not known.");
+                return;
+        }
+    }
+
+    internal void DoSync(int syncId)
+    {
+        // Buffering not enabled.
+        if (!ZH2Lib::GetUseSyncBuffer())
+        {
+            TriggerSyncCore(syncId);
+            return;
+        }
+
+        int min = 0;
+        int max = MAX_LIB_SYNC_TYPES - 1;
+        if (syncId < min || syncId > max)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Invalid sync id " + str(syncId) + ". Id must be between " + str(min) + " and " + str(max) + " (inclusive).");
+            return;
+        }
+
+        // Already marked to sync.
+        if (ZH2Lib::LibContext.SyncContext.FlushTic[syncId] != 0)
+            return;
+
+        ZH2Lib::LibContext.SyncContext.FlushTic[syncId] = Timer() + 1;
+    }
+
     // Basic log formatter to include an additional sync category.
     internal str FormatLog(str category, str message)
     {
@@ -16,22 +67,16 @@ strict namespace Sync
 
     /* COMBINED */
 
-    void LibSyncAll(bool callSyncOnClients = true)
+    void LibSyncAll()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
-
-        Sync::SyncWeather(callSyncOnClients);
+        Sync::SyncWeather();
     }
 
     void CallClientLibSyncAll()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
-
-        if (!IsNetworkGame())
-            return;
 
         Sync::CallSyncWeatherOnClients();
     }
@@ -40,45 +85,57 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
-
         Sync::SyncWeatherClientside();
     }
 
     /* WEATHER */
 
-    void SyncWeather(bool callSyncOnClients = true)
+    void SyncWeather()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeWeatherSyncedClientside();
             return;
+        }
 
+        DoSync(SYNCTYPE_WEATHER);
+    }
+
+    internal void SyncWeatherCore()
+    {
         SyncWeatherActor();
-
-        if (callSyncOnClients)
-            CallSyncWeatherOnClients();
+        CallSyncWeatherOnClients();
     }
 
     void CallSyncWeatherOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            ACS_NamedExecute("zh2_internal_sync_weather_clientside", 0);
+    }
 
-        CallSyncWeatherActorOnClients();
+    script "zh2_internal_sync_weather_clientside" clientside
+    {
+        SyncWeatherClientside();
     }
 
     void SyncWeatherClientside()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncWeatherActorClientSide();
 
-        SyncWeatherActorClientSide();
+        FinalizeWeatherSyncedClientside();
+    }
+
+    internal void FinalizeWeatherSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_WEATHER);
     }
 }
 

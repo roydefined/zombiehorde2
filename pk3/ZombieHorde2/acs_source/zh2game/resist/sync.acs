@@ -1,0 +1,28 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Resist
+{
+    script "zh2_internal_event_resistdatasynced" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceiveDataSynced(packet);
+
+        int type = Event::GetReceiveData(0);
+        if (type != Sync::SYNCTYPE_RESISTS)
+            terminate;
+
+        Resist::ResistT[] module& resists = ZH2Game::GameContext.MapDetails.Resists;
+
+        Logger::LogDebug(LOGSOURCE, "Synchronizing resists clientside.");
+
+        for (int i = 0; i < lengthof(resists); ++i)
+        {
+            if (resists[i].Defined)
+                InitializeResistClientside(i);
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Synchronized resists clientside.");
+    }
+}

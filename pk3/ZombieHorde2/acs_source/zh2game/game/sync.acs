@@ -1,0 +1,23 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    script "zh2_internal_event_gamedatasynced" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceiveDataSynced(packet);
+
+        int type = Event::GetReceiveData(0);
+        if (type != Sync::SYNCTYPE_GAME)
+            terminate;
+
+        // Build the ending if somebody won.
+        WinningSpecieT winningSpecie = GetWinningSpecie();
+        if (winningSpecie != SPECIENONE)
+            ClientBuildEnding();
+
+        Logger::LogDebug(LOGSOURCE, "Synchronized resists clientside.");
+    }
+}

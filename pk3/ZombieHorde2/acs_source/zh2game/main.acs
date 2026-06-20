@@ -253,19 +253,15 @@ strict namespace ZH2Game
         // Now the loop starts because we have loaded everything.
         GameLoop::StartClientPlayerLoopActivator();
 
+        Resist::InitializeClient();
+        Game::InitializeClient();
+        Round::InitializeClient();
+
         // Fully sync up the client.
         Sync::SyncAllClientside();
         Sync::LibSyncAllClientside();
 
         Settings::UpdateCurrentClientSettings();
-
-        // Voting is active, so the client needs a mouse.
-        // TODO: Move this when adding the sync callback system.
-        if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
-        {
-            Hud::SetCursorEnabled(true);
-            Player::LockMovement(true);
-        }
 
         // Initialize team indicators for all existing players.
         // This does not have to run offline as the enter script works fine.

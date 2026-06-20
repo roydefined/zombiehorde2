@@ -15,6 +15,69 @@
 
 strict namespace Sync
 {
+    void FlushPendingSyncs()
+    {
+        int min = 0;
+        int max = MAX_SYNC_TYPES - 1;
+        for (int i = min; i <= max; ++i)
+        {
+            int tic = ZH2Game::GameContext.SyncContext.FlushTic[i];
+            if (tic == 0 || tic > Timer())
+                continue;
+
+            ZH2Game::GameContext.SyncContext.FlushTic[i] = 0;
+
+            int index = i + MAX_LIB_SYNC_TYPES;
+            TriggerSyncCore(index);
+        }
+    }
+
+    internal void TriggerSyncCore(int syncId)
+    {
+        switch(syncId)
+        {
+            case SYNCTYPE_PLAYERS: SyncPlayersCore(); return;
+            case SYNCTYPE_TIMERS: SyncTimersCore(); return;
+            case SYNCTYPE_RESISTS: SyncResistsCore(); return;
+            case SYNCTYPE_ROUNDSTATE: SyncRoundStateCore(); return;
+            case SYNCTYPE_POWERS: SyncPowersCore(); return;
+            case SYNCTYPE_ADMINS: SyncAdminsCore(); return;
+            case SYNCTYPE_GAME: SyncGameCore(); return;
+            case SYNCTYPE_MAPVOTING: SyncMapVotingCore(); return;
+
+            default:
+                Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to flush sync index " + str(syncId) + " as it's not known.");
+                return;
+        }
+    }
+
+    internal void DoSync(int syncId)
+    {
+        // Buffering not enabled.
+        if (!ZH2Lib::GetUseSyncBuffer())
+        {
+            TriggerSyncCore(syncId);
+            return;
+        }
+
+        // Remove whatever base the lib gave us so we now use zero-indexed ids.
+        syncId -= MAX_LIB_SYNC_TYPES;
+
+        int min = 0;
+        int max = MAX_SYNC_TYPES - 1;
+        if (syncId < min || syncId > max)
+        {
+            Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Invalid sync id " + str(syncId) + ". Id must be between " + str(min) + " and " + str(max) + " (inclusive).");
+            return;
+        }
+
+        // Already marked to sync.
+        if (ZH2Game::GameContext.SyncContext.FlushTic[syncId] != 0)
+            return;
+
+        ZH2Game::GameContext.SyncContext.FlushTic[syncId] = Timer() + 1;
+    }
+
     // Basic log formatter to include an additional sync category.
     internal str FormatLog(str category, str message)
     {
@@ -23,29 +86,23 @@ strict namespace Sync
 
     /* COMBINED */
 
-    internal void SyncAll(bool callSyncOnClients = true)
+    internal void SyncAll()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
-
-        Sync::SyncPlayers(callSyncOnClients);
-        Sync::SyncTimers(callSyncOnClients);
-        Sync::SyncResists(callSyncOnClients);
-        Sync::SyncRoundState(callSyncOnClients);
-        Sync::SyncPowers(callSyncOnClients);
-        Sync::SyncAdmins(callSyncOnClients);
-        Sync::SyncGame(callSyncOnClients);
-        Sync::SyncMapVoting(callSyncOnClients);
+        Sync::SyncPlayers();
+        Sync::SyncTimers();
+        Sync::SyncResists();
+        Sync::SyncRoundState();
+        Sync::SyncPowers();
+        Sync::SyncAdmins();
+        Sync::SyncGame();
+        Sync::SyncMapVoting();
     }
 
     internal void CallClientSyncAll()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
-
-        if (!IsNetworkGame())
-            return;
 
         Sync::CallSyncPlayersOnClients();
         Sync::CallSyncTimersOnClients();
@@ -61,9 +118,6 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
-
         Sync::SyncPlayersClientside();
         Sync::SyncTimersClientside();
         Sync::SyncResistsClientside();
@@ -76,282 +130,402 @@ strict namespace Sync
 
     /* PLAYERS */
 
-    internal void SyncPlayers(bool callSyncOnClients = true)
+    internal void SyncPlayers()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizePlayersSyncedClientside();
             return;
+        }
 
+        DoSync(SYNCTYPE_PLAYERS);
+    }
+
+    internal void SyncPlayersCore()
+    {
         SyncPlayersActor();
-
-        if (callSyncOnClients)
-            CallSyncPlayersOnClients();
+        CallSyncPlayersOnClients();
     }
 
     internal void CallSyncPlayersOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            ACS_NamedExecute("zh2_internal_sync_players_clientside", 0);
+    }
 
-        CallSyncPlayersActorOnClients();
+    script "zh2_internal_sync_players_clientside" clientside
+    {
+        SyncPlayersClientside();
     }
 
     internal void SyncPlayersClientside()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncPlayersActorClientSide();
 
-        SyncPlayersActorClientSide();
+        FinalizePlayersSyncedClientside();
+    }
+
+    internal void FinalizePlayersSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_PLAYERS);
     }
 
     /* TIMERS */
 
-    internal void SyncTimers(bool callSyncOnClients = true)
+    internal void SyncTimers()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeTimersSyncedClientside();
             return;
+        }
 
+        DoSync(SYNCTYPE_TIMERS);
+    }
+
+    internal void SyncTimersCore()
+    {
         SyncTimersActor();
-
-        if (callSyncOnClients)
-            CallSyncTimersOnClients();
+        CallSyncTimersOnClients();
     }
 
     internal void CallSyncTimersOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            ACS_NamedExecute("zh2_internal_sync_timers_clientside", 0);
+    }
 
-        CallSyncTimersActorOnClients();
+    script "zh2_internal_sync_timers_clientside" clientside
+    {
+        SyncTimersClientside();
     }
 
     internal void SyncTimersClientside()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncTimersActorClientside();
 
-        SyncTimersActorClientside();
+        FinalizeTimersSyncedClientside();
+    }
+
+    internal void FinalizeTimersSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_TIMERS);
     }
 
     /* RESISTS */
 
-    internal void SyncResists(bool callSyncOnClients = true)
+    internal void SyncResists()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeResistsSyncedClientside();
             return;
+        }
 
+        DoSync(SYNCTYPE_RESISTS);
+    }
+
+    internal void SyncResistsCore()
+    {
         SyncResistsActor();
-
-        if (callSyncOnClients)
-            CallSyncResistsOnClients();
+        CallSyncResistsOnClients();
     }
 
     internal void CallSyncResistsOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            ACS_NamedExecute("zh2_internal_sync_resists_clientside", 0);
+    }
 
-        CallSyncResistsActorOnClients();
+    script "zh2_internal_sync_resists_clientside" clientside
+    {
+        SyncResistsClientside();
     }
 
     internal void SyncResistsClientside()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncResistsActorClientside();
 
-        SyncResistsActorClientside();
+        FinalizeResistsSyncedClientside();
+    }
+
+    internal void FinalizeResistsSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_RESISTS);
     }
 
     /* ROUND */
 
-    internal void SyncRoundState(bool callSyncOnClients = true)
+    internal void SyncRoundState()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeRoundStateSyncedClientside();
             return;
+        }
 
+        DoSync(SYNCTYPE_ROUNDSTATE);
+    }
+
+    internal void SyncRoundStateCore()
+    {
         SyncRoundStateActor();
-
-        if (callSyncOnClients)
-            CallSyncRoundStateOnClients();
+        CallSyncRoundStateOnClients();
     }
 
     internal void CallSyncRoundStateOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            ACS_NamedExecute("zh2_internal_sync_round_state_clientside", 0);
+    }
 
-        CallSyncRoundStateActorOnClients();
+    script "zh2_internal_sync_round_state_clientside" clientside
+    {
+        SyncRoundStateClientside();
     }
 
     internal void SyncRoundStateClientside()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncRoundStateActorClientside();
 
-        SyncRoundStateActorClientside();
+        FinalizeRoundStateSyncedClientside();
+    }
+
+    internal void FinalizeRoundStateSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_ROUNDSTATE);
     }
 
     /* POWERS */
 
-    internal void SyncPowers(bool callSyncOnClients = true)
+    internal void SyncPowers()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizePowersSyncedClientside();
             return;
+        }
 
+        DoSync(SYNCTYPE_POWERS);
+    }
+
+    internal void SyncPowersCore()
+    {
         SyncPowersActor();
-
-        if (callSyncOnClients)
-            CallSyncPowersOnClients();
+        CallSyncPowersOnClients();
     }
 
     internal void CallSyncPowersOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            ACS_NamedExecute("zh2_internal_sync_power_clientside", 0);
+    }
 
-        CallSyncPowersActorOnClients();
+    script "zh2_internal_sync_power_clientside" clientside
+    {
+        SyncPowersClientside();
     }
 
     internal void SyncPowersClientside()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncPowersActorClientSide();
 
-        SyncPowersActorClientSide();
+        FinalizePowersSyncedClientside();
+    }
+
+    internal void FinalizePowersSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_POWERS);
     }
 
     /* ADMIN */
 
-    internal void SyncAdmins(bool callSyncOnClients = true)
+    internal void SyncAdmins()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeAdminsSyncedClientside();
             return;
+        }
 
+        DoSync(SYNCTYPE_ADMINS);
+    }
+
+    internal void SyncAdminsCore()
+    {
         SyncAdminsActor();
-
-        if (callSyncOnClients)
-            CallSyncAdminsOnClients();
+        CallSyncAdminsOnClients();
     }
 
     internal void CallSyncAdminsOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            ACS_NamedExecute("zh2_internal_sync_admins_clientside", 0);
+    }
 
-        CallSyncAdminsActorOnClients();
+    script "zh2_internal_sync_admins_clientside" clientside
+    {
+        SyncAdminsClientside();
     }
 
     internal void SyncAdminsClientside()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncAdminsActorClientside();
 
-        SyncAdminsActorClientside();
+        FinalizeAdminsSyncedClientside();
+    }
+
+    internal void FinalizeAdminsSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_ADMINS);
     }
 
     /* GAME */
 
-    internal void SyncGame(bool callSyncOnClients = true)
+    internal void SyncGame()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeGameSyncedClientside();
             return;
+        }
 
+        DoSync(SYNCTYPE_GAME);
+    }
+
+    internal void SyncGameCore()
+    {
         SyncGameActor();
-
-        if (callSyncOnClients)
-            CallSyncGameOnClients();
+        CallSyncGameOnClients();
     }
 
     internal void CallSyncGameOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            ACS_NamedExecute("zh2_internal_sync_game_clientside", 0);
+    }
 
-        CallSyncGameActorOnClients();
+    script "zh2_internal_sync_game_clientside" clientside
+    {
+        SyncGameClientside();
     }
 
     internal void SyncGameClientside()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncGameActorClientside();
 
-        SyncGameActorClientside();
+        FinalizeGameSyncedClientside();
+    }
+
+    internal void FinalizeGameSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_GAME);
     }
 
     /* MAP VOTING */
 
-    internal void SyncMapVoting(bool callSyncOnClients = true)
+    internal void SyncMapVoting()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
         if (!IsNetworkGame())
+        {
+            FinalizeMapVotingSyncedClientside();
             return;
+        }
 
+        DoSync(SYNCTYPE_MAPVOTING);
+    }
+
+    internal void SyncMapVotingCore()
+    {
         SyncMapVotingActor();
-
-        if (callSyncOnClients)
-            CallSyncMapVotingOnClients();
+        CallSyncMapVotingOnClients();
     }
 
     internal void CallSyncMapVotingOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            ACS_NamedExecute("zh2_internal_sync_mapvoting_clientside", 0);
+    }
 
-        CallSyncMapVotingActorOnClients();
+    script "zh2_internal_sync_mapvoting_clientside" clientside
+    {
+        SyncMapVotingClientside();
     }
 
     internal void SyncMapVotingClientside()
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
 
-        if (!IsNetworkGame())
-            return;
+        if (IsNetworkGame())
+            SyncMapVotingActorClientside();
 
-        SyncMapVotingActorClientside();
+        FinalizeMapVotingSyncedClientside();
+    }
+
+    internal void FinalizeMapVotingSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_MAPVOTING);
     }
 }
 

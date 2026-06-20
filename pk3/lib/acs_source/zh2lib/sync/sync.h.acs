@@ -12,11 +12,26 @@ strict namespace Sync
     #define SYNC_WEATHER_LENGTH EMITTERWEATHER_COUNT * 8 + RANDOMIZEDWEATHER_COUNT * 3 + AMBIENTWEATHER_COUNT * 4
     #define SYNC_WEATHER LIB_SYNC_BASE + SYNC_WEATHER_LENGTH
 
-    extern void LibSyncAll(bool callSyncOnClients = true);
+    // When adding a new sync, also increase this number.
+    #define MAX_LIB_SYNC_TYPES 1
+
+    internal enum LibSyncTypeT : int
+    {
+        SYNCTYPE_WEATHER,
+    };
+
+    struct LibSyncContextT
+    {
+        int FlushTic[MAX_LIB_SYNC_TYPES];
+    };
+
+    extern void LibFlushPendingSyncs();
+
+    extern void LibSyncAll();
     extern void CallClientLibSyncAll();
     extern void LibSyncAllClientside();
 
-    extern void SyncWeather(bool callSyncOnClients = true);
+    extern void SyncWeather();
     extern void CallSyncWeatherOnClients();
     extern void SyncWeatherClientside();
 }
