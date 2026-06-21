@@ -238,6 +238,10 @@ strict namespace Event
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
         {
+            // Failsafe
+            if (i == leftId)
+                continue;
+
             int tid = Identity::GetTID(i);
             if (!Player::GetPlayerIsZombie(i) || !BCSUtils::ActorIsAlive(tid))
                 continue;
@@ -248,7 +252,9 @@ strict namespace Event
         str logMessage;
         buildmsg(logMessage = StrParam())
         {
-            Append(s:"The zombie's \cd" + str(health) + " health \cjhas ");
+            Append(s:"The zombie's \cd");
+            Append(d:compensatedHealth);
+            Append(s:" health \cjhas ");
 
             if (zombieCount == 1)
             {
