@@ -211,6 +211,10 @@ strict namespace Event
 
     internal void CompensateHealthForLeavingZombie(int leftId)
     {
+        int factor = ZH2Game::GetCompensateHealthFactorReturned();
+        if (factor == 0)
+            return;
+
         int health = Player::GetPlayerHealth(leftId);
         if (health <= 0)
             return;
@@ -226,7 +230,11 @@ strict namespace Event
         if (zombieCount == 0)
             return;
 
-        int healthPerZombie = health / zombieCount;
+        int compensatedHealth = (health * factor) / 100;
+        int healthPerZombie = compensatedHealth / zombieCount;
+
+        if (healthPerZombie <= 0)
+            return;
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
         {
