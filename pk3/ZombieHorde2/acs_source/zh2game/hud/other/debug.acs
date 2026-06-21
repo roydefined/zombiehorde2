@@ -53,6 +53,8 @@ strict namespace Hud
                 Player::PlayerStateT state = Player::GetPlayerState(i);
                 if (state == Player::STATENONE) continue;
 
+                int tid = Identity::GetTid(i);
+
                 Append(s:"\n\cj" + Player::GetPlayerName(i));
 
                 // Only draw state if not playing for the sake of relevancy.
@@ -63,6 +65,9 @@ strict namespace Hud
                 if (Player::GetPlayerInitialZombiePreviously(i)) Append(s:"\cn (Initial Previously)");
                 if (Player::GetPlayerInitialZombieLastMap(i)) Append(s:"\ck (Initial Last map)");
                 if (Player::GetPlayerInitialZombie(i)) Append(s:"\ci (Initial)");
+
+                if (state == Player::STATEPLAYING)
+                    Append(s:"\cd (" + str(Player::GetPlayerHealth(i)) + ")");
             }
         }
 
