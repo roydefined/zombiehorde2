@@ -130,11 +130,41 @@ strict namespace Event
         str packet = (str)packetStr;
         Event::ReceivePlayerLeftRound(packet);
         int id = GetReceiveData(0);
+        int reason = GetReceiveData(1);
 
-        if (Player::GetPlayerIsZombie(id) && Game::ZombieCount() == 0)
+        if (Player::GetPlayerIsZombie(id))
         {
-            Game::SetEndReason(Game::REASONZOMBIELEFT);
-            AmbientSound("world/RAGEQUIT", 127);
+            // An intentional leave is one which is triggered on:
+            // - LEAVEREASON_LEFT
+            // - LEAVEREASON_TIMEOUT
+            //
+            // This means it's unintentional when the following reasons are given:
+            // - LEAVEREASON_ERROR
+            // - LEAVEREASON_RECONNECT
+            // - LEAVEREASON_KICKED
+            bool intentional = reason == LEAVEREASON_LEFT || reason == LEAVEREASON_TIMEOUT;
+
+            // Ban a player when playing online.
+            // We ignore this when the player is no longer connected, because you can't ban somebody that left.
+            if (IsNetworkGame() && intentional && BCSUtils::PlayerIsConnected(id))
+            {
+                int duration = ZH2Game::GetMaxBanDuration();
+                if (duration != 0)
+                {
+                    Logger::LogDebug(LOGSOURCE, "Attempting to ban player (\cd" + str(id) + "\cj) " + BCSUtils::PlayerName(id) + " for \cd" + str(duration) + "\cj minute(s).");
+
+                    if (!BanFromGame(id, duration, ZOMBIELEAVEBANREASON))
+                        Logger::LogWarning(LOGSOURCE, "Failed to ban player (\cd" + str(id) + "\cj) " + BCSUtils::PlayerName(id) + " for \cd" + str(duration) + "\cj minute(s).");
+                }
+                else
+                    Logger::LogDebug(LOGSOURCE, "Ignoring ban for player (\cd" + str(id) + "\cj) " + BCSUtils::PlayerName(id) + " for \cd" + str(duration) + "\cj. No duration.");
+            }
+
+            if (Game::ZombieCount() == 0)
+            {
+                Game::SetEndReason(Game::REASONZOMBIELEFT);
+                AmbientSound("world/RAGEQUIT", 127);
+            }
         }
         else if (Player::GetPlayerIsHuman(id))
         {
