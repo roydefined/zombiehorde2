@@ -167,30 +167,35 @@ strict namespace Event
             }
 
             // Game is still playing, we should add time to the active timer.
-            else if(RoundTimer::GetAnyTimerActive())
+            else
             {
-                // If we have max seconds to compensate enabled, add some time based on a factor of it.
-                int maxSeconds = ZH2Game::GetCompensateMaxSecondsReturned();
-                if (maxSeconds != 0)
+                CompensateHealthForLeavingZombie(id);
+
+                if(RoundTimer::GetAnyTimerActive())
                 {
-                    // Add time to the timer to account for a ragequitting zombie, based on zombie health.
-                    // Maximum is 30 seconds, gradually less based on hp difference.
-                    int tid = Identity::GetTID(id);
-                    VALIDATE_TID_VALID_SCRIPT(tid);
-
-                    int health = GetActorProperty(tid, APROP_SPAWNHEALTH);
-                    int healthMax = GetActorProperty(tid, APROP_HEALTH);
-
-                    fixed ratio = fixed(health) / fixed(healthMax);
-                    fixed ratioInverse = 1.0 - ratio;
-
-                    int tics = int(ratioInverse * fixed(maxSeconds * 35));
-                    int ticDiff = RoundTimer::IncrementTimer(RoundTimer::GetActiveTimerIndex(), tics);
-                    if (ticDiff > 0)
+                    // If we have max seconds to compensate enabled, add some time based on a factor of it.
+                    int maxSeconds = ZH2Game::GetCompensateMaxSecondsReturned();
+                    if (maxSeconds != 0)
                     {
-                        Game::CallVisualAddTime(ticDiff);
-                        int displayedSeconds = BCSUtils::Abs(ticDiff / 35);
-                        Logger::LogBold("\cjThe timer has been \cdincremented \cjby \cd" + str(displayedSeconds) + "s" + "\cj to adjust for the leaving zombie.");
+                        // Add time to the timer to account for a ragequitting zombie, based on zombie health.
+                        // Maximum is 30 seconds, gradually less based on hp difference.
+                        int tid = Identity::GetTID(id);
+                        VALIDATE_TID_VALID_SCRIPT(tid);
+
+                        int health = GetActorProperty(tid, APROP_SPAWNHEALTH);
+                        int healthMax = GetActorProperty(tid, APROP_HEALTH);
+
+                        fixed ratio = fixed(health) / fixed(healthMax);
+                        fixed ratioInverse = 1.0 - ratio;
+
+                        int tics = int(ratioInverse * fixed(maxSeconds * 35));
+                        int ticDiff = RoundTimer::IncrementTimer(RoundTimer::GetActiveTimerIndex(), tics);
+                        if (ticDiff > 0)
+                        {
+                            Game::CallVisualAddTime(ticDiff);
+                            int displayedSeconds = BCSUtils::Abs(ticDiff / 35);
+                            Logger::LogBold("\cjThe timer has been \cdincremented \cjby \cd" + str(displayedSeconds) + "s" + "\cj to adjust for the leaving zombie.");
+                        }
                     }
                 }
             }
@@ -202,6 +207,54 @@ strict namespace Event
         }
 
         // No sync, the game ending does it already.
+    }
+
+    internal void CompensateHealthForLeavingZombie(int leftId)
+    {
+        int health = Player::GetPlayerHealth(leftId);
+        if (health <= 0)
+            return;
+
+        int zombieCount = 0;
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+        {
+            if (i != leftId && Player::GetPlayerIsZombie(i))
+                zombieCount++;
+        }
+
+        if (zombieCount == 0)
+            return;
+
+        int healthPerZombie = health / zombieCount;
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+        {
+            int tid = Identity::GetTID(i);
+            if (!Player::GetPlayerIsZombie(i) || !BCSUtils::ActorIsAlive(tid))
+                continue;
+
+            SetActorProperty(tid, APROP_HEALTH, GetActorProperty(tid, APROP_HEALTH) + healthPerZombie);
+        }
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            Append(s:"The zombie's \cd" + str(health) + " health \cjhas ");
+
+            if (zombieCount == 1)
+            {
+                Append(s:"been transferred to the remaining zombie.");
+            }
+            else
+            {
+                Append(s:"been divided over the remaining zombies, granting \cd");
+                Append(d:healthPerZombie);
+                Append(s:" health \cjto each.");
+            }
+        }
+
+        Logger::LogBold(logMessage);
     }
 
     script "zh2_internal_event_specie_changed" (raw packetStr)
