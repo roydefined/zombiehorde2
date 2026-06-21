@@ -14,7 +14,7 @@ from utils import get_root, get_paths
 PORT = "10666"
 
 ZH2_FILES = [
-    "lib",
+    "libraries/ZombieHorde2Lib",
     "ZombieHorde2",
     "ZombieHorde2Doom",
     "ZombieHorde2Legacy",
