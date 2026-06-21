@@ -165,6 +165,32 @@ strict namespace Event
                 Game::SetEndReason(Game::REASONZOMBIELEFT);
                 AmbientSound("world/RAGEQUIT", 127);
             }
+
+            // Game is still playing, we should add time to the active timer.
+            else if(RoundTimer::GetAnyTimerActive())
+            {
+                int maxSeconds = 30;
+
+                // Add time to the timer to account for a ragequitting zombie, based on zombie health.
+                // Maximum is 30 seconds, gradually less based on hp difference.
+                int tid = Identity::GetTID(id);
+                VALIDATE_TID_VALID_SCRIPT(tid);
+
+                int health = GetActorProperty(tid, APROP_SPAWNHEALTH);
+                int healthMax = GetActorProperty(tid, APROP_HEALTH);
+
+                fixed ratio = fixed(health) / fixed(healthMax);
+                fixed ratioInverse = 1.0 - ratio;
+
+                int tics = int(ratioInverse * fixed(maxSeconds * 35));
+                int ticDiff = RoundTimer::IncrementTimer(RoundTimer::GetActiveTimerIndex(), tics);
+                if (ticDiff > 0)
+                {
+                    Game::CallVisualAddTime(ticDiff);
+                    int displayedSeconds = BCSUtils::Abs(ticDiff / 35);
+                    Logger::LogBold("\cjThe timer has been \cdincremented \cjby \cd" + str(displayedSeconds) + "s" + "\cj to adjust for the leaving zombie.");
+                }
+            }
         }
         else if (Player::GetPlayerIsHuman(id))
         {
