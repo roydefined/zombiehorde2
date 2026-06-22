@@ -66,7 +66,12 @@ strict namespace Hud
                 if (Player::GetPlayerInitialZombieLastMap(i)) Append(s:"\ck (Initial Last map)");
                 if (Player::GetPlayerInitialZombie(i)) Append(s:"\ci (Initial)");
 
-                // Health is not synchronized offline.
+                // Damage is not synchronized.
+                int damage = Player::GetDamageToPlayer(i);
+                if (damage != 0)
+                    Append(s:"\cg (" + str(damage) + " dmg)");
+
+                // Health is not synchronized.
                 if (!IsNetworkGame() && state == Player::STATEPLAYING)
                     Append(s:"\cd (" + str(Player::GetPlayerHealth(i)) + ")");
             }

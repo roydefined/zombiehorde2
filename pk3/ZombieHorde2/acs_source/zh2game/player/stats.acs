@@ -27,4 +27,16 @@ strict namespace Player
 
     internal int GetInfects() { return GetPlayerInfects(PlayerNumber()); }
     internal int GetPlayerInfects(int id) { return ZH2Game::GameContext.Players[id].StatsContext.Infects; }
+
+    internal int GetDamageToPlayer(int id) { return GetPlayerDamageToPlayer(PlayerNumber(), id); }
+    internal int GetPlayerDamageToPlayer(int selfId, int damagedId) { return ZH2Game::GameContext.Players[selfId].StatsContext.DamageToPlayers[damagedId]; }
+
+    internal void SetDamageToPlayer(int id, int damage) { SetPlayerDamageToPlayer(PlayerNumber(), id, damage); }
+    internal void SetPlayerDamageToPlayer(int selfId, int damagedId, int damage) { ZH2Game::GameContext.Players[selfId].StatsContext.DamageToPlayers[damagedId] = damage; }
+
+    internal void IncrementDamageToPlayer(int id, int damage) { IncrementPlayerDamageToPlayer(PlayerNumber(), id, damage); }
+    internal void IncrementPlayerDamageToPlayer(int selfId, int damagedId, int damage)
+    {
+        ZH2Game::GameContext.Players[selfId].StatsContext.DamageToPlayers[damagedId] = ZH2Game::GameContext.Players[selfId].StatsContext.DamageToPlayers[damagedId] + damage;
+    }
 }
