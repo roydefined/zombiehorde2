@@ -58,6 +58,11 @@ strict namespace Game
         ZH2Game::GameContext.WinMessageTop = ending.WinMessagesTop[Random(0, lengthof(ending.WinMessagesTop) - 1)];
         ZH2Game::GameContext.WinMessageBottom = ending.WinMessagesBottom[Random(0, lengthof(ending.WinMessagesBottom) - 1)];
 
+        // Don't bother doing the rest if we don't use the default flow, map will reset and the stats won't show.
+        Game::EndActionT action = Game::GetEndAction();
+        if (action != Game::ACTION_DEFAULT)
+            return;
+
         // Play a track for the winning type.
         if (ending.TrackCount != 0 && !_hasStartedEndMusic)
         {
@@ -112,9 +117,25 @@ strict namespace Game
         return ZH2Game::GameContext.EndReason;
     }
 
+    internal void SetEndAction(EndActionT action)
+    {
+        ZH2Game::GameContext.EndAction = action;
+    }
+
+    internal EndActionT GetEndAction()
+    {
+        return ZH2Game::GameContext.EndAction;
+    }
+
     internal EndReasonT GetEndReasonTypeByIndex(int index)
     {
         static EndReasonT collection[] = { REASONNONE, REASONSPECIEWON, REASONHUMANLEFT, REASONZOMBIELEFT, REASONADMINENDED, };
+        return collection[index];
+    }
+
+    internal EndActionT GetEndActionTypeByIndex(int index)
+    {
+        static EndActionT collection[] = { ACTION_DEFAULT, ACTION_RESTART, };
         return collection[index];
     }
 }

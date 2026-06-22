@@ -4,7 +4,7 @@
 
 strict namespace Hud
 {
-    internal void DrawEndingHeader()
+    internal void DrawEndingHeader(Game::EndActionT action)
     {
         BCSUtils::HudSetCenterText(true);
 
@@ -31,13 +31,15 @@ strict namespace Hud
         BCSUtils::HudDrawText(--_drawnHudId, ZH2Game::GameContext.WinMessageBottom);
         DebugDraw();
 
+        fixed y = 25.0;
+
         // End reason, if not just a specie winning.
         Game::EndReasonT reason = Game::GetEndReason();
         if (reason != Game::REASONNONE && reason != Game::REASONSPECIEWON)
         {
             BCSUtils::HudSetFont("SmallFont");
 
-            HudSetPointInternal(0.0, 25.0);
+            HudSetPointInternal(0.0, y);
 
             if (reason == Game::REASONHUMANLEFT)
             {
@@ -55,16 +57,28 @@ strict namespace Hud
                 BCSUtils::HudDrawText(--_drawnHudId, "Admin ended game.");
             }
 
-            BCSUtils::HudSetTextColor(CR_WHITE);
             DebugDraw();
+
+            y += 10.0;
         }
 
-        // Elapsed time
-        str timerFormatted = Utils::FormatTics(Game::GetPlayTime(), true);
-        BCSUtils::HudSetFont("SmallFont");
+        HudSetPointInternal(0.0, y);
 
-        HudSetPointInternal(0.0, 35.0);
-        BCSUtils::HudDrawText(--_drawnHudId, "Play time: " + timerFormatted);
+        // End action, indication what the map will do.
+        // If we show anything except default, don't draw the play time either.
+        if (action == Game::ACTION_RESTART)
+        {
+            BCSUtils::HudSetTextColor(CR_YELLOW);
+            BCSUtils::HudDrawText(--_drawnHudId, "The map will reset.");
+        }
+        else
+        {
+            str timerFormatted = Utils::FormatTics(Game::GetPlayTime(), true);
+
+            BCSUtils::HudSetTextColor(CR_WHITE);
+            BCSUtils::HudDrawText(--_drawnHudId, "Play time: " + timerFormatted);
+        }
+
         DebugDraw();
     }
 }
