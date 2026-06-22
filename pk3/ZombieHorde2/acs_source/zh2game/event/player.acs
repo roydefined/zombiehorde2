@@ -162,8 +162,13 @@ strict namespace Event
 
             if (Game::ZombieCount() == 0)
             {
-                Game::SetEndReason(Game::REASONZOMBIELEFT);
                 AmbientSound("world/RAGEQUIT", 127);
+                Game::SetEndReason(Game::REASONZOMBIELEFT);
+
+                // Check if the last leave was within a configured time.
+                // If so, we do not want to end the round and continue. Instead we must reset.
+                if (CompensateCheckIfRestartNeeded())
+                    Game::SetEndAction(Game::ACTION_RESTART);
             }
 
             // Game is still playing, we should add time to the active timer.
@@ -207,6 +212,12 @@ strict namespace Event
         }
 
         // No sync, the game ending does it already.
+    }
+
+    internal bool CompensateCheckIfRestartNeeded()
+    {
+        int seconds = ZH2Game::GetCompensateRestartIfSpecBeforeSeconds();
+        return Timer() < (seconds * 35);
     }
 
     internal void CompensateHealthForLeavingZombie(int leftId)
