@@ -20,6 +20,12 @@ strict namespace Hud
             Admin::AdminEndGameClientside();
         }
 
+        if (DrawClickableTextConditional(
+            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 0.0, 40.0, 120.0, 10.0, "End game and restart map"))
+        {
+            Admin::AdminEndGameAndRestartClientside();
+        }
+
         // Kill unsafe players
         str message;
         buildmsg(message = StrParam())
@@ -32,13 +38,13 @@ strict namespace Hud
             Append(s:")");
         }
         if (DrawClickableTextConditional(
-            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 0.0, 40.0, 140.0, 10.0, message))
+            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 0.0, 50.0, 140.0, 10.0, message))
         {
             Admin::AdminKillUnsafePlayersClientSide(_killUnsafePlayersSafeSlot);
         }
 
         if (DrawClickableTextConditional(
-            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 0.0, 50.0, 20.0, 10.0, "-1"))
+            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 0.0, 60.0, 20.0, 10.0, "-1"))
         {
             _killUnsafePlayersSafeSlot--;
             if (_killUnsafePlayersSafeSlot < -1)
@@ -46,7 +52,7 @@ strict namespace Hud
         }
 
         if (DrawClickableTextConditional(
-            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 20.0, 50.0, 20.0, 10.0, "+1"))
+            Round::GetActiveKnownRoundState() == Round::STATEPLAYING, --_drawnHudId, 20.0, 60.0, 20.0, 10.0, "+1"))
         {
             _killUnsafePlayersSafeSlot++;
             if (_killUnsafePlayersSafeSlot == MAX_SAFETY_SLOTS)
@@ -55,12 +61,12 @@ strict namespace Hud
 
         BCSUtils::HudSetTextColor(CR_WHITE);
 
-        HudSetPointInternal(0.0, 70.0);
+        HudSetPointInternal(0.0, 80.0);
         BCSUtils::HudDrawText(--_drawnHudId, "\cfSet round state");
 
         // Explicit button for disabling the current round state.
         if (DrawClickableTextConditional(
-            Round::GetActiveRoundStateIndex() != 0, --_drawnHudId, 0.0, 80.0, 80.0, 10.0, "Disable round state"))
+            Round::GetActiveRoundStateIndex() != 0, --_drawnHudId, 0.0, 90.0, 80.0, 10.0, "Disable round state"))
         {
             Admin::AdminSetRoundStateClientside(0);
         }
@@ -74,7 +80,7 @@ strict namespace Hud
         {
             if (!Round::GetRoundDefined(index)) continue;
 
-            addY = 100.0 + fixed(10 * rows);
+            addY = 110.0 + fixed(10 * rows);
 
             if (DrawClickableTextConditional(
                 Round::GetActiveRoundStateIndex() != index, --_drawnHudId, 0.0, addY, 80.0, 10.0, Round::GetRoundStateIndexAsString(index)))

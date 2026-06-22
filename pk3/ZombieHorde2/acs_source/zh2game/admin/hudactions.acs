@@ -322,6 +322,23 @@ strict namespace Admin
         Game::EndGame();
     }
 
+    internal void AdminEndGameAndRestartClientside()
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_end_game_and_restart"))
+            Logger::LogError(LOGSOURCE, "Failed to call admin end game and restart.");
+    }
+
+    script "zh2_internal_menu_end_game_and_restart" net
+    {
+        if (!GetIsAdmin()) terminate;
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING) terminate;
+
+        Game::SetWinningSpecie(Game::SPECIETIE);
+        Game::SetEndReason(Game::REASONADMINENDED);
+        Game::SetEndAction(Game::ACTION_RESTART);
+        Game::EndGame();
+    }
+
     internal void AdminIncrementPlayerItemClientside(int playerId, int itemIndex, int amount)
     {
         if (!NamedRequestScriptPuke("zh2_internal_menu_increment_item", playerId, itemIndex, amount))
