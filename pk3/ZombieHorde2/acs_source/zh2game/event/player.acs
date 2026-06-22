@@ -132,9 +132,12 @@ strict namespace Event
         int id = GetReceiveData(0);
         int reason = GetReceiveData(1);
 
+        int health = Player::GetPlayerHealth(id);
+        int maxHealth = GetZombieMaxHealth(id);
+
         if (Player::GetPlayerIsZombie(id))
         {
-            AwardZombieKillByDamage(id);
+            AwardZombieKillByDamage(id, maxHealth);
 
             // An intentional leave is one which is triggered on:
             // - LEAVEREASON_LEFT
@@ -173,10 +176,10 @@ strict namespace Event
                     Game::SetEndAction(Game::ACTION_RESTART);
             }
 
-            // Game is still playing, we should add time to the active timer.
+            // Game is still playing, we should add time to the active timer based on health.
             else
             {
-                CompensateHealthForLeavingZombie(id);
+                CompensateHealthForLeavingZombie(id, health);
 
                 if(RoundTimer::GetAnyTimerActive())
                 {
@@ -185,14 +188,10 @@ strict namespace Event
                     if (maxSeconds != 0)
                     {
                         // Add time to the timer to account for a ragequitting zombie, based on zombie health.
-                        // Maximum is 30 seconds, gradually less based on hp difference.
+                        // Maximum time is configurable, and gradually less based on hp difference.
                         int tid = Identity::GetTID(id);
-                        VALIDATE_TID_VALID_SCRIPT(tid);
 
-                        int health = GetActorProperty(tid, APROP_SPAWNHEALTH);
-                        int healthMax = GetActorProperty(tid, APROP_HEALTH);
-
-                        fixed ratio = fixed(health) / fixed(healthMax);
+                        fixed ratio = fixed(health) / fixed(maxHealth);
                         fixed ratioInverse = 1.0 - ratio;
 
                         int tics = int(ratioInverse * fixed(maxSeconds * 35));
@@ -222,7 +221,7 @@ strict namespace Event
         return Game::GetPlayTime() < (seconds * 35);
     }
 
-    internal void AwardZombieKillByDamage(int zombieId)
+    internal void AwardZombieKillByDamage(int zombieId, int maxHealth)
     {
         int requiredPercentage = ZH2Game::GetCompensateAwardKillDamagePercentage();
         if (requiredPercentage == 0)
@@ -231,16 +230,7 @@ strict namespace Event
             return;
         }
 
-        int zombieStartHealth = GetZombieStartHealthForKillAward(zombieId);
-
-        // Failsafe, because the zombie would have spectated before they die.
-        if (zombieStartHealth <= 0)
-        {
-            Logger::LogDebug(LOGSOURCE, "Ignoring zombie kill damage award. Zombie start health is \cd" + str(zombieStartHealth) + "\cj.");
-            return;
-        }
-
-        int requiredDamage = (zombieStartHealth * requiredPercentage) / 100;
+        int requiredDamage = (maxHealth * requiredPercentage) / 100;
         if (requiredDamage <= 0)
         {
             Logger::LogDebug(LOGSOURCE, "Ignoring zombie kill damage award. Required damage is \cd" + str(requiredDamage) + "\cj.");
@@ -250,7 +240,7 @@ strict namespace Event
         Logger::LogDebug(LOGSOURCE,
             "Evaluating zombie kill damage award for player (\cd" + str(zombieId) + "\cj) "
             + Player::GetPlayerName(zombieId)
-            + ". Zombie start health: \cd" + str(zombieStartHealth)
+            + ". Zombie start health: \cd" + str(maxHealth)
             + "\cj. Required percentage: \cd" + str(requiredPercentage)
             + "%\cj. Required damage: \cd" + str(requiredDamage) + "\cj.");
 
@@ -306,71 +296,32 @@ strict namespace Event
             Append(s:" has been awarded the zombie kill for dealing \cd");
             Append(d:awardedDamage);
             Append(s:"\cj/\cd");
-            Append(d:zombieStartHealth);
+            Append(d:maxHealth);
             Append(s:"\cj damage.");
         }
 
         Logger::LogBold(logMessage);
     }
 
-    internal int GetZombieStartHealthForKillAward(int zombieId)
+    internal int GetZombieMaxHealth(int zombieId)
     {
-        int tid = Identity::GetTID(zombieId);
-        if (tid != 0)
-        {
-            int spawnHealth = BCSUtils::GetActorSpawnHealth(tid);
-            if (spawnHealth > 0)
-            {
-                Logger::LogDebug(LOGSOURCE,
-                    "Using actor spawn health \cd" + str(spawnHealth)
-                    + "\cj for zombie kill damage award calculations.");
-
-                return spawnHealth;
-            }
-
-            Logger::LogDebug(LOGSOURCE,
-                "Actor spawn health was unavailable for zombie kill damage award calculations. TID: \cd"
-                + str(tid)
-                + "\cj. Spawn health: \cd"
-                + str(spawnHealth)
-                + "\cj.");
-        }
-        else
-        {
-            Logger::LogDebug(LOGSOURCE,
-                "Actor TID was unavailable for zombie kill damage award calculations.");
-        }
-
         bool isInitialZombie = Player::GetPlayerInitialZombie(zombieId);
-
-        int fallbackHealth = isInitialZombie
+        return isInitialZombie
             ? Game::GetInitialZombieMaxHealth()
             : Game::GetRegularZombieMaxHealth();
-
-        Logger::LogDebug(LOGSOURCE,
-            "Using "
-            + (isInitialZombie ? "initial" : "regular")
-            + " zombie max health \cd" + str(fallbackHealth)
-            + "\cj for zombie kill damage award calculations.");
-
-        return fallbackHealth;
     }
 
-    internal void CompensateHealthForLeavingZombie(int leftId)
+    internal void CompensateHealthForLeavingZombie(int id, int health)
     {
         int factor = ZH2Game::GetCompensateHealthFactorReturned();
         if (factor == 0)
-            return;
-
-        int health = Player::GetPlayerHealth(leftId);
-        if (health <= 0)
             return;
 
         int zombieCount = 0;
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
         {
-            if (i != leftId && Player::GetPlayerIsZombie(i))
+            if (i != id && Player::GetPlayerIsZombie(i))
                 zombieCount++;
         }
 
@@ -386,7 +337,7 @@ strict namespace Event
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
         {
             // Failsafe
-            if (i == leftId)
+            if (i == id)
                 continue;
 
             int tid = Identity::GetTID(i);
