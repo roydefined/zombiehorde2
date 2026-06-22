@@ -134,6 +134,8 @@ strict namespace Event
 
         if (Player::GetPlayerIsZombie(id))
         {
+            AwardZombieKillByDamage(id);
+
             // An intentional leave is one which is triggered on:
             // - LEAVEREASON_LEFT
             // - LEAVEREASON_TIMEOUT
@@ -218,6 +220,140 @@ strict namespace Event
     {
         int seconds = ZH2Game::GetCompensateRestartIfSpecBeforeSeconds();
         return Game::GetPlayTime() < (seconds * 35);
+    }
+
+    internal void AwardZombieKillByDamage(int zombieId)
+    {
+        int requiredPercentage = ZH2Game::GetCompensateAwardKillDamagePercentage();
+        if (requiredPercentage == 0)
+        {
+            Logger::LogDebug(LOGSOURCE, "Ignoring zombie kill damage award. Required percentage is 0.");
+            return;
+        }
+
+        int zombieStartHealth = GetZombieStartHealthForKillAward(zombieId);
+
+        // Failsafe, because the zombie would have spectated before they die.
+        if (zombieStartHealth <= 0)
+        {
+            Logger::LogDebug(LOGSOURCE, "Ignoring zombie kill damage award. Zombie start health is \cd" + str(zombieStartHealth) + "\cj.");
+            return;
+        }
+
+        int requiredDamage = (zombieStartHealth * requiredPercentage) / 100;
+        if (requiredDamage <= 0)
+        {
+            Logger::LogDebug(LOGSOURCE, "Ignoring zombie kill damage award. Required damage is \cd" + str(requiredDamage) + "\cj.");
+            return;
+        }
+
+        Logger::LogDebug(LOGSOURCE,
+            "Evaluating zombie kill damage award for player (\cd" + str(zombieId) + "\cj) "
+            + Player::GetPlayerName(zombieId)
+            + ". Zombie start health: \cd" + str(zombieStartHealth)
+            + "\cj. Required percentage: \cd" + str(requiredPercentage)
+            + "%\cj. Required damage: \cd" + str(requiredDamage) + "\cj.");
+
+        int awardedId = -1;
+        int awardedDamage = 0;
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+        {
+            if (!Player::GetPlayerIsHuman(i))
+                continue;
+
+            int damage = Player::GetPlayerDamageToPlayer(i, zombieId);
+            if (damage == 0)
+                continue;
+
+            if (damage < requiredDamage)
+            {
+                Logger::LogDebug(LOGSOURCE, "Rejected candidate (\cd" + str(i) + "\cj) " + Player::GetPlayerName(i) + "dealt \cd" + str(damage) + "\cj damage. Damage is below required damage.");
+                continue;
+            }
+
+            if (damage <= awardedDamage)
+            {
+                Logger::LogDebug(LOGSOURCE, "Rejected candidate (\cd" + str(i) + "\cj) " + Player::GetPlayerName(i) + "dealt \cd" + str(damage) + "\cj damage. Current best candidate has equal or higher damage.");
+                continue;
+            }
+
+            awardedId = i;
+            awardedDamage = damage;
+
+            Logger::LogDebug(LOGSOURCE, "Current best zombie kill award candidate is (\cd" + str(i) + "\cj) " + Player::GetPlayerName(i) + " with \cd" + str(damage) + "\cj damage.");
+        }
+
+        // Sort of failsafe, it's possible the zombie only got damaged by the environment or monsters.
+        if (awardedId == -1)
+        {
+            Logger::LogDebug(LOGSOURCE, "No player qualified for the zombie kill damage award.");
+            return;
+        }
+
+        // TODO: Merge this with the other kill code.
+        Player::IncrementPlayerZombieKills(awardedId);
+        Game::UpdateScoreBoard(awardedId);
+
+        if (Player::GetPlayerZombieKills(awardedId) % 2 == 0)
+            Reward::GivePlayerContainer(awardedId, Reward::REWARDORBMAJOR);
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            Append(s:"Player ");
+            Append(s:BCSUtils::PlayerName(awardedId));
+            Append(s:" has been awarded the zombie kill for dealing \cd");
+            Append(d:awardedDamage);
+            Append(s:"\cj/\cd");
+            Append(d:zombieStartHealth);
+            Append(s:"\cj damage.");
+        }
+
+        Logger::LogBold(logMessage);
+    }
+
+    internal int GetZombieStartHealthForKillAward(int zombieId)
+    {
+        int tid = Identity::GetTID(zombieId);
+        if (tid != 0)
+        {
+            int spawnHealth = BCSUtils::GetActorSpawnHealth(tid);
+            if (spawnHealth > 0)
+            {
+                Logger::LogDebug(LOGSOURCE,
+                    "Using actor spawn health \cd" + str(spawnHealth)
+                    + "\cj for zombie kill damage award calculations.");
+
+                return spawnHealth;
+            }
+
+            Logger::LogDebug(LOGSOURCE,
+                "Actor spawn health was unavailable for zombie kill damage award calculations. TID: \cd"
+                + str(tid)
+                + "\cj. Spawn health: \cd"
+                + str(spawnHealth)
+                + "\cj.");
+        }
+        else
+        {
+            Logger::LogDebug(LOGSOURCE,
+                "Actor TID was unavailable for zombie kill damage award calculations.");
+        }
+
+        bool isInitialZombie = Player::GetPlayerInitialZombie(zombieId);
+
+        int fallbackHealth = isInitialZombie
+            ? Game::GetInitialZombieMaxHealth()
+            : Game::GetRegularZombieMaxHealth();
+
+        Logger::LogDebug(LOGSOURCE,
+            "Using "
+            + (isInitialZombie ? "initial" : "regular")
+            + " zombie max health \cd" + str(fallbackHealth)
+            + "\cj for zombie kill damage award calculations.");
+
+        return fallbackHealth;
     }
 
     internal void CompensateHealthForLeavingZombie(int leftId)
