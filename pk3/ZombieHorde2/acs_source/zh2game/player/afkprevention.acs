@@ -1,0 +1,51 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal void AfkPreventionTic()
+    {
+        if (!PlayerInGame(PlayerNumber()))
+            return;
+
+        if (!GetHasMovedThisMap())
+        {
+            if (Utils::GetIsMoving())
+            {
+                SetHasMovedThisMap(true);
+                return;
+            }
+
+            // On 0 we don't want AFK prevention at map start. Otherwise it would be instant.
+            int seconds = ZH2Game::GetAfkMoveAtRoundStartBeforeSeconds();
+            if (seconds == 0)
+                return;
+
+            if (seconds * 35 > Timer())
+                return;
+
+			KickFromGame(PlayerNumber(), "inactivity");
+        }
+    }
+
+    internal bool GetHasMovedThisMap()
+    {
+        return GetPlayerHasMovedThisMap(PlayerNumber());
+    }
+
+    internal bool GetPlayerHasMovedThisMap(int id)
+    {
+        return ZH2Game::GameContext.Players[id].AfkPreventionContext.HasMovedThisMap;
+    }
+
+    internal void SetHasMovedThisMap(bool set)
+    {
+        SetPlayerHasMovedThisMap(PlayerNumber(), set);
+    }
+
+    internal void SetPlayerHasMovedThisMap(int id, bool set)
+    {
+        ZH2Game::GameContext.Players[id].AfkPreventionContext.HasMovedThisMap = set;
+    }
+}
