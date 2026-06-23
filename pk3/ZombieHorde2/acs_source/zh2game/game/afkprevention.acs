@@ -1,0 +1,78 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Game
+{
+    // Manages the kick buffer which the AFK on the player side fills and formats a nice log message.
+    internal void AfkPreventionTic()
+    {
+        // To collect players we do this every 5 tics.
+        if (Timer() % 5 != 0)
+            return;
+
+        int kickedCount = 0;
+
+        for (int id = 0; id < BCSUtils::MAX_PLAYERS; id++)
+        {
+            if (GetPlayerWasAfkKicked(id))
+                kickedCount++;
+        }
+
+        if (kickedCount == 0)
+            return;
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int current = 0;
+            Append(s:"\cd");
+
+            for (int id = 0; id < BCSUtils::MAX_PLAYERS; id++)
+            {
+                if (!GetPlayerWasAfkKicked(id))
+                    continue;
+
+                current++;
+
+                if (current > 1)
+                {
+                    if (current == kickedCount)
+                        Append(s:" and ");
+                    else
+                        Append(s:", ");
+                }
+
+                Append(s:BCSUtils::PlayerName(id));
+
+                SetPlayerWasAfkKicked(id, false);
+            }
+
+            Append(s:" ");
+            Append(s:(kickedCount == 1 ? "was" : "were"));
+            Append(s:" moved to spectators for inactivity.");
+        }
+
+        Logger::LogBold(logMessage);
+    }
+
+    internal bool GetWasAfkKicked()
+    {
+        return GetPlayerWasAfkKicked(PlayerNumber());
+    }
+
+    internal bool GetPlayerWasAfkKicked(int id)
+    {
+        return ZH2Game::GameContext.AfkPreventionContext.AfkKickedPlayers[id];
+    }
+
+    internal void SetWasAfkKicked(bool set)
+    {
+        SetPlayerWasAfkKicked(PlayerNumber(), set);
+    }
+
+    internal void SetPlayerWasAfkKicked(int id, bool set)
+    {
+        ZH2Game::GameContext.AfkPreventionContext.AfkKickedPlayers[id] = set;
+    }
+}
