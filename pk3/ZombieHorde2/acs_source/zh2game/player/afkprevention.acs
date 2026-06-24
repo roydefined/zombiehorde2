@@ -65,4 +65,19 @@ strict namespace Player
     {
         ZH2Game::GameContext.Players[id].AfkPreventionContext.HasMovedThisMap = set;
     }
+
+    internal int GetTicsUntilKick()
+    {
+        return GetPlayerTicsUntilKick(PlayerNumber());
+    }
+
+    internal int GetPlayerTicsUntilKick(int id)
+    {
+        int seconds = ZH2Game::GetAfkMoveAtRoundStartBeforeSeconds();
+        if (seconds == 0)
+            return 0;
+
+        int playTics = GetPlayerPlayTics(id);
+        return BCSUtils::Max(0, (seconds * 35) - playTics);
+    }
 }
