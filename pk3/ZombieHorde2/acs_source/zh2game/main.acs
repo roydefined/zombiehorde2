@@ -607,6 +607,15 @@ strict namespace ZH2Game
         static PlayerT emptyPlayerDef;
         if (!Memcpy(GameContext.Players[id], emptyPlayerDef))
             Logger::LogError(LOGSOURCE, "Failed to empty player context for player " + str(id) + ".");
+
+        // In online games we want to reset the clientside context too.
+        if (IsNetworkGame() && BCSUtils::IsServerOnly())
+            NamedExecuteClientScript("zh2_internal_reset_player_context_client", id);
+    }
+
+    script "zh2_internal_reset_player_context_client" clientside
+    {
+        ResetPlayerContext(ConsolePlayerNumber());
     }
 
     internal void ResetPlayerPersistingContext(int id)
@@ -616,6 +625,15 @@ strict namespace ZH2Game
         static PersistingPlayerT emptyPlayerDef;
         if (!Memcpy(PersistingGameContext.Players[id], emptyPlayerDef))
             Logger::LogError(LOGSOURCE, "Failed to empty persisting player context for player " + str(id) + ".");
+
+        // In online games we want to reset the clientside context too.
+        if (IsNetworkGame() && BCSUtils::IsServerOnly())
+            NamedExecuteClientScript("zh2_internal_reset_player_persisting_context_client", id);
+    }
+
+    script "zh2_internal_reset_player_persisting_context_client" clientside
+    {
+        ResetPlayerPersistingContext(ConsolePlayerNumber());
     }
 }
 
