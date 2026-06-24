@@ -4,6 +4,26 @@
 
 strict namespace Player
 {
+    internal int GetJoinTic()
+    {
+        return GetPlayerJoinTic(PlayerNumber());
+    }
+
+    internal int GetPlayerJoinTic(int id)
+    {
+        return ZH2Game::GameContext.Players[id].LifecycleContext.JoinTic;
+    }
+
+    internal void SetJoinTic(int tic)
+    {
+        SetPlayerJoinTic(PlayerNumber(), tic);
+    }
+
+    internal void SetPlayerJoinTic(int id, int tic)
+    {
+        ZH2Game::GameContext.Players[id].LifecycleContext.JoinTic = tic;
+    }
+
     internal void SetJoinTicNow()
     {
         SetPlayerJoinTicNow(PlayerNumber());
@@ -12,7 +32,7 @@ strict namespace Player
     internal void SetPlayerJoinTicNow(int id)
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
-        ZH2Game::GameContext.Players[id].LifecycleContext.JoinTic = Timer();
+        SetPlayerJoinTic(id, Timer());
     }
 
     internal int GetPlayTics()

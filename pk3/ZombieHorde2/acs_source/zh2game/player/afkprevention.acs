@@ -4,7 +4,7 @@
 
 strict namespace Player
 {
-    internal void AfkPreventionTic()
+    internal void AfkPreventionTicServer()
     {
         if (!PlayerInGame(PlayerNumber()) || PlayerIsBot(PlayerNumber()))
             return;
@@ -30,6 +30,20 @@ strict namespace Player
             KickFromGame(PlayerNumber(), "inactivity");
             Game::SetWasAfkKicked(true);
         }
+    }
+
+    // Clientside we also check input so we can tell the client if he will be kicked.
+    internal void AfkPreventionTicClient()
+    {
+        // Online-only
+        if (!IsNetworkGame())
+            return;
+
+        if (!PlayerInGame(PlayerNumber()) || PlayerIsBot(PlayerNumber()))
+            return;
+
+        if (!GetHasMovedThisMap() && Utils::GetIsMoving())
+            SetHasMovedThisMap(true);
     }
 
     internal bool GetHasMovedThisMap()
