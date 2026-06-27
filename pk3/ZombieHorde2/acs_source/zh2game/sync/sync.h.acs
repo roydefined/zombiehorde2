@@ -24,9 +24,9 @@ strict namespace Sync
 
     // Start of actual TID definitions
 
-    // Player sync has at least three instances of 64 players needing their own sync tid.
+    // Player sync has at least four instances of 64 players needing their own sync tid.
     // We also require 32 ints from the safety slots (1 player requires 16 bits each at most)
-    #define SYNC_PLAYERS_LENGTH (BCSUtils::MAX_PLAYERS * 3 + 24) + 32 + SYNC_PLAYER_PICKWEIGHT_LENGTH
+    #define SYNC_PLAYERS_LENGTH (BCSUtils::MAX_PLAYERS * 4 + 24) + 32 + SYNC_PLAYER_PICKWEIGHT_LENGTH
     #define SYNC_PLAYERS SYNC_BASE + SYNC_PLAYERS_LENGTH
 
     #define SYNC_ROUNDTIMERS_LENGTH (MAX_TIMERS * 10)
@@ -50,8 +50,12 @@ strict namespace Sync
     #define SYNC_MAPVOTING_LENGTH (BCSUtils::MAX_PLAYERS + MAX_VOTABLEMAPS + 10)
     #define SYNC_MAPVOTING SYNC_GAME + SYNC_MAPVOTING_LENGTH
 
+    // AFK prevention needs 64 * 2 for the last move tic and the warn tic.
+    #define SYNC_AFKPREVENTION_LENGTH (BCSUtils::MAX_PLAYERS * 2)
+    #define SYNC_AFKPREVENTION SYNC_MAPVOTING + SYNC_AFKPREVENTION_LENGTH
+
     // When adding a new sync, also increase this number.
-    #define MAX_SYNC_TYPES 8
+    #define MAX_SYNC_TYPES 9
 
     internal enum SyncTypeT : int
     {
@@ -65,6 +69,7 @@ strict namespace Sync
         SYNCTYPE_ADMINS,
         SYNCTYPE_GAME,
         SYNCTYPE_MAPVOTING,
+        SYNCTYPE_AFKPREVENTION,
     };
 
     struct SyncContextT

@@ -1,0 +1,207 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "AFK prevention"
+
+#include "player.acs"
+
+strict namespace AfkPrevention
+{
+    internal void InitializeServer()
+    {
+        Logger::LogDebug(LOGSOURCE, "Initializing serverside.");
+
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_afkprevention_specie_changed");
+    }
+
+    // Manages the kick buffer which the AFK on the player side fills and formats a nice log message.
+    internal void AfkPreventionBroadcastServer()
+    {
+        int kickedCount = 0;
+
+        for (int id = 0; id < BCSUtils::MAX_PLAYERS; id++)
+        {
+            if (GetPlayerWasRoundStartAfkKicked(id))
+                kickedCount++;
+        }
+
+        if (kickedCount == 0)
+            return;
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int current = 0;
+            Append(s:"\cd");
+
+            for (int id = 0; id < BCSUtils::MAX_PLAYERS; id++)
+            {
+                if (!GetPlayerWasRoundStartAfkKicked(id))
+                    continue;
+
+                current++;
+
+                if (current > 1)
+                {
+                    if (current == kickedCount)
+                        Append(s:" and ");
+                    else
+                        Append(s:", ");
+                }
+
+                Append(s:BCSUtils::PlayerName(id));
+
+                SetPlayerAfkKicked(id, false);
+            }
+
+            Append(s:" ");
+            Append(s:(kickedCount == 1 ? "was" : "were"));
+            Append(s:" moved to spectators for inactivity.");
+        }
+
+        Logger::LogBold(logMessage);
+    }
+
+    // Handles checks if the activator should be kicked for inactivity on round start.
+    internal void PlayerAfkPreventionRoundStartServer()
+    {
+        if (!GetHasMovedThisRound())
+        {
+            if (Utils::GetIsMoving())
+            {
+                SetLastMoveTic(Timer());
+                Sync::SyncAfkPrevention();
+                return;
+            }
+
+            if (!ZH2Game::GetAfkMoveAtRoundStart())
+                return;
+
+            // On 0 we don't want AFK prevention at map start. Otherwise it would be instant.
+            int seconds = ZH2Game::GetAfkMoveAtRoundStartBeforeSeconds();
+            if (seconds == 0)
+                return;
+
+            int playTics = Player::GetPlayTics();
+            if (seconds * 35 > playTics)
+                return;
+
+            KickFromGame(PlayerNumber(), "inactivity");
+            SetAfkKicked(true);
+        }
+    }
+
+    // Handles checks if the activator should be kicked for inactivity as a zombie.
+    internal void PlayerAfkPreventionZombieServer()
+    {
+        if (!Player::GetIsZombie())
+            return;
+
+        // Depending on the AFK type different systems handle inactivity.
+        ZombieAfkTypeT afkType = GetZombieAfkType();
+
+        // No AFK detection enabled, make sure state is reset.
+        if (!ZH2Game::GetAfkMoveAsZombie())
+        {
+            if (afkType != TYPE_NONE)
+            {
+                SetWarnTic(0);
+                SetLastMoveTic(Timer());
+                SetZombieAfkType(TYPE_NONE);
+                Sync::SyncAfkPrevention();
+            }
+            return;
+        }
+
+        bool isMoving = Utils::GetIsMoving();
+
+        switch (afkType)
+        {
+            // Grace period with no check.
+            case TYPE_NONE:
+            {
+                int ticsLeft = GetZombieGraceTicsLeft();
+                if (ticsLeft != 0)
+                    return;
+
+                Logger::LogDebug(LOGSOURCE, "Moving " + BCSUtils::PlayerName(PlayerNumber()) + " to checking state.");
+                SetZombieAfkType(TYPE_CHECKING);
+                break;
+            }
+
+            // Frequent checking to ensure the player isn't moving.
+            case TYPE_CHECKING:
+            {
+                if (isMoving)
+                {
+                    Logger::LogDebug(LOGSOURCE, "Moving " + BCSUtils::PlayerName(PlayerNumber()) + " back to grace state.");
+                    SetLastMoveTic(Timer());
+                    SetZombieAfkType(TYPE_NONE);
+                    return;
+                }
+
+                int ticsLeft = GetZombieCheckTicsLeft();
+                if (ticsLeft != 0)
+                    return;
+
+                Logger::LogDebug(LOGSOURCE, "Moving " + BCSUtils::PlayerName(PlayerNumber()) + " to warn state.");
+                SetZombieAfkType(TYPE_WARNED);
+                SetWarnTic(Timer());
+                Sync::SyncAfkPrevention();
+                break;
+            }
+
+            // Warn state where the player still haven't moved and has now been informed.
+            // case TYPE_WARNED:
+            default:
+            {
+                if (isMoving)
+                {
+                    Logger::LogDebug(LOGSOURCE, "Moving " + BCSUtils::PlayerName(PlayerNumber()) + " back to grace state.");
+                    SetWarnTic(0);
+                    SetLastMoveTic(Timer());
+                    SetZombieAfkType(TYPE_NONE);
+                    Sync::SyncAfkPrevention();
+                    return;
+                }
+
+                int ticsLeft = GetZombieWarnTicsLeft();
+                if (ticsLeft != 0)
+                    return;
+
+                Logger::LogDebug(LOGSOURCE, "Kicking zombie " + BCSUtils::PlayerName(PlayerNumber()) + " for inactivity.");
+                KickFromGame(PlayerNumber(), "inactivity");
+                SetAfkKicked(true);
+                break;
+            }
+        }
+    }
+
+    script "zh2_internal_afkprevention_specie_changed" (raw packetStr)
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerSpecieChanged(packet);
+        int id = Event::GetReceiveData(0);
+        int specieInt = Event::GetReceiveData(1);
+        Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(specieInt);
+
+        // When turning human we want to ensure the warn tic and such is removed.
+        if (specie == Player::SPECIEHUMAN)
+        {
+            Logger::LogDebug(LOGSOURCE, "Moving " + BCSUtils::PlayerName(id) + " back to grace state as they turn human.");
+            SetPlayerWarnTic(id, 0);
+            SetPlayerZombieAfkType(id, TYPE_NONE);
+            Sync::SyncAfkPrevention();
+        }
+
+        // When turning zombie we want to set the move tic so we don't immediately go into the warn state.
+        else if (specie == Player::SPECIEZOMBIE)
+        {
+            Logger::LogDebug(LOGSOURCE, "Setting move tic of " + BCSUtils::PlayerName(id) + " as they turn zombie.");
+            SetPlayerLastMoveTic(id, Timer());
+        }
+    }
+}
+
+#undef LOGSOURCE

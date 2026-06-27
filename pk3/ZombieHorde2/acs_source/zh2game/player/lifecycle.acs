@@ -1,0 +1,51 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Player
+{
+    internal int GetJoinTic()
+    {
+        return GetPlayerJoinTic(PlayerNumber());
+    }
+
+    internal int GetPlayerJoinTic(int id)
+    {
+        return ZH2Game::GameContext.Players[id].LifecycleContext.JoinTic;
+    }
+
+    internal void SetJoinTic(int tic)
+    {
+        SetPlayerJoinTic(PlayerNumber(), tic);
+    }
+
+    internal void SetPlayerJoinTic(int id, int tic)
+    {
+        ZH2Game::GameContext.Players[id].LifecycleContext.JoinTic = tic;
+    }
+
+    internal void SetJoinTicNow()
+    {
+        SetPlayerJoinTicNow(PlayerNumber());
+    }
+
+    internal void SetPlayerJoinTicNow(int id)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+        SetPlayerJoinTic(id, Timer());
+    }
+
+    internal int GetPlayTics()
+    {
+        return GetPlayerPlayTics(PlayerNumber());
+    }
+
+    internal int GetPlayerPlayTics(int id)
+    {
+        if (GetPlayerState(id) == STATENONE)
+            return 0;
+
+        int joinTic = ZH2Game::GameContext.Players[id].LifecycleContext.JoinTic;
+        return Utils::GetSynchronizedTimer() - joinTic;
+    }
+}

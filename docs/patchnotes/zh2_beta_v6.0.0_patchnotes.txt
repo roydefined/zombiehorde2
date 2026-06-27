@@ -33,12 +33,21 @@ Additionally, the system now supports optionally awarding a zombie kill to a hum
 Server hosts can configure the required damage percentage through a cvar.
 If multiple players qualify, the player who dealt the most damage will receive the kill and any associated rewards.
 This helps ensure players are still rewarded when a zombie leaves after taking significant damage.
+Should a zombie leave early, then server hosts can also configure a time period when the map will reset.
+If a zombie leaves before the period ends, the map will end with an indication of map reset.
+The round ends similar to normal endings, minus the stats. The map will reset quickly after.
 
 * * Zombie bans on leaving the round * *
 Additional to the compensation changes, the game now also supports banning a zombie if they were to leave mid-game.
 Zandronum now supports bannign through ACS with the cvar `sv_maxacsbanduration`.
 Server hosts will be able to enable banning through this cvar, or disable it by setting the vlaue to 0.
 The game also respects this value and banning a zombie will happen based on the time provided by `sv_maxacsbanduration`.
+
+* * New AFK prevention system on map start * *
+The game now has detection of AFK players on map start. When a map starts, server hosts can configure a delay in which players must move.
+Players will be informed of this requirement on the HUD, and moving will get rid of this indication as the player will no longer be considered AFK.
+If a player does not move within the allotted time, they will be kicked from the game and pulled into spectator mode. The game will inform who gets kicked for inactivity.
+Players can still rejoin after getting kicked, as long as the round is joinable.
 
 Map changes
 ------------------------------------------------
@@ -49,6 +58,7 @@ Other mod changes
 ------------------------------------------------
 
 - Added a new option to the round menu for administrators to both end the game and reset the current map. This is similar to how the map would reset if zombies leave the game early.
+- The transient and the persisting player context is now disposed on the clientside whenever the serversided variant also disposed. Before only the serversided ones would dispose.
 
 Repository changes
 ------------------------------------------------
