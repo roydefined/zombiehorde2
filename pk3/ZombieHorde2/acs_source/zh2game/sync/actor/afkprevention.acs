@@ -1,0 +1,60 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Sync
+{
+    #define SYNC_CATEGORY "AFKPREVENTION"
+
+    internal void SyncAfkPreventionActor()
+    {
+        int syncId = SYNC_AFKPREVENTION;
+
+        syncId = SyncWriteHasMovedThisMap(syncId);
+
+        VERIFY_SYNCID(syncId, SYNC_AFKPREVENTION, SYNC_AFKPREVENTION_LENGTH);
+    }
+
+    internal void SyncAfkPreventionActorClientside()
+    {
+        int syncId = SYNC_AFKPREVENTION;
+
+        syncId = SyncReadHasMovedThisMap(syncId);
+
+        VERIFY_SYNCID(syncId, SYNC_AFKPREVENTION, SYNC_AFKPREVENTION_LENGTH);
+    }
+
+    internal int SyncWriteHasMovedThisMap(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing has moved this map packs through actors. Sync id: " + str(syncId) + "."));
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            BitMath::SetBit64(BitMath::GetBitPack1(), BitMath::GetBitPack2(), i, Player::GetPlayerHasMovedThisMap(i));
+        }
+
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack1());
+        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack2());
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing has moved this map packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj."));
+        return syncId;
+    }
+
+    internal int SyncReadHasMovedThisMap(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading has moved this map packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        int pack1 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        int pack2 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            Player::SetPlayerHasMovedThisMap(i, bool(BitMath::GetBit64(pack1, pack2, i)));
+        }
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing has moved this map packs to client."));
+        return syncId;
+    }
+
+    #undef SYNC_CATEGORY
+}

@@ -18,6 +18,7 @@ strict namespace Player
             if (Utils::GetIsMoving())
             {
                 SetHasMovedThisMap(true);
+                Sync::SyncAfkPrevention();
                 return;
             }
 
@@ -34,20 +35,6 @@ strict namespace Player
             KickFromGame(PlayerNumber(), "inactivity");
             Game::SetWasRoundStartAfkKicked(true);
         }
-    }
-
-    // Clientside we also check input so we can tell the client if he will be kicked.
-    internal void AfkPreventionRoundStartTicClient()
-    {
-        // Online-only
-        if (!IsNetworkGame())
-            return;
-
-        if (!PlayerInGame(PlayerNumber()) || PlayerIsBot(PlayerNumber()))
-            return;
-
-        if (!GetHasMovedThisMap() && Utils::GetIsMoving())
-            SetHasMovedThisMap(true);
     }
 
     internal bool GetHasMovedThisMap()

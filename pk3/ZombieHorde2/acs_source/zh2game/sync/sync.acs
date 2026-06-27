@@ -12,6 +12,7 @@
 #include "actor/admin.acs"
 #include "actor/game.acs"
 #include "actor/mapvoting.acs"
+#include "actor/afkprevention.acs"
 
 strict namespace Sync
 {
@@ -47,6 +48,7 @@ strict namespace Sync
             case SYNCTYPE_ADMINS: SyncAdminsCore(); return;
             case SYNCTYPE_GAME: SyncGameCore(); return;
             case SYNCTYPE_MAPVOTING: SyncMapVotingCore(); return;
+            case SYNCTYPE_AFKPREVENTION: SyncAfkPreventionCore(); return;
 
             default:
                 Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to flush sync index " + str(syncId) + " as it's not known.");
@@ -101,6 +103,7 @@ strict namespace Sync
         Sync::SyncAdmins();
         Sync::SyncGame();
         Sync::SyncMapVoting();
+        Sync::SyncAfkPrevention();
     }
 
     internal void CallClientSyncAll()
@@ -115,6 +118,7 @@ strict namespace Sync
         Sync::CallSyncAdminsOnClients();
         Sync::CallSyncGameOnClients();
         Sync::CallSyncMapVotingOnClients();
+        Sync::CallSyncAfkPreventionOnClients();
     }
 
     internal void SyncAllClientside()
@@ -129,6 +133,7 @@ strict namespace Sync
         Sync::SyncAdminsClientside();
         Sync::SyncGameClientside();
         Sync::SyncMapVotingClientside();
+        Sync::SyncAfkPreventionClientside();
     }
 
     /* PLAYERS */
@@ -529,6 +534,56 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
         Event::SendDataSynced(SYNCTYPE_MAPVOTING);
+    }
+
+    /* AFK Prevention */
+
+    internal void SyncAfkPrevention()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+        {
+            FinalizeAfkPreventionSyncedClientside();
+            return;
+        }
+
+        DoSync(SYNCTYPE_AFKPREVENTION);
+    }
+
+    internal void SyncAfkPreventionCore()
+    {
+        SyncAfkPreventionActor();
+        CallSyncAfkPreventionOnClients();
+    }
+
+    internal void CallSyncAfkPreventionOnClients()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (IsNetworkGame())
+            ACS_NamedExecute("zh2_internal_sync_afkprevention_clientside", 0);
+    }
+
+    script "zh2_internal_sync_afkprevention_clientside" clientside
+    {
+        SyncAfkPreventionClientside();
+    }
+
+    internal void SyncAfkPreventionClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (IsNetworkGame())
+            SyncAfkPreventionActorClientSide();
+
+        FinalizeAfkPreventionSyncedClientside();
+    }
+
+    internal void FinalizeAfkPreventionSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_AFKPREVENTION);
     }
 }
 
