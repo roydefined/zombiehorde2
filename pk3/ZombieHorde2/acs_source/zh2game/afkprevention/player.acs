@@ -151,12 +151,13 @@ strict namespace AfkPrevention
 
     internal int GetPlayerZombieCheckTicsLeft(int id)
     {
+        int graceTics = ZH2Game::GetAfkZombieMoveGraceTics();
         int checkTics = ZH2Game::GetAfkZombieMoveCheckTics();
         if (checkTics == 0)
             return 0;
 
         int lastMoveTic = GetPlayerLastMoveTic(id);
-        return BCSUtils::Max(0, checkTics - (Utils::GetSynchronizedTimer() - lastMoveTic));
+        return BCSUtils::Max(0, (checkTics + graceTics) - (Utils::GetSynchronizedTimer() - lastMoveTic));
     }
 
     // The tics until the player would be kicked for being inactive as a zombie.
