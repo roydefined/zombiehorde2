@@ -4,7 +4,7 @@
 
 strict namespace Player
 {
-    internal void AfkPreventionTicServer()
+    internal void AfkPreventionRoundStartTicServer()
     {
         if (!PlayerInGame(PlayerNumber()) || PlayerIsBot(PlayerNumber()))
             return;
@@ -32,12 +32,12 @@ strict namespace Player
 
             // Kick and send to buffer so the Game side can log a message.
             KickFromGame(PlayerNumber(), "inactivity");
-            Game::SetWasAfkKicked(true);
+            Game::SetWasRoundStartAfkKicked(true);
         }
     }
 
     // Clientside we also check input so we can tell the client if he will be kicked.
-    internal void AfkPreventionTicClient()
+    internal void AfkPreventionRoundStartTicClient()
     {
         // Online-only
         if (!IsNetworkGame())
@@ -57,7 +57,7 @@ strict namespace Player
 
     internal bool GetPlayerHasMovedThisMap(int id)
     {
-        return ZH2Game::GameContext.Players[id].AfkPreventionContext.HasMovedThisMap;
+        return ZH2Game::GameContext.Players[id].AfkPreventionRoundStartContext.HasMovedThisMap;
     }
 
     internal void SetHasMovedThisMap(bool set)
@@ -67,15 +67,15 @@ strict namespace Player
 
     internal void SetPlayerHasMovedThisMap(int id, bool set)
     {
-        ZH2Game::GameContext.Players[id].AfkPreventionContext.HasMovedThisMap = set;
+        ZH2Game::GameContext.Players[id].AfkPreventionRoundStartContext.HasMovedThisMap = set;
     }
 
-    internal int GetTicsUntilKick()
+    internal int GetTicsUntilRoundStartKick()
     {
-        return GetPlayerTicsUntilKick(PlayerNumber());
+        return GetPlayerTicsUntilRoundStartKick(PlayerNumber());
     }
 
-    internal int GetPlayerTicsUntilKick(int id)
+    internal int GetPlayerTicsUntilRoundStartKick(int id)
     {
         int seconds = ZH2Game::GetAfkMoveAtRoundStartBeforeSeconds();
         if (seconds == 0)

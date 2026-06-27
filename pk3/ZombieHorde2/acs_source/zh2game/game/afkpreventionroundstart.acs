@@ -5,7 +5,7 @@
 strict namespace Game
 {
     // Manages the kick buffer which the AFK on the player side fills and formats a nice log message.
-    internal void AfkPreventionTicServer()
+    internal void AfkPreventionRoundStartTicServer()
     {
         // To collect players we do this every 5 tics.
         if (Timer() % 5 != 0)
@@ -15,7 +15,7 @@ strict namespace Game
 
         for (int id = 0; id < BCSUtils::MAX_PLAYERS; id++)
         {
-            if (GetPlayerWasAfkKicked(id))
+            if (GetPlayerWasRoundStartAfkKicked(id))
                 kickedCount++;
         }
 
@@ -30,7 +30,7 @@ strict namespace Game
 
             for (int id = 0; id < BCSUtils::MAX_PLAYERS; id++)
             {
-                if (!GetPlayerWasAfkKicked(id))
+                if (!GetPlayerWasRoundStartAfkKicked(id))
                     continue;
 
                 current++;
@@ -45,7 +45,7 @@ strict namespace Game
 
                 Append(s:BCSUtils::PlayerName(id));
 
-                SetPlayerWasAfkKicked(id, false);
+                SetPlayerWasRoundStartAfkKicked(id, false);
             }
 
             Append(s:" ");
@@ -56,23 +56,23 @@ strict namespace Game
         Logger::LogBold(logMessage);
     }
 
-    internal bool GetWasAfkKicked()
+    internal bool GetWasRoundStartAfkKicked()
     {
-        return GetPlayerWasAfkKicked(PlayerNumber());
+        return GetPlayerWasRoundStartAfkKicked(PlayerNumber());
     }
 
-    internal bool GetPlayerWasAfkKicked(int id)
+    internal bool GetPlayerWasRoundStartAfkKicked(int id)
     {
-        return ZH2Game::GameContext.AfkPreventionContext.AfkKickedPlayers[id];
+        return ZH2Game::GameContext.AfkPreventionRoundStartContext.AfkKickedPlayers[id];
     }
 
-    internal void SetWasAfkKicked(bool set)
+    internal void SetWasRoundStartAfkKicked(bool set)
     {
-        SetPlayerWasAfkKicked(PlayerNumber(), set);
+        SetPlayerWasRoundStartAfkKicked(PlayerNumber(), set);
     }
 
-    internal void SetPlayerWasAfkKicked(int id, bool set)
+    internal void SetPlayerWasRoundStartAfkKicked(int id, bool set)
     {
-        ZH2Game::GameContext.AfkPreventionContext.AfkKickedPlayers[id] = set;
+        ZH2Game::GameContext.AfkPreventionRoundStartContext.AfkKickedPlayers[id] = set;
     }
 }
