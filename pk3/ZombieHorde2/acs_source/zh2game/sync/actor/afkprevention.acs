@@ -10,7 +10,7 @@ strict namespace Sync
     {
         int syncId = SYNC_AFKPREVENTION;
 
-        syncId = SyncWriteHasMovedThisMap(syncId);
+        syncId = SyncWriteLastMoveTic(syncId);
 
         VERIFY_SYNCID(syncId, SYNC_AFKPREVENTION, SYNC_AFKPREVENTION_LENGTH);
     }
@@ -19,40 +19,30 @@ strict namespace Sync
     {
         int syncId = SYNC_AFKPREVENTION;
 
-        syncId = SyncReadHasMovedThisMap(syncId);
+        syncId = SyncReadLastMoveTic(syncId);
 
         VERIFY_SYNCID(syncId, SYNC_AFKPREVENTION, SYNC_AFKPREVENTION_LENGTH);
     }
 
-    internal int SyncWriteHasMovedThisMap(int syncId)
+    internal int SyncWriteLastMoveTic(int syncId)
     {
-        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing has moved this map packs through actors. Sync id: " + str(syncId) + "."));
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing last move tic packs through actors. Sync id: " + str(syncId) + "."));
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-        {
-            BitMath::SetBit64(BitMath::GetBitPack1(), BitMath::GetBitPack2(), i, AfkPrevention::GetPlayerHasMovedThisMap(i));
-        }
+            BCSUtils::SyncVariable(--syncId, AfkPrevention::GetPlayerLastMoveTic(i));
 
-        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack1());
-        BCSUtils::SyncVariable(--syncId, BitMath::GetBitPack2());
-
-        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing has moved this map packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj."));
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing last move tic packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj."));
         return syncId;
     }
 
-    internal int SyncReadHasMovedThisMap(int syncId)
+    internal int SyncReadLastMoveTic(int syncId)
     {
-        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading has moved this map packs on client through actors. Sync id: " + str(syncId) + "."));
-
-        int pack1 = BCSUtils::GetSyncVarDefault(--syncId, 0);
-        int pack2 = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading last move tic packs on client through actors. Sync id: " + str(syncId) + "."));
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-        {
-            AfkPrevention::SetPlayerHasMovedThisMap(i, bool(BitMath::GetBit64(pack1, pack2, i)));
-        }
+            AfkPrevention::SetPlayerLastMoveTic(i, BCSUtils::GetSyncVarDefault(--syncId, 0));
 
-        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing has moved this map packs to client."));
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing last move tic packs to client."));
         return syncId;
     }
 

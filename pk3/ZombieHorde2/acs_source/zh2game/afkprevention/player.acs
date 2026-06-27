@@ -25,7 +25,28 @@ strict namespace AfkPrevention
         ZH2Game::GameContext.AfkPreventionRoundStartContext.AfkKickedPlayers[id] = set;
     }
 
-    // Booleans to check if the player has moved at all in the round.
+    // The last tic the player has moved
+    internal int GetLastMoveTic()
+    {
+        return GetPlayerLastMoveTic(PlayerNumber());
+    }
+
+    internal int GetPlayerLastMoveTic(int id)
+    {
+        return ZH2Game::GameContext.Players[id].AfkPreventionRoundStartContext.LastMoveTic;
+    }
+
+    internal void SetLastMoveTic(int tic)
+    {
+        SetPlayerLastMoveTic(PlayerNumber(), tic);
+    }
+
+    internal void SetPlayerLastMoveTic(int id, int tic)
+    {
+        ZH2Game::GameContext.Players[id].AfkPreventionRoundStartContext.LastMoveTic = tic;
+    }
+
+    // Helper booleans to check if the player has moved at all in the round.
     internal bool GetHasMovedThisMap()
     {
         return GetPlayerHasMovedThisMap(PlayerNumber());
@@ -33,7 +54,7 @@ strict namespace AfkPrevention
 
     internal bool GetPlayerHasMovedThisMap(int id)
     {
-        return ZH2Game::GameContext.Players[id].AfkPreventionRoundStartContext.HasMovedThisMap;
+        return GetPlayerLastMoveTic(id) != 0;
     }
 
     internal void SetHasMovedThisMap(bool set)
@@ -43,7 +64,7 @@ strict namespace AfkPrevention
 
     internal void SetPlayerHasMovedThisMap(int id, bool set)
     {
-        ZH2Game::GameContext.Players[id].AfkPreventionRoundStartContext.HasMovedThisMap = set;
+        SetPlayerLastMoveTic(id, set ? Utils::GetSynchronizedTimer() : 0);
     }
 
     // The tics until the player would be kicked for being inactive at round start.
