@@ -9,12 +9,8 @@
 strict namespace AfkPrevention
 {
     // Manages the kick buffer which the AFK on the player side fills and formats a nice log message.
-    internal void AfkPreventionRoundStartTicServer()
+    internal void AfkPreventionBroadcastServer()
     {
-        // To collect players we do this every 5 tics.
-        if (Timer() % 5 != 0)
-            return;
-
         int kickedCount = 0;
 
         for (int id = 0; id < BCSUtils::MAX_PLAYERS; id++)
@@ -49,7 +45,7 @@ strict namespace AfkPrevention
 
                 Append(s:BCSUtils::PlayerName(id));
 
-                SetPlayerWasRoundStartAfkKicked(id, false);
+                SetPlayerAfkKicked(id, false);
             }
 
             Append(s:" ");
@@ -61,20 +57,13 @@ strict namespace AfkPrevention
     }
 
     // Handles checks if the activator should be kicked for inactivity on round start.
-    internal void PlayerAfkPreventionRoundStartTicServer()
+    internal void PlayerAfkPreventionRoundStartServer()
     {
-        if (!PlayerInGame(PlayerNumber()) || PlayerIsBot(PlayerNumber()))
-            return;
-
-        Round::KnownRoundStateT roundState = Round::GetActiveKnownRoundState();
-        if (roundState != Round::STATECOUNTDOWN && roundState != Round::STATEPLAYING)
-            return;
-
-        if (!GetHasMovedThisMap())
+        if (!GetHasMovedThisRound())
         {
             if (Utils::GetIsMoving())
             {
-                SetHasMovedThisMap(true);
+                SetLastMoveTic(Timer());
                 Sync::SyncAfkPrevention();
                 return;
             }
@@ -88,9 +77,81 @@ strict namespace AfkPrevention
             if (seconds * 35 > playTics)
                 return;
 
-            // Kick and send to buffer so the Game side can log a message.
             KickFromGame(PlayerNumber(), "inactivity");
-            SetWasRoundStartAfkKicked(true);
+            SetAfkKicked(true);
+        }
+    }
+
+    // Handles checks if the activator should be kicked for inactivity as a zombie.
+    internal void PlayerAfkPreventionZombieServer()
+    {
+        if (!Player::GetIsZombie())
+            return;
+
+        // Depending on the AFK type different systems handle inactivity.
+        ZombieAfkTypeT afkType = GetZombieAfkType();
+
+        bool isMoving = Utils::GetIsMoving();
+
+        switch (afkType)
+        {
+            // Grace period with no check.
+            case TYPE_NONE:
+            {
+                int ticsLeft = GetZombieGraceTicsLeft();
+                if (ticsLeft != 0)
+                    return;
+
+                Logger::LogDebug(LOGSOURCE, "Moving " + BCSUtils::PlayerName(PlayerNumber()) + " to checking state.");
+                SetZombieAfkType(TYPE_CHECKING);
+                break;
+            }
+
+            // Frequent checking to ensure the player isn't moving.
+            case TYPE_CHECKING:
+            {
+                if (isMoving)
+                {
+                    Logger::LogDebug(LOGSOURCE, "Moving " + BCSUtils::PlayerName(PlayerNumber()) + " back to grace state.");
+                    SetLastMoveTic(Timer());
+                    SetZombieAfkType(TYPE_NONE);
+                    return;
+                }
+
+                int ticsLeft = GetZombieCheckTicsLeft();
+                if (ticsLeft != 0)
+                    return;
+
+                Logger::LogDebug(LOGSOURCE, "Moving " + BCSUtils::PlayerName(PlayerNumber()) + " to warn state.");
+                SetZombieAfkType(TYPE_WARNED);
+                SetWarnTic(Timer());
+                Sync::SyncAfkPrevention();
+                break;
+            }
+
+            // Warn state where the player still haven't moved and has now been informed.
+            // case TYPE_WARNED:
+            default:
+            {
+                if (isMoving)
+                {
+                    Logger::LogDebug(LOGSOURCE, "Moving " + BCSUtils::PlayerName(PlayerNumber()) + " back to grace state.");
+                    SetWarnTic(0);
+                    SetLastMoveTic(Timer());
+                    SetZombieAfkType(TYPE_NONE);
+                    Sync::SyncAfkPrevention();
+                    return;
+                }
+
+                int ticsLeft = GetZombieWarnTicsLeft();
+                if (ticsLeft != 0)
+                    return;
+
+                Logger::LogDebug(LOGSOURCE, "Kicking zombie " + BCSUtils::PlayerName(PlayerNumber()) + " for inactivity.");
+                KickFromGame(PlayerNumber(), "inactivity");
+                SetAfkKicked(true);
+                break;
+            }
         }
     }
 }

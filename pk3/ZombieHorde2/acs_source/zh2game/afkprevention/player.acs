@@ -12,17 +12,17 @@ strict namespace AfkPrevention
 
     internal bool GetPlayerWasRoundStartAfkKicked(int id)
     {
-        return ZH2Game::GameContext.AfkPreventionRoundStartContext.AfkKickedPlayers[id];
+        return ZH2Game::GameContext.AfkPreventionContext.AfkKickedPlayers[id];
     }
 
-    internal void SetWasRoundStartAfkKicked(bool set)
+    internal void SetAfkKicked(bool set)
     {
-        SetPlayerWasRoundStartAfkKicked(PlayerNumber(), set);
+        SetPlayerAfkKicked(PlayerNumber(), set);
     }
 
-    internal void SetPlayerWasRoundStartAfkKicked(int id, bool set)
+    internal void SetPlayerAfkKicked(int id, bool set)
     {
-        ZH2Game::GameContext.AfkPreventionRoundStartContext.AfkKickedPlayers[id] = set;
+        ZH2Game::GameContext.AfkPreventionContext.AfkKickedPlayers[id] = set;
     }
 
     // The last tic the player has moved
@@ -33,7 +33,7 @@ strict namespace AfkPrevention
 
     internal int GetPlayerLastMoveTic(int id)
     {
-        return ZH2Game::GameContext.Players[id].AfkPreventionRoundStartContext.LastMoveTic;
+        return ZH2Game::GameContext.Players[id].AfkPreventionContext.LastMoveTic;
     }
 
     internal void SetLastMoveTic(int tic)
@@ -43,28 +43,71 @@ strict namespace AfkPrevention
 
     internal void SetPlayerLastMoveTic(int id, int tic)
     {
-        ZH2Game::GameContext.Players[id].AfkPreventionRoundStartContext.LastMoveTic = tic;
+        ZH2Game::GameContext.Players[id].AfkPreventionContext.LastMoveTic = tic;
+    }
+
+    // The tic when we start warning the player of possibly getting kicked.
+    internal int GetWarnTic()
+    {
+        return GetPlayerWarnTic(PlayerNumber());
+    }
+
+    internal int GetPlayerWarnTic(int id)
+    {
+        return ZH2Game::GameContext.Players[id].AfkPreventionContext.WarnTic;
+    }
+
+    internal void SetWarnTic(int tic)
+    {
+        SetPlayerWarnTic(PlayerNumber(), tic);
+    }
+
+    internal void SetPlayerWarnTic(int id, int tic)
+    {
+        ZH2Game::GameContext.Players[id].AfkPreventionContext.WarnTic = tic;
+    }
+
+    // The last tic the player has moved
+    internal ZombieAfkTypeT GetZombieAfkType()
+    {
+        return GetPlayerZombieAfkType(PlayerNumber());
+    }
+
+    internal ZombieAfkTypeT GetPlayerZombieAfkType(int id)
+    {
+        return ZH2Game::GameContext.Players[id].AfkPreventionContext.ZombieAfkType;
+    }
+
+    internal void SetZombieAfkType(ZombieAfkTypeT type)
+    {
+        SetPlayerZombieAfkType(PlayerNumber(), type);
+    }
+
+    internal void SetPlayerZombieAfkType(int id, ZombieAfkTypeT type)
+    {
+        ZH2Game::GameContext.Players[id].AfkPreventionContext.ZombieAfkType = type;
     }
 
     // Helper booleans to check if the player has moved at all in the round.
-    internal bool GetHasMovedThisMap()
+    internal bool GetHasMovedThisRound()
     {
-        return GetPlayerHasMovedThisMap(PlayerNumber());
+        return GetPlayerHasMovedThisRound(PlayerNumber());
     }
 
-    internal bool GetPlayerHasMovedThisMap(int id)
+    internal bool GetPlayerHasMovedThisRound(int id)
     {
         return GetPlayerLastMoveTic(id) != 0;
     }
 
-    internal void SetHasMovedThisMap(bool set)
+    // Helper booleans to check if the player has moved at all in the round.
+    internal bool GetHasAfkWarn()
     {
-        SetPlayerHasMovedThisMap(PlayerNumber(), set);
+        return GetPlayerHasAfkWarn(PlayerNumber());
     }
 
-    internal void SetPlayerHasMovedThisMap(int id, bool set)
+    internal bool GetPlayerHasAfkWarn(int id)
     {
-        SetPlayerLastMoveTic(id, set ? Utils::GetSynchronizedTimer() : 0);
+        return GetPlayerWarnTic(id) != 0;
     }
 
     // The tics until the player would be kicked for being inactive at round start.
@@ -82,5 +125,54 @@ strict namespace AfkPrevention
 
         int playTics = Player::GetPlayerPlayTics(id);
         return BCSUtils::Max(0, (seconds * 35) - playTics);
+    }
+
+    // The tics until the grace tics end for the zombie.
+    internal int GetZombieGraceTicsLeft()
+    {
+        return GetPlayerZombieGraceTicsLeft(PlayerNumber());
+    }
+
+    internal int GetPlayerZombieGraceTicsLeft(int id)
+    {
+        int graceTics = ZH2Game::GetAfkZombieMoveGraceTics();
+        if (graceTics == 0)
+            return 0;
+
+        int lastMoveTic = GetPlayerLastMoveTic(id);
+        return BCSUtils::Max(0, graceTics - (Utils::GetSynchronizedTimer() - lastMoveTic));
+    }
+
+    // The tics until the check tics end for the zombie.
+    internal int GetZombieCheckTicsLeft()
+    {
+        return GetPlayerZombieCheckTicsLeft(PlayerNumber());
+    }
+
+    internal int GetPlayerZombieCheckTicsLeft(int id)
+    {
+        int checkTics = ZH2Game::GetAfkZombieMoveCheckTics();
+        if (checkTics == 0)
+            return 0;
+
+        int lastMoveTic = GetPlayerLastMoveTic(id);
+        return BCSUtils::Max(0, checkTics - (Utils::GetSynchronizedTimer() - lastMoveTic));
+    }
+
+    // The tics until the player would be kicked for being inactive as a zombie.
+    // NOTE: This does not check if you did move, it merely returns when you would get kicked.
+    internal int GetZombieWarnTicsLeft()
+    {
+        return GetPlayerZombieWarnTicsLeft(PlayerNumber());
+    }
+
+    internal int GetPlayerZombieWarnTicsLeft(int id)
+    {
+        int seconds = ZH2Game::GetAfkZombieMoveWarnSeconds();
+        if (seconds == 0)
+            return 0;
+
+        int warnTic = GetPlayerWarnTic(id);
+        return BCSUtils::Max(0, seconds * 35 - (Utils::GetSynchronizedTimer() - warnTic));
     }
 }

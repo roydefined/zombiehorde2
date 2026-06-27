@@ -92,11 +92,27 @@ strict namespace Hud
 
     internal void DrawAfkBar()
     {
-        if (AfkPrevention::GetHasMovedThisMap())
-            return;
-
         Round::KnownRoundStateT roundState = Round::GetActiveKnownRoundState();
         if (roundState != Round::STATECOUNTDOWN && roundState != Round::STATEPLAYING)
+            return;
+
+        // The bar requires the player to either have no moved, or have a warning he is going to get kicked.
+        // Priority is on having moved at round start.
+        int max, tics;
+        if (AfkPrevention::GetHasMovedThisRound())
+        {
+            max = ZH2Game::GetAfkMoveAtRoundStartBeforeSeconds() * 35;
+            tics = AfkPrevention::GetTicsUntilRoundStartKick();
+        }
+        else if (AfkPrevention::GetHasAfkWarn())
+        {
+            max = ZH2Game::GetAfkZombieMoveWarnSeconds() * 35;
+            tics = AfkPrevention::GetZombieWarnTicsLeft();
+        }
+        else
+            return;
+
+        if (max == 0)
             return;
 
         int id = HUDID_AFKBAR;
@@ -104,13 +120,7 @@ strict namespace Hud
         HudSetPointInternal();
         BCSUtils::HudDrawImage(--id, BAR_AFKPREVENTION_NAME);
 
-        int max = ZH2Game::GetAfkMoveAtRoundStartBeforeSeconds();
-        if (max == 0)
-            return;
-
-        int tics = AfkPrevention::GetTicsUntilRoundStartKick();
-
-        fixed percentage = fixed(tics) / fixed(max * 35);
+        fixed percentage = fixed(tics) / fixed(max);
         fixed clipX = BCSUtils::Round(fixed(BAR_AFKPREVENTION_WIDTH) * percentage);
 
         //BCSUtils::HudSetAlpha(BCSUtils::Min(1.0, percentage * 1.5));
