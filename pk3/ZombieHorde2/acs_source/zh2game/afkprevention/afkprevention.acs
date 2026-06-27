@@ -75,6 +75,9 @@ strict namespace AfkPrevention
                 return;
             }
 
+            if (!ZH2Game::GetAfkMoveAtRoundStart())
+                return;
+
             // On 0 we don't want AFK prevention at map start. Otherwise it would be instant.
             int seconds = ZH2Game::GetAfkMoveAtRoundStartBeforeSeconds();
             if (seconds == 0)
@@ -97,6 +100,19 @@ strict namespace AfkPrevention
 
         // Depending on the AFK type different systems handle inactivity.
         ZombieAfkTypeT afkType = GetZombieAfkType();
+
+        // No AFK detection enabled, make sure state is reset.
+        if (!ZH2Game::GetAfkMoveAsZombie())
+        {
+            if (afkType != TYPE_NONE)
+            {
+                SetWarnTic(0);
+                SetLastMoveTic(Timer());
+                SetZombieAfkType(TYPE_NONE);
+                Sync::SyncAfkPrevention();
+            }
+            return;
+        }
 
         bool isMoving = Utils::GetIsMoving();
 
