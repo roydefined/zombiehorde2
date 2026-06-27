@@ -8,6 +8,13 @@
 
 strict namespace AfkPrevention
 {
+    internal void InitializeServer()
+    {
+        Logger::LogDebug(LOGSOURCE, "Initializing serverside.");
+
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_afkprevention_specie_changed");
+    }
+
     // Manages the kick buffer which the AFK on the player side fills and formats a nice log message.
     internal void AfkPreventionBroadcastServer()
     {
@@ -152,6 +159,31 @@ strict namespace AfkPrevention
                 SetAfkKicked(true);
                 break;
             }
+        }
+    }
+
+    script "zh2_internal_afkprevention_specie_changed" (raw packetStr)
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerSpecieChanged(packet);
+        int id = Event::GetReceiveData(0);
+        int specieInt = Event::GetReceiveData(1);
+        Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(specieInt);
+
+        // When turning human we want to ensure the warn tic and such is removed.
+        if (specie == Player::SPECIEHUMAN)
+        {
+            Logger::LogDebug(LOGSOURCE, "Moving " + BCSUtils::PlayerName(id) + " back to grace state as they turn human.");
+            SetPlayerWarnTic(id, 0);
+            SetPlayerZombieAfkType(id, TYPE_NONE);
+            Sync::SyncAfkPrevention();
+        }
+
+        // When turning zombie we want to set the move tic so we don't immediately go into the warn state.
+        else if (specie == Player::SPECIEZOMBIE)
+        {
+            Logger::LogDebug(LOGSOURCE, "Setting move tic of " + BCSUtils::PlayerName(id) + " as they turn zombie.");
+            SetPlayerLastMoveTic(id, Timer());
         }
     }
 }
