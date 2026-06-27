@@ -1,0 +1,65 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace AfkPrevention
+{
+    // General boolean that acts as a buffer for broadcasting inactivity.
+    internal bool GetWasRoundStartAfkKicked()
+    {
+        return GetPlayerWasRoundStartAfkKicked(PlayerNumber());
+    }
+
+    internal bool GetPlayerWasRoundStartAfkKicked(int id)
+    {
+        return ZH2Game::GameContext.AfkPreventionRoundStartContext.AfkKickedPlayers[id];
+    }
+
+    internal void SetWasRoundStartAfkKicked(bool set)
+    {
+        SetPlayerWasRoundStartAfkKicked(PlayerNumber(), set);
+    }
+
+    internal void SetPlayerWasRoundStartAfkKicked(int id, bool set)
+    {
+        ZH2Game::GameContext.AfkPreventionRoundStartContext.AfkKickedPlayers[id] = set;
+    }
+
+    // Booleans to check if the player has moved at all in the round.
+    internal bool GetHasMovedThisMap()
+    {
+        return GetPlayerHasMovedThisMap(PlayerNumber());
+    }
+
+    internal bool GetPlayerHasMovedThisMap(int id)
+    {
+        return ZH2Game::GameContext.Players[id].AfkPreventionRoundStartContext.HasMovedThisMap;
+    }
+
+    internal void SetHasMovedThisMap(bool set)
+    {
+        SetPlayerHasMovedThisMap(PlayerNumber(), set);
+    }
+
+    internal void SetPlayerHasMovedThisMap(int id, bool set)
+    {
+        ZH2Game::GameContext.Players[id].AfkPreventionRoundStartContext.HasMovedThisMap = set;
+    }
+
+    // The tics until the player would be kicked for being inactive at round start.
+    // NOTE: This does not check if you did move, it merely returns when you would get kicked.
+    internal int GetTicsUntilRoundStartKick()
+    {
+        return GetPlayerTicsUntilRoundStartKick(PlayerNumber());
+    }
+
+    internal int GetPlayerTicsUntilRoundStartKick(int id)
+    {
+        int seconds = ZH2Game::GetAfkMoveAtRoundStartBeforeSeconds();
+        if (seconds == 0)
+            return 0;
+
+        int playTics = Player::GetPlayerPlayTics(id);
+        return BCSUtils::Max(0, (seconds * 35) - playTics);
+    }
+}

@@ -2,7 +2,11 @@
     #error This file must be #included.
 #endif
 
-strict namespace Game
+#define LOGSOURCE "AFK prevention"
+
+#include "player.acs"
+
+strict namespace AfkPrevention
 {
     // Manages the kick buffer which the AFK on the player side fills and formats a nice log message.
     internal void AfkPreventionRoundStartTicServer()
@@ -56,23 +60,39 @@ strict namespace Game
         Logger::LogBold(logMessage);
     }
 
-    internal bool GetWasRoundStartAfkKicked()
+    // Handles checks if the activator should be kicked for inactivity on round start.
+    internal void PlayerAfkPreventionRoundStartTicServer()
     {
-        return GetPlayerWasRoundStartAfkKicked(PlayerNumber());
-    }
+        if (!PlayerInGame(PlayerNumber()) || PlayerIsBot(PlayerNumber()))
+            return;
 
-    internal bool GetPlayerWasRoundStartAfkKicked(int id)
-    {
-        return ZH2Game::GameContext.AfkPreventionRoundStartContext.AfkKickedPlayers[id];
-    }
+        Round::KnownRoundStateT roundState = Round::GetActiveKnownRoundState();
+        if (roundState != Round::STATECOUNTDOWN && roundState != Round::STATEPLAYING)
+            return;
 
-    internal void SetWasRoundStartAfkKicked(bool set)
-    {
-        SetPlayerWasRoundStartAfkKicked(PlayerNumber(), set);
-    }
+        if (!GetHasMovedThisMap())
+        {
+            if (Utils::GetIsMoving())
+            {
+                SetHasMovedThisMap(true);
+                Sync::SyncAfkPrevention();
+                return;
+            }
 
-    internal void SetPlayerWasRoundStartAfkKicked(int id, bool set)
-    {
-        ZH2Game::GameContext.AfkPreventionRoundStartContext.AfkKickedPlayers[id] = set;
+            // On 0 we don't want AFK prevention at map start. Otherwise it would be instant.
+            int seconds = ZH2Game::GetAfkMoveAtRoundStartBeforeSeconds();
+            if (seconds == 0)
+                return;
+
+            int playTics = Player::GetPlayTics();
+            if (seconds * 35 > playTics)
+                return;
+
+            // Kick and send to buffer so the Game side can log a message.
+            KickFromGame(PlayerNumber(), "inactivity");
+            SetWasRoundStartAfkKicked(true);
+        }
     }
 }
+
+#undef LOGSOURCE
