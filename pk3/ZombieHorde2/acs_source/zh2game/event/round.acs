@@ -74,17 +74,26 @@ strict namespace Event
                 Game::SetGameStartTicNow();
                 Sync::SyncGame();
 
-                Delay(const: 35);
-
-                // Timer is completely optional in escape maps, so the map developer is free to leave it out.
+                // For the first second we hide the timer.
                 int index = RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERPLAYING);
-                if (RoundTimer::GetTimerDefined(index))
+                bool defined = RoundTimer::GetTimerDefined(index);
+                if (defined)
                 {
                     RoundTimer::SetActiveTimerByKnownType(RoundTimer::TIMERPLAYING);
                     RoundTimer::StartTimer(index);
+                    RoundTimer::HideTimer(index);
                 }
 
                 Sync::SyncTimers();
+
+                Delay(const: 35);
+
+                if (defined)
+                {
+                    RoundTimer::ShowTimer(index);
+                    Sync::SyncTimers();
+                }
+
                 Delay(const: 35 * 2);
 
                 // Log a message to players to inform them of their specie and their task.
