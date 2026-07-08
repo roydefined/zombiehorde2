@@ -56,12 +56,12 @@ def get_paths():
 
         # ACSUtils
         "acsutils_dist": root / "modules" / "acsutils" / "dist",
-        "bcsutils_target": root / "pk3" / "lib" / "acs_source" / "bcsutils",
+        "bcsutils_target": root / "pk3" / "libraries" / "ZombieHorde2Lib" / "acs_source" / "bcsutils",
 
         # Library
-        "lib": root / "pk3" / "lib",
-        "lib_src": root / "pk3" / "lib" / "acs_source",
-        "lib_acs": root / "pk3" / "lib" / "acs",
+        "lib": root / "pk3" / "libraries" / "ZombieHorde2Lib",
+        "lib_src": root / "pk3" / "libraries" / "ZombieHorde2Lib" / "acs_source",
+        "lib_acs": root / "pk3" / "libraries" / "ZombieHorde2Lib" / "acs",
 
         # Core
         "core_src": root / "pk3" / "ZombieHorde2" / "acs_source",
