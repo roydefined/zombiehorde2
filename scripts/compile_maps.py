@@ -24,7 +24,7 @@ def main():
     logging.info(f'Compiling ACS scripts from "{mapfolder}"...\n')
 
     include_args = [
-        "-i", str(root / "pk3" / "lib"),
+        "-i", str(root / "pk3" / "libraries" / "ZombieHorde2Lib"),
         "-i", str(root / "pk3" / "ZombieHorde2")
     ]
 
