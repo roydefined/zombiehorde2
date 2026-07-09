@@ -60,7 +60,10 @@ strict namespace Admin
         int ticDiff = RoundTimer::IncrementTimer(index, addTics);
         if (ticDiff > 0)
         {
-            Game::CallVisualAddTime(addTics < 0 ? -ticDiff : ticDiff);
+            // Only show a visual change if the timer is not hidden.
+            if (RoundTimer::GetTimerVisible(index))
+                Game::CallVisualAddTime(addTics < 0 ? -ticDiff : ticDiff);
+
             int displayedSeconds = BCSUtils::Abs(addTics / 35);
             Logger::LogBold("\cjAn \cfadmin \cjhas " + (addTics < 0 ? "\cgdecremented" : "\cdincremented") + "\cj the current timer by " + (addTics < 0 ? "\cg" + str(displayedSeconds) : "\cd" + str(displayedSeconds)) + "s" + "\cj!");
 

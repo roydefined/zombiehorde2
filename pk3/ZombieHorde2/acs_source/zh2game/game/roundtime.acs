@@ -23,14 +23,18 @@ strict namespace Game
         int count = Game::ZombieCount(true) - Player::InitialZombieCount(true);
         int tics = BCSUtils::Max(0, 90 - 15 * count) + 10 * BCSUtils::Clamp(count / 6, 0, 1);
 
-        int ticDiff = RoundTimer::IncrementTimer(RoundTimer::GetActiveTimerIndex(), tics * 35);
+        int timerIndex = RoundTimer::GetActiveTimerIndex();
+        int ticDiff = RoundTimer::IncrementTimer(timerIndex, tics * 35);
 
         // No difference, then no need for an update.
         if (ticDiff != 0)
         {
             Logger::LogDebug(LOGSOURCE, "Increased timer by \cd" + str(ticDiff) + "\cj seconds.");
             Sync::SyncTimers();
-            CallVisualAddTime(ticDiff);
+
+            // Only show a visual increase if the timer is not hidden.
+            if (RoundTimer::GetTimerVisible(timerIndex))
+                CallVisualAddTime(ticDiff);
         }
     }
 

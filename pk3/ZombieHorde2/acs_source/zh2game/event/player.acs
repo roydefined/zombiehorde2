@@ -194,11 +194,15 @@ strict namespace Event
                         fixed ratio = fixed(health) / fixed(maxHealth);
                         fixed ratioInverse = 1.0 - ratio;
 
+                        int timerIndex = RoundTimer::GetActiveTimerIndex();
                         int tics = int(ratioInverse * fixed(maxSeconds * 35));
-                        int ticDiff = RoundTimer::IncrementTimer(RoundTimer::GetActiveTimerIndex(), tics);
+                        int ticDiff = RoundTimer::IncrementTimer(timerIndex, tics);
                         if (ticDiff > 0)
                         {
-                            Game::CallVisualAddTime(ticDiff);
+                            // Only show a visual increase if the timer is not hidden.
+                            if (RoundTimer::GetTimerVisible(timerIndex))
+                                Game::CallVisualAddTime(ticDiff);
+
                             int displayedSeconds = BCSUtils::Abs(ticDiff / 35);
                             Logger::LogBold("\cjThe timer has been \cdincremented \cjby \cd" + str(displayedSeconds) + "s" + "\cj to adjust for the leaving zombie.");
                         }
