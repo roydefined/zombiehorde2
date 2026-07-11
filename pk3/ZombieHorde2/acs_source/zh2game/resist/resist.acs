@@ -4,6 +4,7 @@
 
 #define LOGSOURCE "Resist"
 
+#include "scripthandler.acs"
 #include "extensions.acs"
 #include "sync.acs"
 
@@ -31,14 +32,36 @@ strict namespace Resist
             if (!IsDefined(index))
                 continue;
 
-            if (!IsActive(index))
-                continue;
+            ResistT module& resist = resists[index];
 
-            if (GetTicsDifference(index) <= 0)
+            ResistRunStateT state = GetRunState(index);
+            if (state == STATEREADYTORUN)
+            {
+                SetRunState(index, STATERUNNING);
+                Event::SendResistStarted(index);
+                Sync::SyncResists();
+
+                Logger::LogDebug(LOGSOURCE, "Resist " + str(index) + " has started.");
+            }
+
+            else if (state == STATEREADYTOEND)
             {
                 SetRunState(index, STATEENDED);
                 Event::SendResistElapsed(index);
                 Sync::SyncResists();
+
+                Logger::LogDebug(LOGSOURCE, "Resist " + str(index) + " has ended.");
+            }
+
+            else if (state == STATERUNNING && GetTicsDifference(index) <= 0)
+            {
+                if (resist.InitialState.PostResistScript != (raw)0)
+                {
+                    StartPostResistScript(index);
+                    return;
+                }
+
+                SetScriptReadyToEnd(index);
             }
         }
     }
@@ -113,9 +136,21 @@ strict namespace Resist
         Logger::LogDebug(LOGSOURCE, "Initialized new resist clientside at index \cd" + str(index) + "\cj. Time reason: " + timeReasonLog + ". Top reason: " + topReasonLog + ". Top reason has time token: \cd" + (resist.InitialState.TopReasonTimeTokenIndex != -1 ? "yes" : "no") + "\cj. Top reason time token has color: \cd" + (resist.InitialState.TopReasonHasColoredTimeToken ? "yes" : "no") + "\cj. Time reason has time token: \cd" + (resist.InitialState.TimeReasonTimeTokenIndex != -1 ? "yes" : "no") + "\cj. Time reason time token has color: \cd" + (resist.InitialState.TimeReasonHasColoredTimeToken ? "yes" : "no") + "\cj.");
     }
 
-    internal int GetMaximumTics(int index) { return GetRefByindex(index).InitialState.Length * 35; }
-    internal bool IsDefined(int index) { return GetRefByindex(index).Defined; }
-    internal bool IsActive(int index) { return GetRunState(index) == STATERUNNING; }
+    internal int GetMaximumTics(int index)
+    {
+        return GetRefByindex(index).InitialState.Length * 35;
+    }
+
+    internal bool IsDefined(int index)
+    {
+        return GetRefByindex(index).Defined;
+    }
+
+    internal bool IsActive(int index)
+    {
+        ResistRunStateT state = GetRunState(index);
+        return state != STATENONE && state != STATEENDED;
+    }
 
     internal int GetTicsLeft(int index)
     {
@@ -130,20 +165,39 @@ strict namespace Resist
 
     internal void StartResist(int index)
     {
-        // Already running or finished.
-        if (GetRunState(index) != STATENONE)
+        ResistRunStateT state = GetRunState(index);
+        if (state != STATENONE)
             return;
 
+        ResistT module& resist = GetRefByindex(index);
+        if (resist.InitialState.PreResistScript != (raw)0)
+        {
+            StartPreResistScript(index);
+            return;
+        }
+
+        SetScriptReadyToRun(index);
+    }
+
+    internal void SetScriptReadyToRun(int index)
+    {
         ResistT module& resist = GetRefByindex(index);
 
         // The ending tic of a resist is set to an interval of 35 to keep in sync with other resists.
         // This is mostly so the visualization of them remains equal between other resists.
         int endingTic = Utils::GetSynchronizedTimer() + resist.InitialState.Length * 35;
         resist.EndingTic = endingTic + (35 - (endingTic % 35));
-        SetRunState(index, STATERUNNING);
 
-        Logger::LogDebug(LOGSOURCE, "Starting resist. True length: \cd" + str(resist.EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
-        Event::SendResistStarted(index);
+        Logger::LogDebug(LOGSOURCE, "Resist is ready to run. True length: \cd" + str(resist.EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
+        SetRunState(index, STATEREADYTORUN);
+    }
+
+    internal void SetScriptReadyToEnd(int index)
+    {
+        ResistT module& resist = GetRefByindex(index);
+
+        Logger::LogDebug(LOGSOURCE, "Resist is ready to end.");
+        SetRunState(index, STATEREADYTOEND);
     }
 
     internal void StopResist(int index)
@@ -162,9 +216,25 @@ strict namespace Resist
         return GetRefByindex(index).RunState;
     }
 
+    internal void StartPreResistScript(int index)
+    {
+        ResistT module& resist = GetRefByindex(index);
+
+        SetRunState(index, STATEPRESCRIPT);
+        ACS_NamedExecuteWithResult(RESIST_SCRIPT_HANDLER_NAME, index, true, resist.InitialState.PreResistScript);
+    }
+
+    internal void StartPostResistScript(int index)
+    {
+        ResistT module& resist = GetRefByindex(index);
+
+        SetRunState(index, STATEPOSTSCRIPT);
+        ACS_NamedExecuteWithResult(RESIST_SCRIPT_HANDLER_NAME, index, false, resist.InitialState.PostResistScript);
+    }
+
     internal ResistRunStateT GetRunStateTypeByIndex(int stateIndex)
     {
-        static ResistRunStateT collection[] = { STATENONE, STATERUNNING, STATEENDED };
+        static ResistRunStateT collection[] = { STATENONE, STATEPRESCRIPT, STATEREADYTORUN, STATERUNNING, STATEPOSTSCRIPT, STATEREADYTOEND, STATEENDED };
 
         // No known round state.
         if (stateIndex < STATENONE && stateIndex > STATEENDED)
