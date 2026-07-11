@@ -128,7 +128,7 @@ strict namespace Resist
         return GetRefByindex(index).EndingTic - Utils::GetSynchronizedTimer();
     }
 
-    internal void StartResist(int index, bool broadcast = true)
+    internal void StartResist(int index)
     {
         // Already running or finished.
         if (GetRunState(index) != STATENONE)
@@ -143,17 +143,13 @@ strict namespace Resist
         SetRunState(index, STATERUNNING);
 
         Logger::LogDebug(LOGSOURCE, "Starting resist. True length: \cd" + str(resist.EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
-
-        if (broadcast)
-            Event::SendResistStarted(index);
+        Event::SendResistStarted(index);
     }
 
-    internal void StopResist(int index, bool broadcast = true)
+    internal void StopResist(int index)
     {
         GetRefByindex(index).EndingTic = -1;
-
-        if (broadcast)
-            Event::SendResistStopped(index);
+        Event::SendResistStopped(index);
     }
 
     internal void SetRunState(int index, ResistRunStateT state)
