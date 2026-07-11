@@ -175,7 +175,14 @@ strict namespace IO
         if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPRERESISTSCRIPTKEY)) return false;
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
 
-        _tokenizerResistParsedValue = Tokenizer::GetSymbol(handle);
+        str scriptName = Tokenizer::GetSymbol(handle);
+        if (!CheckScript(scriptName, true))
+        {
+            Tokenizer::SetErrored(handle, "The given pre-resist script does not exist: '" + scriptName + "'.");
+            return false;
+        }
+
+        _tokenizerResistParsedValue = scriptName;
 
         // Peek next character, see if we have a comma.
         // These are optional and if so, make sure to skip it.
@@ -191,7 +198,14 @@ strict namespace IO
         if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPOSTRESISTSCRIPTKEY)) return false;
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
 
-        _tokenizerResistParsedValue = Tokenizer::GetSymbol(handle);
+        str scriptName = Tokenizer::GetSymbol(handle);
+        if (!CheckScript(scriptName, true))
+        {
+            Tokenizer::SetErrored(handle, "The given post-resist script does not exist: '" + scriptName + "'.");
+            return false;
+        }
+
+        _tokenizerResistParsedValue = scriptName;
 
         // Peek next character, see if we have a comma.
         // These are optional and if so, make sure to skip it.
