@@ -273,6 +273,16 @@ strict namespace Resist
         ACS_NamedExecuteWithResult(RESIST_SCRIPT_HANDLER_NAME, index, false, resist.InitialState.PostResistScript);
     }
 
+    internal void SetLifecycleState(int index, ResistLifecycleStateT state)
+    {
+        GetRefByindex(index).LifecycleState = state;
+    }
+
+    internal ResistLifecycleStateT GetLifecycleState(int index)
+    {
+        return GetRefByindex(index).LifecycleState;
+    }
+
     internal ResistRunStateT GetRunStateTypeByIndex(int stateIndex)
     {
         static ResistRunStateT collection[] = { STATENONE, STATEPRESCRIPT, STATEREADYTORUN, STATERUNNING, STATEPOSTSCRIPT, STATEREADYTOELAPSE, STATEENDED };
@@ -280,6 +290,17 @@ strict namespace Resist
         // No known round state.
         if (stateIndex < STATENONE && stateIndex > STATEENDED)
             return STATENONE;
+
+        return collection[stateIndex];
+    }
+
+    internal str GetLifecycleStateStringByIndex(int stateIndex)
+    {
+        static str collection[] = { "none", "new", "updated" };
+
+        // No known lifecycle state.
+        if (stateIndex < LIFECYCLESTATE_NONE || stateIndex > LIFECYCLESTATE_UPDATED)
+            return "unknown";
 
         return collection[stateIndex];
     }

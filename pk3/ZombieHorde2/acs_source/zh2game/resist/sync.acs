@@ -19,8 +19,18 @@ strict namespace Resist
 
         for (int i = 0; i < lengthof(resists); ++i)
         {
-            if (resists[i].Defined)
+            if (!resists[i].Defined)
+                continue;
+
+            if (GetLifecycleState(i) == LIFECYCLESTATE_NONE)
+            {
+                SetLifecycleState(i, LIFECYCLESTATE_NEW);
                 InitializeResistClientside(i);
+            }
+            else
+            {
+                SetLifecycleState(i, LIFECYCLESTATE_UPDATED);
+            }
         }
 
         Logger::LogDebug(LOGSOURCE, "Synchronized resists clientside.");
