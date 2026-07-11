@@ -297,6 +297,19 @@ strict namespace Admin
         Resist::StartResist(index);
     }
 
+    internal void AdminSetElapseResistClientside(int index)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_elapse_resist", index))
+            Logger::LogError(LOGSOURCE, "Failed to call admin elapse resist.");
+    }
+
+    script "zh2_internal_menu_elapse_resist" (int index) net
+    {
+        if (!GetIsAdmin()) terminate;
+        if (!Resist::IsActive(index)) terminate;
+        Resist::SetResistReadyToElapse(index);
+    }
+
     internal void AdminSetStopResistClientside(int index)
     {
         if (!NamedRequestScriptPuke("zh2_internal_menu_stop_resist", index))
@@ -307,7 +320,7 @@ strict namespace Admin
     {
         if (!GetIsAdmin()) terminate;
         if (!Resist::IsActive(index)) terminate;
-        Resist::StopResist(index);
+        Resist::SetResistReadyToStop(index);
     }
 
     internal void AdminEndGameClientside()

@@ -44,13 +44,22 @@ strict namespace Resist
                 Logger::LogDebug(LOGSOURCE, "Resist " + str(index) + " has started.");
             }
 
-            else if (state == STATEREADYTOEND)
+            else if (state == STATEREADYTOELAPSE)
             {
                 SetRunState(index, STATEENDED);
                 Event::SendResistElapsed(index);
                 Sync::SyncResists();
 
-                Logger::LogDebug(LOGSOURCE, "Resist " + str(index) + " has ended.");
+                Logger::LogDebug(LOGSOURCE, "Resist " + str(index) + " has elapsed.");
+            }
+
+            else if (state == STATEREADYTOSTOP)
+            {
+                SetRunState(index, STATEENDED);
+                Event::SendResistStopped(index);
+                Sync::SyncResists();
+
+                Logger::LogDebug(LOGSOURCE, "Resist " + str(index) + " has stopped.");
             }
 
             else if (state == STATERUNNING && GetTicsDifference(index) <= 0)
@@ -61,7 +70,7 @@ strict namespace Resist
                     return;
                 }
 
-                SetResistReadyToEnd(index);
+                SetResistReadyToElapse(index);
             }
         }
     }
@@ -192,18 +201,20 @@ strict namespace Resist
         SetRunState(index, STATEREADYTORUN);
     }
 
-    internal void SetResistReadyToEnd(int index)
+    internal void SetResistReadyToElapse(int index)
     {
         ResistT module& resist = GetRefByindex(index);
 
-        Logger::LogDebug(LOGSOURCE, "Resist is ready to end.");
-        SetRunState(index, STATEREADYTOEND);
+        Logger::LogDebug(LOGSOURCE, "Resist is ready to elapse.");
+        SetRunState(index, STATEREADYTOELAPSE);
     }
 
-    internal void StopResist(int index)
+    internal void SetResistReadyToStop(int index)
     {
         GetRefByindex(index).EndingTic = -1;
-        Event::SendResistStopped(index);
+
+        Logger::LogDebug(LOGSOURCE, "Resist is ready to stop.");
+        SetRunState(index, STATEREADYTOSTOP);
     }
 
     internal void SetRunState(int index, ResistRunStateT state)
@@ -234,7 +245,7 @@ strict namespace Resist
 
     internal ResistRunStateT GetRunStateTypeByIndex(int stateIndex)
     {
-        static ResistRunStateT collection[] = { STATENONE, STATEPRESCRIPT, STATEREADYTORUN, STATERUNNING, STATEPOSTSCRIPT, STATEREADYTOEND, STATEENDED };
+        static ResistRunStateT collection[] = { STATENONE, STATEPRESCRIPT, STATEREADYTORUN, STATERUNNING, STATEPOSTSCRIPT, STATEREADYTOELAPSE, STATEENDED };
 
         // No known round state.
         if (stateIndex < STATENONE && stateIndex > STATEENDED)
