@@ -47,6 +47,8 @@ strict namespace IO
         int length = 0;
         str topReasonLabel = (raw)0;
         str timeReasonLabel = (raw)0;
+        str preResistScript = (raw)0;
+        str postResistScript = (raw)0;
 
         // While the brace level does not match the end level, we keep parsing.
         while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) == braceLevel)
@@ -73,6 +75,20 @@ strict namespace IO
                 continue;
             }
 
+            if (ParseResistPreResistScript(handle, symbol))
+            {
+                if (preResistScript != (raw)0) Logger::LogWarning(LOGSOURCE, "The pre-resist script was already defined for the resist. Replacing.");
+                preResistScript = _tokenizerResistParsedValue;
+                continue;
+            }
+
+            if (ParseResistPostResistScript(handle, symbol))
+            {
+                if (postResistScript != (raw)0) Logger::LogWarning(LOGSOURCE, "The post-resist script was already defined for the resist. Replacing.");
+                postResistScript = _tokenizerResistParsedValue;
+                continue;
+            }
+
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing resist definition for " + mapLump + ": '" + symbol + "'.");
             return false;
         }
@@ -83,7 +99,14 @@ strict namespace IO
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
             Tokenizer::Next(handle);
 
-        Resist::CreateResist(length, topReasonLabel, timeReasonLabel);
+        Resist::CreateResist(
+            length,
+            topReasonLabel,
+            timeReasonLabel,
+            preResistScript,
+            postResistScript
+        );
+
         Logger::LogDebug(LOGSOURCE, "Parsed resist definition for \cd" + mapLump + ".");
         return true;
     }
@@ -134,6 +157,38 @@ strict namespace IO
     internal bool ParseResistTimeReasonLabel(int handle, str identifyingSymbol)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTTIMEREASONLABELKEY)) return false;
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
+
+        _tokenizerResistParsedValue = Tokenizer::GetSymbol(handle);
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        return true;
+    }
+
+    internal bool ParseResistPreResistScript(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPRERESISTSCRIPTKEY)) return false;
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
+
+        _tokenizerResistParsedValue = Tokenizer::GetSymbol(handle);
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        return true;
+    }
+
+    internal bool ParseResistPostResistScript(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPOSTRESISTSCRIPTKEY)) return false;
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
 
         _tokenizerResistParsedValue = Tokenizer::GetSymbol(handle);
