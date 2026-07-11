@@ -70,4 +70,18 @@ strict namespace Resist
         Sync::SyncResists();
         return Resist::GetTicsLeft(index);
     }
+
+    void StopResistByIndex(int index)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return;
+        }
+
+        Resist::SetResistReadyToStop(index);
+        Sync::SyncResists();
+    }
 }
