@@ -37,20 +37,22 @@ strict namespace Hud
             HudSetPointInternal(80.0, addY);
             BCSUtils::HudDrawText(--_drawnHudId, str(Resist::GetTicsLeft(index)) + "/" + str(Resist::GetMaximumTics(index)));
 
+            Resist::ResistRunStateT state = Resist::GetRunState(index);
+
             if (DrawClickableTextConditional(
-                !Resist::IsActive(index), --_drawnHudId, 140.0, addY, 40.0, 10.0, "start"))
+                state == Resist::STATENONE, --_drawnHudId, 140.0, addY, 40.0, 10.0, "start"))
             {
                 Admin::AdminSetStartResistClientside(index);
             }
 
             if (DrawClickableTextConditional(
-                Resist::IsActive(index), --_drawnHudId, 190.0, addY, 40.0, 10.0, "elapse"))
+                state == Resist::STATERUNNING, --_drawnHudId, 190.0, addY, 40.0, 10.0, "elapse"))
             {
                 Admin::AdminSetElapseResistClientside(index);
             }
 
             if (DrawClickableTextConditional(
-                Resist::IsActive(index), --_drawnHudId, 240.0, addY, 40.0, 10.0, "stop"))
+                state == Resist::STATERUNNING, --_drawnHudId, 250.0, addY, 40.0, 10.0, "stop"))
             {
                 Admin::AdminSetStopResistClientside(index);
             }

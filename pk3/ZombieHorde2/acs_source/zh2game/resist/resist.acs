@@ -63,15 +63,7 @@ strict namespace Resist
             }
 
             else if (state == STATERUNNING && GetTicsDifference(index) <= 0)
-            {
-                if (resist.InitialState.PostResistScript != (raw)0)
-                {
-                    StartPostResistScript(index);
-                    return;
-                }
-
-                SetResistReadyToElapse(index);
-            }
+                ElapseResist(index);
         }
     }
 
@@ -189,6 +181,31 @@ strict namespace Resist
         SetResistReadyToRun(index);
     }
 
+    internal void ElapseResist(int index)
+    {
+        ResistRunStateT state = GetRunState(index);
+        if (state != STATERUNNING)
+            return;
+
+        ResistT module& resist = GetRefByindex(index);
+        if (resist.InitialState.PostResistScript != (raw)0)
+        {
+            StartPostResistScript(index);
+            return;
+        }
+
+        SetResistReadyToElapse(index);
+    }
+
+    internal void StopResist(int index)
+    {
+        ResistRunStateT state = GetRunState(index);
+        if (state != STATERUNNING)
+            return;
+
+        SetResistReadyToStop(index);
+    }
+
     internal void SetResistReadyToRun(int index)
     {
         ResistT module& resist = GetRefByindex(index);
@@ -204,7 +221,7 @@ strict namespace Resist
 
     internal void SetResistReadyToElapse(int index)
     {
-        ResistT module& resist = GetRefByindex(index);
+        GetRefByindex(index).EndingTic = -1;
 
         Logger::LogDebug(LOGSOURCE, "Resist is ready to elapse.");
         SetRunState(index, STATEREADYTOELAPSE);
