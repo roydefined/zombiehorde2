@@ -43,7 +43,7 @@ strict namespace Sync
 
             if (!resists[i].Defined)
             {
-                syncId -= 5;
+                syncId -= 6;
                 continue;
             }
 
@@ -51,6 +51,7 @@ strict namespace Sync
             // We can also not do this but then it's unclear what resists to define.
             BCSUtils::SyncVariable(--syncId, resists[i].InitialState.Length);
             BCSUtils::SyncVariable(--syncId, resists[i].EndingTic);
+            BCSUtils::SyncVariable(--syncId, resists[i].PauseTic);
             BCSUtils::SyncVariable(--syncId, resists[i].RunState);
             BCSUtils::SyncVariable(--syncId, Resist::GetFlags(i));
 
@@ -98,12 +99,13 @@ strict namespace Sync
             resists[i].Defined = BCSUtils::GetSyncVarDefault(--syncId, -1);
             if (!resists[i].Defined)
             {
-                syncId -= 5;
+                syncId -= 6;
                 continue;
             }
 
             resists[i].InitialState.Length = BCSUtils::GetSyncVarDefault(--syncId, 0);
-            resists[i].EndingTic = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            resists[i].EndingTic = BCSUtils::GetSyncVarDefault(--syncId, -1);
+            resists[i].PauseTic = BCSUtils::GetSyncVarDefault(--syncId, -1);
             resists[i].RunState = Resist::GetRunStateTypeByIndex(BCSUtils::GetSyncVarDefault(--syncId, 0));
             Resist::SetFlags(i, BCSUtils::GetSyncVarDefault(--syncId, Resist::FLAG_NONE));
 

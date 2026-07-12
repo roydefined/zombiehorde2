@@ -90,6 +90,7 @@ strict namespace Resist
         resist.InitialState.PostResistScript = postResistScript;
         resist.InitialState.Flags = flags;
         resist.EndingTic = -1;
+        resist.PauseTic = -1;
         resist.Defined = true;
 
         Logger::LogDebug(LOGSOURCE, "Created new resist at index \cd" + str(index) + "\cj. Length: \cd" + str(length) + "\cj. Top reason: \cd" + topReasonLabel + "\cj. Time reason: \cd" + timeReasonLabel + ".");
@@ -162,7 +163,13 @@ strict namespace Resist
 
     internal int GetTicsDifference(int index)
     {
-        return GetRefByindex(index).EndingTic - Utils::GetSynchronizedTimer();
+        ResistT module& resist = GetRefByindex(index);
+
+        int currentTic = GetRunState(index) == STATEPAUSED
+            ? resist.PauseTic
+            : Utils::GetSynchronizedTimer();
+
+        return resist.EndingTic - currentTic;
     }
 
     internal void StartResist(int index)
@@ -184,7 +191,7 @@ strict namespace Resist
     internal void ElapseResist(int index)
     {
         ResistRunStateT state = GetRunState(index);
-        if (state != STATERUNNING)
+        if (state != STATERUNNING && state != STATEPAUSED)
             return;
 
         ResistT module& resist = GetRefByindex(index);
@@ -200,10 +207,40 @@ strict namespace Resist
     internal void StopResist(int index)
     {
         ResistRunStateT state = GetRunState(index);
-        if (state != STATERUNNING)
+        if (state != STATERUNNING && state != STATEPAUSED)
             return;
 
         SetResistReadyToStop(index);
+    }
+
+    internal void PauseResist(int index)
+    {
+        if (GetRunState(index) != STATERUNNING)
+            return;
+
+        ResistT module& resist = GetRefByindex(index);
+
+        resist.PauseTic = Utils::GetSynchronizedTimer();
+        SetRunState(index, STATEPAUSED);
+        Sync::SyncResists();
+
+        Logger::LogDebug(LOGSOURCE, "Paused resist \cd" + str(index) + " \cj.");
+    }
+
+    internal void ResumeResist(int index)
+    {
+        if (GetRunState(index) != STATEPAUSED)
+            return;
+
+        ResistT module& resist = GetRefByindex(index);
+
+        resist.EndingTic += Utils::GetSynchronizedTimer() - resist.PauseTic;
+        resist.PauseTic = -1;
+
+        SetRunState(index, STATERUNNING);
+        Sync::SyncResists();
+
+        Logger::LogDebug(LOGSOURCE, "Resumed resist \cd" + str(index) + " \cj.");
     }
 
     internal void SetResistReadyToRun(int index)

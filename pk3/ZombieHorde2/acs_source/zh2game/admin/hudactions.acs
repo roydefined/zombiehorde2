@@ -323,6 +323,32 @@ strict namespace Admin
         Resist::StopResist(index);
     }
 
+    internal void AdminSetPauseResistClientside(int index)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_pause_resist", index))
+            Logger::LogError(LOGSOURCE, "Failed to call admin pause resist.");
+    }
+
+    script "zh2_internal_menu_pause_resist" (int index) net
+    {
+        if (!GetIsAdmin()) terminate;
+        if (!Resist::IsActive(index)) terminate;
+        Resist::PauseResist(index);
+    }
+
+    internal void AdminSetResumeResistClientside(int index)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_resume_resist", index))
+            Logger::LogError(LOGSOURCE, "Failed to call admin resume resist.");
+    }
+
+    script "zh2_internal_menu_resume_resist" (int index) net
+    {
+        if (!GetIsAdmin()) terminate;
+        if (!Resist::IsActive(index)) terminate;
+        Resist::ResumeResist(index);
+    }
+
     internal void AdminEndGameClientside()
     {
         if (!NamedRequestScriptPuke("zh2_internal_menu_end_game"))
