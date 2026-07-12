@@ -4,6 +4,8 @@
 
 strict namespace Hud
 {
+    Resist::ResistHookDataT? _resistHookData;
+
     internal void DrawResistsHud()
     {
         // Client is a zombie, and the cvar to not show resists is enabled.
@@ -33,6 +35,10 @@ strict namespace Hud
 
     internal void DrawResists()
     {
+        // Ensure we have the hook data allocated.
+        if (_resistHookData == null)
+            _resistHookData = BCS::Malloc(lengthof(_resistHookData));
+
         int offset = 0;
         for (int index = 0; index < MAX_RESISTS; ++index)
         {
@@ -41,6 +47,10 @@ strict namespace Hud
 
             if (!Resist::IsActive(index))
                 continue;
+
+            _resistHookData.Index = index;
+            _resistHookData.Offset = offset;
+            Hook::Call(Hook::HOOK_CLIENTDRAWRESIST, _resistHookData);
 
             DrawResist(index, offset++);
         }
