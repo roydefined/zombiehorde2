@@ -20,9 +20,6 @@ strict namespace Hud
         BCSUtils::HudSetCenterText(true);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
 
-        // TODO: We should be able to define for each resist what it should do (not fade out for example)
-        BCSUtils::HudSetAlpha(GetFadeOutAlpha());
-
         // On a full server event, offset the resists downwards as to avoid overlapping with the wobbling text.
         fixed addY = Game::GetFullServerElapsedTics() > 0 ? 50.0 : 0.0;
         PrepareHud(
@@ -39,6 +36,8 @@ strict namespace Hud
         if (_resistHookData == null)
             _resistHookData = BCS::Malloc(lengthof(_resistHookData));
 
+        fixed alpha = GetFadeOutAlpha();
+
         int offset = 0;
         for (int index = 0; index < MAX_RESISTS; ++index)
         {
@@ -47,6 +46,12 @@ strict namespace Hud
 
             if (Resist::GetRunState(index) != Resist::STATERUNNING)
                 continue;
+
+            // Note this will propagate into the hooks by design.
+            if (Resist::GetNoFade(index))
+                BCSUtils::HudSetAlpha(1.0);
+            else
+                BCSUtils::HudSetAlpha(alpha);
 
             _resistHookData.Index = index;
             _resistHookData.Offset = offset;
