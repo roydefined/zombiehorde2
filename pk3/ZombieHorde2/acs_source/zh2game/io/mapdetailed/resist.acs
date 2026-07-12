@@ -45,6 +45,7 @@ strict namespace IO
 
         // These variables hold all values that have been parsed thus far.
         int length = 0;
+        int flags = Resist::FLAG_NONE;
         str topReasonLabel = (raw)0;
         str timeReasonLabel = (raw)0;
         str preResistScript = (raw)0;
@@ -89,6 +90,13 @@ strict namespace IO
                 continue;
             }
 
+            if (ParseResistFlags(handle, symbol))
+            {
+                if (flags != Resist::FLAG_NONE) Logger::LogWarning(LOGSOURCE, "The flags were already defined for the resist. Replacing.");
+                flags = _tokenizerResistParsedValue;
+                continue;
+            }
+
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing resist definition for " + mapLump + ": '" + symbol + "'.");
             return false;
         }
@@ -104,7 +112,8 @@ strict namespace IO
             topReasonLabel,
             timeReasonLabel,
             preResistScript,
-            postResistScript
+            postResistScript,
+            flags
         );
 
         Logger::LogDebug(LOGSOURCE, "Parsed resist definition for \cd" + mapLump + ".");
@@ -209,6 +218,49 @@ strict namespace IO
 
         // Peek next character, see if we have a comma.
         // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        return true;
+    }
+
+    internal bool ParseResistFlags(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTFLAGSKEY)) return false;
+        if (!Tokenizer::ExpectNextChar(handle, '{')) return false;
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        int flags = Resist::FLAG_NONE;
+
+        Tokenizer::Next(handle);
+
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) == braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+
+            if (BCSUTILS::StrIEquals(symbol, RESISTFLAGHIDETOPREASONKEY))
+            {
+                flags |= Resist::FLAG_HIDE_TOP_REASON;
+            }
+            else if (BCSUTILS::StrIEquals(symbol, RESISTFLAGHIDETIMEREASONKEY))
+            {
+                flags |= Resist::FLAG_HIDE_TIME_REASON;
+            }
+            else
+            {
+                Tokenizer::SetErrored(handle, "Unknown resist flag: '" + symbol + "'.");
+                return false;
+            }
+
+            Tokenizer::Next(handle);
+            if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                Tokenizer::Next(handle);
+        }
+
+        _tokenizerResistParsedValue = flags;
+
+        // Skip the closing brace and an optional comma after the flags block.
         Tokenizer::Next(handle);
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
             Tokenizer::Next(handle);

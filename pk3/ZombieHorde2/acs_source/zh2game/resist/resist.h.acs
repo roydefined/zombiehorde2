@@ -16,6 +16,7 @@ strict namespace Resist
     {
         str TopReasonLabel, TimeReasonLabel;
         int Length;
+        int Flags;
 
         // Serverside, exclusive scripts for the resist which will be invoked before and after the script runs.
         str PreResistScript, PostResistScript;
@@ -51,12 +52,22 @@ strict namespace Resist
         STATEENDED,
     };
 
+    enum ResistFlagT : int
+    {
+        FLAG_NONE = 0,
+        FLAG_HIDE_TOP_REASON  = 1 << 0,
+        FLAG_HIDE_TIME_REASON = 1 << 1,
+
+        FLAG_HIDE_REASONS = FLAG_HIDE_TOP_REASON | FLAG_HIDE_TIME_REASON,
+    };
+
     extern int CreateResist(
         int length,
         str topReasonLabel = (raw)0,
         str timeReasonLabel = (raw)0,
         str preResistScript = (raw)0,
-        str postResistScript = (raw)0);
+        str postResistScript = (raw)0,
+        int flags = FLAG_NONE);
 
     extern void CreateResistByIndex(
         int index,
@@ -64,7 +75,8 @@ strict namespace Resist
         str topReasonLabel = (raw)0,
         str timeReasonLabel = (raw)0,
         str preResistScript = (raw)0,
-        str postResistScript = (raw)0);
+        str postResistScript = (raw)0,
+        int flags = FLAG_NONE);
 
     extern int StartResistByIndex(int index);
     extern void StopResistByIndex(int index);

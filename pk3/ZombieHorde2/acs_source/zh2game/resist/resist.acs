@@ -81,7 +81,8 @@ strict namespace Resist
         str topReasonLabel = (raw)0,
         str timeReasonLabel = (raw)0,
         str preResistScript = (raw)0,
-        str postResistScript = (raw)0)
+        str postResistScript = (raw)0,
+        int flags = FLAG_NONE)
     {
         if (index < 0 || index >= MAX_RESISTS)
         {
@@ -95,6 +96,7 @@ strict namespace Resist
         resist.InitialState.TimeReasonLabel = timeReasonLabel;
         resist.InitialState.PreResistScript = preResistScript;
         resist.InitialState.PostResistScript = postResistScript;
+        resist.InitialState.Flags = flags;
         resist.EndingTic = -1;
         resist.Defined = true;
 
@@ -110,7 +112,6 @@ strict namespace Resist
 
         // Explicit check for `(raw)0` as timereason meaning nothing was set at all.
         // Default to "resist for %t seconds" then.
-        // TODO: Use a flag to explicitly indicate NOT to do this?
         if (resist.InitialState.TimeReasonLabel == (raw)0)
             resist.InitialState.TimeReasonLabel = "Resist for " + RESIST_TIME_TOKEN + " second" + RESIST_PLURAL_TOKEN;
 
@@ -271,6 +272,31 @@ strict namespace Resist
 
         SetRunState(index, STATEPOSTSCRIPT);
         ACS_NamedExecuteWithResult(RESIST_SCRIPT_HANDLER_NAME, index, false, resist.InitialState.PostResistScript);
+    }
+
+    internal void SetFlags(int index, int flags)
+    {
+        GetRefByindex(index).InitialState.Flags = flags;
+    }
+
+    internal int GetFlags(int index)
+    {
+        return GetRefByindex(index).InitialState.Flags;
+    }
+
+    internal bool HasFlag(int index, ResistFlagT flag)
+    {
+        return (GetFlags(index) & flag) != 0;
+    }
+
+    internal bool GetHideTopReason(int index)
+    {
+        return HasFlag(index, FLAG_HIDE_TOP_REASON);
+    }
+
+    internal bool GetHideTimeReason(int index)
+    {
+        return HasFlag(index, FLAG_HIDE_TIME_REASON);
     }
 
     internal ResistRunStateT GetRunStateTypeByIndex(int stateIndex)

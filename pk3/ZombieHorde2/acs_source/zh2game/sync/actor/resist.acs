@@ -41,10 +41,9 @@ strict namespace Sync
             // Skip if undefined.
             BCSUtils::SyncVariable(--syncId, int(resists[i].Defined));
 
-            // TODO: should be 2, not 3?
             if (!resists[i].Defined)
             {
-                syncId -= 3;
+                syncId -= 5;
                 continue;
             }
 
@@ -53,6 +52,7 @@ strict namespace Sync
             BCSUtils::SyncVariable(--syncId, resists[i].InitialState.Length);
             BCSUtils::SyncVariable(--syncId, resists[i].EndingTic);
             BCSUtils::SyncVariable(--syncId, resists[i].RunState);
+            BCSUtils::SyncVariable(--syncId, Resist::GetFlags(i));
 
             str topReasonLabel = resists[i].InitialState.TopReasonLabel;
             str timeReasonLabel = resists[i].InitialState.TimeReasonLabel;
@@ -98,13 +98,14 @@ strict namespace Sync
             resists[i].Defined = BCSUtils::GetSyncVarDefault(--syncId, -1);
             if (!resists[i].Defined)
             {
-                syncId -= 3;
+                syncId -= 5;
                 continue;
             }
 
             resists[i].InitialState.Length = BCSUtils::GetSyncVarDefault(--syncId, 0);
             resists[i].EndingTic = BCSUtils::GetSyncVarDefault(--syncId, 0);
             resists[i].RunState = Resist::GetRunStateTypeByIndex(BCSUtils::GetSyncVarDefault(--syncId, 0));
+            Resist::SetFlags(i, BCSUtils::GetSyncVarDefault(--syncId, Resist::FLAG_NONE));
 
             // As specified above, `GetCVarString` doesn't differentiate 0 from "" so we must pass this data.
             int pack = BCSUtils::GetSyncVarDefault(--syncId, 0);
