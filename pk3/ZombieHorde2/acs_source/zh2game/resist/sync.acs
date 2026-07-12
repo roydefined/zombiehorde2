@@ -22,17 +22,11 @@ strict namespace Resist
             if (!resists[i].Defined)
                 continue;
 
-            if (GetLifecycleState(i) == LIFECYCLESTATE_NONE)
-            {
-                SetLifecycleState(i, LIFECYCLESTATE_NEW);
+            if (!ZH2Game::GameContext.MapDetails.ResistsInitialized)
                 InitializeResistClientside(i);
-            }
-            else
-            {
-                SetLifecycleState(i, LIFECYCLESTATE_UPDATED);
-            }
         }
 
+        ZH2Game::GameContext.MapDetails.ResistsInitialized = true;
         Logger::LogDebug(LOGSOURCE, "Synchronized resists clientside.");
     }
 }
