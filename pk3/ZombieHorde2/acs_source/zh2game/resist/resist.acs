@@ -96,7 +96,10 @@ strict namespace Resist
         Logger::LogDebug(LOGSOURCE, "Created new resist at index \cd" + str(index) + "\cj. Length: \cd" + str(length) + "\cj. Top reason: \cd" + topReasonLabel + "\cj. Time reason: \cd" + timeReasonLabel + ".");
     }
 
-    internal ResistT module& GetRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Resists[index]; }
+    internal ResistT module& GetRefByindex(int index)
+    {
+        return ZH2Game::GameContext.MapDetails.Resists[index];
+    }
 
     // Called by the client, which is used to determine some things about the resist that do not change after it was made.
     internal void InitializeResistClientside(int index)
@@ -222,7 +225,7 @@ strict namespace Resist
         SetRunState(index, STATEPAUSED);
         Sync::SyncResists();
 
-        Logger::LogDebug(LOGSOURCE, "Paused resist \cd" + str(index) + " \cj.");
+        Logger::LogDebug(LOGSOURCE, "Paused resist \cd" + str(index) + "\cj.");
     }
 
     internal void ResumeResist(int index)
@@ -238,7 +241,7 @@ strict namespace Resist
         SetRunState(index, STATERUNNING);
         Sync::SyncResists();
 
-        Logger::LogDebug(LOGSOURCE, "Resumed resist \cd" + str(index) + " \cj.");
+        Logger::LogDebug(LOGSOURCE, "Resumed resist \cd" + str(index) + "\cj.");
     }
 
     internal void SetResistReadyToRun(int index)
@@ -424,10 +427,21 @@ strict namespace Resist
 
     internal ResistRunStateT GetRunStateTypeByIndex(int stateIndex)
     {
-        static ResistRunStateT collection[] = { STATENONE, STATEPRESCRIPT, STATEREADYTORUN, STATERUNNING, STATEPOSTSCRIPT, STATEREADYTOELAPSE, STATEENDED };
+        static ResistRunStateT collection[] =
+        {
+            STATENONE,
+            STATEPRESCRIPT,
+            STATEREADYTORUN,
+            STATERUNNING,
+            STATEPAUSED,
+            STATEPOSTSCRIPT,
+            STATEREADYTOSTOP,
+            STATEREADYTOELAPSE,
+            STATEENDED
+        };
 
-        // No known round state.
-        if (stateIndex < STATENONE && stateIndex > STATEENDED)
+        // No known resist state.
+        if (stateIndex < STATENONE || stateIndex > STATEENDED)
             return STATENONE;
 
         return collection[stateIndex];
