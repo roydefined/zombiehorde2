@@ -178,8 +178,7 @@ strict namespace Resist
         if (state != STATENONE)
             return;
 
-        ResistT module& resist = GetRefByindex(index);
-        if (resist.InitialState.PreResistScript != (raw)0)
+        if (HasPreResistScript(index))
         {
             StartPreResistScript(index);
             return;
@@ -194,8 +193,7 @@ strict namespace Resist
         if (state != STATERUNNING && state != STATEPAUSED)
             return;
 
-        ResistT module& resist = GetRefByindex(index);
-        if (resist.InitialState.PostResistScript != (raw)0)
+        if (HasPostResistScript(index))
         {
             StartPostResistScript(index);
             return;
@@ -334,20 +332,38 @@ strict namespace Resist
         return scriptName != (raw)0 && scriptName != "";
     }
 
-    internal bool HasPreResistScript(int index)
+    // Returns the script specifically set for this resist, or the map-wide
+    // pre-resist script when the resist does not define one.
+    internal str GetPreResistScript(int index)
     {
         str scriptName = GetRefByindex(index).InitialState.PreResistScript;
+        if (scriptName != (raw)0 && scriptName != "")
+            return scriptName;
 
-        return HasGlobalPreResistScript()
-            || scriptName != (raw)0 && scriptName != "";
+        return GetGlobalPreResistScript();
+    }
+
+    // Returns the script specifically set for this resist, or the map-wide
+    // post-resist script when the resist does not define one.
+    internal str GetPostResistScript(int index)
+    {
+        str scriptName = GetRefByindex(index).InitialState.PostResistScript;
+        if (scriptName != (raw)0 && scriptName != "")
+            return scriptName;
+
+        return GetGlobalPostResistScript();
+    }
+
+    internal bool HasPreResistScript(int index)
+    {
+        str scriptName = GetPreResistScript(index);
+        return scriptName != (raw)0 && scriptName != "";
     }
 
     internal bool HasPostResistScript(int index)
     {
-        str scriptName = GetRefByindex(index).InitialState.PostResistScript;
-
-        return HasGlobalPostResistScript()
-            || scriptName != (raw)0 && scriptName != "";
+        str scriptName = GetPostResistScript(index);
+        return scriptName != (raw)0 && scriptName != "";
     }
 
     internal void SetRunState(int index, ResistRunStateT state)
@@ -362,18 +378,18 @@ strict namespace Resist
 
     internal void StartPreResistScript(int index)
     {
-        ResistT module& resist = GetRefByindex(index);
+        str scriptName = GetPreResistScript(index);
 
         SetRunState(index, STATEPRESCRIPT);
-        ACS_NamedExecuteWithResult(RESIST_SCRIPT_HANDLER_NAME, index, true, resist.InitialState.PreResistScript);
+        ACS_NamedExecuteWithResult(RESIST_SCRIPT_HANDLER_NAME, index, true, scriptName);
     }
 
     internal void StartPostResistScript(int index)
     {
-        ResistT module& resist = GetRefByindex(index);
+        str scriptName = GetPostResistScript(index);
 
         SetRunState(index, STATEPOSTSCRIPT);
-        ACS_NamedExecuteWithResult(RESIST_SCRIPT_HANDLER_NAME, index, false, resist.InitialState.PostResistScript);
+        ACS_NamedExecuteWithResult(RESIST_SCRIPT_HANDLER_NAME, index, false, scriptName);
     }
 
     internal void SetFlags(int index, int flags)
