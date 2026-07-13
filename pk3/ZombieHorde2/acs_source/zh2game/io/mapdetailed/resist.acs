@@ -8,6 +8,44 @@ strict namespace IO
     // This is placed in a local variable in the same frame, located in the main parsing method.
     internal raw _tokenizerResistParsedValue;
 
+    internal bool ParseResistBlock(int handle, str mapLump, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "resist"))
+            return false;
+
+        Logger::LogDebug(LOGSOURCE, "Start parse map resist block for \cd" + mapLump + ".");
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseGlobalPreResistScript(handle, symbol)
+                || ParseGlobalPostResistScript(handle, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing resist block for " + mapLump + ": '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Parsed map resist block for \cd" + mapLump + ".");
+        return true;
+    }
+
+
     // Parse resists.
     // The format of the collection is `resist [ { definition } ]`, where definition is a collection of key or key-value pairs.
     internal bool ParseResistCollection(int handle, str mapLump, str identifyingSymbol)
@@ -269,6 +307,70 @@ strict namespace IO
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
             Tokenizer::Next(handle);
 
+        return true;
+    }
+
+    internal bool ParseGlobalPreResistScript(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPRERESISTSCRIPTKEY))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) == Tokenizer::TEQ)
+            Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "The given value for PreResistScript is not correct. Expected a script name string.");
+            return false;
+        }
+
+        str scriptName = Tokenizer::GetSymbol(handle);
+        if (!CheckScript(scriptName, true))
+        {
+            Tokenizer::SetErrored(handle, "The given global pre-resist script does not exist: '" + scriptName + "'.");
+            return false;
+        }
+
+        if (Resist::GetGlobalPreResistScript() != (raw)0)
+            Logger::LogWarning(LOGSOURCE, "Parsing duplicate value for PreResistScript.");
+
+        Resist::SetGlobalPreResistScript(scriptName);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed global PreResistScript: \cd" + scriptName + "\cj.");
+        return true;
+    }
+
+    internal bool ParseGlobalPostResistScript(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPOSTRESISTSCRIPTKEY))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) == Tokenizer::TEQ)
+            Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "The given value for PostResistScript is not correct. Expected a script name string.");
+            return false;
+        }
+
+        str scriptName = Tokenizer::GetSymbol(handle);
+        if (!CheckScript(scriptName, true))
+        {
+            Tokenizer::SetErrored(handle, "The given global post-resist script does not exist: '" + scriptName + "'.");
+            return false;
+        }
+
+        if (Resist::GetGlobalPostResistScript() != (raw)0)
+            Logger::LogWarning(LOGSOURCE, "Parsing duplicate value for PostResistScript.");
+
+        Resist::SetGlobalPostResistScript(scriptName);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed global PostResistScript: \cd" + scriptName + "\cj.");
         return true;
     }
 }
