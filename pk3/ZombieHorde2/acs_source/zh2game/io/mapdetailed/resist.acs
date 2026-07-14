@@ -10,7 +10,7 @@ strict namespace IO
 
     internal bool ParseResistBlock(int handle, str mapLump, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, "resist"))
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPREFIXKEY))
             return false;
 
         Logger::LogDebug(LOGSOURCE, "Start parse map resist block for \cd" + mapLump + ".");
@@ -27,7 +27,8 @@ strict namespace IO
         {
             str symbol = Tokenizer::GetSymbol(handle);
             if (ParseGlobalPreResistScript(handle, symbol)
-                || ParseGlobalPostResistScript(handle, symbol))
+                || ParseGlobalPostResistScript(handle, symbol)
+                || ParseResistDefinitionsCollection(handle, mapLump, symbol))
             {
                 // Optional comma.
                 Tokenizer::Next(handle, false);
@@ -46,12 +47,31 @@ strict namespace IO
     }
 
 
+    // !!DEPRECATED!!
+    // The parsing of resist collections has been moved into the `resist` lump.
+    // Users should use that block instead. This path will keep working.
+
     // Parse resists.
     // The format of the collection is `resist [ { definition } ]`, where definition is a collection of key or key-value pairs.
-    internal bool ParseResistCollection(int handle, str mapLump, str identifyingSymbol)
+    internal bool ParseResistCollectionDeprecated(int handle, str mapLump, str identifyingSymbol)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTSPREFIXKEY)) return false;
 
+        Logger::LogWarning(LOGSOURCE, "Parsing resists through a " + RESISTSPREFIXKEY + " collection has been deprecated! Use the new " + RESISTPREFIXKEY + " lump instead and place the resists in a " + RESIST_DEFINITIONS_KEY + " collection.");
+
+        return ParseResistCollection(handle, mapLump, identifyingSymbol);
+    }
+
+    internal bool ParseResistDefinitionsCollection(int handle, str mapLump, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESIST_DEFINITIONS_KEY))
+            return false;
+
+        return ParseResistCollection(handle, mapLump, identifyingSymbol);
+    }
+
+    internal bool ParseResistCollection(int handle, str mapLump, str identifyingSymbol)
+    {
         Logger::LogDebug(LOGSOURCE, "Start parse resist collection for \cd" + mapLump + ".");
 
         int bracketLevel = Tokenizer::GetBracketLevel(handle);
