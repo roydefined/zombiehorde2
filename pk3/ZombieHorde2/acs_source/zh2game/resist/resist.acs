@@ -91,6 +91,7 @@ strict namespace Resist
         resist.InitialState.Flags = flags;
         resist.EndingTic = -1;
         resist.PauseTic = -1;
+        resist.RunState = STATENONE;
         resist.Defined = true;
 
         Logger::LogDebug(LOGSOURCE, "Created new resist at index \cd" + str(index) + "\cj. Length: \cd" + str(length) + "\cj. Top reason: \cd" + topReasonLabel + "\cj. Time reason: \cd" + timeReasonLabel + ".");
@@ -244,7 +245,48 @@ strict namespace Resist
         Logger::LogDebug(LOGSOURCE, "Resumed resist \cd" + str(index) + "\cj.");
     }
 
-    internal void SetResistReadyToRun(int index)
+    internal void ResetResist(int index, bool preserveRunningState = false)
+    {
+        if (!IsDefined(index))
+            return;
+
+        ResistT module& resist = GetRefByindex(index);
+        bool preserveRunning = preserveRunningState && GetRunState(index) == STATERUNNING;
+
+        resist.EndingTic = -1;
+        resist.PauseTic = -1;
+        resist.RunState = STATENONE;
+
+        if (preserveRunning)
+        {
+            ResetEndingTic(index);
+            resist.RunState = STATERUNNING;
+
+            Logger::LogDebug(LOGSOURCE, "Reset running resist \cd" + str(index) + "\cj while preserving its running state. True length: \cd" + str(resist.EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
+            return;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Reset resist \cd" + str(index) + "\cj to its initial state.");
+    }
+
+    internal void ResetAllResists(bool preserveRunningState = false)
+    {
+        ResistT[] module& resists = ZH2Game::GameContext.MapDetails.Resists;
+
+        for (int index = 0; index < lengthof(resists); ++index)
+        {
+            if (!IsDefined(index))
+                continue;
+
+            ResetResist(index, preserveRunningState);
+        }
+
+        Sync::SyncResists();
+
+        Logger::LogDebug(LOGSOURCE, "Reset all resists to their initial state.");
+    }
+
+    internal void ResetEndingTic(int index)
     {
         ResistT module& resist = GetRefByindex(index);
 
@@ -252,8 +294,14 @@ strict namespace Resist
         // This is mostly so the visualization of them remains equal between other resists.
         int endingTic = Utils::GetSynchronizedTimer() + resist.InitialState.Length * 35;
         resist.EndingTic = endingTic + (35 - (endingTic % 35));
+        resist.PauseTic = -1;
+    }
 
-        Logger::LogDebug(LOGSOURCE, "Resist is ready to run. True length: \cd" + str(resist.EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
+    internal void SetResistReadyToRun(int index)
+    {
+        ResetEndingTic(index);
+
+        Logger::LogDebug(LOGSOURCE, "Resist is ready to run. True length: \cd" + str(GetRefByindex(index).EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
         SetRunState(index, STATEREADYTORUN);
     }
 

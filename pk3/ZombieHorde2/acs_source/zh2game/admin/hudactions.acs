@@ -349,6 +349,19 @@ strict namespace Admin
         Resist::ResumeResist(index);
     }
 
+    internal void AdminSetResetResistClientside(int index)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_reset_resist", index))
+            Logger::LogError(LOGSOURCE, "Failed to call admin reset resist.");
+    }
+
+    script "zh2_internal_menu_reset_resist" (int index) net
+    {
+        if (!GetIsAdmin()) terminate;
+        if (!Resist::IsActive(index)) terminate;
+        Resist::ResetResist(index, true);
+    }
+
     internal void AdminEndGameClientside()
     {
         if (!NamedRequestScriptPuke("zh2_internal_menu_end_game"))
