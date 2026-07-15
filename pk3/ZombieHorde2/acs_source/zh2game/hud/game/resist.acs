@@ -4,6 +4,8 @@
 
 strict namespace Hud
 {
+    Resist::ResistHookDataT? _resistHookData;
+
     internal void DrawResistsHud()
     {
         // Client is a zombie, and the cvar to not show resists is enabled.
@@ -18,42 +20,61 @@ strict namespace Hud
         BCSUtils::HudSetCenterText(true);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
 
-        // TODO: We should be able to define for each resist what it should do (not fade out for example)
-        BCSUtils::HudSetAlpha(GetFadeOutAlpha());
-
         // On a full server event, offset the resists downwards as to avoid overlapping with the wobbling text.
         fixed addY = Game::GetFullServerElapsedTics() > 0 ? 50.0 : 0.0;
-        PrepareHud(
-            320.0,
-            BCSUtils::HudTop() + 50.0 + addY,
-            true);
+        fixed yOffset = BCSUtils::HudTop() + 50.0 + addY;
 
-        DrawResists();
+        DrawResists(yOffset);
     }
 
-    internal void DrawResists()
+    internal void DrawResists(fixed yOffset)
     {
+        // Ensure we have the hook data allocated.
+        if (_resistHookData == null)
+            _resistHookData = BCS::Malloc(lengthof(_resistHookData));
+
+        fixed alpha = GetFadeOutAlpha();
+
         int offset = 0;
+        int AddY = 0;
         for (int index = 0; index < MAX_RESISTS; ++index)
         {
             if (!Resist::IsDefined(index))
                 continue;
 
-            if (!Resist::IsActive(index))
+            if (Resist::GetRunState(index) != Resist::STATERUNNING)
                 continue;
 
-            DrawResist(index, offset++);
+            // Offset will propagate into the hooks by design.
+            PrepareHud(320.0, yOffset + fixed(AddY), true);
+
+            // Fade will propagate into the hooks by design.
+            if (Resist::GetNoFade(index))
+                BCSUtils::HudSetAlpha(1.0);
+            else
+                BCSUtils::HudSetAlpha(alpha);
+
+            _resistHookData.Index = index;
+            raw result = Hook::Call(Hook::HOOK_CLIENTDRAWRESIST, _resistHookData);
+            AddY += (int)result;
+
+            AddY += DrawResist(index, offset++);
         }
     }
 
-    internal void DrawResist(int index, int offset)
+    internal int DrawResist(int index, int offset)
     {
         Resist::ResistT module& resist = Resist::GetRefByindex(index);
+        int maximumTics = Resist::GetMaximumTics(index);
         int ticsLeft = Resist::GetTicsLeft(index);
+
+        // Do not draw if above the max tics
+        if (ticsLeft > maximumTics)
+            return 0;
 
         // Failsafe, as online the client might not be informed in time of the resist ending.
         if (ticsLeft <= 0)
-            return;
+            return 0;
 
         str FormatLabel(int colorAtIndex, str label)
         {
@@ -82,7 +103,11 @@ strict namespace Hud
             return label;
         }
 
-        if (resist.InitialState.TopReasonLabel != (raw)0 && resist.InitialState.TopReasonLabel != "")
+        bool hideTopReason = Resist::GetHideTopReason(index);
+        bool hideTimeReason = Resist::GetHideTimeReason(index);
+        int addY = 12;
+
+        if (!hideTopReason && resist.InitialState.TopReasonLabel != (raw)0 && resist.InitialState.TopReasonLabel != "")
         {
             int colorAtIndex = !resist.InitialState.TopReasonHasColoredTimeToken
                 ? resist.InitialState.TopReasonTimeTokenIndex : -1;
@@ -91,12 +116,12 @@ strict namespace Hud
             BCSUtils::HudSetTextColor(CR_WHITE);
             BCSUtils::HudSetFont("SmallFont");
 
-            HudSetPointInternal(0.0, fixed(30 * offset));
+            HudSetPointInternal();
             BCSUtils::HudDrawText(--_drawnHudId, topReasonLabel);
             DebugDraw();
         }
 
-        if (resist.InitialState.TimeReasonLabel != (raw)0 && resist.InitialState.TimeReasonLabel != "")
+        if (!hideTimeReason && resist.InitialState.TimeReasonLabel != (raw)0 && resist.InitialState.TimeReasonLabel != "")
         {
             int colorAtIndex = !resist.InitialState.TimeReasonHasColoredTimeToken
                 ? resist.InitialState.TimeReasonTimeTokenIndex : -1;
@@ -105,10 +130,14 @@ strict namespace Hud
             BCSUtils::HudSetTextColor(CR_RED);
             BCSUtils::HudSetFont("BigFont");
 
-            HudSetPointInternal(0.0, fixed(30 * offset) + 12.0);
+            HudSetPointInternal(0.0, fixed(addY));
             BCSUtils::HudDrawText(--_drawnHudId, timeReasonLabel);
             DebugDraw();
+
+            addY += 12;
         }
+
+        return addY;
     }
 
     internal fixed GetFadeOutAlpha()

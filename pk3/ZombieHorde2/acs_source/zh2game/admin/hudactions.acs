@@ -297,6 +297,19 @@ strict namespace Admin
         Resist::StartResist(index);
     }
 
+    internal void AdminSetElapseResistClientside(int index)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_elapse_resist", index))
+            Logger::LogError(LOGSOURCE, "Failed to call admin elapse resist.");
+    }
+
+    script "zh2_internal_menu_elapse_resist" (int index) net
+    {
+        if (!GetIsAdmin()) terminate;
+        if (!Resist::IsActive(index)) terminate;
+        Resist::ElapseResist(index);
+    }
+
     internal void AdminSetStopResistClientside(int index)
     {
         if (!NamedRequestScriptPuke("zh2_internal_menu_stop_resist", index))
@@ -308,6 +321,45 @@ strict namespace Admin
         if (!GetIsAdmin()) terminate;
         if (!Resist::IsActive(index)) terminate;
         Resist::StopResist(index);
+    }
+
+    internal void AdminSetPauseResistClientside(int index)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_pause_resist", index))
+            Logger::LogError(LOGSOURCE, "Failed to call admin pause resist.");
+    }
+
+    script "zh2_internal_menu_pause_resist" (int index) net
+    {
+        if (!GetIsAdmin()) terminate;
+        if (!Resist::IsActive(index)) terminate;
+        Resist::PauseResist(index);
+    }
+
+    internal void AdminSetResumeResistClientside(int index)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_resume_resist", index))
+            Logger::LogError(LOGSOURCE, "Failed to call admin resume resist.");
+    }
+
+    script "zh2_internal_menu_resume_resist" (int index) net
+    {
+        if (!GetIsAdmin()) terminate;
+        if (!Resist::IsActive(index)) terminate;
+        Resist::ResumeResist(index);
+    }
+
+    internal void AdminSetResetResistClientside(int index)
+    {
+        if (!NamedRequestScriptPuke("zh2_internal_menu_reset_resist", index))
+            Logger::LogError(LOGSOURCE, "Failed to call admin reset resist.");
+    }
+
+    script "zh2_internal_menu_reset_resist" (int index) net
+    {
+        if (!GetIsAdmin()) terminate;
+        if (!Resist::IsActive(index)) terminate;
+        Resist::ResetResist(index, true);
     }
 
     internal void AdminEndGameClientside()

@@ -107,7 +107,7 @@ strict namespace IO
                 continue;
 
             // Parsed on both sides.
-            bool parsed = ParseResistCollection(handle, mapLump, symbol)
+            bool parsed = ParseResistCollectionDeprecated(handle, mapLump, symbol)
                 || ParseEventCollection(handle, mapLump, symbol)
                 || ParseWeatherProfiles(handle, mapLump, symbol);
 
@@ -116,6 +116,13 @@ strict namespace IO
             {
                 parsed = BCSUtils::IsServer() && ParseGameBlock(handle, mapLump, symbol)
                     || BCSUtils::IsClientOnly() && Tokenizer::ParseBodyAsEmpty(handle, symbol, "game");
+            }
+
+            // Resist block is serverside
+            if (!parsed)
+            {
+                parsed = BCSUtils::IsServer() && ParseResistBlock(handle, mapLump, symbol)
+                    || BCSUtils::IsClientOnly() && Tokenizer::ParseBodyAsEmpty(handle, symbol, "resist");
             }
 
             // Safety block is serverside

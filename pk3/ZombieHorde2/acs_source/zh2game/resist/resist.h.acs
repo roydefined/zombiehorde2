@@ -9,10 +9,17 @@ strict namespace Resist
     // In the future I will support the ability to allocate these to allow for more, but this requires an extra library.
     #define MAX_RESISTS 20
 
+    #define RESIST_SCRIPT_HANDLER_NAME "zh2_internal_resist_script_handler"
+    #define RESIST_SCRIPT_HANDLER_AWAITER_NAME "zh2_internal_resist_script_handler_awaiter"
+
     internal struct ResistInitialStateT
     {
         str TopReasonLabel, TimeReasonLabel;
         int Length;
+        int Flags;
+
+        // Serverside, exclusive scripts for the resist which will be invoked before and after the script runs.
+        str PreResistScript, PostResistScript;
 
         // Everything below is intialized clientside and helps with setting up the resist logic.
         bool TopReasonHasColoredTimeToken;
@@ -24,22 +31,65 @@ strict namespace Resist
     internal struct ResistT
     {
         ResistInitialStateT InitialState;
-        int EndingTic;
         ResistRunStateT RunState;
 
+        int EndingTic;
+        int PauseTic;
+
         // Set to `true` if we defined the resist index.
-        // Clientside this is also checked to ensure we have a valid resist.
+        // This one is used with a sync so we know if the index is actually defined at all.
+        // Different from the lifecycle which is the general state of the resist after being defined.
         bool Defined;
+    };
+
+    struct ResistHookDataT
+    {
+        int Index;
     };
 
     enum ResistRunStateT : int
     {
         STATENONE,
+        STATEPRESCRIPT,
+        STATEREADYTORUN,
         STATERUNNING,
+        STATEPOSTSCRIPT,
+        STATEREADYTOSTOP,
+        STATEREADYTOELAPSE,
+        STATEPAUSED,
         STATEENDED,
     };
 
-    extern int CreateResist(int length, str topReasonLabel = "", str timeReasonLabel = "");
-    extern void CreateResistByIndex(int index, int length, str topReasonLabel = "", str timeReasonLabel = "");
+    enum ResistFlagT : int
+    {
+        FLAG_NONE = 0,
+        FLAG_HIDE_TOP_REASON  = 1 << 0,
+        FLAG_HIDE_TIME_REASON = 1 << 1,
+        FLAG_NO_FADE = 1 << 2,
+
+        FLAG_HIDE_REASONS = FLAG_HIDE_TOP_REASON | FLAG_HIDE_TIME_REASON,
+    };
+
+    extern int CreateResist(
+        int length,
+        str topReasonLabel = (raw)0,
+        str timeReasonLabel = (raw)0,
+        str preResistScript = (raw)0,
+        str postResistScript = (raw)0,
+        int flags = FLAG_NONE);
+
+    extern void CreateResistByIndex(
+        int index,
+        int length,
+        str topReasonLabel = (raw)0,
+        str timeReasonLabel = (raw)0,
+        str preResistScript = (raw)0,
+        str postResistScript = (raw)0,
+        int flags = FLAG_NONE);
+
     extern int StartResistByIndex(int index);
+    extern void StopResistByIndex(int index);
+    extern void ElapseResistByIndex(int index);
+    extern int GetTicsLeftByIndex(int index);
+    extern int GetMaximumTicsByIndex(int index);
 }

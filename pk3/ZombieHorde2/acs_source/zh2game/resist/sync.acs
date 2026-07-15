@@ -19,10 +19,14 @@ strict namespace Resist
 
         for (int i = 0; i < lengthof(resists); ++i)
         {
-            if (resists[i].Defined)
+            if (!resists[i].Defined)
+                continue;
+
+            if (!ZH2Game::GameContext.MapDetails.ResistsInitialized)
                 InitializeResistClientside(i);
         }
 
+        ZH2Game::GameContext.MapDetails.ResistsInitialized = true;
         Logger::LogDebug(LOGSOURCE, "Synchronized resists clientside.");
     }
 }

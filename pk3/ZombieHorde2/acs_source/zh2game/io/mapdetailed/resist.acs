@@ -8,12 +8,70 @@ strict namespace IO
     // This is placed in a local variable in the same frame, located in the main parsing method.
     internal raw _tokenizerResistParsedValue;
 
+    internal bool ParseResistBlock(int handle, str mapLump, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPREFIXKEY))
+            return false;
+
+        Logger::LogDebug(LOGSOURCE, "Start parse map resist block for \cd" + mapLump + ".");
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseGlobalPreResistScript(handle, symbol)
+                || ParseGlobalPostResistScript(handle, symbol)
+                || ParseResistDefinitionsCollection(handle, mapLump, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing resist block for " + mapLump + ": '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Parsed map resist block for \cd" + mapLump + ".");
+        return true;
+    }
+
+
+    // !!DEPRECATED!!
+    // The parsing of resist collections has been moved into the `resist` lump.
+    // Users should use that block instead. This path will keep working.
+
     // Parse resists.
     // The format of the collection is `resist [ { definition } ]`, where definition is a collection of key or key-value pairs.
-    internal bool ParseResistCollection(int handle, str mapLump, str identifyingSymbol)
+    internal bool ParseResistCollectionDeprecated(int handle, str mapLump, str identifyingSymbol)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTSPREFIXKEY)) return false;
 
+        Logger::LogWarning(LOGSOURCE, "Parsing resists through a " + RESISTSPREFIXKEY + " collection has been deprecated! Use the new " + RESISTPREFIXKEY + " lump instead and place the resists in a " + RESIST_DEFINITIONS_KEY + " collection.");
+
+        return ParseResistCollection(handle, mapLump, identifyingSymbol);
+    }
+
+    internal bool ParseResistDefinitionsCollection(int handle, str mapLump, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESIST_DEFINITIONS_KEY))
+            return false;
+
+        return ParseResistCollection(handle, mapLump, identifyingSymbol);
+    }
+
+    internal bool ParseResistCollection(int handle, str mapLump, str identifyingSymbol)
+    {
         Logger::LogDebug(LOGSOURCE, "Start parse resist collection for \cd" + mapLump + ".");
 
         int bracketLevel = Tokenizer::GetBracketLevel(handle);
@@ -45,8 +103,11 @@ strict namespace IO
 
         // These variables hold all values that have been parsed thus far.
         int length = 0;
+        int flags = Resist::FLAG_NONE;
         str topReasonLabel = (raw)0;
         str timeReasonLabel = (raw)0;
+        str preResistScript = (raw)0;
+        str postResistScript = (raw)0;
 
         // While the brace level does not match the end level, we keep parsing.
         while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) == braceLevel)
@@ -73,6 +134,27 @@ strict namespace IO
                 continue;
             }
 
+            if (ParseResistPreResistScript(handle, symbol))
+            {
+                if (preResistScript != (raw)0) Logger::LogWarning(LOGSOURCE, "The pre-resist script was already defined for the resist. Replacing.");
+                preResistScript = _tokenizerResistParsedValue;
+                continue;
+            }
+
+            if (ParseResistPostResistScript(handle, symbol))
+            {
+                if (postResistScript != (raw)0) Logger::LogWarning(LOGSOURCE, "The post-resist script was already defined for the resist. Replacing.");
+                postResistScript = _tokenizerResistParsedValue;
+                continue;
+            }
+
+            if (ParseResistFlags(handle, symbol))
+            {
+                if (flags != Resist::FLAG_NONE) Logger::LogWarning(LOGSOURCE, "The flags were already defined for the resist. Replacing.");
+                flags = _tokenizerResistParsedValue;
+                continue;
+            }
+
             Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing resist definition for " + mapLump + ": '" + symbol + "'.");
             return false;
         }
@@ -83,7 +165,15 @@ strict namespace IO
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
             Tokenizer::Next(handle);
 
-        Resist::CreateResist(length, topReasonLabel, timeReasonLabel);
+        Resist::CreateResist(
+            length,
+            topReasonLabel,
+            timeReasonLabel,
+            preResistScript,
+            postResistScript,
+            flags
+        );
+
         Logger::LogDebug(LOGSOURCE, "Parsed resist definition for \cd" + mapLump + ".");
         return true;
     }
@@ -144,6 +234,163 @@ strict namespace IO
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
             Tokenizer::Next(handle);
 
+        return true;
+    }
+
+    internal bool ParseResistPreResistScript(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPRERESISTSCRIPTKEY)) return false;
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
+
+        str scriptName = Tokenizer::GetSymbol(handle);
+        if (!CheckScript(scriptName, true))
+        {
+            Tokenizer::SetErrored(handle, "The given pre-resist script does not exist: '" + scriptName + "'.");
+            return false;
+        }
+
+        _tokenizerResistParsedValue = scriptName;
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        return true;
+    }
+
+    internal bool ParseResistPostResistScript(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPOSTRESISTSCRIPTKEY)) return false;
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
+
+        str scriptName = Tokenizer::GetSymbol(handle);
+        if (!CheckScript(scriptName, true))
+        {
+            Tokenizer::SetErrored(handle, "The given post-resist script does not exist: '" + scriptName + "'.");
+            return false;
+        }
+
+        _tokenizerResistParsedValue = scriptName;
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        return true;
+    }
+
+    internal bool ParseResistFlags(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTFLAGSKEY)) return false;
+        if (!Tokenizer::ExpectNextChar(handle, '{')) return false;
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        int flags = Resist::FLAG_NONE;
+
+        Tokenizer::Next(handle);
+
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) == braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+
+            if (BCSUTILS::StrIEquals(symbol, RESISTFLAGHIDETOPREASONKEY))
+            {
+                flags |= Resist::FLAG_HIDE_TOP_REASON;
+            }
+            else if (BCSUTILS::StrIEquals(symbol, RESISTFLAGHIDETIMEREASONKEY))
+            {
+                flags |= Resist::FLAG_HIDE_TIME_REASON;
+            }
+            else if (BCSUTILS::StrIEquals(symbol, RESISTFLAGNOFADEKEY))
+            {
+                flags |= Resist::FLAG_NO_FADE;
+            }
+            else
+            {
+                Tokenizer::SetErrored(handle, "Unknown resist flag: '" + symbol + "'.");
+                return false;
+            }
+
+            Tokenizer::Next(handle);
+            if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                Tokenizer::Next(handle);
+        }
+
+        _tokenizerResistParsedValue = flags;
+
+        // Skip the closing brace and an optional comma after the flags block.
+        Tokenizer::Next(handle);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle);
+
+        return true;
+    }
+
+    internal bool ParseGlobalPreResistScript(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTGLOBALPRERESISTSCRIPTKEY))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) == Tokenizer::TEQ)
+            Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "The given value for " + RESISTGLOBALPRERESISTSCRIPTKEY + " is not correct. Expected a script name string.");
+            return false;
+        }
+
+        str scriptName = Tokenizer::GetSymbol(handle);
+        if (!CheckScript(scriptName, true))
+        {
+            Tokenizer::SetErrored(handle, "The given global pre-resist script does not exist: '" + scriptName + "'.");
+            return false;
+        }
+
+        if (Resist::GetGlobalPreResistScript() != (raw)0)
+            Logger::LogWarning(LOGSOURCE, "Parsing duplicate value for PreResistScript.");
+
+        Resist::SetGlobalPreResistScript(scriptName);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed global PreResistScript: \cd" + scriptName + "\cj.");
+        return true;
+    }
+
+    internal bool ParseGlobalPostResistScript(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTGLOBALPOSTRESISTSCRIPTKEY))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) == Tokenizer::TEQ)
+            Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "The given value for " + RESISTGLOBALPOSTRESISTSCRIPTKEY + " is not correct. Expected a script name string.");
+            return false;
+        }
+
+        str scriptName = Tokenizer::GetSymbol(handle);
+        if (!CheckScript(scriptName, true))
+        {
+            Tokenizer::SetErrored(handle, "The given global post-resist script does not exist: '" + scriptName + "'.");
+            return false;
+        }
+
+        if (Resist::GetGlobalPostResistScript() != (raw)0)
+            Logger::LogWarning(LOGSOURCE, "Parsing duplicate value for PostResistScript.");
+
+        Resist::SetGlobalPostResistScript(scriptName);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed global PostResistScript: \cd" + scriptName + "\cj.");
         return true;
     }
 }

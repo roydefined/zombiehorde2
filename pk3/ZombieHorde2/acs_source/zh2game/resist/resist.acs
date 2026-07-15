@@ -4,7 +4,8 @@
 
 #define LOGSOURCE "Resist"
 
-#include "extensions.acs"
+#include "prepostscript.acs"
+#include "extern.acs"
 #include "sync.acs"
 
 // Note:
@@ -31,19 +32,49 @@ strict namespace Resist
             if (!IsDefined(index))
                 continue;
 
-            if (!IsActive(index))
-                continue;
+            ResistT module& resist = resists[index];
 
-            if (GetTicsDifference(index) <= 0)
+            ResistRunStateT state = GetRunState(index);
+            if (state == STATEREADYTORUN)
+            {
+                SetRunState(index, STATERUNNING);
+                Event::SendResistStarted(index);
+                Sync::SyncResists();
+
+                Logger::LogDebug(LOGSOURCE, "Resist " + str(index) + " has started.");
+            }
+
+            else if (state == STATEREADYTOELAPSE)
             {
                 SetRunState(index, STATEENDED);
                 Event::SendResistElapsed(index);
                 Sync::SyncResists();
+
+                Logger::LogDebug(LOGSOURCE, "Resist " + str(index) + " has elapsed.");
             }
+
+            else if (state == STATEREADYTOSTOP)
+            {
+                SetRunState(index, STATEENDED);
+                Event::SendResistStopped(index);
+                Sync::SyncResists();
+
+                Logger::LogDebug(LOGSOURCE, "Resist " + str(index) + " has stopped.");
+            }
+
+            else if (state == STATERUNNING && GetTicsDifference(index) <= 0)
+                ElapseResist(index);
         }
     }
 
-    internal void DefineNewByIndex(int index, int length, str topReasonLabel = (raw)0, str timeReasonLabel = (raw)0)
+    internal void DefineNewByIndex(
+        int index,
+        int length,
+        str topReasonLabel = (raw)0,
+        str timeReasonLabel = (raw)0,
+        str preResistScript = (raw)0,
+        str postResistScript = (raw)0,
+        int flags = FLAG_NONE)
     {
         if (index < 0 || index >= MAX_RESISTS)
         {
@@ -55,13 +86,21 @@ strict namespace Resist
         resist.InitialState.Length = length;
         resist.InitialState.TopReasonLabel = topReasonLabel;
         resist.InitialState.TimeReasonLabel = timeReasonLabel;
+        resist.InitialState.PreResistScript = preResistScript;
+        resist.InitialState.PostResistScript = postResistScript;
+        resist.InitialState.Flags = flags;
         resist.EndingTic = -1;
+        resist.PauseTic = -1;
+        resist.RunState = STATENONE;
         resist.Defined = true;
 
         Logger::LogDebug(LOGSOURCE, "Created new resist at index \cd" + str(index) + "\cj. Length: \cd" + str(length) + "\cj. Top reason: \cd" + topReasonLabel + "\cj. Time reason: \cd" + timeReasonLabel + ".");
     }
 
-    internal ResistT module& GetRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Resists[index]; }
+    internal ResistT module& GetRefByindex(int index)
+    {
+        return ZH2Game::GameContext.MapDetails.Resists[index];
+    }
 
     // Called by the client, which is used to determine some things about the resist that do not change after it was made.
     internal void InitializeResistClientside(int index)
@@ -70,7 +109,6 @@ strict namespace Resist
 
         // Explicit check for `(raw)0` as timereason meaning nothing was set at all.
         // Default to "resist for %t seconds" then.
-        // TODO: Use a flag to explicitly indicate NOT to do this?
         if (resist.InitialState.TimeReasonLabel == (raw)0)
             resist.InitialState.TimeReasonLabel = "Resist for " + RESIST_TIME_TOKEN + " second" + RESIST_PLURAL_TOKEN;
 
@@ -105,9 +143,21 @@ strict namespace Resist
         Logger::LogDebug(LOGSOURCE, "Initialized new resist clientside at index \cd" + str(index) + "\cj. Time reason: " + timeReasonLog + ". Top reason: " + topReasonLog + ". Top reason has time token: \cd" + (resist.InitialState.TopReasonTimeTokenIndex != -1 ? "yes" : "no") + "\cj. Top reason time token has color: \cd" + (resist.InitialState.TopReasonHasColoredTimeToken ? "yes" : "no") + "\cj. Time reason has time token: \cd" + (resist.InitialState.TimeReasonTimeTokenIndex != -1 ? "yes" : "no") + "\cj. Time reason time token has color: \cd" + (resist.InitialState.TimeReasonHasColoredTimeToken ? "yes" : "no") + "\cj.");
     }
 
-    internal int GetMaximumTics(int index) { return GetRefByindex(index).InitialState.Length * 35; }
-    internal bool IsDefined(int index) { return GetRefByindex(index).Defined; }
-    internal bool IsActive(int index) { return GetRunState(index) == STATERUNNING; }
+    internal int GetMaximumTics(int index)
+    {
+        return GetRefByindex(index).InitialState.Length * 35;
+    }
+
+    internal bool IsDefined(int index)
+    {
+        return GetRefByindex(index).Defined;
+    }
+
+    internal bool IsActive(int index)
+    {
+        ResistRunStateT state = GetRunState(index);
+        return state != STATENONE && state != STATEENDED;
+    }
 
     internal int GetTicsLeft(int index)
     {
@@ -117,35 +167,194 @@ strict namespace Resist
 
     internal int GetTicsDifference(int index)
     {
-        return GetRefByindex(index).EndingTic - Utils::GetSynchronizedTimer();
+        ResistT module& resist = GetRefByindex(index);
+
+        int currentTic = GetRunState(index) == STATEPAUSED
+            ? resist.PauseTic
+            : Utils::GetSynchronizedTimer();
+
+        return resist.EndingTic - currentTic;
     }
 
-    internal void StartResist(int index, bool broadcast = true)
+    internal void StartResist(int index)
     {
-        // Already running or finished.
-        if (GetRunState(index) != STATENONE)
+        ResistRunStateT state = GetRunState(index);
+        if (state != STATENONE)
             return;
 
+        if (HasPreResistScript(index))
+        {
+            StartPreResistScript(index);
+            return;
+        }
+
+        SetResistReadyToRun(index);
+    }
+
+    internal void ElapseResist(int index)
+    {
+        ResistRunStateT state = GetRunState(index);
+        if (state != STATERUNNING && state != STATEPAUSED)
+            return;
+
+        if (HasPostResistScript(index))
+        {
+            StartPostResistScript(index);
+            return;
+        }
+
+        SetResistReadyToElapse(index);
+    }
+
+    internal void StopResist(int index)
+    {
+        ResistRunStateT state = GetRunState(index);
+        if (state != STATERUNNING && state != STATEPAUSED)
+            return;
+
+        SetResistReadyToStop(index);
+    }
+
+    internal void PauseResist(int index)
+    {
+        if (GetRunState(index) != STATERUNNING)
+            return;
+
+        ResistT module& resist = GetRefByindex(index);
+
+        resist.PauseTic = Utils::GetSynchronizedTimer();
+        SetRunState(index, STATEPAUSED);
+        Sync::SyncResists();
+
+        Logger::LogDebug(LOGSOURCE, "Paused resist \cd" + str(index) + "\cj.");
+    }
+
+    internal void ResumeResist(int index)
+    {
+        if (GetRunState(index) != STATEPAUSED)
+            return;
+
+        ResistT module& resist = GetRefByindex(index);
+
+        resist.EndingTic += Utils::GetSynchronizedTimer() - resist.PauseTic;
+        resist.PauseTic = -1;
+
+        SetRunState(index, STATERUNNING);
+        Sync::SyncResists();
+
+        Logger::LogDebug(LOGSOURCE, "Resumed resist \cd" + str(index) + "\cj.");
+    }
+
+    internal void ResetResist(int index, bool preserveRunningState = false)
+    {
+        if (!IsDefined(index))
+            return;
+
+        ResistT module& resist = GetRefByindex(index);
+        bool preserveRunning = preserveRunningState && GetRunState(index) == STATERUNNING;
+
+        resist.EndingTic = -1;
+        resist.PauseTic = -1;
+        resist.RunState = STATENONE;
+
+        if (preserveRunning)
+        {
+            ResetEndingTic(index);
+            resist.RunState = STATERUNNING;
+
+            Logger::LogDebug(LOGSOURCE, "Reset running resist \cd" + str(index) + "\cj while preserving its running state. True length: \cd" + str(resist.EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
+            return;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Reset resist \cd" + str(index) + "\cj to its initial state.");
+    }
+
+    internal void ResetAllResists(bool preserveRunningState = false)
+    {
+        ResistT[] module& resists = ZH2Game::GameContext.MapDetails.Resists;
+
+        for (int index = 0; index < lengthof(resists); ++index)
+        {
+            if (!IsDefined(index))
+                continue;
+
+            ResetResist(index, preserveRunningState);
+        }
+
+        Sync::SyncResists();
+
+        Logger::LogDebug(LOGSOURCE, "Reset all resists to their initial state.");
+    }
+
+    internal void ResetEndingTic(int index)
+    {
         ResistT module& resist = GetRefByindex(index);
 
         // The ending tic of a resist is set to an interval of 35 to keep in sync with other resists.
         // This is mostly so the visualization of them remains equal between other resists.
         int endingTic = Utils::GetSynchronizedTimer() + resist.InitialState.Length * 35;
         resist.EndingTic = endingTic + (35 - (endingTic % 35));
-        SetRunState(index, STATERUNNING);
-
-        Logger::LogDebug(LOGSOURCE, "Starting resist. True length: \cd" + str(resist.EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
-
-        if (broadcast)
-            Event::SendResistStarted(index);
+        resist.PauseTic = -1;
     }
 
-    internal void StopResist(int index, bool broadcast = true)
+    internal void SetResistReadyToRun(int index)
     {
-        GetRefByindex(index).EndingTic = -1;
+        ResetEndingTic(index);
 
-        if (broadcast)
-            Event::SendResistStopped(index);
+        Logger::LogDebug(LOGSOURCE, "Resist is ready to run. True length: \cd" + str(GetRefByindex(index).EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
+        SetRunState(index, STATEREADYTORUN);
+    }
+
+    internal void SetResistReadyToElapse(int index)
+    {
+        ResistT module& resist = GetRefByindex(index);
+
+        resist.EndingTic = -1;
+        resist.PauseTic = -1;
+
+        Logger::LogDebug(LOGSOURCE, "Resist is ready to elapse.");
+        SetRunState(index, STATEREADYTOELAPSE);
+    }
+
+    internal void SetResistReadyToStop(int index)
+    {
+        ResistT module& resist = GetRefByindex(index);
+
+        resist.EndingTic = -1;
+        resist.PauseTic = -1;
+
+        Logger::LogDebug(LOGSOURCE, "Resist is ready to stop.");
+        SetRunState(index, STATEREADYTOSTOP);
+    }
+
+    internal void ElapseAllResists()
+    {
+        ResistT[] module& resists = ZH2Game::GameContext.MapDetails.Resists;
+        for (int index = 0; index < lengthof(resists); ++index)
+        {
+            if (!IsDefined(index))
+                continue;
+
+            if (!IsActive(index))
+                continue;
+
+            SetRunState(index, STATEREADYTOELAPSE);
+        }
+    }
+
+    internal void StopAllResists()
+    {
+        ResistT[] module& resists = ZH2Game::GameContext.MapDetails.Resists;
+        for (int index = 0; index < lengthof(resists); ++index)
+        {
+            if (!IsDefined(index))
+                continue;
+
+            if (!IsActive(index))
+                continue;
+
+            SetRunState(index, STATEREADYTOSTOP);
+        }
     }
 
     internal void SetRunState(int index, ResistRunStateT state)
@@ -158,12 +367,53 @@ strict namespace Resist
         return GetRefByindex(index).RunState;
     }
 
+    internal void SetFlags(int index, int flags)
+    {
+        GetRefByindex(index).InitialState.Flags = flags;
+    }
+
+    internal int GetFlags(int index)
+    {
+        return GetRefByindex(index).InitialState.Flags;
+    }
+
+    internal bool HasFlag(int index, ResistFlagT flag)
+    {
+        return (GetFlags(index) & flag) != 0;
+    }
+
+    internal bool GetHideTopReason(int index)
+    {
+        return HasFlag(index, FLAG_HIDE_TOP_REASON);
+    }
+
+    internal bool GetHideTimeReason(int index)
+    {
+        return HasFlag(index, FLAG_HIDE_TIME_REASON);
+    }
+
+    internal bool GetNoFade(int index)
+    {
+        return HasFlag(index, FLAG_NO_FADE);
+    }
+
     internal ResistRunStateT GetRunStateTypeByIndex(int stateIndex)
     {
-        static ResistRunStateT collection[] = { STATENONE, STATERUNNING, STATEENDED };
+        static ResistRunStateT collection[] =
+        {
+            STATENONE,
+            STATEPRESCRIPT,
+            STATEREADYTORUN,
+            STATERUNNING,
+            STATEPAUSED,
+            STATEPOSTSCRIPT,
+            STATEREADYTOSTOP,
+            STATEREADYTOELAPSE,
+            STATEENDED
+        };
 
-        // No known round state.
-        if (stateIndex < STATENONE && stateIndex > STATEENDED)
+        // No known resist state.
+        if (stateIndex < STATENONE || stateIndex > STATEENDED)
             return STATENONE;
 
         return collection[stateIndex];

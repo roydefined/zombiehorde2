@@ -20,10 +20,21 @@ strict namespace IO
     #define HUMANSTARTITEMSKEY "humanstartitems"
     #define ZOMBIESTARTITEMSKEY "zombiestartitems"
 
+    #define RESISTPREFIXKEY "resist"
+    #define RESIST_DEFINITIONS_KEY "definitions"
     #define RESISTSPREFIXKEY "resists"
     #define RESISTLENGTHKEY "length"
     #define RESISTTOPREASONLABELKEY "topreasonlabel"
     #define RESISTTIMEREASONLABELKEY "timereasonlabel"
+    #define RESISTPRERESISTSCRIPTKEY  "PreResistScript"
+    #define RESISTPOSTRESISTSCRIPTKEY "PostResistScript"
+    #define RESISTGLOBALPRERESISTSCRIPTKEY  "GlobalPreResistScript"
+    #define RESISTGLOBALPOSTRESISTSCRIPTKEY "GlobalPostResistScript"
+
+    #define RESISTFLAGSKEY "Flags"
+    #define RESISTFLAGHIDETOPREASONKEY "HideTopReason"
+    #define RESISTFLAGHIDETIMEREASONKEY "HideTimeReason"
+    #define RESISTFLAGNOFADEKEY "NoFade"
 
     #define EVENTSPREFIXKEY "events"
     #define RADIODEFLUMP_RADIOLIST_BLOCKKEYWORD "radiolist"
@@ -61,6 +72,13 @@ strict namespace IO
         int ActiveRoundStateIndex;
 
         Resist::ResistT Resists[MAX_RESISTS];
+
+        // Serverside map scripts invoked for every resist.
+        str GlobalPreResistScript;
+        str GlobalPostResistScript;
+
+        // This is purely clientside so we know if the sync was for new resists, or if we edit them.
+        bool ResistsInitialized;
 
         // If `true`, the map is configured to play a heartbeat ambient on the final human.
         // TODO: This could turn into an integer indicating the final n humans play a heartbeat.

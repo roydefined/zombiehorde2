@@ -1,0 +1,129 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Resist
+{
+    script "zh2_script_startresist" (int index)
+    {
+        StartResistByIndex(index);
+    }
+
+    int CreateResist(
+        int length,
+        str topReasonLabel = (raw)0,
+        str timeReasonLabel = (raw)0,
+        str preResistScript = (raw)0,
+        str postResistScript = (raw)0,
+        int flags = FLAG_NONE)
+    {
+        for (int index = 0; index < MAX_RESISTS; ++index)
+        {
+            if (Resist::IsDefined(index))
+                continue;
+
+            Resist::DefineNewByIndex(
+                index,
+                length,
+                topReasonLabel,
+                timeReasonLabel,
+                preResistScript,
+                postResistScript,
+                flags
+            );
+
+            return index;
+        }
+
+        return -1;
+    }
+
+    void CreateResistByIndex(
+        int index,
+        int length,
+        str topReasonLabel = (raw)0,
+        str timeReasonLabel = (raw)0,
+        str preResistScript = (raw)0,
+        str postResistScript = (raw)0,
+        int flags = FLAG_NONE)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        Resist::DefineNewByIndex(
+            index,
+            length,
+            topReasonLabel,
+            timeReasonLabel,
+            preResistScript,
+            postResistScript,
+            flags
+        );
+    }
+
+    int StartResistByIndex(int index)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION_RETURN(0);
+
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return 0;
+        }
+
+        Resist::StartResist(index);
+        Sync::SyncResists();
+        return Resist::GetTicsLeft(index);
+    }
+
+    void StopResistByIndex(int index)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return;
+        }
+
+        Resist::StopResist(index);
+    }
+
+    void ElapseResistByIndex(int index)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return;
+        }
+
+        Resist::ElapseResist(index);
+    }
+
+    int GetTicsLeftByIndex(int index)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION_RETURN(0);
+
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return 0;
+        }
+
+        return Resist::GetTicsLeft(index);
+    }
+
+    int GetMaximumTicsByIndex(int index)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION_RETURN(0);
+
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return 0;
+        }
+
+        return Resist::GetMaximumTics(index);
+    }
+}
