@@ -65,7 +65,12 @@ strict namespace Hud
     internal int DrawResist(int index, int offset)
     {
         Resist::ResistT module& resist = Resist::GetRefByindex(index);
+        int maximumTics = Resist::GetMaximumTics(index);
         int ticsLeft = Resist::GetTicsLeft(index);
+
+        // Do not draw if above the max tics
+        if (ticsLeft > maximumTics)
+            return 0;
 
         // Failsafe, as online the client might not be informed in time of the resist ending.
         if (ticsLeft <= 0)
