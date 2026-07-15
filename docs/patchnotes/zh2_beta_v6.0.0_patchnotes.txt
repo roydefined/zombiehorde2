@@ -56,6 +56,29 @@ The game will now be able to track the activity of zombies and determine if one 
 Just like with the checking done on round start, the player will be informed to stay active or risk getting kicked.
 The standard ruling will apply when they get kicked, where the game could ban them for leaving the game early.
 
+* * Resist system improvements and runtime control * *
+The resist system has been expanded significantly and is now much more flexible for both built-in gameplay and custom maps.
+Resists now support optional pre- and post-resist scripts which are invoked before a resist starts and after it ends.
+Additionally, maps can define global pre- and post-resist scripts which are automatically used for every resist that does not define its own scripts.
+This greatly reduces duplicate scripting when maps use many resists. Feel free to use one or the other. Note global ones are ignored if a specific pre- and/or post- script is specified.
+
+Resists now support hooks which allow you to control how a resist is drawn, or something else it might need to do when it tics.
+Use this to completely change a resist's visual or control it another way whilst still having the benefit of knowing where to draw and what the length of the resist is.
+
+Resists now support configurable flags which can alter their behavior.
+Currently maps can choose to hide the top reason, hide the timer reason, hide both, or disable the default fade animation.
+Combined with hooks you can completely change resists to how you like it.
+
+Resists can now be controlled much more easily during gameplay.
+Scripts can now elapse scripts at runtime. They can also get information such as their maximum length, and time left.
+
+Administrators can now control resists much better.
+Beyond the existing start and stop functionality you can now elapse, pause and resume a resist as well.
+Based on the resist state different options will be available.
+Please note, resists are created by maps and depending on their implementation behavior of this feature might vary.
+It is not guaranteed a map might fully support these options, and calling a resist multiple times likely doesn't work that well.
+Use this with caution, knowing that this is the case.
+
 Map changes
 ------------------------------------------------
 
@@ -80,3 +103,4 @@ Repository changes
 - Builds made of the mod through PubDoomer in this project are now in lowercase rather than PascalCase.
 - Fixed an issue where the play timer was not set quick enough, causing early infections to not count towards the play timer.
 - The round timer will now only visually increase/decrease if it's actually visible. If hidden this effect is skipped.
+- Deprecated the `Resists` block in ZHMAPINFO lumps. Use the new `Resist` block instead.
