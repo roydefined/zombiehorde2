@@ -33,10 +33,32 @@ strict namespace Resist
             return;
         }
 
+        bool executed;
         if (isGlobalScript)
-            ACS_NamedExecute(scriptName, 0, index);
+            executed = ACS_NamedExecute(scriptName, 0, index);
         else
-            ACS_NamedExecute(scriptName, 0);
+            executed = ACS_NamedExecute(scriptName, 0);
+
+        if (!executed)
+        {
+            Logger::LogError(
+                LOGSOURCE,
+                RESIST_SCRIPT_HANDLER_NAME +
+                " failed to execute " +
+                (isGlobalScript ? "global " : "") +
+                (isPreScript ? "pre" : "post") +
+                "-script " + scriptName +
+                " of resist " + str((int)index) +
+                "."
+            );
+
+            if (isPreScript)
+                SetResistReadyToRun(index);
+            else
+                SetResistReadyToElapse(index);
+
+            return;
+        }
 
         NamedScriptWait(scriptName);
 
