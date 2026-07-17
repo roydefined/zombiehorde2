@@ -14,22 +14,8 @@ strict namespace Resist
     {
         if (!CheckScript(scriptName, true))
         {
-            Logger::LogError(
-                LOGSOURCE,
-                RESIST_SCRIPT_HANDLER_NAME +
-                " failed to call " +
-                (isGlobalScript ? "global " : "") +
-                (isPreScript ? "pre" : "post") +
-                "-script " + scriptName +
-                " of resist " + str((int)index) +
-                ". Script not found."
-            );
-
-            if (isPreScript)
-                SetResistReadyToRun(index);
-            else
-                SetResistReadyToElapse(index);
-
+            LogResistScriptError(index, isPreScript, scriptName, isGlobalScript, "Script not found.");
+            CompleteResistScript(index, isPreScript);
             return;
         }
 
@@ -41,31 +27,40 @@ strict namespace Resist
 
         if (!executed)
         {
-            Logger::LogError(
-                LOGSOURCE,
-                RESIST_SCRIPT_HANDLER_NAME +
-                " failed to execute " +
-                (isGlobalScript ? "global " : "") +
-                (isPreScript ? "pre" : "post") +
-                "-script " + scriptName +
-                " of resist " + str((int)index) +
-                "."
-            );
-
-            if (isPreScript)
-                SetResistReadyToRun(index);
-            else
-                SetResistReadyToElapse(index);
-
+            LogResistScriptError(index, isPreScript, scriptName, isGlobalScript, "Script failed to execute.");
+            CompleteResistScript(index, isPreScript);
             return;
         }
 
         NamedScriptWait(scriptName);
+        CompleteResistScript(index, isPreScript);
+    }
 
+    internal void CompleteResistScript(int index, bool isPreScript)
+    {
         if (isPreScript)
             SetResistReadyToRun(index);
         else
             SetResistReadyToElapse(index);
+    }
+
+    internal void LogResistScriptError(
+        int index,
+        bool isPreScript,
+        str scriptName,
+        bool isGlobalScript,
+        str reason)
+    {
+        Logger::LogError(
+            LOGSOURCE,
+            RESIST_SCRIPT_HANDLER_NAME +
+            " failed to call " +
+            (isGlobalScript ? "global " : "") +
+            (isPreScript ? "pre" : "post") +
+            "-script " + scriptName +
+            " of resist " + str(index) +
+            ". " + reason
+        );
     }
 
     internal void StartPreResistScript(int index)
