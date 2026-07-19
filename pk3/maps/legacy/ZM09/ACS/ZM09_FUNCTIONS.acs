@@ -13,43 +13,50 @@ function int unusedTID(int start, int end)//THIS FUNCTION WAS CREATED BY Ijon Ti
     int ret = start - 1;
     int tidNum;
     if (start > end) { start ^= end; end ^= start; start ^= end; }
-    while (ret++ != end){   
+    while (ret++ != end){
         if (ThingCount(0, ret) == 0)  return ret;
-    }   
-    return -1; 
+    }
+    return -1;
 }
 
-function int GetHigherCeiling(int tid2) {//THIS FUNCTION WAS CREATED BY Ijon Tichy and edited  by IBM5155
-   int posx=getactorx(tid2);
-    int posy=getactory(tid2);
-    int posz=GetActorCeilingZ(tid2);//504
-    int z=posz+25.0;
+function fixed GetHigherCeiling(int tid2) {//THIS FUNCTION WAS CREATED BY Ijon Tichy and edited  by IBM5155
+    fixed posx=getactorx(tid2);
+    fixed posy=getactory(tid2);
+    fixed posz=GetActorCeilingZ(tid2);//504
+    fixed z=posz+25.0;
     int test=0;
     int tid=unusedTID(1000, 2000);
     spawn("mapspot",posx,posy,z,tid,0);
-    while(GetActorCeilingZ(tid)!=0){
+    while(GetActorCeilingZ(tid) != 0.0)
+    {
         z=z+25.0;//850.0
         thing_remove(tid);
         spawn("mapspot",posx,posy,z,tid,0);
         test++;
-    }if(test==0){
+    }
+    if(test==0)
+    {
         thing_remove(tid);
         z=posz;
-    }else{
+    }
+    else
+    {
         thing_remove(tid);
         spawn("mapspot",posx,posy,z-27.0,tid,0);
-        z=GetActorCeilingZ(tid);
+        z = GetActorCeilingZ(tid);
         thing_remove(tid);
-    }return z;
+    }
+
+    return z;
 }
 
-function int hud_resize(void){
+function fixed hud_resize(void){
     int x=get_screenx();
     int y=get_screeny();
-    int output=0;
-    if(x<=320) output=0.02;
-    else if(x<=640) output=0.01;
-    else output=0;
+    fixed output = 0.0;
+    if (x <= 320) output = 0.02;
+    else if(x<=640) output = 0.01;
+    else output = 0.0;
     return output;
 
 }
@@ -67,4 +74,4 @@ function int divide(int a, int b){
     if(b!=0)
         c=a/b;
     return c;
-}  
+}

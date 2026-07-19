@@ -7,152 +7,155 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-bool Resists[4] = {false, false, false, false}; //Needed to prevent a multiple trigger
-Str Messages[4] = {"Opening lab entrance", "Opening laser research complex", "Opening east zone door", "Thalaron laser overcharge"};
-bool teleporter = false;
-bool teleporter2 = false; //[AQW] Anti Zombie Suicide.
-
-Script 1 (int resist, int time)
+strict namespace
 {
-    SetActivator(-1);
-    if(Resists[resist] == false)
+    bool Resists[4] = {false, false, false, false}; //Needed to prevent a multiple trigger
+    Str Messages[4] = {"Opening lab entrance", "Opening laser research complex", "Opening east zone door", "Thalaron laser overcharge"};
+    bool teleporter = false;
+    bool teleporter2 = false; //[AQW] Anti Zombie Suicide.
+
+    Script 1 (int resist, int time)
     {
-        Resists[resist] = true;
-        for(int i = time ; i>0 ; i--)
+        SetActivator(-1);
+        if(Resists[resist] == false)
         {
-            CustomMessage(Messages[resist], i);
+            Resists[resist] = true;
+            for(int i = time ; i>0 ; i--)
+            {
+                CustomMessage(Messages[resist], i);
+                delay(35);
+            }
+            switch(resist)
+            {
+                case 0:
+                    polyobj_move(1,10,64,112);
+                    break;
+                case 1:
+                    door_open(7,20);
+                    break;
+                case 2:
+                    polyobj_move(3,10,64,56);
+                    door_open(5,20);
+                    break;
+            }
+        }
+    }
+
+    Script 2 Open
+    {
+        SetLineBlocking(13,BLOCK_EVERYTHING);
+        delay(35*9);
+        Music::PlayMusic("lam_fina", 0);
+        delay(35*5);
+        SetLineTexture(13,SIDE_FRONT,TEXTURE_MIDDLE,"-");
+        SetLineTexture(13,SIDE_BACK,TEXTURE_MIDDLE,"-");
+        SetLineBlocking(13,BLOCK_NOTHING);
+        Polyobj_move(7,15,128,56);
+    }
+
+    Script 3 (void)
+    {
+        SetFont("CONFONT");
+        HudMessageBold(n:0, s:" has reached the subterrain bunker!\n\cCEscape from the lab before thatlaron generator explodes!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+        Delay(35*2);
+        SetActivator(-1);
+        Resists[3] = true;
+        for(int i = 30 ; i>0 ; i--)
+        {
+            CustomMessage(Messages[3], i);
             delay(35);
         }
-        switch(resist)
+        //Generic_Ceiling(8,15,96,0,16); //ZH2 [AQW]
+        Ceiling_LowerAndCrush(8,15,20,2); //ZH2 [AQW]
+        tagwait(8);
+        Ceiling_LowerByValueTimes8(8,16,1);
+        Delay(50);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"\cGWarning : \cFThalaron laser overheat!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+        delay(50);
+        Radius_Quake(100,35*5,0,100,0);
+        AmbientSound("world/thalarbeam",100);
+        Game::KillUnsafePlayers();
+    }
+
+    script 5 (void)
+    {
+        Teleport(9,0,0);
+        if(teleporter == false)
         {
-            case 0:
-                polyobj_move(1,10,64,112);
-                break;
-            case 1:
-                door_open(7,20);
-                break;
-            case 2:
-                polyobj_move(3,10,64,56);
-                door_open(5,20);
-                break;
+            teleporter = true;
+            polyobj_move(5,15,64,56);
         }
     }
-}
 
-Script 2 Open
-{
-    SetLineBlocking(13,BLOCK_EVERYTHING);
-    delay(35*9);
-    Music::PlayMusic("lam_fina", 0);
-    delay(35*5);
-    SetLineTexture(13,SIDE_FRONT,TEXTURE_MIDDLE,"-");
-    SetLineTexture(13,SIDE_BACK,TEXTURE_MIDDLE,"-");
-    SetLineBlocking(13,BLOCK_NOTHING);
-    Polyobj_move(7,15,128,56);
-}
-
-Script 3 (void)
-{
-    SetFont("CONFONT");
-    HudMessageBold(n:0, s:" has reached the subterrain bunker!\n\cCEscape from the lab before thatlaron generator explodes!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-    Delay(35*2);
-    SetActivator(-1);
-    Resists[3] = true;
-    for(int i = 30 ; i>0 ; i--)
+    Script 6 (void)
     {
-        CustomMessage(Messages[3], i);
-        delay(35);
+        SetActivator(-1);
+        Printbold(s:"Forcefields activated\nSystem will collapse in 15 seconds");
+        SetLineTexture(10,SIDE_FRONT,TEXTURE_MIDDLE,"FIREBLU1");
+        SetLineTexture(10,SIDE_BACK,TEXTURE_MIDDLE,"FIREBLU1");
+        SetLineBlocking(10,BLOCK_CREATURES);
+        delay(35*15);
+        SetLineTexture(10,SIDE_FRONT,TEXTURE_MIDDLE,"-");
+        SetLineTexture(10,SIDE_BACK,TEXTURE_MIDDLE,"-");
+        SetLineBlocking(10,BLOCK_NOTHING);
+        printbold(s:"Forcefields disabled");
     }
-    //Generic_Ceiling(8,15,96,0,16); //ZH2 [AQW]
-	Ceiling_LowerAndCrush(8,15,20,2); //ZH2 [AQW]
-    tagwait(8);
-	Ceiling_LowerByValueTimes8(8,16,1);
-    Delay(50);
-    SetFont("BIGFONT");
-    HudMessageBold(s:"\cGWarning : \cFThalaron laser overheat!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-    delay(50);
-    Radius_Quake(100,35*5,0,100,0);
-    AmbientSound("world/thalarbeam",100);
-	Game::KillUnsafePlayers();
-}
 
-script 5 (void)
-{
-    Teleport(9,0,0);
-    if(teleporter == false)
+    Script 7 (void)
     {
-        teleporter = true;
-        polyobj_move(5,15,64,56);
+        SetActivator(-1);
+        //Ceiling_LowerByvalue(11,30,112); - causes no crushing damage
+        //Generic_ceiling(11, 30, 112, 0, 16); //ZH2 [AQW]
+        Ceiling_LowerAndCrush(11,30,10,2); //ZH2 [AQW]
+        Printbold(s:"Sewer access closed\nSearching for problems");
+        tagwait(11);
+        Ceiling_LowerByValueTimes8(11,30,1); //ZH2 [AQW]
+        SetLineBlocking(12,BLOCK_CREATURES);
+        delay(35*15);
+        Ceiling_raiseByValue(11,20,112);
+        SetLineBlocking(12,BLOCK_NOTHING);
+        printbold(s:"No problems found\nRe-opening the sewer acces");
     }
-}
 
-Script 6 (void)
-{
-    SetActivator(-1);
-    Printbold(s:"Forcefields activated\nSystem will collapse in 15 seconds");
-    SetLineTexture(10,SIDE_FRONT,TEXTURE_MIDDLE,"FIREBLU1");
-    SetLineTexture(10,SIDE_BACK,TEXTURE_MIDDLE,"FIREBLU1");
-    SetLineBlocking(10,BLOCK_CREATURES);
-    delay(35*15);
-    SetLineTexture(10,SIDE_FRONT,TEXTURE_MIDDLE,"-");
-    SetLineTexture(10,SIDE_BACK,TEXTURE_MIDDLE,"-");
-    SetLineBlocking(10,BLOCK_NOTHING);
-    printbold(s:"Forcefields disabled");
-}
-
-Script 7 (void)
-{
-    SetActivator(-1);
-    //Ceiling_LowerByvalue(11,30,112); - causes no crushing damage
-	//Generic_ceiling(11, 30, 112, 0, 16); //ZH2 [AQW]
-	Ceiling_LowerAndCrush(11,30,10,2); //ZH2 [AQW]
-    Printbold(s:"Sewer access closed\nSearching for problems");
-    tagwait(11);
-	Ceiling_LowerByValueTimes8(11,30,1); //ZH2 [AQW]
-    SetLineBlocking(12,BLOCK_CREATURES);
-    delay(35*15);
-    Ceiling_raiseByValue(11,20,112);
-    SetLineBlocking(12,BLOCK_NOTHING);
-    printbold(s:"No problems found\nRe-opening the sewer acces");
-}
-
-Script 8 (void)
-{
-    SetActivator(-1);
-    Printbold(s:" Bunker forcefields activated\nSystem will collapse in 15 seconds");
-    SetLineTexture(14,SIDE_FRONT,TEXTURE_MIDDLE,"FIREBLU1");
-    SetLineTexture(14,SIDE_BACK,TEXTURE_MIDDLE,"FIREBLU1");
-    SetLineBlocking(14,BLOCK_CREATURES);
-    delay(35*15);
-    SetLineTexture(14,SIDE_FRONT,TEXTURE_MIDDLE,"-");
-    SetLineTexture(14,SIDE_BACK,TEXTURE_MIDDLE,"-");
-    SetLineBlocking(14,BLOCK_NOTHING);
-    printbold(s:"Forcefields disabled");
-}
-
-//[AQW] Added this teleport script to disallow Zombies to kill themselves in the Laser.
-Script 9 (void)
-{
-	if(Player::GetIsZombie())
+    Script 8 (void)
     {
-		Teleport(12,0,0);
-		if(teleporter2 == false)
-		{
-			teleporter2 = true;
-			Door_Open(15,15,0);
-		}
-	}
-    else
+        SetActivator(-1);
+        Printbold(s:" Bunker forcefields activated\nSystem will collapse in 15 seconds");
+        SetLineTexture(14,SIDE_FRONT,TEXTURE_MIDDLE,"FIREBLU1");
+        SetLineTexture(14,SIDE_BACK,TEXTURE_MIDDLE,"FIREBLU1");
+        SetLineBlocking(14,BLOCK_CREATURES);
+        delay(35*15);
+        SetLineTexture(14,SIDE_FRONT,TEXTURE_MIDDLE,"-");
+        SetLineTexture(14,SIDE_BACK,TEXTURE_MIDDLE,"-");
+        SetLineBlocking(14,BLOCK_NOTHING);
+        printbold(s:"Forcefields disabled");
+    }
+
+    //[AQW] Added this teleport script to disallow Zombies to kill themselves in the Laser.
+    Script 9 (void)
     {
-		DamageThing(6000, MOD_UNKNOWN);
-	}
-}
+        if(Player::GetIsZombie())
+        {
+            Teleport(12,0,0);
+            if(teleporter2 == false)
+            {
+                teleporter2 = true;
+                Door_Open(15,15,0);
+            }
+        }
+        else
+        {
+            DamageThing(6000, MOD_UNKNOWN);
+        }
+    }
 
 
-Function void CustomMessage(Str msg1, int time)
-{
-    SetFont("BIGFONT");
-    HudmessageBold(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-    SetFont("SmallFont");
-    HudmessageBold(s:msg1; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+    Function void CustomMessage(Str msg1, int time)
+    {
+        SetFont("BIGFONT");
+        HudmessageBold(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+        SetFont("SmallFont");
+        HudmessageBold(s:msg1; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+    }
 }

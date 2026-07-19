@@ -7,739 +7,742 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-int secretswitchcount = 0;
-
-bool Music1Used = FALSE;
-bool ScriptUsed = FALSE;
-bool ScriptUsed2 = FALSE;
-bool ScriptUsed3 = FALSE;
-bool CriminalsHere = FALSE;
-bool SecretActivated = FALSE;
-bool TheGood = FALSE;
-bool TheUgly = FALSE;
-bool TheBad = FALSE;
-
-bool jumpscare1 = FALSE;
-bool jumpscare2 = FALSE;
-
-bool incriminalrange[BCSUtils::MAX_PLAYERS];
-
-bool camera1 = FALSE;
-bool camera2 = FALSE;
-bool camera3 = FALSE;
-bool camera4 = FALSE;
-bool camera5 = FALSE;
-
-Script 1 OPEN
+strict namespace
 {
-    /*if(random(0,20) <= 1) //for now, let's keep these things inactive
-    {
-        spawnspot("ZH2LegacyZe17ShopguySecret", 65, 0, 0);
-        jumpscare1 = True;
-    }
-    else spawnspot("Shopguy", 65,0,0);
+    int secretswitchcount = 0;
 
-    if(random(0,20) >= 19)
+    bool Music1Used = FALSE;
+    bool ScriptUsed = FALSE;
+    bool ScriptUsed2 = FALSE;
+    bool ScriptUsed3 = FALSE;
+    bool CriminalsHere = FALSE;
+    bool SecretActivated = FALSE;
+    bool TheGood = FALSE;
+    bool TheUgly = FALSE;
+    bool TheBad = FALSE;
+
+    bool jumpscare1 = FALSE;
+    bool jumpscare2 = FALSE;
+
+    bool incriminalrange[BCSUtils::MAX_PLAYERS];
+
+    bool camera1 = FALSE;
+    bool camera2 = FALSE;
+    bool camera3 = FALSE;
+    bool camera4 = FALSE;
+    bool camera5 = FALSE;
+
+    Script 1 OPEN
     {
+        /*if(random(0,20) <= 1) //for now, let's keep these things inactive
+        {
+            spawnspot("ZH2LegacyZe17ShopguySecret", 65, 0, 0);
+            jumpscare1 = True;
+        }
+        else spawnspot("Shopguy", 65,0,0);
+
+        if(random(0,20) >= 19)
+        {
+            spawnspot("ZH2LegacyZE17Head", 81, 561, 0);
+            jumpscare2 = True;
+        }
+        else spawnspot(CRYSTAL_ITEM, 81,0,0);*/
+
+        //temp untill finished
+        spawnspot("ZH2LegacyReplacedShopguy", 65,0,0);
         spawnspot("ZH2LegacyZE17Head", 81, 561, 0);
-        jumpscare2 = True;
+
+        //main water reflection
+        sector_SetPlaneReflection(29,100,0);
+
+        //mudwater reflection
+        sector_SetPlaneReflection(100,30,0);
+
+        //seperate reflections in cases of 3d floors or other tag uses
+        Sector_SetPlaneReflection(30,100,0);
+        Sector_SetPlaneReflection(90,100,0);
+        Sector_SetPlaneReflection(91,100,0);
+
+        //no falling damage in several parts where you can get alot of damage otherwise
+        Sector_ChangeFlags(9, SECF_NOFALLINGDAMAGE, 0);
+        Sector_ChangeFlags(10, SECF_NOFALLINGDAMAGE, 0);
+        Sector_ChangeFlags(11, SECF_NOFALLINGDAMAGE, 0);
+        Sector_ChangeFlags(14, SECF_NOFALLINGDAMAGE, 0);
+        Sector_ChangeFlags(19, SECF_NOFALLINGDAMAGE, 0);
+        Sector_ChangeFlags(23, SECF_NOFALLINGDAMAGE, 0);
+        Sector_ChangeFlags(24, SECF_NOFALLINGDAMAGE, 0);
+        Sector_ChangeFlags(26, SECF_NOFALLINGDAMAGE, 0);
+        Sector_ChangeFlags(27, SECF_NOFALLINGDAMAGE, 0);
+        Sector_ChangeFlags(43, SECF_NOFALLINGDAMAGE, 0);
+
+        sector_setcolor(80, 200, 200, 100, 100);
+        sector_setColor(40,150,150,255);
+        sector_setFade(40,0,0,255);
+
+        delay(35*3);
+
+        SetFont("CONFONT");
+        HudMessageBold(s:"The criminal group found your hiding place.\nYou need to find another place to hide.";HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 5.0, 2.0);
+
+        Music::PlayMusic("D_GBU1");
+
+        delay(35*12);
+
+        acs_execute(2,0,0,0,0); //script 2 will start automaticly
+
+        delay(35*15);
+        Music::PlayMusic("D_NULL");
     }
-    else spawnspot(CRYSTAL_ITEM, 81,0,0);*/
 
-    //temp untill finished
-    spawnspot("ZH2LegacyReplacedShopguy", 65,0,0);
-    spawnspot("ZH2LegacyZE17Head", 81, 561, 0);
+    script "ze17_unload" Unloading
+    {
+        SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
+    }
 
-    //main water reflection
-    sector_SetPlaneReflection(29,100,0);
+    script 2 (void) // Opening the Cave ( 1st resist )
+    {
+        SetActivator(-1);
+        for(int time=5; time>0; time--)
+        {
+            SetFont("BIGFONT");
+            Hudmessage(s:"Opening the Cave in \cc",d:time,s:""; HUDMSG_FADEOUT, 998, CR_Yellow, 0.5, 0.17, 1.5, 0.5);
+            delay(35);
+        }
+        Floor_MovetoValue(5, 16, -160, 0);
+    }
 
-    //mudwater reflection
-    sector_SetPlaneReflection(100,30,0);
+    script 4 (void) // Closing the exit Cave
+    {
+        PrintBold(n:0, s:" has sealed the cave !");
+        SetActivator(-1);
+        Radius_Quake(2, 70, 0, 10, 15);
+        Ceiling_LowerAndCrush(7,64,5,2); //ZH2 [AQW] Put dmg to 5, and hexen mode.
+        TagWait(7); //ZH2 [AQW]
+        Ceiling_LowerByValueTimes8(7,16,1); //ZH2 [AQW]
 
-    //seperate reflections in cases of 3d floors or other tag uses
-    Sector_SetPlaneReflection(30,100,0);
-    Sector_SetPlaneReflection(90,100,0);
-    Sector_SetPlaneReflection(91,100,0);
+        delay(35*6);
 
-    //no falling damage in several parts where you can get alot of damage otherwise
-    Sector_ChangeFlags(9, SECF_NOFALLINGDAMAGE, 0);
-    Sector_ChangeFlags(10, SECF_NOFALLINGDAMAGE, 0);
-    Sector_ChangeFlags(11, SECF_NOFALLINGDAMAGE, 0);
-    Sector_ChangeFlags(14, SECF_NOFALLINGDAMAGE, 0);
-    Sector_ChangeFlags(19, SECF_NOFALLINGDAMAGE, 0);
-    Sector_ChangeFlags(23, SECF_NOFALLINGDAMAGE, 0);
-    Sector_ChangeFlags(24, SECF_NOFALLINGDAMAGE, 0);
-    Sector_ChangeFlags(26, SECF_NOFALLINGDAMAGE, 0);
-    Sector_ChangeFlags(27, SECF_NOFALLINGDAMAGE, 0);
-    Sector_ChangeFlags(43, SECF_NOFALLINGDAMAGE, 0);
+        Floor_LowerByValue(95,50,246);
+        PrintBold(s:"Another way is now open !");
+        Floor_MovetoValue(6,10,16);
+    }
 
-    sector_setcolor(80, 200, 200, 100, 100);
-    sector_setColor(40,150,150,255);
-    sector_setFade(40,0,0,255);
+    script 5 (void) // Lowering pillars the Cave ( 2nd resist )
+    {
+        SetActivator(-1);
 
-    delay(35*3);
+        for(int time = 20; time > 0; time--)
+        {
+            SetFont("BIGFONT");
+            Hudmessage(s:"Resist for \cc",d:time,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
+            SetFont("SMALLFONT");
+            HudmessageBold(s:"Lowering pillars"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
 
-    SetFont("CONFONT");
-    HudMessageBold(s:"The criminal group found your hiding place.\nYou need to find another place to hide.";HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 5.0, 2.0);
+            delay(35);
+        }
 
-    Music::PlayMusic("D_GBU1");
+        ACS_Execute(24,0,1);
+        SetLineBlocking(1, BLOCK_NOTHING);
+        Floor_Lowerbyvalue(13,50,256);
 
-    delay(35*12);
+        delay(35);
 
-    acs_execute(2,0,0,0,0); //script 2 will start automaticly
+        PrintBold(s:"The jail will open in 10 seconds.");
 
-    delay(35*15);
-    Music::PlayMusic("D_NULL");
-}
+        delay(35*2);
 
-script "ze17_unload" Unloading
-{
-	SetPlayerProperty(1, false, PROP_TOTALLYFROZEN);
-}
+        Music::PlayMusic("D_GBU2");
 
-script 2 (void) // Opening the Cave ( 1st resist )
-{
-	SetActivator(-1);
-	for(int time=5; time>0; time--)
-	{
-		SetFont("BIGFONT");
-		Hudmessage(s:"Opening the Cave in \cc",d:time,s:""; HUDMSG_FADEOUT, 998, CR_Yellow, 0.5, 0.17, 1.5, 0.5);
-		delay(35);
-	}
-	Floor_MovetoValue(5, 16, -160, 0);
-}
+        delay(35*4+18);
 
-script 4 (void) // Closing the exit Cave
-{
-    PrintBold(n:0, s:" has sealed the cave !");
-    SetActivator(-1);
-    Radius_Quake(2, 70, 0, 10, 15);
-    Ceiling_LowerAndCrush(7,64,5,2); //ZH2 [AQW] Put dmg to 5, and hexen mode.
-	TagWait(7); //ZH2 [AQW]
-	Ceiling_LowerByValueTimes8(7,16,1); //ZH2 [AQW]
+        SETFONT("SMALLFONT");
+        HudMessageBold(s:"The Good, the Bad and the Ugly"; HUDMSG_FADEINOUT, 0, CR_GREEN, 0.05, 0.85, 7.0);
 
-    delay(35*6);
+        delay(35*3);
 
-    Floor_LowerByValue(95,50,246);
-    PrintBold(s:"Another way is now open !");
-    Floor_MovetoValue(6,10,16);
-}
+        SETFONT("SMALLFONT");
+        HudMessageBold(s:"A remake of Blood's map"; HUDMSG_FADEINOUT, 0, CR_WHITE, 0.05, 0.87, 4.0);
 
-script 5 (void) // Lowering pillars the Cave ( 2nd resist )
-{
-    SetActivator(-1);
+        delay(18);
 
-    for(int time = 20; time > 0; time--)
+        SetLineBlocking(2,BLOCK_NOTHING);
+        ACS_Execute(24,0,2);
+        PrintBold(s:"Jail opened!");
+        Floor_Lowerbyvalue(17,50,250);
+
+        delay(18);
+
+        SETFONT("SMALLFONT");
+        HudMessageBold(s:"By Fused"; HUDMSG_FADEINOUT, 0, CR_WHITE, 0.04, 0.89, 3.0);
+    }
+
+    Script 6 (void) //shortcut at the village
+    {
+    Floor_LowerbyValue(109,75,120);
+    }
+
+    Script 7 (void) // Not accessible anymore
+    {
+        Print(s:"This door is locked.");
+        ActivatorSound("sound/locked2", 127);
+        delay(15);
+    }
+
+    Script 8 (void) // Re-Sealing a cave
+    {
+    int time;
+    for(time=14;time>0;time--)
+    {
+    SetFont("ConFONT");
+    Hudmessagebold(s:"\ckThe hidden cave will be re-sealed in \cj",d:time,s:" \ckseconds"; HUDMSG_FADEOUT, 0, CR_White, 0.04, 0.86, 0.5);
+    Radius_Quake(2, 17, 0, 10, 35);
+    delay(35);
+    }
+    Radius_Quake(2, 105, 0, 10, 35);
+    Floor_RaiseAndCrush(24,60,10,2); //ZH2 [AQW] But yeah, WTF is this script? This raise a random floor to the sky just before the 1st resist. ????
+    TagWait(24); //ZH2 [AQW]
+    Floor_RaiseByValueTimes8(24,16,1); //ZH2 [AQW]
+    }
+
+    Script 9 (void) // Falling and taking damage
+    {
+        if(Player::GetIsHuman())
+        {
+            Thing_Damage(0, random(5,15), MOD_FALLING);
+            Thing_Move(0,3,1);
+        }
+        else
+        {
+            Thing_Damage(0, random(50,75), MOD_FALLING);
+            Thing_Move(0,4,1);
+        }
+    }
+
+    Script 10 (void) // Falling and taking damage
+    {
+     Thing_Damage(0, random(0,0), MOD_FALLING);
+     Teleport(0,5,0);
+    }
+
+    Script 11 (void) // Calling to maya's force
+    {
+        PrintBold(n:0, s:" has called the apache's force to block zombies!\n\nit will be removed in 15 seconds.");
+        SetActivator(-1);
+      SpawnspotFacing("yellowparticlefountain",99,8666);
+      setlinespecial(35,80,17,0,0,0,0);
+        Delay(35*17);
+      setlinespecial(35,0,0,0,0,0,0);
+      Thing_Remove(8666);
+        PrintBold(s:"Apache's force removed !");
+    }
+
+    script 12 (int x) //For those that fall in the water at the canyon part
+    {
+       if(Player::GetIsHuman())
+           Thing_Damage(0, random(5,15), MOD_FALLING);
+       else
+           Thing_Damage(0, random(50,75), MOD_FALLING);
+
+        Switch(x)
+        {
+            Case 1:
+                teleport(57,0,0);
+                Break;
+
+            Case 2:
+                teleport(58,0,0);
+                Break;
+
+            Case 3:
+                teleport(59,0,0);
+                Break;
+
+            Case 4:
+                teleport(60,0,0);
+                Break;
+
+            case 5: //this is actually after the canyon part
+                teleport(112,0,0);
+                Break;
+
+            case 6: //this aswell
+                teleport(118,0,0);
+                Break;
+        }
+    }
+
+    script 13 (void) // Opening secret cave.
+    {
+        Radius_Quake(2, 70, 0, 10, 35);
+        Floor_LowerbyValue(24,25,246);
+    }
+
+    Script 14 (void) // 1st Pillars
+    {
+
+        if(Player::GetIsHuman())
+        {
+            SetActivator(-1);
+            PrintBold(s:"The pillars will lower in 3 seconds.");
+            Delay(35*5);
+            Floor_LowerbyValue(36,75,120);
+        }
+        else
+        {
+            SetActivator(-1);
+            PrintBold(s:"The pillars will lower in 10 seconds.");
+            Delay(35*12);
+            Floor_LowerbyValue(36,75,120);
+        }
+    }
+
+    script 15 (void) // Opening the exit Cave
+    {
+        if (ScriptUsed2  == FALSE )
+        {
+            ScriptUsed2 = TRUE;
+            Floor_LowerbyValue(34,115,256);
+            Radius_Quake(2, 140, 0, 10, 45);
+        }
+    }
+
+    script 16 (void) // Final resists
     {
         SetFont("BIGFONT");
-        Hudmessage(s:"Resist for \cc",d:time,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
-        SetFont("SMALLFONT");
-        HudmessageBold(s:"Lowering pillars"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+        HudmessageBold(n:0, s:" \ckhas found the village !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 5.5, 2.0);
+        SetActivator(-1);
+        Music::PlayMusic("*");
+
+        delay(35*2);
+
+        Music::PlayMusic("D_GBU3");
+
+        delay(35*6);
+
+        for(int time=10;time>0;time--)
+        {
+            SetFont("BIGFONT");
+            Hudmessage(s:"Resist for \cc",d:time,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
+            SetFont("SmallFONT");
+            HudmessageBold(s:"Opening the village gates"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+
+            delay(35);
+        }
+
+        thingsound(49,"sound/woodgateopen",255);
+
+        delay(18);
+
+        Polyobj_RotateRight(1, 1, 35);
+        Polyobj_RotateLeft(2, 1, 35);
+
+        delay(35*20+33); //this actually makes a difference
+
+        for(int time2=10;time2>=3;time2--)
+        {
+            SetFont("BIGFONT");
+            Hudmessage(s:"Resist for \cc",d:time2,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
+            SetFont("SmallFONT");
+            HudmessageBold(s:"Opening the second gates"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+
+            delay(35);
+        }
+
+        Music::PlayMusic("d_null");
+
+        spawnspot("ZH2LegacyZe17CriminalDummy1",66, 555, 0);
+
+        delay(35*2);
+
+        thing_remove(555);
+        spawnspot("ZH2LegacyZe17CriminalDummy3",66, 556, 0);
 
         delay(35);
-    }
 
-    ACS_Execute(24,0,1);
-    SetLineBlocking(1, BLOCK_NOTHING);
-    Floor_Lowerbyvalue(13,50,256);
+        thingsound(68, "sound/cowboyshotsequence", 150);
+        thing_remove(556);
+        spawnspot("ZH2LegacyZe17CriminalDummy4",66, 557, 0);
 
-    delay(35);
+        delay(35*2);
 
-    PrintBold(s:"The jail will open in 10 seconds.");
+        spawnspot("ZH2LegacyZE29Explosion",69,0);
+        radius_quake(3,70, 0, 20, 70);
+        floor_lowerbyvalue(75, 999, 56);
+        floor_lowerbyvalue(71, 999, 16);
+        floor_lowerbyvalue(73, 999, 24);
+        floor_lowerbyvalue(74, 999, 48);
+        changefloor(75,"FLAT14-B");
 
-    delay(35*2);
+        floor_lowerbyvalue(76,10,80);
+        floor_lowerbyvalue(77,20,104);
+        floor_lowerbyvalue(78,5,60);
+        SetLineBlocking(79, BLOCK_NOTHING);
 
-    Music::PlayMusic("D_GBU2");
+        delay(35*2);
 
-    delay(35*4+18);
+        Music::PlayMusic("D_GBU4");
 
-    SETFONT("SMALLFONT");
-    HudMessageBold(s:"The Good, the Bad and the Ugly"; HUDMSG_FADEINOUT, 0, CR_GREEN, 0.05, 0.85, 7.0);
+        acs_execute(27,0,0,0,0);
+        SetFont("CONFONT");
+        HudMessageBold(s:"The criminal group has found you! Flee for the hotel and access the hiding room.";HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 6.0, 2.0);
 
-    delay(35*3);
+        delay(35);
 
-    SETFONT("SMALLFONT");
-    HudMessageBold(s:"A remake of Blood's map"; HUDMSG_FADEINOUT, 0, CR_WHITE, 0.05, 0.87, 4.0);
+        thing_remove(557);
+        spawnspot("ZH2LegacyZe17CriminalDummy3",66, 558, 0);
 
-    delay(18);
+        delay(35);
 
-    SetLineBlocking(2,BLOCK_NOTHING);
-    ACS_Execute(24,0,2);
-    PrintBold(s:"Jail opened!");
-    Floor_Lowerbyvalue(17,50,250);
+        thing_remove(558);
+        spawnspot("ZH2LegacyZe17CriminalDummy1",66, 0, 0);
 
-    delay(18);
+        delay(35*3);
 
-    SETFONT("SMALLFONT");
-    HudMessageBold(s:"By Fused"; HUDMSG_FADEINOUT, 0, CR_WHITE, 0.04, 0.89, 3.0);
-}
+        for(int time3 = 45 ;time3 > 0; time3--)
+        {
+            SetFont("BIGFONT");
+            Hudmessage(s:"Resist for \cc",d:time3,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
+            SetFont("SmallFONT");
+            HudmessageBold(s:"Closing the hiding room"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
 
-Script 6 (void) //shortcut at the village
-{
-Floor_LowerbyValue(109,75,120);
-}
+            delay(35);
+        }
 
-Script 7 (void) // Not accessible anymore
-{
-	Print(s:"This door is locked.");
-	ActivatorSound("sound/locked2", 127);
-	delay(15);
-}
-
-Script 8 (void) // Re-Sealing a cave
-{
-int time;
-for(time=14;time>0;time--)
-{
-SetFont("ConFONT");
-Hudmessagebold(s:"\ckThe hidden cave will be re-sealed in \cj",d:time,s:" \ckseconds"; HUDMSG_FADEOUT, 0, CR_White, 0.04, 0.86, 0.5);
-Radius_Quake(2, 17, 0, 10, 35);
-delay(35);
-}
-Radius_Quake(2, 105, 0, 10, 35);
-Floor_RaiseAndCrush(24,60,10,2); //ZH2 [AQW] But yeah, WTF is this script? This raise a random floor to the sky just before the 1st resist. ????
-TagWait(24); //ZH2 [AQW]
-Floor_RaiseByValueTimes8(24,16,1); //ZH2 [AQW]
-}
-
-Script 9 (void) // Falling and taking damage
-{
-	if(Player::GetIsHuman())
-	{
-		Thing_Damage(0, random(5,15), MOD_FALLING);
-		Thing_Move(0,3,1);
-	}
-	else
-	{
-		Thing_Damage(0, random(50,75), MOD_FALLING);
-		Thing_Move(0,4,1);
-	}
-}
-
-Script 10 (void) // Falling and taking damage
-{
- Thing_Damage(0, random(0,0), MOD_FALLING);
- Teleport(0,5,0);
-}
-
-Script 11 (void) // Calling to maya's force
-{
-	PrintBold(n:0, s:" has called the apache's force to block zombies!\n\nit will be removed in 15 seconds.");
-	SetActivator(-1);
-  SpawnspotFacing("yellowparticlefountain",99,8666);
-  setlinespecial(35,80,17,0,0,0,0);
-	Delay(35*17);
-  setlinespecial(35,0,0,0,0,0,0);
-  Thing_Remove(8666);
-	PrintBold(s:"Apache's force removed !");
-}
-
-script 12 (int x) //For those that fall in the water at the canyon part
-{
-   if(Player::GetIsHuman())
-	   Thing_Damage(0, random(5,15), MOD_FALLING);
-   else
-	   Thing_Damage(0, random(50,75), MOD_FALLING);
-
-	Switch(x)
-	{
-		Case 1:
-			teleport(57,0,0);
-			Break;
-
-		Case 2:
-			teleport(58,0,0);
-			Break;
-
-		Case 3:
-			teleport(59,0,0);
-			Break;
-
-		Case 4:
-			teleport(60,0,0);
-			Break;
-
-		case 5: //this is actually after the canyon part
-			teleport(112,0,0);
-			Break;
-
-		case 6: //this aswell
-			teleport(118,0,0);
-			Break;
-	}
-}
-
-script 13 (void) // Opening secret cave.
-{
-	Radius_Quake(2, 70, 0, 10, 35);
-	Floor_LowerbyValue(24,25,246);
-}
-
-Script 14 (void) // 1st Pillars
-{
-
-	if(Player::GetIsHuman())
-	{
-		SetActivator(-1);
-		PrintBold(s:"The pillars will lower in 3 seconds.");
-		Delay(35*5);
-		Floor_LowerbyValue(36,75,120);
-	}
-	else
-	{
-		SetActivator(-1);
-		PrintBold(s:"The pillars will lower in 10 seconds.");
-		Delay(35*12);
-		Floor_LowerbyValue(36,75,120);
-	}
-}
-
-script 15 (void) // Opening the exit Cave
-{
-	if (ScriptUsed2  == FALSE )
-	{
-		ScriptUsed2 = TRUE;
-		Floor_LowerbyValue(34,115,256);
-		Radius_Quake(2, 140, 0, 10, 45);
-	}
-}
-
-script 16 (void) // Final resists
-{
-    SetFont("BIGFONT");
-    HudmessageBold(n:0, s:" \ckhas found the village !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 5.5, 2.0);
-    SetActivator(-1);
-    Music::PlayMusic("*");
-
-    delay(35*2);
-
-    Music::PlayMusic("D_GBU3");
-
-    delay(35*6);
-
-    for(int time=10;time>0;time--)
-    {
+        ACS_Suspend(28,0);
+        floor_raiseandcrush(101, 10, 50, 2); //ZH2 [AQW] dmg to 50 because its the ending, hexen mode...
+        TagWait(101); //ZH2 [AQW]
+        Floor_RaiseByValueTimes8(101,16,1);//ZH2 [AQW]
+        CriminalsHere = TRUE;
         SetFont("BIGFONT");
-        Hudmessage(s:"Resist for \cc",d:time,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
-        SetFont("SmallFONT");
-        HudmessageBold(s:"Opening the village gates"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+        HudmessageBold(s:"\ckThe criminals are here !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 2.5, 0.5);
+
+        delay(35*2);
+
+        Music::PlayMusic("D_NULL");
+        fadeto(0,0,0,1.0,2.0);
+        SetPlayerProperty(1, 1, PROP_TOTALLYFROZEN);
+
+        delay(35*2);
+
+        SetLineBlocking(102,BLOCK_EVERYTHING);
+        spawnspot("ZH2LegacyZe17CriminalDummy1",108, 561, 0); //idle criminals
+        spawnspot("ZH2LegacyZe17CriminalDummy1",109, 562, 0); //shooting criminals
+        spawnspot("ZH2LegacyReplacedShopguy", 117,0,0);
+
+        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+        {
+            if(!Game::GetPlayerIsSafe(i))
+                Teleportother(Identity::GetTid(i),201+i,0);
+        }
 
         delay(35);
-    }
 
-    thingsound(49,"sound/woodgateopen",255);
+        acs_execute(30,0,0,0,0);
+        fadeto(0, 0, 0, 0.0, 1.0);
+        ambientsound("sound/showdown", 100);
+        CAMERA1 = TRUE;
 
-    delay(18);
+        delay(35*3);
 
-    Polyobj_RotateRight(1, 1, 35);
-    Polyobj_RotateLeft(2, 1, 35);
-
-    delay(35*20+33); //this actually makes a difference
-
-    for(int time2=10;time2>=3;time2--)
-    {
-        SetFont("BIGFONT");
-        Hudmessage(s:"Resist for \cc",d:time2,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
-        SetFont("SmallFONT");
-        HudmessageBold(s:"Opening the second gates"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+        fadeto(0, 0, 0, 1.0,1.0);
 
         delay(35);
-    }
 
-    Music::PlayMusic("d_null");
+        fadeto(0, 0, 0, 0.0, 1.0);
 
-    spawnspot("ZH2LegacyZe17CriminalDummy1",66, 555, 0);
+        CAMERA1 = FALSE;
+        CAMERA2 = TRUE;
 
-    delay(35*2);
+        delay(35*3);
 
-    thing_remove(555);
-    spawnspot("ZH2LegacyZe17CriminalDummy3",66, 556, 0);
-
-    delay(35);
-
-    thingsound(68, "sound/cowboyshotsequence", 150);
-    thing_remove(556);
-    spawnspot("ZH2LegacyZe17CriminalDummy4",66, 557, 0);
-
-    delay(35*2);
-
-    spawnspot("ZH2LegacyZE29Explosion",69,0);
-    radius_quake(3,70, 0, 20, 70);
-    floor_lowerbyvalue(75, 999, 56);
-    floor_lowerbyvalue(71, 999, 16);
-    floor_lowerbyvalue(73, 999, 24);
-    floor_lowerbyvalue(74, 999, 48);
-    changefloor(75,"FLAT14-B");
-
-    floor_lowerbyvalue(76,10,80);
-    floor_lowerbyvalue(77,20,104);
-    floor_lowerbyvalue(78,5,60);
-    SetLineBlocking(79, BLOCK_NOTHING);
-
-    delay(35*2);
-
-    Music::PlayMusic("D_GBU4");
-
-    acs_execute(27,0,0,0,0);
-    SetFont("CONFONT");
-    HudMessageBold(s:"The criminal group has found you! Flee for the hotel and access the hiding room.";HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 6.0, 2.0);
-
-    delay(35);
-
-    thing_remove(557);
-    spawnspot("ZH2LegacyZe17CriminalDummy3",66, 558, 0);
-
-    delay(35);
-
-    thing_remove(558);
-    spawnspot("ZH2LegacyZe17CriminalDummy1",66, 0, 0);
-
-    delay(35*3);
-
-    for(int time3 = 45 ;time3 > 0; time3--)
-    {
-        SetFont("BIGFONT");
-        Hudmessage(s:"Resist for \cc",d:time3,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
-        SetFont("SmallFONT");
-        HudmessageBold(s:"Closing the hiding room"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+        fadeto(0, 0, 0, 1.0, 1.0);
 
         delay(35);
-    }
 
-    ACS_Suspend(28,0);
-    floor_raiseandcrush(101, 10, 50, 2); //ZH2 [AQW] dmg to 50 because its the ending, hexen mode...
-	TagWait(101); //ZH2 [AQW]
-	Floor_RaiseByValueTimes8(101,16,1);//ZH2 [AQW]
-    CriminalsHere = TRUE;
-    SetFont("BIGFONT");
-    HudmessageBold(s:"\ckThe criminals are here !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 2.5, 0.5);
+        fadeto(0, 0, 0, 0.0, 1.0);
 
-    delay(35*2);
+        CAMERA2 = FALSE;
+        CAMERA3 = TRUE;
 
-    Music::PlayMusic("D_NULL");
-    fadeto(0,0,0,1.0,2.0);
-    SetPlayerProperty(1, true, PROP_TOTALLYFROZEN);
+        delay(35*6);
 
-    delay(35*2);
+        fadeto(0, 0, 0, 1.0, 1.0);
 
-    SetLineBlocking(102,BLOCK_EVERYTHING);
-    spawnspot("ZH2LegacyZe17CriminalDummy1",108, 561, 0); //idle criminals
-    spawnspot("ZH2LegacyZe17CriminalDummy1",109, 562, 0); //shooting criminals
-    spawnspot("ZH2LegacyReplacedShopguy", 117,0,0);
-
-    for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-    {
-        if(!Game::GetPlayerIsSafe(i))
-			Teleportother(Identity::GetTid(i),201+i,0);
-    }
-
-    delay(35);
-
-    acs_execute(30,0,0,0,0);
-    fadeto(0,0,0,0,1.0);
-    ambientsound("sound/showdown", 100);
-    CAMERA1 = TRUE;
-
-    delay(35*3);
-
-    fadeto(0,0,0,1.0,1.0);
-
-    delay(35);
-
-    fadeto(0,0,0,0,1.0);
-
-    CAMERA1 = FALSE;
-    CAMERA2 = TRUE;
-
-    delay(35*3);
-
-    fadeto(0,0,0,1.0,1.0);
-
-    delay(35);
-
-    fadeto(0,0,0,0,1.0);
-
-    CAMERA2 = FALSE;
-    CAMERA3 = TRUE;
-
-    delay(35*6);
-
-    fadeto(0,0,0,1.0,1.0);
-
-    delay(35);
-
-    fadeto(0,0,0,0,1.0);
-
-    CAMERA3 = FALSE;
-    CAMERA4 = TRUE;
-
-    delay(35*3);
-
-    fadeto(0,0,0,1.0,3.0);
-
-    delay(35*4);
-
-    fadeto(0,0,0,0,3.0);
-
-    CAMERA4 = FALSE;
-    CAMERA5 = TRUE;
-
-    thing_remove(562);
-    spawnspot("ZH2LegacyZe17CriminalDummy3",109, 562, 0);
-
-    delay(35*2);
-
-    thing_remove(562);
-    spawnspot("ZH2LegacyZe17CriminalDummy4",109, 562, 0);
-
-    ambientsound("sound/cowboyshotend", 100);
-    sectordamage(102, 6000, MOD_EXIT, 0, DAMAGE_PLAYERS); //6000 because some bh zombies have this much apparantly
-
-    delay(35);
-
-    thing_remove(562);
-    spawnspot("ZH2LegacyZe17CriminalDummy3",109, 562, 0);
-
-    delay(35*2);
-
-    thing_remove(562);
-    spawnspot("ZH2LegacyZe17CriminalDummy4",109, 562, 0);
-    sectordamage(103, 6000, MOD_EXIT, 0, DAMAGE_PLAYERS);
-
-    delay(35);
-
-    thing_remove(562);
-    spawnspot("ZH2LegacyZe17CriminalDummy3",109, 562, 0);
-
-    delay(35*2);
-
-    sectordamage(107, 6000, MOD_EXIT, 0, DAMAGE_PLAYERS);
-	Game::KillUnsafePlayers(); // To be safe, let's use this aswell.
-
-    delay(35*2);
-
-    fadeto(0,0,0,1.0,1.0);
-
-    delay(35);
-
-    fadeto(0,0,0,0,1.0);
-    SetPlayerProperty(1, false, PROP_TOTALLYFROZEN);
-    CAMERA5 = FALSE;
-}
-
-script 17 (void)
-{
-	if(Player::GetIsHuman())
-	{
-		Print(s:"Run ! The apache's force protects you !");
-	}
-	else
-	{
-		ThrustThing(192, 20, 0, 0);
-		Print(s:"You shall not pass !");
-	}
-}
-
-Script 19 (void) // Cave teleporter only for humans.
-{
-
-	if(Player::GetIsHuman())
-	{
-		Thing_Move(0,random(96,98),0);
-	}
-	else
-	{
-		Print(s:"This teleporter works only with humans.");
-	}
-}
-
-script 20 (void) // Opening secret cave.
-{
-	Radius_Quake(2, 70, 0, 10, 89);
-	Floor_LowerbyValue(91,25,70);
-}
-
-script 21 (void) // The ugly !
-{
-	if(CheckInventory("Clip") == 1 && TheUgly == FALSE )
-	{
-		Print(s:"You already got a role in this history");
-	}
-	if(CheckInventory("Clip") == 0 && TheUgly == FALSE )
-	{
-		PrintBold(n:0, s:" is the ugly !\n\nhe found the treasure.");
-		GiveInventory("Clip",1);
-		TheUgly = TRUE;
-	}
-}
-
-script 22 (void) // The good !
-{
-	if(CheckInventory("Clip") == 1 && TheGood == FALSE )
-	{
-		Print(s:"You already got a role in this history");
-	}
-	if(CheckInventory("Clip") == 0 && TheGood == FALSE )
-	{
-		PrintBold(n:0, s:" is the good !\n\nhe found the jacksgun.");
-		GiveInventory("Clip",1);
-		TheGood = TRUE;
-	}
-}
-
-script 23 (void) // The bad !
-{
-	if(CheckInventory("Clip") == 1 && TheBad == FALSE )
-	{
-		Print(s:"You already got a role in this history");
-	}
-	if(CheckInventory("Clip") == 0 && TheBad == FALSE )
-	{
-		PrintBold(n:0, s:" is the bad !");
-		GiveInventory("Clip",1);
-		TheBad = TRUE;
-	}
-}
-
-Script 24 (int iLine) CLIENTSIDE
-{
-	for(int i= 100; i >= 0; i -= 5) {
-		TranslucentLine(iLine, i);
-		Delay(1);
-	}
-}
-
-/*script 25 (void) //secret
-{
-    floor_raisetohighest(45,4);
-    LocalSetMusic("D_NULL");
-    tagwait(45);
-    floor_raisetohighest(46,8);
-    thingsound(47,"sound/churchbell",100);
-
-    delay(35*3);
-
-    spawnspot(WEAPON_JACKSGUN_SPAWN_NAME,48,0,0);
-    spawnspot("teleportfog",48,0,0);
-
-    delay(35*3);
-
-    LocalSetMusic("D_GBU2");
-}*/
-
-script 26 (void) // new resist after the canyon part
-{
-	if (ScriptUsed3  == FALSE )
-	{
-		ScriptUsed3 = TRUE;
-		SetActivator(-1);
-		for(int time2=30;time2>0;time2--)
-		{
-			SetFont("BIGFONT");
-			Hudmessage(s:"Resist for \cc",d:time2,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
-			SetFont("SmallFONT");
-			HudmessageBold(s:"Opening the second cave"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-
-			delay(35);
-		}
-		Floor_movetovalue(52, 20, 120);
-		Floor_movetovalue(53, 40, 120);
-		Floor_movetovalue(54, 50, 120);
-		Floor_movetovalue(55, 70, 120);
-
-		radius_quake(4, 105, 0, 10, 56);
-		SetLineBlocking(57, BLOCK_NOTHING);
-	}
-}
-
-script 3 (void) //in criminal range for final village part.
-{
-    if(LineSide()== LINE_FRONT) incriminalrange[PlayerNumber()] = 1;
-    else incriminalrange[PlayerNumber()] = 0;
-}
-
-script 27 (void) //shooting criminals for final resist
-{
-    if(!criminalshere)
-    {
-        spawnspot("ZH2LegacyZe17CriminalDummy3",79, 559, 0);
-
-        delay(35*5);
-
-        thing_remove(559);
-        spawnspot("ZH2LegacyZe17CriminalDummy4",79, 560, 0);
-
-		for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-		{
-			if(incriminalrange[i])
-			{
-				int tid = Identity::GetTid(i);
-				thingsound(tid, "sound/cowboyshot", 255);
-				Thing_Damage(tid, random(5,15), MOD_UNKNOWN);
-			}
-		}
         delay(35);
 
-        thing_remove(560);
+        fadeto(0, 0, 0, 0.0, 1.0);
+
+        CAMERA3 = FALSE;
+        CAMERA4 = TRUE;
+
+        delay(35*3);
+
+        fadeto(0, 0, 0, 1.0, 3.0);
+
+        delay(35*4);
+
+        fadeto(0, 0, 0, 0.0, 3.0);
+
+        CAMERA4 = FALSE;
+        CAMERA5 = TRUE;
+
+        thing_remove(562);
+        spawnspot("ZH2LegacyZe17CriminalDummy3",109, 562, 0);
+
+        delay(35*2);
+
+        thing_remove(562);
+        spawnspot("ZH2LegacyZe17CriminalDummy4",109, 562, 0);
+
+        ambientsound("sound/cowboyshotend", 100);
+        sectordamage(102, 6000, "exit", (raw)0, DAMAGE_PLAYERS); //6000 because some bh zombies have this much apparantly
+
+        delay(35);
+
+        thing_remove(562);
+        spawnspot("ZH2LegacyZe17CriminalDummy3",109, 562, 0);
+
+        delay(35*2);
+
+        thing_remove(562);
+        spawnspot("ZH2LegacyZe17CriminalDummy4",109, 562, 0);
+        sectordamage(103, 6000, "exit", (raw)0, DAMAGE_PLAYERS);
+
+        delay(35);
+
+        thing_remove(562);
+        spawnspot("ZH2LegacyZe17CriminalDummy3",109, 562, 0);
+
+        delay(35*2);
+
+        sectordamage(107, 6000, "exit", (raw)0, DAMAGE_PLAYERS);
+        Game::KillUnsafePlayers(); // To be safe, let's use this aswell.
+
+        delay(35*2);
+
+        fadeto(0, 0, 0, 1.0, 1.0);
+
+        delay(35);
+
+        fadeto(0, 0, 0, 0.0, 1.0);
+        SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
+        CAMERA5 = FALSE;
+    }
+
+    script 17 (void)
+    {
+        if(Player::GetIsHuman())
+        {
+            Print(s:"Run ! The apache's force protects you !");
+        }
+        else
+        {
+            ThrustThing(192, 20, 0, 0);
+            Print(s:"You shall not pass !");
+        }
+    }
+
+    Script 19 (void) // Cave teleporter only for humans.
+    {
+
+        if(Player::GetIsHuman())
+        {
+            Thing_Move(0,random(96,98),0);
+        }
+        else
+        {
+            Print(s:"This teleporter works only with humans.");
+        }
+    }
+
+    script 20 (void) // Opening secret cave.
+    {
+        Radius_Quake(2, 70, 0, 10, 89);
+        Floor_LowerbyValue(91,25,70);
+    }
+
+    script 21 (void) // The ugly !
+    {
+        if(CheckInventory("Clip") == 1 && TheUgly == FALSE )
+        {
+            Print(s:"You already got a role in this history");
+        }
+        if(CheckInventory("Clip") == 0 && TheUgly == FALSE )
+        {
+            PrintBold(n:0, s:" is the ugly !\n\nhe found the treasure.");
+            GiveInventory("Clip",1);
+            TheUgly = TRUE;
+        }
+    }
+
+    script 22 (void) // The good !
+    {
+        if(CheckInventory("Clip") == 1 && TheGood == FALSE )
+        {
+            Print(s:"You already got a role in this history");
+        }
+        if(CheckInventory("Clip") == 0 && TheGood == FALSE )
+        {
+            PrintBold(n:0, s:" is the good !\n\nhe found the jacksgun.");
+            GiveInventory("Clip",1);
+            TheGood = TRUE;
+        }
+    }
+
+    script 23 (void) // The bad !
+    {
+        if(CheckInventory("Clip") == 1 && TheBad == FALSE )
+        {
+            Print(s:"You already got a role in this history");
+        }
+        if(CheckInventory("Clip") == 0 && TheBad == FALSE )
+        {
+            PrintBold(n:0, s:" is the bad !");
+            GiveInventory("Clip",1);
+            TheBad = TRUE;
+        }
+    }
+
+    Script 24 (int iLine) CLIENTSIDE
+    {
+        for(int i= 100; i >= 0; i -= 5) {
+            TranslucentLine(iLine, i);
+            Delay(1);
+        }
+    }
+
+    /*script 25 (void) //secret
+    {
+        floor_raisetohighest(45,4);
+        LocalSetMusic("D_NULL");
+        tagwait(45);
+        floor_raisetohighest(46,8);
+        thingsound(47,"sound/churchbell",100);
+
+        delay(35*3);
+
+        spawnspot(WEAPON_JACKSGUN_SPAWN_NAME,48,0,0);
+        spawnspot("teleportfog",48,0,0);
+
+        delay(35*3);
+
+        LocalSetMusic("D_GBU2");
+    }*/
+
+    script 26 (void) // new resist after the canyon part
+    {
+        if (ScriptUsed3  == FALSE )
+        {
+            ScriptUsed3 = TRUE;
+            SetActivator(-1);
+            for(int time2=30;time2>0;time2--)
+            {
+                SetFont("BIGFONT");
+                Hudmessage(s:"Resist for \cc",d:time2,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
+                SetFont("SmallFONT");
+                HudmessageBold(s:"Opening the second cave"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+
+                delay(35);
+            }
+            Floor_movetovalue(52, 20, 120);
+            Floor_movetovalue(53, 40, 120);
+            Floor_movetovalue(54, 50, 120);
+            Floor_movetovalue(55, 70, 120);
+
+            radius_quake(4, 105, 0, 10, 56);
+            SetLineBlocking(57, BLOCK_NOTHING);
+        }
+    }
+
+    script 3 (void) //in criminal range for final village part.
+    {
+        if(LineSide()== LINE_FRONT) incriminalrange[PlayerNumber()] = true;
+        else incriminalrange[PlayerNumber()] = false;
+    }
+
+    script 27 (void) //shooting criminals for final resist
+    {
+        if(!criminalshere)
+        {
+            spawnspot("ZH2LegacyZe17CriminalDummy3",79, 559, 0);
+
+            delay(35*5);
+
+            thing_remove(559);
+            spawnspot("ZH2LegacyZe17CriminalDummy4",79, 560, 0);
+
+            for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+            {
+                if(incriminalrange[i])
+                {
+                    int tid = Identity::GetTid(i);
+                    thingsound(tid, "sound/cowboyshot", 255);
+                    Thing_Damage(tid, random(5,15), MOD_UNKNOWN);
+                }
+            }
+            delay(35);
+
+            thing_remove(560);
+            restart;
+        }
+    }
+
+    /*script 28 (void) //scary head switch
+    {
+        if (jumpscare2 == true)
+        {
+            thingsound(81,"sound/robovoice",255);
+            Light_fade(80,0,5);
+
+            delay(5);
+
+            Light_fade(80,192,5);
+
+            delay(10);
+
+            Light_fade(80,0,0);
+
+            SetFont("SCARYFCE");
+            HudMessage(s:"A"; HUDMSG_FADEOUT, 0, CR_White, 0.0, 0.0, 0.1);
+            spawnspot(CRYSTAL_ITEM, 81,0,0);
+            thing_remove(561);
+
+            Light_fade(80,192,35);
+        }
+    }*/
+
+    // This forces the camera upon players.
+    script 30 (void)
+    {
+        setactivator(-1);
+
+        if(Camera1)
+            changecamera(110,1,0);
+
+        else if (Camera2)
+            changecamera(111,1,0);
+
+        else if (Camera3)
+            changecamera(113,1,0);
+
+        else if (Camera4)
+            changecamera(115,1,0);
+
+        else if (Camera5)
+            changecamera(116,1,0);
+
+        else
+        {
+            changecamera(0,0,0);
+            terminate;
+        }
+
+        delay(1);
         restart;
     }
-}
 
-/*script 28 (void) //scary head switch
-{
-    if (jumpscare2 == true)
+    script 31 (void) //for now let's keep this message going until the window is ready. Compile with 28 when done.
     {
-        thingsound(81,"sound/robovoice",255);
-        Light_fade(80,0,5);
-
-        delay(5);
-
-        Light_fade(80,192,5);
-
-        delay(10);
-
-        Light_fade(80,0,0);
-
-        SetFont("SCARYFCE");
-        HudMessage(s:"A"; HUDMSG_FADEOUT, 0, CR_White, 0.0, 0.0, 0.1);
-        spawnspot(CRYSTAL_ITEM, 81,0,0);
-        thing_remove(561);
-
-        Light_fade(80,192,35);
+        HudmessageBold(s:"Insufficient key"; HUDMSG_FADEOUT, 0, CR_White, 0.5, 0.8, 1.5, 0.5);
     }
-}*/
-
-// This forces the camera upon players.
-script 30 (void)
-{
-	setactivator(-1);
-
-    if(Camera1)
-		changecamera(110,1,0);
-
-    else if (Camera2)
-		changecamera(111,1,0);
-
-    else if (Camera3)
-		changecamera(113,1,0);
-
-    else if (Camera4)
-		changecamera(115,1,0);
-
-    else if (Camera5)
-		changecamera(116,1,0);
-
-    else
-    {
-		changecamera(0,0,0);
-		terminate;
-	}
-
-    delay(1);
-    restart;
-}
-
-script 31 (void) //for now let's keep this message going until the window is ready. Compile with 28 when done.
-{
-    HudmessageBold(s:"Insufficient key"; HUDMSG_FADEOUT, 0, CR_White, 0.5, 0.8, 1.5, 0.5);
 }

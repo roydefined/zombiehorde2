@@ -7,695 +7,698 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-#define WEEGEE_HP 1500
-
-#define HUDTID_WEEGEE 900
-
-#define GRAPHIC_WEEGEE_SMALL "Weegee"
-#define GRAPHIC_WEEGEE_BIG "Weegee2"
-
-#define WEEGEE_MAIN_SCRIPT 99
-#define WEEGEE_DEATH_SCRIPT 96
-#define WEEGEE_HEALTH_SCRIPT 97
-
-//Variables
-Bool Teleporter[BCSUtils::MAX_PLAYERS];           //Teleport Bool for tube
-Bool Buttons = 0;                       //Counts the activated powersupplies
-Int ExtraEndRoom;                       //Random if an extra endroom opens
-Int GrenadeRoom;                        //Random if an extra endroom / grenaderoom opens
-Int LiftDirection;                      //Random if elevator goes up or down
-Int FirstResistReached = 0;             //Check if the first resist already was activated
-Int HumansDie = 60;                     //Resist for weegee, humans die when the count is over
-int humancount = 0;                     //Counts how many humans there are left
-int zombiecount = 0;                    //Counts how many zimbas there are left
-Int AirStrike = 45;                     //Airstrike (3th) resist
-Int BookChase = 20;                     //Bookcase (1th) resist
-Int Door = 25;                          //Door (2th) resist
-Int I2;                                 //A die check for zombies
-Int I3;                                 //A die check for humans
-Int EndReached = 0;                     //Checks if the last resist already was activated
-Int playernum;                          //Gives all players an unique number
-Int Box = 0;                            //Check when the box must go open
-Int ScrlX = 0;                          //Resolution check for weegee picture (X)
-Int Scrly = 0;                          //Resolution check for weegee picture (Y)
-
-// [ZH2] Indicates somebody reached the secret exit to the safezone.
-bool secretExitReached;
-
-//Function for letting see the resists
-function void ResistMessage1 (int restime, str todo)
+strict namespace
 {
-    SetFont("BIGFONT");
-    HudMessageBold(s:todo, d:restime, s:" seconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-}
+    #define WEEGEE_HP 1500
 
-//Explosion Function
-function void SX (int spawntag)
-{
-    Spawnspot("ZH2LegacyZE25Explosion", spawntag, 0, 0);
-    Ambientsound("sound/explosion1",127);
-}
+    #define HUDTID_WEEGEE 900
 
-/* ##################################################*/
+    #define GRAPHIC_WEEGEE_SMALL "Weegee"
+    #define GRAPHIC_WEEGEE_BIG "Weegee2"
 
-//SCRIPTS!
-//Start up script
+    #define WEEGEE_MAIN_SCRIPT 99
+    #define WEEGEE_DEATH_SCRIPT 96
+    #define WEEGEE_HEALTH_SCRIPT 97
 
-Script 1 open
-{
-    Floor_waggle(278,7,15,12,0);
-    Sector_setColor(61,150,0 ,0);
-    Sector_setColor(143,75,0 ,0);
-    Sector_setColor(65,0,255,0);
-    Sector_setColor(71,0,255,0);
-    Sector_setColor(200,0,255,0);
-    Delay(35*20);
-    Floor_lowerbyvalue(138,255,72);
-    SectorDamage(137,9999,0,0,0);
-}
+    //Variables
+    bool Teleporter[BCSUtils::MAX_PLAYERS];           //Teleport Bool for tube
+    int Buttons = 0;                       //Counts the activated powersupplies
+    int ExtraEndRoom;                       //Random if an extra endroom opens
+    int GrenadeRoom;                        //Random if an extra endroom / grenaderoom opens
+    int LiftDirection;                      //Random if elevator goes up or down
+    int FirstResistReached = 0;             //Check if the first resist already was activated
+    int HumansDie = 60;                     //Resist for weegee, humans die when the count is over
+    int humancount = 0;                     //Counts how many humans there are left
+    int zombiecount = 0;                    //Counts how many zimbas there are left
+    int AirStrike = 45;                     //Airstrike (3th) resist
+    int BookChase = 20;                     //Bookcase (1th) resist
+    int Door = 25;                          //Door (2th) resist
+    int I2;                                 //A die check for zombies
+    int I3;                                 //A die check for humans
+    int EndReached = 0;                     //Checks if the last resist already was activated
+    int playernum;                          //Gives all players an unique number
+    int Box = 0;                            //Check when the box must go open
+    int ScrlX = 0;                          //Resolution check for weegee picture (X)
+    int Scrly = 0;                          //Resolution check for weegee picture (Y)
 
-/* ##################################################*/
+    // [ZH2] Indicates somebody reached the secret exit to the safezone.
+    bool secretExitReached;
 
-//PowerSupply scripts
-
-Script 2 (Void)
-{
-    Buttons++;
-    Print(s:"\crPower supply activated!");
-}
-
-script 3 (void) //Some powersupplies need height check
-{
-    if(GetActorZ(0) >= 378.0)
+    //Function for letting see the resists
+    function void ResistMessage1 (int restime, str todo)
     {
-        Acs_execute(2, 0, 0, 0, 0);
-        ClearLineSpecial();
-        Terminate;
+        SetFont("BIGFONT");
+        HudMessageBold(s:todo, d:restime, s:" seconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
     }
-}
 
-script 4 (void) //Some powersupplies need height check
-{
-    if(GetActorZ(0) >= 584.0)
+    //Explosion Function
+    function void SX (int spawntag)
     {
-        Acs_execute(2, 0, 0, 0, 0);
-        ClearLineSpecial();
-        Terminate;
+        Spawnspot("ZH2LegacyZE25Explosion", spawntag, 0, 0);
+        Ambientsound("sound/explosion1",127);
     }
-}
 
-script 7 (void) //Some powersupplies need height check
-{
-	if(GetActorZ(0) >= 88.0)
+    /* ##################################################*/
+
+    //SCRIPTS!
+    //Start up script
+
+    Script 1 open
     {
-		Acs_execute(2, 0, 0, 0, 0);
-		ClearLineSpecial();
-		Terminate;
+        Floor_waggle(278,7,15,12,0);
+        Sector_setColor(61,150,0 ,0);
+        Sector_setColor(143,75,0 ,0);
+        Sector_setColor(65,0,255,0);
+        Sector_setColor(71,0,255,0);
+        Sector_setColor(200,0,255,0);
+        Delay(35*20);
+        Floor_lowerbyvalue(138,255,72);
+        SectorDamage(137, 9999, "None", (raw)0, 0);
     }
-}
 
-script 12 (void) //Some powersupplies need height check
-{
-	if(GetActorZ(0) >= 764.0)
+    /* ##################################################*/
+
+    //PowerSupply scripts
+
+    Script 2 (Void)
     {
-		Acs_execute(2,0,0,0,0);
-		ClearLineSpecial();
-		Terminate;
+        Buttons++;
+        Print(s:"\crPower supply activated!");
     }
-}
 
-Script 15 Open //Shows the activated power supplies
-{
-    SetActivator(-1);
-    delay(1);
-    SetFont("Stiffont");
-    HudMessageBold(s:"\cd",d: buttons; HUDMSG_PLAIN, 0, CR_White, 0.0, 0.0, 0.1);
-    Restart;
-}
-
-script 17 (void) //Powersupply check for weegee
-{
-    If(buttons >= 20) //You need atleast 20 activated power supplies!
+    script 3 (void) //Some powersupplies need height check
     {
-        ClearLineSpecial();
-        Door_open(128,25);
-        Acs_execute(WEEGEE_MAIN_SCRIPT,0,0,0,0); //Weegee script
-        Acs_Terminate(14,0);
-        Acs_Terminate(15,0);
-        Terminate;
-    }
-	else
-	{
-		Print(s:"You need at least 20 power supplies!"); //how sad
-	}
-}
-
-/* ##################################################*/
-
-//First resist (Bookcase)
-
-script 5 (void)
-{
-    If(FirstResistReached == 0) //Checks if the script isnt activated yet, and that it wont be activated again
-    {
-        FirstResistReached++;
-        SetActivator(-1);
-        for(int i = BookChase; i > 0; i--)
+        if(GetActorZ(0) >= 378.0)
         {
-            ResistMessage1(i,"\cjBookcase lowers in ");
+            Acs_execute(2, 0, 0, 0, 0);
+            ClearLineSpecial();
+            Terminate;
+        }
+    }
+
+    script 4 (void) //Some powersupplies need height check
+    {
+        if(GetActorZ(0) >= 584.0)
+        {
+            Acs_execute(2, 0, 0, 0, 0);
+            ClearLineSpecial();
+            Terminate;
+        }
+    }
+
+    script 7 (void) //Some powersupplies need height check
+    {
+        if(GetActorZ(0) >= 88.0)
+        {
+            Acs_execute(2, 0, 0, 0, 0);
+            ClearLineSpecial();
+            Terminate;
+        }
+    }
+
+    script 12 (void) //Some powersupplies need height check
+    {
+        if(GetActorZ(0) >= 764.0)
+        {
+            Acs_execute(2,0,0,0,0);
+            ClearLineSpecial();
+            Terminate;
+        }
+    }
+
+    Script 15 Open //Shows the activated power supplies
+    {
+        SetActivator(-1);
+        delay(1);
+        SetFont("Stiffont");
+        HudMessageBold(s:"\cd",d: buttons; HUDMSG_PLAIN, 0, CR_White, 0.0, 0.0, 0.1);
+        Restart;
+    }
+
+    script 17 (void) //Powersupply check for weegee
+    {
+        If(buttons >= 20) //You need atleast 20 activated power supplies!
+        {
+            ClearLineSpecial();
+            Door_open(128,25);
+            Acs_execute(WEEGEE_MAIN_SCRIPT,0,0,0,0); //Weegee script
+            Acs_Terminate(14,0);
+            Acs_Terminate(15,0);
+            Terminate;
+        }
+        else
+        {
+            Print(s:"You need at least 20 power supplies!"); //how sad
+        }
+    }
+
+    /* ##################################################*/
+
+    //First resist (Bookcase)
+
+    script 5 (void)
+    {
+        If(FirstResistReached == 0) //Checks if the script isnt activated yet, and that it wont be activated again
+        {
+            FirstResistReached++;
+            SetActivator(-1);
+            for(int i = BookChase; i > 0; i--)
+            {
+                ResistMessage1(i,"\cjBookcase lowers in ");
+                Delay(35);
+            }
+
+            Floor_lowertolowest(47,255);
+            Door_open(142,25);
+            Delay(35*15);
+            Floor_lowertolowest(21,255);
+        }
+    }
+
+    /* ##################################################*/
+
+    //Random teleporter & checker for falling of the building / in the nukage etc...
+
+    script 6 (Void)
+    {
+        Teleport(Random(2,9),0,0); // < This script was first something like 56 lines lol
+    }
+
+    script 8 (void) //Zombies get more damage from falling of the buildings than humans
+    {
+        if(Player::GetIsHuman())
+            Thing_Damage(0, 25, MOD_FALLING);
+        else
+            Thing_Damage(0, 150, MOD_FALLING);
+
+        Acs_execute(6, 0, 0, 0, 0);
+    }
+
+    /* ##################################################*/
+
+    //2th resist (DOOR)
+
+    script 9 (void) // Door resist
+    {
+        SetActivator(-1);
+        for(int i = Door; i > 0; i--)
+        {
+            ResistMessage1(i,"\cjDoor opens in ");
             Delay(35);
         }
 
-		Floor_lowertolowest(47,255);
-		Door_open(142,25);
-		Delay(35*15);
-		Floor_lowertolowest(21,255);
-	}
-}
-
-/* ##################################################*/
-
-//Random teleporter & checker for falling of the building / in the nukage etc...
-
-script 6 (Void)
-{
-    Teleport(Random(2,9),0,0); // < This script was first something like 56 lines lol
-}
-
-script 8 (void) //Zombies get more damage from falling of the buildings than humans
-{
-    if(Player::GetIsHuman())
-        Thing_Damage(0, 25, MOD_FALLING);
-    else
-		Thing_Damage(0, 150, MOD_FALLING);
-
-	Acs_execute(6, 0, 0, 0, 0);
-}
-
-/* ##################################################*/
-
-//2th resist (DOOR)
-
-script 9 (void) // Door resist
-{
-    SetActivator(-1);
-    for(int i = Door; i > 0; i--)
-    {
-        ResistMessage1(i,"\cjDoor opens in ");
-        Delay(35);
+        Door_open(63,25);
+        Delay(35*5);
+        Floor_RaiseByValue(80,50,1260);
+        FloorAndCeiling_RaiseByValue(178,50,1260);
+        Delay(35*35);
+        Floor_RaiseByValue(126,255,256);
+        SetLineSpecial(127,0);
+        Print(s:"The chute is available for zombies!");
     }
 
-    Door_open(63,25);
-    Delay(35*5);
-    Floor_RaiseByValue(80,50,1260);
-    FloorAndCeiling_RaiseByValue(178,50,1260);
-    Delay(35*35);
-    Floor_RaiseByValue(126,255,256);
-    SetLineSpecial(127,0);
-    Print(s:"The chute is available for zombies!");
-}
+    /* ##################################################*/
 
-/* ##################################################*/
+    //Elevator direction
 
-//Elevator direction
-
-script 10 (void)
-{
-    LiftDirection = random(1, 3);
-    switch(LiftDirection)
+    script 10 (void)
     {
-		Case 1:
-		Case 2:
-		{
-			//Goes down 2/3
-			printbold(n:0, s:" \cJactivated the elevator!");
-			Setactivator(-1);
-			Door_close(62,255);
-			Tagwait(62);
-			ChangeFloor(181,"ZHECM02");
-			ChangeFloor(182,"VOID");
-			Delay(35);
-			FloorandCeiling_Lowerbyvalue(61,250,7864);
-			Tagwait(61);
-			SX(252);
-			Print(s:"Elevator reached lowerst floor");
-			Delay(35);
-			Door_open( 70,25);
-			ChangeFloor(182,"ZHECM02");
-			ChangeFloor(180,"VOID");
-			Terminate;
-		}
-		Case 3:
-		{
-			//Goes up 1/3
-			printbold(n:0, s:" \cJactivated the elevator!");
-			Setactivator(-1);
-			Door_close(62,255);
-			Tagwait(62);
-			ChangeFloor(181,"ZHECM02");
-			ChangeFloor(182,"VOID");
-			Delay(35);
-			FloorandCeiling_Raisebyvalue(61,10,256);
-			Tagwait(61);
-			Print(s:" someone pressed the UP button -_\\ !!!");
-			Delay(35);
-			Door_open( 70,25);
-			ChangeFloor(182,"ZHECM02");
-			ChangeFloor(180,"VOID");
-			Terminate;
-		}
+        LiftDirection = random(1, 3);
+        switch(LiftDirection)
+        {
+            Case 1:
+            Case 2:
+            {
+                //Goes down 2/3
+                printbold(n:0, s:" \cJactivated the elevator!");
+                Setactivator(-1);
+                Door_close(62,255);
+                Tagwait(62);
+                ChangeFloor(181,"ZHECM02");
+                ChangeFloor(182,"VOID");
+                Delay(35);
+                FloorandCeiling_Lowerbyvalue(61,250,7864);
+                Tagwait(61);
+                SX(252);
+                Print(s:"Elevator reached lowerst floor");
+                Delay(35);
+                Door_open( 70,25);
+                ChangeFloor(182,"ZHECM02");
+                ChangeFloor(180,"VOID");
+                Terminate;
+            }
+            Case 3:
+            {
+                //Goes up 1/3
+                printbold(n:0, s:" \cJactivated the elevator!");
+                Setactivator(-1);
+                Door_close(62,255);
+                Tagwait(62);
+                ChangeFloor(181,"ZHECM02");
+                ChangeFloor(182,"VOID");
+                Delay(35);
+                FloorandCeiling_Raisebyvalue(61,10,256);
+                Tagwait(61);
+                Print(s:" someone pressed the UP button -_\\ !!!");
+                Delay(35);
+                Door_open( 70,25);
+                ChangeFloor(182,"ZHECM02");
+                ChangeFloor(180,"VOID");
+                Terminate;
+            }
+        }
     }
-}
 
-/* Turned off because this should no longer be used
+    /* Turned off because this should no longer be used
 
-script 21 (void) //Elevator UP script
-{
-	If(!Player::GetIsZombie())
-	{
-		GiveInventory("AutomaticRifle",1);
-		Print(s:"You received an usefull weapon");
-		SetWeapon("AutomaticRIfle"); //BAR :D
-	}
-	else
-	{
-		Print(s:"IM A BUTTON NOW GTFO!");
-	}
-}*/
-
-/* ##################################################*/
-
-//Chute scripts
-Script 11 (void) //Closes the chute
-{
-    printbold(n:0, s:" \cJclosed the chute for 15 seconds!");
-    SetActivator(-1);
-    Ceiling_RaiseByValue(65,25,512);
-    Ceiling_LowerAndCrush(69,150,20,2); //ZH2 [AQW] crushmode hexen &dmg 20.
-    Floor_RaiseByValue(69,150,8);
-	TagWait(69);//ZH2 [AQW]
-    Delay(35*5);
-    Ceiling_LowerByValue(65,25,512);
-    Delay(35*5);
-    Ceiling_Raisebyvalue(69,100,80);
-    printbold(s:" \cJThe chute has been opened!");
-}
-
-// Lower pillars just before the airstrike.
-script 13 (void)
-{
-    Floor_lowerbyvalue(91,25,146);
-
-    delay (35*3);
-
-    ACS_NamedExecute("ze25_start_airstrike_early", 0);
-}
-
-Script 66 (void) // Chute teleport script
-{
-	If(Player::GetIsZombie())
-		SetActorPosition(0, GetActorX(0) + 416.0, GetActorY(0) - 96.0, GetActorZ(0) - 64.0, 0);
-	else
-		SetActorPosition(0, GetActorX(0) + 864.0,GetActorY(0) - 192.0, GetActorZ(0) - 64.0, 0);
-}
-
-Script 88 (void) //Anti zombie forcefield
-{
-    If(Player::GetIsZombie())
-        Thrustthing(128,16,16,0);
-}
-
-/* ##################################################*/
-
-//Last (3th) resist
-
-script "ze25_start_airstrike_early"
-{
-    // Start airstrike early if somebody reached the secret exit.
-    if (secretExitReached)
+    script 21 (void) //Elevator UP script
     {
-        ACS_Execute(14, 0);
-    }
-}
+        If(!Player::GetIsZombie())
+        {
+            GiveInventory("AutomaticRifle",1);
+            Print(s:"You received an usefull weapon");
+            SetWeapon("AutomaticRIfle"); //BAR :D
+        }
+        else
+        {
+            Print(s:"IM A BUTTON NOW GTFO!");
+        }
+    }*/
 
-script 14 (void) // airstrike
-{
-    if(EndReached == 0)
+    /* ##################################################*/
+
+    //Chute scripts
+    Script 11 (void) //Closes the chute
     {
-        EndReached++;
+        printbold(n:0, s:" \cJclosed the chute for 15 seconds!");
         SetActivator(-1);
-        for(int i = AirStrike; i > 0; i--)
-        {
-			ResistMessage1(i,"\cjAirstrike in... ");
-			Delay(35);
-		}
-		Acs_Terminate(15,0);
-		Acs_execute(16,0,0,0,0);
-		Acs_execute(33,0,0,0,0);
-		Ceiling_LowerAndCrush(235, 25, 20, 2); //ZH2 [AQW] Crushmode hexen and dmg 20.
-		Tagwait(235);
-		Ceiling_LowerByValueTimes8(235, 16, 1); //ZH2 [AQW]
-		for(i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-		{
-			if(!Game::GetPlayerIsSafe(i))
-				Thing_Damage(Identity::GetTid(i), 10000, MOD_EXIT);
-		}
-		AmbientSound("world/nuke1",999);
-		Fadeto (255, 25, 25, 1.0, 0);
-		delay(105);
-		Fadeto (0, 0, 0, 0, 6.0);
-
-		// Opens the box
-		Box++;
+        Ceiling_RaiseByValue(65,25,512);
+        Ceiling_LowerAndCrush(69,150,20,2); //ZH2 [AQW] crushmode hexen &dmg 20.
+        Floor_RaiseByValue(69,150,8);
+        TagWait(69);//ZH2 [AQW]
+        Delay(35*5);
+        Ceiling_LowerByValue(65,25,512);
+        Delay(35*5);
+        Ceiling_Raisebyvalue(69,100,80);
+        printbold(s:" \cJThe chute has been opened!");
     }
-}
 
-
-Script 33 (void) // opening endroom again
-{
-	Delay(35*30);
-	Print(s:"Endroom has been opened again");
-	SetLineBlocking(20,Block_everything);
-	Door_open(235,255);
-
-	If(GetSectorFloorZ(111,0,0) != -7792)
-	{
-		Floor_RaiseByValue(111,255,128);
-    }
-}
-
-/* ##################################################*/
-
-//Endroom stuff
-
-script 19 (void) //Checks if you're inside the box
-{
-    if(GetActorZ(0) <= -7916.0)
-	{
-        ClearLineSpecial();
-        FloorAndCeiling_lowerbyvalue(141,25,48);
-        Delay(35*60);
-        FloorAndCeiling_raisebyvalue(141,25,48);
-        Terminate;
-	}
-}
-
-script 22 (void) //A closable door in endroom
-{
-    Print(n:0, s:" closed a door, it will open in a minute");
-    SetActivator(-1);
-    Door_close(145,25);
-    TagWait(145);
-    Delay(35*60);
-    Door_open(145,25);
-    TagWait(145);
-    Print(s:"The door has been opened");
-}
-
-Script 83 (void) //Changes floors and stuff in the endroom
-{
-    Print(s:"You started the buildings cleaningprogram!");
-    SetActivator(-1);
-    Delay(35*15);
-    Floor_LowerByValue(227,25,256); //Some boxes lower
-    Delay(35*10);
-    Ceiling_RaiseByValue(243,25,128); //Some pillars raises
-    Delay(35*8);
-    FloorAndCeiling_LowerByValue(242,5,226); //Some lifts lower
-}
-
-script 23 open //Random extra endroom, open 3/4
-{
-    ExtraEndRoom = random(1, 4);
-    switch(ExtraEndRoom)
+    // Lower pillars just before the airstrike.
+    script 13 (void)
     {
-        Case 1:
-        Case 2:
-        Case 3:
+        Floor_lowerbyvalue(91,25,146);
+
+        delay (35*3);
+
+        ACS_NamedExecute("ze25_start_airstrike_early", 0);
+    }
+
+    Script 66 (void) // Chute teleport script
+    {
+        If(Player::GetIsZombie())
+            SetActorPosition(0, GetActorX(0) + 416.0, GetActorY(0) - 96.0, GetActorZ(0) - 64.0, false);
+        else
+            SetActorPosition(0, GetActorX(0) + 864.0,GetActorY(0) - 192.0, GetActorZ(0) - 64.0, false);
+    }
+
+    Script 88 (void) //Anti zombie forcefield
+    {
+        If(Player::GetIsZombie())
+            Thrustthing(128,16,16,0);
+    }
+
+    /* ##################################################*/
+
+    //Last (3th) resist
+
+    script "ze25_start_airstrike_early"
+    {
+        // Start airstrike early if somebody reached the secret exit.
+        if (secretExitReached)
         {
+            ACS_Execute(14, 0);
+        }
+    }
+
+    script 14 (void) // airstrike
+    {
+        if(EndReached == 0)
+        {
+            EndReached++;
+            SetActivator(-1);
+            for(int i = AirStrike; i > 0; i--)
+            {
+                ResistMessage1(i,"\cjAirstrike in... ");
+                Delay(35);
+            }
+            Acs_Terminate(15,0);
+            Acs_execute(16,0,0,0,0);
+            Acs_execute(33,0,0,0,0);
+            Ceiling_LowerAndCrush(235, 25, 20, 2); //ZH2 [AQW] Crushmode hexen and dmg 20.
+            Tagwait(235);
+            Ceiling_LowerByValueTimes8(235, 16, 1); //ZH2 [AQW]
+            for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+            {
+                if(!Game::GetPlayerIsSafe(i))
+                    Thing_Damage(Identity::GetTid(i), 10000, MOD_EXIT);
+            }
+            AmbientSound("world/nuke1",999);
+            Fadeto (255, 25, 25, 1.0, 0.0);
+            delay(105);
+            Fadeto (0, 0, 0, 0.0, 6.0);
+
+            // Opens the box
+            Box++;
+        }
+    }
+
+
+    Script 33 (void) // opening endroom again
+    {
+        Delay(35*30);
+        Print(s:"Endroom has been opened again");
+        SetLineBlocking(20,Block_everything);
+        Door_open(235,255);
+
+        If(GetSectorFloorZ(111,0,0) != -7792.0)
+        {
+            Floor_RaiseByValue(111,255,128);
+        }
+    }
+
+    /* ##################################################*/
+
+    //Endroom stuff
+
+    script 19 (void) //Checks if you're inside the box
+    {
+        if(GetActorZ(0) <= -7916.0)
+        {
+            ClearLineSpecial();
+            FloorAndCeiling_lowerbyvalue(141,25,48);
+            Delay(35*60);
+            FloorAndCeiling_raisebyvalue(141,25,48);
             Terminate;
         }
-        Case 4 :
-        {
-			Door_Open(145,25);
-			SetLineSpecial(17,0);
-			Floor_lowerbyvalue(138,255,72);
-        }
     }
-}
 
-Script 80 (void) // yellow key message
-{
-	Print(s:"With this key you can open an extra room at the end of the map");
-}
-
-/* ##################################################*/
-
-//Scripts for the laberatorium
-
-script 26 open //Sometimes a special grenaderoom opens, or another extra door at the end
-{
-    Delay(35*12);
-    Floor_RaiseByValue(74,25,128);
-    GrenadeRoom = random(1, 3);
-    switch(GrenadeRoom)
+    script 22 (void) //A closable door in endroom
     {
-        Case 1 :
-        Case 2 :
+        Print(n:0, s:" closed a door, it will open in a minute");
+        SetActivator(-1);
+        Door_close(145,25);
+        TagWait(145);
+        Delay(35*60);
+        Door_open(145,25);
+        TagWait(145);
+        Print(s:"The door has been opened");
+    }
+
+    Script 83 (void) //Changes floors and stuff in the endroom
+    {
+        Print(s:"You started the buildings cleaningprogram!");
+        SetActivator(-1);
+        Delay(35*15);
+        Floor_LowerByValue(227,25,256); //Some boxes lower
+        Delay(35*10);
+        Ceiling_RaiseByValue(243,25,128); //Some pillars raises
+        Delay(35*8);
+        FloorAndCeiling_LowerByValue(242,5,226); //Some lifts lower
+    }
+
+    script 23 open //Random extra endroom, open 3/4
+    {
+        ExtraEndRoom = random(1, 4);
+        switch(ExtraEndRoom)
         {
-            Door_Open(216,25); //Extra end room
-        }
-        Case 3 :
-        {
-            Door_Open(153,25); //Room with grenades in lab
+            Case 1:
+            Case 2:
+            Case 3:
+            {
+                Terminate;
+            }
+            Case 4 :
+            {
+                Door_Open(145,25);
+                SetLineSpecial(17,0);
+                Floor_lowerbyvalue(138,255,72);
+            }
         }
     }
-}
 
-script 27 (void) //Lab door
-{
-    SetLineSpecial(19,acs_executealways,88);
-    floorAndCeiling_LowerByValue(18,255,136);
-    PrintBold(n:0, s:" activated the powershield");
-    SetActivator(-1);
-    Delay(35*10);
-    PrintBold(s:" powershield deactivated!");
-    SetLineSpecial(19,0,0);
-    floorAndCeiling_LowerByValue(18,255,136);
-}
+    Script 80 (void) // yellow key message
+    {
+        Print(s:"With this key you can open an extra room at the end of the map");
+    }
 
-/* ##################################################*/
+    /* ##################################################*/
 
-//Scripts for some secrets
+    //Scripts for the laberatorium
 
-
-
-Script 29 (void) //Trollface posters
-{
-/*
-    If(Player::GetIsZombie())
+    script 26 open //Sometimes a special grenaderoom opens, or another extra door at the end
+    {
+        Delay(35*12);
+        Floor_RaiseByValue(74,25,128);
+        GrenadeRoom = random(1, 3);
+        switch(GrenadeRoom)
         {
-        Print(s:"Troll");
-        Terminate;
+            Case 1 :
+            Case 2 :
+            {
+                Door_Open(216,25); //Extra end room
+            }
+            Case 3 :
+            {
+                Door_Open(153,25); //Room with grenades in lab
+            }
         }
-    Else
+    }
+
+    script 27 (void) //Lab door
+    {
+        SetLineSpecial(19,acs_executealways,88);
+        floorAndCeiling_LowerByValue(18,255,136);
+        PrintBold(n:0, s:" activated the powershield");
+        SetActivator(-1);
+        Delay(35*10);
+        PrintBold(s:" powershield deactivated!");
+        SetLineSpecial(19,0,0);
+        floorAndCeiling_LowerByValue(18,255,136);
+    }
+
+    /* ##################################################*/
+
+    //Scripts for some secrets
+
+
+
+    Script 29 (void) //Trollface posters
+    {
+    /*
+        If(Player::GetIsZombie())
+            {
+            Print(s:"Troll");
+            Terminate;
+            }
+        Else
+            {
+            GiveInventory("FireGrenade",1);
+            Print(s:"Grenade");
+            ClearLineSpecial();
+            }
+    */
+    }
+
+    Script 32 (void) //Unusual item giver
+    {
+    /*
+        Print(s:"\cgITEM");
+        GiveInventory("UnusualItem2",1);
+    */
+    }
+
+    Script 59 (void) //DA BOX PART 1 :D
+    {
+        Game::SetIsSafe(true);
+        Door_Close(201,255);
+        Teleport_Nofog(0,0,203);
+        Acs_Execute(60,0);
+        secretExitReached = true;
+    }
+
+    Script 60 (Void) //DA BOX PART 2 :D
+    {
+        If(Box == 1)
         {
-        GiveInventory("FireGrenade",1);
-        Print(s:"Grenade");
-        ClearLineSpecial();
+            Delay(35*30);
+            Floor_Lowertolowest(202,255);
         }
-*/
-}
+        else
+        {
+            Delay(1);
+            restart;
+        }
+    }
 
-Script 32 (void) //Unusual item giver
-{
-/*
-    Print(s:"\cgITEM");
-    GiveInventory("UnusualItem2",1);
-*/
-}
+    /* ##################################################*/
 
-Script 59 (void) //DA BOX PART 1 :D
-{
-    Game::SetIsSafe(true);
-    Door_Close(201,255);
-    Teleport_Nofog(0,0,203);
-    Acs_Execute(60,0);
-    secretExitReached = true;
-}
+    //Some terminate scripts
 
-Script 60 (Void) //DA BOX PART 2 :D
-{
-	If(Box == 1)
-	{
-		Delay(35*30);
-		Floor_Lowertolowest(202,255);
-	}
-	else
-	{
-		Delay(1);
-		restart;
-	}
-}
+    Script 31 (void) {}
 
-/* ##################################################*/
+    Script 16 (void) {}
 
-//Some terminate scripts
+    /* ##################################################*/
 
-Script 31 (void) {}
+    //Teleport scripts
 
-Script 16 (void) {}
+    Script 84 (void) //Teleport at begin of map
+    {
+        Teleport(0,random(184,199),0);
+    }
 
-/* ##################################################*/
+    Script 73 (void) //Old chute teleport script
+    {
+        If(Player::GetIsZombie())
+            Teleport_Nofog(0,0,64);
+        else
+            Teleport_Nofog(0,0,200);
+    }
 
-//Teleport scripts
+    /* ##################################################*/
 
-Script 84 (void) //Teleport at begin of map
-{
-    Teleport(0,random(184,199),0);
-}
+    //Some other unknown scripts
 
-Script 73 (void) //Old chute teleport script
-{
-	If(Player::GetIsZombie())
-		Teleport_Nofog(0,0,64);
-	else
-		Teleport_Nofog(0,0,200);
-}
+    Script 79 (void)
+    {
+        If(CheckInventory(KEY_YELLOW_KEYCARD))
+        {
+            Door_Open(145,25);
+            Terminate;
+        }
+        Else
+        {
+            Print(s:"You need a yellow keycard");
+            Terminate;
+        }
+    }
 
-/* ##################################################*/
+    Script 71 (void)
+    {
+        Door_Open(220,255);
+        SetThingSpecial(221,0,255,0,0,100);
+    }
 
-//Some other unknown scripts
+    Script 74 (void)
+    {
+        ThrustthingZ(0,128,0,0);
+    }
 
-Script 79 (void)
-{
-	If(CheckInventory(KEY_YELLOW_KEYCARD))
-	{
-		Door_Open(145,25);
-		Terminate;
-	}
-	Else
-	{
-		Print(s:"You need a yellow keycard");
-		Terminate;
-	}
-}
+    Script 55 (int angle)
+    {
+        If(Player::GetIsZombie())
+            Thrustthing(angle,30,30,0);
+    }
 
-Script 71 (void)
-{
-    Door_Open(220,255);
-    SetThingSpecial(221,0,255,0,0,100);
-}
+    Script 57 (void)
+    {
+        SetLineTexture(253, SIDE_FRONT,TEXTURE_MIDDLE,"");
+    }
 
-Script 74 (void)
-{
-    ThrustthingZ(0,128,0,0);
-}
+    /* ##################################################*/
 
-Script 55 (int angle)
-{
-    If(Player::GetIsZombie())
-		Thrustthing(angle,30,30,0);
-}
+    //WEEGEE !!!!!!!!!!!!!!!!!!
 
-Script 57 (void)
-{
-	SetLineTexture(253, SIDE_FRONT,TEXTURE_MIDDLE,"");
-}
+    Script WEEGEE_MAIN_SCRIPT (void)
+    {
+        HudMessageBold(s:"KILL THE WEEGEE BEFORE THE HUMANS WILL DIE!!!"; HUDMSG_PLAIN, 0, CR_White, 0.05, 0.85, 0.1);
+        AmbientSound("world/weegeespawn", 127);
+        Acs_executeAlways(92,0);
+        SpawnSpot("ZH2LegacyZE25Weegee",99,98,0);
+        Acs_execute(98,0,98,0,0);
+        SetThingSpecial(98,Acs_execute,95,0,0,0,0);
+        Music::PlayMusic("D_WEEGEE");
+        Delay(35);
+        Acs_executealways(WEEGEE_HEALTH_SCRIPT,0,0,0,0);
 
-/* ##################################################*/
+        SetActivator(-1);
 
-//WEEGEE !!!!!!!!!!!!!!!!!!
+        for(int i = HumansDie; i > 0; i--)
+        {
+            ResistMessage1(i,"\cjHumans \cfdie in... ");
+            Delay(35);
+        }
 
-Script WEEGEE_MAIN_SCRIPT (void)
-{
-	HudMessageBold(s:"KILL THE WEEGEE BEFORE THE HUMANS WILL DIE!!!"; HUDMSG_PLAIN, 0, CR_White, 0.05, 0.85, 0.1);
-	AmbientSound("world/weegeespawn", 127);
-	Acs_executeAlways(92,0);
-	SpawnSpot("ZH2LegacyZE25Weegee",99,98,0);
-	Acs_execute(98,0,98,0,0);
-	SetThingSpecial(98,Acs_execute,95,0,0,0,0);
-	Music::PlayMusic("D_WEEGEE");
-	Delay(35);
-	Acs_executealways(WEEGEE_HEALTH_SCRIPT,0,0,0,0);
+        for(int i = 0; i < BCSUtils::MAX_PLAYERS; ++i3)
+        {
+            int tid = Identity::GetTid(i);
+            if (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(tid) || !Player::GetPlayerIsHuman(i))
+                continue;
 
-	SetActivator(-1);
+            Game::KillPlayer(i, MOD_UNKNOWN);
+        }
+    }
 
-	for(int i = HumansDie; i > 0; i--)
-	{
-		ResistMessage1(i,"\cjHumans \cfdie in... ");
-		Delay(35);
-	}
+    SCRIPT 98 (int weegeeTID) //Thx kurwa
+    {
+        for(int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int tid = Identity::GetTid(i);
+            if (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(tid))
+                continue;
 
-	for(i = 0; i < BCSUtils::MAX_PLAYERS; ++i3)
-	{
-		int tid = Identity::GetTid(i);
-		if (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(tid) || !Player::GetPlayerIsHuman(i))
-			continue;
+            if(Player::GetPlayerIsHuman(i))
+                ++humancount;
+            else
+                ++zombiecount;
+        }
 
-        Game::KillPlayer(i, MOD_UNKNOWN);
-	}
-}
+        if(humancount != 0)
+            SetActorProperty(weegeeTID, APROP_Health, 2500 + humancount * 1250);
+    }
 
-SCRIPT 98 (int weegeeTID) //Thx kurwa
-{
-	for(int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-	{
-		int tid = Identity::GetTid(i);
-		if (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(tid))
-			continue;
+    // NOTE, HARDCODED terminate by weegee actor.
+    Script WEEGEE_HEALTH_SCRIPT (void)
+    {
+        SetActivator(-1);
+        setFont("SMALLFONT");
+        hudmessageBold(s: "Weegee's health! : ", d:GetActorProperty(98, APROP_Health),s: ""; HUDMSG_PLAIN, HUDTID_WEEGEE, CR_GREY, 0.03, -0.8, 1.0, 0.03, 0.0);
+        delay(const:1);
+        restart;
+    }
 
-		if(Player::GetPlayerIsHuman(i))
-			++humancount;
-		else
-			++zombiecount;
-	}
+    // NOTE, HARDCODED execute by weegee actor.
+    script WEEGEE_DEATH_SCRIPT (void)
+    {
+        for(int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int tid = Identity::GetTid(i);
+            if (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(tid) || !Player::GetPlayerIsZombie(i))
+                continue;
 
-	if(humancount != 0)
-		SetActorProperty(weegeeTID, APROP_Health, 2500 + humancount * 1250);
-}
+            Game::KillPlayer(i, MOD_UNKNOWN);
+        }
 
-// NOTE, HARDCODED terminate by weegee actor.
-Script WEEGEE_HEALTH_SCRIPT (void)
-{
-	SetActivator(-1);
-	setFont("SMALLFONT");
-	hudmessageBold(s: "Weegee's health! : ", d:GetActorProperty(98, APROP_Health),s: ""; HUDMSG_PLAIN, HUDTID_WEEGEE, CR_GREY, 0.03, -0.8, 1.0, 0.03, 0);
-	delay(const:1);
-	restart;
-}
+        Fadeto (255, 25, 25, 1.0, 0.0);
+        delay(105);
+        Fadeto (0, 0, 0, 0.0, 6.0);
+    }
 
-// NOTE, HARDCODED execute by weegee actor.
-script WEEGEE_DEATH_SCRIPT (void)
-{
-	for(int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-	{
-		int tid = Identity::GetTid(i);
-		if (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(tid) || !Player::GetPlayerIsZombie(i))
-			continue;
+    Script 95 (void)
+    {
+        Acs_Terminate(WEEGEE_MAIN_SCRIPT,0);
+        AmbientSound("world/weegeedie", 127);
+    }
 
-        Game::KillPlayer(i, MOD_UNKNOWN);
-	}
+    Script 92 (void)
+    {
+        ScrlX = GetScreenWidth();
+        Scrly = GetScreenHeight();
+        If(ScrlX - Scrly <= 255)
+            SetFont(GRAPHIC_WEEGEE_BIG);
+        else
+            SetFont(GRAPHIC_WEEGEE_SMALL);
 
-	Fadeto (255, 25, 25, 1.0, 0);
-	delay(105);
-	Fadeto (0, 0, 0, 0, 6.0);
-}
-
-Script 95 (void)
-{
-	Acs_Terminate(WEEGEE_MAIN_SCRIPT,0);
-	AmbientSound("world/weegeedie", 127);
-}
-
-Script 92 (void)
-{
-	ScrlX = GetScreenWidth();
-	Scrly = GetScreenHeight();
-	If(ScrlX - Scrly <= 255)
-		SetFont(GRAPHIC_WEEGEE_BIG);
-	else
-		SetFont(GRAPHIC_WEEGEE_SMALL);
-
-	HudMessageBold(s:"A"; HUDMSG_FADEINOUT, 1, 0, 0.5, 0.2, 3, 3.0, 2.0, 2.0);
+        HudMessageBold(s:"A"; HUDMSG_FADEINOUT, 1, 0, 0.5, 0.2, 3.0, 3.0, 2.0, 2.0);
+    }
 }

@@ -7,290 +7,293 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-//New Reorganised Script layout
-
-Script "ze16_open" open
+strict namespace
 {
-	giveinventory(FLARE_ITEM, 1);
-	Sector_SetPlaneReflection(7, 128, 0);
-	setlinespecial(1, 80, 4, 0, 0, 0, 0);
-}
+    //New Reorganised Script layout
 
-Script 2 Open
-{
-	Sector_SetFade(15,100,100,100);
-	Sector_SetFade(24,100,100,100);
-	Sector_SetFade(26,100,100,100);
-	Sector_SetFade(27,100,100,100);
-	Sector_SetFade(28,100,100,100);
-	Sector_SetFade(29,100,100,100);
-	Delay(37*5);
+    Script "ze16_open" open
+    {
+        giveinventory(FLARE_ITEM, 1);
+        Sector_SetPlaneReflection(7, 128, 0);
+        setlinespecial(1, 80, 4, 0, 0, 0, 0);
+    }
 
-	SetFont("BIGFONT");
-	HudmessageBold(s:"A blizzard approaches and the way back to town has been blocked!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);//--Warning message
-	Delay(37*3);
-	SetFont("BIGFONT");
-	HudmessageBold(s:"Find and take shelter in the bunker."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 3.5, 0.5);
+    Script 2 Open
+    {
+        Sector_SetFade(15,100,100,100);
+        Sector_SetFade(24,100,100,100);
+        Sector_SetFade(26,100,100,100);
+        Sector_SetFade(27,100,100,100);
+        Sector_SetFade(28,100,100,100);
+        Sector_SetFade(29,100,100,100);
+        Delay(37*5);
 
-	delay(37);
-	Door_open(14,15);
-	delay(37*3);
-	HudmessageBold(s:"A zombie has been spotted!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 3.5, 0.5);
-	Door_open(16,15);
-	Music::PlayMusic("D_ESTAR");
-	delay(37*5);
-	acs_execute(3,0,0,0,0);
-}
+        SetFont("BIGFONT");
+        HudmessageBold(s:"A blizzard approaches and the way back to town has been blocked!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);//--Warning message
+        Delay(37*3);
+        SetFont("BIGFONT");
+        HudmessageBold(s:"Find and take shelter in the bunker."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 3.5, 0.5);
 
-//===========-----------------First Resist-----------------===========\\
+        delay(37);
+        Door_open(14,15);
+        delay(37*3);
+        HudmessageBold(s:"A zombie has been spotted!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 3.5, 0.5);
+        Door_open(16,15);
+        Music::PlayMusic("D_ESTAR");
+        delay(37*5);
+        acs_execute(3,0,0,0,0);
+    }
 
-script 3 (void) // Opening the Gate
-{
-	SetActivator(-1);
-	{
-		int time;
-		for(time=5;time>0;time--)
-		{
-			SetFont("BIGFONT");
-			Hudmessage(s:"\cqOpening the Gate in \cj",d:time,s:""; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-			delay(35);
-		}
-		Floor_LowerByValuetimes8(8, 16, 17);
-	}
-}
+    //===========-----------------First Resist-----------------===========\\
 
-script 4 (void) //Cargo hold
-{
-	SetActivator(-1);
-	{
-		int time;
-		for(time=21;time>0;time--)
-		{
-			SetFont("BIGFONT");
-			Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-			SetFont("SmallFONT");
-			HudmessageBold(s:"Releasing door locks."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-			delay(35);
-		}
-		setlinespecial(1,0,0,0,0,0,0);
-		Floor_Lowertonearest(5, 10);
-		Door_open(9,10);
-	}
-}
+    script 3 (void) // Opening the Gate
+    {
+        SetActivator(-1);
+        {
+            int time;
+            for(time=5;time>0;time--)
+            {
+                SetFont("BIGFONT");
+                Hudmessage(s:"\cqOpening the Gate in \cj",d:time,s:""; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+                delay(35);
+            }
+            Floor_LowerByValuetimes8(8, 16, 17);
+        }
+    }
 
-//===========-----------------Second Resist-----------------===========\\
+    script 4 (void) //Cargo hold
+    {
+        SetActivator(-1);
+        {
+            int time;
+            for(time=21;time>0;time--)
+            {
+                SetFont("BIGFONT");
+                Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+                SetFont("SmallFONT");
+                HudmessageBold(s:"Releasing door locks."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+                delay(35);
+            }
+            setlinespecial(1,0,0,0,0,0,0);
+            Floor_Lowertonearest(5, 10);
+            Door_open(9,10);
+        }
+    }
 
-script 5 (void) //Elevator
-{
-	SetActivator(-1);
-	radius_quake(100,100,0,50,25);
-	{
-		int time;
-		for(time=11;time>0;time--)
-		{
-			SetFont("BIGFONT");
-			Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-			SetFont("SmallFONT");
-			HudmessageBold(s:"Get into the elevator!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-			delay(35);
-		}
-		Door_close(10,20);
-		ceiling_lowerandcrush(12,21,100,2); //ZH2 [AQW] hexen crushmode
-		TagWait(12);
-		Ceiling_LowerByValueTimes8(12,16,1);
-		FloorAndCeiling_LowerByValue(11,20,8*25);
-		FloorAndCeiling_LowerByValue(43,24,8*99);
-		tagwait(11);
-		radius_quake(50,25,0,50,25);
-		delay(38*3);
-		FloorAndCeiling_LowerByValue(11,70,8*76);
-		tagwait(11);
-		radius_quake(50,5,0,50,25);
-		delay(38*2);
-		{
-			SetFont("SmallFONT");
-			HudmessageBold(s:"Vent path opened!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.6);
-			delay(38);
-		}
-		floor_LowerByValue(13,20,8*6);
-		Ceiling_RaiseByValue(18,255,26*8);
-		Light_ChangeToValue(17,255);
-		Light_ChangeToValue(19,255);
-	}
-}
+    //===========-----------------Second Resist-----------------===========\\
 
-SCript 6 (void)//Zombie paths for first resist area.
-{
-	If(Player::GetIsZombie())
-	{
-		Plat_DownWaitUpStay(20,55,55);
-	}
-	Else
-	{
-		print(s:"Doesn't seem to budge...");
-	}
-}
+    script 5 (void) //Elevator
+    {
+        SetActivator(-1);
+        radius_quake(100,100,0,50,25);
+        {
+            int time;
+            for(time=11;time>0;time--)
+            {
+                SetFont("BIGFONT");
+                Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+                SetFont("SmallFONT");
+                HudmessageBold(s:"Get into the elevator!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+                delay(35);
+            }
+            Door_close(10,20);
+            ceiling_lowerandcrush(12,21,100,2); //ZH2 [AQW] hexen crushmode
+            TagWait(12);
+            Ceiling_LowerByValueTimes8(12,16,1);
+            FloorAndCeiling_LowerByValue(11,20,8*25);
+            FloorAndCeiling_LowerByValue(43,24,8*99);
+            tagwait(11);
+            radius_quake(50,25,0,50,25);
+            delay(38*3);
+            FloorAndCeiling_LowerByValue(11,70,8*76);
+            tagwait(11);
+            radius_quake(50,5,0,50,25);
+            delay(38*2);
+            {
+                SetFont("SmallFONT");
+                HudmessageBold(s:"Vent path opened!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.6);
+                delay(38);
+            }
+            floor_LowerByValue(13,20,8*6);
+            Ceiling_RaiseByValue(18,255,26*8);
+            Light_ChangeToValue(17,255);
+            Light_ChangeToValue(19,255);
+        }
+    }
 
-SCript 7 (void)//Zombie paths
-{
-	If(Player::GetIsZombie())
-	{
-		Plat_DownWaitUpStay(21,55,55);
-	}
-	Else
-	{
-		print(s:"Doesn't seem to budge...");
-	}
-}
+    SCript 6 (void)//Zombie paths for first resist area.
+    {
+        If(Player::GetIsZombie())
+        {
+            Plat_DownWaitUpStay(20,55,55);
+        }
+        Else
+        {
+            print(s:"Doesn't seem to budge...");
+        }
+    }
 
-SCript 8 (void)//Zombie paths
-{
-	If(Player::GetIsZombie())
-	{
-		Plat_DownWaitUpStay(22,55,55);
-	}
-	Else
-	{
-		print(s:"Doesn't seem to budge...");
-	}
-}
+    SCript 7 (void)//Zombie paths
+    {
+        If(Player::GetIsZombie())
+        {
+            Plat_DownWaitUpStay(21,55,55);
+        }
+        Else
+        {
+            print(s:"Doesn't seem to budge...");
+        }
+    }
 
-SCript 9 (void)//Zombie paths
-{
-	If(Player::GetIsZombie())
-	{
-		Plat_DownWaitUpStay(23,55,55);
-	}
-	Else
-	{
-		print(s:"Doesn't seem to budge...");
-	}
-}
+    SCript 8 (void)//Zombie paths
+    {
+        If(Player::GetIsZombie())
+        {
+            Plat_DownWaitUpStay(22,55,55);
+        }
+        Else
+        {
+            print(s:"Doesn't seem to budge...");
+        }
+    }
 
-//===========-----------------Final Resist-----------------===========\\
+    SCript 9 (void)//Zombie paths
+    {
+        If(Player::GetIsZombie())
+        {
+            Plat_DownWaitUpStay(23,55,55);
+        }
+        Else
+        {
+            print(s:"Doesn't seem to budge...");
+        }
+    }
 
-script 10 (void)
-{
-	HudmessageBold(s:"Made by: \cmRa\cqbbitlo\cmrd & Thoumi"; HUDMSG_FADEOUT, 0, CR_White, 0.5, 0.19, 3.5, 0.5);
-}
+    //===========-----------------Final Resist-----------------===========\\
 
-script 11 (void)
-{
-	SetActivator(-1);
-	int time;
-	for(time=36;time>0;time--)
-	{
-		SetFont("BIGFONT");
-		Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-		SetFont("SmallFont");
-		HudmessageBold(s:"Sealing the bunker door."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-		delay(35);
-	}
-	acs_execute(12,0,0,0,0);
-}
+    script 10 (void)
+    {
+        HudmessageBold(s:"Made by: \cmRa\cqbbitlo\cmrd & Thoumi"; HUDMSG_FADEOUT, 0, CR_White, 0.5, 0.19, 3.5, 0.5);
+    }
 
-Script 12 (void)//The door seal.
-{
-    SetFont("BIGFONT");
-    Hudmessage(s:"\cjDoor Sealing..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-    Delay(35*3);
-    AmbientSound("world/avalance1", 127);
-    Radius_Quake(41, 255, 0, 12,34);
-    ceiling_LowerAndCrush(40,16,10,2); //ZH2 [AQW] crushmode hexen
-	TagWait(40);
-	Ceiling_LowerByValueTimes8(40,16,1);
-    Delay(35*2);
-    SetFont("BIGFONT");
-    HudmessageBold(s:"\cgWARNING: \cjAvalanche!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
-    delay(65);
+    script 11 (void)
+    {
+        SetActivator(-1);
+        int time;
+        for(time=36;time>0;time--)
+        {
+            SetFont("BIGFONT");
+            Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+            SetFont("SmallFont");
+            HudmessageBold(s:"Sealing the bunker door."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+            delay(35);
+        }
+        acs_execute(12,0,0,0,0);
+    }
 
-	// Light effect
-	for(int k = 0; k < BCSUtils::MAX_PLAYERS; k++)
-	{
-		if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
-		{
-            int tid = Identity::GetTid(k);
-			SetActivator(tid);
-			FadeTo(1.0, 1.0, 1.0, 1.0, 1.0);
-		}
-	}
+    Script 12 (void)//The door seal.
+    {
+        SetFont("BIGFONT");
+        Hudmessage(s:"\cjDoor Sealing..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+        Delay(35*3);
+        AmbientSound("world/avalance1", 127);
+        Radius_Quake(41, 255, 0, 12,34);
+        ceiling_LowerAndCrush(40,16,10,2); //ZH2 [AQW] crushmode hexen
+        TagWait(40);
+        Ceiling_LowerByValueTimes8(40,16,1);
+        Delay(35*2);
+        SetFont("BIGFONT");
+        HudmessageBold(s:"\cgWARNING: \cjAvalanche!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
+        delay(65);
 
-    SetActivator(-1);
-    
-	Delay(70);
-	Game::KillUnsafePlayers();
-}
+        // Light effect
+        for(int k = 0; k < BCSUtils::MAX_PLAYERS; k++)
+        {
+            if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
+            {
+                int tid = Identity::GetTid(k);
+                SetActivator(tid);
+                FadeTo(255, 255, 255, 1.0, 1.0);
+            }
+        }
 
-script 15 (void)
-{
-	PrintBold(n:0, s:" \cFHas activated the forcefield! It will deactivate in 25 seconds!");
-	setactivator(-1);
-	TranslucentLine(2, 100, 0);
-	setlinetexture(2,SIDE_FRONT,TEXTURE_MIDDLE,"LASER1");
-	setlinetexture(2,SIDE_back,TEXTURE_MIDDLE,"LASER1");
-	setlinespecial(2,80,16,0,0,0,0);
-	setlinespecial(3,80,16,0,0,0,0);
-	acs_eXecute(18,0,0,0,0);
-}
+        SetActivator(-1);
 
-Script 18 (void)
-{
-	int time;
-	for(time=25;time>0;time--)
-	{
-		SetFont("ConFONT");
-		Hudmessage(s:"\cqFocefield will fall in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 0, CR_White, 0.04, 0.86, 0.5);
-		delay(35);
-	}
-	TranslucentLine(2, 0, 0);
-	setlinetexture(2,SIDE_FRONT,TEXTURE_MIDDLE,"-");
-	setlinetexture(2,SIDE_back,TEXTURE_MIDDLE,"-");
-	setlinespecial(2,0,0,0,0,0,0);
-	setlinespecial(3,0,0,0,0,0,0);
-}
+        Delay(70);
+        Game::KillUnsafePlayers();
+    }
 
-script 16 (void)
-{
-	If(Player::GetIsZombie())
-		ThrustThing(64+128, 20, 0, 0);
-}
+    script 15 (void)
+    {
+        PrintBold(n:0, s:" \cFHas activated the forcefield! It will deactivate in 25 seconds!");
+        setactivator(-1);
+        TranslucentLine(2, 100, 0);
+        setlinetexture(2,SIDE_FRONT,TEXTURE_MIDDLE,"LASER1");
+        setlinetexture(2,SIDE_back,TEXTURE_MIDDLE,"LASER1");
+        setlinespecial(2,80,16,0,0,0,0);
+        setlinespecial(3,80,16,0,0,0,0);
+        acs_eXecute(18,0,0,0,0);
+    }
 
-script 17 (void)
-{
-	If(Player::GetIsZombie())
-	{
-		Hudmessage(s:"Zombies can Use the boxes to get past the forcefield!"; HUDMSG_fADEOUT, 108, CR_GREEN, 0.5, 0.25, 5.0);
-		Light_ChangeToValue(42,255);
-		delay(37);
-		Light_ChangeToValue(42,152);
-	}
-	else
-	{
-	}
-}
+    Script 18 (void)
+    {
+        int time;
+        for(time=25;time>0;time--)
+        {
+            SetFont("ConFONT");
+            Hudmessage(s:"\cqFocefield will fall in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 0, CR_White, 0.04, 0.86, 0.5);
+            delay(35);
+        }
+        TranslucentLine(2, 0, 0);
+        setlinetexture(2,SIDE_FRONT,TEXTURE_MIDDLE,"-");
+        setlinetexture(2,SIDE_back,TEXTURE_MIDDLE,"-");
+        setlinespecial(2,0,0,0,0,0,0);
+        setlinespecial(3,0,0,0,0,0,0);
+    }
 
-script 19 (void)
-{
-	PrintBold(n:0, s:" \cFHas lowered the Bridge! It will raise in 10 seconds!");
-	setactivator(-1);
-	FloorAndCeiling_LowerByValue(48,20,8*21);
-	tagwait(48);
-	acs_eXecute(20,0,0,0,0);
-}
+    script 16 (void)
+    {
+        If(Player::GetIsZombie())
+            ThrustThing(64+128, 20, 0, 0);
+    }
 
-Script 20 (void)
-{
-	int time;
-	for(time=10;time>0;time--)
-	{
-		SetFont("ConFONT");
-		Hudmessage(s:"\cqBridge will raise in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 0, CR_White, 0.04, 0.86, 0.5);
-		delay(35);
-	}
-	FloorAndCeiling_raiseByValue(48,20,8*21);
-}
+    script 17 (void)
+    {
+        If(Player::GetIsZombie())
+        {
+            Hudmessage(s:"Zombies can Use the boxes to get past the forcefield!"; HUDMSG_fADEOUT, 108, CR_GREEN, 0.5, 0.25, 5.0);
+            Light_ChangeToValue(42,255);
+            delay(37);
+            Light_ChangeToValue(42,152);
+        }
+        else
+        {
+        }
+    }
 
-script 21 (void)
-{
-	FloorAndCeiling_LowerByValue(50,215,8*350);
+    script 19 (void)
+    {
+        PrintBold(n:0, s:" \cFHas lowered the Bridge! It will raise in 10 seconds!");
+        setactivator(-1);
+        FloorAndCeiling_LowerByValue(48,20,8*21);
+        tagwait(48);
+        acs_eXecute(20,0,0,0,0);
+    }
+
+    Script 20 (void)
+    {
+        int time;
+        for(time=10;time>0;time--)
+        {
+            SetFont("ConFONT");
+            Hudmessage(s:"\cqBridge will raise in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 0, CR_White, 0.04, 0.86, 0.5);
+            delay(35);
+        }
+        FloorAndCeiling_raiseByValue(48,20,8*21);
+    }
+
+    script 21 (void)
+    {
+        FloorAndCeiling_LowerByValue(50,215,8*350);
+    }
 }

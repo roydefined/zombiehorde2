@@ -7,207 +7,210 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-#define FORCEFIELDTIME 15
-
-Int forceActivated = 0;
-
-
-script "ze09_open_1" open // Level setups
+strict namespace
 {
-	TranslucentLine(1, 160, 0);
-	Scroll_Texture_Both(1, 0, 0, 200, 0);
-	Scroll_Texture_Both(-1, 0, 0, 200, 0);
-	TranslucentLine(2, 96, 0);
-	Scroll_Texture_Both(2, 0, 0, 128, 0);
-	Scroll_Texture_Both(-2, 0, 0, 128, 0);
-	SetLineBlocking(2, BLOCK_EVERYTHING);
-	Sector_SetColor(5, 0, 0, 160);
-	Sector_SetRotation(12, 0, 90);
-	Sector_SetCeilingPanning(13,0,0,32,0);
-	Floor_Waggle(26, 8, 128, 16, 0);
-	Ceiling_Waggle(26, 8, 128, 16, 0);
-	Sector_SetColor(30, 0, 0, 160);
+    #define FORCEFIELDTIME 15
 
-	TranslucentLine(3, 0, 0);
-	Scroll_Texture_Both(3, 0, 0, 128, 0);
-	Scroll_Texture_Both(-3, 0, 0, 128, 0);
-}
+    Int forceActivated = 0;
 
-script "ze09_open_2" open
-{
-	Delay(35*9);
-	Door_OPEN(6, 96);
-	// ACS_Execute(3,0,0,0,0); //earthquakes
-	Thing_Activate(7);
-	Music::PlayMusic("ROUTE4", 100);
-	Delay(35*8);
-	TranslucentLine(2, 0, 0);
-	SetLineBlocking(2, BLOCK_NOTHING);
 
-	// TODO
-	//GiveImmuneZE();
-}
+    script "ze09_open_1" open // Level setups
+    {
+        TranslucentLine(1, 160, 0);
+        Scroll_Texture_Both(1, 0, 0, 200, 0);
+        Scroll_Texture_Both(-1, 0, 0, 200, 0);
+        TranslucentLine(2, 96, 0);
+        Scroll_Texture_Both(2, 0, 0, 128, 0);
+        Scroll_Texture_Both(-2, 0, 0, 128, 0);
+        SetLineBlocking(2, BLOCK_EVERYTHING);
+        Sector_SetColor(5, 0, 0, 160);
+        Sector_SetRotation(12, 0, 90);
+        Sector_SetCeilingPanning(13,0,0,32,0);
+        Floor_Waggle(26, 8, 128, 16, 0);
+        Ceiling_Waggle(26, 8, 128, 16, 0);
+        Sector_SetColor(30, 0, 0, 160);
 
-/* RESIST EVENT */
-script "ze09_internal_event_resistelapsed" (raw packetRaw)
-{
-	Event::ReceiveTimerElapsed((str)packetRaw);
-	int index = Event::GetReceiveData(0);
-	
-	switch(index)
-	{
-		case 0:
-			Door_Open(23,96);
-			break;
-		case 1:
-			Floor_LowerByvalue(27, 21, 120);
-			break;
-		case 2:
-			Door_Open(36, 96, 120);
-			break;
-	}
-}
+        TranslucentLine(3, 0, 0);
+        Scroll_Texture_Both(3, 0, 0, 128, 0);
+        Scroll_Texture_Both(-3, 0, 0, 128, 0);
+    }
 
-Script 3 (void) // Earthquakes
-{
-	int duration = random(2, 6);
-	Radius_Quake(random(1,2), duration*35, 0, 128, 8);
-	delay(duration* 35 + random(70,105));
-	restart;
-}
+    script "ze09_open_2" open
+    {
+        Delay(35*9);
+        Door_OPEN(6, 96);
+        // ACS_Execute(3,0,0,0,0); //earthquakes
+        Thing_Activate(7);
+        Music::PlayMusic("ROUTE4", 100);
+        Delay(35*8);
+        TranslucentLine(2, 0, 0);
+        SetLineBlocking(2, BLOCK_NOTHING);
 
-Script 6 (void) // Forcefield
-{
-	if(forceActivated==0)
-	{
-		printbold(n:0, s:" \cJhas activated the forcefield");
-		SetActivator(-1);
-		TranslucentLine(3, 96, 0);
-		SetLineBlocking(3, BLOCK_CREATURES);
+        // TODO
+        //GiveImmuneZE();
+    }
 
-		Delay(35 * FORCEFIELDTIME);
+    /* RESIST EVENT */
+    script "ze09_internal_event_resistelapsed" (raw packetRaw)
+    {
+        Event::ReceiveTimerElapsed((str)packetRaw);
+        int index = Event::GetReceiveData(0);
 
-		printbold(s:"\cGForcefield deactivated");
-		SetLineBlocking(3, BLOCK_NOTHING);
-		TranslucentLine(3, 0, 0);
-		forceActivated=1;
-	}
-}
+        switch(index)
+        {
+            case 0:
+                Door_Open(23,96);
+                break;
+            case 1:
+                Floor_LowerByvalue(27, 21, 120);
+                break;
+            case 2:
+                Door_Open(36, 96, 120);
+                break;
+        }
+    }
 
-script 11 (void)
-{
-	Radius_Quake(3, 35, 0, 3, 39);
-	PrintBold(n:0, s:" made the crates fall!");
-	SetActivator(-1);
+    Script 3 (void) // Earthquakes
+    {
+        int duration = random(2, 6);
+        Radius_Quake(random(1,2), duration*35, 0, 128, 8);
+        delay(duration* 35 + random(70,105));
+        restart;
+    }
 
-	// Changed in ZH2: The cra no longer inflicts instant death, instead delayed damage using hexen's crushing style.
-	// 2 is Hexen crushing mode.
-	Ceiling_LowerAndCrush(58, 255, 500, 2);
-	Tagwait(58);
-	Ceiling_LowerByValueTimes8(58, 255, 1);
+    Script 6 (void) // Forcefield
+    {
+        if(forceActivated==0)
+        {
+            printbold(n:0, s:" \cJhas activated the forcefield");
+            SetActivator(-1);
+            TranslucentLine(3, 96, 0);
+            SetLineBlocking(3, BLOCK_CREATURES);
 
-	Delay(35*5);
-	PrintBold(s:"\n\nAn alternative path has been opened");
-	Door_Open(59, 96);
-}
+            Delay(35 * FORCEFIELDTIME);
 
-Script 12 (void) // Jail
-{
-	SetActivator(-1);
-	PrintBold(s:"The pillars will lower in 15 seconds");
-	Delay(35*15);
-	PrintBold(s:"Pillars Lowered!");
-	Floor_LowerByvalue(41, 21, 88);
-}
+            printbold(s:"\cGForcefield deactivated");
+            SetLineBlocking(3, BLOCK_NOTHING);
+            TranslucentLine(3, 0, 0);
+            forceActivated=1;
+        }
+    }
 
-Script 13 (void)
-{
-	PrintBold(n:0, s:" has lowered the gate!");
-	SetActivator(-1);
-	Ceiling_LowerByValue(42, 21, 128);
-	Tagwait(42);
-	Delay(35*10);
-	PrintBold(s:"Gate opened!");
-	Ceiling_RaiseByValue(42, 21, 128);
-}
+    script 11 (void)
+    {
+        Radius_Quake(3, 35, 0, 3, 39);
+        PrintBold(n:0, s:" made the crates fall!");
+        SetActivator(-1);
 
-Script 14 (void)
-{
-	Teleport_NoFog(100 + PlayerNumber(), 1, 0);
-}
+        // Changed in ZH2: The cra no longer inflicts instant death, instead delayed damage using hexen's crushing style.
+        // 2 is Hexen crushing mode.
+        Ceiling_LowerAndCrush(58, 255, 500, 2);
+        Tagwait(58);
+        Ceiling_LowerByValueTimes8(58, 255, 1);
 
-Script 15 (int num, int angle)
-{
-	if(!LineSide())
-	{
-		Teleport_NoFog(num, 0, 0);
-		ThrustThing(angle, 20);
-	}
-}
+        Delay(35*5);
+        PrintBold(s:"\n\nAn alternative path has been opened");
+        Door_Open(59, 96);
+    }
 
-Script 16 (void)
-{
-	Game::SetIsSafe(true);
-}
+    Script 12 (void) // Jail
+    {
+        SetActivator(-1);
+        PrintBold(s:"The pillars will lower in 15 seconds");
+        Delay(35*15);
+        PrintBold(s:"Pillars Lowered!");
+        Floor_LowerByvalue(41, 21, 88);
+    }
 
-Script 17 (void)
-{
-	delay(1);
-	Game::SetIsSafe(false);
-}
+    Script 13 (void)
+    {
+        PrintBold(n:0, s:" has lowered the gate!");
+        SetActivator(-1);
+        Ceiling_LowerByValue(42, 21, 128);
+        Tagwait(42);
+        Delay(35*10);
+        PrintBold(s:"Gate opened!");
+        Ceiling_RaiseByValue(42, 21, 128);
+    }
 
-Script 18 (void)
-{
-	SetFont("CONFONT");
-	HudMessageBold(n:0, s:" \cGhas reached the rescue point!\nSecure the helipad until the chopper arrives!";
-				HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+    Script 14 (void)
+    {
+        Teleport_NoFog(100 + PlayerNumber(), 1, 0);
+    }
 
-	SetActivator(-1);
-	Delay(35*5);
+    Script 15 (int num, int angle)
+    {
+        if(!LineSide())
+        {
+            Teleport_NoFog(num, 0, 0);
+            ThrustThing(angle, 20);
+        }
+    }
 
-	Delay(Resist::StartResistByIndex(3));
+    Script 16 (void)
+    {
+        Game::SetIsSafe(true);
+    }
 
-	Thing_Activate(69);
-	Acs_Execute(20, 0);
-	Floor_LowerByValue(72, 30, 504);
-	Ceiling_LowerByValue(72, 30, 504);
-	TagWait(72);
-	SetLineBlocking(44, BLOCK_NOTHING);
+    Script 17 (void)
+    {
+        delay(1);
+        Game::SetIsSafe(false);
+    }
 
-	Delay(35*5);
+    Script 18 (void)
+    {
+        SetFont("CONFONT");
+        HudMessageBold(n:0, s:" \cGhas reached the rescue point!\nSecure the helipad until the chopper arrives!";
+                    HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
 
-	Floor_RaiseByValue(72, 8, 312);
-	Ceiling_RaiseByValue(72, 8, 312);
+        SetActivator(-1);
+        Delay(35*5);
 
-	Delay(35*3);
+        Delay(Resist::StartResistByIndex(3));
 
-	SetFont("BIGFONT");
-	HudMessageBold(s:"\cGWarning : \cKThe tanker is sinking!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+        Thing_Activate(69);
+        Acs_Execute(20, 0);
+        Floor_LowerByValue(72, 30, 504);
+        Ceiling_LowerByValue(72, 30, 504);
+        TagWait(72);
+        SetLineBlocking(44, BLOCK_NOTHING);
 
-	Delay(35*3);
+        Delay(35*5);
 
-	for(int k = 0; k < BCSUtils::MAX_PLAYERS; k++)
-	{
-		if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
-			Acs_ExecuteAlways(19, 0, k, 0, 0);
-	}
+        Floor_RaiseByValue(72, 8, 312);
+        Ceiling_RaiseByValue(72, 8, 312);
 
-	Delay(35 * 2 + 18);
-    Sector_SetDamage(44, 10000, 12);
-}
+        Delay(35*3);
 
-Script 19 (int who) // Drowning
-{
-	SetActivatorToPlayer(who);
-	Delay(35*2);
-	FadeTo(0, 0, 0.5, 1.0, 0.5);
-	Delay(18);
-	LocalAmbientSound("sound/drowning1", 127);
-	Game::Kill(MOD_WATER);
-	FadeTo(0, 0, 0.5, 0.0, 0.5);
-}
+        SetFont("BIGFONT");
+        HudMessageBold(s:"\cGWarning : \cKThe tanker is sinking!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
 
-Script 20 (void) CLIENTSIDE
-{
-	Thing_Remove(73);
+        Delay(35*3);
+
+        for(int k = 0; k < BCSUtils::MAX_PLAYERS; k++)
+        {
+            if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
+                Acs_ExecuteAlways(19, 0, k, 0, 0);
+        }
+
+        Delay(35 * 2 + 18);
+        Sector_SetDamage(44, 10000, 12);
+    }
+
+    Script 19 (int who) // Drowning
+    {
+        SetActivatorToPlayer(who);
+        Delay(35*2);
+        FadeTo(0, 0, 128, 1.0, 0.5);
+        Delay(18);
+        LocalAmbientSound("sound/drowning1", 127);
+        Game::Kill(MOD_WATER);
+        FadeTo(0, 0, 128, 0.0, 0.5);
+    }
+
+    Script 20 (void) CLIENTSIDE
+    {
+        Thing_Remove(73);
+    }
 }
