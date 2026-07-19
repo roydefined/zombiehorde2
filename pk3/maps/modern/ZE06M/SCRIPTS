@@ -18,7 +18,9 @@ strict namespace
     /* Level Setups */
     Script "ze06b_open" OPEN
     {
-        Sector_SetCeilingScale2(2, 2.0, 2.0);
+        // [ZH2] Seems like the signature is wrong for this function in BCC.
+        Sector_SetCeilingScale2(2, (raw)2.0, (raw)2.0);
+
         Sector_SetFloorPanning(5, 0, 0, 32, 0);
         Sector_SetCeilingPanning(6, 0, 0, 32, 0);
         Sector_SetRotation(10, 90, 90);
@@ -84,18 +86,21 @@ strict namespace
     Script "ze06b_open_client" OPEN CLIENTSIDE
     {
         int i;
-        Scroll_Wall(90, 1.0, 0, 0, 2);
-        Scroll_Wall(90, 1.0, 0, 1, 2);
+
+        // [ZH2] Seems like the signature is wrong for this function in BCC.
+        Scroll_Wall(90, (raw)1.0, (raw)0.0, 0, 2);
+        Scroll_Wall(90, (raw)1.0, (raw)0.0, 1, 2);
+
         while(1)
         {
             for (i = 0; i < 35; i++ )
             {
-                TranslucentLine(90, 80 + 5 * i, FALSE);
+                TranslucentLine(90, 80 + 5 * i, 0);
                 delay(1);
             }
             for (i = 0; i < 35; i++ )
             {
-                TranslucentLine(90, 255 - 5 * i, FALSE);
+                TranslucentLine(90, 255 - 5 * i, 0);
                 delay(1);
             }
         }

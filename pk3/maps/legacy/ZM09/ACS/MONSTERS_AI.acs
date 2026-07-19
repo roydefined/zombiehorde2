@@ -6,7 +6,7 @@
 #import "zm09_fun.acs"
 */
 int ghoul_target;
-int monster_target_distance=0;
+fixed monster_target_distance = 0.0;
 
 #define IS_RAVISHING 1
 #define IS_WHIETFACE 0
@@ -14,18 +14,19 @@ int monster_target_distance=0;
 script 4 (int who, int code){// White Face/Ravishing AI core
     int safe_tid=ActivatorTID();
     int monster_target_tid=0;
-    int i=0,j=0;
-    int shorter_distance;
-    int farest_distance=0;
+    int i = 0;
+    fixed j = 0.0;
+    fixed shorter_distance = 0.0;
+    fixed farest_distance = 0.0;
     int tid;
-    int humanId =0;
+    int humanId = 0;
 
 	//LOOP TO FIND THE SHORTEST OR FAREST HUMAN
     while(Game::HumanCount() >= 1){
         i=0;
         monster_target_tid=0;
-        farest_distance=0;
-        shorter_distance=2147483647;
+        farest_distance=0.0;
+        shorter_distance=2147483647.0;
         while(i<BCSUtils::MAX_PLAYERS){
             tid = Identity::GetTid(i);
 
@@ -52,28 +53,29 @@ script 4 (int who, int code){// White Face/Ravishing AI core
                             humanId = i;
                         }
                     }
-                } 
+                }
             }
             i++;
             delay(1);
         }
         ghoul_target=monster_target_tid;
-        if(shorter_distance==2147483647)
-        { 
-            monster_target_distance=monster_target_tid;
+        if(shorter_distance == 2147483647.0)
+        {
+            // [ZH2] I have no idea what this is even supposed to do.
+            monster_target_distance = fixed(monster_target_tid);
         }
-        else 
-        { 
-            monster_target_distance=shorter_distance;
+        else
+        {
+            monster_target_distance = shorter_distance;
         }
         Thing_Hate(100 , monster_target_tid, 6);//TRACK THE PLAYER UNTILL HE'S ALIVE OR IS NOT A ZOMBIE
-		if(who == IS_WHIETFACE) 
+		if(who == IS_WHIETFACE)
         {
             acs_execute(21,0,monster_target_tid);
         }
         //LOOP FOR CHECKING IF HUMAN IS ALIVE OR BECAME A ZOMBIE
         while(
-            PlayerInGame(humanId) && 
+            PlayerInGame(humanId) &&
             Player::GetPlayerIsHuman(humanId))
         {
             delay(35);

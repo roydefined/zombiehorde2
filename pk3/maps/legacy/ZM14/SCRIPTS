@@ -19,7 +19,7 @@ strict namespace
 
     Script 80 OPEN //Keyspawn
     {
-        Thing_Spawn(Random(600,604), "ZH2LegacyCaveKey",0,0);
+        SpawnSpot("ZH2LegacyCaveKey", Random(600,604), 0, 0);
         thing_deactivate(171);
         thing_deactivate(173);
         thing_deactivate(174);
@@ -27,8 +27,8 @@ strict namespace
 
     Script 81 (void)
     {
-        If(CheckInventory("ZH2LegacyCaveKey")==1)
-        {Door_Open(133,25);}
+        If(CheckInventory("ZH2LegacyCaveKey"))
+            Door_Open(133,25);
     }
 
     int SCRATCH=400;
@@ -268,11 +268,11 @@ strict namespace
     // [ZH2] Handle conditionally enabling/disabling dynamic lights based on the cvar.
     script "open_client" open clientside
     {
-        _dynamicLightsEnabled = GetUserCVar(ConsolePlayerNumber(), "cl_zh2_zm14_enabledynamiclights");
+        _dynamicLightsEnabled = (bool)GetUserCVar(ConsolePlayerNumber(), "cl_zh2_zm14_enabledynamiclights");
         SetDynamicLights(_dynamicLightsEnabled, false);
         while (true)
         {
-            if (_dynamicLightsEnabled != GetUserCVar(ConsolePlayerNumber(), "cl_zh2_zm14_enabledynamiclights"))
+            if (_dynamicLightsEnabled != (bool)GetUserCVar(ConsolePlayerNumber(), "cl_zh2_zm14_enabledynamiclights"))
             {
                 SetDynamicLights(!_dynamicLightsEnabled, true);
                 _dynamicLightsEnabled = !_dynamicLightsEnabled;

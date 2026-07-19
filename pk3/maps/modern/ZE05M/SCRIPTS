@@ -43,7 +43,10 @@ strict namespace
         Sector_SetFade(131, FOG_RR, FOG_GG, FOG_BB);
         Sector_SetFade(132, FOG_RR, FOG_GG, FOG_BB);
         */
-        Sector_SetCeilingScale2(111, 2.0, 2.0);
+
+        // [ZH2] Seems like the signature is wrong for this function in BCC.
+        Sector_SetCeilingScale2(111, (raw)2.0, (raw)2.0);
+
         Sector_SetRotation(4, 90, 0);
         Sector_SetRotation(19, 180, 0);
         Sector_SetCeilingPanning(15, 8, 0, 8, 0);
@@ -108,7 +111,7 @@ strict namespace
     {
         Event::ReceiveTimerElapsed((str)packetRaw);
         int index = Event::GetReceiveData(0);
-        
+
         switch(index)
         {
             case 0:
@@ -244,24 +247,27 @@ strict namespace
         else
             Thing_Damage2(0, 100, "Slime");
 
-        Teleport(teleport_id, 0, true);
+        Teleport(teleport_id, 0, 1);
     }
 
     Script 20 OPEN CLIENTSIDE
     {
         int i;
-        Scroll_Wall(90, 1.0, 0, 0, 2);
-        Scroll_Wall(90, 1.0, 0, 1, 2);
+
+        // [ZH2] Seems like the signature is wrong for this function in BCC.
+        Scroll_Wall(90, (raw)1.0, (raw)0.0, 0, 2);
+        Scroll_Wall(90, (raw)1.0, (raw)0.0, 1, 2);
+
         while(1)
         {
-            for ( i=0; i<35; i++ )
+            for (int i = 0; i < 35; i++)
             {
-                TranslucentLine(90, 80 + 5 * i, FALSE);
+                TranslucentLine(90, 80 + 5 * i, 0);
                 delay(1);
             }
-            for ( i=0; i<35; i++ )
+            for (int i= 0; i < 35; i++)
             {
-                TranslucentLine(90, 255 - 5 * i, FALSE);
+                TranslucentLine(90, 255 - 5 * i, 0);
                 delay(1);
             }
         }

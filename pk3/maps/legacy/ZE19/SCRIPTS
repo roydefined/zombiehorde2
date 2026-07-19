@@ -11,20 +11,20 @@ strict namespace
 {
     //Creating variables
 
-    Int resist1 = 22; // 22 seconds
-    Int resist2 = 30; // 30 seconds
-    Int resist3 = 20; // 20 seconds
-    Int resist4 = 35; // 35 seconds
-    Int resist5 = 10; // 30 seconds
-    Int DiscoButtonUsed = 0;
-    Int SpecialRoomOpen;
-    Int AnotherEnd;
-    Int LiftFloor = 5;
+    int resist1 = 22; // 22 seconds
+    int resist2 = 30; // 30 seconds
+    int resist3 = 20; // 20 seconds
+    int resist4 = 35; // 35 seconds
+    int resist5 = 10; // 30 seconds
+    int DiscoButtonUsed = 0;
+    int SpecialRoomOpen;
+    int AnotherEnd;
+    int LiftFloor = 5;
     bool InTram[BCSUtils::MAX_PLAYERS];
-    Int Coordinates = 0;
-    Int BoatX = 7328.0;
-    Int BoatY = -4.0;
-    Int BoatZ = 0.0;
+    int Coordinates = 0;
+    fixed BoatX = 7328.0;
+    fixed BoatY = -4.0;
+    fixed BoatZ = 0.0;
 
 
     //Creating resist message function
@@ -183,18 +183,18 @@ strict namespace
         {
             int tid = Identity::GetTid(j);
             if(InTram[j])
-                SetActorPosition(tid,GetActorX(tid)+3424.0,GetActorY(tid)-8.0,GetActorZ(tid)+8.0,0);
+                SetActorPosition(tid, GetActorX(tid) + 3424.0, GetActorY(tid) - 8.0, GetActorZ(tid) + 8.0, false);
         }
 
         delay(70);
-        for(i = 20;i < 1280;i+=20)
+        for(int i = 20; i < 1280; i += 20)
         {
             Scroll_Ceiling(29,-i/2,-10,0);
             Scroll_Texture_Both(29,i,0,0,0);
             delay(5);
         }
         delay(70);
-        for(i = 1260;i > 20;i-=10)
+        for(int i = 1260; i > 20; i -= 10)
         {
             Scroll_Ceiling(29,-i/2,-10,0);
             Scroll_Texture_Both(29,i,0,0,0);
@@ -220,8 +220,8 @@ strict namespace
 
     Script 91 (void)
     {
-        SectorDamage(28,5,"ice",0,DAMAGE_PLAYERS|DAMAGE_IN_AIR);
-        SectorDamage(167,5,"ice",0,DAMAGE_PLAYERS|DAMAGE_IN_AIR);
+        SectorDamage(28, 5, "ice", (raw)0,DAMAGE_PLAYERS | DAMAGE_IN_AIR);
+        SectorDamage(167, 5, "ice", (raw)0, DAMAGE_PLAYERS | DAMAGE_IN_AIR);
         Delay(1);
         Restart;
     }
@@ -295,7 +295,7 @@ strict namespace
                 {
                     int tid = Identity::GetTid(g);
                     if(Game::GetPlayerIsSafe(g))
-                        SetActorPosition(tid, GetActorX(tid)+ BoatX ,GetActorY(tid)+ BoatY ,GetActorZ(tid)+ BoatZ ,0);
+                        SetActorPosition(tid, GetActorX(tid)+ BoatX, GetActorY(tid)+ BoatY, GetActorZ(tid)+ BoatZ, false);
                 }
                 Acs_executeAlways(44,0);
             }
@@ -311,9 +311,9 @@ strict namespace
 
     Script 44 (void)
     {
-        Fadeto (255, 25, 25, 1.0, 0);
+        Fadeto (255, 25, 25, 1.0, 0.0);
         delay(105);
-        Fadeto (0, 0, 0, 0, 6.0);
+        Fadeto (0, 0, 0, 0.0, 6.0);
         floor_lowerbyvalue(80,50,9999);
         ceiling_lowerbyvalue(80,50,9999);
     }
@@ -338,8 +338,10 @@ strict namespace
 
     script 22 (void)
     {
-        if(LineSide() == LINE_FRONT) InTram[PlayerNumber()] = 1;
-        else InTram[PlayerNumber()] = 0;
+        if(LineSide() == LINE_FRONT)
+            InTram[PlayerNumber()] = true;
+        else
+            InTram[PlayerNumber()] = false;
     }
 
 

@@ -7,7 +7,7 @@
 
 int debug_wf_speed=0;
 int debug_wf_scrpt_stck=0;
-int debug_wf_vsble=false;
+bool debug_wf_vsble=false;
 
 script 35 (void){//White Face Script
     int rnd=0;
@@ -64,8 +64,8 @@ script 41 (int X) clientside{//White Face scirpt: Change the map + Ravishing vis
         ACS_Terminate(32,0);
         ACS_Terminate(33,0);
         ACS_Terminate(34,0);
-        generator1=0;
-        generator2=0;
+        generator1 = false;
+        generator2 = false;
         ReplaceTextures("ITEX20","ITEX24");
         ReplaceTextures("ITEXE29","ITEXE50");
         ReplaceTextures("ITEXE33","ITEXE51");
@@ -81,7 +81,7 @@ script 41 (int X) clientside{//White Face scirpt: Change the map + Ravishing vis
         SetLineTexture(84,SIDE_FRONT ,TEXTURE_MIDDLE  ,"ITEXE54");
         SetLineTexture(85,SIDE_FRONT ,TEXTURE_MIDDLE  ,"ITEXE54");
         SetLineTexture(159,SIDE_FRONT ,TEXTURE_MIDDLE  ,"ITEXE54");
-        HudMessagebold(s:""; HUDMSG_PLAIN , 800, 0, 0.5, 0,0,0, 0);
+        HudMessagebold(s:""; HUDMSG_PLAIN , 800, 0, 0.5, 0.0, 0.0, 0.0, 0.0);
         delay(35*5);
         SetMusic("suicide");
         Music_Played=IMSCARED_MUSIC;
@@ -129,7 +129,7 @@ script 41 (int X) clientside{//White Face scirpt: Change the map + Ravishing vis
         spawnspot("IMSCARED",132,0,0);
         thing_remove(132);
         x=0;
-        while(x<200){        
+        while(x<200){
             if(x!=131 && x!=100 && x!=1) Light_ChangeToValue(x,-100);
             x++;
             delay(1);
@@ -139,14 +139,14 @@ script 41 (int X) clientside{//White Face scirpt: Change the map + Ravishing vis
         k=0;
         while(true){
             x=random(0,7);
-            if(x==0)     spawn("DeadMarine",random(-2263.18,-367.978),random(-1199.85,-429.914),300.0,151,0);//red key spam place
-            else if(x==1)spawn("DeadMarine",random(-3218.18,792.0),random(-4871.85,-429.914),300.0,151,0);//Outside area + second/fist floor red house
-            else if(x==2)spawn("DeadMarine",random(0.18,2500.0),random(1000.85,1500.914),385.0,151,0);//Big generator
-            else if(x==3)spawn("DeadMarine",random(2143.18,4000.0),random(2400.85,3790.914),450.0,151,0);//Hell area
-            else if(x==4)spawn("DeadMarine",random(-1009.18,-460.0),random(-225.85,720.914),66.0,151,0);//Entering cave
-            else if(x==5)spawn("DeadMarine",random(-90.18,2668.0),random(1000.85,1500.914),520.0,151,0);//Big generator
-            else if(x==6)spawn("DeadMarine",random(-320.18,1700.0),random(320.85,850.914),300.0,151,0);//Blue key spot
-            else if(x==7)spawn("DeadMarine",random(3947.18,5727.0),random(-2000.85,-230.914),402.0,151,0);//Third floor
+            if(x==0)     spawn("DeadMarine", Math::FRandom(-2263.18,-367.978), Math::FRandom(-1199.85,-429.914),300.0,151,0);//red key spam place
+            else if(x==1)spawn("DeadMarine", Math::FRandom(-3218.18,792.0), Math::FRandom(-4871.85,-429.914),300.0,151,0);//Outside area + second/fist floor red house
+            else if(x==2)spawn("DeadMarine", Math::FRandom(0.18,2500.0), Math::FRandom(1000.85,1500.914),385.0,151,0);//Big generator
+            else if(x==3)spawn("DeadMarine", Math::FRandom(2143.18,4000.0), Math::FRandom(2400.85,3790.914),450.0,151,0);//Hell area
+            else if(x==4)spawn("DeadMarine", Math::FRandom(-1009.18,-460.0), Math::FRandom(-225.85,720.914),66.0,151,0);//Entering cave
+            else if(x==5)spawn("DeadMarine", Math::FRandom(-90.18,2668.0), Math::FRandom(1000.85,1500.914),520.0,151,0);//Big generator
+            else if(x==6)spawn("DeadMarine", Math::FRandom(-320.18,1700.0), Math::FRandom(320.85,850.914),300.0,151,0);//Blue key spot
+            else if(x==7)spawn("DeadMarine", Math::FRandom(3947.18,5727.0), Math::FRandom(-2000.85,-230.914),402.0,151,0);//Third floor
             thingsound(151,"player/male/death1",255);
             delay(j);
             k++;
@@ -170,11 +170,11 @@ script 41 (int X) clientside{//White Face scirpt: Change the map + Ravishing vis
 }
 
 
-script 43 (int spot) clientside{//White Face third floor trick
+script 43 (raw spot) clientside{//White Face third floor trick
     int k=90;
     int i=100;
     int j;
-	int TEXT1,TEXT2,TEXT3;
+	str TEXT1,TEXT2,TEXT3;
 	int light1,light2,light3;
 	if(spot==true){
 		TEXT1="JNROCK13"; TEXT2="BBRWZ04"; TEXT3="WOODN2";
@@ -209,25 +209,25 @@ script 43 (int spot) clientside{//White Face third floor trick
         ReplaceTextures("FIREBLU2",TEXT2);
         ReplaceTextures("N_SKIN03",TEXT3);
         if(spot==true){
-			Light_ChangeToValue(light1,112);        
-			Light_ChangeToValue(light2,104);        
+			Light_ChangeToValue(light1,112);
+			Light_ChangeToValue(light2,104);
 			Light_ChangeToValue(light3,112);
         }else{
-            Light_ChangeToValue(light1,104);            
-			Light_ChangeToValue(light2,96);            
+            Light_ChangeToValue(light1,104);
+			Light_ChangeToValue(light2,96);
 			Light_ChangeToValue(light3,88);
         }thing_remove(116);
         thing_remove(200);
         delay(70);
         activatorsound("ELAUGHT",255);
-    }   
+    }
 }
 
 script 44 (void){//White Face attack script
-    SetHudSize(640,480,1);
+    SetHudSize(640,480,true);
     SetFont("ISCAR");
     activatorsound("SOULFUCK",255);
-    HudMessage(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, 0.5, 0.5,5.0,0, 0.2);
+    HudMessage(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, 0.5, 0.5,5.0,0.0, 0.2);
     teleport(102,0,0);
     acs_execute(41,0,1,0,0);
     SetFont("SMALLFONT");

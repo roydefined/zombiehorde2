@@ -129,7 +129,7 @@ strict namespace
         }
 
         // Boundary rocks.
-        for (i = 0; i < lengthof(_nukeBoundaryRocks); ++i)
+        for (int i = 0; i < lengthof(_nukeBoundaryRocks); ++i)
         {
             sector_setfade(_nukeBoundaryRocks[i].SectorTag, fade, fade, fade);
             sector_setcolor(_nukeBoundaryRocks[i].SectorTag, color1, color2, color2);
@@ -423,12 +423,12 @@ strict namespace
     // Bunker teleport system
     script "SetInBunker" (int inBunker, int targetTid)
     {
-        SetIsInBunker(inBunker);
+        SetIsInBunker((bool)inBunker);
         Teleport_NoFog(targetTid);
 
         // Apply velocity if entering, otherwise the teleporting removes it.
         if (inBunker)
-            SetActorVelocity(ActivatorTID(), 0, 0, GetActorVelZ(ActivatorTID()), FALSE, FALSE);
+            SetActorVelocity(ActivatorTID(), 0.0, 0.0, GetActorVelZ(ActivatorTID()), false, false);
 
         NamedExecuteClientScript("SetInBunker_Client", PlayerNumber(), inBunker);
     }
@@ -518,7 +518,7 @@ strict namespace
 
     internal bool GetPlayerIsInBunker(int id)
     {
-        return CheckActorInventory(Identity::GetTid(id), IN_BUNKER_ITEM);
+        return CheckActorInventory(Identity::GetTid(id), IN_BUNKER_ITEM) > 0;
     }
 
     internal void SetIsInBunker(bool value)
@@ -528,7 +528,7 @@ strict namespace
 
     internal void SetPlayerIsInBunker(int id, bool value)
     {
-        BCSUtils::SetActorInventory(Identity::GetTid(id), IN_BUNKER_ITEM, value);
+        BCSUtils::SetActorInventory(Identity::GetTid(id), IN_BUNKER_ITEM, (int)value);
     }
 
     /*
@@ -544,7 +544,7 @@ strict namespace
 
         setFont("smallfont");
         SetHudSize(640, 480, FALSE);
-        HudMessage(s:"You thoroughly search the locker"; HUDMSG_TYPEON, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 4.0, 0.04, 0);
+        HudMessage(s:"You thoroughly search the locker"; HUDMSG_TYPEON, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 4.0, 0.04, 0.0);
 
         int searchingCount = 35*5;
         while (--searchingCount)
@@ -566,7 +566,7 @@ strict namespace
             }
 
             if (searchingCount == 35*4)
-                HudMessage(s:"..."; HUDMSG_TYPEON, HUDID_INTERACTION+1, CR_WHITE, 445.0, 120.0, 0, 1.0, 0.0);
+                HudMessage(s:"..."; HUDMSG_TYPEON, HUDID_INTERACTION+1, CR_WHITE, 445.0, 120.0, 0.0, 1.0, 0.0);
 
             delay(1);
         }
@@ -813,7 +813,7 @@ strict namespace
         if (NukeHasBlownOver())
         {
             int killElevatorId = isInBunker ? elevatorId : targetElevatorId;
-            for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
             {
                 if (!PlayerInGame(i) || !GetPlayerIsInElevator(i, killElevatorId))
                     continue;
@@ -823,7 +823,7 @@ strict namespace
         }
 
         // Set occupands in the elevator as in/outside the bunker
-        for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             if (PlayerInGame(i) && GetPlayerIsInElevator(i, elevatorId))
                 SetPlayerIsInBunker(i, targetIsInBunker);
@@ -833,7 +833,7 @@ strict namespace
         }
 
         // Switch players into the new elevator
-        for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             if (GetPlayerIsInElevator(i, elevatorId))
                 SetPlayerIsInElevator(i, targetElevatorId);
@@ -863,7 +863,7 @@ strict namespace
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             if (GetPlayerIsInElevator(i, elevatorId))
-                TeleportInSector(sourceSectorTag, sourceTag, tempDestTag, false, Identity::GetTid(i));
+                TeleportInSector(sourceSectorTag, sourceTag, tempDestTag, 0, Identity::GetTid(i));
         }
 
         PlaySound(tempDestTag, "sound/lift1", CHAN_AUTO, 1.0);
@@ -871,7 +871,7 @@ strict namespace
 
         // Move all players from the temporary elevator to the final one.
         // This one doesn't need a special check since we're in a temporary room anyway.
-        TeleportInSector(tempDestSectorTag, tempDestTag, destTag, false);
+        TeleportInSector(tempDestSectorTag, tempDestTag, destTag, 0);
 
         ThingSound(destTag, "sound/ding1", 127);
 
@@ -909,7 +909,7 @@ strict namespace
 
             int tid = Identity::GetTid(i);
             Thing_Damage(tid, 20, MOD_CRUSH);
-            ThrustThing(angle, 10, false, tid);
+            ThrustThing(angle, 10, 0, tid);
             Logger::LogTo(i, "You got crushed by the elevator doors, careful!");
         }
     }
@@ -1064,7 +1064,7 @@ strict namespace
 
         Delay(12);
 
-        for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             if (!PlayerInGame(i) || GetPlayerIsInBunker(i))
                 continue;
@@ -1074,7 +1074,7 @@ strict namespace
 
         // Set boundaries by raising rocks
         SetLineBlocking(2, BLOCK_PLAYERS);
-        for (i = 0; i < lengthof(_nukeBoundaryRocks); ++i)
+        for (int i = 0; i < lengthof(_nukeBoundaryRocks); ++i)
         {
             int tag = _nukeBoundaryRocks[i].SectorTag;
             int height = _nukeBoundaryRocks[i].Height;
@@ -1161,7 +1161,7 @@ strict namespace
                 BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
                 BCSUtils::HudSetShowOnFullAutomap(FALSE);
 
-                for (i = 0; i < lengthof(_shelterMarkers); ++i)
+                for (int i = 0; i < lengthof(_shelterMarkers); ++i)
                 {
                     int tag = _shelterMarkers[i];
 
@@ -1189,6 +1189,8 @@ strict namespace
         delay(35);
 
         delay(35*2);
+
+        int i;
         for (i = 2; i <= 4; ++i)
         {
             Radius_Quake2(0, i, 35*2, 0, 1, "");
@@ -1211,9 +1213,9 @@ strict namespace
         SetActivator(tid);
 
         // Player is not in the bunker.
-        FadeTo(150, 20, 20, 1.0, 0);
+        FadeTo(150, 20, 20, 1.0, 0.0);
         delay(35);
-        FadeTo(0, 0, 0, 0, 8.0);
+        FadeTo(0, 0, 0, 0.0, 8.0);
     }
 
     script "Event_Nuke_Final_client" clientside
@@ -1312,7 +1314,7 @@ strict namespace
             HudMessage(s:"Keep your body temperature above \cf28 degrees \cjat all times."; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 380.0, 5.0, 1.0, 5.0);
         }
 
-        SetHudSize(480, 480, 0);
+        SetHudSize(480, 480, false);
         DrawFrostScreen(240.0, 240.0, HUDID_TEMPERATURE);
     }
 
@@ -1354,7 +1356,7 @@ strict namespace
         return 0;
     }
 
-    internal void DrawFrostScreen(int x, int y, int id)
+    internal void DrawFrostScreen(fixed x, fixed y, int id)
     {
         // The values at which the graphics are going to be displayed.
         static int frostGraphicValues[4] = {
@@ -1441,7 +1443,7 @@ strict namespace
 
     internal bool GetPlayerIsCold(int id)
     {
-        return CheckActorInventory(Identity::GetTid(id), TEMPERATURE_ISCOLD_ITEM);
+        return CheckActorInventory(Identity::GetTid(id), TEMPERATURE_ISCOLD_ITEM) > 0;
     }
 
     internal void SetIsCold(bool value)
@@ -1451,7 +1453,7 @@ strict namespace
 
     internal void SetPlayerIsCold(int id, bool value)
     {
-        BCSUtils::SetActorInventory(Identity::GetTid(id), TEMPERATURE_ISCOLD_ITEM, value);
+        BCSUtils::SetActorInventory(Identity::GetTid(id), TEMPERATURE_ISCOLD_ITEM, (int)value);
     }
 
     /*

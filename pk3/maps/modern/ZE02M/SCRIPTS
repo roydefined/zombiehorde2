@@ -41,7 +41,7 @@ strict namespace
         if(ConsolePlayerNumber() != PlayerNumber())
             terminate;
 
-        int side = LineSide() == LINE_FRONT;
+        bool side = LineSide() == LINE_FRONT;
         if (side)
             Weather::StartEmitterWeather(Weather::EMITTERWEATHER_SPARK);
         else
@@ -55,8 +55,7 @@ strict namespace
         if(ConsolePlayerNumber() != PlayerNumber())
             terminate;
 
-        int side = LineSide() == LINE_FRONT;
-        if (side)
+        if (LineSide() == LINE_FRONT)
             Weather::SetEmitterWeatherSpawnCount(Weather::EMITTERWEATHER_SPARK, 25);
         else
             Weather::SetEmitterWeatherSpawnCount(Weather::EMITTERWEATHER_SPARK, 6);
@@ -108,7 +107,7 @@ strict namespace
 
             int tid = Identity::GetTid(i);
             Thing_Damage(tid, 20, MOD_CRUSH);
-            ThrustThing(192, 10, false, tid);
+            ThrustThing(192, 10, 0, tid);
         }
 
         Delay(35*2);
@@ -183,14 +182,14 @@ strict namespace
         delay(35);
 
         // Push anybody trying to block the doors.
-        for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
             if (!PlayerInGame(i) || !_inSafezoneDoors[i])
                 continue;
 
             int tid = Identity::GetTid(i);
             Thing_Damage(tid, 20, MOD_CRUSH);
-            ThrustThing(192, 10, false, tid);
+            ThrustThing(192, 10, 0, tid);
         }
 
         // Failsafe, ensure nobody can get out if they attempt to exit while the polyobjects might still be closing.

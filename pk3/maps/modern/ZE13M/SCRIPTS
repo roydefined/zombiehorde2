@@ -61,7 +61,7 @@ strict namespace
 
     // All the possible things that can be bought from the shop guy
     // { item name, decorate name, gold needed }
-    internal int _shopGuyStuff[5][3] =
+    internal raw _shopGuyStuff[5][3] =
     {
         { "jacks gun", WEAPON_JACKSGUN_SPAWN_NAME, 100 },
         { "double barrel shotgun", WEAPON_DOUBLESHOTGUN_SPAWN_NAME, 100 },
@@ -218,7 +218,7 @@ strict namespace
     script "OpenCastleDoors"
     {
         // Height check to avoid players from pressing the switch at the ground floor.
-        if(GetActorZ(0) < 592)
+        if(GetActorZ(0) < 592.0)
             terminate;
 
         ClearLineSpecial();
@@ -416,15 +416,15 @@ strict namespace
         int iconId = KEYDISPLAYID,
             textId = KEYDISPLAYID + 1;
 
-        int iconX = KEYICONDISPLAYX,
-            iconY = KEYICONDISPLAYY,
-            textX = KEYTEXTDISPLAYX + 0.1,
-            textY = KEYTEXTDISPLAYY;
+        fixed iconX = KEYICONDISPLAYX,
+              iconY = KEYICONDISPLAYY,
+              textX = KEYTEXTDISPLAYX + 0.1,
+              textY = KEYTEXTDISPLAYY;
 
         SetHudSize(640, 480, false);
 
         SetFont("MAPCK01I");
-        HudMessage(s:"a"; HUDMSG_FADEINOUT, KEYDISPLAYID, CR_UNTRANSLATED, iconX, iconY, 5.0, 1.0, 0);
+        HudMessage(s:"a"; HUDMSG_FADEINOUT, KEYDISPLAYID, CR_UNTRANSLATED, iconX, iconY, 5.0, 1.0, 0.0);
 
         SetFont("smallfont");
         HudMessage(s:"\cgBlood Ruby"; HUDMSG_TYPEON, KEYDISPLAYID + 1, CR_WHITE, textX, textY, 4.0, 0.05, 0.5);
@@ -445,7 +445,7 @@ strict namespace
             }
             else
             {
-                message = BCSUtils::cond(CheckInventory(KEY_BLOODRUBY_NAME), "Acquired!", "Acquirable");
+                message = BCSUtils::cond(CheckInventory(KEY_BLOODRUBY_NAME) > 0, "Acquired!", "Acquirable");
             }
 
             SetFont("MAPCK01I");
@@ -468,15 +468,15 @@ strict namespace
         int iconId = KEYDISPLAYID + 2,
             textId = KEYDISPLAYID + 3;
 
-        int iconX = KEYICONDISPLAYX,
-            iconY = KEYICONDISPLAYY + KEYYOFFSET,
-            textX = KEYTEXTDISPLAYX + 0.1,
-            textY = KEYTEXTDISPLAYY + KEYYOFFSET;
+        fixed iconX = KEYICONDISPLAYX,
+              iconY = KEYICONDISPLAYY + KEYYOFFSET,
+              textX = KEYTEXTDISPLAYX + 0.1,
+              textY = KEYTEXTDISPLAYY + KEYYOFFSET;
 
         SetHudSize(640, 480, false);
 
         SetFont("MAPCK02I");
-        HudMessage(s:"a"; HUDMSG_FADEINOUT, iconId, CR_UNTRANSLATED, iconX, iconY, 5.0, 1.0, 0);
+        HudMessage(s:"a"; HUDMSG_FADEINOUT, iconId, CR_UNTRANSLATED, iconX, iconY, 5.0, 1.0, 0.0);
 
         SetFont("smallfont");
         HudMessage(s:"\chNight Sapphire"; HUDMSG_TYPEON, textId, CR_WHITE, textX, textY, 3.75, 0.05, 0.5);
@@ -497,7 +497,7 @@ strict namespace
             }
             else
             {
-                message = BCSUtils::cond(CheckInventory(KEY_NIGHTSAPPHIRE_NAME), "Acquired!", "Acquirable");
+                message = BCSUtils::cond(CheckInventory(KEY_NIGHTSAPPHIRE_NAME) > 0, "Acquired!", "Acquirable");
             }
 
             SetFont("MAPCK02I");
@@ -612,7 +612,9 @@ strict namespace
     script "DeathQuake" (void)
     {
         FadeTo(0, 0, 0, 1.0, 4.0);
-        for (int i = 1; i < 4; i++)
+
+        int i;
+        for (i = 1; i < 4; i++)
         {
             Radius_Quake2(ActivatorTID(), i, 35, 0, 1, "");
             delay(35);

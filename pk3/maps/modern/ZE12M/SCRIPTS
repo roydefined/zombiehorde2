@@ -169,7 +169,7 @@ strict namespace
 
         delay(18);
 
-        int stayTime = _gameType == GAMETYPE_LINEAR ? 3.75 : 5.75;
+        fixed stayTime = _gameType == GAMETYPE_LINEAR ? 3.75 : 5.75;
 
         SetHudSize(640, 480, FALSE);
         SetFont("smallfont");
@@ -205,7 +205,7 @@ strict namespace
     internal void ActivateBeacon(int index)
     {
         int tag = _pillarTids[index];
-        TranslucentLine(tag, 128, true);
+        TranslucentLine(tag, 128, 1);
 
         // Call directly to the client offline.
         if (!IsNetworkGame())
@@ -326,14 +326,14 @@ strict namespace
 
     function int GetPillarsDoneCount(void)
     {
-        return _pillarDone[0] + _pillarDone[1] + _pillarDone[2] + _pillarDone[3];
+        return (int)_pillarDone[0] + (int)_pillarDone[1] + (int)_pillarDone[2] + (int)_pillarDone[3];
     }
 
     Script "FinalResist" (void)
     {
         SetActivator(-1);
 
-        int y = 40.0;
+        fixed y = 40.0;
 
         SetHudSize(640, 480, FALSE);
         SetFont("BIGFONT");
@@ -371,7 +371,8 @@ strict namespace
     script "DeathQuake"
     {
         FadeTo(0, 0, 0, 1.0, 4.0);
-        for (int i = 1; i < 4; i++)
+        int i;
+        for (i = 1; i < 4; i++)
         {
             Radius_Quake2(ActivatorTID(), i, 35, 0, 1, "");
             delay(35);
@@ -795,7 +796,7 @@ strict namespace
         if (!IsNetworkGame())
             return;
 
-        int value = BCSUtils::PackBytes(_pillarDone[0], _pillarDone[1], _pillarDone[2], _pillarDone[3]);
+        int value = BCSUtils::PackBytes((int)_pillarDone[0], (int)_pillarDone[1], (int)_pillarDone[2], (int)_pillarDone[3]);
         BCSUtils::SyncVariable(SYNC_PILLARSTATE, value);
 
         ACS_NamedExecuteAlways("SyncActivePillars_Client", 0);
@@ -815,10 +816,10 @@ strict namespace
             return;
 
         int value = BCSUtils::GetSyncVarDefault(SYNC_PILLARSTATE, 0);
-        _pillarDone[0] = BCSUtils::UnpackByte1(value);
-        _pillarDone[1] = BCSUtils::UnpackByte2(value);
-        _pillarDone[2] = BCSUtils::UnpackByte3(value);
-        _pillarDone[3] = BCSUtils::UnpackByte4(value);
+        _pillarDone[0] = (bool)BCSUtils::UnpackByte1(value);
+        _pillarDone[1] = (bool)BCSUtils::UnpackByte2(value);
+        _pillarDone[2] = (bool)BCSUtils::UnpackByte3(value);
+        _pillarDone[3] = (bool)BCSUtils::UnpackByte4(value);
 
         if (_pillarDone[0])
             ActivateBeaconClient(0);
@@ -832,7 +833,7 @@ strict namespace
         if (_pillarDone[3])
             ActivateBeaconClient(3);
 
-        Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced active pillars to client: ", d:_pillarDone[0], s:", ", d:_pillarDone[1], s:", ", d:_pillarDone[2], s:", ", d:_pillarDone[3], s:"."));
+        Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced active pillars to client: ", d:(int)_pillarDone[0], s:", ", d:(int)_pillarDone[1], s:", ", d:(int)_pillarDone[2], s:", ", d:(int)_pillarDone[3], s:"."));
     }
 
     #undef LOGSOURCE

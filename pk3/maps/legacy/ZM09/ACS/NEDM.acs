@@ -4,10 +4,10 @@ bool nedm_digit_lock=false;
 int nedm_code=0;
 
 int mcdonald=0;
-int pos_z_nedm;
+fixed pos_z_nedm;
 script 29 (int input){//Nedm Script: Switch counter to allow nedm
     bool script_lock=false;
-    
+
     pos_z_nedm=getactorz(PlayerNumber()+600);
     if(input==6){
         if(pos_z_nedm<140.0){
@@ -97,19 +97,19 @@ script 29 (int input){//Nedm Script: Switch counter to allow nedm
 }
 
 
-        
-int nedm_desactive=false;
+
+bool nedm_desactive=false;
 
 script 30 (void) clientside{//NEDM code spam
     int counter=0;
-    int posy=-3.0;
+    fixed posy= -3.0;
     while(posy<=0.05){
         SetFont("NEDML");
-        if(nedm_desactive==false)HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, 0.5, posy,0.1,0, 0.3);
+        if(nedm_desactive==false)HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, 0.5, posy,0.1,0.0, 0.3);
         posy+=0.01;
         delay(1);
     }SetFont("NEDML");
-    if(nedm_desactive==false)HudMessagebold(s:"A"; HUDMSG_PLAIN , 800, counter, 0.5, posy,1.5,0, 0);
+    if(nedm_desactive==false)HudMessagebold(s:"A"; HUDMSG_PLAIN , 800, counter, 0.5, posy,1.5,0.0, 0.0);
     Music_Played=NEDM_MUSIC;
     if(nedm_desactive==false)play_zm09_music();
     delay(35);
@@ -120,46 +120,61 @@ script 30 (void) clientside{//NEDM code spam
     while(true){
         if(nedm_desactive==false){
             SetFont("NEDML");
-            HudMessagebold(s:"A"; HUDMSG_PLAIN , 800, counter, 0.5+random(random(-0.1,0),random(0,0.1)), posy+random(-0.05,0.05),0.1,0, 0);
+            HudMessagebold(s:"A"; HUDMSG_PLAIN , 800, counter, 0.5 + Math::FRandom(Math::FRandom(-0.1,0.0), Math::FRandom(0.0,0.1)), posy + Math::FRandom(-0.05,0.05),0.1,0.0, 0.0);
         }delay(1);
     }
 }
 
 script 31 (void) clientside{//Nedm Code:Cat see
-    int posx1=0.1;
-    int posx2=0.9;
-    int posy=0.9;
-    while(true){
-        while(posy>=0.1){
-            if(nedm_desactive==false){
+    fixed posx1=0.1;
+    fixed posx2=0.9;
+    fixed posy=0.9;
+    while(true)
+    {
+        while(posy>=0.1)
+        {
+            if(nedm_desactive==false)
+            {
                 SetFont("NEDMCAT");
-                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx1+sin(posy), posy,0.1,0, 0.2);
-                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx2-sin(posy), posy,0.1,0, 0.2);
+                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx1+sin(posy), posy,0.1,0.0, 0.2);
+                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx2-sin(posy), posy,0.1,0.0, 0.2);
             }
-            posy-=0.010;   
+            posy-=0.010;
             delay(3);
-        }while(posx1<=0.9){
-            if(nedm_desactive==false){
+        }
+
+        while(posx1<=0.9)
+        {
+            if(nedm_desactive==false)
+            {
                 SetFont("NEDMCAT");
-                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx1, posy+sin(posx1),0.1,0, 0.2);
-                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx2, posy-sin(posx2),0.1,0, 0.2);
+                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx1, posy+sin(posx1),0.1,0.0, 0.2);
+                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx2, posy-sin(posx2),0.1,0.0, 0.2);
             }
             posx2=1.0-posx1;
             posx1+=0.010;
             delay(3);
-        }while(posy<=0.9){
-            if(nedm_desactive==false){
+        }
+
+        while(posy<=0.9)
+        {
+            if(nedm_desactive==false)
+            {
                 SetFont("NEDMCAT");
-                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx1+sin(posy), posy,0.1,0, 0.2);
-                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx2-sin(posy), posy,0.1,0, 0.2);
+                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx1+sin(posy), posy,0.1,0.0, 0.2);
+                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx2-sin(posy), posy,0.1,0.0, 0.2);
             }
             posy+=0.010;
             delay(3);
-        }while(posx1>=0.1){
-            if(nedm_desactive==false){
+        }
+
+        while(posx1>=0.1)
+        {
+            if(nedm_desactive==false)
+            {
                 SetFont("NEDMCAT");
-                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx1, posy+sin(posx1),0.1,0, 0.2);
-                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx2, posy-sin(posx2),0.1,0, 0.2);
+                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx1, posy+sin(posx1),0.1,0.0, 0.2);
+                HudMessagebold(s:"A"; HUDMSG_FADEINOUT, 0, CR_UNTRANSLATED, posx2, posy-sin(posx2),0.1,0.0, 0.2);
             }
             posx2=1.0-posx1;
             posx1-=0.010;
@@ -223,4 +238,4 @@ script 33 (int light, int var) clientside{//Nedm colored lights
             delay(3);
         }
     }
-}  
+}

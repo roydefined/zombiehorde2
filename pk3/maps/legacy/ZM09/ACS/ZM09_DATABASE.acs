@@ -1,50 +1,50 @@
 //ZM09 Database
 
-script 23 (int type, int arg1, int arg2) clientside{//Update the clientside from who called the debug command
+script 23 (raw type, raw arg1, raw arg2) clientside{//Update the clientside from who called the debug command
     if(type==1){
-        user_ghoulactivesound=arg1; 
+        user_ghoulactivesound=arg1;
         user_invisible=arg2;
     }else if(type==2){
-        script_test=arg1; 
+        script_test=arg1;
         ghoul_invtest=arg2;
     }else if(type==3){
-        stuck_test=arg1;   
+        stuck_test=arg1;
         script_test=arg2;
     }else if(type==4){
-        ghoul_hate=arg1;   
+        ghoul_hate=arg1;
         sound_toplay=arg2;
     }else if(type==5){
-        ghoul_target=arg1; 
+        ghoul_target=arg1;
         monster_target_distance=arg2;
     }else if(type==6){
-        soulsphere_damage=arg1;    
+        soulsphere_damage=arg1;
         generator1=arg2;
     }else if(type==7){
-        generator2=arg1; 
+        generator2=arg1;
         zm09_dev2=arg2;
     }else if(type==8){
         zm09_weather=arg1;
-        debug_zm09=arg2;       
+        debug_zm09=arg2;
     }
 }
 
 script 26 open{//Update server side functions to clientside
     while(true){
-        acs_execute(23,0,1,user_ghoulactivesound,user_invisible);
+        acs_execute(23,0,1, user_ghoulactivesound, (raw)user_invisible);
         delay(1);
-        acs_execute(23,0,2,script_test,ghoul_invtest);
+        acs_execute(23,0,2, script_test, (raw)ghoul_invtest);
         delay(1);
-        acs_execute(23,0,3,stuck_test,script_test);
+        acs_execute(23,0,3, stuck_test, script_test);
         delay(1);
-        acs_execute(23,0,4,ghoul_hate,sound_toplay);
+        acs_execute(23,0,4, ghoul_hate, sound_toplay);
         delay(1);
-        acs_execute(23,0,5,ghoul_target,monster_target_distance);
+        acs_execute(23,0,5, ghoul_target, (raw)monster_target_distance);
         delay(1);
-        acs_execute(23,0,6,soulsphere_damage,generator1);
+        acs_execute(23,0,6, (raw)soulsphere_damage, (raw)generator1);
         delay(1);
-        acs_execute(23,0,7,generator2,zm09_dev2);
+        acs_execute(23,0,7, (raw)generator2, zm09_dev2);
         delay(1);
-        acs_execute(23,0,8,zm09_weather,ibm_distance(100,ghoul_target));
+        acs_execute(23,0,8, zm09_weather, (raw)ibm_distance(100, ghoul_target));
         delay(10);
     }
 }
@@ -148,7 +148,7 @@ script 66 (int action,int data1,int data2) CLIENTSIDE{//update clientside statis
         setcvar("x_zh_zm09_100",data1);
         setcvar("x_zh_zm09_zp",data2);
     break;
-    
+
 
     }
 }
@@ -188,76 +188,76 @@ script "internal_statistics" (void) NET clientside{//show statistics
         x_zh_zm09_100=getcvar("x_zh_zm09_100");
         x_zh_zm09_zp=getcvar("x_zh_zm09_zp");
         SetFont("BIGFONT");
-        HudMessageBold(s:"ZM09 STATISTICS, update your information through legacy map options"; HUDMSG_FADEOUT, 500, CR_GREEN, 0, 0.18, 5.5, 0);
+        HudMessageBold(s:"ZM09 STATISTICS, update your information through legacy map options"; HUDMSG_FADEOUT, 500, CR_GREEN, 0.0, 0.18, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cdHow many times people played this map:",d:x_zh_zm09_cn; HUDMSG_FADEOUT, 501, CR_RED, 0, 0.20, 5.5, 0);
+        HudMessageBold(s:"\cdHow many times people played this map:",d:x_zh_zm09_cn; HUDMSG_FADEOUT, 501, CR_RED, 0.0, 0.20, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cdHow many players played this map:",d:x_zh_zm09_to, s:" (",d:divide(x_zh_zm09_to,x_zh_zm09_cn),s:" players per time)"; HUDMSG_FADEOUT, 502, CR_RED, 0, 0.22, 5.5, 0);
+        HudMessageBold(s:"\cdHow many players played this map:",d:x_zh_zm09_to, s:" (",d:divide(x_zh_zm09_to,x_zh_zm09_cn),s:" players per time)"; HUDMSG_FADEOUT, 502, CR_RED, 0.0, 0.22, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cdHow many players disconnected in this map:",d:x_zh_zm09_di,s:" (",d:divide(x_zh_zm09_di*100,x_zh_zm09_to),s:"% of all players, ",d:divide(x_zh_zm09_di,x_zh_zm09_cn),s:" players by map) "; HUDMSG_FADEOUT, 503, CR_RED, 0, 0.24, 5.5, 0);
+        HudMessageBold(s:"\cdHow many players disconnected in this map:",d:x_zh_zm09_di,s:" (",d:divide(x_zh_zm09_di*100,x_zh_zm09_to),s:"% of all players, ",d:divide(x_zh_zm09_di,x_zh_zm09_cn),s:" players by map) "; HUDMSG_FADEOUT, 503, CR_RED, 0.0, 0.24, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cfHow many times white face appeared in this map:",d:x_zh_zm09_wf,s:" (",d:divide(x_zh_zm09_wf*100,x_zh_zm09_cn),s:"%)"; HUDMSG_FADEOUT, 504, CR_RED, 0, 0.26, 5.5, 0);
+        HudMessageBold(s:"\cfHow many times white face appeared in this map:",d:x_zh_zm09_wf,s:" (",d:divide(x_zh_zm09_wf*100,x_zh_zm09_cn),s:"%)"; HUDMSG_FADEOUT, 504, CR_RED, 0.0, 0.26, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cfHow many times ravishing appeared in this map:",d:x_zh_zm09_ra,s:" (",d:divide(x_zh_zm09_ra*100,x_zh_zm09_cn),s:"%)"; HUDMSG_FADEOUT, 505, CR_RED, 0, 0.28, 5.5, 0);
+        HudMessageBold(s:"\cfHow many times ravishing appeared in this map:",d:x_zh_zm09_ra,s:" (",d:divide(x_zh_zm09_ra*100,x_zh_zm09_cn),s:"%)"; HUDMSG_FADEOUT, 505, CR_RED, 0.0, 0.28, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cfHow many times soul sphere appeared in this map:",d:x_zh_zm09_sf,s:" (",d:divide(x_zh_zm09_sf*100,x_zh_zm09_cn),s:"%)"; HUDMSG_FADEOUT, 506, CR_RED, 0, 0.30, 5.5, 0);
+        HudMessageBold(s:"\cfHow many times soul sphere appeared in this map:",d:x_zh_zm09_sf,s:" (",d:divide(x_zh_zm09_sf*100,x_zh_zm09_cn),s:"%)"; HUDMSG_FADEOUT, 506, CR_RED, 0.0, 0.30, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cfHow many times there was no ghouls in this map:",d:x_zh_zm09_cn-x_zh_zm09_wf-x_zh_zm09_ra-x_zh_zm09_sf,s:" (",d:100-divide((x_zh_zm09_wf+x_zh_zm09_ra+x_zh_zm09_sf)*100,x_zh_zm09_cn),s:"%)"; HUDMSG_FADEOUT, 514, CR_RED, 0, 0.32, 5.5, 0);
+        HudMessageBold(s:"\cfHow many times there was no ghouls in this map:",d:x_zh_zm09_cn-x_zh_zm09_wf-x_zh_zm09_ra-x_zh_zm09_sf,s:" (",d:100-divide((x_zh_zm09_wf+x_zh_zm09_ra+x_zh_zm09_sf)*100,x_zh_zm09_cn),s:"%)"; HUDMSG_FADEOUT, 514, CR_RED, 0.0, 0.32, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cgHow many kills did white face in this map:",d:x_zh_zm09_wk,s:" (",d:divide(x_zh_zm09_wk*100,x_zh_zm09_wk+x_zh_zm09_rk+x_zh_zm09_sk),s:"%)"; HUDMSG_FADEOUT, 507, CR_RED, 0, 0.34, 5.5, 0);
+        HudMessageBold(s:"\cgHow many kills did white face in this map:",d:x_zh_zm09_wk,s:" (",d:divide(x_zh_zm09_wk*100,x_zh_zm09_wk+x_zh_zm09_rk+x_zh_zm09_sk),s:"%)"; HUDMSG_FADEOUT, 507, CR_RED, 0.0, 0.34, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cgHow many kills did Ravishing in this map:",d:x_zh_zm09_rk,s:" (",d:divide(x_zh_zm09_rk*100,x_zh_zm09_wk+x_zh_zm09_rk+x_zh_zm09_sk),s:"%)"; HUDMSG_FADEOUT, 508, CR_RED, 0, 0.36, 5.5, 0);
+        HudMessageBold(s:"\cgHow many kills did Ravishing in this map:",d:x_zh_zm09_rk,s:" (",d:divide(x_zh_zm09_rk*100,x_zh_zm09_wk+x_zh_zm09_rk+x_zh_zm09_sk),s:"%)"; HUDMSG_FADEOUT, 508, CR_RED, 0.0, 0.36, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cgHow many kills did Soul Sphere in this map:",d:x_zh_zm09_sk,s:" (",d:divide(x_zh_zm09_sk*100,x_zh_zm09_wk+x_zh_zm09_rk+x_zh_zm09_sk),s:"%)"; HUDMSG_FADEOUT, 509, CR_RED, 0, 0.38, 5.5, 0);
+        HudMessageBold(s:"\cgHow many kills did Soul Sphere in this map:",d:x_zh_zm09_sk,s:" (",d:divide(x_zh_zm09_sk*100,x_zh_zm09_wk+x_zh_zm09_rk+x_zh_zm09_sk),s:"%)"; HUDMSG_FADEOUT, 509, CR_RED, 0.0, 0.38, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cjHow many times the code typed was 0% correct:",d:x_zh_zm09_0,s:" (compared to other codes:",d:divide(x_zh_zm09_0*100,x_zh_zm09_0+x_zh_zm09_25+x_zh_zm09_50+x_zh_zm09_100),s:"%, ",d:divide(x_zh_zm09_0*100,x_zh_zm09_cn),s:"%of change to happen per round)"; HUDMSG_FADEOUT, 510, CR_RED, 0, 0.40, 5.5, 0);
+        HudMessageBold(s:"\cjHow many times the code typed was 0% correct:",d:x_zh_zm09_0,s:" (compared to other codes:",d:divide(x_zh_zm09_0*100,x_zh_zm09_0+x_zh_zm09_25+x_zh_zm09_50+x_zh_zm09_100),s:"%, ",d:divide(x_zh_zm09_0*100,x_zh_zm09_cn),s:"%of change to happen per round)"; HUDMSG_FADEOUT, 510, CR_RED, 0.0, 0.40, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cjHow many times the code typed was 25% correct:",d:x_zh_zm09_25,s:" (compared to other codes:",d:divide(x_zh_zm09_25*100,x_zh_zm09_0+x_zh_zm09_25+x_zh_zm09_50+x_zh_zm09_100),s:"%, ",d:divide(x_zh_zm09_25*100,x_zh_zm09_cn),s:"%of change to happen per round)"; HUDMSG_FADEOUT, 511, CR_RED, 0, 0.42, 5.5, 0);
+        HudMessageBold(s:"\cjHow many times the code typed was 25% correct:",d:x_zh_zm09_25,s:" (compared to other codes:",d:divide(x_zh_zm09_25*100,x_zh_zm09_0+x_zh_zm09_25+x_zh_zm09_50+x_zh_zm09_100),s:"%, ",d:divide(x_zh_zm09_25*100,x_zh_zm09_cn),s:"%of change to happen per round)"; HUDMSG_FADEOUT, 511, CR_RED, 0.0, 0.42, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cjHow many times the code typed was 50% correct:",d:x_zh_zm09_50,s:" (compared to other codes:",d:divide(x_zh_zm09_50*100,x_zh_zm09_0+x_zh_zm09_25+x_zh_zm09_50+x_zh_zm09_100),s:"%, ",d:divide(x_zh_zm09_50*100,x_zh_zm09_cn),s:"%of change to happen per round)"; HUDMSG_FADEOUT, 512, CR_RED, 0, 0.44, 5.5, 0);
+        HudMessageBold(s:"\cjHow many times the code typed was 50% correct:",d:x_zh_zm09_50,s:" (compared to other codes:",d:divide(x_zh_zm09_50*100,x_zh_zm09_0+x_zh_zm09_25+x_zh_zm09_50+x_zh_zm09_100),s:"%, ",d:divide(x_zh_zm09_50*100,x_zh_zm09_cn),s:"%of change to happen per round)"; HUDMSG_FADEOUT, 512, CR_RED, 0.0, 0.44, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cjHow many times the code typed was 100% correct:",d:x_zh_zm09_100,s:" (compared to other codes:",d:divide(x_zh_zm09_100*100,x_zh_zm09_0+x_zh_zm09_25+x_zh_zm09_50+x_zh_zm09_100),s:"%, ",d:divide(x_zh_zm09_100*100,x_zh_zm09_cn),s:"%of change to happen per round)"; HUDMSG_FADEOUT, 513, CR_RED, 0, 0.46, 5.5, 0);
+        HudMessageBold(s:"\cjHow many times the code typed was 100% correct:",d:x_zh_zm09_100,s:" (compared to other codes:",d:divide(x_zh_zm09_100*100,x_zh_zm09_0+x_zh_zm09_25+x_zh_zm09_50+x_zh_zm09_100),s:"%, ",d:divide(x_zh_zm09_100*100,x_zh_zm09_cn),s:"%of change to happen per round)"; HUDMSG_FADEOUT, 513, CR_RED, 0.0, 0.46, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cjHow many times the code  was used:",d:x_zh_zm09_100+x_zh_zm09_50+x_zh_zm09_25+x_zh_zm09_0,s:" (",d:divide(x_zh_zm09_100+x_zh_zm09_50+x_zh_zm09_25+x_zh_zm09_0*100,x_zh_zm09_cn),s:"%)"; HUDMSG_FADEOUT, 515, CR_RED, 0, 0.48, 5.5, 0);
+        HudMessageBold(s:"\cjHow many times the code  was used:",d:x_zh_zm09_100+x_zh_zm09_50+x_zh_zm09_25+x_zh_zm09_0,s:" (",d:divide(x_zh_zm09_100+x_zh_zm09_50+x_zh_zm09_25+x_zh_zm09_0*100,x_zh_zm09_cn),s:"%)"; HUDMSG_FADEOUT, 515, CR_RED, 0.0, 0.48, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:"\cj How many times the zombies got overpowered itens:",d:x_zh_zm09_zp,s:" (chance to happen on this map:",d:divide(x_zh_zm09_zp*100,x_zh_zm09_cn),s:"%)"; HUDMSG_FADEOUT, 516, CR_RED, 0, 0.5, 5.5, 0);
+        HudMessageBold(s:"\cj How many times the zombies got overpowered itens:",d:x_zh_zm09_zp,s:" (chance to happen on this map:",d:divide(x_zh_zm09_zp*100,x_zh_zm09_cn),s:"%)"; HUDMSG_FADEOUT, 516, CR_RED, 0.0, 0.5, 5.5, 0.0);
 
         delay(1);
     }
         SetFont("BIGFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 500, CR_GREEN, 0, 0.2, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 500, CR_GREEN, 0.0, 0.2, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 501, CR_RED, 0.3, 0.22, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 501, CR_RED, 0.3, 0.22, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 502, CR_RED, 0.3, 0.22, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 502, CR_RED, 0.3, 0.22, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 503, CR_RED, 0.3, 0.24, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 503, CR_RED, 0.3, 0.24, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 504, CR_RED, 0.3, 0.26, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 504, CR_RED, 0.3, 0.26, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 505, CR_RED, 0.3, 0.28, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 505, CR_RED, 0.3, 0.28, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 506, CR_RED, 0.3, 0.30, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 506, CR_RED, 0.3, 0.30, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 507, CR_RED, 0.3, 0.32, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 507, CR_RED, 0.3, 0.32, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 508, CR_RED, 0.3, 0.34, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 508, CR_RED, 0.3, 0.34, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 509, CR_RED, 0.3, 0.36, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 509, CR_RED, 0.3, 0.36, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 510, CR_RED, 0.3, 0.38, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 510, CR_RED, 0.3, 0.38, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 511, CR_RED, 0.3, 0.40, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 511, CR_RED, 0.3, 0.40, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 512, CR_RED, 0.3, 0.42, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 512, CR_RED, 0.3, 0.42, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 513, CR_RED, 0.3, 0.44, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 513, CR_RED, 0.3, 0.44, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 514, CR_RED, 0.3, 0.44, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 514, CR_RED, 0.3, 0.44, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 515, CR_RED, 0.3, 0.44, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 515, CR_RED, 0.3, 0.44, 5.5, 0.0);
         SetFont("SMALLFONT");
-        HudMessageBold(s:""; HUDMSG_FADEOUT, 516, CR_RED, 0.3, 0.44, 5.5, 0);
+        HudMessageBold(s:""; HUDMSG_FADEOUT, 516, CR_RED, 0.3, 0.44, 5.5, 0.0);
 
 }
 
@@ -287,8 +287,8 @@ int input=GetCvar("x_zh_zm09");
         i=i*10;//220
         j=input/100;//222
         i=j-i;//222-220=2
-        if(i<2 || i>3) rain_sound=0;
-        else rain_sound=i-2;
+        if(i<2 || i>3) rain_sound=false;
+        else rain_sound=bool(i-2);
         //22260
         i=input/10000;//2
         i=i*10;//20
@@ -299,25 +299,25 @@ int input=GetCvar("x_zh_zm09");
         i=input/10000;//2
         if(i==1)music_quality=false;
         else music_quality=true;
-		
+
 		//Adapt the old menu values to the new menu
 		//Funcion adapts the old save data to the new menu system
 		men_selected[0]=weather_quality+1;
-		if(rain_sound==1)
-			men_selected[1]=false;
+		if(rain_sound)
+			men_selected[1]=0;
 		else
-			men_selected[1]=true;
+			men_selected[1]=1;
 		men_selected[2]=rain_detail+1;
-		if(nedm_desactive==1)
+		if(nedm_desactive)
 			men_selected[3]=0;
 		else
 			men_selected[3]=1;
-		if(reflection_actived==1)
+		if(reflection_actived)
 			men_selected[4]=0;
 		else
 			men_selected[4]=1;
     }
-    if(reflection_actived==true){
+    if(reflection_actived){
         Sector_SetPlaneReflection (153, 44, 0);
         Sector_SetPlaneReflection (149, 66, 0);
         Sector_SetPlaneReflection (3, 44, 0);

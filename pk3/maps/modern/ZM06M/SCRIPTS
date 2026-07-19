@@ -106,8 +106,8 @@ strict namespace
     // We track the number spawned, and how many are left.
     // The one for the number left is used to determine when the event ends, but we also need to make sure they all spawned.
     #define ANGEL_SPAWNS_MAX 5
-    internal bool _angelsSpawned;
-    internal bool _angelsLeft = ANGEL_SPAWNS_MAX;
+    internal int _angelsSpawned;
+    internal int _angelsLeft = ANGEL_SPAWNS_MAX;
 
     // Spider context
     // Track total spider kills to reward players.
@@ -484,7 +484,7 @@ strict namespace
             fixed spawnY = y + offsetY;
             fixed spawnZ = z + Math::FRandom(UBOA_DIED_ITEM_SPAWN_HEIGHT_MIN, UBOA_DIED_ITEM_SPAWN_HEIGHT_MAX);
 
-            SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
+            SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, int(angle * 255.0));
             Delay(const: UBOA_DIED_ITEM_SPAWN_DELAY);
         }
     }
@@ -548,7 +548,7 @@ strict namespace
             fixed spawnY = y + offsetY;
             fixed spawnZ = z + Math::FRandom(ANGEL_DIED_ITEM_SPAWN_HEIGHT_MIN, ANGEL_DIED_ITEM_SPAWN_HEIGHT_MAX);
 
-            SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
+            SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, int(angle * 255.0));
         }
 
         SpawnLoot(WEAPON_JACKSGUN_AMMODOUBLE_NAME);
@@ -594,7 +594,7 @@ strict namespace
         fixed spawnY = y + offsetY;
         fixed spawnZ = z + Math::FRandom(SPIDER_DIED_ITEM_SPAWN_HEIGHT_MIN, SPIDER_DIED_ITEM_SPAWN_HEIGHT_MAX);
 
-        SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
+        SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, int(angle * 255.0));
     }
 
     // guitar riff
@@ -772,7 +772,7 @@ strict namespace
         SetHudSize(320, 240, false);
 
         for (int i = 0; i < StrLen(message); ++i)
-            hudmessageBold(c:GetChar(message, i); HUDMSG_PLAIN, HUDID_DISCO + i,  random(1, 20), 70.0 + (20.0 * i), random(20.0, 22.0), 1.0);
+            hudmessageBold(c:GetChar(message, i); HUDMSG_PLAIN, HUDID_DISCO + i,  random(1, 20), 70.0 + fixed(20 * i), Math::FRandom(20.0, 22.0), 1.0);
     }
 
     function void DrawDiscoMessage (void)
@@ -787,7 +787,7 @@ strict namespace
 
         setFont("smallfont");
         SetHudSize(320, 240, false);
-        HudMessage(s:discoMessages[random(0,4)]; HUDMSG_FADEOUT, 0, random(1, 20), random(100.0, 200.0), random(50.0, 150.0), 0, 1.0);
+        HudMessage(s:discoMessages[random(0,4)]; HUDMSG_FADEOUT, 0, random(1, 20), Math::FRandom(100.0, 200.0), Math::FRandom(50.0, 150.0), 0.0, 1.0);
     }
 
     script "Event_Disco" (void)
@@ -885,8 +885,8 @@ strict namespace
 
         SpawnSpot("ZH2Uboa", 80, TAG_UBOA);
 
-        FadeTo(0, 0, 0, 1.0, 0);
-        FadeTo(0, 0, 0, 0, 1.0);
+        FadeTo(0, 0, 0, 1.0, 0.0);
+        FadeTo(0, 0, 0, 0.0, 1.0);
 
         // Replace hospital textures
         SetActorState(TAG_MAPSPOTCEILINGLAMP, "inactive");
@@ -922,7 +922,7 @@ strict namespace
         // Should not matter, just done in case scripts are being puked manually.
         SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
 
-        Music::SetDefaultMusic(BCSUtils::cond(Random(0, 1), "FUCKED", "FUCKED2"));
+        Music::SetDefaultMusic(BCSUtils::cond((bool)Random(0, 1), "FUCKED", "FUCKED2"));
         Music::PlayDefaultMusic();
 
         int startTimestamp = Timer();
@@ -949,7 +949,7 @@ strict namespace
         SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
 
         // Can't really revert back to the defaults so just assume 128
-        for (i = 0; i < lengthof(_roomTags); ++i)
+        for (int i = 0; i < lengthof(_roomTags); ++i)
         {
             Light_Fade(_roomTags[i], 128, 35 * 10);
         }
@@ -972,8 +972,8 @@ strict namespace
         SetEventState(EVENTSTATE_NIGHTMARE);
         ACS_NamedExecuteAlways("Event_Nightmare_Client", 0);
 
-        FadeTo(0, 0, 0, 1.0, 0);
-        FadeTo(0, 0, 0, 0, 1.0);
+        FadeTo(0, 0, 0, 1.0, 0.0);
+        FadeTo(0, 0, 0, 0.0, 1.0);
 
         // Turns on sounds
         Thing_Activate(83);
@@ -1195,7 +1195,7 @@ strict namespace
 
         Setfont("smallfont");
         HudMessageBold(n:0, s:" found the door to heaven."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-        teleport_nofog(6, true, 0);
+        teleport_nofog(6, 1, 0);
 
         int tid = ActivatorTID();
         SetActivator(-1);
@@ -1349,7 +1349,7 @@ strict namespace
         SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
 
         // Can't really revert back to the defaults so just assume 128.
-        for (i = 0; i < lengthof(_roomTags); ++i)
+        for (int i = 0; i < lengthof(_roomTags); ++i)
         {
             Light_Fade(_roomTags[i], 128, 35 * 10);
         }
