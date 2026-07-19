@@ -7,510 +7,513 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-#define KORAXANDDSPARIL_TID 100
-
-int resists[5] = {0, 0, 0, 0, 0};
-int secretSwitch = 0;
-int secretSwitch2 = 0;
-int elevator = 0;
-int elevator2 = 0;
-
-script 1 OPEN
+strict namespace
 {
-    // Zombie spawn area
-    TranslucentLine(2, 75, 0);
-    Scroll_Texture_Both(2, 0, 0, 200, 0);
+	#define KORAXANDDSPARIL_TID 100
 
-    // Chute
-    TranslucentLine(4, 75, 0);
+	int resists[5] = {0, 0, 0, 0, 0};
+	int secretSwitch = 0;
+	int secretSwitch2 = 0;
+	int elevator = 0;
+	int elevator2 = 0;
 
-    // Wind
-    Sector_SetWind(117, 450, 0, 0);
+	script 1 OPEN
+	{
+	    // Zombie spawn area
+	    TranslucentLine(2, 75, 0);
+	    Scroll_Texture_Both(2, 0, 0, 200, 0);
 
-    // Spawn Holycross
-    SpawnSpot(HOLYCROSS_ITEM, 3, 6, 0);
-    SetThingSpecial(6, 226, 30);
+	    // Chute
+	    TranslucentLine(4, 75, 0);
 
-    // Beginning script
-    delay (10*35);
-    SetFont("CONFONT");
-    HudMessageBold(s:"\ccTest subject 29 is trying to escape."; HUDMSG_FADEOUT, 997, CR_RED, 0.05, 0.85, 10.0, 2.0);
-    delay(7*35);
+	    // Wind
+	    Sector_SetWind(117, 450, 0, 0);
 
-    AmbientSound("ambient/warning1", 127);
-    SetFont("BIGFONT");
-    HudMessageBold(s:"\ccTest subject 29 became uncontrollable !\nStarting self-destruction."; HUDMSG_FADEOUT | HUDMSG_LOG, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
-    Ceiling_MoveToValue(7, 65535, 1, 1); // Open zombie jail
-    Floor_MoveToValue(7, 65535, 2, 1); // Open zombie jail
-    Floor_LowerByValue(1, 20, 92); // Open the way
-    Ceiling_RaiseByValue(1, 20, 92); // Open the way
-    delay(9*35);
-}
+	    // Spawn Holycross
+	    SpawnSpot(HOLYCROSS_ITEM, 3, 6, 0);
+	    SetThingSpecial(6, 226, 30);
 
-script 2 (void) // Resist #1
-{
-    if(!resists[1])
-    {
-        resists[1]++;
+	    // Beginning script
+	    delay (10*35);
+	    SetFont("CONFONT");
+	    HudMessageBold(s:"\ccTest subject 29 is trying to escape."; HUDMSG_FADEOUT, 997, CR_RED, 0.05, 0.85, 10.0, 2.0);
+	    delay(7*35);
 
-        for (int m = 10; m > 0; m--) // Countdown
-        {
-            ResistMessage2_2(m, "The lift is arriving...", CR_PURPLE);
-            delay(35);
-        }
+	    AmbientSound("ambient/warning1", 127);
+	    SetFont("BIGFONT");
+	    HudMessageBold(s:"\ccTest subject 29 became uncontrollable !\nStarting self-destruction."; HUDMSG_FADEOUT | HUDMSG_LOG, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
+	    Ceiling_MoveToValue(7, 65535, 1, 1); // Open zombie jail
+	    Floor_MoveToValue(7, 65535, 2, 1); // Open zombie jail
+	    Floor_LowerByValue(1, 20, 92); // Open the way
+	    Ceiling_RaiseByValue(1, 20, 92); // Open the way
+	    delay(9*35);
+	}
 
-        Ceiling_RaiseByValue(10, 20, 124); // Open door
-        ThingSound(14, "sound/ding1", 127);
-        Polyobj_DoorSlide(1, 20, 0, 56, 35*5); // Open lift
-        Polyobj_DoorSlide(2, 20, 128, 56, 35*5); // Open lift
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\ccThe lift leaves in 5 seconds"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 2.0, 0.5);
-        ACS_ExecuteAlways(21, 0, 0, 0, 0);
-    }
-}
+	script 2 (void) // Resist #1
+	{
+	    if(!resists[1])
+	    {
+	        resists[1]++;
 
-script 21 (void) // Lift
-{
-    delay(8*35);
-    TeleportInSector(54, 55, 56, 0, 0);
-    delay(2*35);
-    ThingSound(15, "sound/ding1", 127);
-    Polyobj_Move(3, 20, 0, 56); // Open lift
-    Polyobj_Move(4, 20, 128, 56); // Open lift
-    SetFont("SMALLFONT");
-    PrintBold(s:"The secondary path has been opened.");
-    Ceiling_RaiseByValue(8, 255, 48); // Open the second path
-    ACS_ExecuteAlways(22, 0, 0, 0, 0);
-}
+	        for (int m = 10; m > 0; m--) // Countdown
+	        {
+	            ResistMessage2_2(m, "The lift is arriving...", CR_PURPLE);
+	            delay(35);
+	        }
 
-script 22 (void) // Stairs
-{
-    delay(10*35);
-    SetFont("BIGFONT");
-    HudMessageBold(s:"\ccThe stairs are now available."; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 2.0, 0.5);
-    Ceiling_RaiseByValue(13, 20, 124);
-}
+	        Ceiling_RaiseByValue(10, 20, 124); // Open door
+	        ThingSound(14, "sound/ding1", 127);
+	        Polyobj_DoorSlide(1, 20, 0, 56, 35*5); // Open lift
+	        Polyobj_DoorSlide(2, 20, 128, 56, 35*5); // Open lift
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:"\ccThe lift leaves in 5 seconds"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 2.0, 0.5);
+	        ACS_ExecuteAlways(21, 0, 0, 0, 0);
+	    }
+	}
 
-script 3 (void) // Resist #2
-{
-    if (!resists[2])
-    {
-        resists[2]++;
+	script 21 (void) // Lift
+	{
+	    delay(8*35);
+	    TeleportInSector(54, 55, 56, 0, 0);
+	    delay(2*35);
+	    ThingSound(15, "sound/ding1", 127);
+	    Polyobj_Move(3, 20, 0, 56); // Open lift
+	    Polyobj_Move(4, 20, 128, 56); // Open lift
+	    SetFont("SMALLFONT");
+	    PrintBold(s:"The secondary path has been opened.");
+	    Ceiling_RaiseByValue(8, 255, 48); // Open the second path
+	    ACS_ExecuteAlways(22, 0, 0, 0, 0);
+	}
 
-        for (int m = 20; m > 0; m--) // Countdown
-        {
-            ResistMessage2_2(m, "Opening exit...", CR_PURPLE);
-            delay(35);
-        }
+	script 22 (void) // Stairs
+	{
+	    delay(10*35);
+	    SetFont("BIGFONT");
+	    HudMessageBold(s:"\ccThe stairs are now available."; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 2.0, 0.5);
+	    Ceiling_RaiseByValue(13, 20, 124);
+	}
 
-        Ceiling_RaiseByValue(49, 20, 116); // Open Exit
+	script 3 (void) // Resist #2
+	{
+	    if (!resists[2])
+	    {
+	        resists[2]++;
 
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\ccThe exit is now opened."; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 2.0, 0.5);
-    }
-}
+	        for (int m = 20; m > 0; m--) // Countdown
+	        {
+	            ResistMessage2_2(m, "Opening exit...", CR_PURPLE);
+	            delay(35);
+	        }
 
-Script 4 (void) // Resist #3
-{
-    if (!resists[3])
-    {
-        resists[3]++;
+	        Ceiling_RaiseByValue(49, 20, 116); // Open Exit
 
-        for (int m=20; m>0; m--) // Countdown
-        {
-            ResistMessage2_2(m, "The lift is arriving...", CR_PURPLE);
-            delay(35);
-        }
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:"\ccThe exit is now opened."; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 2.0, 0.5);
+	    }
+	}
 
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\ccThe lift leaves in 5 seconds"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 2.0, 0.5);
-        ThingSound(168, "sound/ding1", 127);
-        Polyobj_DoorSlide(47, 20, 64, 56, 35*5); // Open lift #1
-        Polyobj_DoorSlide(48, 20, 192, 56, 35*5); // Open lift #1
-        delay(35*8);
-        resists[3]++; // Lift #1 arrived
-        ACS_ExecuteAlways(41, 0, 0, 0, 0);
-    }
-}
+	Script 4 (void) // Resist #3
+	{
+	    if (!resists[3])
+	    {
+	        resists[3]++;
 
-script 41 (void) // Lift
-{
-    if (!secretSwitch)
-    {
-        TeleportInSector(68, 71, 86, 0, 0); // Teleport
-        delay(35*2);
-        Polyobj_Move(50, 20, 64, 56); // Open lift #1
-        Polyobj_Move(51, 20, 192, 56); // Open lift #1
-    }
-    else // Secret
-    {
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\ccThe elevator's engine has been reversed!"; HUDMSG_FADEOUT | HUDMSG_LOG, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
-        TeleportInSector(68, 71, 102, 0, 0); // Teleport
-        delay(35*2);
-        Polyobj_Move(60, 20, 64, 56); // Open lift #1 (secret ending)
-        Polyobj_Move(61, 20, 192, 56); // Open lift #1 (secret ending)
-    }
+	        for (int m=20; m>0; m--) // Countdown
+	        {
+	            ResistMessage2_2(m, "The lift is arriving...", CR_PURPLE);
+	            delay(35);
+	        }
 
-    ThingSound(170, "sound/ding1", 127);
-    ThingSound(169, "sound/ding1", 127);
-    Polyobj_Move(45, 20, 64, 56); // Open lift #2
-    Polyobj_Move(46, 20, 192, 56); // Open lift #2
-    SetFont("SMALLFONT");
-    PrintBold(s:"The second lift has arrived.");
-}
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:"\ccThe lift leaves in 5 seconds"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 2.0, 0.5);
+	        ThingSound(168, "sound/ding1", 127);
+	        Polyobj_DoorSlide(47, 20, 64, 56, 35*5); // Open lift #1
+	        Polyobj_DoorSlide(48, 20, 192, 56, 35*5); // Open lift #1
+	        delay(35*8);
+	        resists[3]++; // Lift #1 arrived
+	        ACS_ExecuteAlways(41, 0, 0, 0, 0);
+	    }
+	}
 
-Script 5 (void) // Resist #4 - end
-{
-    if (!resists[4])
-    {
-        resists[4]++;
-        Music::PlayMusic("NSMUS_37");
+	script 41 (void) // Lift
+	{
+	    if (!secretSwitch)
+	    {
+	        TeleportInSector(68, 71, 86, 0, 0); // Teleport
+	        delay(35*2);
+	        Polyobj_Move(50, 20, 64, 56); // Open lift #1
+	        Polyobj_Move(51, 20, 192, 56); // Open lift #1
+	    }
+	    else // Secret
+	    {
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:"\ccThe elevator's engine has been reversed!"; HUDMSG_FADEOUT | HUDMSG_LOG, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
+	        TeleportInSector(68, 71, 102, 0, 0); // Teleport
+	        delay(35*2);
+	        Polyobj_Move(60, 20, 64, 56); // Open lift #1 (secret ending)
+	        Polyobj_Move(61, 20, 192, 56); // Open lift #1 (secret ending)
+	    }
 
-        for (int m = 40; m > 0; m--) // Countdown
-        {
-            ResistMessage2_2(m, "The helicopter is arriving...", CR_PURPLE);
-            delay(35);
-        }
+	    ThingSound(170, "sound/ding1", 127);
+	    ThingSound(169, "sound/ding1", 127);
+	    Polyobj_Move(45, 20, 64, 56); // Open lift #2
+	    Polyobj_Move(46, 20, 192, 56); // Open lift #2
+	    SetFont("SMALLFONT");
+	    PrintBold(s:"The second lift has arrived.");
+	}
 
-        Thing_Activate(172);
-        Floor_LowerByValue(81, 38, 816);
-        Ceiling_LowerByValue(81, 38, 816);
-        TagWait(81);
-        delay(35*2);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\ccThe helicopter has arrived.\nIt will leave in 5 seconds."; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
-        delay(35*5);
-        Floor_RaiseByValue(81, 30, 666);
-        Ceiling_RaiseByValue(81, 30, 666);
-        delay(35*4);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\ccSelf-destruction in 3 seconds..."; HUDMSG_FADEOUT, 998, CR_GREEN, 0.5, 0.17, 7.0, 0.5);
-        delay(35);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\ccSelf-destruction in 2 seconds..."; HUDMSG_FADEOUT, 998, CR_ORANGE, 0.5, 0.17, 7.0, 0.5);
-        delay(35);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\ccSelf-destruction in 1 seconds..."; HUDMSG_FADEOUT, 998, CR_RED, 0.5, 0.17, 7.0, 0.5);
-        delay(35);
-        SetFont("BIGFONT");
-        HudMessageBold(s:" "; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
-        AmbientSound("world/nuke1", 127);
-        Game::KillUnsafePlayers();
+	Script 5 (void) // Resist #4 - end
+	{
+	    if (!resists[4])
+	    {
+	        resists[4]++;
+	        Music::PlayMusic("NSMUS_37");
 
-        int tid;
-        for(int n = 0; n < BCSUtils::MAX_PLAYERS; n++) // Kill players if their z<=500
-        {
-            tid = Identity::GetTid(n);
-            if(GetActorZ(tid) <= 500.0)
-	            Game::KillPlayer(n, MOD_EXIT);
-        }
+	        for (int m = 40; m > 0; m--) // Countdown
+	        {
+	            ResistMessage2_2(m, "The helicopter is arriving...", CR_PURPLE);
+	            delay(35);
+	        }
 
-        while(true)
-        {
-            for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++) // Kill players if their z<=500
-            {
-                tid = Identity::GetTid(i);
-                if(GetActorZ(tid) <= 500.0)
-	                Game::KillPlayer(n, MOD_FALLING);
-            }
-        }
-    }
-}
+	        Thing_Activate(172);
+	        Floor_LowerByValue(81, 38, 816);
+	        Ceiling_LowerByValue(81, 38, 816);
+	        TagWait(81);
+	        delay(35*2);
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:"\ccThe helicopter has arrived.\nIt will leave in 5 seconds."; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
+	        delay(35*5);
+	        Floor_RaiseByValue(81, 30, 666);
+	        Ceiling_RaiseByValue(81, 30, 666);
+	        delay(35*4);
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:"\ccSelf-destruction in 3 seconds..."; HUDMSG_FADEOUT, 998, CR_GREEN, 0.5, 0.17, 7.0, 0.5);
+	        delay(35);
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:"\ccSelf-destruction in 2 seconds..."; HUDMSG_FADEOUT, 998, CR_ORANGE, 0.5, 0.17, 7.0, 0.5);
+	        delay(35);
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:"\ccSelf-destruction in 1 seconds..."; HUDMSG_FADEOUT, 998, CR_RED, 0.5, 0.17, 7.0, 0.5);
+	        delay(35);
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:" "; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
+	        AmbientSound("world/nuke1", 127);
+	        Game::KillUnsafePlayers();
 
-Script 6 (void) // Resist #4 bis - secret end
-{
-    if (!resists[4])
-    {
-        resists[4]++;
-        Music::PlayMusic("NSMUS_37");
+	        int tid;
+	        for(int n = 0; n < BCSUtils::MAX_PLAYERS; n++) // Kill players if their z<=500
+	        {
+	            tid = Identity::GetTid(n);
+	            if(GetActorZ(tid) <= 500.0)
+		            Game::KillPlayer(n, MOD_EXIT);
+	        }
 
-        for (int m=35; m>0; m--) // Countdown
-        {
-            ResistMessage2_2(m, "Sealing safe area...", CR_PURPLE);
-            delay(35);
-        }
+	        while(true)
+	        {
+	            for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++) // Kill players if their z<=500
+	            {
+	                tid = Identity::GetTid(i);
+	                if(GetActorZ(tid) <= 500.0)
+		                Game::KillPlayer(n, MOD_FALLING);
+	            }
+	        }
+	    }
+	}
 
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\clSealing room..."; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
-        Ceiling_LowerAndCrush(105, 4, 65535);
-        delay(35*6);
-        Ceiling_LowerByValue(105, 4, 8);
-        delay(35*2);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\ccSelf-destruction in 3 seconds..."; HUDMSG_FADEOUT, 998, CR_GREEN, 0.5, 0.17, 7.0, 0.5);
-        delay(35);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\ccSelf-destruction in 2 seconds..."; HUDMSG_FADEOUT, 998, CR_ORANGE, 0.5, 0.17, 7.0, 0.5);
-        delay(35);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\ccSelf-destruction in 1 seconds..."; HUDMSG_FADEOUT, 998, CR_RED, 0.5, 0.17, 7.0, 0.5);
-        delay(35);
-        SetFont("BIGFONT");
-        HudMessageBold(s:" "; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
-        AmbientSound("world/nuke1", 127);
-        Game::KillUnsafePlayers();
-        resists[4]++;
-    }
-}
+	Script 6 (void) // Resist #4 bis - secret end
+	{
+	    if (!resists[4])
+	    {
+	        resists[4]++;
+	        Music::PlayMusic("NSMUS_37");
 
-script 8 (void) // Secret Switch
-{
-    if (resists[3] < 2) // Lift #1 hasn't reached the last resist
-    {
-        secretSwitch++;
-        SetFont("CONFONT");
-        HudMessageBold(n:0, s:"\c- has reversed the elevator engine."; HUDMSG_FADEOUT, 997, CR_WHITE, 0.05, 0.85, 10.0, 2.0);
-    }
-}
+	        for (int m=35; m>0; m--) // Countdown
+	        {
+	            ResistMessage2_2(m, "Sealing safe area...", CR_PURPLE);
+	            delay(35);
+	        }
 
-script 9 (void) // Secret
-{
-    Ceiling_MoveToValue(61, 65535, 193, 1); // Lower 3D floor
-    TagWait(61);
-    delay(35*4);
-    Ceiling_MoveToValue(61, 65535, 0, 0); // Raise 3D floor
-    TagWait(61);
-}
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:"\clSealing room..."; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
+	        Ceiling_LowerAndCrush(105, 4, 65535);
+	        delay(35*6);
+	        Ceiling_LowerByValue(105, 4, 8);
+	        delay(35*2);
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:"\ccSelf-destruction in 3 seconds..."; HUDMSG_FADEOUT, 998, CR_GREEN, 0.5, 0.17, 7.0, 0.5);
+	        delay(35);
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:"\ccSelf-destruction in 2 seconds..."; HUDMSG_FADEOUT, 998, CR_ORANGE, 0.5, 0.17, 7.0, 0.5);
+	        delay(35);
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:"\ccSelf-destruction in 1 seconds..."; HUDMSG_FADEOUT, 998, CR_RED, 0.5, 0.17, 7.0, 0.5);
+	        delay(35);
+	        SetFont("BIGFONT");
+	        HudMessageBold(s:" "; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
+	        AmbientSound("world/nuke1", 127);
+	        Game::KillUnsafePlayers();
+	        resists[4]++;
+	    }
+	}
 
-script 10 (void) // Secret
-{
-    if (CheckInventory("ZH2BlueKeyCard") && !secretSwitch2)
-    {
-        secretSwitch2++;
-        SetFont("CONFONT");
-        HudMessageBold(n:0, s:"\c- has deactivated the generator."; HUDMSG_FADEOUT, 997, CR_WHITE, 0.05, 0.85, 10.0, 2.0);
-        AmbientSound("sound/poweroff1", 127);
-        Ceiling_MoveToValue(97, 12, 1, 1);
-        Floor_MoveToValue(97, 12, 2, 1);
+	script 8 (void) // Secret Switch
+	{
+	    if (resists[3] < 2) // Lift #1 hasn't reached the last resist
+	    {
+	        secretSwitch++;
+	        SetFont("CONFONT");
+	        HudMessageBold(n:0, s:"\c- has reversed the elevator engine."; HUDMSG_FADEOUT, 997, CR_WHITE, 0.05, 0.85, 10.0, 2.0);
+	    }
+	}
 
-        SetActivator(-1);
+	script 9 (void) // Secret
+	{
+	    Ceiling_MoveToValue(61, 65535, 193, 1); // Lower 3D floor
+	    TagWait(61);
+	    delay(35*4);
+	    Ceiling_MoveToValue(61, 65535, 0, 0); // Raise 3D floor
+	    TagWait(61);
+	}
 
-        delay(5*35);
-        Light_ChangeToValue(58, 144);
-        Light_ChangeToValue(96, 144);
-        Light_ChangeToValue(104, 144);
-        Sector_SetGravity(96, 1, 0);
-        Thing_Activate(KORAXANDDSPARIL_TID);
-        delay(3*35);
-        Ceiling_MoveToValue(82, 65535, 1, 1);
-        Floor_MoveToValue(82, 65535, 2, 1);
-        ACS_ExecuteAlways(13, 0, 0, 0, 0);
-        Music::PlayMusic("D_DARKER");
-        SetFont("SMALLFONT");
-        PrintBold(s: "Something bad happened...");
+	script 10 (void) // Secret
+	{
+	    if (CheckInventory("ZH2BlueKeyCard") && !secretSwitch2)
+	    {
+	        secretSwitch2++;
+	        SetFont("CONFONT");
+	        HudMessageBold(n:0, s:"\c- has deactivated the generator."; HUDMSG_FADEOUT, 997, CR_WHITE, 0.05, 0.85, 10.0, 2.0);
+	        AmbientSound("sound/poweroff1", 127);
+	        Ceiling_MoveToValue(97, 12, 1, 1);
+	        Floor_MoveToValue(97, 12, 2, 1);
 
-        while(resists[4] < 2)
-            delay(1);
+	        SetActivator(-1);
 
-        SetActivator(0);
-        delay(5*35);
-        AmbientSound("world/ULTIMA1", 127);
-        Fadeto(100, 100, 100, 1.0, 6.0);
-        delay(8*35);
+	        delay(5*35);
+	        Light_ChangeToValue(58, 144);
+	        Light_ChangeToValue(96, 144);
+	        Light_ChangeToValue(104, 144);
+	        Sector_SetGravity(96, 1, 0);
+	        Thing_Activate(KORAXANDDSPARIL_TID);
+	        delay(3*35);
+	        Ceiling_MoveToValue(82, 65535, 1, 1);
+	        Floor_MoveToValue(82, 65535, 2, 1);
+	        ACS_ExecuteAlways(13, 0, 0, 0, 0);
+	        Music::PlayMusic("D_DARKER");
+	        SetFont("SMALLFONT");
+	        PrintBold(s: "Something bad happened...");
 
-        int HumanSpot = 133;
-        int ZombieSpot = 149;
+	        while(resists[4] < 2)
+	            delay(1);
 
-        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-        {
-            int tid = Identity::GetTid(i);
-            if(PlayerInGame(i)) // There is a player
-            {
-                if(Player::GetPlayerIsZombie(i)) // This player is a zombie
-                {
-                    TeleportOther(tid, ZombieSpot, 0); // Teleport the player
-                    ZombieSpot++; // Next spot
+	        SetActivator(0);
+	        delay(5*35);
+	        AmbientSound("world/ULTIMA1", 127);
+	        Fadeto(100, 100, 100, 1.0, 6.0);
+	        delay(8*35);
 
-                    If (ZombieSpot > 164)
-                        ZombieSpot = 149; // Reset spot
-                }
-                else // This player is a human
-                {
-                    TeleportOther(tid, HumanSpot, 0); // Teleport the player
-                    HumanSpot++; // Next spot
+	        int HumanSpot = 133;
+	        int ZombieSpot = 149;
 
-                    If (HumanSpot > 148)
-                        HumanSpot = 133; // Reset spot
-                }
-            }
-            delay(1);
-        }
+	        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+	        {
+	            int tid = Identity::GetTid(i);
+	            if(PlayerInGame(i)) // There is a player
+	            {
+	                if(Player::GetPlayerIsZombie(i)) // This player is a zombie
+	                {
+	                    TeleportOther(tid, ZombieSpot, 0); // Teleport the player
+	                    ZombieSpot++; // Next spot
 
-        TeleportOther(KORAXANDDSPARIL_TID, 132, 0); // Teleport Korax and D'Sparil
+	                    If (ZombieSpot > 164)
+	                        ZombieSpot = 149; // Reset spot
+	                }
+	                else // This player is a human
+	                {
+	                    TeleportOther(tid, HumanSpot, 0); // Teleport the player
+	                    HumanSpot++; // Next spot
 
-        Fadeto(100, 100, 100, 0.0, 1.0);
-        delay(35);
-        Music::PlayMusic("FF9BOSS");
-    }
-    else
-    {
-        SetFont("SMALLFONT");
-        Print(s:"Access denied !");
-    }
-}
+	                    If (HumanSpot > 148)
+	                        HumanSpot = 133; // Reset spot
+	                }
+	            }
+	            delay(1);
+	        }
 
-script 11 (void) // Elevator secret room
-{
-    if(!elevator)
-    {
-        elevator++;
-        Floor_RaiseByValue(98, 64, 376);
-        delay(3*35);
-        Floor_LowerByValue(98, 64, 376);
-		tagwait(98);
-        elevator--;
-    }
-}
+	        TeleportOther(KORAXANDDSPARIL_TID, 132, 0); // Teleport Korax and D'Sparil
 
-script 12 (void) // Elevator #2
-{
-    if(!elevator2)
-    {
-        elevator2++;
-        delay(35);
-        Polyobj_Move(45, 20, 192, 56); // Close lift
-        Polyobj_Move(46, 20, 64, 56); // Close lift
-        delay(5*35);
+	        Fadeto(100, 100, 100, 0.0, 1.0);
+	        delay(35);
+	        Music::PlayMusic("FF9BOSS");
+	    }
+	    else
+	    {
+	        SetFont("SMALLFONT");
+	        Print(s:"Access denied !");
+	    }
+	}
 
-        if(!secretSwitch)
-        {
-            TeleportInSector(69, 70, 88, 0, 0);
-            delay(5*35);
-            ThingSound(171, "sound/ding1", 127);
-            Polyobj_DoorSlide(52, 20, 64, 56, 35*5); // Open lift
-            Polyobj_DoorSlide(53, 20, 192, 56, 35*5); // Open lift
-            delay(7*35);
-            TeleportInSector(52, 88, 70, 0, 0);
-        }
-        else
-        {
-            TeleportInSector(69, 70, 80, 0, 0);
-            delay(5*35);
-            ThingSound(171, "sound/ding1", 127);
-            Polyobj_DoorSlide(62, 20, 64, 56, 35*5); // Open lift
-            Polyobj_DoorSlide(63, 20, 192, 56, 35*5); // Open lift
-            delay(7*35);
-            TeleportInSector(53, 80, 70, 0, 0);
-        }
+	script 11 (void) // Elevator secret room
+	{
+	    if(!elevator)
+	    {
+	        elevator++;
+	        Floor_RaiseByValue(98, 64, 376);
+	        delay(3*35);
+	        Floor_LowerByValue(98, 64, 376);
+			tagwait(98);
+	        elevator--;
+	    }
+	}
 
-        delay(35);
-        ThingSound(169, "sound/ding1", 127);
-        Polyobj_Move(45, 20, 64, 56); // Open lift #2
-        Polyobj_Move(46, 20, 192, 56); // Open lift #2
-        elevator2--;
-    }
-}
+	script 12 (void) // Elevator #2
+	{
+	    if(!elevator2)
+	    {
+	        elevator2++;
+	        delay(35);
+	        Polyobj_Move(45, 20, 192, 56); // Close lift
+	        Polyobj_Move(46, 20, 64, 56); // Close lift
+	        delay(5*35);
 
-script 13 (void)
-{
-    int rewardHumans=1;
-    ACS_ExecuteAlways(15, 0, 0, 0, 0);
+	        if(!secretSwitch)
+	        {
+	            TeleportInSector(69, 70, 88, 0, 0);
+	            delay(5*35);
+	            ThingSound(171, "sound/ding1", 127);
+	            Polyobj_DoorSlide(52, 20, 64, 56, 35*5); // Open lift
+	            Polyobj_DoorSlide(53, 20, 192, 56, 35*5); // Open lift
+	            delay(7*35);
+	            TeleportInSector(52, 88, 70, 0, 0);
+	        }
+	        else
+	        {
+	            TeleportInSector(69, 70, 80, 0, 0);
+	            delay(5*35);
+	            ThingSound(171, "sound/ding1", 127);
+	            Polyobj_DoorSlide(62, 20, 64, 56, 35*5); // Open lift
+	            Polyobj_DoorSlide(63, 20, 192, 56, 35*5); // Open lift
+	            delay(7*35);
+	            TeleportInSector(53, 80, 70, 0, 0);
+	        }
 
-    int killerId = -1;
-    while(ThingCountName("ZH2LegacyZe24KoraxAndDsparil", KORAXANDDSPARIL_TID)) // Korax and D'Sparil is alive
-    {
-        SetFont("SMALLFONT");
-        HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- health: ", d:GetActorProperty(KORAXANDDSPARIL_TID, APROP_Health), s:""; HUDMSG_FADEOUT, 997, CR_WHITE, 0.05, 0.85, 10.0, 2.0); // Display health
+	        delay(35);
+	        ThingSound(169, "sound/ding1", 127);
+	        Polyobj_Move(45, 20, 64, 56); // Open lift #2
+	        Polyobj_Move(46, 20, 192, 56); // Open lift #2
+	        elevator2--;
+	    }
+	}
 
-        // The last target will be the killer.
-        if (SetActivatorToTarget(KORAXANDDSPARIL_TID))
-        {
-            killerId = PlayerNumber();
-            SetActivator(-1);
-        }
+	script 13 (void)
+	{
+	    int rewardHumans=1;
+	    ACS_ExecuteAlways(15, 0, 0, 0, 0);
 
-        delay(1);
-    }
+	    int killerId = -1;
+	    while(ThingCountName("ZH2LegacyZe24KoraxAndDsparil", KORAXANDDSPARIL_TID)) // Korax and D'Sparil is alive
+	    {
+	        SetFont("SMALLFONT");
+	        HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- health: ", d:GetActorProperty(KORAXANDDSPARIL_TID, APROP_Health), s:""; HUDMSG_FADEOUT, 997, CR_WHITE, 0.05, 0.85, 10.0, 2.0); // Display health
 
-    if (killerId == -1)
-        terminate;
+	        // The last target will be the killer.
+	        if (SetActivatorToTarget(KORAXANDDSPARIL_TID))
+	        {
+	            killerId = PlayerNumber();
+	            SetActivator(-1);
+	        }
 
-    SetFont("BIGFONT");
-    if (Player::GetPlayerIsZombie(killerId)) // Killer is a zombie
-    {
-        HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- have been defeated by ", s:BCSUtils::PlayerName(killerId), s:".\nAll zombies have been awarded with a bonus item !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
-        rewardHumans--; // Reward zombies
-    }
-    else // if killer is a human
-        HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- have been defeated by ", s:BCSUtils::PlayerName(killerId), s:".\nAll humans have been awarded with a bonus item !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
+	        delay(1);
+	    }
 
-    for(int j = 0; j < BCSUtils::MAX_PLAYERS; j++)
-    {
-        int tid = Identity::GetTid(j);
-        if(PlayerInGame(j)) // There is a player
-        {
-            if(rewardHumans && !Player::GetPlayerIsZombie(j)) // This player is a human and humans are rewarded
-                GiveActorInventory(tid, "ZH2ItemRewardOrbMinor", 1);
+	    if (killerId == -1)
+	        terminate;
 
-            else if(!rewardHumans && Player::GetPlayerIsZombie(j)) // This player is a zombie and zombies are rewarded
-                GiveActorInventory(tid, "ZH2ItemRewardOrbMinor", 1);
-        }
-        delay(1);
-    }
-}
+	    SetFont("BIGFONT");
+	    if (Player::GetPlayerIsZombie(killerId)) // Killer is a zombie
+	    {
+	        HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- have been defeated by ", s:BCSUtils::PlayerName(killerId), s:".\nAll zombies have been awarded with a bonus item !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
+	        rewardHumans--; // Reward zombies
+	    }
+	    else // if killer is a human
+	        HudMessageBold(s:"\cmKorax\c- and \clD'Sparil\c- have been defeated by ", s:BCSUtils::PlayerName(killerId), s:".\nAll humans have been awarded with a bonus item !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 7.0, 0.5);
 
-script 15 (void)
-{
-    int KMessage = 0;
+	    for(int j = 0; j < BCSUtils::MAX_PLAYERS; j++)
+	    {
+	        int tid = Identity::GetTid(j);
+	        if(PlayerInGame(j)) // There is a player
+	        {
+	            if(rewardHumans && !Player::GetPlayerIsZombie(j)) // This player is a human and humans are rewarded
+	                GiveActorInventory(tid, "ZH2ItemRewardOrbMinor", 1);
 
-    while(ThingCountName("ZH2LegacyZe24KoraxAndDsparil", KORAXANDDSPARIL_TID)) // Korax and D'Sparil is living
-    {
-        switch(KMessage)
-        {
-            case 0:
-                Chat::SendActor(KORAXANDDSPARIL_TID, "Greetings, mortal are you ready to die ?");
-                AmbientSound("KoraxVoiceGreetings", 127);
-                Delay(70);
-                AmbientSound("KoraxVoiceReady", 127);
-                break;
-            case 1:
-                Chat::SendActor(KORAXANDDSPARIL_TID, "My servants can smell your blood human.");
-                AmbientSound("KoraxVoiceBlood", 127);
-                break;
-            case 2:
-                Chat::SendActor(KORAXANDDSPARIL_TID, "You have play this game too long mortal. I think i shall remove you from the board.");
-                AmbientSound("KoraxVoiceGame", 127);
-                Delay(140);
-                AmbientSound("KoraxVoiceBoard", 127);
-                break;
-            case 3:
-                Chat::SendActor(KORAXANDDSPARIL_TID, "Worship me, and may be merciful. Then again maybe not");
-                AmbientSound("KoraxVoiceWorship", 127);
-                Delay(175);
-                AmbientSound("KoraxVoiceMaybe", 127);
-                break;
-            case 4:
-                Chat::SendActor(KORAXANDDSPARIL_TID, "Are you strong enough to face your own master ?");
-                AmbientSound("KoraxVoiceStrong", 127);
-                Delay(70);
-                AmbientSound("KoraxVoiceFace", 127);
-                break;
-        }
-        Delay(1000); // 1000 ticks after the last message
-        KMessage = random(1, 4);
-    }
-}
+	            else if(!rewardHumans && Player::GetPlayerIsZombie(j)) // This player is a zombie and zombies are rewarded
+	                GiveActorInventory(tid, "ZH2ItemRewardOrbMinor", 1);
+	        }
+	        delay(1);
+	    }
+	}
 
-script 29 (int firstMapSpotTID, int lastMapSpotTID)
-{
-    int mapSpotTID = random(firstMapSpotTID, lastMapSpotTID);
-    Teleport_NoStop(mapSpotTID, 0, 1);
-}
+	script 15 (void)
+	{
+	    int KMessage = 0;
 
-script 30 (void) // PICKUP CROSS
-{
-    PrintBold(s:"\cgWARNING!\n", n:0, s:"\cj has picked up the \cvCross!");
-}
+	    while(ThingCountName("ZH2LegacyZe24KoraxAndDsparil", KORAXANDDSPARIL_TID)) // Korax and D'Sparil is living
+	    {
+	        switch(KMessage)
+	        {
+	            case 0:
+	                Chat::SendActor(KORAXANDDSPARIL_TID, "Greetings, mortal are you ready to die ?");
+	                AmbientSound("KoraxVoiceGreetings", 127);
+	                Delay(70);
+	                AmbientSound("KoraxVoiceReady", 127);
+	                break;
+	            case 1:
+	                Chat::SendActor(KORAXANDDSPARIL_TID, "My servants can smell your blood human.");
+	                AmbientSound("KoraxVoiceBlood", 127);
+	                break;
+	            case 2:
+	                Chat::SendActor(KORAXANDDSPARIL_TID, "You have play this game too long mortal. I think i shall remove you from the board.");
+	                AmbientSound("KoraxVoiceGame", 127);
+	                Delay(140);
+	                AmbientSound("KoraxVoiceBoard", 127);
+	                break;
+	            case 3:
+	                Chat::SendActor(KORAXANDDSPARIL_TID, "Worship me, and may be merciful. Then again maybe not");
+	                AmbientSound("KoraxVoiceWorship", 127);
+	                Delay(175);
+	                AmbientSound("KoraxVoiceMaybe", 127);
+	                break;
+	            case 4:
+	                Chat::SendActor(KORAXANDDSPARIL_TID, "Are you strong enough to face your own master ?");
+	                AmbientSound("KoraxVoiceStrong", 127);
+	                Delay(70);
+	                AmbientSound("KoraxVoiceFace", 127);
+	                break;
+	        }
+	        Delay(1000); // 1000 ticks after the last message
+	        KMessage = random(1, 4);
+	    }
+	}
 
-function void ResistMessage2_2 (int restime, str whyresist, str color)
-{
-   SetFont("SMALLFONT");
-    HudMessageBold(s:whyresist; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 1.5, 0.5);
-    SetFont("BIGFONT");
+	script 29 (int firstMapSpotTID, int lastMapSpotTID)
+	{
+	    int mapSpotTID = random(firstMapSpotTID, lastMapSpotTID);
+	    Teleport_NoStop(mapSpotTID, 0, 1);
+	}
 
-    if(restime>1)
-        HudMessageBold(s:"Resist for \cJ", d:restime, s:" \c-seconds"; HUDMSG_FADEOUT, 999, color, 0.5, 0.2, 1.1, 0.5);
-    else
-        HudMessageBold(s:"Resist for \cJ", d:restime, s:" \c-second"; HUDMSG_FADEOUT, 999, color, 0.5, 0.2, 1.1, 0.5);
+	script 30 (void) // PICKUP CROSS
+	{
+	    PrintBold(s:"\cgWARNING!\n", n:0, s:"\cj has picked up the \cvCross!");
+	}
+
+	function void ResistMessage2_2 (int restime, str whyresist, str color)
+	{
+	   SetFont("SMALLFONT");
+	    HudMessageBold(s:whyresist; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 1.5, 0.5);
+	    SetFont("BIGFONT");
+
+	    if(restime>1)
+	        HudMessageBold(s:"Resist for \cJ", d:restime, s:" \c-seconds"; HUDMSG_FADEOUT, 999, color, 0.5, 0.2, 1.1, 0.5);
+	    else
+	        HudMessageBold(s:"Resist for \cJ", d:restime, s:" \c-second"; HUDMSG_FADEOUT, 999, color, 0.5, 0.2, 1.1, 0.5);
+	}
 }

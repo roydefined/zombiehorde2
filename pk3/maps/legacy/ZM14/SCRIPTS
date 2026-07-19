@@ -7,308 +7,311 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-//Dynamic lighttag: 400
-//+ 401, 402
-//+ 403
-//+ 404, 405, 406, 407, 408
-
-// [ZH2] Track last value for dynamic lights.
-internal bool _dynamicLightsEnabled;
-
-Script 80 OPEN //Keyspawn
+strict namespace
 {
-	Thing_Spawn(Random(600,604), "ZH2LegacyCaveKey",0,0);
-	thing_deactivate(171);
-	thing_deactivate(173);
-	thing_deactivate(174);
-}
+	//Dynamic lighttag: 400
+	//+ 401, 402
+	//+ 403
+	//+ 404, 405, 406, 407, 408
 
-Script 81 (void)
-{
-	If(CheckInventory("ZH2LegacyCaveKey")==1)
-	{Door_Open(133,25);}
-}
+	// [ZH2] Track last value for dynamic lights.
+	internal bool _dynamicLightsEnabled;
 
-int SCRATCH=400;
-
-Script 71 (void)
-{
-	Thingsound(170, "sound/recordscratch", 127);
-	Scratch--;
-	if(SCRATCH==0)
+	Script 80 OPEN //Keyspawn
 	{
-		Setlinespecial(175,0);
+		Thing_Spawn(Random(600,604), "ZH2LegacyCaveKey",0,0);
 		thing_deactivate(171);
-		thing_deactivate(172);
 		thing_deactivate(173);
-		thing_activate(174);
+		thing_deactivate(174);
 	}
-}
 
-int MUS=0;
-
-Script 72 (void)
-{
-	if(MUS==0)
+	Script 81 (void)
 	{
-		MUS=1;
-		thing_deactivate(171);
-		thing_activate(172);
-		Delay(35);
+		If(CheckInventory("ZH2LegacyCaveKey")==1)
+		{Door_Open(133,25);}
 	}
-	else if(MUS==1)
+
+	int SCRATCH=400;
+
+	Script 71 (void)
 	{
-		MUS=2;
-		thing_deactivate(172);
-		thing_activate(173);
-		Delay(35);
-	}
-	else if(MUS==2)
-	{
-		MUS=0;
-		thing_deactivate(173);
-		thing_activate(171);
-		Delay(35);
-	}
-}
-
-Script 1 OPEN CLIENTSIDE
-{
-	Thing_Deactivate(401);
-	Thing_activate(402);
-	Delay(35/4);
-	Thing_Deactivate(402);
-	Thing_activate(401);
-	Delay(35/4);
-	Restart;
-}
-
-Script 28 open CLIENTSIDE
-{
-	Thing_Deactivate(169);
-	Delay(8);
-	Thing_activate(169);
-	Delay(8);
-	Thing_Deactivate(169);
-	Delay(8);
-	Thing_activate(169);
-	Delay(8);
-	Thing_Deactivate(169);
-	Delay(4);
-	Thing_activate(169);
-	Delay(4);
-	Thing_Deactivate(169);
-	Delay(4);
-	Thing_activate(169);
-	Delay(4);
-	Thing_Deactivate(169);
-	Delay(4);
-	Thing_activate(169);
-	Delay(4);
-	Thing_Deactivate(169);
-	Delay(4);
-	Thing_activate(169);
-	Delay(4);
-	Thing_Deactivate(169);
-	Delay(2);
-	Thing_activate(169);
-	Delay(2);
-	Thing_Deactivate(169);
-	Delay(2);
-	Thing_activate(169);
-	Delay(2);
-	Thing_Deactivate(169);
-	Delay(2);
-	Thing_activate(169);
-	Delay(2);
-	Thing_Deactivate(169);
-	Delay(2);
-	Thing_activate(169);
-	Delay(2);
-	Thing_Deactivate(169);
-	Delay(2);
-	Thing_activate(169);
-	Delay(2);
-	Thing_Deactivate(169);
-	Delay(2);
-	Thing_activate(169);
-	Delay(2);
-	Thing_Deactivate(169);
-	Delay(2);
-	Thing_activate(169);
-	Delay(2);
-	Thing_Deactivate(169);
-	Delay(2);
-	Thing_activate(169);
-	Delay(2);
-	Thing_Deactivate(169);
-	Delay(1);
-	Thing_activate(169);
-	Delay(1);
-	Thing_Deactivate(169);
-	Delay(1);
-	Thing_activate(169);
-	Delay(16);
-	Restart;
-}
-
-Script 2 OPEN CLIENTSIDE
-{
-	Int A = 255;
-	Int B = 0;
-
-	While(B!=255)
-	{
-		SetThingSpecial(403,0,A,B);
-		A=A-5;
-		B=B+5;
-		Delay(1);
-	}
-	While(A!=255)
-	{
-		SetThingSpecial(403,0,A,B);
-		A=A+5;
-		B=B-5;
-		Delay(1);
-	}
-	Restart;
-}
-
-Script 3 OPEN CLIENTSIDE
-{
-	Int C = 0;
-
-	Thing_Deactivate(404);
-	Thing_Deactivate(405);
-	Thing_Deactivate(406);
-	Thing_Deactivate(407);
-	Thing_Deactivate(408);
-	While(c==0)
-	{
-		Thing_Deactivate(408);
-		Thing_Activate(404);
-		Delay(35/2);
-		Thing_Deactivate(404);
-		Thing_Activate(405);
-		Delay(35/2);
-		Thing_Deactivate(405);
-		Thing_Activate(406);
-		Delay(35/2);
-		Thing_Deactivate(406);
-		Thing_Activate(407);
-		Delay(35/2);
-		Thing_Deactivate(407);
-		Thing_Activate(408);
-		Delay(35/2);
-	}
-}
-
-
-void SetDynamicLights(bool enable, bool message)
-{
-	if (!enable)
-	{
-		Thing_DeActivate(400);
-		Thing_DeActivate(401);
-		Thing_DeActivate(402);
-		Thing_DeActivate(403);
-		Thing_DeActivate(404);
-		Thing_DeActivate(405);
-		Thing_DeActivate(406);
-		Thing_DeActivate(407);
-		Thing_DeActivate(408);
-		Acs_Terminate(1,0);
-		Acs_Terminate(3,0);
-
-		if (message)
-			Log(s:"1046 Map Dynamic Lights Deactivated.");
-	}
-	else
-	{
-		Thing_Activate(400);
-		Thing_Activate(401);
-		Thing_Activate(402);
-		Thing_Activate(403);
-		Thing_Activate(404);
-		Thing_Activate(405);
-		Thing_Activate(406);
-		Thing_Activate(407);
-		Thing_Activate(408);
-		Acs_Execute(1,0);
-		Acs_Execute(3,0);
-
-		if (message)
-			Log(s:"1046 Map Dynamic Lights Activated.");
-	}
-}
-
-Script 8 (void)
-{
-	SetLineSpecial(131,0,0,0,0,0,0);
-	FloorAndCeiling_RaiseByValue(132,5,64);
-	Floor_RaiseByValue(130,5,64);
-	TagWait(132);
-	Delay(35*3);
-	FloorAndCeiling_LowerByValue(132,5,64);
-	Floor_LowerByValue(130,5,64);
-	TagWait(132);
-	Delay(35);
-	SetLineSpecial(131,acs_execute,8,0,0,0,0);
-}
-
-Script 56 OPEN
-{
-	Delay(35*10);
-	SetFont("Smallfont");
-	Print(s:"Bad framerate? Remove a big part of the dynamic lights through the legacy map options.");
-}
-
-// [ZH2] Handle conditionally enabling/disabling dynamic lights based on the cvar.
-script "open_client" open clientside
-{
-	_dynamicLightsEnabled = GetUserCVar(ConsolePlayerNumber(), "cl_zh2_zm14_enabledynamiclights");
-	SetDynamicLights(_dynamicLightsEnabled, false);
-	while (true)
-	{
-		if (_dynamicLightsEnabled != GetUserCVar(ConsolePlayerNumber(), "cl_zh2_zm14_enabledynamiclights"))
+		Thingsound(170, "sound/recordscratch", 127);
+		Scratch--;
+		if(SCRATCH==0)
 		{
-			SetDynamicLights(!_dynamicLightsEnabled, true);
-			_dynamicLightsEnabled = !_dynamicLightsEnabled;
+			Setlinespecial(175,0);
+			thing_deactivate(171);
+			thing_deactivate(172);
+			thing_deactivate(173);
+			thing_activate(174);
 		}
-
-		delay(const: 1);
 	}
-}
 
-Script 9 (void)
-{
-	If(Player::GetIsZombie())
-	{
-		Teleport(110,110,1);
-		Terminate;
-	}
-	Else
-	{
-        // TODO: Is this correct? Are we falling?
-		Thing_damage(0, 30, MOD_FALLING);
-		Teleport(138,138,1);
-		Terminate;
-	}
-}
+	int MUS=0;
 
-Script 77 (void) //Broken doors
-{
-	Print(s:"This door is broken");
-}
-
-Script 78 (Int DOORTAG) //Locked doors
-{
-	If(CheckInventory("ZH2LegacyZm14Lockpick")==1)
+	Script 72 (void)
 	{
-		Door_Raise(DOORTAG,25,10);
+		if(MUS==0)
+		{
+			MUS=1;
+			thing_deactivate(171);
+			thing_activate(172);
+			Delay(35);
+		}
+		else if(MUS==1)
+		{
+			MUS=2;
+			thing_deactivate(172);
+			thing_activate(173);
+			Delay(35);
+		}
+		else if(MUS==2)
+		{
+			MUS=0;
+			thing_deactivate(173);
+			thing_activate(171);
+			Delay(35);
+		}
 	}
-	else
+
+	Script 1 OPEN CLIENTSIDE
 	{
-		Print(s:"This door is locked");
+		Thing_Deactivate(401);
+		Thing_activate(402);
+		Delay(35/4);
+		Thing_Deactivate(402);
+		Thing_activate(401);
+		Delay(35/4);
+		Restart;
+	}
+
+	Script 28 open CLIENTSIDE
+	{
+		Thing_Deactivate(169);
+		Delay(8);
+		Thing_activate(169);
+		Delay(8);
+		Thing_Deactivate(169);
+		Delay(8);
+		Thing_activate(169);
+		Delay(8);
+		Thing_Deactivate(169);
+		Delay(4);
+		Thing_activate(169);
+		Delay(4);
+		Thing_Deactivate(169);
+		Delay(4);
+		Thing_activate(169);
+		Delay(4);
+		Thing_Deactivate(169);
+		Delay(4);
+		Thing_activate(169);
+		Delay(4);
+		Thing_Deactivate(169);
+		Delay(4);
+		Thing_activate(169);
+		Delay(4);
+		Thing_Deactivate(169);
+		Delay(2);
+		Thing_activate(169);
+		Delay(2);
+		Thing_Deactivate(169);
+		Delay(2);
+		Thing_activate(169);
+		Delay(2);
+		Thing_Deactivate(169);
+		Delay(2);
+		Thing_activate(169);
+		Delay(2);
+		Thing_Deactivate(169);
+		Delay(2);
+		Thing_activate(169);
+		Delay(2);
+		Thing_Deactivate(169);
+		Delay(2);
+		Thing_activate(169);
+		Delay(2);
+		Thing_Deactivate(169);
+		Delay(2);
+		Thing_activate(169);
+		Delay(2);
+		Thing_Deactivate(169);
+		Delay(2);
+		Thing_activate(169);
+		Delay(2);
+		Thing_Deactivate(169);
+		Delay(2);
+		Thing_activate(169);
+		Delay(2);
+		Thing_Deactivate(169);
+		Delay(1);
+		Thing_activate(169);
+		Delay(1);
+		Thing_Deactivate(169);
+		Delay(1);
+		Thing_activate(169);
+		Delay(16);
+		Restart;
+	}
+
+	Script 2 OPEN CLIENTSIDE
+	{
+		Int A = 255;
+		Int B = 0;
+
+		While(B!=255)
+		{
+			SetThingSpecial(403,0,A,B);
+			A=A-5;
+			B=B+5;
+			Delay(1);
+		}
+		While(A!=255)
+		{
+			SetThingSpecial(403,0,A,B);
+			A=A+5;
+			B=B-5;
+			Delay(1);
+		}
+		Restart;
+	}
+
+	Script 3 OPEN CLIENTSIDE
+	{
+		Int C = 0;
+
+		Thing_Deactivate(404);
+		Thing_Deactivate(405);
+		Thing_Deactivate(406);
+		Thing_Deactivate(407);
+		Thing_Deactivate(408);
+		While(c==0)
+		{
+			Thing_Deactivate(408);
+			Thing_Activate(404);
+			Delay(35/2);
+			Thing_Deactivate(404);
+			Thing_Activate(405);
+			Delay(35/2);
+			Thing_Deactivate(405);
+			Thing_Activate(406);
+			Delay(35/2);
+			Thing_Deactivate(406);
+			Thing_Activate(407);
+			Delay(35/2);
+			Thing_Deactivate(407);
+			Thing_Activate(408);
+			Delay(35/2);
+		}
+	}
+
+
+	void SetDynamicLights(bool enable, bool message)
+	{
+		if (!enable)
+		{
+			Thing_DeActivate(400);
+			Thing_DeActivate(401);
+			Thing_DeActivate(402);
+			Thing_DeActivate(403);
+			Thing_DeActivate(404);
+			Thing_DeActivate(405);
+			Thing_DeActivate(406);
+			Thing_DeActivate(407);
+			Thing_DeActivate(408);
+			Acs_Terminate(1,0);
+			Acs_Terminate(3,0);
+
+			if (message)
+				Log(s:"1046 Map Dynamic Lights Deactivated.");
+		}
+		else
+		{
+			Thing_Activate(400);
+			Thing_Activate(401);
+			Thing_Activate(402);
+			Thing_Activate(403);
+			Thing_Activate(404);
+			Thing_Activate(405);
+			Thing_Activate(406);
+			Thing_Activate(407);
+			Thing_Activate(408);
+			Acs_Execute(1,0);
+			Acs_Execute(3,0);
+
+			if (message)
+				Log(s:"1046 Map Dynamic Lights Activated.");
+		}
+	}
+
+	Script 8 (void)
+	{
+		SetLineSpecial(131,0,0,0,0,0,0);
+		FloorAndCeiling_RaiseByValue(132,5,64);
+		Floor_RaiseByValue(130,5,64);
+		TagWait(132);
+		Delay(35*3);
+		FloorAndCeiling_LowerByValue(132,5,64);
+		Floor_LowerByValue(130,5,64);
+		TagWait(132);
+		Delay(35);
+		SetLineSpecial(131,acs_execute,8,0,0,0,0);
+	}
+
+	Script 56 OPEN
+	{
+		Delay(35*10);
+		SetFont("Smallfont");
+		Print(s:"Bad framerate? Remove a big part of the dynamic lights through the legacy map options.");
+	}
+
+	// [ZH2] Handle conditionally enabling/disabling dynamic lights based on the cvar.
+	script "open_client" open clientside
+	{
+		_dynamicLightsEnabled = GetUserCVar(ConsolePlayerNumber(), "cl_zh2_zm14_enabledynamiclights");
+		SetDynamicLights(_dynamicLightsEnabled, false);
+		while (true)
+		{
+			if (_dynamicLightsEnabled != GetUserCVar(ConsolePlayerNumber(), "cl_zh2_zm14_enabledynamiclights"))
+			{
+				SetDynamicLights(!_dynamicLightsEnabled, true);
+				_dynamicLightsEnabled = !_dynamicLightsEnabled;
+			}
+
+			delay(const: 1);
+		}
+	}
+
+	Script 9 (void)
+	{
+		If(Player::GetIsZombie())
+		{
+			Teleport(110,110,1);
+			Terminate;
+		}
+		Else
+		{
+	        // TODO: Is this correct? Are we falling?
+			Thing_damage(0, 30, MOD_FALLING);
+			Teleport(138,138,1);
+			Terminate;
+		}
+	}
+
+	Script 77 (void) //Broken doors
+	{
+		Print(s:"This door is broken");
+	}
+
+	Script 78 (Int DOORTAG) //Locked doors
+	{
+		If(CheckInventory("ZH2LegacyZm14Lockpick")==1)
+		{
+			Door_Raise(DOORTAG,25,10);
+		}
+		else
+		{
+			Print(s:"This door is locked");
+		}
 	}
 }

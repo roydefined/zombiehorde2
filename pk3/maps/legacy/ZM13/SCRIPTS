@@ -7,202 +7,205 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-bool jacks = true;
-bool tele = false;
-
-// Tracks who has taken fruit.
-bool tookFruit[BCSUtils::MAX_PLAYERS];
-
-//OMGOMGOMG DONT SPOIL DEM SECRETS
-script "zm13_open" open
+strict namespace
 {
-    sector_setcolor(9,8,64,128);
-    sector_setcolor(40,32,32,255);
-    sector_setcolor(122,32,32,255);
-    sector_setrotation(44,270,0);
-    sector_setfloorpanning(44,0,0,40,0);
-    sector_setfloorscale(45,0,30,0,30);
-    sector_setfloorpanning(46,32,0,16,0);
-    sector_setfloorpanning(54,32,0,0,0);
-    sector_setfloorpanning(55,16,0,52,0);
-    sector_setrotation(55,45,0);
-    translucentline(1,160,0);
-    sector_setceilingpanning(78,0,0,32,0);
-    sector_setfloorpanning(97,0,0,32,0);
-    sector_setfloorpanning(76,0,0,32,0);
-    sector_setceilingpanning(81,48,0,0,0);
-    sector_setceilingpanning(98,48,0,0,0);
-    sector_setrotation(125,224,224);
-    sector_setrotation(135,224,224);
-    setactorproperty(136,APROP_Gravity,0);
-    setactorproperty(138,APROP_Gravity,1.9);
-}
+	bool jacks = true;
+	bool tele = false;
 
-script "zh_fixes_bp_holycross_msg" (void)
-{
-    PrintBold(s:"\n",n:0, s:"\cj has picked up the \cvHoly Cross!");
-}
+	// Tracks who has taken fruit.
+	bool tookFruit[BCSUtils::MAX_PLAYERS];
 
-script 2 (void)
-{
-    print(s:"This switch seems to be jammed.");
-}
-
-script 3 (void)
-{
-    pillar_open(26,2,45,40);
-    pillar_open(27,2,60,50);
-    floor_lowerbyvalue(28,1,8);
-    ceiling_raisebyvalue(28,1,13);
-    pillar_open(29,2,5,55);
-    pillar_open(30,2,15,25);
-}
-
-script 4 (void) //prison entrance
-{
-    setactivator(-1);
-    floor_lowerbyvalue(60,255,3);
-    floor_raisebyvalue(59,20,118);
-    tagwait(59);
-    delay(175);
-    floor_lowerbyvalue(59,9,118);
-    tagwait(59);
-    delay(35);
-    floor_raisebyvalue(60,1,3);
-    tagwait(60);
-    delay(5);
-}
-
-script 5(void)
-{
-    print(s:"You found a note. It says:\nThere is more than one secret in winery.");
-}
-
-script 6 (void)
-{
-    jacks = 0;
-    print(s:"No camping here!\nTake jacksgun before you take damage.");
-}
-
-script 7 (void)
-{
-    polyobj_move(1,12,0,56);
-}
-
-script 8 (void)
-{
-    tele = 1;
-    delay(40);
-    tele = 0;
-}
-
-script 9 (void) //SECRET teleport to jacksgun
-{
-	if(!tele)
+	//OMGOMGOMG DONT SPOIL DEM SECRETS
+	script "zm13_open" open
 	{
-		delay(35);
-	}
-	else if(!jacks)
-	{
-		print(s:"someone activated this already...");
-		delay(99);
-	}
-	else if(Player::GetIsZombie())
-	{
-		print(s:"no zimbas allowed!");
-		delay(50);
-	}
-	else if(CheckInventory(WEAPON_AMMO_JACKSGUN_NAME))
-	{
-		print(s:"you already have jacksgun!");
-		delay(50);
-	}
-	else
-	{
-		teleport(61,0,0);
-	}
-}
-
-script 10 (void) //little secret
-{
-	if(Player::GetIsZombie())
-	{
-		print(s:"these are apples, not brains...");
-		delay(9);
-		terminate;
+	    sector_setcolor(9,8,64,128);
+	    sector_setcolor(40,32,32,255);
+	    sector_setcolor(122,32,32,255);
+	    sector_setrotation(44,270,0);
+	    sector_setfloorpanning(44,0,0,40,0);
+	    sector_setfloorscale(45,0,30,0,30);
+	    sector_setfloorpanning(46,32,0,16,0);
+	    sector_setfloorpanning(54,32,0,0,0);
+	    sector_setfloorpanning(55,16,0,52,0);
+	    sector_setrotation(55,45,0);
+	    translucentline(1,160,0);
+	    sector_setceilingpanning(78,0,0,32,0);
+	    sector_setfloorpanning(97,0,0,32,0);
+	    sector_setfloorpanning(76,0,0,32,0);
+	    sector_setceilingpanning(81,48,0,0,0);
+	    sector_setceilingpanning(98,48,0,0,0);
+	    sector_setrotation(125,224,224);
+	    sector_setrotation(135,224,224);
+	    setactorproperty(136,APROP_Gravity,0);
+	    setactorproperty(138,APROP_Gravity,1.9);
 	}
 
-	if(checkinventory(tookFruit[PlayerNumber()]))
+	script "zh_fixes_bp_holycross_msg" (void)
 	{
-		print(s:"don't be greedy!");
-		delay(9);
-		terminate;
+	    PrintBold(s:"\n",n:0, s:"\cj has picked up the \cvHoly Cross!");
 	}
 
-	switch(random(1,5))
+	script 2 (void)
 	{
-		case 1:
-			healthing(15);
-			print(s:"mmm, tasty!");
-			break;
-
-		case 2:
-			healthing(25);
-			print(s:"damn, that's good!");
-			break;
-
-		case 3:
-			healthing(10);
-			print(s:"not half bad...");
-			break;
-
-		case 4:
-			healthing(5);
-			print(s:"urgh! it's rotten.");
-			break;
-
-		case 5:
-			healthing(20);
-			print(s:"i want some more!");
-			break;
+	    print(s:"This switch seems to be jammed.");
 	}
 
-	tookFruit[PlayerNumber()] = true;
-}
-script 11 (void)
-{
-    if(Player::GetIsHuman())
-		teleport(0,39,0);
-}
+	script 3 (void)
+	{
+	    pillar_open(26,2,45,40);
+	    pillar_open(27,2,60,50);
+	    floor_lowerbyvalue(28,1,8);
+	    ceiling_raisebyvalue(28,1,13);
+	    pillar_open(29,2,5,55);
+	    pillar_open(30,2,15,25);
+	}
 
-script 12(void)
-{
-    print(s:"It is locked from the other side.");
-}
+	script 4 (void) //prison entrance
+	{
+	    setactivator(-1);
+	    floor_lowerbyvalue(60,255,3);
+	    floor_raisebyvalue(59,20,118);
+	    tagwait(59);
+	    delay(175);
+	    floor_lowerbyvalue(59,9,118);
+	    tagwait(59);
+	    delay(35);
+	    floor_raisebyvalue(60,1,3);
+	    tagwait(60);
+	    delay(5);
+	}
 
-script 13(void)
-{
-    print(s:"tic-toc... not");
-}
+	script 5(void)
+	{
+	    print(s:"You found a note. It says:\nThere is more than one secret in winery.");
+	}
 
-script 14(void)
-{
-    if(getactorZ(0) < 800 * 65536)
-		teleport_nofog(134);
-}
+	script 6 (void)
+	{
+	    jacks = 0;
+	    print(s:"No camping here!\nTake jacksgun before you take damage.");
+	}
 
-script 23(void)
-{
-    if(thingcountname("ZH2LegacyReplacedPottery", 0) == 0)
-		giveinventory(KEY_RED_SKULL, 1);
-    else
-		print(s:"This can't be activated right now.");
+	script 7 (void)
+	{
+	    polyobj_move(1,12,0,56);
+	}
 
-    delay(35);
-}
+	script 8 (void)
+	{
+	    tele = 1;
+	    delay(40);
+	    tele = 0;
+	}
 
-script 24(void)
-{
-    floor_movetovalue(0,64,1296,0);
-    line_setblocking(66,0,4);
+	script 9 (void) //SECRET teleport to jacksgun
+	{
+		if(!tele)
+		{
+			delay(35);
+		}
+		else if(!jacks)
+		{
+			print(s:"someone activated this already...");
+			delay(99);
+		}
+		else if(Player::GetIsZombie())
+		{
+			print(s:"no zimbas allowed!");
+			delay(50);
+		}
+		else if(CheckInventory(WEAPON_AMMO_JACKSGUN_NAME))
+		{
+			print(s:"you already have jacksgun!");
+			delay(50);
+		}
+		else
+		{
+			teleport(61,0,0);
+		}
+	}
+
+	script 10 (void) //little secret
+	{
+		if(Player::GetIsZombie())
+		{
+			print(s:"these are apples, not brains...");
+			delay(9);
+			terminate;
+		}
+
+		if(checkinventory(tookFruit[PlayerNumber()]))
+		{
+			print(s:"don't be greedy!");
+			delay(9);
+			terminate;
+		}
+
+		switch(random(1,5))
+		{
+			case 1:
+				healthing(15);
+				print(s:"mmm, tasty!");
+				break;
+
+			case 2:
+				healthing(25);
+				print(s:"damn, that's good!");
+				break;
+
+			case 3:
+				healthing(10);
+				print(s:"not half bad...");
+				break;
+
+			case 4:
+				healthing(5);
+				print(s:"urgh! it's rotten.");
+				break;
+
+			case 5:
+				healthing(20);
+				print(s:"i want some more!");
+				break;
+		}
+
+		tookFruit[PlayerNumber()] = true;
+	}
+	script 11 (void)
+	{
+	    if(Player::GetIsHuman())
+			teleport(0,39,0);
+	}
+
+	script 12(void)
+	{
+	    print(s:"It is locked from the other side.");
+	}
+
+	script 13(void)
+	{
+	    print(s:"tic-toc... not");
+	}
+
+	script 14(void)
+	{
+	    if(getactorZ(0) < 800 * 65536)
+			teleport_nofog(134);
+	}
+
+	script 23(void)
+	{
+	    if(thingcountname("ZH2LegacyReplacedPottery", 0) == 0)
+			giveinventory(KEY_RED_SKULL, 1);
+	    else
+			print(s:"This can't be activated right now.");
+
+	    delay(35);
+	}
+
+	script 24(void)
+	{
+	    floor_movetovalue(0,64,1296,0);
+	    line_setblocking(66,0,4);
+	}
 }

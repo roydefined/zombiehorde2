@@ -7,600 +7,603 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-bool LightSwitch[256];
-
-int jivetalk;
-
-#define SOFTWARE_PLAYER 0
-
-function int GetPlayerRender(void) {return GetCVar ("vid_renderer");}
-
-script 1 OPEN clientside //software support
+strict namespace
 {
-    if(getplayerrender()!=SOFTWARE_PLAYER) Terminate;
-    {
-        for(int area=0;area<=999;area++)
-        {
-            Light_fade(area,192,35);
-        }
+	bool LightSwitch[256];
 
-    }
-}
+	int jivetalk;
 
+	#define SOFTWARE_PLAYER 0
 
-script 11 open
-{
-	GiveInventory(FLARE_ITEM, 1);
-	Sector_ChangeFlags(99, SECF_NOFALLINGDAMAGE, 0);
-	Sector_ChangeFlags(32, SECF_NOFALLINGDAMAGE, 0);
-	Sector_ChangeFlags(112, SECF_NOFALLINGDAMAGE, 0);
-	Sector_ChangeFlags(69, SECF_NOFALLINGDAMAGE, 0);
-	Thing_Move(144, random(132,136), 1); //yellow key
-	sector_setcolor(118,0,0,255);
-	sector_setcolor(119,0,0,255);
-	sector_setcolor(24,0,0,255);
-	sector_setcolor(4,0,0,255);
-	Thing_Deactivate(125);
+	function int GetPlayerRender(void) {return GetCVar ("vid_renderer");}
 
-	delay(random(35*60,35*180));
-	thing_activate(128);
-	setfont("BIGFONT");
-	HudMessage(s:"The monster! It's real!"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-	SpawnSpot ("ZH2LegacyZm19Oni", 130,131);
-	Thing_remove(128);
-	acs_execute(4,0,0,0,0);
-	door_open(102,100);
-	door_open(6,100);
-}
-
-
-
-Script 2 (int lightNumber) NET Clientside
-{
-    Thing_Activate(125);
-    SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "CGSWC02B");
-    LightSwitch[lightNumber] = 1;
-    ActivatorSound("switches/normbutn", 127);
-}
-
-Script 3 (int lightNumber) NET Clientside
-{
-	if (LightSwitch[lightNumber] == True)
+	script 1 OPEN clientside //software support
 	{
-		Thing_Deactivate(lightNumber);
-		SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "BSW07A");
-		LightSwitch[lightNumber] = 0;
-		ActivatorSound("sound/lighton1", 127);
+	    if(getplayerrender()!=SOFTWARE_PLAYER) Terminate;
+	    {
+	        for(int area=0;area<=999;area++)
+	        {
+	            Light_fade(area,192,35);
+	        }
+
+	    }
 	}
-	else
+
+
+	script 11 open
 	{
-		Thing_Activate(lightNumber);
-		SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "BSW07B");
-		LightSwitch[lightNumber] = 1;
-		ActivatorSound("sound/lightoff1", 127);
+		GiveInventory(FLARE_ITEM, 1);
+		Sector_ChangeFlags(99, SECF_NOFALLINGDAMAGE, 0);
+		Sector_ChangeFlags(32, SECF_NOFALLINGDAMAGE, 0);
+		Sector_ChangeFlags(112, SECF_NOFALLINGDAMAGE, 0);
+		Sector_ChangeFlags(69, SECF_NOFALLINGDAMAGE, 0);
+		Thing_Move(144, random(132,136), 1); //yellow key
+		sector_setcolor(118,0,0,255);
+		sector_setcolor(119,0,0,255);
+		sector_setcolor(24,0,0,255);
+		sector_setcolor(4,0,0,255);
+		Thing_Deactivate(125);
+
+		delay(random(35*60,35*180));
+		thing_activate(128);
+		setfont("BIGFONT");
+		HudMessage(s:"The monster! It's real!"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+		SpawnSpot ("ZH2LegacyZm19Oni", 130,131);
+		Thing_remove(128);
+		acs_execute(4,0,0,0,0);
+		door_open(102,100);
+		door_open(6,100);
 	}
-}
-
-Script 4 (void)
-// Ao Oni tel
-{
-   delay(random(35*10,35*15));
-   teleportother(131,129,0);
-   restart;
-}
-
-script 5 (void)
-{
-	Music::PlayMusic("d_rape", 0);
-	acs_execute(8,0,0,0,0);
-	delay(35*230);
-	acs_execute(7,0,0,0,0);
-}
-
-script 7 (void)
-{
-	jivetalk =0;
-	acs_terminate(8,0);
-	acs_terminate(9,0);
-	acs_terminate(10,0);
-
-	sector_setcolor(0,150,150,150);
-	sector_setcolor(1,150,150,150);
-	sector_setcolor(2,150,150,150);
-	sector_setcolor(3,150,150,150);
-	sector_setcolor(4,150,150,150);
-	sector_setcolor(5,150,150,150);
-	sector_setcolor(6,150,150,150);
-	sector_setcolor(7,150,150,150);
-	sector_setcolor(8,150,150,150);
-	sector_setcolor(9,150,150,150);
-	sector_setcolor(10,150,150,150);
-	sector_setcolor(11,150,150,150);
-	sector_setcolor(12,150,150,150);
-	sector_setcolor(13,150,150,150);
-	sector_setcolor(14,150,150,150);
-	sector_setcolor(15,150,150,150);
-	sector_setcolor(16,150,150,150);
-	sector_setcolor(17,150,150,150);
-	sector_setcolor(18,150,150,150);
-	sector_setcolor(19,150,150,150);
-	sector_setcolor(20,150,150,150);
-	sector_setcolor(21,150,150,150);
-	sector_setcolor(22,150,150,150);
-	sector_setcolor(23,150,150,150);
-	sector_setcolor(24,150,150,150);
-	sector_setcolor(25,150,150,150);
-	sector_setcolor(26,150,150,150);
-	sector_setcolor(27,150,150,150);
-	sector_setcolor(28,150,150,150);
-	sector_setcolor(29,150,150,150);
-	sector_setcolor(30,150,150,150);
-	sector_setcolor(31,150,150,150);
-	sector_setcolor(32,150,150,150);
-	sector_setcolor(33,150,150,150);
-	sector_setcolor(34,150,150,150);
-	sector_setcolor(35,150,150,150);
-	sector_setcolor(36,150,150,150);
-	sector_setcolor(37,150,150,150);
-	sector_setcolor(38,150,150,150);
-	sector_setcolor(39,150,150,150);
-	sector_setcolor(40,150,150,150);
-	sector_setcolor(41,150,150,150);
-	sector_setcolor(42,150,150,150);
-	sector_setcolor(43,150,150,150);
-	sector_setcolor(44,150,150,150);
-	sector_setcolor(45,150,150,150);
-	sector_setcolor(46,150,150,150);
-	sector_setcolor(47,150,150,150);
-	sector_setcolor(48,150,150,150);
-	sector_setcolor(49,150,150,150);
-	sector_setcolor(50,150,150,150);
-	sector_setcolor(51,150,150,150);
-	sector_setcolor(52,150,150,150);
-	sector_setcolor(53,150,150,150);
-	sector_setcolor(54,150,150,150);
-	sector_setcolor(55,150,150,150);
-	sector_setcolor(56,150,150,150);
-	sector_setcolor(57,150,150,150);
-	sector_setcolor(58,150,150,150);
-	sector_setcolor(59,150,150,150);
-	sector_setcolor(60,150,150,150);
-	sector_setcolor(61,150,150,150);
-	sector_setcolor(62,150,150,150);
-	sector_setcolor(63,150,150,150);
-	sector_setcolor(64,150,150,150);
-	sector_setcolor(65,150,150,150);
-	sector_setcolor(66,150,150,150);
-	sector_setcolor(67,150,150,150);
-	sector_setcolor(68,150,150,150);
-	sector_setcolor(69,150,150,150);
-	sector_setcolor(70,150,150,150);
-	sector_setcolor(71,150,150,150);
-	sector_setcolor(72,150,150,150);
-	sector_setcolor(73,150,150,150);
-	sector_setcolor(74,150,150,150);
-	sector_setcolor(75,150,150,150);
-	sector_setcolor(76,150,150,150);
-	sector_setcolor(77,150,150,150);
-	sector_setcolor(78,150,150,150);
-	sector_setcolor(79,150,150,150);
-	sector_setcolor(80,150,150,150);
-	sector_setcolor(81,150,150,150);
-	sector_setcolor(82,150,150,150);
-	sector_setcolor(83,150,150,150);
-	sector_setcolor(84,150,150,150);
-	sector_setcolor(85,150,150,150);
-	sector_setcolor(86,150,150,150);
-	sector_setcolor(87,150,150,150);
-	sector_setcolor(88,150,150,150);
-	sector_setcolor(89,150,150,150);
-	sector_setcolor(90,150,150,150);
-	sector_setcolor(91,150,150,150);
-	sector_setcolor(92,150,150,150);
-	sector_setcolor(93,150,150,150);
-	sector_setcolor(94,150,150,150);
-	sector_setcolor(95,150,150,150);
-	sector_setcolor(96,150,150,150);
-	sector_setcolor(97,150,150,150);
-	sector_setcolor(98,150,150,150);
-	sector_setcolor(99,150,150,150);
-	sector_setcolor(100,150,150,150);
-	sector_setcolor(101,150,150,150);
-	sector_setcolor(102,150,150,150);
-	sector_setcolor(103,150,150,150);
-	sector_setcolor(104,150,150,150);
-	sector_setcolor(105,150,150,150);
-	sector_setcolor(106,150,150,150);
-	sector_setcolor(107,150,150,150);
-	sector_setcolor(108,150,150,150);
-	sector_setcolor(109,150,150,150);
-	sector_setcolor(110,150,150,150);
-	sector_setcolor(111,150,150,150);
-	sector_setcolor(112,150,150,150);
-	sector_setcolor(113,150,150,150);
-	sector_setcolor(114,150,150,150);
-	sector_setcolor(115,150,150,150);
-	sector_setcolor(116,150,150,150);
-	sector_setcolor(117,150,150,150);
-	sector_setcolor(118,150,150,150);
-	sector_setcolor(120,150,150,150);
-	sector_setcolor(121,150,150,150);
-	sector_setcolor(122,150,150,150);
-	sector_setcolor(123,150,150,150);
-	sector_setcolor(124,150,150,150);
-	sector_setcolor(125,150,150,150);
-	sector_setcolor(126,150,150,150);
-	sector_setcolor(127,150,150,150);
-	sector_setcolor(128,150,150,150);
-	sector_setcolor(129,150,150,150);
-	sector_setcolor(130,150,150,150);
-	sector_setcolor(131,150,150,150);
-	sector_setcolor(132,150,150,150);
-	sector_setcolor(133,150,150,150);
-	sector_setcolor(134,150,150,150);
-	sector_setcolor(135,150,150,150);
-	sector_setcolor(136,150,150,150);
-	sector_setcolor(137,150,150,150);
-	sector_setcolor(138,150,150,150);
-	sector_setcolor(139,150,150,150);
-	sector_setcolor(140,150,150,150);
-	sector_setcolor(141,150,150,150);
-	sector_setcolor(142,150,150,150);
-	sector_setcolor(143,150,150,150);
-	sector_setcolor(144,150,150,150);
-	sector_setcolor(145,150,150,150);
-	sector_setcolor(146,150,150,150);
-	sector_setcolor(147,150,150,150);
-	sector_setcolor(148,150,150,150);
-	sector_setcolor(149,150,150,150);
-	sector_setcolor(150,150,150,150);
-	sector_setcolor(151,150,150,150);
-	sector_setcolor(152,150,150,150);
-	sector_setcolor(153,150,150,150);
-	sector_setcolor(154,150,150,150);
-	sector_setcolor(155,150,150,150);
-	sector_setcolor(156,150,150,150);
-	sector_setcolor(157,150,150,150);
-	sector_setcolor(158,150,150,150);
-	sector_setcolor(159,150,150,150);
-	Music::PlayMusic("D_null", 0);
-}
-
-script 8 (void)
-{
-	delay(35*36);
-
-	acs_execute(9,0,0,0,0);
-}
-
-script 9 (void)
-{
-	sector_setcolor(0,0,0,255);
-	sector_setcolor(1,0,0,255);
-	sector_setcolor(2,0,0,255);
-	sector_setcolor(3,0,0,255);
-	sector_setcolor(4,0,0,255);
-	sector_setcolor(5,0,0,255);
-	sector_setcolor(6,0,0,255);
-	sector_setcolor(7,0,0,255);
-	sector_setcolor(8,0,0,255);
-	sector_setcolor(9,0,0,255);
-	sector_setcolor(10,0,0,255);
-	sector_setcolor(11,0,0,255);
-	sector_setcolor(12,0,0,255);
-	sector_setcolor(13,0,0,255);
-	sector_setcolor(14,0,0,255);
-	sector_setcolor(15,0,0,255);
-	sector_setcolor(16,0,0,255);
-	sector_setcolor(17,0,0,255);
-	sector_setcolor(18,0,0,255);
-	sector_setcolor(19,0,0,255);
-	sector_setcolor(20,0,0,255);
-	sector_setcolor(21,0,0,255);
-	sector_setcolor(22,0,0,255);
-	sector_setcolor(23,0,0,255);
-	sector_setcolor(24,0,0,255);
-	sector_setcolor(25,0,0,255);
-	sector_setcolor(26,0,0,255);
-	sector_setcolor(27,0,0,255);
-	sector_setcolor(28,0,0,255);
-	sector_setcolor(29,0,0,255);
-	sector_setcolor(30,0,0,255);
-	sector_setcolor(31,0,0,255);
-	sector_setcolor(32,0,0,255);
-	sector_setcolor(33,0,0,255);
-	sector_setcolor(34,0,0,255);
-	sector_setcolor(35,0,0,255);
-	sector_setcolor(36,0,0,255);
-	sector_setcolor(37,0,0,255);
-	sector_setcolor(38,0,0,255);
-	sector_setcolor(39,0,0,255);
-	sector_setcolor(40,0,0,255);
-	sector_setcolor(41,0,0,255);
-	sector_setcolor(42,0,0,255);
-	sector_setcolor(43,0,0,255);
-	sector_setcolor(44,0,0,255);
-	sector_setcolor(45,0,0,255);
-	sector_setcolor(46,0,0,255);
-	sector_setcolor(47,0,0,255);
-	sector_setcolor(48,0,0,255);
-	sector_setcolor(49,0,0,255);
-	sector_setcolor(50,0,0,255);
-	sector_setcolor(51,0,0,255);
-	sector_setcolor(52,0,0,255);
-	sector_setcolor(53,0,0,255);
-	sector_setcolor(54,0,0,255);
-	sector_setcolor(55,0,0,255);
-	sector_setcolor(56,0,0,255);
-	sector_setcolor(57,0,0,255);
-	sector_setcolor(58,0,0,255);
-	sector_setcolor(59,0,0,255);
-	sector_setcolor(60,0,0,255);
-	sector_setcolor(61,0,0,255);
-	sector_setcolor(62,0,0,255);
-	sector_setcolor(63,0,0,255);
-	sector_setcolor(64,0,0,255);
-	sector_setcolor(65,0,0,255);
-	sector_setcolor(66,0,0,255);
-	sector_setcolor(67,0,0,255);
-	sector_setcolor(68,0,0,255);
-	sector_setcolor(69,0,0,255);
-	sector_setcolor(70,0,0,255);
-	sector_setcolor(71,0,0,255);
-	sector_setcolor(72,0,0,255);
-	sector_setcolor(73,0,0,255);
-	sector_setcolor(74,0,0,255);
-	sector_setcolor(75,0,0,255);
-	sector_setcolor(76,0,0,255);
-	sector_setcolor(77,0,0,255);
-	sector_setcolor(78,0,0,255);
-	sector_setcolor(79,0,0,255);
-	sector_setcolor(80,0,0,255);
-	sector_setcolor(81,0,0,255);
-	sector_setcolor(82,0,0,255);
-	sector_setcolor(83,0,0,255);
-	sector_setcolor(84,0,0,255);
-	sector_setcolor(85,0,0,255);
-	sector_setcolor(86,0,0,255);
-	sector_setcolor(87,0,0,255);
-	sector_setcolor(88,0,0,255);
-	sector_setcolor(89,0,0,255);
-	sector_setcolor(90,0,0,255);
-	sector_setcolor(91,0,0,255);
-	sector_setcolor(92,0,0,255);
-	sector_setcolor(93,0,0,255);
-	sector_setcolor(94,0,0,255);
-	sector_setcolor(95,0,0,255);
-	sector_setcolor(96,0,0,255);
-	sector_setcolor(97,0,0,255);
-	sector_setcolor(98,0,0,255);
-	sector_setcolor(99,0,0,255);
-	sector_setcolor(100,0,0,255);
-	sector_setcolor(101,0,0,255);
-	sector_setcolor(102,0,0,255);
-	sector_setcolor(103,0,0,255);
-	sector_setcolor(104,0,0,255);
-	sector_setcolor(105,0,0,255);
-	sector_setcolor(106,0,0,255);
-	sector_setcolor(107,0,0,255);
-	sector_setcolor(108,0,0,255);
-	sector_setcolor(109,0,0,255);
-	sector_setcolor(110,0,0,255);
-	sector_setcolor(111,0,0,255);
-	sector_setcolor(112,0,0,255);
-	sector_setcolor(113,0,0,255);
-	sector_setcolor(114,0,0,255);
-	sector_setcolor(115,0,0,255);
-	sector_setcolor(116,0,0,255);
-	sector_setcolor(117,0,0,255);
-	sector_setcolor(118,0,0,255);
-	sector_setcolor(120,0,0,255);
-	sector_setcolor(121,0,0,255);
-	sector_setcolor(122,0,0,255);
-	sector_setcolor(123,0,0,255);
-	sector_setcolor(124,0,0,255);
-	sector_setcolor(125,0,0,255);
-	sector_setcolor(126,0,0,255);
-	sector_setcolor(127,0,0,255);
-	sector_setcolor(128,0,0,255);
-	sector_setcolor(129,0,0,255);
-	sector_setcolor(130,0,0,255);
-	sector_setcolor(131,0,0,255);
-	sector_setcolor(132,0,0,255);
-	sector_setcolor(133,0,0,255);
-	sector_setcolor(134,0,0,255);
-	sector_setcolor(135,0,0,255);
-	sector_setcolor(136,0,0,255);
-	sector_setcolor(137,0,0,255);
-	sector_setcolor(138,0,0,255);
-	sector_setcolor(139,0,0,255);
-	sector_setcolor(140,0,0,255);
-	sector_setcolor(141,0,0,255);
-	sector_setcolor(142,0,0,255);
-	sector_setcolor(143,0,0,255);
-	sector_setcolor(144,0,0,255);
-	sector_setcolor(145,0,0,255);
-	sector_setcolor(146,0,0,255);
-	sector_setcolor(147,0,0,255);
-	sector_setcolor(148,0,0,255);
-	sector_setcolor(149,0,0,255);
-	sector_setcolor(150,0,0,255);
-	sector_setcolor(151,0,0,255);
-	sector_setcolor(152,0,0,255);
-	sector_setcolor(153,0,0,255);
-	sector_setcolor(154,0,0,255);
-	sector_setcolor(155,0,0,255);
-	sector_setcolor(156,0,0,255);
-	sector_setcolor(157,0,0,255);
-	sector_setcolor(158,0,0,255);
-	sector_setcolor(159,0,0,255);
-
-	delay(35);
-	acs_execute(10,0,0,0,0);
-}
 
 
-script 10 (void)
-{
-	sector_setcolor(0,150,150,150);
-	sector_setcolor(1,150,150,150);
-	sector_setcolor(2,150,150,150);
-	sector_setcolor(3,150,150,150);
-	sector_setcolor(4,150,150,150);
-	sector_setcolor(5,150,150,150);
-	sector_setcolor(6,150,150,150);
-	sector_setcolor(7,150,150,150);
-	sector_setcolor(8,150,150,150);
-	sector_setcolor(9,150,150,150);
-	sector_setcolor(10,150,150,150);
-	sector_setcolor(11,150,150,150);
-	sector_setcolor(12,150,150,150);
-	sector_setcolor(13,150,150,150);
-	sector_setcolor(14,150,150,150);
-	sector_setcolor(15,150,150,150);
-	sector_setcolor(16,150,150,150);
-	sector_setcolor(17,150,150,150);
-	sector_setcolor(18,150,150,150);
-	sector_setcolor(19,150,150,150);
-	sector_setcolor(20,150,150,150);
-	sector_setcolor(21,150,150,150);
-	sector_setcolor(22,150,150,150);
-	sector_setcolor(23,150,150,150);
-	sector_setcolor(24,150,150,150);
-	sector_setcolor(25,150,150,150);
-	sector_setcolor(26,150,150,150);
-	sector_setcolor(27,150,150,150);
-	sector_setcolor(28,150,150,150);
-	sector_setcolor(29,150,150,150);
-	sector_setcolor(30,150,150,150);
-	sector_setcolor(31,150,150,150);
-	sector_setcolor(32,150,150,150);
-	sector_setcolor(33,150,150,150);
-	sector_setcolor(34,150,150,150);
-	sector_setcolor(35,150,150,150);
-	sector_setcolor(36,150,150,150);
-	sector_setcolor(37,150,150,150);
-	sector_setcolor(38,150,150,150);
-	sector_setcolor(39,150,150,150);
-	sector_setcolor(40,150,150,150);
-	sector_setcolor(41,150,150,150);
-	sector_setcolor(42,150,150,150);
-	sector_setcolor(43,150,150,150);
-	sector_setcolor(44,150,150,150);
-	sector_setcolor(45,150,150,150);
-	sector_setcolor(46,150,150,150);
-	sector_setcolor(47,150,150,150);
-	sector_setcolor(48,150,150,150);
-	sector_setcolor(49,150,150,150);
-	sector_setcolor(50,150,150,150);
-	sector_setcolor(51,150,150,150);
-	sector_setcolor(52,150,150,150);
-	sector_setcolor(53,150,150,150);
-	sector_setcolor(54,150,150,150);
-	sector_setcolor(55,150,150,150);
-	sector_setcolor(56,150,150,150);
-	sector_setcolor(57,150,150,150);
-	sector_setcolor(58,150,150,150);
-	sector_setcolor(59,150,150,150);
-	sector_setcolor(60,150,150,150);
-	sector_setcolor(61,150,150,150);
-	sector_setcolor(62,150,150,150);
-	sector_setcolor(63,150,150,150);
-	sector_setcolor(64,150,150,150);
-	sector_setcolor(65,150,150,150);
-	sector_setcolor(66,150,150,150);
-	sector_setcolor(67,150,150,150);
-	sector_setcolor(68,150,150,150);
-	sector_setcolor(69,150,150,150);
-	sector_setcolor(70,150,150,150);
-	sector_setcolor(71,150,150,150);
-	sector_setcolor(72,150,150,150);
-	sector_setcolor(73,150,150,150);
-	sector_setcolor(74,150,150,150);
-	sector_setcolor(75,150,150,150);
-	sector_setcolor(76,150,150,150);
-	sector_setcolor(77,150,150,150);
-	sector_setcolor(78,150,150,150);
-	sector_setcolor(79,150,150,150);
-	sector_setcolor(80,150,150,150);
-	sector_setcolor(81,150,150,150);
-	sector_setcolor(82,150,150,150);
-	sector_setcolor(83,150,150,150);
-	sector_setcolor(84,150,150,150);
-	sector_setcolor(85,150,150,150);
-	sector_setcolor(86,150,150,150);
-	sector_setcolor(87,150,150,150);
-	sector_setcolor(88,150,150,150);
-	sector_setcolor(89,150,150,150);
-	sector_setcolor(90,150,150,150);
-	sector_setcolor(91,150,150,150);
-	sector_setcolor(92,150,150,150);
-	sector_setcolor(93,150,150,150);
-	sector_setcolor(94,150,150,150);
-	sector_setcolor(95,150,150,150);
-	sector_setcolor(96,150,150,150);
-	sector_setcolor(97,150,150,150);
-	sector_setcolor(98,150,150,150);
-	sector_setcolor(99,150,150,150);
-	sector_setcolor(100,150,150,150);
-	sector_setcolor(101,150,150,150);
-	sector_setcolor(102,150,150,150);
-	sector_setcolor(103,150,150,150);
-	sector_setcolor(104,150,150,150);
-	sector_setcolor(105,150,150,150);
-	sector_setcolor(106,150,150,150);
-	sector_setcolor(107,150,150,150);
-	sector_setcolor(108,150,150,150);
-	sector_setcolor(109,150,150,150);
-	sector_setcolor(110,150,150,150);
-	sector_setcolor(111,150,150,150);
-	sector_setcolor(112,150,150,150);
-	sector_setcolor(113,150,150,150);
-	sector_setcolor(114,150,150,150);
-	sector_setcolor(115,150,150,150);
-	sector_setcolor(116,150,150,150);
-	sector_setcolor(117,150,150,150);
-	sector_setcolor(118,150,150,150);
-	sector_setcolor(120,150,150,150);
-	sector_setcolor(121,150,150,150);
-	sector_setcolor(122,150,150,150);
-	sector_setcolor(123,150,150,150);
-	sector_setcolor(124,150,150,150);
-	sector_setcolor(125,150,150,150);
-	sector_setcolor(126,150,150,150);
-	sector_setcolor(127,150,150,150);
-	sector_setcolor(128,150,150,150);
-	sector_setcolor(129,150,150,150);
-	sector_setcolor(130,150,150,150);
-	sector_setcolor(131,150,150,150);
-	sector_setcolor(132,150,150,150);
-	sector_setcolor(133,150,150,150);
-	sector_setcolor(134,150,150,150);
-	sector_setcolor(135,150,150,150);
-	sector_setcolor(136,150,150,150);
-	sector_setcolor(137,150,150,150);
-	sector_setcolor(138,150,150,150);
-	sector_setcolor(139,150,150,150);
-	sector_setcolor(140,150,150,150);
-	sector_setcolor(141,150,150,150);
-	sector_setcolor(142,150,150,150);
-	sector_setcolor(143,150,150,150);
-	sector_setcolor(144,150,150,150);
-	sector_setcolor(145,150,150,150);
-	sector_setcolor(146,150,150,150);
-	sector_setcolor(147,150,150,150);
-	sector_setcolor(148,150,150,150);
-	sector_setcolor(149,150,150,150);
-	sector_setcolor(150,150,150,150);
-	sector_setcolor(151,150,150,150);
-	sector_setcolor(152,150,150,150);
-	sector_setcolor(153,150,150,150);
-	sector_setcolor(154,150,150,150);
-	sector_setcolor(155,150,150,150);
-	sector_setcolor(156,150,150,150);
-	sector_setcolor(157,150,150,150);
-	sector_setcolor(158,150,150,150);
-	sector_setcolor(159,150,150,150);
-	delay(35);
-	acs_execute(9,0,0,0,0);
+
+	Script 2 (int lightNumber) NET Clientside
+	{
+	    Thing_Activate(125);
+	    SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "CGSWC02B");
+	    LightSwitch[lightNumber] = 1;
+	    ActivatorSound("switches/normbutn", 127);
+	}
+
+	Script 3 (int lightNumber) NET Clientside
+	{
+		if (LightSwitch[lightNumber] == True)
+		{
+			Thing_Deactivate(lightNumber);
+			SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "BSW07A");
+			LightSwitch[lightNumber] = 0;
+			ActivatorSound("sound/lighton1", 127);
+		}
+		else
+		{
+			Thing_Activate(lightNumber);
+			SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "BSW07B");
+			LightSwitch[lightNumber] = 1;
+			ActivatorSound("sound/lightoff1", 127);
+		}
+	}
+
+	Script 4 (void)
+	// Ao Oni tel
+	{
+	   delay(random(35*10,35*15));
+	   teleportother(131,129,0);
+	   restart;
+	}
+
+	script 5 (void)
+	{
+		Music::PlayMusic("d_rape", 0);
+		acs_execute(8,0,0,0,0);
+		delay(35*230);
+		acs_execute(7,0,0,0,0);
+	}
+
+	script 7 (void)
+	{
+		jivetalk =0;
+		acs_terminate(8,0);
+		acs_terminate(9,0);
+		acs_terminate(10,0);
+
+		sector_setcolor(0,150,150,150);
+		sector_setcolor(1,150,150,150);
+		sector_setcolor(2,150,150,150);
+		sector_setcolor(3,150,150,150);
+		sector_setcolor(4,150,150,150);
+		sector_setcolor(5,150,150,150);
+		sector_setcolor(6,150,150,150);
+		sector_setcolor(7,150,150,150);
+		sector_setcolor(8,150,150,150);
+		sector_setcolor(9,150,150,150);
+		sector_setcolor(10,150,150,150);
+		sector_setcolor(11,150,150,150);
+		sector_setcolor(12,150,150,150);
+		sector_setcolor(13,150,150,150);
+		sector_setcolor(14,150,150,150);
+		sector_setcolor(15,150,150,150);
+		sector_setcolor(16,150,150,150);
+		sector_setcolor(17,150,150,150);
+		sector_setcolor(18,150,150,150);
+		sector_setcolor(19,150,150,150);
+		sector_setcolor(20,150,150,150);
+		sector_setcolor(21,150,150,150);
+		sector_setcolor(22,150,150,150);
+		sector_setcolor(23,150,150,150);
+		sector_setcolor(24,150,150,150);
+		sector_setcolor(25,150,150,150);
+		sector_setcolor(26,150,150,150);
+		sector_setcolor(27,150,150,150);
+		sector_setcolor(28,150,150,150);
+		sector_setcolor(29,150,150,150);
+		sector_setcolor(30,150,150,150);
+		sector_setcolor(31,150,150,150);
+		sector_setcolor(32,150,150,150);
+		sector_setcolor(33,150,150,150);
+		sector_setcolor(34,150,150,150);
+		sector_setcolor(35,150,150,150);
+		sector_setcolor(36,150,150,150);
+		sector_setcolor(37,150,150,150);
+		sector_setcolor(38,150,150,150);
+		sector_setcolor(39,150,150,150);
+		sector_setcolor(40,150,150,150);
+		sector_setcolor(41,150,150,150);
+		sector_setcolor(42,150,150,150);
+		sector_setcolor(43,150,150,150);
+		sector_setcolor(44,150,150,150);
+		sector_setcolor(45,150,150,150);
+		sector_setcolor(46,150,150,150);
+		sector_setcolor(47,150,150,150);
+		sector_setcolor(48,150,150,150);
+		sector_setcolor(49,150,150,150);
+		sector_setcolor(50,150,150,150);
+		sector_setcolor(51,150,150,150);
+		sector_setcolor(52,150,150,150);
+		sector_setcolor(53,150,150,150);
+		sector_setcolor(54,150,150,150);
+		sector_setcolor(55,150,150,150);
+		sector_setcolor(56,150,150,150);
+		sector_setcolor(57,150,150,150);
+		sector_setcolor(58,150,150,150);
+		sector_setcolor(59,150,150,150);
+		sector_setcolor(60,150,150,150);
+		sector_setcolor(61,150,150,150);
+		sector_setcolor(62,150,150,150);
+		sector_setcolor(63,150,150,150);
+		sector_setcolor(64,150,150,150);
+		sector_setcolor(65,150,150,150);
+		sector_setcolor(66,150,150,150);
+		sector_setcolor(67,150,150,150);
+		sector_setcolor(68,150,150,150);
+		sector_setcolor(69,150,150,150);
+		sector_setcolor(70,150,150,150);
+		sector_setcolor(71,150,150,150);
+		sector_setcolor(72,150,150,150);
+		sector_setcolor(73,150,150,150);
+		sector_setcolor(74,150,150,150);
+		sector_setcolor(75,150,150,150);
+		sector_setcolor(76,150,150,150);
+		sector_setcolor(77,150,150,150);
+		sector_setcolor(78,150,150,150);
+		sector_setcolor(79,150,150,150);
+		sector_setcolor(80,150,150,150);
+		sector_setcolor(81,150,150,150);
+		sector_setcolor(82,150,150,150);
+		sector_setcolor(83,150,150,150);
+		sector_setcolor(84,150,150,150);
+		sector_setcolor(85,150,150,150);
+		sector_setcolor(86,150,150,150);
+		sector_setcolor(87,150,150,150);
+		sector_setcolor(88,150,150,150);
+		sector_setcolor(89,150,150,150);
+		sector_setcolor(90,150,150,150);
+		sector_setcolor(91,150,150,150);
+		sector_setcolor(92,150,150,150);
+		sector_setcolor(93,150,150,150);
+		sector_setcolor(94,150,150,150);
+		sector_setcolor(95,150,150,150);
+		sector_setcolor(96,150,150,150);
+		sector_setcolor(97,150,150,150);
+		sector_setcolor(98,150,150,150);
+		sector_setcolor(99,150,150,150);
+		sector_setcolor(100,150,150,150);
+		sector_setcolor(101,150,150,150);
+		sector_setcolor(102,150,150,150);
+		sector_setcolor(103,150,150,150);
+		sector_setcolor(104,150,150,150);
+		sector_setcolor(105,150,150,150);
+		sector_setcolor(106,150,150,150);
+		sector_setcolor(107,150,150,150);
+		sector_setcolor(108,150,150,150);
+		sector_setcolor(109,150,150,150);
+		sector_setcolor(110,150,150,150);
+		sector_setcolor(111,150,150,150);
+		sector_setcolor(112,150,150,150);
+		sector_setcolor(113,150,150,150);
+		sector_setcolor(114,150,150,150);
+		sector_setcolor(115,150,150,150);
+		sector_setcolor(116,150,150,150);
+		sector_setcolor(117,150,150,150);
+		sector_setcolor(118,150,150,150);
+		sector_setcolor(120,150,150,150);
+		sector_setcolor(121,150,150,150);
+		sector_setcolor(122,150,150,150);
+		sector_setcolor(123,150,150,150);
+		sector_setcolor(124,150,150,150);
+		sector_setcolor(125,150,150,150);
+		sector_setcolor(126,150,150,150);
+		sector_setcolor(127,150,150,150);
+		sector_setcolor(128,150,150,150);
+		sector_setcolor(129,150,150,150);
+		sector_setcolor(130,150,150,150);
+		sector_setcolor(131,150,150,150);
+		sector_setcolor(132,150,150,150);
+		sector_setcolor(133,150,150,150);
+		sector_setcolor(134,150,150,150);
+		sector_setcolor(135,150,150,150);
+		sector_setcolor(136,150,150,150);
+		sector_setcolor(137,150,150,150);
+		sector_setcolor(138,150,150,150);
+		sector_setcolor(139,150,150,150);
+		sector_setcolor(140,150,150,150);
+		sector_setcolor(141,150,150,150);
+		sector_setcolor(142,150,150,150);
+		sector_setcolor(143,150,150,150);
+		sector_setcolor(144,150,150,150);
+		sector_setcolor(145,150,150,150);
+		sector_setcolor(146,150,150,150);
+		sector_setcolor(147,150,150,150);
+		sector_setcolor(148,150,150,150);
+		sector_setcolor(149,150,150,150);
+		sector_setcolor(150,150,150,150);
+		sector_setcolor(151,150,150,150);
+		sector_setcolor(152,150,150,150);
+		sector_setcolor(153,150,150,150);
+		sector_setcolor(154,150,150,150);
+		sector_setcolor(155,150,150,150);
+		sector_setcolor(156,150,150,150);
+		sector_setcolor(157,150,150,150);
+		sector_setcolor(158,150,150,150);
+		sector_setcolor(159,150,150,150);
+		Music::PlayMusic("D_null", 0);
+	}
+
+	script 8 (void)
+	{
+		delay(35*36);
+
+		acs_execute(9,0,0,0,0);
+	}
+
+	script 9 (void)
+	{
+		sector_setcolor(0,0,0,255);
+		sector_setcolor(1,0,0,255);
+		sector_setcolor(2,0,0,255);
+		sector_setcolor(3,0,0,255);
+		sector_setcolor(4,0,0,255);
+		sector_setcolor(5,0,0,255);
+		sector_setcolor(6,0,0,255);
+		sector_setcolor(7,0,0,255);
+		sector_setcolor(8,0,0,255);
+		sector_setcolor(9,0,0,255);
+		sector_setcolor(10,0,0,255);
+		sector_setcolor(11,0,0,255);
+		sector_setcolor(12,0,0,255);
+		sector_setcolor(13,0,0,255);
+		sector_setcolor(14,0,0,255);
+		sector_setcolor(15,0,0,255);
+		sector_setcolor(16,0,0,255);
+		sector_setcolor(17,0,0,255);
+		sector_setcolor(18,0,0,255);
+		sector_setcolor(19,0,0,255);
+		sector_setcolor(20,0,0,255);
+		sector_setcolor(21,0,0,255);
+		sector_setcolor(22,0,0,255);
+		sector_setcolor(23,0,0,255);
+		sector_setcolor(24,0,0,255);
+		sector_setcolor(25,0,0,255);
+		sector_setcolor(26,0,0,255);
+		sector_setcolor(27,0,0,255);
+		sector_setcolor(28,0,0,255);
+		sector_setcolor(29,0,0,255);
+		sector_setcolor(30,0,0,255);
+		sector_setcolor(31,0,0,255);
+		sector_setcolor(32,0,0,255);
+		sector_setcolor(33,0,0,255);
+		sector_setcolor(34,0,0,255);
+		sector_setcolor(35,0,0,255);
+		sector_setcolor(36,0,0,255);
+		sector_setcolor(37,0,0,255);
+		sector_setcolor(38,0,0,255);
+		sector_setcolor(39,0,0,255);
+		sector_setcolor(40,0,0,255);
+		sector_setcolor(41,0,0,255);
+		sector_setcolor(42,0,0,255);
+		sector_setcolor(43,0,0,255);
+		sector_setcolor(44,0,0,255);
+		sector_setcolor(45,0,0,255);
+		sector_setcolor(46,0,0,255);
+		sector_setcolor(47,0,0,255);
+		sector_setcolor(48,0,0,255);
+		sector_setcolor(49,0,0,255);
+		sector_setcolor(50,0,0,255);
+		sector_setcolor(51,0,0,255);
+		sector_setcolor(52,0,0,255);
+		sector_setcolor(53,0,0,255);
+		sector_setcolor(54,0,0,255);
+		sector_setcolor(55,0,0,255);
+		sector_setcolor(56,0,0,255);
+		sector_setcolor(57,0,0,255);
+		sector_setcolor(58,0,0,255);
+		sector_setcolor(59,0,0,255);
+		sector_setcolor(60,0,0,255);
+		sector_setcolor(61,0,0,255);
+		sector_setcolor(62,0,0,255);
+		sector_setcolor(63,0,0,255);
+		sector_setcolor(64,0,0,255);
+		sector_setcolor(65,0,0,255);
+		sector_setcolor(66,0,0,255);
+		sector_setcolor(67,0,0,255);
+		sector_setcolor(68,0,0,255);
+		sector_setcolor(69,0,0,255);
+		sector_setcolor(70,0,0,255);
+		sector_setcolor(71,0,0,255);
+		sector_setcolor(72,0,0,255);
+		sector_setcolor(73,0,0,255);
+		sector_setcolor(74,0,0,255);
+		sector_setcolor(75,0,0,255);
+		sector_setcolor(76,0,0,255);
+		sector_setcolor(77,0,0,255);
+		sector_setcolor(78,0,0,255);
+		sector_setcolor(79,0,0,255);
+		sector_setcolor(80,0,0,255);
+		sector_setcolor(81,0,0,255);
+		sector_setcolor(82,0,0,255);
+		sector_setcolor(83,0,0,255);
+		sector_setcolor(84,0,0,255);
+		sector_setcolor(85,0,0,255);
+		sector_setcolor(86,0,0,255);
+		sector_setcolor(87,0,0,255);
+		sector_setcolor(88,0,0,255);
+		sector_setcolor(89,0,0,255);
+		sector_setcolor(90,0,0,255);
+		sector_setcolor(91,0,0,255);
+		sector_setcolor(92,0,0,255);
+		sector_setcolor(93,0,0,255);
+		sector_setcolor(94,0,0,255);
+		sector_setcolor(95,0,0,255);
+		sector_setcolor(96,0,0,255);
+		sector_setcolor(97,0,0,255);
+		sector_setcolor(98,0,0,255);
+		sector_setcolor(99,0,0,255);
+		sector_setcolor(100,0,0,255);
+		sector_setcolor(101,0,0,255);
+		sector_setcolor(102,0,0,255);
+		sector_setcolor(103,0,0,255);
+		sector_setcolor(104,0,0,255);
+		sector_setcolor(105,0,0,255);
+		sector_setcolor(106,0,0,255);
+		sector_setcolor(107,0,0,255);
+		sector_setcolor(108,0,0,255);
+		sector_setcolor(109,0,0,255);
+		sector_setcolor(110,0,0,255);
+		sector_setcolor(111,0,0,255);
+		sector_setcolor(112,0,0,255);
+		sector_setcolor(113,0,0,255);
+		sector_setcolor(114,0,0,255);
+		sector_setcolor(115,0,0,255);
+		sector_setcolor(116,0,0,255);
+		sector_setcolor(117,0,0,255);
+		sector_setcolor(118,0,0,255);
+		sector_setcolor(120,0,0,255);
+		sector_setcolor(121,0,0,255);
+		sector_setcolor(122,0,0,255);
+		sector_setcolor(123,0,0,255);
+		sector_setcolor(124,0,0,255);
+		sector_setcolor(125,0,0,255);
+		sector_setcolor(126,0,0,255);
+		sector_setcolor(127,0,0,255);
+		sector_setcolor(128,0,0,255);
+		sector_setcolor(129,0,0,255);
+		sector_setcolor(130,0,0,255);
+		sector_setcolor(131,0,0,255);
+		sector_setcolor(132,0,0,255);
+		sector_setcolor(133,0,0,255);
+		sector_setcolor(134,0,0,255);
+		sector_setcolor(135,0,0,255);
+		sector_setcolor(136,0,0,255);
+		sector_setcolor(137,0,0,255);
+		sector_setcolor(138,0,0,255);
+		sector_setcolor(139,0,0,255);
+		sector_setcolor(140,0,0,255);
+		sector_setcolor(141,0,0,255);
+		sector_setcolor(142,0,0,255);
+		sector_setcolor(143,0,0,255);
+		sector_setcolor(144,0,0,255);
+		sector_setcolor(145,0,0,255);
+		sector_setcolor(146,0,0,255);
+		sector_setcolor(147,0,0,255);
+		sector_setcolor(148,0,0,255);
+		sector_setcolor(149,0,0,255);
+		sector_setcolor(150,0,0,255);
+		sector_setcolor(151,0,0,255);
+		sector_setcolor(152,0,0,255);
+		sector_setcolor(153,0,0,255);
+		sector_setcolor(154,0,0,255);
+		sector_setcolor(155,0,0,255);
+		sector_setcolor(156,0,0,255);
+		sector_setcolor(157,0,0,255);
+		sector_setcolor(158,0,0,255);
+		sector_setcolor(159,0,0,255);
+
+		delay(35);
+		acs_execute(10,0,0,0,0);
+	}
+
+
+	script 10 (void)
+	{
+		sector_setcolor(0,150,150,150);
+		sector_setcolor(1,150,150,150);
+		sector_setcolor(2,150,150,150);
+		sector_setcolor(3,150,150,150);
+		sector_setcolor(4,150,150,150);
+		sector_setcolor(5,150,150,150);
+		sector_setcolor(6,150,150,150);
+		sector_setcolor(7,150,150,150);
+		sector_setcolor(8,150,150,150);
+		sector_setcolor(9,150,150,150);
+		sector_setcolor(10,150,150,150);
+		sector_setcolor(11,150,150,150);
+		sector_setcolor(12,150,150,150);
+		sector_setcolor(13,150,150,150);
+		sector_setcolor(14,150,150,150);
+		sector_setcolor(15,150,150,150);
+		sector_setcolor(16,150,150,150);
+		sector_setcolor(17,150,150,150);
+		sector_setcolor(18,150,150,150);
+		sector_setcolor(19,150,150,150);
+		sector_setcolor(20,150,150,150);
+		sector_setcolor(21,150,150,150);
+		sector_setcolor(22,150,150,150);
+		sector_setcolor(23,150,150,150);
+		sector_setcolor(24,150,150,150);
+		sector_setcolor(25,150,150,150);
+		sector_setcolor(26,150,150,150);
+		sector_setcolor(27,150,150,150);
+		sector_setcolor(28,150,150,150);
+		sector_setcolor(29,150,150,150);
+		sector_setcolor(30,150,150,150);
+		sector_setcolor(31,150,150,150);
+		sector_setcolor(32,150,150,150);
+		sector_setcolor(33,150,150,150);
+		sector_setcolor(34,150,150,150);
+		sector_setcolor(35,150,150,150);
+		sector_setcolor(36,150,150,150);
+		sector_setcolor(37,150,150,150);
+		sector_setcolor(38,150,150,150);
+		sector_setcolor(39,150,150,150);
+		sector_setcolor(40,150,150,150);
+		sector_setcolor(41,150,150,150);
+		sector_setcolor(42,150,150,150);
+		sector_setcolor(43,150,150,150);
+		sector_setcolor(44,150,150,150);
+		sector_setcolor(45,150,150,150);
+		sector_setcolor(46,150,150,150);
+		sector_setcolor(47,150,150,150);
+		sector_setcolor(48,150,150,150);
+		sector_setcolor(49,150,150,150);
+		sector_setcolor(50,150,150,150);
+		sector_setcolor(51,150,150,150);
+		sector_setcolor(52,150,150,150);
+		sector_setcolor(53,150,150,150);
+		sector_setcolor(54,150,150,150);
+		sector_setcolor(55,150,150,150);
+		sector_setcolor(56,150,150,150);
+		sector_setcolor(57,150,150,150);
+		sector_setcolor(58,150,150,150);
+		sector_setcolor(59,150,150,150);
+		sector_setcolor(60,150,150,150);
+		sector_setcolor(61,150,150,150);
+		sector_setcolor(62,150,150,150);
+		sector_setcolor(63,150,150,150);
+		sector_setcolor(64,150,150,150);
+		sector_setcolor(65,150,150,150);
+		sector_setcolor(66,150,150,150);
+		sector_setcolor(67,150,150,150);
+		sector_setcolor(68,150,150,150);
+		sector_setcolor(69,150,150,150);
+		sector_setcolor(70,150,150,150);
+		sector_setcolor(71,150,150,150);
+		sector_setcolor(72,150,150,150);
+		sector_setcolor(73,150,150,150);
+		sector_setcolor(74,150,150,150);
+		sector_setcolor(75,150,150,150);
+		sector_setcolor(76,150,150,150);
+		sector_setcolor(77,150,150,150);
+		sector_setcolor(78,150,150,150);
+		sector_setcolor(79,150,150,150);
+		sector_setcolor(80,150,150,150);
+		sector_setcolor(81,150,150,150);
+		sector_setcolor(82,150,150,150);
+		sector_setcolor(83,150,150,150);
+		sector_setcolor(84,150,150,150);
+		sector_setcolor(85,150,150,150);
+		sector_setcolor(86,150,150,150);
+		sector_setcolor(87,150,150,150);
+		sector_setcolor(88,150,150,150);
+		sector_setcolor(89,150,150,150);
+		sector_setcolor(90,150,150,150);
+		sector_setcolor(91,150,150,150);
+		sector_setcolor(92,150,150,150);
+		sector_setcolor(93,150,150,150);
+		sector_setcolor(94,150,150,150);
+		sector_setcolor(95,150,150,150);
+		sector_setcolor(96,150,150,150);
+		sector_setcolor(97,150,150,150);
+		sector_setcolor(98,150,150,150);
+		sector_setcolor(99,150,150,150);
+		sector_setcolor(100,150,150,150);
+		sector_setcolor(101,150,150,150);
+		sector_setcolor(102,150,150,150);
+		sector_setcolor(103,150,150,150);
+		sector_setcolor(104,150,150,150);
+		sector_setcolor(105,150,150,150);
+		sector_setcolor(106,150,150,150);
+		sector_setcolor(107,150,150,150);
+		sector_setcolor(108,150,150,150);
+		sector_setcolor(109,150,150,150);
+		sector_setcolor(110,150,150,150);
+		sector_setcolor(111,150,150,150);
+		sector_setcolor(112,150,150,150);
+		sector_setcolor(113,150,150,150);
+		sector_setcolor(114,150,150,150);
+		sector_setcolor(115,150,150,150);
+		sector_setcolor(116,150,150,150);
+		sector_setcolor(117,150,150,150);
+		sector_setcolor(118,150,150,150);
+		sector_setcolor(120,150,150,150);
+		sector_setcolor(121,150,150,150);
+		sector_setcolor(122,150,150,150);
+		sector_setcolor(123,150,150,150);
+		sector_setcolor(124,150,150,150);
+		sector_setcolor(125,150,150,150);
+		sector_setcolor(126,150,150,150);
+		sector_setcolor(127,150,150,150);
+		sector_setcolor(128,150,150,150);
+		sector_setcolor(129,150,150,150);
+		sector_setcolor(130,150,150,150);
+		sector_setcolor(131,150,150,150);
+		sector_setcolor(132,150,150,150);
+		sector_setcolor(133,150,150,150);
+		sector_setcolor(134,150,150,150);
+		sector_setcolor(135,150,150,150);
+		sector_setcolor(136,150,150,150);
+		sector_setcolor(137,150,150,150);
+		sector_setcolor(138,150,150,150);
+		sector_setcolor(139,150,150,150);
+		sector_setcolor(140,150,150,150);
+		sector_setcolor(141,150,150,150);
+		sector_setcolor(142,150,150,150);
+		sector_setcolor(143,150,150,150);
+		sector_setcolor(144,150,150,150);
+		sector_setcolor(145,150,150,150);
+		sector_setcolor(146,150,150,150);
+		sector_setcolor(147,150,150,150);
+		sector_setcolor(148,150,150,150);
+		sector_setcolor(149,150,150,150);
+		sector_setcolor(150,150,150,150);
+		sector_setcolor(151,150,150,150);
+		sector_setcolor(152,150,150,150);
+		sector_setcolor(153,150,150,150);
+		sector_setcolor(154,150,150,150);
+		sector_setcolor(155,150,150,150);
+		sector_setcolor(156,150,150,150);
+		sector_setcolor(157,150,150,150);
+		sector_setcolor(158,150,150,150);
+		sector_setcolor(159,150,150,150);
+		delay(35);
+		acs_execute(9,0,0,0,0);
+	}
 }

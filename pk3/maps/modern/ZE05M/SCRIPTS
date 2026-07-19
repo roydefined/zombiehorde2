@@ -7,272 +7,275 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-#define RESIST1_TIME 10
-#define RESIST2_TIME 30
-#define RESIST3_TIME 20
-#define RESIST4_TIME 30
-#define ESCAPE_TIME  20
-
-#define SONG_DURATION 165
-
-Bool b_lift_is_gone        = FALSE;
-Bool b_firstLiftActivation = FALSE;
-Bool b_AlertStopped        = FALSE;
-bool b_shieldactive        = FALSE;
-
-Int timeleft = ESCAPE_TIME;
-
-Script "zm05m_open" open // Level setups
+strict namespace
 {
-    /* Reactor fog */
-    /*
-    #define FOG_RR  32
-    #define FOG_GG  96
-    #define FOG_BB  0
-    Sector_SetFade(1,   FOG_RR, FOG_GG, FOG_BB);
-    Sector_SetFade(10,  FOG_RR, FOG_GG, FOG_BB);
-    Sector_SetFade(11,  FOG_RR, FOG_GG, FOG_BB);
-    Sector_SetFade(12,  FOG_RR, FOG_GG, FOG_BB);
-    Sector_SetFade(13,  FOG_RR, FOG_GG, FOG_BB);
-    Sector_SetFade(14,  FOG_RR, FOG_GG, FOG_BB);
-    Sector_SetFade(15,  FOG_RR, FOG_GG, FOG_BB);
-    Sector_SetFade(116, FOG_RR, FOG_GG, FOG_BB);
-    Sector_SetFade(127, FOG_RR, FOG_GG, FOG_BB);
-    Sector_SetFade(131, FOG_RR, FOG_GG, FOG_BB);
-    Sector_SetFade(132, FOG_RR, FOG_GG, FOG_BB);
-    */
-    Sector_SetCeilingScale2(111, 2.0, 2.0);
-    Sector_SetRotation(4, 90, 0);
-    Sector_SetRotation(19, 180, 0);
-    Sector_SetCeilingPanning(15, 8, 0, 8, 0);
-    Sector_SetRotation(79, 90, 90);
-    SetLineBlocking(1, BLOCK_CREATURES);
-    TranslucentLine(1, 96, 0);
-    Scroll_Texture_Both(1, 0, 0, 200, 0);
-    Scroll_Texture_Both(-1, 0, 0, 200, 0);
-    SetLineBlocking(2, BLOCK_CREATURES);
-    TranslucentLine(2, 96, 0);
-    Scroll_Texture_Both(2, 0, 0, 200, 0);
-    Scroll_Texture_Both(-2, 0, 0, 200, 0);
-    SetLineBlocking(3, BLOCK_NOTHING);
-    TranslucentLine(3, 0, 0);
-    Scroll_Texture_Both(3, 0, 0, 200, 0);
-    Scroll_Texture_Both(-3, 0, 0, 200, 0);
-    SetLineBlocking(4, BLOCK_CREATURES);
-    TranslucentLine(4, 96, 0);
-    Scroll_Texture_Both(4, 0, 0, 200, 0);
-    Scroll_Texture_Both(-4, 0, 0, 200, 0);
-    TranslucentLine(9, 0, 0);
-    Scroll_Texture_Both(9, 0, 0, 200, 0);
-    Scroll_Texture_Both(-9, 0, 0, 200, 0);
+	#define RESIST1_TIME 10
+	#define RESIST2_TIME 30
+	#define RESIST3_TIME 20
+	#define RESIST4_TIME 30
+	#define ESCAPE_TIME  20
 
-    TranslucentLine(15, 96, 0);
-    Sector_SetRotation(23, 180, 180);
+	#define SONG_DURATION 165
 
-    /* Midgar reactors*/
-    //Sector_SetFloorPanning (tag, u-int, u-frac, v-int, v-frac)
+	Bool b_lift_is_gone        = FALSE;
+	Bool b_firstLiftActivation = FALSE;
+	Bool b_AlertStopped        = FALSE;
+	bool b_shieldactive        = FALSE;
 
-    // South
-    Sector_SetRotation(120, 180, 0);
-    Sector_SetFloorPanning(120, 0, 0, 40, 0);
+	Int timeleft = ESCAPE_TIME;
 
-    // East
-    Sector_SetRotation(121, 90, 0);
-    Sector_SetFloorPanning(121, -24, 0, -32, 0);
-
-    // West
-    Sector_SetRotation(122, -90, 0);
-    Sector_SetFloorPanning(122, 24, 0, 0, 0);
-
-    // South West
-    Sector_SetRotation(123, -135, 0);
-    Sector_SetFloorPanning(123, -36, 0, 4, 0);
-
-    // North West
-    Sector_SetRotation(124, -45, 0);
-    Sector_SetFloorPanning(124, -48, 0, 0, 0);
-
-    // North East
-    Sector_SetRotation(125, 45, 0);
-    Sector_SetFloorPanning(125, 32, 0, 56, 0);
-
-    // South East
-    Sector_SetRotation(126, 135, 0);
-    Sector_SetFloorPanning(126, 56, 0, 64, 0);
-}
-
-/* RESIST EVENT */
-script "ze05m_internal_event_resistelapsed" (raw packetRaw)
-{
-	Event::ReceiveTimerElapsed((str)packetRaw);
-	int index = Event::GetReceiveData(0);
-	
-	switch(index)
+	Script "zm05m_open" open // Level setups
 	{
-		case 0:
-			Floor_LowerByValue(107, 21, 88);
-			break;
-		case 1:
-			SetLineBlocking(2, BLOCK_NOTHING);
-			TranslucentLine(2, 0, 0);
-			break;
-		case 2:
-			Door_Open(100, 64);
-			break;
+	    /* Reactor fog */
+	    /*
+	    #define FOG_RR  32
+	    #define FOG_GG  96
+	    #define FOG_BB  0
+	    Sector_SetFade(1,   FOG_RR, FOG_GG, FOG_BB);
+	    Sector_SetFade(10,  FOG_RR, FOG_GG, FOG_BB);
+	    Sector_SetFade(11,  FOG_RR, FOG_GG, FOG_BB);
+	    Sector_SetFade(12,  FOG_RR, FOG_GG, FOG_BB);
+	    Sector_SetFade(13,  FOG_RR, FOG_GG, FOG_BB);
+	    Sector_SetFade(14,  FOG_RR, FOG_GG, FOG_BB);
+	    Sector_SetFade(15,  FOG_RR, FOG_GG, FOG_BB);
+	    Sector_SetFade(116, FOG_RR, FOG_GG, FOG_BB);
+	    Sector_SetFade(127, FOG_RR, FOG_GG, FOG_BB);
+	    Sector_SetFade(131, FOG_RR, FOG_GG, FOG_BB);
+	    Sector_SetFade(132, FOG_RR, FOG_GG, FOG_BB);
+	    */
+	    Sector_SetCeilingScale2(111, 2.0, 2.0);
+	    Sector_SetRotation(4, 90, 0);
+	    Sector_SetRotation(19, 180, 0);
+	    Sector_SetCeilingPanning(15, 8, 0, 8, 0);
+	    Sector_SetRotation(79, 90, 90);
+	    SetLineBlocking(1, BLOCK_CREATURES);
+	    TranslucentLine(1, 96, 0);
+	    Scroll_Texture_Both(1, 0, 0, 200, 0);
+	    Scroll_Texture_Both(-1, 0, 0, 200, 0);
+	    SetLineBlocking(2, BLOCK_CREATURES);
+	    TranslucentLine(2, 96, 0);
+	    Scroll_Texture_Both(2, 0, 0, 200, 0);
+	    Scroll_Texture_Both(-2, 0, 0, 200, 0);
+	    SetLineBlocking(3, BLOCK_NOTHING);
+	    TranslucentLine(3, 0, 0);
+	    Scroll_Texture_Both(3, 0, 0, 200, 0);
+	    Scroll_Texture_Both(-3, 0, 0, 200, 0);
+	    SetLineBlocking(4, BLOCK_CREATURES);
+	    TranslucentLine(4, 96, 0);
+	    Scroll_Texture_Both(4, 0, 0, 200, 0);
+	    Scroll_Texture_Both(-4, 0, 0, 200, 0);
+	    TranslucentLine(9, 0, 0);
+	    Scroll_Texture_Both(9, 0, 0, 200, 0);
+	    Scroll_Texture_Both(-9, 0, 0, 200, 0);
+
+	    TranslucentLine(15, 96, 0);
+	    Sector_SetRotation(23, 180, 180);
+
+	    /* Midgar reactors*/
+	    //Sector_SetFloorPanning (tag, u-int, u-frac, v-int, v-frac)
+
+	    // South
+	    Sector_SetRotation(120, 180, 0);
+	    Sector_SetFloorPanning(120, 0, 0, 40, 0);
+
+	    // East
+	    Sector_SetRotation(121, 90, 0);
+	    Sector_SetFloorPanning(121, -24, 0, -32, 0);
+
+	    // West
+	    Sector_SetRotation(122, -90, 0);
+	    Sector_SetFloorPanning(122, 24, 0, 0, 0);
+
+	    // South West
+	    Sector_SetRotation(123, -135, 0);
+	    Sector_SetFloorPanning(123, -36, 0, 4, 0);
+
+	    // North West
+	    Sector_SetRotation(124, -45, 0);
+	    Sector_SetFloorPanning(124, -48, 0, 0, 0);
+
+	    // North East
+	    Sector_SetRotation(125, 45, 0);
+	    Sector_SetFloorPanning(125, 32, 0, 56, 0);
+
+	    // South East
+	    Sector_SetRotation(126, 135, 0);
+	    Sector_SetFloorPanning(126, 56, 0, 64, 0);
 	}
-}
 
-Script 2 (void) // Lift
-{
-    SetActivator(-1);
-    if(b_lift_is_gone==FALSE)
-    {
-        ThingSound(20, "sound/ding1", 127);
-        if(b_firstLiftActivation==FALSE)
-        {
-            SetFont("BIGFONT");
-            HudMessageBold(s:"The lift is leaving in 10 seconds"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 2.0, 1.0);
-            Polyobj_DoorSlide(2, 20, 128, 56, 350);
-            delay(405);
-            b_firstLiftActivation=TRUE;
-        }
-        else
-        {
-            Polyobj_DoorSlide(2, 20, 128, 56, 140);
-            delay(195);
-        }
+	/* RESIST EVENT */
+	script "ze05m_internal_event_resistelapsed" (raw packetRaw)
+	{
+		Event::ReceiveTimerElapsed((str)packetRaw);
+		int index = Event::GetReceiveData(0);
+		
+		switch(index)
+		{
+			case 0:
+				Floor_LowerByValue(107, 21, 88);
+				break;
+			case 1:
+				SetLineBlocking(2, BLOCK_NOTHING);
+				TranslucentLine(2, 0, 0);
+				break;
+			case 2:
+				Door_Open(100, 64);
+				break;
+		}
+	}
 
-        TeleportInSector(22, 23, 22, 0, 0);
-        delay(5);
-        ThingSound(21, "sound/lift1", 127);
-        delay(35*4);
-        Polyobj_DoorSlide(4, 20, 128, 56, 140);
-        ThingSound(22, "sound/ding1", 127);
-        b_lift_is_gone = TRUE;
-    }
-    else
-    {
-        ThingSound(24, "sound/ding1", 127);
-        Polyobj_DoorSlide(4, 20, 128, 56, 140);
-        delay(195);
-        TeleportInSector(23, 22, 23, 0, 0);
-        delay(5);
-        ThingSound(21, "sound/lift1", 127);
-        delay(35*4);
-        Polyobj_DoorSlide(2, 20, 128, 56, 140);
-        ThingSound(20, "sound/ding1", 127);
-        b_lift_is_gone = FALSE;
-    }
-}
+	Script 2 (void) // Lift
+	{
+	    SetActivator(-1);
+	    if(b_lift_is_gone==FALSE)
+	    {
+	        ThingSound(20, "sound/ding1", 127);
+	        if(b_firstLiftActivation==FALSE)
+	        {
+	            SetFont("BIGFONT");
+	            HudMessageBold(s:"The lift is leaving in 10 seconds"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 2.0, 1.0);
+	            Polyobj_DoorSlide(2, 20, 128, 56, 350);
+	            delay(405);
+	            b_firstLiftActivation=TRUE;
+	        }
+	        else
+	        {
+	            Polyobj_DoorSlide(2, 20, 128, 56, 140);
+	            delay(195);
+	        }
 
-Script 3 (void) // ALERT sound
-{
-    while(b_AlertStopped==FALSE)
-    {
-        AmbientSound("sound/alert1", 100);
-        delay(36);
-    }
-}
+	        TeleportInSector(22, 23, 22, 0, 0);
+	        delay(5);
+	        ThingSound(21, "sound/lift1", 127);
+	        delay(35*4);
+	        Polyobj_DoorSlide(4, 20, 128, 56, 140);
+	        ThingSound(22, "sound/ding1", 127);
+	        b_lift_is_gone = TRUE;
+	    }
+	    else
+	    {
+	        ThingSound(24, "sound/ding1", 127);
+	        Polyobj_DoorSlide(4, 20, 128, 56, 140);
+	        delay(195);
+	        TeleportInSector(23, 22, 23, 0, 0);
+	        delay(5);
+	        ThingSound(21, "sound/lift1", 127);
+	        delay(35*4);
+	        Polyobj_DoorSlide(2, 20, 128, 56, 140);
+	        ThingSound(20, "sound/ding1", 127);
+	        b_lift_is_gone = FALSE;
+	    }
+	}
 
-Script 6 (void) // Anti zombie shield
-{
-    PrintBold(n:0, s:" \cFhas activated the shield.\nIt will shut down in 10 seconds.");
-    SetActivator(-1);
-    TranslucentLine(3, 96, 0);
-    b_shieldactive = TRUE;
-    delay(35*10);
-    b_shieldactive = FALSE;
-    TranslucentLine(3, 0, 0);
-}
+	Script 3 (void) // ALERT sound
+	{
+	    while(b_AlertStopped==FALSE)
+	    {
+	        AmbientSound("sound/alert1", 100);
+	        delay(36);
+	    }
+	}
 
-Script 7 (void) // Bomb has been planted
-{
-    LocalAmbientSound("sound/plantbomb", 127);
-    SetActivator(-1);
+	Script 6 (void) // Anti zombie shield
+	{
+	    PrintBold(n:0, s:" \cFhas activated the shield.\nIt will shut down in 10 seconds.");
+	    SetActivator(-1);
+	    TranslucentLine(3, 96, 0);
+	    b_shieldactive = TRUE;
+	    delay(35*10);
+	    b_shieldactive = FALSE;
+	    TranslucentLine(3, 0, 0);
+	}
 
-    Delay(35 * 3);
-	Delay(Resist::StartResistByIndex(3));
-    SetLineBlocking(4, BLOCK_NOTHING);
-    TranslucentLine(4, 0, 0);
-    Delay(35);
+	Script 7 (void) // Bomb has been planted
+	{
+	    LocalAmbientSound("sound/plantbomb", 127);
+	    SetActivator(-1);
 
-    Acs_Execute(3, 0, 0, 0, 0);
-    Delay(35);
+	    Delay(35 * 3);
+		Delay(Resist::StartResistByIndex(3));
+	    SetLineBlocking(4, BLOCK_NOTHING);
+	    TranslucentLine(4, 0, 0);
+	    Delay(35);
 
-    SetFont("CONFONT");
-    HudMessageBold(s:"The bomb has been planted!\nGet out of here before it blows up!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.05, 0.85, 3.0, 2.0);
-	Delay(Resist::StartResistByIndex(4));
-    b_AlertStopped = TRUE;
-    Delay(40);
+	    Acs_Execute(3, 0, 0, 0, 0);
+	    Delay(35);
 
-    //Generic_Ceiling(103, 32, 64, 5, 16); //ZH2 [AQW] ptn xsnake, t'aurais pu utiliser le bon lineaction bordel
-	Ceiling_LowerAndCrush(103,32,20,2); //ZH2 [AQW]
-    Tagwait(103);
-	Ceiling_LowerByValueTimes8(103,32,1);
+	    SetFont("CONFONT");
+	    HudMessageBold(s:"The bomb has been planted!\nGet out of here before it blows up!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.05, 0.85, 3.0, 2.0);
+		Delay(Resist::StartResistByIndex(4));
+	    b_AlertStopped = TRUE;
+	    Delay(40);
 
-	AmbientSound("world/nuke1", 127);
-	Radius_Quake(10, 500, 0, 200, 110);
+	    //Generic_Ceiling(103, 32, 64, 5, 16); //ZH2 [AQW] ptn xsnake, t'aurais pu utiliser le bon lineaction bordel
+		Ceiling_LowerAndCrush(103,32,20,2); //ZH2 [AQW]
+	    Tagwait(103);
+		Ceiling_LowerByValueTimes8(103,32,1);
 
-	Game::KillUnsafePlayers();
-}
+		AmbientSound("world/nuke1", 127);
+		Radius_Quake(10, 500, 0, 200, 110);
 
-Script 9 (int num, int angle)
-{
-    if(!LineSide())
-    {
-        Teleport_NoFog(num, 0, 0);
-        ThrustThing(angle, 20);
-    }
-}
+		Game::KillUnsafePlayers();
+	}
+
+	Script 9 (int num, int angle)
+	{
+	    if(!LineSide())
+	    {
+	        Teleport_NoFog(num, 0, 0);
+	        ThrustThing(angle, 20);
+	    }
+	}
 
 
-Script 10 (void)    // Shield script
-{
-    if( !b_shieldactive )
-        terminate;
+	Script 10 (void)    // Shield script
+	{
+	    if( !b_shieldactive )
+	        terminate;
 
-    if(Player::GetIsZombie())
-        ThrustThing(192, 20, 0, 0);
-}
+	    if(Player::GetIsZombie())
+	        ThrustThing(192, 20, 0, 0);
+	}
 
-Script 12 (int teleport_id)  // Falling in mako
-{
-    if(Player::GetIsHuman())
-        Thing_Damage2(0, 10, "Slime");
-    else
-        Thing_Damage2(0, 100, "Slime");
+	Script 12 (int teleport_id)  // Falling in mako
+	{
+	    if(Player::GetIsHuman())
+	        Thing_Damage2(0, 10, "Slime");
+	    else
+	        Thing_Damage2(0, 100, "Slime");
 
-	Teleport(teleport_id, 0, true);
-}
+		Teleport(teleport_id, 0, true);
+	}
 
-Script 20 OPEN CLIENTSIDE
-{
-    int i;
-    Scroll_Wall(90, 1.0, 0, 0, 2);
-    Scroll_Wall(90, 1.0, 0, 1, 2);
-    while(1)
-    {
-        for ( i=0; i<35; i++ )
-        {
-            TranslucentLine(90, 80 + 5 * i, FALSE);
-            delay(1);
-        }
-        for ( i=0; i<35; i++ )
-        {
-            TranslucentLine(90, 255 - 5 * i, FALSE);
-            delay(1);
-        }
-    }
+	Script 20 OPEN CLIENTSIDE
+	{
+	    int i;
+	    Scroll_Wall(90, 1.0, 0, 0, 2);
+	    Scroll_Wall(90, 1.0, 0, 1, 2);
+	    while(1)
+	    {
+	        for ( i=0; i<35; i++ )
+	        {
+	            TranslucentLine(90, 80 + 5 * i, FALSE);
+	            delay(1);
+	        }
+	        for ( i=0; i<35; i++ )
+	        {
+	            TranslucentLine(90, 255 - 5 * i, FALSE);
+	            delay(1);
+	        }
+	    }
 
-}
+	}
 
-Script 21 OPEN CLIENTSIDE
-{
-    AmbientSound("sound/trainstop", 127);
-}
+	Script 21 OPEN CLIENTSIDE
+	{
+	    AmbientSound("sound/trainstop", 127);
+	}
 
-Script 22 OPEN CLIENTSIDE
-{
-    Delay(SONG_DURATION * 35);
-    Music::PlayMusic("D_NULL");
+	Script 22 OPEN CLIENTSIDE
+	{
+	    Delay(SONG_DURATION * 35);
+	    Music::PlayMusic("D_NULL");
+	}
 }

@@ -9,367 +9,370 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-// The TID that is used for synchronising the Delorean state with clients.
-#define SYNC_DELOREAN 100
-
-#define HUDID_DELOREAN 50
-
-// The current speed of the Delorean.
-// Synchronized to clients.
-// If 0, the value is not drawn on the HUD.
-internal int _deloreanSpeed = 0;
-
-// Used with the delorean speed-o-meter, which hooks on the HUD.
-internal Hud::HudHookDataT? hudHookDataRef;
-
-#define LOGSOURCE "Map"
-
-script "OnOpen" open
+strict namespace
 {
-	// Resists
-	Resist::CreateResist(20);
-	Resist::CreateResist(25);
-	Resist::CreateResist(20);
+	// The TID that is used for synchronising the Delorean state with clients.
+	#define SYNC_DELOREAN 100
 
-	// Resist blocking lines.
-	SetLineBlocking(1, BLOCK_CREATURES);
-	SetLineBlocking(2, BLOCK_CREATURES);
-	SetLineBlocking(7, BLOCK_CREATURES);
-}
+	#define HUDID_DELOREAN 50
 
-script "OnOpenClient" open CLIENTSIDE
-{
-	ClientSyncDeloreanSpeed();
+	// The current speed of the Delorean.
+	// Synchronized to clients.
+	// If 0, the value is not drawn on the HUD.
+	internal int _deloreanSpeed = 0;
 
-    Hook::Register(Hook::HOOK_CLIENTDRAWHUD, OnDrawDeloreanSpeedHud);
+	// Used with the delorean speed-o-meter, which hooks on the HUD.
+	internal Hud::HudHookDataT? hudHookDataRef;
 
-	ACS_NamedExecute("DeloreanMusicLoop", 0);
-}
+	#define LOGSOURCE "Map"
 
-script "Resist1"
-{
-	SetActivator(-1);
-	Delay(Resist::StartResistByIndex(0));
-
-	Floor_LowerByValue(9, 32, 248);
-	SetLineBlocking(1, BLOCK_NOTHING);
-
-	Delay(35*5);
-
-	Logger::LogBold("A secondary path has opened.");
-	Floor_LowerByValue(5, 32, 64);
-}
-
-script "Resist2"
-{
-	SetActivator(-1);
-	Delay(Resist::StartResistByIndex(1));
-	Floor_LowerByValue(8, 16, 120);
-	SetLineBlocking(2, BLOCK_NOTHING);
-}
-
-script "Resist3"
-{
-	Delay(Resist::StartResistByIndex(2));
-	Floor_LowerByValue(30, 16, 120);
-	SetLineBlocking(7, BLOCK_NOTHING);
-
-	Delay(35*5);
-
-	Logger::LogBold("A secondary path has opened.");
-	Floor_LowerByValue(15, 32, 64);
-}
-
-script "FellSouthSpawn"
-{
-	TeleportUtil::TeleportAreaBetween(7, 9, 90, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
-}
-
-script "FellResist2"
-{
-	TeleportUtil::TeleportAreaBetween(12, 14, 90, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
-}
-
-script "FellOffTrain"
-{
-	TeleportUtil::TeleportAreaBetween(300, 305, 90, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
-}
-
-// General hudmessage prepare used for all messages.
-internal void PrepareDeloreanMessage(fixed offsetY = 0.0)
-{
-	BCSUtils::HudResetState();
-	BCSUtils::HudSetVirtualSize(640.0, 480.0);
-	BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-	BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
-
-	BCSUtils::HudSetTextColor(CR_WHITE);
-	BCSUtils::HudSetCenterText(true);
-
-	BCSUtils::HudSetStayTime(4.0);
-	BCSUtils::HudSetDisappearTime(0.5);
-
-	BCSUtils::HudSetPoint(320.0, 100.0 + offsetY);
-}
-
-script "TeleportToTrain"
-{
-	static bool trainReached;
-	if(!trainReached)
+	script "OnOpen" open
 	{
-		PrepareDeloreanMessage();
-		BCSUtils::HudSetShowToEveryone(true);
-		BCSUtils::HudSetFont("smallfont");
-        BCSUtils::HudDrawText(0, StrParam(s:BCSUtils::PlayerName(PlayerNumber()), s:" \cjhas reached the train!\nGet on the Delorean before it reaches 88mph!"));
+		// Resists
+		Resist::CreateResist(20);
+		Resist::CreateResist(25);
+		Resist::CreateResist(20);
+
+		// Resist blocking lines.
+		SetLineBlocking(1, BLOCK_CREATURES);
+		SetLineBlocking(2, BLOCK_CREATURES);
+		SetLineBlocking(7, BLOCK_CREATURES);
 	}
 
-	// Humans are teleported further ahead.
-	if(Player::GetIsHuman())
-		TeleportUtil::TeleportAreaBetween(400, 405, 90, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
-	else
-		TeleportUtil::TeleportAreaBetween(300, 305, 90, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
-
-	if(!trainReached)
+	script "OnOpenClient" open CLIENTSIDE
 	{
-		trainReached = true;
+		ClientSyncDeloreanSpeed();
 
+	    Hook::Register(Hook::HOOK_CLIENTDRAWHUD, OnDrawDeloreanSpeedHud);
+
+		ACS_NamedExecute("DeloreanMusicLoop", 0);
+	}
+
+	script "Resist1"
+	{
 		SetActivator(-1);
+		Delay(Resist::StartResistByIndex(0));
+
+		Floor_LowerByValue(9, 32, 248);
+		SetLineBlocking(1, BLOCK_NOTHING);
+
 		Delay(35*5);
-		ACS_NamedExecute("DeloreanSpeedOMeter", 0);
-	}
-}
 
-script "DeloreanSpeedOMeter"
-{
-	_deloreanSpeed = 20;
-	SyncDeloreanSpeed();
-
-	// Increase speed at different intervals depending on how fast the Delorean is going.
-	While(_deloreanSpeed < 88)
-	{
-		int speedDelay = 40;
-		if (_deloreanSpeed < 70) speedDelay = 30;
-		if (_deloreanSpeed < 50) speedDelay = 20;
-
-		_deloreanSpeed++;
-		SyncDeloreanSpeed();
-
-		Delay(speedDelay);
+		Logger::LogBold("A secondary path has opened.");
+		Floor_LowerByValue(5, 32, 64);
 	}
 
-	Delay(35);
-
-	_deloreanSpeed = 0;
-	SyncDeloreanSpeed();
-
-	// Initial message to unsafe players.
-	for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+	script "Resist2"
 	{
-		if (!PlayerInGame(i))
-			continue;
-
-		SetActivatorToPlayer(i);
-
-		if(Game::GetIsSafe())
-			continue;
-
-		PrepareDeloreanMessage();
-		BCSUtils::HudSetFont("bigfont");
-        BCSUtils::HudDrawText(0, "Warning: Abyss right ahead!");
+		SetActivator(-1);
+		Delay(Resist::StartResistByIndex(1));
+		Floor_LowerByValue(8, 16, 120);
+		SetLineBlocking(2, BLOCK_NOTHING);
 	}
 
-	SetActivator(-1);
-	Delay(35*2);
-
-	// Start blocking players from getting on the delorean.
-	SetLineBlocking(33, BLOCK_CREATURES);
-
-	// For players that are safe we flash an effect clientside.
-	ACS_NamedExecute("SafetyFlash", 0);
-
-	SetActivator(-1);
-	Delay(21);
-
-	// For players that are not safe we do a camera effect.
-	ACS_NamedExecute("CliffCamera", 0);
-
-	// Start teleporting non-safe players.
-	for(i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+	script "Resist3"
 	{
-		if (!PlayerInGame(i))
-			continue;
+		Delay(Resist::StartResistByIndex(2));
+		Floor_LowerByValue(30, 16, 120);
+		SetLineBlocking(7, BLOCK_NOTHING);
 
-		SetActivatorToPlayer(i);
+		Delay(35*5);
 
-		// If safe
-		if(Game::GetIsSafe())
+		Logger::LogBold("A secondary path has opened.");
+		Floor_LowerByValue(15, 32, 64);
+	}
+
+	script "FellSouthSpawn"
+	{
+		TeleportUtil::TeleportAreaBetween(7, 9, 90, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
+	}
+
+	script "FellResist2"
+	{
+		TeleportUtil::TeleportAreaBetween(12, 14, 90, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
+	}
+
+	script "FellOffTrain"
+	{
+		TeleportUtil::TeleportAreaBetween(300, 305, 90, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
+	}
+
+	// General hudmessage prepare used for all messages.
+	internal void PrepareDeloreanMessage(fixed offsetY = 0.0)
+	{
+		BCSUtils::HudResetState();
+		BCSUtils::HudSetVirtualSize(640.0, 480.0);
+		BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+		BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+		BCSUtils::HudSetTextColor(CR_WHITE);
+		BCSUtils::HudSetCenterText(true);
+
+		BCSUtils::HudSetStayTime(4.0);
+		BCSUtils::HudSetDisappearTime(0.5);
+
+		BCSUtils::HudSetPoint(320.0, 100.0 + offsetY);
+	}
+
+	script "TeleportToTrain"
+	{
+		static bool trainReached;
+		if(!trainReached)
 		{
-			if(Player::GetIsHuman())
-				TeleportUtil::TeleportArea(800, 200, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOT);
-			else
-				TeleportUtil::TeleportArea(900, 200, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOT);
-			continue;
+			PrepareDeloreanMessage();
+			BCSUtils::HudSetShowToEveryone(true);
+			BCSUtils::HudSetFont("smallfont");
+	        BCSUtils::HudDrawText(0, StrParam(s:BCSUtils::PlayerName(PlayerNumber()), s:" \cjhas reached the train!\nGet on the Delorean before it reaches 88mph!"));
 		}
 
-		// For players that are not safe.
-		TeleportUtil::TeleportArea(700, 120, TeleportUtil::TELEPORT_USETELEPORTSPOTHEIGHT);
-		ThrustThing(64, 100, 0, ActivatorTID());
-		ThrustThingZ(ActivatorTID(), 20, 0, 0);
+		// Humans are teleported further ahead.
+		if(Player::GetIsHuman())
+			TeleportUtil::TeleportAreaBetween(400, 405, 90, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
+		else
+			TeleportUtil::TeleportAreaBetween(300, 305, 90, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
+
+		if(!trainReached)
+		{
+			trainReached = true;
+
+			SetActivator(-1);
+			Delay(35*5);
+			ACS_NamedExecute("DeloreanSpeedOMeter", 0);
+		}
 	}
 
-	for(i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+	script "DeloreanSpeedOMeter"
 	{
-		if (!PlayerInGame(i))
-			continue;
+		_deloreanSpeed = 20;
+		SyncDeloreanSpeed();
 
-		SetActivatorToPlayer(i);
+		// Increase speed at different intervals depending on how fast the Delorean is going.
+		While(_deloreanSpeed < 88)
+		{
+			int speedDelay = 40;
+			if (_deloreanSpeed < 70) speedDelay = 30;
+			if (_deloreanSpeed < 50) speedDelay = 20;
 
-		if(!Game::GetIsSafe())
-			continue;
+			_deloreanSpeed++;
+			SyncDeloreanSpeed();
 
-		PrepareDeloreanMessage();
-		BCSUtils::HudSetStayTime(6.0);
-		BCSUtils::HudSetFont("smallfont");
-		BCSUtils::HudDrawText(0, "The Delorean has passed through time...");
+			Delay(speedDelay);
+		}
+
+		Delay(35);
+
+		_deloreanSpeed = 0;
+		SyncDeloreanSpeed();
+
+		// Initial message to unsafe players.
+		for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+		{
+			if (!PlayerInGame(i))
+				continue;
+
+			SetActivatorToPlayer(i);
+
+			if(Game::GetIsSafe())
+				continue;
+
+			PrepareDeloreanMessage();
+			BCSUtils::HudSetFont("bigfont");
+	        BCSUtils::HudDrawText(0, "Warning: Abyss right ahead!");
+		}
+
+		SetActivator(-1);
+		Delay(35*2);
+
+		// Start blocking players from getting on the delorean.
+		SetLineBlocking(33, BLOCK_CREATURES);
+
+		// For players that are safe we flash an effect clientside.
+		ACS_NamedExecute("SafetyFlash", 0);
+
+		SetActivator(-1);
+		Delay(21);
+
+		// For players that are not safe we do a camera effect.
+		ACS_NamedExecute("CliffCamera", 0);
+
+		// Start teleporting non-safe players.
+		for(i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+		{
+			if (!PlayerInGame(i))
+				continue;
+
+			SetActivatorToPlayer(i);
+
+			// If safe
+			if(Game::GetIsSafe())
+			{
+				if(Player::GetIsHuman())
+					TeleportUtil::TeleportArea(800, 200, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOT);
+				else
+					TeleportUtil::TeleportArea(900, 200, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOT);
+				continue;
+			}
+
+			// For players that are not safe.
+			TeleportUtil::TeleportArea(700, 120, TeleportUtil::TELEPORT_USETELEPORTSPOTHEIGHT);
+			ThrustThing(64, 100, 0, ActivatorTID());
+			ThrustThingZ(ActivatorTID(), 20, 0, 0);
+		}
+
+		for(i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+		{
+			if (!PlayerInGame(i))
+				continue;
+
+			SetActivatorToPlayer(i);
+
+			if(!Game::GetIsSafe())
+				continue;
+
+			PrepareDeloreanMessage();
+			BCSUtils::HudSetStayTime(6.0);
+			BCSUtils::HudSetFont("smallfont");
+			BCSUtils::HudDrawText(0, "The Delorean has passed through time...");
+		}
+
+		SetActivator(-1);
+		Delay(35*2);
+
+		for(i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+		{
+			if (!PlayerInGame(i))
+				continue;
+
+			SetActivatorToPlayer(i);
+
+			if(!Game::GetIsSafe())
+				continue;
+
+			PrepareDeloreanMessage(10.0);
+			BCSUtils::HudSetFont("smallfont");
+			BCSUtils::HudDrawText(0, "The train and its passengers have fallen over the cliff!");
+		}
+
+		Delay(35);
+		Game::KillUnsafePlayers();
+
 	}
 
-	SetActivator(-1);
-	Delay(35*2);
-
-	for(i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+	internal raw OnDrawDeloreanSpeedHud(void[]* data)
 	{
-		if (!PlayerInGame(i))
-			continue;
+	    if (data == null)
+			return 0;
 
-		SetActivatorToPlayer(i);
+	    hudHookDataRef = data;
 
-		if(!Game::GetIsSafe())
-			continue;
+		if (hudHookDataRef.Type != Hud::HUDHOOK_PLAYERSTATUS)
+			return 0;
 
-		PrepareDeloreanMessage(10.0);
-		BCSUtils::HudSetFont("smallfont");
-		BCSUtils::HudDrawText(0, "The train and its passengers have fallen over the cliff!");
+		if (_deloreanSpeed == 0)
+			return 0;
+
+		Hud::SetRelativePoint(180.0, -100.0);
+		BCSUtils::HudDrawImage(HUDID_DELOREAN, "DELOREAN");
+
+		Hud::SetRelativePoint(200.0, -100.0);
+		BCSUtils::HudSetTextColor(CR_WHITE);
+		BCSUtils::HudDrawText(HUDID_DELOREAN + 1, str((int)_deloreanSpeed));
+
+		Hud::SetRelativePoint(228.0, -100.0);
+		BCSUtils::HudSetTextColor(CR_WHITE);
+		BCSUtils::HudDrawText(HUDID_DELOREAN + 2, "mph");
+
+	    return 0;
 	}
 
-	Delay(35);
-	Game::KillUnsafePlayers();
-
-}
-
-internal raw OnDrawDeloreanSpeedHud(void[]* data)
-{
-    if (data == null)
-		return 0;
-
-    hudHookDataRef = data;
-
-	if (hudHookDataRef.Type != Hud::HUDHOOK_PLAYERSTATUS)
-		return 0;
-
-	if (_deloreanSpeed == 0)
-		return 0;
-
-	Hud::SetRelativePoint(180.0, -100.0);
-	BCSUtils::HudDrawImage(HUDID_DELOREAN, "DELOREAN");
-
-	Hud::SetRelativePoint(200.0, -100.0);
-	BCSUtils::HudSetTextColor(CR_WHITE);
-	BCSUtils::HudDrawText(HUDID_DELOREAN + 1, str((int)_deloreanSpeed));
-
-	Hud::SetRelativePoint(228.0, -100.0);
-	BCSUtils::HudSetTextColor(CR_WHITE);
-	BCSUtils::HudDrawText(HUDID_DELOREAN + 2, "mph");
-
-    return 0;
-}
-
-script "SafetyFlash" clientside
-{
-	BCSUtils::SetActivatorToConsolePlayer();
-
-	// Camera must be on somebody that is safe.
-	int tid = CheckPlayerCamera(ConsolePlayerNumber());
-	if (!Identity::IsValidTid(tid))
-		terminate;
-
-	if(!Game::GetPlayerIsSafe(Identity::GetId(tid)))
-		terminate;
-
-	SetActivator(tid);
-
-	// The player the client looks at is safe, do the effect.
-	FadeTo(255, 255, 0, 1.0, 0.2);
-	Delay(7);
-	FadeTo(255, 255, 0, 0.0, 0.2);
-	Delay(7);
-	FadeTo(255, 255, 0, 1.0, 0.2);
-	Delay(7);
-	FadeTo(255, 255, 0, 0.0, 0.2);
-}
-
-script "CliffCamera" clientside
-{
-	BCSUtils::SetActivatorToConsolePlayer();
-
-	// Camera must be on somebody that is not safe.
-	int tid = CheckPlayerCamera(ConsolePlayerNumber());
-	if (!Identity::IsValidTid(tid))
-		terminate;
-
-	if(Game::GetPlayerIsSafe(Identity::GetId(tid)))
-		terminate;
-
-	// The player the client looks at is not safe, do the effect.
-	ChangeCamera(26, 0, 0);
-	delay(35 * 8);
-	ChangeCamera(0, 1, 0);
-}
-
-// Delorean music trigger that plays on the client if the Delorean is about to teleport.
-// Runs clientside on players to avoid issues with the music cutting of prematurely.
-script "DeloreanMusicLoop" clientside
-{
-	SetActivator(-1);
-
-	// We specifically want 70mph to trigger the music to it's at the correct moment.
-	// This also means late joiners won't get the music anymore.
-	if (_deloreanSpeed != 70)
+	script "SafetyFlash" clientside
 	{
-		delay(const: 1);
-		restart;
+		BCSUtils::SetActivatorToConsolePlayer();
+
+		// Camera must be on somebody that is safe.
+		int tid = CheckPlayerCamera(ConsolePlayerNumber());
+		if (!Identity::IsValidTid(tid))
+			terminate;
+
+		if(!Game::GetPlayerIsSafe(Identity::GetId(tid)))
+			terminate;
+
+		SetActivator(tid);
+
+		// The player the client looks at is safe, do the effect.
+		FadeTo(255, 255, 0, 1.0, 0.2);
+		Delay(7);
+		FadeTo(255, 255, 0, 0.0, 0.2);
+		Delay(7);
+		FadeTo(255, 255, 0, 1.0, 0.2);
+		Delay(7);
+		FadeTo(255, 255, 0, 0.0, 0.2);
 	}
 
-	Music::PlayMusic("ROUTE3", 0);
-	Delay(35*55);
-	Music::PlayMusic("", 0);
+	script "CliffCamera" clientside
+	{
+		BCSUtils::SetActivatorToConsolePlayer();
+
+		// Camera must be on somebody that is not safe.
+		int tid = CheckPlayerCamera(ConsolePlayerNumber());
+		if (!Identity::IsValidTid(tid))
+			terminate;
+
+		if(Game::GetPlayerIsSafe(Identity::GetId(tid)))
+			terminate;
+
+		// The player the client looks at is not safe, do the effect.
+		ChangeCamera(26, 0, 0);
+		delay(35 * 8);
+		ChangeCamera(0, 1, 0);
+	}
+
+	// Delorean music trigger that plays on the client if the Delorean is about to teleport.
+	// Runs clientside on players to avoid issues with the music cutting of prematurely.
+	script "DeloreanMusicLoop" clientside
+	{
+		SetActivator(-1);
+
+		// We specifically want 70mph to trigger the music to it's at the correct moment.
+		// This also means late joiners won't get the music anymore.
+		if (_deloreanSpeed != 70)
+		{
+			delay(const: 1);
+			restart;
+		}
+
+		Music::PlayMusic("ROUTE3", 0);
+		Delay(35*55);
+		Music::PlayMusic("", 0);
+	}
+
+	internal void SyncDeloreanSpeed()
+	{
+		VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+		if (!IsNetworkGame())
+			return;
+
+		BCSUtils::SyncVariable(SYNC_DELOREAN, _deloreanSpeed);
+		ACS_NamedExecuteAlways("SyncDeloreanSpeed_Client", 0);
+	}
+
+	script "SyncDeloreanSpeed_Client" clientside
+	{
+		ClientSyncDeloreanSpeed();
+	}
+
+	// Called clientside to fetch the synced state.
+	internal void ClientSyncDeloreanSpeed()
+	{
+		VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+		if (!IsNetworkGame())
+			return;
+
+		_deloreanSpeed = BCSUtils::GetSyncVarDefault(SYNC_DELOREAN, 0);
+		Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced delorean speed to client: ", d:_deloreanSpeed, s:"."));
+	}
+
+	#undef LOGSOURCE
 }
-
-internal void SyncDeloreanSpeed()
-{
-	VALIDATE_IS_SERVERSIDE_FUNCTION();
-
-	if (!IsNetworkGame())
-		return;
-
-	BCSUtils::SyncVariable(SYNC_DELOREAN, _deloreanSpeed);
-	ACS_NamedExecuteAlways("SyncDeloreanSpeed_Client", 0);
-}
-
-script "SyncDeloreanSpeed_Client" clientside
-{
-	ClientSyncDeloreanSpeed();
-}
-
-// Called clientside to fetch the synced state.
-internal void ClientSyncDeloreanSpeed()
-{
-	VALIDATE_IS_CLIENTSIDE_FUNCTION();
-
-	if (!IsNetworkGame())
-		return;
-
-	_deloreanSpeed = BCSUtils::GetSyncVarDefault(SYNC_DELOREAN, 0);
-	Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced delorean speed to client: ", d:_deloreanSpeed, s:"."));
-}
-
-#undef LOGSOURCE

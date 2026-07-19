@@ -7,218 +7,221 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-Int SubmarineStillReachable = 1;
-Int SubmarineExitable = 0;
-Int resist1 = 20;
-Int resist2 = 20;
-Int AllowManualActivation = 0;
-Int resist3 = 30;
-Int BaseReached = 0;
-Int resistfinal = 30;
-Int GateCrossable = 1;
-bool trapDisabled = false;
-
-Script "ze07_open" OPEN // Level Setups
+strict namespace
 {
-	Sector_SetDamage(2, 10000, 0);
-	Sector_SetRotation(15, 90, 0);
-	Sector_SetRotation(16, 0, 90);
-	Sector_SetRotation(18, 180, 0);
-	Floor_LowerByValue(25, 32, 128); // 2nd submarine
-	TranslucentLine(2, 0, 0);
-	Sector_SetColor(31, 0, 0, 255);
-	SetLineBlocking(3, BLOCK_CREATURES);
-	TranslucentLine(3, 96, 0);
-	Scroll_Texture_Both(3, 0, 0, 0, 200);
-	Scroll_Texture_Both(-3, 0, 0, 0, 200);
-	TranslucentLine(4, 32, 0);
-	Scroll_Texture_Both(4, 0, 0, 0, 200);
-	Scroll_Texture_Both(-4, 0, 0, 0, 200);
-	TranslucentLine(10, 0, 0);
-	Scroll_Texture_Both(10, 0, 0, 0, -200);
-	Scroll_Texture_Both(-10, 0, 0, 0, -200);
+	Int SubmarineStillReachable = 1;
+	Int SubmarineExitable = 0;
+	Int resist1 = 20;
+	Int resist2 = 20;
+	Int AllowManualActivation = 0;
+	Int resist3 = 30;
+	Int BaseReached = 0;
+	Int resistfinal = 30;
+	Int GateCrossable = 1;
+	bool trapDisabled = false;
 
-	// Zombie trap room
-	TranslucentLine(67, 144, 0);
-	Scroll_Texture_Both(67, 0, 0, 0, -200);
-	Scroll_Texture_Both(-67, 0, 0, 0, -200);
-}
-
-/* RESIST EVENT */
-script "ze07_internal_event_resistelapsed" (raw packetRaw)
-{
-	Event::ReceiveTimerElapsed((str)packetRaw);
-	int index = Event::GetReceiveData(0);
-	
-	switch(index)
+	Script "ze07_open" OPEN // Level Setups
 	{
-		case 0:
-			Door_Open(13, 32);
-			break;
-		case 1:
-			Acs_Execute(8, 0);
-			AllowManualActivation = 1;
-			break;
-		case 2:
-			SetLineBlocking(3, BLOCK_NOTHING);
-			TranslucentLine(3, 0, 0);
-			Delay(35*5);
-			Floor_LowerByValue(36, 16, 112);
-			break;
-		case 3:
-			SetFont("BIGFONT");
-			HudMessageBold(s:"\cGWarning : \cKGate being closed!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-			Delay(random(105, 140));
-			GateCrossable = 0;
-			AmbientSound("sound/poweroff1", 100);
-			TranslucentLine(4, 0, 0);
-			Delay(35*4);
-			Game::KillUnsafePlayers();
+		Sector_SetDamage(2, 10000, 0);
+		Sector_SetRotation(15, 90, 0);
+		Sector_SetRotation(16, 0, 90);
+		Sector_SetRotation(18, 180, 0);
+		Floor_LowerByValue(25, 32, 128); // 2nd submarine
+		TranslucentLine(2, 0, 0);
+		Sector_SetColor(31, 0, 0, 255);
+		SetLineBlocking(3, BLOCK_CREATURES);
+		TranslucentLine(3, 96, 0);
+		Scroll_Texture_Both(3, 0, 0, 0, 200);
+		Scroll_Texture_Both(-3, 0, 0, 0, 200);
+		TranslucentLine(4, 32, 0);
+		Scroll_Texture_Both(4, 0, 0, 0, 200);
+		Scroll_Texture_Both(-4, 0, 0, 0, 200);
+		TranslucentLine(10, 0, 0);
+		Scroll_Texture_Both(10, 0, 0, 0, -200);
+		Scroll_Texture_Both(-10, 0, 0, 0, -200);
+
+		// Zombie trap room
+		TranslucentLine(67, 144, 0);
+		Scroll_Texture_Both(67, 0, 0, 0, -200);
+		Scroll_Texture_Both(-67, 0, 0, 0, -200);
 	}
-}
 
-Script 2 (void) // Getting into the submarine
-{
-	if(SubmarineStillReachable==1)
+	/* RESIST EVENT */
+	script "ze07_internal_event_resistelapsed" (raw packetRaw)
 	{
-		if(Player::GetIsZombie())
-			Teleport_NoFog(10);
-		else
-			Teleport_NoFog(2);
+		Event::ReceiveTimerElapsed((str)packetRaw);
+		int index = Event::GetReceiveData(0);
+		
+		switch(index)
+		{
+			case 0:
+				Door_Open(13, 32);
+				break;
+			case 1:
+				Acs_Execute(8, 0);
+				AllowManualActivation = 1;
+				break;
+			case 2:
+				SetLineBlocking(3, BLOCK_NOTHING);
+				TranslucentLine(3, 0, 0);
+				Delay(35*5);
+				Floor_LowerByValue(36, 16, 112);
+				break;
+			case 3:
+				SetFont("BIGFONT");
+				HudMessageBold(s:"\cGWarning : \cKGate being closed!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+				Delay(random(105, 140));
+				GateCrossable = 0;
+				AmbientSound("sound/poweroff1", 100);
+				TranslucentLine(4, 0, 0);
+				Delay(35*4);
+				Game::KillUnsafePlayers();
+		}
 	}
-}
 
-Script 3 (void) // Getting out of the submarine
-{
-	if(SubmarineExitable==0)
-		Print(s:"You can't get out now.");
-	Else
-		Teleport_NoFog(200+PlayerNumber());
-}
-
-Script 4 (void)
-{
-	SetFont("CONFONT");
-	HudMessageBold(s:"The submarine will leave in 15 seconds!"; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.05, 0.85, 3.0, 2.0);
-	SetActivator(-1);
-
-	Delay(35*15);
-
-	SubmarineStillReachable = 0;
-	SetFont("CONFONT");
-	HudMessageBold(s:"The submarine is leaving!"; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.05, 0.85, 3.0, 2.0);
-	Floor_LowerByValue(8, 8, 128);
-	Floor_LowerByValue(9, 8, 128);
-	Acs_execute(5, 0, 0, 0, 0);
-
-	Delay(35 * 35);
-
-	Floor_RaiseByValue(25, 32, 128);
-
-	Delay(35 * 5);
-
-	Acs_Terminate(5, 0);
-	SetFont("CONFONT");
-	HudMessageBold(s:"The submarine has arrived!"; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.05, 0.85, 3.0, 2.0);
-	SubmarineExitable = 1;
-	SubmarineStillReachable = 1;
-
-	Delay(35 * 10);
-
-	// deactivate zombie trap room
-	TranslucentLine(67, 0, 0);
-	trapDisabled = true;
-}
-
-Script 5 (void) // Sounds
-{
-	ThingSound(12, "sound/submarine1", 100);
-	Delay(35*20);
-	ThingSound(12, "sound/submarine1", 100);
-}
-
-Script 8 (void) // Teleport
-{
-	SetLineBlocking(1, BLOCK_CREATURES);
-	SetLineBlocking(10, BLOCK_CREATURES);
-	TranslucentLine(10, 96, 0);
-	Delay(35*5);
-	TeleportInSector(22, 23, 24, 1, 0);
-	Delay(35*3);
-	TranslucentLine(10, 0, 0);
-	SetLineBlocking(1, BLOCK_NOTHING);
-	SetLineBlocking(10, BLOCK_NOTHING);
-	Delay(35*5);
-}
-
-Script 9 (void)
-{
-	if(AllowManualActivation==1)
+	Script 2 (void) // Getting into the submarine
 	{
-		Print(s:"Teleportation Activated");
+		if(SubmarineStillReachable==1)
+		{
+			if(Player::GetIsZombie())
+				Teleport_NoFog(10);
+			else
+				Teleport_NoFog(2);
+		}
+	}
+
+	Script 3 (void) // Getting out of the submarine
+	{
+		if(SubmarineExitable==0)
+			Print(s:"You can't get out now.");
+		Else
+			Teleport_NoFog(200+PlayerNumber());
+	}
+
+	Script 4 (void)
+	{
+		SetFont("CONFONT");
+		HudMessageBold(s:"The submarine will leave in 15 seconds!"; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.05, 0.85, 3.0, 2.0);
+		SetActivator(-1);
+
+		Delay(35*15);
+
+		SubmarineStillReachable = 0;
+		SetFont("CONFONT");
+		HudMessageBold(s:"The submarine is leaving!"; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.05, 0.85, 3.0, 2.0);
+		Floor_LowerByValue(8, 8, 128);
+		Floor_LowerByValue(9, 8, 128);
+		Acs_execute(5, 0, 0, 0, 0);
+
+		Delay(35 * 35);
+
+		Floor_RaiseByValue(25, 32, 128);
+
+		Delay(35 * 5);
+
+		Acs_Terminate(5, 0);
+		SetFont("CONFONT");
+		HudMessageBold(s:"The submarine has arrived!"; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.05, 0.85, 3.0, 2.0);
+		SubmarineExitable = 1;
+		SubmarineStillReachable = 1;
+
+		Delay(35 * 10);
+
+		// deactivate zombie trap room
+		TranslucentLine(67, 0, 0);
+		trapDisabled = true;
+	}
+
+	Script 5 (void) // Sounds
+	{
+		ThingSound(12, "sound/submarine1", 100);
+		Delay(35*20);
+		ThingSound(12, "sound/submarine1", 100);
+	}
+
+	Script 8 (void) // Teleport
+	{
+		SetLineBlocking(1, BLOCK_CREATURES);
+		SetLineBlocking(10, BLOCK_CREATURES);
+		TranslucentLine(10, 96, 0);
+		Delay(35*5);
+		TeleportInSector(22, 23, 24, 1, 0);
 		Delay(35*3);
-		ACS_Execute(8, 0);
+		TranslucentLine(10, 0, 0);
+		SetLineBlocking(1, BLOCK_NOTHING);
+		SetLineBlocking(10, BLOCK_NOTHING);
+		Delay(35*5);
 	}
-	Else Print(s:"The teleporter is not ready yet.");
-}
 
-Script 10 (void) // Forcefield
-{
-	PrintBold(n:0, s:" has activated the forcefield!");
-	SetActivator(-1);
-	SetLineBlocking(2, BLOCK_CREATURES);
-	TranslucentLine(2, 96, 0);
-	Scroll_Texture_Both(2, 0, 0, 0, 200);
-	Scroll_Texture_Both(-2, 0, 0, 0, 200);
-	Delay(35*15);
-	PrintBold(s:"\cGForcefield deactivated!");
-	SetLineBlocking(2, BLOCK_NOTHING);
-	TranslucentLine(2, 0, 0);
-}
-
-Script 12 (void) // Crossing the gate
-{
-	if(GateCrossable==1)
+	Script 9 (void)
 	{
-		Game::SetIsSafe(true);
-		if(BaseReached==0)
+		if(AllowManualActivation==1)
 		{
-			SetFont("CONFONT");
-			HudMessageBold(n:0, s:" has reached the base!\n\cCDefend it until the gate closes!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-			Resist::StartResistByIndex(3);
-			BaseReached=1;
+			Print(s:"Teleportation Activated");
+			Delay(35*3);
+			ACS_Execute(8, 0);
 		}
-		if(Player::GetIshuman())
-			Teleport_NoFog(250+PlayerNumber(), 1, 0);
-		else
-			Teleport_NoFog(34, 1, 0);
+		Else Print(s:"The teleporter is not ready yet.");
 	}
-}
 
-Script 14 (void) // Base -> gate
-{
-	if(GateCrossable==1)
+	Script 10 (void) // Forcefield
 	{
-		if(Player::GetIshuman())
-			ThrustThing(64, 30, 0, 0);
-		else
+		PrintBold(n:0, s:" has activated the forcefield!");
+		SetActivator(-1);
+		SetLineBlocking(2, BLOCK_CREATURES);
+		TranslucentLine(2, 96, 0);
+		Scroll_Texture_Both(2, 0, 0, 0, 200);
+		Scroll_Texture_Both(-2, 0, 0, 0, 200);
+		Delay(35*15);
+		PrintBold(s:"\cGForcefield deactivated!");
+		SetLineBlocking(2, BLOCK_NOTHING);
+		TranslucentLine(2, 0, 0);
+	}
+
+	Script 12 (void) // Crossing the gate
+	{
+		if(GateCrossable==1)
 		{
-			Teleport_NoFog(35, 1, 0);
-			Game::SetIsSafe(false);
-			ThrustThing(192, 75, 0, 0);
-			ThrustThingZ(0, 50, 0, 0);
+			Game::SetIsSafe(true);
+			if(BaseReached==0)
+			{
+				SetFont("CONFONT");
+				HudMessageBold(n:0, s:" has reached the base!\n\cCDefend it until the gate closes!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+				Resist::StartResistByIndex(3);
+				BaseReached=1;
+			}
+			if(Player::GetIshuman())
+				Teleport_NoFog(250+PlayerNumber(), 1, 0);
+			else
+				Teleport_NoFog(34, 1, 0);
 		}
 	}
-}
+
+	Script 14 (void) // Base -> gate
+	{
+		if(GateCrossable==1)
+		{
+			if(Player::GetIshuman())
+				ThrustThing(64, 30, 0, 0);
+			else
+			{
+				Teleport_NoFog(35, 1, 0);
+				Game::SetIsSafe(false);
+				ThrustThing(192, 75, 0, 0);
+				ThrustThingZ(0, 50, 0, 0);
+			}
+		}
+	}
 
 
-Script 15 (void)
-{
-    if(trapDisabled)
-        terminate;
+	Script 15 (void)
+	{
+	    if(trapDisabled)
+	        terminate;
 
-    if(Player::GetIshuman())
-        ThrustThing(128, 30, 0, 0);
-    else
-        ThrustThing(0, 30, 0, 0);
+	    if(Player::GetIshuman())
+	        ThrustThing(128, 30, 0, 0);
+	    else
+	        ThrustThing(0, 30, 0, 0);
+	}
 }

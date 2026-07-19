@@ -7,73 +7,76 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-Int forcefield2=0;
-
-script "zm03_open" open // Level setups
+strict namespace
 {
-	Sector_SetPlaneReflection(23, 128, 0);
-	Sector_SetRotation(46, 90, 90);
-	Scroll_Texture_Both(10, 0, 0, 0, 200);
-	Scroll_Texture_Both(-10, 0, 0, 0, 200);
-	TranslucentLine(10, 0, 0);
-	Sector_SetfloorPanning(73, 32, 0, 0, 0);
-	Sector_SetceilingPanning(73, 32, 0, 0, 0);
-	Sector_SetRotation(91, 90, 0);
-	Sector_SetRotation(110, 0, 90);
-	if(!random(0,1))
-		terminate;
+	Int forcefield2=0;
 
-	// Night mode activated
-	for(int i = 0; i < 120; i++)
+	script "zm03_open" open // Level setups
 	{
-		Light_LowerByValue(i, 16);
-	}
-
-	ReplaceTextures("SKYC_N", "SKYD_N");
-	ReplaceTextures("SKYC_S", "SKYD_S");
-	ReplaceTextures("SKYC_W", "SKYD_W");
-	ReplaceTextures("SKYC_E", "SKYD_E");
-	ReplaceTextures("SKYC_T", "SKYD_T");
-
-	// Turn on some lights
-	Acs_Execute(5, 0);
-
-	SpawnSpot(FLAREBOX_ITEM, 119);
-
-	Delay(const: 10);
-
-	for(i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-	{
-		if(PlayerInGame(i))
-			GiveActorInventory(Identity::GetTid(i), FLARE_ITEM, 1);
-	}
-}
-
-Script 2 (void) // Door is locked
-{
-	ActivatorSound("sound/locked1", 127);
-	delay(15);
-}
-
-Script 3 (void) /* Forcefield */
-{
-	if(forcefield2 == 0)
-	{
-		SetLineBlocking(10, BLOCK_CREATURES);
-		TranslucentLine(10, 96, 0);
+		Sector_SetPlaneReflection(23, 128, 0);
+		Sector_SetRotation(46, 90, 90);
 		Scroll_Texture_Both(10, 0, 0, 0, 200);
-		Scroll_Texture_Both(-1, 0, 0, 0, 200);
-		forcefield2 = 1;
-	}
-	Else
-	{
-		SetLineBlocking(10, BLOCK_NOTHING);
+		Scroll_Texture_Both(-10, 0, 0, 0, 200);
 		TranslucentLine(10, 0, 0);
-		forcefield2 = 0;
-	}
-}
+		Sector_SetfloorPanning(73, 32, 0, 0, 0);
+		Sector_SetceilingPanning(73, 32, 0, 0, 0);
+		Sector_SetRotation(91, 90, 0);
+		Sector_SetRotation(110, 0, 90);
+		if(!random(0,1))
+			terminate;
 
-Script 5 (void) CLIENTSIDE
-{
-	Thing_Activate(118);
+		// Night mode activated
+		for(int i = 0; i < 120; i++)
+		{
+			Light_LowerByValue(i, 16);
+		}
+
+		ReplaceTextures("SKYC_N", "SKYD_N");
+		ReplaceTextures("SKYC_S", "SKYD_S");
+		ReplaceTextures("SKYC_W", "SKYD_W");
+		ReplaceTextures("SKYC_E", "SKYD_E");
+		ReplaceTextures("SKYC_T", "SKYD_T");
+
+		// Turn on some lights
+		Acs_Execute(5, 0);
+
+		SpawnSpot(FLAREBOX_ITEM, 119);
+
+		Delay(const: 10);
+
+		for(i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+		{
+			if(PlayerInGame(i))
+				GiveActorInventory(Identity::GetTid(i), FLARE_ITEM, 1);
+		}
+	}
+
+	Script 2 (void) // Door is locked
+	{
+		ActivatorSound("sound/locked1", 127);
+		delay(15);
+	}
+
+	Script 3 (void) /* Forcefield */
+	{
+		if(forcefield2 == 0)
+		{
+			SetLineBlocking(10, BLOCK_CREATURES);
+			TranslucentLine(10, 96, 0);
+			Scroll_Texture_Both(10, 0, 0, 0, 200);
+			Scroll_Texture_Both(-1, 0, 0, 0, 200);
+			forcefield2 = 1;
+		}
+		Else
+		{
+			SetLineBlocking(10, BLOCK_NOTHING);
+			TranslucentLine(10, 0, 0);
+			forcefield2 = 0;
+		}
+	}
+
+	Script 5 (void) CLIENTSIDE
+	{
+		Thing_Activate(118);
+	}
 }

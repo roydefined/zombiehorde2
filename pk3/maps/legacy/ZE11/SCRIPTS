@@ -7,227 +7,230 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-#define FROZEN_TIME  5
-
-#define LOGSOURCE "ZE11"
-
-bool forcefield_active = false;
-
-Script "ze11_open" OPEN
+strict namespace
 {
-    // Level setups
-    CreateTranslation(1, 0:255=192:207);    // Frozen in ice
-    TranslucentLine(4, 0, 0);
-	TranslucentLine(8, 160, 0);
-    TranslucentLine(101, 0, 0);     // invis blocking lines
-    TranslucentLine(150, 0, 0);     // invis blocking lines
-    Sector_SetRotation(67, 45, 0);
-    Sector_SetRotation(68, -45, 0);
+	#define FROZEN_TIME  5
 
-    //  Start here
-    delay(35*5);
-    AmbientSound("world/readyvoice", 127);
-    delay(35*2);
+	#define LOGSOURCE "ZE11"
 
-    // Make the walls disappear
-    SetLineBlocking(1, BLOCK_NOTHING);
-    Acs_ExecuteAlways(4, 0, 1, 0, 0);   // Translucy fadeout
-    delay(10);
+	bool forcefield_active = false;
 
-    // Music change
-    AmbientSound("world/varietystart", 100);
-    delay(36);
-    Music::PlayMusic("Variety");
-
-    // Making sure of this for spectators
-    delay(35*5);
-    TranslucentLine(1, 0, 0);
-}
-
-Script "ze11_open_client" OPEN CLIENTSIDE   // Clientsided level setups
-{
-    Ceiling_Waggle(95, 64*8, 32, 0, 0);
-    Ceiling_Waggle(96, 64*8, 32, 32, 0);
-    Ceiling_Waggle(97, 64*8, 32, 64, 0);
-    Ceiling_Waggle(98, 64*8, 32, 96, 0);
-    Floor_Waggle(95, 64*8, 32, 0, 0);
-    Floor_Waggle(96, 64*8, 32, 32, 0);
-    Floor_Waggle(97, 64*8, 32, 64, 0);
-    Floor_Waggle(98, 64*8, 32, 96, 0);
-}
-
-Script "ze11_open_client2" OPEN CLIENTSIDE
-{
-	int i;
-	for(i=0; i<20; i++)
+	Script "ze11_open" OPEN
 	{
-		TranslucentLine(100, 10*i, 0);
-		Delay(1);
-	}
-	for(i=0; i<20; i++)
-	{
-		TranslucentLine(100, 200-10*i, 0);
-		Delay(1);
-	}
-	restart;    // loop!!!
-}
+	    // Level setups
+	    CreateTranslation(1, 0:255=192:207);    // Frozen in ice
+	    TranslucentLine(4, 0, 0);
+		TranslucentLine(8, 160, 0);
+	    TranslucentLine(101, 0, 0);     // invis blocking lines
+	    TranslucentLine(150, 0, 0);     // invis blocking lines
+	    Sector_SetRotation(67, 45, 0);
+	    Sector_SetRotation(68, -45, 0);
 
-script "ze11_unload" unloading
-{
-    SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
-}
+	    //  Start here
+	    delay(35*5);
+	    AmbientSound("world/readyvoice", 127);
+	    delay(35*2);
 
-/* RESIST EVENT */
-script "ze11_internal_event_resistelapsed" (raw packetRaw)
-{
-	Event::ReceiveTimerElapsed((str)packetRaw);
-	int index = Event::GetReceiveData(0);
+	    // Make the walls disappear
+	    SetLineBlocking(1, BLOCK_NOTHING);
+	    Acs_ExecuteAlways(4, 0, 1, 0, 0);   // Translucy fadeout
+	    delay(10);
 
-	switch(index)
-	{
-		case 0:
-			// remove the block
-			SetLineBlocking(3, BLOCK_NOTHING);
-			Acs_ExecuteAlways(4, 0, 3, 0, 0);   // Translucy fadeout
+	    // Music change
+	    AmbientSound("world/varietystart", 100);
+	    delay(36);
+	    Music::PlayMusic("Variety");
 
-			delay(35*5);
-			// secondary path
-			//Floor_RaiseByValue(82, 32, 128);
-			Ceiling_RaiseByValue(82, 32, 128);
-			delay(35*5);
-			Floor_MoveToValue(51, 16, 120, 1);
-			SetLineTexture(150, SIDE_FRONT, TEXTURE_MIDDLE, "-");
-			SetLineTexture(150, SIDE_BACK, TEXTURE_MIDDLE, "-");
-			break;
-
-		case 1:
-			// Make the walls disappear
-			SetLineBlocking(6, BLOCK_NOTHING);
-			Acs_ExecuteAlways(4, 0, 6, 0, 0);   // Translucy fadeout
-			delay(15);
-			break;
-
-		case 2:
-			// Make the wall disappear
-			SetLineBlocking(7, BLOCK_NOTHING);
-			Acs_ExecuteAlways(4, 0, 7, 0, 0);   // Translucy fadeout
-			delay(35*5);
-			TranslucentLine(8, 0, 0);
-			SetLineBlocking(8, BLOCK_NOTHING);
-			break;
-
-		case 3:
-			delay(35);
-			//Generic_Ceiling(90, 16, 64, 5, 16); //ZH2 [AQW]
-			Ceiling_LowerAndCrush(90,16,50,2); //ZH2 [AQW]
-			tagWait(90);
-			Ceiling_LowerByValueTimes8(90,16,1); //ZH2 [AQW]
-
-			SetFont("BIGFONT");
-			HudMessageBold(s:"Aborting simulation..."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.2, 3.0, 2.0);
-			Delay(70);
-			Music::PlayMusic("D_NULL");
-			AmbientSound("sound/poweroff1", 100);
-			Delay(70);
-			Game::KillUnsafePlayers();
-			break;
-	}
-}
-
-Script 2 (int destination)
-{
-	// teleport
-	Teleport_NoFog(destination, 1);
-
-	// freeze
-	if (GetCVar("sv_zh2_ze11_enablefrozenteleporting"))
-		Acs_ExecuteAlways(3, 0);
-}
-
-// Freezes humans that fall in the void
-Script 3 (void)
-{
-    if(Player::GetIsZombie())
-        terminate;
-
-    // Freeze
-    SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN);
-
-	// Mapspot will hold the player's translation so we can set the special translation.
-	int translationHolderTid = UniqueTid();
-	if (!SpawnForced("mapspot", 0.0, 0.0, 0.0, translationHolderTid))
-	{
-		Logger::LogError(LOGSOURCE, "Failed to spawn translation mapspot.");
-		terminate;
+	    // Making sure of this for spectators
+	    delay(35*5);
+	    TranslucentLine(1, 0, 0);
 	}
 
-	Thing_SetTranslation(translationHolderTid, -1);
-
-    // Colors
-    Thing_SetTranslation(0, 1);
-    FadeTo(127, 127, 255, 0.5, 0.0);
-
-    // Play a sound
-    ActivatorSound("world/frozen", 127);
-
-    delay(35 * FROZEN_TIME);
-
-	// Set activator to the spawned mapspot holding the translation and transfer the translation back.
-	int tid = ActivatorTID();
-	if (!SetActivator(translationHolderTid))
-		terminate;
-
-	Thing_SetTranslation(tid, -1);
-	Thing_Remove(translationHolderTid);
-
-	if (!SetActivator(tid))
-		terminate;
-
-    // Unfreeze the player
-    SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN);
-    FadeTo(127, 127, 255, 0.0, 1.0);
-
-}
-
-Script 4 (int id) CLIENTSIDE    // Translucy fadeout clientsided
-{
-    for(int i=40; i>=0; i--)
+	Script "ze11_open_client" OPEN CLIENTSIDE   // Clientsided level setups
 	{
-        TranslucentLine(id, 5*i, 0);
-        Delay(1);
-    }
+	    Ceiling_Waggle(95, 64*8, 32, 0, 0);
+	    Ceiling_Waggle(96, 64*8, 32, 32, 0);
+	    Ceiling_Waggle(97, 64*8, 32, 64, 0);
+	    Ceiling_Waggle(98, 64*8, 32, 96, 0);
+	    Floor_Waggle(95, 64*8, 32, 0, 0);
+	    Floor_Waggle(96, 64*8, 32, 32, 0);
+	    Floor_Waggle(97, 64*8, 32, 64, 0);
+	    Floor_Waggle(98, 64*8, 32, 96, 0);
+	}
+
+	Script "ze11_open_client2" OPEN CLIENTSIDE
+	{
+		int i;
+		for(i=0; i<20; i++)
+		{
+			TranslucentLine(100, 10*i, 0);
+			Delay(1);
+		}
+		for(i=0; i<20; i++)
+		{
+			TranslucentLine(100, 200-10*i, 0);
+			Delay(1);
+		}
+		restart;    // loop!!!
+	}
+
+	script "ze11_unload" unloading
+	{
+	    SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
+	}
+
+	/* RESIST EVENT */
+	script "ze11_internal_event_resistelapsed" (raw packetRaw)
+	{
+		Event::ReceiveTimerElapsed((str)packetRaw);
+		int index = Event::GetReceiveData(0);
+
+		switch(index)
+		{
+			case 0:
+				// remove the block
+				SetLineBlocking(3, BLOCK_NOTHING);
+				Acs_ExecuteAlways(4, 0, 3, 0, 0);   // Translucy fadeout
+
+				delay(35*5);
+				// secondary path
+				//Floor_RaiseByValue(82, 32, 128);
+				Ceiling_RaiseByValue(82, 32, 128);
+				delay(35*5);
+				Floor_MoveToValue(51, 16, 120, 1);
+				SetLineTexture(150, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+				SetLineTexture(150, SIDE_BACK, TEXTURE_MIDDLE, "-");
+				break;
+
+			case 1:
+				// Make the walls disappear
+				SetLineBlocking(6, BLOCK_NOTHING);
+				Acs_ExecuteAlways(4, 0, 6, 0, 0);   // Translucy fadeout
+				delay(15);
+				break;
+
+			case 2:
+				// Make the wall disappear
+				SetLineBlocking(7, BLOCK_NOTHING);
+				Acs_ExecuteAlways(4, 0, 7, 0, 0);   // Translucy fadeout
+				delay(35*5);
+				TranslucentLine(8, 0, 0);
+				SetLineBlocking(8, BLOCK_NOTHING);
+				break;
+
+			case 3:
+				delay(35);
+				//Generic_Ceiling(90, 16, 64, 5, 16); //ZH2 [AQW]
+				Ceiling_LowerAndCrush(90,16,50,2); //ZH2 [AQW]
+				tagWait(90);
+				Ceiling_LowerByValueTimes8(90,16,1); //ZH2 [AQW]
+
+				SetFont("BIGFONT");
+				HudMessageBold(s:"Aborting simulation..."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.2, 3.0, 2.0);
+				Delay(70);
+				Music::PlayMusic("D_NULL");
+				AmbientSound("sound/poweroff1", 100);
+				Delay(70);
+				Game::KillUnsafePlayers();
+				break;
+		}
+	}
+
+	Script 2 (int destination)
+	{
+		// teleport
+		Teleport_NoFog(destination, 1);
+
+		// freeze
+		if (GetCVar("sv_zh2_ze11_enablefrozenteleporting"))
+			Acs_ExecuteAlways(3, 0);
+	}
+
+	// Freezes humans that fall in the void
+	Script 3 (void)
+	{
+	    if(Player::GetIsZombie())
+	        terminate;
+
+	    // Freeze
+	    SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN);
+
+		// Mapspot will hold the player's translation so we can set the special translation.
+		int translationHolderTid = UniqueTid();
+		if (!SpawnForced("mapspot", 0.0, 0.0, 0.0, translationHolderTid))
+		{
+			Logger::LogError(LOGSOURCE, "Failed to spawn translation mapspot.");
+			terminate;
+		}
+
+		Thing_SetTranslation(translationHolderTid, -1);
+
+	    // Colors
+	    Thing_SetTranslation(0, 1);
+	    FadeTo(127, 127, 255, 0.5, 0.0);
+
+	    // Play a sound
+	    ActivatorSound("world/frozen", 127);
+
+	    delay(35 * FROZEN_TIME);
+
+		// Set activator to the spawned mapspot holding the translation and transfer the translation back.
+		int tid = ActivatorTID();
+		if (!SetActivator(translationHolderTid))
+			terminate;
+
+		Thing_SetTranslation(tid, -1);
+		Thing_Remove(translationHolderTid);
+
+		if (!SetActivator(tid))
+			terminate;
+
+	    // Unfreeze the player
+	    SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN);
+	    FadeTo(127, 127, 255, 0.0, 1.0);
+
+	}
+
+	Script 4 (int id) CLIENTSIDE    // Translucy fadeout clientsided
+	{
+	    for(int i=40; i>=0; i--)
+		{
+	        TranslucentLine(id, 5*i, 0);
+	        Delay(1);
+	    }
+	}
+
+	Script 5 (void) // Forcefield
+	{
+	    PrintBold(n:0, s:" \cDhas activated the forcefield!\n\n\cDIt will shut down in \cG10 \cDseconds!");
+	    SetActivator(-1);
+	    forcefield_active = true;
+	    //SetLineBlocking(4, BLOCK_CREATURES);
+	    TranslucentLine(4, 205, 0);
+
+	    Delay(35*10);
+	    forcefield_active = false;
+	    PrintBold(s:"\cDField deactivated!");
+	    //SetLineBlocking(4, BLOCK_NOTHING);
+	    TranslucentLine(4, 0, 0);
+	}
+
+	Script 9 (void) // Teleport after third event
+	{
+		if(Player::GetIsZombie())
+			Teleport_NoFog(2, true);
+		else
+	    	Teleport_NoFog(400 + PlayerNumber(), true);
+	}
+
+	Script 10 (void)
+	{
+	    if(forcefield_active==false)
+	        terminate;
+
+	    if(Player::GetIsZombie())
+	        ThrustThing(128, 30, 0, 0);
+	}
+
+	#undef LOGSOURCE
 }
-
-Script 5 (void) // Forcefield
-{
-    PrintBold(n:0, s:" \cDhas activated the forcefield!\n\n\cDIt will shut down in \cG10 \cDseconds!");
-    SetActivator(-1);
-    forcefield_active = true;
-    //SetLineBlocking(4, BLOCK_CREATURES);
-    TranslucentLine(4, 205, 0);
-
-    Delay(35*10);
-    forcefield_active = false;
-    PrintBold(s:"\cDField deactivated!");
-    //SetLineBlocking(4, BLOCK_NOTHING);
-    TranslucentLine(4, 0, 0);
-}
-
-Script 9 (void) // Teleport after third event
-{
-	if(Player::GetIsZombie())
-		Teleport_NoFog(2, true);
-	else
-    	Teleport_NoFog(400 + PlayerNumber(), true);
-}
-
-Script 10 (void)
-{
-    if(forcefield_active==false)
-        terminate;
-
-    if(Player::GetIsZombie())
-        ThrustThing(128, 30, 0, 0);
-}
-
-#undef LOGSOURCE

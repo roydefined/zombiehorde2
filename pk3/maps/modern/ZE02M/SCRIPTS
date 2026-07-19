@@ -7,229 +7,232 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-// Tracks if the player is close to the closing polyobject doors.
-// This prevents players from blocking in and pushes them away. It also prevents having to instakill them.
-internal bool _inElevatorDoors[BCSUtils::MAX_PLAYERS];
-internal bool _inSafezoneDoors[BCSUtils::MAX_PLAYERS];
-
-Script "OnOpen" open
+strict namespace
 {
-	// This is the poly object in the elevator that will push anybody trying to block it.
-	// Move it to the side for now until it is needed
-	Polyobj_Move(5, 50, 128, 256);
+	// Tracks if the player is close to the closing polyobject doors.
+	// This prevents players from blocking in and pushes them away. It also prevents having to instakill them.
+	internal bool _inElevatorDoors[BCSUtils::MAX_PLAYERS];
+	internal bool _inSafezoneDoors[BCSUtils::MAX_PLAYERS];
 
-	// Final doors, already open
-	Polyobj_Move(8, 7, 128, 80);
-	Polyobj_Move(9, 7, 0, 80);
-
-	Resist::CreateResist(15, "Lowering pillars");
-	Resist::CreateResist(20, "Opening excavation entrance");
-	Resist::CreateResist(25, "Initializing elevators");
-	Resist::CreateResist(45, "Defend the secure room");
-}
-
-Script "OnOpenClient" open clientside
-{
-	SpawnSpotForced("ZH2ZE02MVolcanoSmoke", 6, 0, 0);
-}
-
-// Switches the sparks on or off depending on the lineside.
-script "SparksSwitch" (void) clientside
-{
-	if(ConsolePlayerNumber() != PlayerNumber())
-		terminate;
-
-	int side = LineSide() == LINE_FRONT;
-	if (side)
-		Weather::StartEmitterWeather(Weather::EMITTERWEATHER_SPARK);
-	else
-		Weather::StopEmitterWeather(Weather::EMITTERWEATHER_SPARK);
-}
-
-// Increases/decreases the count of the sparks when crossing the line
-// This switch assumes the small sparks are already enabled.
-script "BigSparksSwitch" (void) clientside
-{
-	if(ConsolePlayerNumber() != PlayerNumber())
-		terminate;
-
-	int side = LineSide() == LINE_FRONT;
-	if (side)
-		Weather::SetEmitterWeatherSpawnCount(Weather::EMITTERWEATHER_SPARK, 25);
-	else
-		Weather::SetEmitterWeatherSpawnCount(Weather::EMITTERWEATHER_SPARK, 6);
-}
-
-Script "Resist1" (void)
-{
-	SetActivator(-1);
-	Delay(Resist::StartResistByIndex(0));
-
-	Floor_LowerByValue(8, 16, 108);
-	SetLineBlocking(1, BLOCK_NOTHING);
-
-}
-
-Script "Resist2" (void)
-{
-	SetActivator(-1);
-	Delay(Resist::StartResistByIndex(1));
-
-	Floor_LowerByValue(5, 16, 108);
-	SetLineBlocking(2, BLOCK_NOTHING);
-
-}
-
-Script "Resist3" (void)
-{
-	SetActivator(-1);
-	Delay(Resist::StartResistByIndex(2));
-
-	Polyobj_Move(1, 10, 128, 120);
-	Polyobj_Move(2, 10, 0, 120);
-	ACS_NamedExecute("LiftDoorSound", 0, 1, 2);
-
-	PolyWait(1);
-	Delay(35*2);
-
-	Polyobj_OR_Move(1, 10, 0, 120);
-	Polyobj_OR_Move(2, 10, 128, 120);
-	ACS_NamedExecute("LiftDoorSound", 0, 1, 2);
-
-	Delay(35*3);
-
-	// Push anybody trying to block the doors.
-	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+	Script "OnOpen" open
 	{
-		if (!PlayerInGame(i) || !_inElevatorDoors[i])
-			continue;
+		// This is the poly object in the elevator that will push anybody trying to block it.
+		// Move it to the side for now until it is needed
+		Polyobj_Move(5, 50, 128, 256);
 
-		int tid = Identity::GetTid(i);
-		Thing_Damage(tid, 20, MOD_CRUSH);
-		ThrustThing(192, 10, false, tid);
+		// Final doors, already open
+		Polyobj_Move(8, 7, 128, 80);
+		Polyobj_Move(9, 7, 0, 80);
+
+		Resist::CreateResist(15, "Lowering pillars");
+		Resist::CreateResist(20, "Opening excavation entrance");
+		Resist::CreateResist(25, "Initializing elevators");
+		Resist::CreateResist(45, "Defend the secure room");
 	}
 
-	Delay(35*2);
-
-	// Move the pushing polyobject too
-	Polyobj_Move(5, 50, 0, 256);
-
-	Delay(35*2);
-
-	// Now slowly move it forward into the crowd
-	Polyobj_Move(5, 5, 192, 12);
-
-	Floor_RaiseByValue(60, 20, 570);
-	Ceiling_RaiseByValue(60, 20, 570);
-	Floor_RaiseByValue(62, 20, 570);
-	Ceiling_RaiseByValue(62, 20, 570);
-	Ceiling_RaiseByValue(1, 20, 570);
-
-
-	// Move it back to avoid z fighting
-	PolyWait(5);
-	Delay(20);
-	Polyobj_Move(5, 5, 64, 12);
-
-	TagWait(60);
-	Delay(35 * 1 + 18);
-
-	Polyobj_Move(3, 7, 128, 128);
-	Polyobj_Move(4, 7, 0, 128);
-	ACS_NamedExecute("LiftDoorSound", 0, 3, 4);
-
-	PolyWait(3);
-	Delay(35*2);
-
-	Logger::LogBold("A secondary path has been opened.");
-
-	Polyobj_Move(6, 10, 192, 100);
-	Polyobj_Move(7, 10, 64, 100);
-	ACS_NamedExecute("ReactorDoorSound", 0, 6, 7);
-}
-
-Script "FinalResist" (void)
-{
-	SetFont("SMALLFONT");
-	HudMessageBold(s:"The volcano grows restless.\nPrepare for a huge volcanic eruption!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-
-	SetActivator(-1);
-	delay(35*3);
-
-	Delay(Resist::StartResistByIndex(3));
-
-	for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+	Script "OnOpenClient" open clientside
 	{
-		if (!PlayerInGame(i)) {
-			continue;
+		SpawnSpotForced("ZH2ZE02MVolcanoSmoke", 6, 0, 0);
+	}
+
+	// Switches the sparks on or off depending on the lineside.
+	script "SparksSwitch" (void) clientside
+	{
+		if(ConsolePlayerNumber() != PlayerNumber())
+			terminate;
+
+		int side = LineSide() == LINE_FRONT;
+		if (side)
+			Weather::StartEmitterWeather(Weather::EMITTERWEATHER_SPARK);
+		else
+			Weather::StopEmitterWeather(Weather::EMITTERWEATHER_SPARK);
+	}
+
+	// Increases/decreases the count of the sparks when crossing the line
+	// This switch assumes the small sparks are already enabled.
+	script "BigSparksSwitch" (void) clientside
+	{
+		if(ConsolePlayerNumber() != PlayerNumber())
+			terminate;
+
+		int side = LineSide() == LINE_FRONT;
+		if (side)
+			Weather::SetEmitterWeatherSpawnCount(Weather::EMITTERWEATHER_SPARK, 25);
+		else
+			Weather::SetEmitterWeatherSpawnCount(Weather::EMITTERWEATHER_SPARK, 6);
+	}
+
+	Script "Resist1" (void)
+	{
+		SetActivator(-1);
+		Delay(Resist::StartResistByIndex(0));
+
+		Floor_LowerByValue(8, 16, 108);
+		SetLineBlocking(1, BLOCK_NOTHING);
+
+	}
+
+	Script "Resist2" (void)
+	{
+		SetActivator(-1);
+		Delay(Resist::StartResistByIndex(1));
+
+		Floor_LowerByValue(5, 16, 108);
+		SetLineBlocking(2, BLOCK_NOTHING);
+
+	}
+
+	Script "Resist3" (void)
+	{
+		SetActivator(-1);
+		Delay(Resist::StartResistByIndex(2));
+
+		Polyobj_Move(1, 10, 128, 120);
+		Polyobj_Move(2, 10, 0, 120);
+		ACS_NamedExecute("LiftDoorSound", 0, 1, 2);
+
+		PolyWait(1);
+		Delay(35*2);
+
+		Polyobj_OR_Move(1, 10, 0, 120);
+		Polyobj_OR_Move(2, 10, 128, 120);
+		ACS_NamedExecute("LiftDoorSound", 0, 1, 2);
+
+		Delay(35*3);
+
+		// Push anybody trying to block the doors.
+		for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+		{
+			if (!PlayerInGame(i) || !_inElevatorDoors[i])
+				continue;
+
+			int tid = Identity::GetTid(i);
+			Thing_Damage(tid, 20, MOD_CRUSH);
+			ThrustThing(192, 10, false, tid);
 		}
 
-		SetActivatorToPlayer(i);
-		Radius_Quake(15, 35*7, 0, 50, 0);
+		Delay(35*2);
+
+		// Move the pushing polyobject too
+		Polyobj_Move(5, 50, 0, 256);
+
+		Delay(35*2);
+
+		// Now slowly move it forward into the crowd
+		Polyobj_Move(5, 5, 192, 12);
+
+		Floor_RaiseByValue(60, 20, 570);
+		Ceiling_RaiseByValue(60, 20, 570);
+		Floor_RaiseByValue(62, 20, 570);
+		Ceiling_RaiseByValue(62, 20, 570);
+		Ceiling_RaiseByValue(1, 20, 570);
+
+
+		// Move it back to avoid z fighting
+		PolyWait(5);
+		Delay(20);
+		Polyobj_Move(5, 5, 64, 12);
+
+		TagWait(60);
+		Delay(35 * 1 + 18);
+
+		Polyobj_Move(3, 7, 128, 128);
+		Polyobj_Move(4, 7, 0, 128);
+		ACS_NamedExecute("LiftDoorSound", 0, 3, 4);
+
+		PolyWait(3);
+		Delay(35*2);
+
+		Logger::LogBold("A secondary path has been opened.");
+
+		Polyobj_Move(6, 10, 192, 100);
+		Polyobj_Move(7, 10, 64, 100);
+		ACS_NamedExecute("ReactorDoorSound", 0, 6, 7);
 	}
 
-	SetActivator(-1);
-
-	Polyobj_Move(8, 7, 0, 80);
-	Polyobj_Move(9, 7, 128, 80);
-	ACS_NamedExecute("LiftDoorSound", 0, 8, 9);
-
-	Delay(35*2);
-
-	SetFont("BIGFONT");
-	HudMessageBold(s:"\cGVolcanic Eruption!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-	delay(35);
-
-	// Push anybody trying to block the doors.
-	for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+	Script "FinalResist" (void)
 	{
-		if (!PlayerInGame(i) || !_inSafezoneDoors[i])
-			continue;
+		SetFont("SMALLFONT");
+		HudMessageBold(s:"The volcano grows restless.\nPrepare for a huge volcanic eruption!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
 
-		int tid = Identity::GetTid(i);
-		Thing_Damage(tid, 20, MOD_CRUSH);
-		ThrustThing(192, 10, false, tid);
+		SetActivator(-1);
+		delay(35*3);
+
+		Delay(Resist::StartResistByIndex(3));
+
+		for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+		{
+			if (!PlayerInGame(i)) {
+				continue;
+			}
+
+			SetActivatorToPlayer(i);
+			Radius_Quake(15, 35*7, 0, 50, 0);
+		}
+
+		SetActivator(-1);
+
+		Polyobj_Move(8, 7, 0, 80);
+		Polyobj_Move(9, 7, 128, 80);
+		ACS_NamedExecute("LiftDoorSound", 0, 8, 9);
+
+		Delay(35*2);
+
+		SetFont("BIGFONT");
+		HudMessageBold(s:"\cGVolcanic Eruption!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+		delay(35);
+
+		// Push anybody trying to block the doors.
+		for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+		{
+			if (!PlayerInGame(i) || !_inSafezoneDoors[i])
+				continue;
+
+			int tid = Identity::GetTid(i);
+			Thing_Damage(tid, 20, MOD_CRUSH);
+			ThrustThing(192, 10, false, tid);
+		}
+
+		// Failsafe, ensure nobody can get out if they attempt to exit while the polyobjects might still be closing.
+		Line_SetBlocking(2, BLOCK_PLAYERS, 0);
+
+		delay(35);
+		AmbientSound("world/volcano1", 127);
+		delay(35);
+
+		Game::KillUnsafePlayers();
 	}
 
-	// Failsafe, ensure nobody can get out if they attempt to exit while the polyobjects might still be closing.
-	Line_SetBlocking(2, BLOCK_PLAYERS, 0);
-
-	delay(35);
-	AmbientSound("world/volcano1", 127);
-	delay(35);
-
-	Game::KillUnsafePlayers();
-}
-
-// `SoundSequenceOnPolyObj` has no networking and as such this must be clientside to work.
-script "ReactorDoorSound"(int tid1, int tid2) clientside
-{
-	SoundSequenceOnPolyObj(tid1, "ReactorDoor");
-	SoundSequenceOnPolyObj(tid2, "ReactorDoor");
-}
-
-script "LiftDoorSound"(int tid1, int tid2) clientside
-{
-	SoundSequenceOnPolyObj(tid1, "ZH2LiftDoor1");
-	SoundSequenceOnPolyObj(tid2, "ZH2LiftDoor1");
-}
-
-Script "Lava_Teleport" (int teleportTid, int noDamage)
-{
-	if(Player::GetIsHuman() && !noDamage)
+	// `SoundSequenceOnPolyObj` has no networking and as such this must be clientside to work.
+	script "ReactorDoorSound"(int tid1, int tid2) clientside
 	{
-		Thing_Damage(0, GetActorProperty(0, APROP_Health)/3, 0);
+		SoundSequenceOnPolyObj(tid1, "ReactorDoor");
+		SoundSequenceOnPolyObj(tid2, "ReactorDoor");
 	}
 
-	TeleportUtil::TeleportArea(teleportTid, 32, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
-}
+	script "LiftDoorSound"(int tid1, int tid2) clientside
+	{
+		SoundSequenceOnPolyObj(tid1, "ZH2LiftDoor1");
+		SoundSequenceOnPolyObj(tid2, "ZH2LiftDoor1");
+	}
 
-Script "InElevatorDoors"
-{
-	_inElevatorDoors[PlayerNumber()] = LineSide() == LINE_FRONT;
-}
+	Script "Lava_Teleport" (int teleportTid, int noDamage)
+	{
+		if(Player::GetIsHuman() && !noDamage)
+		{
+			Thing_Damage(0, GetActorProperty(0, APROP_Health)/3, 0);
+		}
 
-Script "InSafezoneDoors"
-{
-	_inSafezoneDoors[PlayerNumber()] = LineSide() == LINE_FRONT;
+		TeleportUtil::TeleportArea(teleportTid, 32, TeleportUtil::TELEPORT_PROFILE_TELEPORTSPOTFOG);
+	}
+
+	Script "InElevatorDoors"
+	{
+		_inElevatorDoors[PlayerNumber()] = LineSide() == LINE_FRONT;
+	}
+
+	Script "InSafezoneDoors"
+	{
+		_inSafezoneDoors[PlayerNumber()] = LineSide() == LINE_FRONT;
+	}
 }

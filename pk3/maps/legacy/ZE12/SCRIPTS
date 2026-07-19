@@ -7,112 +7,115 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-bool pyr_scpt_exec = false;
-
-script "ze12_open" OPEN	// Level setups
+strict namespace
 {
-    // north active by default
-    floor_raisebyvalue(5,8,128);
-    SetLineTexture(2, SIDE_FRONT, TEXTURE_MIDDLE, "LGTBEAM2");
-    SetLineTexture(2, SIDE_BACK, TEXTURE_MIDDLE, "LGTBEAM2");
+	bool pyr_scpt_exec = false;
 
-    // west active by default
-	floor_raisebyvalue(11,8,128);
-    SetLineTexture(5, SIDE_FRONT, TEXTURE_MIDDLE, "LGTBEAM2");
-    SetLineTexture(5, SIDE_BACK, TEXTURE_MIDDLE, "LGTBEAM2");
-}
-
-/* RESIST EVENT */
-script "ze12_internal_event_resistelapsed" (raw packetRaw)
-{
-	Event::ReceiveTimerElapsed((str)packetRaw);
-	int index = Event::GetReceiveData(0);
-
-	switch(index)
+	script "ze12_open" OPEN	// Level setups
 	{
-		case 0:
-			floor_LowerByValue(36, 32, 264);
-			floor_raisebyvalue(8,16,408);
-			floor_raisebyvalue(9,16,536);
-			delay(270);
-			SetLineTexture(3, SIDE_FRONT, TEXTURE_MIDDLE, "LGTBEAM2");
-			SetLineTexture(3, SIDE_BACK, TEXTURE_MIDDLE, "LGTBEAM2");
-			AmbientSound("world/beacon1",127);
-			break;
-		case 1:
-			floor_LowerByValue(33, 16, 112);
-			break;
-		case 2:
-			// TODO: Support explosion
-			//Spawn("Explosion", GetActorX(29), GetActorY(29), GetActorZ(29));
-			AmbientSound("world/reveal1",127);
-			floor_lowertonearest(33,16);
-			floor_lowerinstant(28,0,2048);
-			ceiling_lowerinstant(28,0,2048);
-			break;
+	    // north active by default
+	    floor_raisebyvalue(5,8,128);
+	    SetLineTexture(2, SIDE_FRONT, TEXTURE_MIDDLE, "LGTBEAM2");
+	    SetLineTexture(2, SIDE_BACK, TEXTURE_MIDDLE, "LGTBEAM2");
+
+	    // west active by default
+		floor_raisebyvalue(11,8,128);
+	    SetLineTexture(5, SIDE_FRONT, TEXTURE_MIDDLE, "LGTBEAM2");
+	    SetLineTexture(5, SIDE_BACK, TEXTURE_MIDDLE, "LGTBEAM2");
 	}
-}
 
-script 2 (void)
-{
-	floor_lowerbyvalue(2,8,136);
-	ceiling_raisebyvalue(12,8,120);
-}
+	/* RESIST EVENT */
+	script "ze12_internal_event_resistelapsed" (raw packetRaw)
+	{
+		Event::ReceiveTimerElapsed((str)packetRaw);
+		int index = Event::GetReceiveData(0);
 
-//===============Inside the pyramid===================
-Script 14 (void) // final
-{
-    SetActivator(-1);
-    SetFont("CONFONT");
-    HudMessageBold(s:"\cgA curse is about to befall the area!\n\ccTake shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-    Delay(105);
+		switch(index)
+		{
+			case 0:
+				floor_LowerByValue(36, 32, 264);
+				floor_raisebyvalue(8,16,408);
+				floor_raisebyvalue(9,16,536);
+				delay(270);
+				SetLineTexture(3, SIDE_FRONT, TEXTURE_MIDDLE, "LGTBEAM2");
+				SetLineTexture(3, SIDE_BACK, TEXTURE_MIDDLE, "LGTBEAM2");
+				AmbientSound("world/beacon1",127);
+				break;
+			case 1:
+				floor_LowerByValue(33, 16, 112);
+				break;
+			case 2:
+				// TODO: Support explosion
+				//Spawn("Explosion", GetActorX(29), GetActorY(29), GetActorZ(29));
+				AmbientSound("world/reveal1",127);
+				floor_lowertonearest(33,16);
+				floor_lowerinstant(28,0,2048);
+				ceiling_lowerinstant(28,0,2048);
+				break;
+		}
+	}
 
-	Delay(Resist::StartResistByIndex(3));
+	script 2 (void)
+	{
+		floor_lowerbyvalue(2,8,136);
+		ceiling_raisebyvalue(12,8,120);
+	}
 
-    Delay(70);
-    //Generic_Ceiling(31, 16, 128, 5, 16); //ZH2 [AQW]
-	Ceiling_LowerAndCrush(31,16,50,2); //ZH2 [AQW]
-	TagWait(31);
-	Ceiling_LowerByValueTimes8(31,16,1);
-    Delay(35*4);
+	//===============Inside the pyramid===================
+	Script 14 (void) // final
+	{
+	    SetActivator(-1);
+	    SetFont("CONFONT");
+	    HudMessageBold(s:"\cgA curse is about to befall the area!\n\ccTake shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+	    Delay(105);
 
-	Game::KillUnsafePlayers();
-}
+		Delay(Resist::StartResistByIndex(3));
+
+	    Delay(70);
+	    //Generic_Ceiling(31, 16, 128, 5, 16); //ZH2 [AQW]
+		Ceiling_LowerAndCrush(31,16,50,2); //ZH2 [AQW]
+		TagWait(31);
+		Ceiling_LowerByValueTimes8(31,16,1);
+	    Delay(35*4);
+
+		Game::KillUnsafePlayers();
+	}
 
 
-script 19 (void) //MO MONEY, MO PROBLEMS!!!
-{
-    if (Player::GetIsHuman())
-    {
-        if(CheckInventory(CURRENCY_CASH_NAME) < 100)
-        {
-            print(s:"You got a gold coin!");
-            activatorsound("item/cash",128);
-            giveInventory(CURRENCY_CASH_NAME, 1);
-        }
+	script 19 (void) //MO MONEY, MO PROBLEMS!!!
+	{
+	    if (Player::GetIsHuman())
+	    {
+	        if(CheckInventory(CURRENCY_CASH_NAME) < 100)
+	        {
+	            print(s:"You got a gold coin!");
+	            activatorsound("item/cash",128);
+	            giveInventory(CURRENCY_CASH_NAME, 1);
+	        }
 
-        else
-        {
-            print(s:"You can't carry anymore.");
-        }
-    }
+	        else
+	        {
+	            print(s:"You can't carry anymore.");
+	        }
+	    }
 
-    else if(Player::GetIsZombie())
-    {
-        print(s:"Silly Zombie. You don't need gold -_-");
-    }
+	    else if(Player::GetIsZombie())
+	    {
+	        print(s:"Silly Zombie. You don't need gold -_-");
+	    }
 
-}
+	}
 
-script 20 (void) //bridge
-{
-    PrintBold(n:0, s:"\c- has raised the bridges! They will lower in \ca10 \c-seconds");
-    SetActivator(-1);
-    floor_raisebyvalue(25,8,256);
-    ceiling_raisebyvalue(25,8,256);
-    tagwait(25);
-    delay(35*3);
-    PrintBold(s:"\c- Bridges lowering!");
-    floor_lowerbyvalue(25,8,256);
-    ceiling_lowerbyvalue(25,8,256);
+	script 20 (void) //bridge
+	{
+	    PrintBold(n:0, s:"\c- has raised the bridges! They will lower in \ca10 \c-seconds");
+	    SetActivator(-1);
+	    floor_raisebyvalue(25,8,256);
+	    ceiling_raisebyvalue(25,8,256);
+	    tagwait(25);
+	    delay(35*3);
+	    PrintBold(s:"\c- Bridges lowering!");
+	    floor_lowerbyvalue(25,8,256);
+	    ceiling_lowerbyvalue(25,8,256);
+	}
 }

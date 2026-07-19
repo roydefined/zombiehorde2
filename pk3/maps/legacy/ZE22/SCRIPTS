@@ -7,296 +7,299 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-int numberofplayers = 0;
-
-Int TELE1 = 97;
-Int TELE2 = 99;
-Int TELE3 = 105;
-Int TELE4 = 107;
-Int TELE5 = 109;
-Int TELE6 = 111;
-
-bool Airstrike_inbound=false;
-
-function int GetPlayerRender(void) {return GetCVar ("vid_renderer");}
-
-#define SOFTWARE_PLAYER 0
-
-script 10 OPEN clientside //software support
+strict namespace
 {
-    if(getplayerrender()!=SOFTWARE_PLAYER) Terminate;
-    {
-        Log(s:"Software mode has been detected.");
-        Log(s:"Map brightness increased and all water textures + colors have been improved to support software rendering.");
+	int numberofplayers = 0;
 
-        delay(35*3);
+	Int TELE1 = 97;
+	Int TELE2 = 99;
+	Int TELE3 = 105;
+	Int TELE4 = 107;
+	Int TELE5 = 109;
+	Int TELE6 = 111;
 
-        //if i find a software-friendly texture i will use that here.
+	bool Airstrike_inbound=false;
 
-        for(int area=0;area<=999;area++) //random tag because i'm too damn lazy to check how many tags are used...
-        {
-            Light_fade(area,192,35);
-        }
-    }
-}
+	function int GetPlayerRender(void) {return GetCVar ("vid_renderer");}
 
-Script 1 OPEN // Level setups
-{
-	delay(35*2);
+	#define SOFTWARE_PLAYER 0
 
-	printbold(s:"if you are lost follow the markers 0n the map");
-
-	delay(35*3);
-
-	door_open(31,10);
-
-	delay(35*8);
-	Radius_Quake(9, 35, 0, 500, 38);
-	ambientsound("sound/farexplosion", 50);
-
-	// Borrowed ZE25's explosion.
-	spawnspot("ZH2LegacyZE25Explosion",77,0,0);
-
-	floor_movetovalue(32, 50, 0, 0);
-
-	delay(18);
-
-	SetFont("BIGFONT");
-	str message;
-	buildmsg(message = StrParam())
+	script 10 OPEN clientside //software support
 	{
-		Append(s:"\cqThe explosion released \ci");
-		switch(Game::ZombieCount())
+	    if(getplayerrender()!=SOFTWARE_PLAYER) Terminate;
+	    {
+	        Log(s:"Software mode has been detected.");
+	        Log(s:"Map brightness increased and all water textures + colors have been improved to support software rendering.");
+
+	        delay(35*3);
+
+	        //if i find a software-friendly texture i will use that here.
+
+	        for(int area=0;area<=999;area++) //random tag because i'm too damn lazy to check how many tags are used...
+	        {
+	            Light_fade(area,192,35);
+	        }
+	    }
+	}
+
+	Script 1 OPEN // Level setups
+	{
+		delay(35*2);
+
+		printbold(s:"if you are lost follow the markers 0n the map");
+
+		delay(35*3);
+
+		door_open(31,10);
+
+		delay(35*8);
+		Radius_Quake(9, 35, 0, 500, 38);
+		ambientsound("sound/farexplosion", 50);
+
+		// Borrowed ZE25's explosion.
+		spawnspot("ZH2LegacyZE25Explosion",77,0,0);
+
+		floor_movetovalue(32, 50, 0, 0);
+
+		delay(18);
+
+		SetFont("BIGFONT");
+		str message;
+		buildmsg(message = StrParam())
 		{
-			case 1: Append(s:"experiment Z"); break;
-			case 2: Append(s:"experiment Z and X"); break;
-			default: Append(s:"multiple experiments"); break;
+			Append(s:"\cqThe explosion released \ci");
+			switch(Game::ZombieCount())
+			{
+				case 1: Append(s:"experiment Z"); break;
+				case 2: Append(s:"experiment Z and X"); break;
+				default: Append(s:"multiple experiments"); break;
+			}
+			Append(s:"\cq!");
 		}
-		Append(s:"\cq!");
-	}
-	HudmessageBold(s:message; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
+		HudmessageBold(s:message; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 2.0);
 
-	delay(18);
-	Music::PlayMusic("D_SCAPE");
+		delay(18);
+		Music::PlayMusic("D_SCAPE");
 
-	delay(35*5);
-	acs_execute(3,0,0,0,0);
-}
-
-script 3 (void) //first resist
-{
-    int time;
-    for(time=25;time>0;time--)
-    {
-        SetFont("BIGFONT");
-        Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-        SetFont("SmallFont");
-        HudmessageBold(s:"Opening back door..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-        delay(35);
-    }
-    Door_Open(27,96);
-}
-
-Script 4 (void) // Second resist
-{
-	SetActivator(-1);
-
-    int time;
-    for(time=15;time>0;time--)
-    {
-        SetFont("BIGFONT");
-        Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-        SetFont("SmallFont");
-        HudmessageBold(s:"Waiting for the elevators"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-        delay(35);
-    }
-
-	ceiling_raiseByvalue(28, 20, 64);
-	printbold(s:"Leaving in 5 seconds...");
-	delay(175);
-	//Generic_Ceiling(28, 32, 0, 4, 16); //ZH2 [AQW]
-	Ceiling_LowerAndCrush(28,32,5,2); //ZH2 [AQW]
-	TagWait(28); //ZH2 [AQW]
-	Ceiling_LowerByValueTimes8(28,32,1); //ZH2 [AQW]
-	floor_lowerbyvalue(68, 10, 100);
-	ceiling_lowerbyvalue(68, 10, 100);
-	ceiling_lowerbyvalue(69, 10, 100);
-	floor_lowerbyvalue(69, 10, 100);
-	tagwait(69);
-
-	floor_lowerbyvalue(68, 20, 824);
-	ceiling_lowerbyvalue(68, 20, 824);
-	ceiling_lowerbyvalue(69, 20, 824);
-	floor_lowerbyvalue(69, 20, 824);
-	tagwait(69);
-
-	floor_lowerbyvalue(68, 10, 100);
-	ceiling_lowerbyvalue(68, 10, 100);
-	ceiling_lowerbyvalue(69, 10, 100);
-	floor_lowerbyvalue(69, 10, 100);
-	tagwait(69);
-
-	door_open(35,96);
-	printbold(s:"stairs available");
-	door_open(30,96);
-}
-
-Script 5 (void) // pillars
-{
-    printbold(n:0, s:" \cghas activated the pillars");
-    floor_raisebyvalue(57,20,160);
-    Delay(35*15);
-    printbold(s:"\cGPillars lowering");
-    floor_lowerbyvalue(57,20,160);
-}
-script 6 (void)//third resist
-{
-	SetActivator(-1);
-	int time;
-		for(time=30;time>0;time--)
-	{
-		SetFont("BIGFONT");
-			Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-			SetFont("SmallFont");
-			HudmessageBold(s:"lowering pillars..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-
-			delay(35);
-		}
-
-	floor_lowerbyvalue(56, 100,250);
-
-}
-
-
-script 7 (void) // final resist
-{
-	SetActivator(-1);
-	int time;
-		for(time=40;time>0;time--)
-	{
-		SetFont("BIGFONT");
-			Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-			SetFont("SmallFont");
-			HudmessageBold(s:"Calling in the airstrike"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-			delay(35);
-		}
-
-		SetFont("BIGFONT");
-		printbold(s:"\cjincoming airstrike!");
-
-	delay(35*2);
-
-	ambientsound("sound/airstrike",255);
-
-	delay(18);
-
-	for(int tag=79;tag<=93;tag++)
-	{
-		spawnspot("ZH2LegacyZE22Jet",tag,0,0);
-		delay(2);
+		delay(35*5);
+		acs_execute(3,0,0,0,0);
 	}
 
-	delay(18);
-
-	Airstrike_inbound = true;
-
-	ambientsound("world/nuke1", 255);
-	floor_lowerbyvalue(34, 35, 400);
-	ceiling_lowerbyvalue(34, 35, 400);
-	Radius_Quake(9, 35*5, 0, 50, 38);
-	floorandceiling_lowerbyvalue(114,10,180);
-
-	//extra script to make a good camp spot
-	floor_lowerbyvalue(16, 5, 50);
-	floorandceiling_lowerbyvalue(116, 5, 50);
-	floorandceiling_lowerbyvalue(118, 5, 50);
-
-	Game::KillUnsafePlayers();
-
-	for(int area=0;area<=999;area++) //random tag because i'm too damn lazy to check how many tags are used...
+	script 3 (void) //first resist
 	{
-		Light_fade(area,192,18);
+	    int time;
+	    for(time=25;time>0;time--)
+	    {
+	        SetFont("BIGFONT");
+	        Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+	        SetFont("SmallFont");
+	        HudmessageBold(s:"Opening back door..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+	        delay(35);
+	    }
+	    Door_Open(27,96);
 	}
 
-	spawnspot("ZH2LegacyZE22SlowExplosion",94,0,0);
-	delay(18);
-	spawnspot("ZH2LegacyZE22SlowExplosion",95,0,0);
-	delay(18);
-	spawnspot("ZH2LegacyZE22SlowExplosion",96,0,0);
+	Script 4 (void) // Second resist
+	{
+		SetActivator(-1);
 
-	delay(35*2);
+	    int time;
+	    for(time=15;time>0;time--)
+	    {
+	        SetFont("BIGFONT");
+	        Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+	        SetFont("SmallFont");
+	        HudmessageBold(s:"Waiting for the elevators"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+	        delay(35);
+	    }
 
-    for(int area3=0;area3<=999;area3++) //random tag because i'm too damn lazy to check how many tags are used...
-    {
-        Light_fade(area3,128,35);
-    }
-}
+		ceiling_raiseByvalue(28, 20, 64);
+		printbold(s:"Leaving in 5 seconds...");
+		delay(175);
+		//Generic_Ceiling(28, 32, 0, 4, 16); //ZH2 [AQW]
+		Ceiling_LowerAndCrush(28,32,5,2); //ZH2 [AQW]
+		TagWait(28); //ZH2 [AQW]
+		Ceiling_LowerByValueTimes8(28,32,1); //ZH2 [AQW]
+		floor_lowerbyvalue(68, 10, 100);
+		ceiling_lowerbyvalue(68, 10, 100);
+		ceiling_lowerbyvalue(69, 10, 100);
+		floor_lowerbyvalue(69, 10, 100);
+		tagwait(69);
 
-script 8 (void) //falling in water
-{
-    if(Player::GetIsHuman())
-    {
-        Thing_Damage(0, 10, MOD_FALLING);
-        Acs_execute(9, 0, 3, 0, 0);
-    }
-    else
-    {
-        Thing_Damage(0, 150, MOD_FALLING);
-        Acs_execute(9, 0, 4, 0, 0);
-    }
-}
+		floor_lowerbyvalue(68, 20, 824);
+		ceiling_lowerbyvalue(68, 20, 824);
+		ceiling_lowerbyvalue(69, 20, 824);
+		floor_lowerbyvalue(69, 20, 824);
+		tagwait(69);
 
-script 9 (int x) //advanced teleport system
-{
-    switch(x)
-    {
-        //case 1: //resist 1 hole <!> deprecated <!>
+		floor_lowerbyvalue(68, 10, 100);
+		ceiling_lowerbyvalue(68, 10, 100);
+		ceiling_lowerbyvalue(69, 10, 100);
+		floor_lowerbyvalue(69, 10, 100);
+		tagwait(69);
 
-        /*
-        teleport(TELE1++,0,0);
-        if(TELE1 > 98)
-        TELE1=97;
-        break;
-        */
+		door_open(35,96);
+		printbold(s:"stairs available");
+		door_open(30,96);
+	}
+
+	Script 5 (void) // pillars
+	{
+	    printbold(n:0, s:" \cghas activated the pillars");
+	    floor_raisebyvalue(57,20,160);
+	    Delay(35*15);
+	    printbold(s:"\cGPillars lowering");
+	    floor_lowerbyvalue(57,20,160);
+	}
+	script 6 (void)//third resist
+	{
+		SetActivator(-1);
+		int time;
+			for(time=30;time>0;time--)
+		{
+			SetFont("BIGFONT");
+				Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+				SetFont("SmallFont");
+				HudmessageBold(s:"lowering pillars..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+
+				delay(35);
+			}
+
+		floor_lowerbyvalue(56, 100,250);
+
+	}
 
 
-        case 2: //hole into the cafetaria and at lift
+	script 7 (void) // final resist
+	{
+		SetActivator(-1);
+		int time;
+			for(time=40;time>0;time--)
+		{
+			SetFont("BIGFONT");
+				Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+				SetFont("SmallFont");
+				HudmessageBold(s:"Calling in the airstrike"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+				delay(35);
+			}
 
-        if(TELE2 > 104)
-        TELE2=99;
-        teleport_nofog(TELE2++,0,0);
-        break;
+			SetFont("BIGFONT");
+			printbold(s:"\cjincoming airstrike!");
 
-        case 3: //falling in the water as a human
+		delay(35*2);
 
-        If(!Airstrike_inbound)
-        {
-            teleport(TELE3++,0,0);
-            if(TELE3 > 106)
-            TELE3=105;
-        }
-        else
-        {
-            teleport(TELE6++,0,0);
-            if(TELE6 > 112)
-            TELE6=111;
-        }
-        break;
+		ambientsound("sound/airstrike",255);
 
-        case 4: //falling in the water as a zombie
+		delay(18);
 
-        If(!Airstrike_inbound)
-        {
-        teleport(TELE4++,0,0);
-        if(TELE4 > 108)
-        TELE4=107;
-        }
-        else
-        {
-            teleport(TELE5++,0,0);
-            if(TELE5 > 110)
-            TELE5=109;
-        }
-        break;
-    }
+		for(int tag=79;tag<=93;tag++)
+		{
+			spawnspot("ZH2LegacyZE22Jet",tag,0,0);
+			delay(2);
+		}
+
+		delay(18);
+
+		Airstrike_inbound = true;
+
+		ambientsound("world/nuke1", 255);
+		floor_lowerbyvalue(34, 35, 400);
+		ceiling_lowerbyvalue(34, 35, 400);
+		Radius_Quake(9, 35*5, 0, 50, 38);
+		floorandceiling_lowerbyvalue(114,10,180);
+
+		//extra script to make a good camp spot
+		floor_lowerbyvalue(16, 5, 50);
+		floorandceiling_lowerbyvalue(116, 5, 50);
+		floorandceiling_lowerbyvalue(118, 5, 50);
+
+		Game::KillUnsafePlayers();
+
+		for(int area=0;area<=999;area++) //random tag because i'm too damn lazy to check how many tags are used...
+		{
+			Light_fade(area,192,18);
+		}
+
+		spawnspot("ZH2LegacyZE22SlowExplosion",94,0,0);
+		delay(18);
+		spawnspot("ZH2LegacyZE22SlowExplosion",95,0,0);
+		delay(18);
+		spawnspot("ZH2LegacyZE22SlowExplosion",96,0,0);
+
+		delay(35*2);
+
+	    for(int area3=0;area3<=999;area3++) //random tag because i'm too damn lazy to check how many tags are used...
+	    {
+	        Light_fade(area3,128,35);
+	    }
+	}
+
+	script 8 (void) //falling in water
+	{
+	    if(Player::GetIsHuman())
+	    {
+	        Thing_Damage(0, 10, MOD_FALLING);
+	        Acs_execute(9, 0, 3, 0, 0);
+	    }
+	    else
+	    {
+	        Thing_Damage(0, 150, MOD_FALLING);
+	        Acs_execute(9, 0, 4, 0, 0);
+	    }
+	}
+
+	script 9 (int x) //advanced teleport system
+	{
+	    switch(x)
+	    {
+	        //case 1: //resist 1 hole <!> deprecated <!>
+
+	        /*
+	        teleport(TELE1++,0,0);
+	        if(TELE1 > 98)
+	        TELE1=97;
+	        break;
+	        */
+
+
+	        case 2: //hole into the cafetaria and at lift
+
+	        if(TELE2 > 104)
+	        TELE2=99;
+	        teleport_nofog(TELE2++,0,0);
+	        break;
+
+	        case 3: //falling in the water as a human
+
+	        If(!Airstrike_inbound)
+	        {
+	            teleport(TELE3++,0,0);
+	            if(TELE3 > 106)
+	            TELE3=105;
+	        }
+	        else
+	        {
+	            teleport(TELE6++,0,0);
+	            if(TELE6 > 112)
+	            TELE6=111;
+	        }
+	        break;
+
+	        case 4: //falling in the water as a zombie
+
+	        If(!Airstrike_inbound)
+	        {
+	        teleport(TELE4++,0,0);
+	        if(TELE4 > 108)
+	        TELE4=107;
+	        }
+	        else
+	        {
+	            teleport(TELE5++,0,0);
+	            if(TELE5 > 110)
+	            TELE5=109;
+	        }
+	        break;
+	    }
+	}
 }

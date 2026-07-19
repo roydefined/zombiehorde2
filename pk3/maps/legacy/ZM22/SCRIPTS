@@ -7,434 +7,437 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-int powerbox;
-int jivetalk;
-int boogiered;
-int boogiegreen;
-int boogieblue;
-int foundkey;
-int locatekey;
-
-script 1 OPEN
+strict namespace
 {
-    foundkey = 0;
-    powerbox = 0;
-    jivetalk = 0;
-    boogiered = 0;
-    boogiegreen = 0;
-    boogieblue = 0;
-    locatekey = random(1, 4);
-    GiveInventory(FLARE_ITEM, 2);
-    Sector_SetColor(11, 0, 48, 160);
-    Sector_SetColor(19, 48, 128, 0);
-    Sector_SetColor(2, 217, 211, 0);
-    Delay(35 * 2);
-    printbold(n:0, s:"This map contains 3 secret events");
-}
+	int powerbox;
+	int jivetalk;
+	int boogiered;
+	int boogiegreen;
+	int boogieblue;
+	int foundkey;
+	int locatekey;
 
-Script 2 (void) // radio
-{
-	if(powerbox == 1)
+	script 1 OPEN
 	{
-		HudMessage(s:"It no longer works."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+	    foundkey = 0;
+	    powerbox = 0;
+	    jivetalk = 0;
+	    boogiered = 0;
+	    boogiegreen = 0;
+	    boogieblue = 0;
+	    locatekey = random(1, 4);
+	    GiveInventory(FLARE_ITEM, 2);
+	    Sector_SetColor(11, 0, 48, 160);
+	    Sector_SetColor(19, 48, 128, 0);
+	    Sector_SetColor(2, 217, 211, 0);
+	    Delay(35 * 2);
+	    printbold(n:0, s:"This map contains 3 secret events");
 	}
 
-    if(powerbox == 0)
-    {
-        switch(random(1, 4))
-        {
-            case 1: // DISCO
-                powerbox = 1;
-                jivetalk = 1;
-                thing_deactivate(28);
-                SetActorState (82, "active");
-                SetActorState (28, "disco");
-                Music::PlayMusic("Ewf", 0);
-                acs_execute(3, 0, 0, 0, 0);
-                delay (random(2400, 4800));
-                acs_execute(4, 0, 0, 0, 0);
-                break;
-
-            case 2: // GRUNT
-                powerbox = 1;
-                ActivatorSound("world/GLASS_S", 128);
-                SetActorState (28, "inactive");
-                Music::PlayMusic("SEARCH", 0);
-
-				for (int i = 0; i < 100; ++i)
-					Sector_Setcolor(i, 100, 100, 100);
-
-				// Some special cases
-				Sector_SetColor(11, 40, 60, 160);
-                Sector_Setcolor(62, 32, 0, 0);
-
-                setlinetexture(1, side_FRONT, texture_MIDDLE, "alex2");
-                Door_open(30, 35);
-                SpawnSpot ("ZH2LegacyGrunt", 29, 27);
-                Thing_remove(25);
-                acs_execute(7, 0, 0, 0, 0);
-                break;
-
-            case 3: // GRUNT
-                powerbox = 1;
-                ActivatorSound("world/GLASS_S", 128);
-                SetActorState (28, "inactive");
-                Music::PlayMusic("SEARCH", 0);
-
-				for (i = 0; i < 100; ++i)
-					Sector_Setcolor(i, 100, 100, 100);
-
-				// Some special cases
-				Sector_SetColor(11, 40, 60, 160);
-                Sector_Setcolor(62, 32, 0, 0);
-
-                setlinetexture(1, side_FRONT, texture_MIDDLE, "alex2");
-                Door_open(30, 35);
-                SpawnSpot ("ZH2LegacyGrunt", 29, 27);
-                Thing_remove(25);
-                acs_execute(7, 0, 0, 0, 0);
-                break;
-
-            case 4: // OMG ITS NYAN CAT!!!
-                powerbox = 1;
-                jivetalk = 1;
-                thing_deactivate(28);
-                SpawnSpot("ZH2LegacyNyanCat", 47, 48);
-                thing_activate(48);
-                SetActorState (28, "inactive");
-                SetActorState (82, "active");
-                Music::PlayMusic("NYANCAT", 0);
-                acs_execute(14, 0, 0, 0, 0);
-                delay (random(2400, 4800));
-                acs_execute(15, 0, 0, 0, 0);
-                break;
-        }
-    }
-}
-
-Script 3 (void) // BOOGIE DOWN!!
-{
-    boogiered = random(1, 255);
-    boogiegreen = random(1, 255);
-    boogieblue = random(1, 255);
-
-    setfont("BIGFONT");
-    hudmessageBold(s: "D";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "I";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "S";HUDMSG_PLAIN, 12,  random(1, 20), 0.38, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "C";HUDMSG_PLAIN, 13,  random(1, 20), 0.42, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "O";HUDMSG_PLAIN, 14,  random(1, 20), 0.46, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "P";HUDMSG_PLAIN, 15,  random(1, 20), 0.54, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "A";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "R";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "T";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "Y";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 9999);
-
-	for (int i = 0; i < 100; ++i)
-		Sector_Setcolor(i, boogiered, boogiegreen, boogieblue);
-
-    delay (17);
-    restart;
-}
-
-Script 4 (void) // Buzz Kill
-{
-    delay(random(2400, 4800));
-    jivetalk = 0;
-    acs_terminate(3, 0);
-    setfont("BIGFONT");
-    hudmessageBold(s: "";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 12,  random(1, 20), 0.38, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 13,  random(1, 20), 0.42, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 14,  random(1, 20), 0.46, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s:"NO MORE DISCO FOR YOU!"; HUDMSG_FADEOUT, 15, CR_GREY, 0.5, 0.2, 3.0, 1.0, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 1.0);
-
-    thing_activate(28);
-    SetActorState (28, "active");
-    SetActorState (57, "active");
-    SetActorState (82, "active");
-    Music::PlayMusic("D_amn", 0);
-
-	for (int i = 0; i < 100; ++i)
-		Sector_Setcolor(i, 100, 100, 100);
-
-	// Some special cases
-	Sector_SetColor(11, 40, 60, 160);
-	Sector_Setcolor(62, 32, 0, 0);
-}
-
-Script 5 (void) // BOOGIE DOWN!! NOT INCLUDED
-{
-    boogiered = random(1, 255);
-    boogiegreen = random(1, 255);
-    boogieblue = random(1, 255);
-
-    setfont("BIGFONT");
-    hudmessageBold(s: "D";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "j";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "P";HUDMSG_PLAIN, 15,  random(1, 20), 0.54, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "A";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "R";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "T";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "Y";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 9999);
-
-	for (int i = 0; i < 100; ++i)
-		Sector_Setcolor(i, boogiered, boogiegreen, boogieblue);
-
-    delay (17);
-    restart;
-}
-
-Script 6 (void) // Buzz Kill NOT INCLUDED
-{
-    delay(random(2400, 4800));
-    jivetalk = 0;
-    acs_terminate(5, 0);
-
-    setfont("BIGFONT");
-    hudmessageBold(s: "";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 12,  random(1, 20), 0.38, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 13,  random(1, 20), 0.42, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 14,  random(1, 20), 0.46, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s:"NO MORE PARTY FOR YOU!"; HUDMSG_FADEOUT, 15, CR_GREY, 0.5, 0.2, 3.0, 1.0, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 1.0);
-
-    thing_activate(28);
-    SetActorState (28, "active");
-    SetActorState (82, "active");
-    Music::PlayMusic("D_amn", 0);
-    Sector_SetColor(11, 0, 48, 160);
-}
-
-// One sided bar door that can only be opened from the inside.
-script "bar_door_open"(int side)
-{
-	static bool opened;
-
-	if (!side && !opened)
+	Script 2 (void) // radio
 	{
-		HudMessage(s:"This door appears to be locked from the other side."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-		ActivatorSound("sound/locked1", 127);
-		terminate;
+		if(powerbox == 1)
+		{
+			HudMessage(s:"It no longer works."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+		}
+
+	    if(powerbox == 0)
+	    {
+	        switch(random(1, 4))
+	        {
+	            case 1: // DISCO
+	                powerbox = 1;
+	                jivetalk = 1;
+	                thing_deactivate(28);
+	                SetActorState (82, "active");
+	                SetActorState (28, "disco");
+	                Music::PlayMusic("Ewf", 0);
+	                acs_execute(3, 0, 0, 0, 0);
+	                delay (random(2400, 4800));
+	                acs_execute(4, 0, 0, 0, 0);
+	                break;
+
+	            case 2: // GRUNT
+	                powerbox = 1;
+	                ActivatorSound("world/GLASS_S", 128);
+	                SetActorState (28, "inactive");
+	                Music::PlayMusic("SEARCH", 0);
+
+					for (int i = 0; i < 100; ++i)
+						Sector_Setcolor(i, 100, 100, 100);
+
+					// Some special cases
+					Sector_SetColor(11, 40, 60, 160);
+	                Sector_Setcolor(62, 32, 0, 0);
+
+	                setlinetexture(1, side_FRONT, texture_MIDDLE, "alex2");
+	                Door_open(30, 35);
+	                SpawnSpot ("ZH2LegacyGrunt", 29, 27);
+	                Thing_remove(25);
+	                acs_execute(7, 0, 0, 0, 0);
+	                break;
+
+	            case 3: // GRUNT
+	                powerbox = 1;
+	                ActivatorSound("world/GLASS_S", 128);
+	                SetActorState (28, "inactive");
+	                Music::PlayMusic("SEARCH", 0);
+
+					for (i = 0; i < 100; ++i)
+						Sector_Setcolor(i, 100, 100, 100);
+
+					// Some special cases
+					Sector_SetColor(11, 40, 60, 160);
+	                Sector_Setcolor(62, 32, 0, 0);
+
+	                setlinetexture(1, side_FRONT, texture_MIDDLE, "alex2");
+	                Door_open(30, 35);
+	                SpawnSpot ("ZH2LegacyGrunt", 29, 27);
+	                Thing_remove(25);
+	                acs_execute(7, 0, 0, 0, 0);
+	                break;
+
+	            case 4: // OMG ITS NYAN CAT!!!
+	                powerbox = 1;
+	                jivetalk = 1;
+	                thing_deactivate(28);
+	                SpawnSpot("ZH2LegacyNyanCat", 47, 48);
+	                thing_activate(48);
+	                SetActorState (28, "inactive");
+	                SetActorState (82, "active");
+	                Music::PlayMusic("NYANCAT", 0);
+	                acs_execute(14, 0, 0, 0, 0);
+	                delay (random(2400, 4800));
+	                acs_execute(15, 0, 0, 0, 0);
+	                break;
+	        }
+	    }
 	}
 
-	if (!opened)
-		HudMessage(s:"You've unlocked the bar's entrance."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-
-	opened = true;
-
-	Door_Open(42, 35, 0);
-	Delay(35 * 5);
-	Door_Close(42, 35, 0);
-	Tagwait(42);
-}
-
-Script 7 (void) // Grunt tel
-{
-    delay(random(20, 240));
-    teleportother(27, 26, 1);
-    restart;
-}
-
-Script 8 (void) // tv
-{
-    if(locatekey == 1 && foundkey == 0)
-    {
-        HudMessage(s:"You found a battery"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-        GiveInventory("ZH2LegacyCaveKey", 1);
-        LocalAmbientSound("sound/itemget1", 128);
-        foundkey = 1;
-    }
-    else Print(s:"Nothing here.");
-}
-
-
-Script 9 (void) // tv
-{
-    if(locatekey == 2 && foundkey == 0)
-    {
-        HudMessage(s:"You found a battery"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-        GiveInventory("ZH2LegacyCaveKey", 1);
-        LocalAmbientSound("sound/itemget1", 128);
-        foundkey = 1;
-    }
-    else Print(s:"Nothing here.");
-}
-
-
-Script 10 (void) // tv
-{
-    if(locatekey == 3 && foundkey == 0)
-    {
-        HudMessage(s:"You found a battery"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-        GiveInventory("ZH2LegacyCaveKey", 1);
-        LocalAmbientSound("sound/itemget1", 128);
-        foundkey = 1;
-    }
-    else Print(s:"Nothing here.");
-}
-
-
-Script 11 (void) // gtv
-{
-    if(locatekey == 4 && foundkey == 0)
-    {
-        HudMessage(s:"You found a battery"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-        GiveInventory("ZH2LegacyCaveKey", 1);
-        LocalAmbientSound("sound/itemget1", 128);
-        foundkey = 1;
-    }
-    else Print(s:"Nothing here.");
-}
-
-Script 12 (void) // tv
-{
-    if(!CheckInventory("ZH2LegacyCaveKey"))
-    {
-        HudMessage(s:"without batteries...."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-		terminate;
-	}
-
-    HudMessage(s:"no signal."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-	Plat_DownWaitUpStay(22, 35, 0);
-}
-
-script 13 (void)
-{
-	static bool opened;
-
-    if(!opened && !CheckInventory("ZH2LegacyBookKey"))
+	Script 3 (void) // BOOGIE DOWN!!
 	{
-		ActivatorSound("sound/locked1", 127);
-		terminate;
+	    boogiered = random(1, 255);
+	    boogiegreen = random(1, 255);
+	    boogieblue = random(1, 255);
+
+	    setfont("BIGFONT");
+	    hudmessageBold(s: "D";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "I";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "S";HUDMSG_PLAIN, 12,  random(1, 20), 0.38, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "C";HUDMSG_PLAIN, 13,  random(1, 20), 0.42, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "O";HUDMSG_PLAIN, 14,  random(1, 20), 0.46, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "P";HUDMSG_PLAIN, 15,  random(1, 20), 0.54, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "A";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "R";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "T";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "Y";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 9999);
+
+		for (int i = 0; i < 100; ++i)
+			Sector_Setcolor(i, boogiered, boogiegreen, boogieblue);
+
+	    delay (17);
+	    restart;
 	}
 
-    Plat_DownWaitUpStay(32, 35, 35);
-	opened = true;
-}
+	Script 4 (void) // Buzz Kill
+	{
+	    delay(random(2400, 4800));
+	    jivetalk = 0;
+	    acs_terminate(3, 0);
+	    setfont("BIGFONT");
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 12,  random(1, 20), 0.38, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 13,  random(1, 20), 0.42, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 14,  random(1, 20), 0.46, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s:"NO MORE DISCO FOR YOU!"; HUDMSG_FADEOUT, 15, CR_GREY, 0.5, 0.2, 3.0, 1.0, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 1.0);
 
-Script 14 (void) // BOOGIE DOWN!!
-{
-    boogiered = random(1, 255);
-    boogiegreen = random(1, 255);
-    boogieblue = random(1, 255);
-    setfont("BIGFONT");
-    hudmessageBold(s: "N";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "Y";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "A";HUDMSG_PLAIN, 12,  random(1, 20), 0.38, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "N";HUDMSG_PLAIN, 13,  random(1, 20), 0.42, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 14,  random(1, 20), 0.46, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "C";HUDMSG_PLAIN, 15,  random(1, 20), 0.54, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "A";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "T";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "!";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "!";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 9999);
+	    thing_activate(28);
+	    SetActorState (28, "active");
+	    SetActorState (57, "active");
+	    SetActorState (82, "active");
+	    Music::PlayMusic("D_amn", 0);
 
-    Sector_Setcolor(0, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(1, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(2, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(3, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(4, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(5, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(6, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(7, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(8, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(9, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(10, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(11, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(12, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(13, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(14, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(15, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(16, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(17, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(18, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(19, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(20, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(21, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(22, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(23, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(24, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(25, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(26, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(27, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(28, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(29, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(30, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(31, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(32, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(33, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(34, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(35, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(36, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(37, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(38, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(39, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(40, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(41, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(42, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(43, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(44, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(45, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(46, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(47, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(48, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(49, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(50, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(51, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(52, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(53, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(54, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(55, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(58, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(59, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(62, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(68, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(73, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(74, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(75, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(76, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(77, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(78, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(79, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(81, boogiered, boogiegreen, boogieblue);
+		for (int i = 0; i < 100; ++i)
+			Sector_Setcolor(i, 100, 100, 100);
 
-    delay (17);
-    restart;
-}
+		// Some special cases
+		Sector_SetColor(11, 40, 60, 160);
+		Sector_Setcolor(62, 32, 0, 0);
+	}
 
-Script 15 (void) // Buzz Kill
-{
-    delay(random(2400, 4800));
-    jivetalk = 0;
-    acs_terminate(14, 0);
-    setfont("BIGFONT");
-    hudmessageBold(s: "";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 12,  random(1, 20), 0.38, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 13,  random(1, 20), 0.42, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 14,  random(1, 20), 0.46, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s:"Good bye NYAN!!!"; HUDMSG_FADEOUT, 15, CR_GREY, 0.5, 0.2, 3.0, 1.0, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 1.0);
-    hudmessageBold(s: "";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 1.0);
+	Script 5 (void) // BOOGIE DOWN!! NOT INCLUDED
+	{
+	    boogiered = random(1, 255);
+	    boogiegreen = random(1, 255);
+	    boogieblue = random(1, 255);
 
-    thing_activate(28);
-    SetActorState (82, "active");
-    Thing_remove(48);
-    SetActorState (28, "active");
-    SetActorState (82, "active");
-    Music::PlayMusic("D_amn", 0);
+	    setfont("BIGFONT");
+	    hudmessageBold(s: "D";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "j";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "P";HUDMSG_PLAIN, 15,  random(1, 20), 0.54, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "A";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "R";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "T";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "Y";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 9999);
 
-    Sector_SetColor(11, 0, 48, 160);
+		for (int i = 0; i < 100; ++i)
+			Sector_Setcolor(i, boogiered, boogiegreen, boogieblue);
+
+	    delay (17);
+	    restart;
+	}
+
+	Script 6 (void) // Buzz Kill NOT INCLUDED
+	{
+	    delay(random(2400, 4800));
+	    jivetalk = 0;
+	    acs_terminate(5, 0);
+
+	    setfont("BIGFONT");
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 12,  random(1, 20), 0.38, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 13,  random(1, 20), 0.42, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 14,  random(1, 20), 0.46, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s:"NO MORE PARTY FOR YOU!"; HUDMSG_FADEOUT, 15, CR_GREY, 0.5, 0.2, 3.0, 1.0, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 1.0);
+
+	    thing_activate(28);
+	    SetActorState (28, "active");
+	    SetActorState (82, "active");
+	    Music::PlayMusic("D_amn", 0);
+	    Sector_SetColor(11, 0, 48, 160);
+	}
+
+	// One sided bar door that can only be opened from the inside.
+	script "bar_door_open"(int side)
+	{
+		static bool opened;
+
+		if (!side && !opened)
+		{
+			HudMessage(s:"This door appears to be locked from the other side."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+			ActivatorSound("sound/locked1", 127);
+			terminate;
+		}
+
+		if (!opened)
+			HudMessage(s:"You've unlocked the bar's entrance."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+
+		opened = true;
+
+		Door_Open(42, 35, 0);
+		Delay(35 * 5);
+		Door_Close(42, 35, 0);
+		Tagwait(42);
+	}
+
+	Script 7 (void) // Grunt tel
+	{
+	    delay(random(20, 240));
+	    teleportother(27, 26, 1);
+	    restart;
+	}
+
+	Script 8 (void) // tv
+	{
+	    if(locatekey == 1 && foundkey == 0)
+	    {
+	        HudMessage(s:"You found a battery"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+	        GiveInventory("ZH2LegacyCaveKey", 1);
+	        LocalAmbientSound("sound/itemget1", 128);
+	        foundkey = 1;
+	    }
+	    else Print(s:"Nothing here.");
+	}
+
+
+	Script 9 (void) // tv
+	{
+	    if(locatekey == 2 && foundkey == 0)
+	    {
+	        HudMessage(s:"You found a battery"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+	        GiveInventory("ZH2LegacyCaveKey", 1);
+	        LocalAmbientSound("sound/itemget1", 128);
+	        foundkey = 1;
+	    }
+	    else Print(s:"Nothing here.");
+	}
+
+
+	Script 10 (void) // tv
+	{
+	    if(locatekey == 3 && foundkey == 0)
+	    {
+	        HudMessage(s:"You found a battery"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+	        GiveInventory("ZH2LegacyCaveKey", 1);
+	        LocalAmbientSound("sound/itemget1", 128);
+	        foundkey = 1;
+	    }
+	    else Print(s:"Nothing here.");
+	}
+
+
+	Script 11 (void) // gtv
+	{
+	    if(locatekey == 4 && foundkey == 0)
+	    {
+	        HudMessage(s:"You found a battery"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+	        GiveInventory("ZH2LegacyCaveKey", 1);
+	        LocalAmbientSound("sound/itemget1", 128);
+	        foundkey = 1;
+	    }
+	    else Print(s:"Nothing here.");
+	}
+
+	Script 12 (void) // tv
+	{
+	    if(!CheckInventory("ZH2LegacyCaveKey"))
+	    {
+	        HudMessage(s:"without batteries...."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+			terminate;
+		}
+
+	    HudMessage(s:"no signal."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+		Plat_DownWaitUpStay(22, 35, 0);
+	}
+
+	script 13 (void)
+	{
+		static bool opened;
+
+	    if(!opened && !CheckInventory("ZH2LegacyBookKey"))
+		{
+			ActivatorSound("sound/locked1", 127);
+			terminate;
+		}
+
+	    Plat_DownWaitUpStay(32, 35, 35);
+		opened = true;
+	}
+
+	Script 14 (void) // BOOGIE DOWN!!
+	{
+	    boogiered = random(1, 255);
+	    boogiegreen = random(1, 255);
+	    boogieblue = random(1, 255);
+	    setfont("BIGFONT");
+	    hudmessageBold(s: "N";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "Y";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "A";HUDMSG_PLAIN, 12,  random(1, 20), 0.38, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "N";HUDMSG_PLAIN, 13,  random(1, 20), 0.42, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 14,  random(1, 20), 0.46, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "C";HUDMSG_PLAIN, 15,  random(1, 20), 0.54, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "A";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "T";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "!";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 9999);
+	    hudmessageBold(s: "!";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 9999);
+
+	    Sector_Setcolor(0, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(1, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(2, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(3, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(4, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(5, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(6, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(7, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(8, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(9, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(10, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(11, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(12, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(13, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(14, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(15, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(16, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(17, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(18, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(19, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(20, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(21, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(22, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(23, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(24, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(25, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(26, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(27, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(28, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(29, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(30, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(31, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(32, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(33, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(34, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(35, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(36, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(37, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(38, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(39, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(40, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(41, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(42, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(43, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(44, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(45, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(46, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(47, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(48, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(49, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(50, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(51, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(52, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(53, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(54, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(55, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(58, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(59, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(62, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(68, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(73, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(74, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(75, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(76, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(77, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(78, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(79, boogiered, boogiegreen, boogieblue);
+	    Sector_Setcolor(81, boogiered, boogiegreen, boogieblue);
+
+	    delay (17);
+	    restart;
+	}
+
+	Script 15 (void) // Buzz Kill
+	{
+	    delay(random(2400, 4800));
+	    jivetalk = 0;
+	    acs_terminate(14, 0);
+	    setfont("BIGFONT");
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 12,  random(1, 20), 0.38, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 13,  random(1, 20), 0.42, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 14,  random(1, 20), 0.46, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s:"Good bye NYAN!!!"; HUDMSG_FADEOUT, 15, CR_GREY, 0.5, 0.2, 3.0, 1.0, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 1.0);
+	    hudmessageBold(s: "";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 1.0);
+
+	    thing_activate(28);
+	    SetActorState (82, "active");
+	    Thing_remove(48);
+	    SetActorState (28, "active");
+	    SetActorState (82, "active");
+	    Music::PlayMusic("D_amn", 0);
+
+	    Sector_SetColor(11, 0, 48, 160);
+	}
 }

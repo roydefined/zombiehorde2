@@ -7,735 +7,774 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-#define SAFE_TIME 13
-
-int switchcount = 0;
-int Secret_Activated = 0;
-int Door_Sealed = 0;
-int Final_resist_activated = 0;
-int Final_resist_end = 0;
-int Humanactivated = 0;
-int Nyan = 0;
-int lift = 3;
-int Nyaned = 0;
-int redkeyspawn;
-
-
-//==========================---World scripts---==========================
-Script 4 open
+strict namespace
 {
-    Thing_DeActivate(106); // Resist marker 1
-    Thing_Activate(107); // Resist marker 2
-    Thing_Activate(108); // Resist marker 3
-    SetLineSpecial(4,80,12,0,0,0,0);
-    SetLineSpecial(1,80,2,0,0,0,0);//Resist1
-    SetLineSpecial(2,80,3,0,0,0,0);//Resist2
-    SetLineSpecial(3,80,5,0,0,0,0);//Resist3
-    SetLineSpecial(5,80,12,0,0,0,0);
-    SetLineSpecial(7,80,12,0,0,0,0);
-    SetLineSpecial(9,80,10,0,0,0,0);
-    Sector_SetRotation (70, 45,45);
-    Sector_SetRotation (71, 45,45);
-    Sector_SetRotation (72, 45,45);
-    Sector_SetRotation (73, 45,45);
-    Sector_SetRotation (74, 45,45);
-    Sector_SetRotation (75, 45,45);
-    Sector_SetRotation (75, 45,45);
-    SetLineBlocking(8,BLOCK_CREATURES);
-    SetLineBlocking(6,BLOCK_CREATURES);
-    delay(3*32);
-    SetFont("BIGFONT");
-    HudmessageBold(s:"\cgcaution: \cjOnly \cvBlue \cjdoors will open!"; HUDMSG_FADEOUT, 0, CR_White, 0.5, 0.05, 5.5, 0.5);//--Warning message
-}
+	#define SAFE_TIME 13
 
-script 29 (void)
-{
-	PrintBold(n:0, s:"\cj is a wallrunner!");
-	HealThing(200, 200);
-	Door_raise(89,15,0);
-}
+	int switchcount = 0;
+	int Secret_Activated = 0;
+	int Door_Sealed = 0;
+	int Final_resist_activated = 0;
+	int Final_resist_end = 0;
+	int Humanactivated = 0;
+	int Nyan = 0;
+	int lift = 3;
+	int Nyaned = 0;
+	int redkeyspawn;
 
-//---------------------------------------- [ZH2] Special safety script
 
-// The script marks the player as safe using either slot 0 or 2 depending on map state.
-// Slot 2 is hidden and will be used instead if the secret ending has started.
-// Reason being is that at this point the safezone is no longer safe, and player must move.
-script "enter_safezone"
-{
-	if (Secret_Activated)
-		Game::SetIsSafe(Lineside() == LINE_FRONT, 2);
-	else
-		Game::SetIsSafe(Lineside() == LINE_FRONT, 0);
-}
-
-//----------------------------------------zombie river teleporter + Human instakill
-Script 8 (void)
-{
-	if(Player::GetIsZombie())
+	//==========================---World scripts---==========================
+	Script 4 open
 	{
-		Teleport(49);
+	    Thing_DeActivate(106); // Resist marker 1
+	    Thing_Activate(107); // Resist marker 2
+	    Thing_Activate(108); // Resist marker 3
+	    SetLineSpecial(4,80,12,0,0,0,0);
+	    SetLineSpecial(1,80,2,0,0,0,0);//Resist1
+	    SetLineSpecial(2,80,3,0,0,0,0);//Resist2
+	    SetLineSpecial(3,80,5,0,0,0,0);//Resist3
+	    SetLineSpecial(5,80,12,0,0,0,0);
+	    SetLineSpecial(7,80,12,0,0,0,0);
+	    SetLineSpecial(9,80,10,0,0,0,0);
+	    Sector_SetRotation (70, 45,45);
+	    Sector_SetRotation (71, 45,45);
+	    Sector_SetRotation (72, 45,45);
+	    Sector_SetRotation (73, 45,45);
+	    Sector_SetRotation (74, 45,45);
+	    Sector_SetRotation (75, 45,45);
+	    Sector_SetRotation (75, 45,45);
+	    SetLineBlocking(8,BLOCK_CREATURES);
+	    SetLineBlocking(6,BLOCK_CREATURES);
+	    delay(3*32);
+	    SetFont("BIGFONT");
+	    HudmessageBold(s:"\cgcaution: \cjOnly \cvBlue \cjdoors will open!"; HUDMSG_FADEOUT, 0, CR_White, 0.5, 0.05, 5.5, 0.5);//--Warning message
 	}
-	else
+
+	script 29 (void)
 	{
-		Thing_Damage(0, 1000, MOD_FALLING);
+		PrintBold(n:0, s:"\cj is a wallrunner!");
+		HealThing(200, 200);
+		Door_raise(89,15,0);
 	}
-}
 
-Script 40 (void)
-{
-	if(Player::GetIsZombie())
+	//---------------------------------------- [ZH2] Special safety script
+
+	// The script marks the player as safe using either slot 0 or 2 depending on map state.
+	// Slot 2 is hidden and will be used instead if the secret ending has started.
+	// Reason being is that at this point the safezone is no longer safe, and player must move.
+	script "enter_safezone"
 	{
-		Teleport(137);
+		if (Secret_Activated)
+			Game::SetIsSafe(Lineside() == LINE_FRONT, 2);
+		else
+			Game::SetIsSafe(Lineside() == LINE_FRONT, 0);
 	}
-	else
+
+	//----------------------------------------zombie river teleporter + Human instakill
+	Script 8 (void)
 	{
-		Thing_Damage(0, 1000, MOD_FALLING);
+		if(Player::GetIsZombie())
+		{
+			Teleport(49);
+		}
+		else
+		{
+			Thing_Damage(0, 1000, MOD_FALLING);
+		}
 	}
-}
 
-//--------------------------------------------------------Pillars
-Script 1 (void)
-{
-    SetActivator(-1);
-    PrintBold(s:"The pillars have been raised! \n\nThey will automatically lower in 25 seconds.");
-    Floor_RaiseByValue(2, 16, 128);
-    Delay(35*27);
-    Floor_LowerByValue(2, 16, 128);
-	PrintBold(s:"Pillars lowered!");
-}
-
-//--------------------------------------------------Falling Rock Crusher
-Script 9 (void)
-{
-	ceiling_LowerAndCrush(24,115,1000,2); //ZH2 [AQW] Should be an "impossible path, kept the damage. Added 2 for hexen mode.
-	Radius_Quake(5, 22, 0, 12,87);
-	TagWait(24); //ZH2 [AQW]
-	Ceiling_LowerByValueTimes8(24,16,1); //ZH2 [AQW]
-}
-
-Script 14 (void)
-{
-	ceiling_LowerAndCrush(58,15,5,2); //ZH2 [AQW] Added hexen crushmode.
-	TagWait(58); //ZH2 [AQW]
-	Ceiling_LowerByValueTimes8(58,16,1); //ZH2 [AQW]
-
-}
-
-//----------------------------------------------------Shaft Door
-Script 10 (void)
-{
-	PrintBold(n:0, s:"\cj Has opened the shaft door!");
-	Door_open(35,51);
-	acs_execute(47,0,0,0,0);
-}
-
-script 27 (void)//Shortcut Shaft to endroom.
-{
-	if (lift > 0)
+	Script 40 (void)
 	{
-		Floor_LowerByValue(95, 55, 86*8);
-		Ceiling_LowerByValue(95, 55, 86*8);
-		Ceiling_Lowerandcrush(96, 55, 10,2); //ZH2 [AQW] added hexen crushmode.
-		lift --;
-		delay(5*37);
-		Floor_raiseByValue(95, 55, 86*8);
-		Ceiling_raiseByValue(95, 55, 86*8);
-		Ceiling_raisebyvalue(96, 55, 16*8);
-		TagWait(95);
+		if(Player::GetIsZombie())
+		{
+			Teleport(137);
+		}
+		else
+		{
+			Thing_Damage(0, 1000, MOD_FALLING);
+		}
 	}
-	Else
+
+	//--------------------------------------------------------Pillars
+	Script 1 (void)
 	{
-		PrintBold(s:"The shaft is caving in!");
-		Floor_LowerByValue(95, 55, 86*8);
-		Ceiling_LowerByValue(95, 55, 86*8);
-		Ceiling_Lowerandcrush(96, 55, 10,2); //ZH2 [AQW] added hexen crushmode.
-		Delay(4*37);
-		Radius_Quake(5, 22, 0, 12,105);
-		ceiling_LowerAndCrush(104,10,20,2); //ZH2 [AQW] added hexen crushmode. Damage changed to 20.
-		TagWait(104);//ZH2 [AQW]
-		Ceiling_LowerByValueTimes8(104,16,1);//ZH2 [AQW]
-		lift = 1;
+	    SetActivator(-1);
+	    PrintBold(s:"The pillars have been raised! \n\nThey will automatically lower in 25 seconds.");
+	    Floor_RaiseByValue(2, 16, 128);
+	    Delay(35*27);
+	    Floor_LowerByValue(2, 16, 128);
+		PrintBold(s:"Pillars lowered!");
 	}
-}
 
-Script 47 (void)
-{
-	SetActivator(-1);
-	while (lift > 0)
+	//--------------------------------------------------Falling Rock Crusher
+	Script 9 (void)
 	{
-		delay(1);
-		SetFont("CONFONT");
-		HudMessageBold(d: lift, s:" Use(s) until shaft caves in."; HUDMSG_PLAIN, 0, CR_White, 0.04, 0.86, 0.1);
+		ceiling_LowerAndCrush(24,115,1000,2); //ZH2 [AQW] Should be an "impossible path, kept the damage. Added 2 for hexen mode.
+		Radius_Quake(5, 22, 0, 12,87);
+		TagWait(24); //ZH2 [AQW]
+		Ceiling_LowerByValueTimes8(24,16,1); //ZH2 [AQW]
 	}
-	acs_execute(48,0,0,0,0);
-}
 
-Script 48 (void)
-{
-	while (lift == 0)
+	Script 14 (void)
 	{
-		delay(1);
-		SetFont("CONFONT");
-		HudMessageBold(s:"Careful! The shaft will cave in!"; HUDMSG_PLAIN, 0, CR_White, 0.04, 0.86, 0.1);
+		ceiling_LowerAndCrush(58,15,5,2); //ZH2 [AQW] Added hexen crushmode.
+		TagWait(58); //ZH2 [AQW]
+		Ceiling_LowerByValueTimes8(58,16,1); //ZH2 [AQW]
+
 	}
-}
 
-//------------------------------------------------------Sealed Doors
-script 12 (void)
-{
-	Print(s:"\cjThis Door has been sealed");
-}
-
-script 21 (void)
-{
-	Print(s:"\cjNya!");
-}
-
-//============================---Resists---==========================
-//------------------------------------------------------Lowering Gate
-script 2 (void)
-{
-	SetActivator(-1);
-	int time;
-	for(time=17;time>0;time--)
+	//----------------------------------------------------Shaft Door
+	Script 10 (void)
 	{
-		SetFont("BIGFONT");
-		Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-		SetFont("SmallFont");
-		HudmessageBold(s:"Wait for the gate to lower..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-		delay(35);
+		PrintBold(n:0, s:"\cj Has opened the shaft door!");
+		Door_open(35,51);
+		acs_execute(47,0,0,0,0);
 	}
-	SetLineBlocking(6, OFF);
-	Floor_LowerByValue(93, 16, 36*8);
-	delay(37);
-	Radius_Quake(5, 4*37, 0, 12,31);
-	Floor_LowerByValue(3, 16, 290);
-	Floor_LowerByValue(93, 16, 36*8);
-	SetLineSpecial(1,0,0,0,0,0,0);
-	SetLineSpecial(6,0,0,0,0,0,0);
-	Door_open(114,36);
-	SetLineSpecial(4,12,0,15,75,0,0);
-	Thing_Activate(106); // Resist marker 1
-	Thing_DeActivate(107); // Resist marker 2
-}
 
-//------------------------------------------------------Hacking door
-script 3 (void)
-{
-	SetActivator(-1);
-	int time;
-	for(time=28;time>0;time--)
+	script 27 (void)//Shortcut Shaft to endroom.
 	{
-		SetFont("BIGFONT");
-		Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-		SetFont("SmallFont");
-		HudmessageBold(s:"Hacking the door..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-		delay(35);
+		if (lift > 0)
+		{
+			Floor_LowerByValue(95, 55, 86*8);
+			Ceiling_LowerByValue(95, 55, 86*8);
+			Ceiling_Lowerandcrush(96, 55, 10,2); //ZH2 [AQW] added hexen crushmode.
+			lift --;
+			delay(5*37);
+			Floor_raiseByValue(95, 55, 86*8);
+			Ceiling_raiseByValue(95, 55, 86*8);
+			Ceiling_raisebyvalue(96, 55, 16*8);
+			TagWait(95);
+		}
+		Else
+		{
+			PrintBold(s:"The shaft is caving in!");
+			Floor_LowerByValue(95, 55, 86*8);
+			Ceiling_LowerByValue(95, 55, 86*8);
+			Ceiling_Lowerandcrush(96, 55, 10,2); //ZH2 [AQW] added hexen crushmode.
+			Delay(4*37);
+			Radius_Quake(5, 22, 0, 12,105);
+			ceiling_LowerAndCrush(104,10,20,2); //ZH2 [AQW] added hexen crushmode. Damage changed to 20.
+			TagWait(104);//ZH2 [AQW]
+			Ceiling_LowerByValueTimes8(104,16,1);//ZH2 [AQW]
+			lift = 1;
+		}
 	}
-	SetLineBlocking(8, OFF);
-	Door_open(22,55);
-	SetLineSpecial(2,0,0,0,0,0,0);
-	Thing_Activate(107); // Resist marker 2
-	Thing_DeActivate(108); // Resist marker 3
-}
 
-//-----------------------------------------------------Survive (Longest script)
-
-Script 5 (void)
-{
-	SetActivator(-1);
-	if (Nyan == 0)
+	Script 47 (void)
 	{
-		Final_resist_Activated = 1;
+		SetActivator(-1);
+		while (lift > 0)
+		{
+			delay(1);
+			SetFont("CONFONT");
+			HudMessageBold(d: lift, s:" Use(s) until shaft caves in."; HUDMSG_PLAIN, 0, CR_White, 0.04, 0.86, 0.1);
+		}
+		acs_execute(48,0,0,0,0);
+	}
+
+	Script 48 (void)
+	{
+		while (lift == 0)
+		{
+			delay(1);
+			SetFont("CONFONT");
+			HudMessageBold(s:"Careful! The shaft will cave in!"; HUDMSG_PLAIN, 0, CR_White, 0.04, 0.86, 0.1);
+		}
+	}
+
+	//------------------------------------------------------Sealed Doors
+	script 12 (void)
+	{
+		Print(s:"\cjThis Door has been sealed");
+	}
+
+	script 21 (void)
+	{
+		Print(s:"\cjNya!");
+	}
+
+	//============================---Resists---==========================
+	//------------------------------------------------------Lowering Gate
+	script 2 (void)
+	{
+		SetActivator(-1);
 		int time;
-		for(time = 44;time > 0;time--)
+		for(time=17;time>0;time--)
 		{
 			SetFont("BIGFONT");
 			Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
 			SetFont("SmallFont");
-			HudmessageBold(s:"Survive"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+			HudmessageBold(s:"Wait for the gate to lower..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
 			delay(35);
 		}
-
-		Final_resist_end = 1;
-		delay(1);
-		acs_execute (20,0,0,0,0);
+		SetLineBlocking(6, OFF);
+		Floor_LowerByValue(93, 16, 36*8);
+		delay(37);
+		Radius_Quake(5, 4*37, 0, 12,31);
+		Floor_LowerByValue(3, 16, 290);
+		Floor_LowerByValue(93, 16, 36*8);
+		SetLineSpecial(1,0,0,0,0,0,0);
+		SetLineSpecial(6,0,0,0,0,0,0);
+		Door_open(114,36);
+		SetLineSpecial(4,12,0,15,75,0,0);
+		Thing_Activate(106); // Resist marker 1
+		Thing_DeActivate(107); // Resist marker 2
 	}
-	Else
+
+	//------------------------------------------------------Hacking door
+	script 3 (void)
 	{
-		terminate;
+		SetActivator(-1);
+		int time;
+		for(time=28;time>0;time--)
+		{
+			SetFont("BIGFONT");
+			Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+			SetFont("SmallFont");
+			HudmessageBold(s:"Hacking the door..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+			delay(35);
+		}
+		SetLineBlocking(8, OFF);
+		Door_open(22,55);
+		SetLineSpecial(2,0,0,0,0,0,0);
+		Thing_Activate(107); // Resist marker 2
+		Thing_DeActivate(108); // Resist marker 3
 	}
-}
 
-Script 20 (void)//The door seal.
-{
-	if (Secret_Activated == 1 && Final_resist_Activated == 0)//Activated before you enter the endroom
+	//-----------------------------------------------------Survive (Longest script)
+
+	Script 5 (void)
 	{
-		Door_Sealed = 1;
+		SetActivator(-1);
+		if (Nyan == 0)
+		{
+			Final_resist_Activated = 1;
+			int time;
+			for(time = 44;time > 0;time--)
+			{
+				SetFont("BIGFONT");
+				Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+				SetFont("SmallFont");
+				HudmessageBold(s:"Survive"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+				delay(35);
+			}
 
-		delay(1);
-		SetFont("BIGFONT");
-		Hudmessage(s:"\cjDoor Sealing..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-		acs_terminate(26,0);//Stops the terminal counter
-		acs_terminate(47,0);
-		acs_terminate(48,0);
-		SetLineSpecial(3,0,0,0,0,0,0);
-		Delay(35*3);
-		ceiling_LowerAndCrush(30,16,10,2); //ZH2 [AQW]
-		TagWait(30); //ZH2 [AQW]
-		Ceiling_LowerByValueTimes8(30,16,1); //ZH2 [AQW]
-		Delay(35*2);
-		SetFont("BIGFONT");
-		HudmessageBold(s:"\cgWARNING: \cjIsland Self-Destruction!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
-		delay(35);
-		AmbientSound("world/nuke1", 127);
-		acs_execute(42,0,0,0,0);
-		thing_activate(92);
-		Door_open(59,15);
-		delay(4*37);
-		Acs_execute(22,0,0,0,0);
+			Final_resist_end = 1;
+			delay(1);
+			acs_execute (20,0,0,0,0);
+		}
+		Else
+		{
+			terminate;
+		}
 	}
-	else if (Final_resist_Activated == 1 && Secret_Activated == 1)//Activated after you enter the endroom
-	{
-		Door_Sealed = 1;
 
-		SetFont("BIGFONT");
-		Hudmessage(s:"\cjDoor Sealing..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-		acs_terminate(26,0);//The terminal counter
-		acs_terminate(47,0);
-		acs_terminate(48,0);
-		SetLineSpecial(3,0,0,0,0,0,0);
-		Delay(35*3);
-		ceiling_LowerAndCrush(30,16,10,2); //ZH2 [AQW]
-		TagWait(30); //ZH2 [AQW]
-		Ceiling_LowerByValueTimes8(30,16,1); //ZH2 [AQW]
-		Delay(35*2);
-		SetFont("BIGFONT");
-		HudmessageBold(s:"\cgWARNING: \cjIsland Self-Destruction!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
-		delay(35);
-		AmbientSound("world/nuke1", 127);
-		acs_execute(42,0,0,0,0);
-		delay(4*37);
-		Door_open(59,15);
-		Acs_execute(22,0,0,0,0);
+	Script 20 (void)//The door seal.
+	{
+		if (Secret_Activated == 1 && Final_resist_Activated == 0)//Activated before you enter the endroom
+		{
+			Door_Sealed = 1;
+
+			delay(1);
+			SetFont("BIGFONT");
+			Hudmessage(s:"\cjDoor Sealing..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+			acs_terminate(26,0);//Stops the terminal counter
+			acs_terminate(47,0);
+			acs_terminate(48,0);
+			SetLineSpecial(3,0,0,0,0,0,0);
+			Delay(35*3);
+			ceiling_LowerAndCrush(30,16,10,2); //ZH2 [AQW]
+			TagWait(30); //ZH2 [AQW]
+			Ceiling_LowerByValueTimes8(30,16,1); //ZH2 [AQW]
+			Delay(35*2);
+			SetFont("BIGFONT");
+			HudmessageBold(s:"\cgWARNING: \cjIsland Self-Destruction!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
+			delay(35);
+			AmbientSound("world/nuke1", 127);
+			acs_execute(42,0,0,0,0);
+			thing_activate(92);
+			Door_open(59,15);
+			delay(4*37);
+			Acs_execute(22,0,0,0,0);
+		}
+		else if (Final_resist_Activated == 1 && Secret_Activated == 1)//Activated after you enter the endroom
+		{
+			Door_Sealed = 1;
+
+			SetFont("BIGFONT");
+			Hudmessage(s:"\cjDoor Sealing..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+			acs_terminate(26,0);//The terminal counter
+			acs_terminate(47,0);
+			acs_terminate(48,0);
+			SetLineSpecial(3,0,0,0,0,0,0);
+			Delay(35*3);
+			ceiling_LowerAndCrush(30,16,10,2); //ZH2 [AQW]
+			TagWait(30); //ZH2 [AQW]
+			Ceiling_LowerByValueTimes8(30,16,1); //ZH2 [AQW]
+			Delay(35*2);
+			SetFont("BIGFONT");
+			HudmessageBold(s:"\cgWARNING: \cjIsland Self-Destruction!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
+			delay(35);
+			AmbientSound("world/nuke1", 127);
+			acs_execute(42,0,0,0,0);
+			delay(4*37);
+			Door_open(59,15);
+			Acs_execute(22,0,0,0,0);
+		}
+		else if (Nyan == 1)
+		{
+			Door_Sealed = 1;
+
+			SetFont("BIGFONT");
+			Hudmessage(s:"\cjNya..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+			acs_terminate(26,0);//The terminal counter
+			acs_terminate(47,0);
+			acs_terminate(48,0);
+			SetLineSpecial(3,0,0,0,0,0,0);
+			Delay(35*3);
+			ceiling_LowerAndCrush(30,16,10,2); //ZH2 [AQW]
+			TagWait(30); //ZH2 [AQW]
+			Ceiling_LowerByValueTimes8(30,16,1); //ZH2 [AQW]
+			Delay(35*2);
+			SetFont("BIGFONT");
+			HudmessageBold(s:"\cgNya!: \cjNyanyanyanyanyanya!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
+			delay(35);
+			AmbientSound("world/nuke1", 127);
+			acs_execute(42,0,0,0,0);
+		}
+		else
+		{
+			Door_Sealed = 1;
+
+			SetFont("BIGFONT");
+			Hudmessage(s:"\cjDoor Sealing..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+			acs_terminate(26,0);//The terminal counter
+			acs_terminate(47,0);
+			acs_terminate(48,0);
+			SetLineSpecial(3,0,0,0,0,0,0);
+			Delay(35*3);
+			ceiling_LowerAndCrush(30,16,10,2); //ZH2 [AQW]
+			TagWait(30); //ZH2 [AQW]
+			Ceiling_LowerByValueTimes8(30,16,1); //ZH2 [AQW]
+			Delay(35*2);
+			SetFont("BIGFONT");
+			HudmessageBold(s:"\cgWARNING: \cjIsland Self-Destruction!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
+			delay(35);
+			AmbientSound("world/nuke1", 127);
+			acs_execute(42,0,0,0,0);
+		}
 	}
-	else if (Nyan == 1)
-	{
-		Door_Sealed = 1;
 
-		SetFont("BIGFONT");
-		Hudmessage(s:"\cjNya..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-		acs_terminate(26,0);//The terminal counter
-		acs_terminate(47,0);
-		acs_terminate(48,0);
-		SetLineSpecial(3,0,0,0,0,0,0);
-		Delay(35*3);
-		ceiling_LowerAndCrush(30,16,10,2); //ZH2 [AQW]
-		TagWait(30); //ZH2 [AQW]
-		Ceiling_LowerByValueTimes8(30,16,1); //ZH2 [AQW]
-		Delay(35*2);
-		SetFont("BIGFONT");
-		HudmessageBold(s:"\cgNya!: \cjNyanyanyanyanyanya!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
-		delay(35);
-		AmbientSound("world/nuke1", 127);
-		acs_execute(42,0,0,0,0);
+	script 42 (void)
+	{
+		Thing_Activate(108); // Resist marker 3
+		Game::KillUnsafePlayers();
 	}
-	else
-	{
-		Door_Sealed = 1;
 
-		SetFont("BIGFONT");
-		Hudmessage(s:"\cjDoor Sealing..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-		acs_terminate(26,0);//The terminal counter
-		acs_terminate(47,0);
-		acs_terminate(48,0);
-		SetLineSpecial(3,0,0,0,0,0,0);
-		Delay(35*3);
-		ceiling_LowerAndCrush(30,16,10,2); //ZH2 [AQW]
-		TagWait(30); //ZH2 [AQW]
-		Ceiling_LowerByValueTimes8(30,16,1); //ZH2 [AQW]
-		Delay(35*2);
-		SetFont("BIGFONT");
-		HudmessageBold(s:"\cgWARNING: \cjIsland Self-Destruction!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
-		delay(35);
-		AmbientSound("world/nuke1", 127);
-		acs_execute(42,0,0,0,0);
+	Script 19 (void)//For testing purposes only. Will deactivate later.
+	{
+		PrintBold(n:0,s:"\cj, 15 Terminals have been Activated!");
+		switchcount = 15;
 	}
-}
 
-script 42 (void)
-{
-	Thing_Activate(108); // Resist marker 3
-	Game::KillUnsafePlayers();
-}
+	//-------------------------------------------------------Secret Ending
 
-Script 19 (void)//For testing purposes only. Will deactivate later.
-{
-	PrintBold(n:0,s:"\cj, 15 Terminals have been Activated!");
-	switchcount = 15;
-}
-
-//-------------------------------------------------------Secret Ending
-
-Script 26 (void)
-{
-	SetActivator(-1);
-	while (switchcount < 16)
+	Script 26 (void)
 	{
-		delay(1);
-		SetFont("CONFONT");
-		HudMessageBold(d: switchcount, s:" Terminal(s) activated"; HUDMSG_PLAIN, 0, CR_White, 0.05, 0.85, 0.1);
+		SetActivator(-1);
+		while (switchcount < 16)
+		{
+			delay(1);
+			SetFont("CONFONT");
+			HudMessageBold(d: switchcount, s:" Terminal(s) activated"; HUDMSG_PLAIN, 0, CR_White, 0.05, 0.85, 0.1);
+		}
 	}
-}
 
-Script 11 (void)
-{
-	if (Player::GetIsHuman() && humanactivated == 0)
-		switchcount++;
-
-	delay(1);
-	acs_execute(16,0,0,0,0);
-	humanactivated = 1;//This stops humans from using this one switch again and again.
-}
-
-Script 15 (void)
-{
-	SetActivator(-1);
-	if (Door_Sealed == 1)
+	Script 11 (void)
 	{
-		HudmessageBold(s:"You're too late"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
-	}
-	else
-	{
-		switchcount++;
+		if (Player::GetIsHuman() && humanactivated == 0)
+			switchcount++;
+
 		delay(1);
 		acs_execute(16,0,0,0,0);
+		humanactivated = 1;//This stops humans from using this one switch again and again.
 	}
-}
 
-Script 16 (void)
-{
-    SetActivator(-1);
-    if (Door_Sealed == 1)
-    {
-		HudmessageBold(s:"You're too late"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
-    }
-    else if (switchcount == 16)
-    {
-		PrintBold(n:0, s:"\cjThe shaft door has been opened!");
-		Door_open(35,51);//opens the shaft
-		acs_execute(47,0,0,0,0);// Shaft usage counter
-		SetLineSpecial(9,80,41,0,0,0,0);//changes the shaft message
-		acs_terminate(26,0);//The terminal counter
-		SetLineSpecial(3,0,0,0,0,0,0);
-		acs_terminate(5,0);//3rd resist start
-		acs_terminate(20,0);//Sealing door
-		acs_execute(30,0,0,0,0);//Random
-    }
-}
-
-Script 30 (void)
-{
-    if (Secret_Activated == 0)
-    {
-		// Aww yea, you can stack cases :3
-		switch(random(1,10))
+	Script 15 (void)
+	{
+		SetActivator(-1);
+		if (Door_Sealed == 1)
 		{
-			case 1:
-			case 3:
-			case 4:
-			case 5:
-			case 6:
-			case 7:
-			case 8:
-			case 9:
-			case 10:
-			{
-				Secret_Activated = 1;
-				SetLineSpecial(3,0,0,0,0,0,0);
-				Music::PlayMusic("RUNAWAY");
-				SetFont("BIGFONT");
-				HudmessageBold(s:"Secret Ending ACTIVATED"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.30, 3.5, 0.5);
-				Log(s:"Secret Ending has been Activated!");
+			HudmessageBold(s:"You're too late"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
+		}
+		else
+		{
+			switchcount++;
+			delay(1);
+			acs_execute(16,0,0,0,0);
+		}
+	}
 
-				// [ZH2] Move all current safe players to slot 2
-				for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+	Script 16 (void)
+	{
+	    SetActivator(-1);
+	    if (Door_Sealed == 1)
+	    {
+			HudmessageBold(s:"You're too late"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 5.5, 0.5);
+	    }
+	    else if (switchcount == 16)
+	    {
+			PrintBold(n:0, s:"\cjThe shaft door has been opened!");
+			Door_open(35,51);//opens the shaft
+			acs_execute(47,0,0,0,0);// Shaft usage counter
+			SetLineSpecial(9,80,41,0,0,0,0);//changes the shaft message
+			acs_terminate(26,0);//The terminal counter
+			SetLineSpecial(3,0,0,0,0,0,0);
+			acs_terminate(5,0);//3rd resist start
+			acs_terminate(20,0);//Sealing door
+			acs_execute(30,0,0,0,0);//Random
+	    }
+	}
+
+	Script 30 (void)
+	{
+	    if (Secret_Activated == 0)
+	    {
+			// Aww yea, you can stack cases :3
+			switch(random(1,10))
+			{
+				case 1:
+				case 3:
+				case 4:
+				case 5:
+				case 6:
+				case 7:
+				case 8:
+				case 9:
+				case 10:
 				{
-					if (Game::GetPlayerIsSafe(i, 0))
+					Secret_Activated = 1;
+					SetLineSpecial(3,0,0,0,0,0,0);
+					Music::PlayMusic("RUNAWAY");
+					SetFont("BIGFONT");
+					HudmessageBold(s:"Secret Ending ACTIVATED"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.30, 3.5, 0.5);
+					Log(s:"Secret Ending has been Activated!");
+
+					// [ZH2] Move all current safe players to slot 2
+					for (int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
 					{
-						Game::SetPlayerIsSafe(i, false, 0, false);
-						Game::SetPlayerIsSafe(i, true, 2, false);
+						if (Game::GetPlayerIsSafe(i, 0))
+						{
+							Game::SetPlayerIsSafe(i, false, 0, false);
+							Game::SetPlayerIsSafe(i, true, 2, false);
+						}
 					}
+
+					// Bit of a hack but we don't have a good way to sync the game again if we never broadcast changes.
+					// So just call SetPlayerIsSafe one more time.
+					Game::SetPlayerIsSafe(0, false, 0, false);
+
+					delay(5*35);
+					acs_execute(17,0,0,0,0);
+					break;
 				}
 
-				// Bit of a hack but we don't have a good way to sync the game again if we never broadcast changes.
-				// So just call SetPlayerIsSafe one more time.
-				Game::SetPlayerIsSafe(0, false, 0, false);
-
-				delay(5*35);
-				acs_execute(17,0,0,0,0);
-				break;
+				// Nyan, rare
+				case 2:
+				{
+					Acs_execute(33,0,0,0,0);
+					break;
+				}
 			}
+		}
+	}
 
-			// Nyan, rare
-			case 2:
+	// For testing only. This script will conflict with any resist that is currently running.
+	script 33 (void)
+	{
+	    Nyan = 1;
+	    SetLineSpecial(3,0,0,0,0,0,0);
+	    SetLineSpecial(5,80,21,0,0,0,0);
+	    Music::PlayMusic("D_NyanST");
+	    delay(125);
+	    Music::PlayMusic("D_NyanRP");
+	    acs_execute(32,0,0,0,0);
+	    acs_executealways(46,0,0,0,0);
+	    SetFont("BIGFONT");
+	    HudmessageBold(s:"Nyanyanyanya!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.30, 3.5, 0.5);
+	    Log(s:"Nyanyanyanyanyanyanya!");
+	    delay(35);
+	    acs_execute(31,0,0,0,0);
+	}
+
+	script 32 (void)
+	{
+		SetActivator(-1);
+		while (Nyan < 2)
+		{
+			delay(1);
+			SetFont("Frame1");
+			HudMessage(s:"A"; HUDMSG_PLAIN, 3, CR_UNTRANSLATED, 0.05, 0.85, 0.1);
+		}
+	}
+
+	script 31 (void)
+	{
+		SetActivator(-1);
+		if (Door_Sealed == 0)
+		{
+			SetLineSpecial(5,80,21,0,0,0,0);
+			int time;
+			for(time=30;time>0;time--)
 			{
-				Acs_execute(33,0,0,0,0);
-				break;
+				SetFont("BIGFONT");
+				Hudmessage(s:"\cqNyanyanyanyanya in \cj",d:time,s:" \cqnya!"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+				SetFont("SmallFont");
+				HudmessageBold(s:"Nyanyanyanyanya!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+				delay(35);
 			}
+
+			Secret_Activated = 0;
+			Acs_execute(20,0,0,0,0);
 		}
 	}
-}
 
-// For testing only. This script will conflict with any resist that is currently running.
-script 33 (void)
-{
-    Nyan = 1;
-    SetLineSpecial(3,0,0,0,0,0,0);
-    SetLineSpecial(5,80,21,0,0,0,0);
-    Music::PlayMusic("D_NyanST");
-    delay(125);
-    Music::PlayMusic("D_NyanRP");
-    acs_execute(32,0,0,0,0);
-    acs_executealways(46,0,0,0,0);
-    SetFont("BIGFONT");
-    HudmessageBold(s:"Nyanyanyanya!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.30, 3.5, 0.5);
-    Log(s:"Nyanyanyanyanyanyanya!");
-    delay(35);
-    acs_execute(31,0,0,0,0);
-}
 
-script 32 (void)
-{
-	SetActivator(-1);
-	while (Nyan < 2)
+	Script 17 (void)
 	{
+		SetActivator(-1);
+		if (Door_Sealed == 0)
+		{
+			int time;
+			for(time=30;time>0;time--)
+			{
+				SetFont("BIGFONT");
+				Hudmessage(s:"\cqDoor seals in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+				SetFont("SmallFont");
+				HudmessageBold(s:"Preparing Toxins..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+				delay(35);
+			}
+			Acs_execute(20,0,0,0,0);
+		}
+	}
+	//----------------------------------------------------------Toxins 4-----------------Scripts:
+	script 22 (void)
+	{
+		SetFont("BIGFONT");
+		HudmessageBold(s:"Outbreak detected in bunker."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.2, 2.5, 0.5);
+		delay(3*35);
+
+		//[Fused] - adding this because Nyan cat will change this font when activated.
+		SetFont("BIGFONT");
+
+		HudmessageBold(s:"Activating Emergency Protocol."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.2, 1.5, 0.5);
+		delay(2*35);
+		int time;
+		for(time=8;time>0;time--)
+		{
+			SetFont("BIGFONT");
+			Hudmessage(s:"\cqReleasing Toxins in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+			SetFont("SmallFont");
+			HudmessageBold(s:""; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+			delay(35);
+		}
+		Door_close(59,15);
 		delay(1);
-		SetFont("Frame1");
-		HudMessage(s:"A"; HUDMSG_PLAIN, 3, CR_UNTRANSLATED, 0.05, 0.85, 0.1);
+		ceiling_LowerAndCrush(63,18,10,2); //ZH2 [AQW] hexen crushmode
+		delay(37);
+		ceiling_LowerAndCrush(64,18,10,2); //ZH2 [AQW] hexen crushmode
+		delay(3*37);
+		SetFont("BIGFONT");
+		Hudmessage(s:"\clReleasing Toxins"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 1, 1.5);
+		delay (30);
+		acs_execute(37,0,0,0,0);//Activates final Resist
+		ceiling_lowerbyvalue(65,15,4*8);
+		delay(3*37);
+		SpawnSpot ("ZH2LegacyZE15SteamSpawner", 62,0,192);//South
+		SpawnSpot ("ZH2LegacyZE15SteamSpawner", 76,0,32);//Northeast
+		SpawnSpot ("ZH2LegacyZE15SteamSpawner", 77,0,0);//East
+		SpawnSpot ("ZH2LegacyZE15SteamSpawner", 78,0,224);//Southeast
+		SpawnSpot ("ZH2LegacyZE15SteamSpawner", 79,0,211);//Southeast > south /
+		SpawnSpot ("ZH2LegacyZE15SteamSpawner", 80,0,82);//Northwest > North \
+		SpawnSpot ("ZH2LegacyZE15SteamSpawner", 81,0,128);//West
+		SpawnSpot ("ZH2LegacyZE15SteamSpawner", 82,0,64);//north
+		AmbientSound("world/gas1", 100);
+		Game::KillUnsafePlayers(3);
+		delay(8*37);
+		Thing_Remove (62);//Removes the steam actors because they cause afterlag for the players.
+		Thing_Remove (76);
+		Thing_Remove (77);
+		Thing_Remove (78);
+		Thing_Remove (79);
+		Thing_Remove (80);
+		Thing_Remove (81);
+		Thing_Remove (82);
 	}
-}
 
-script 31 (void)
-{
-	SetActivator(-1);
-	if (Door_Sealed == 0)
+	script 28 (void)//Second resist vent trap.
 	{
-		SetLineSpecial(5,80,21,0,0,0,0);
-		int time;
-		for(time=30;time>0;time--)
+		Ceiling_LowerByValue(110, 55, 6*8);
+		TagWait(83);
+		delay(15*37);
+		Ceiling_raiseByValue(110, 55, 6*8);
+	}
+
+	// Zombie has escaped message.
+	Script 13 (void)
+	{
+		If(Player::GetIsZombie())
 		{
 			SetFont("BIGFONT");
-			Hudmessage(s:"\cqNyanyanyanyanya in \cj",d:time,s:" \cqnya!"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+			HudmessageBold(s:"\cgWARNING: \cjSubject ", n:0, s:" \cjhas Escaped. Initiating self-Destruct sequence."; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 5.5, 0.5);//--Warning message
+		}
+		Else
+		{
+		}
+	}
+
+	script 36 open // Redkey randomizer, Should spawn 2 possible redkey cards in the map for a total of 3.
+	{
+		redkeyspawn = random(1,7);
+		delay(35);
+		if(redkeyspawn==1)
+		{
+			spawnspot(KEY_RED_KEYCARD, 84,0,0);
+			spawnspot(KEY_RED_KEYCARD, 127,0,0);
+		}
+		else if (redkeyspawn==2)
+		{
+			spawnspot(KEY_RED_KEYCARD, 88,0,0);
+			spawnspot(KEY_RED_KEYCARD, 84,0,0);
+		}
+		else if (redkeyspawn==3)
+		{
+			spawnspot(KEY_RED_KEYCARD, 121,0,0);
+			spawnspot(KEY_RED_KEYCARD, 88,0,0);
+		}
+		else if (redkeyspawn==4)
+		{
+			spawnspot(KEY_RED_KEYCARD, 122,0,0);
+			spawnspot(KEY_RED_KEYCARD, 121,0,0);
+		}
+		else if (redkeyspawn==5)
+		{
+			spawnspot(KEY_RED_KEYCARD, 123,0,0);
+			spawnspot(KEY_RED_KEYCARD, 122,0,0);
+		}
+		else if (redkeyspawn==6)
+		{
+			spawnspot(KEY_RED_KEYCARD, 124,0,0);
+			spawnspot(KEY_RED_KEYCARD, 123,0,0);
+		}
+		else if (redkeyspawn==7)
+		{
+			spawnspot(KEY_RED_KEYCARD, 127,0,0);
+			spawnspot(KEY_RED_KEYCARD, 124,0,0);
+		}
+	}
+
+	//-------------------------------------------------------Escape 5-----------------Scripts:
+
+	script 37 (void)//Final resist
+	{
+		int time;
+		for(time=42;time>0;time--)
+		{
+			SetFont("BIGFONT");
+			Hudmessage(s:"\cqSingularity Matrix activating in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
 			SetFont("SmallFont");
-			HudmessageBold(s:"Nyanyanyanyanya!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+			HudmessageBold(s:"Runaway"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
 			delay(35);
 		}
 
-		Secret_Activated = 0;
-		Acs_execute(20,0,0,0,0);
+		SetLineBlocking(10, ON);
+		Delay(35*2);
+		SetFont("BIGFONT");
+		HudmessageBold(s:"\cgWARNING: \cjSingularity Matrix is @ct1v3"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 3.5, 0.5);
+		delay(35*2);
+		AmbientSound("sound/braincube", 100);
+
+		// Light effect
+		fadeto(128,0,255, 1.0, 0);
+		fadeto(0,0,0, 1.0, 0.75);
+		delay(30*2);
+		setlinespecial(10,9,0,0,0,0,0);
+		Game::KillUnsafePlayers(1);
+		delay(25);
+		fadeto(0,0,0, 0, 0.75);
 	}
-}
 
-
-Script 17 (void)
-{
-	SetActivator(-1);
-	if (Door_Sealed == 0)
+	Script 41 (void)
 	{
-		int time;
-		for(time=30;time>0;time--)
+	     Print(s:"\cjThe shaft is already opened.");
+	}
+
+	script 43 (void)
+	{
+		SetActivator(-1);
+		Radius_Quake(5, 58, 0, 30,90);
+		FloorAndCeiling_LowerByValue(87,58,17*8);
+		delay(12);
+		FloorAndCeiling_LowerByValue(88,28,16);
+		delay(37);
+		Radius_Quake(5, 28, 0, 30,90);
+		FloorAndCeiling_LowerByValue(87,28,16*8);
+		FloorAndCeiling_LowerByValue(88,28,16*8);
+		delay(27);
+		Sector_SetDamage(83,10000,0);
+		Sector_SetDamage(84,10000,0);
+		Sector_SetDamage(85,10000,0);
+		Sector_SetDamage(82,10000,0);
+		Sector_SetDamage(68,10000,0);
+	}
+
+	script 44 (void)
+	{
+	     Printbold(s:"\cjGet to the ship!");
+	}
+
+	script 45 (void)
+	{
+		SetActivator(-1);
+		if (Nyaned < 5)
 		{
-			SetFont("BIGFONT");
-			Hudmessage(s:"\cqDoor seals in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-			SetFont("SmallFont");
-			HudmessageBold(s:"Preparing Toxins..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-			delay(35);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME1");
+			delay(3);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME2");
+			delay(3);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME3");
+			delay(3);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME4");
+			delay(3);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME5");
+			delay(3);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME6");
+			delay(3);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME7");
+			delay(3);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME8");
+			delay(3);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME9");
+			delay(3);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME10");
+			delay(3);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME11");
+			delay(3);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME0");
+			Nyaned ++;
+			acs_executealways(45,0,0,0,0);
 		}
-		Acs_execute(20,0,0,0,0);
-	}
-}
-//----------------------------------------------------------Toxins 4-----------------Scripts:
-script 22 (void)
-{
-	SetFont("BIGFONT");
-	HudmessageBold(s:"Outbreak detected in bunker."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.2, 2.5, 0.5);
-	delay(3*35);
-
-	//[Fused] - adding this because Nyan cat will change this font when activated.
-	SetFont("BIGFONT");
-
-	HudmessageBold(s:"Activating Emergency Protocol."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.2, 1.5, 0.5);
-	delay(2*35);
-	int time;
-	for(time=8;time>0;time--)
-	{
-		SetFont("BIGFONT");
-		Hudmessage(s:"\cqReleasing Toxins in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-		SetFont("SmallFont");
-		HudmessageBold(s:""; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-		delay(35);
-	}
-	Door_close(59,15);
-	delay(1);
-	ceiling_LowerAndCrush(63,18,10,2); //ZH2 [AQW] hexen crushmode
-	delay(37);
-	ceiling_LowerAndCrush(64,18,10,2); //ZH2 [AQW] hexen crushmode
-	delay(3*37);
-	SetFont("BIGFONT");
-	Hudmessage(s:"\clReleasing Toxins"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 1, 1.5);
-	delay (30);
-	acs_execute(37,0,0,0,0);//Activates final Resist
-	ceiling_lowerbyvalue(65,15,4*8);
-	delay(3*37);
-	SpawnSpot ("ZH2LegacyZE15SteamSpawner", 62,0,192);//South
-	SpawnSpot ("ZH2LegacyZE15SteamSpawner", 76,0,32);//Northeast
-	SpawnSpot ("ZH2LegacyZE15SteamSpawner", 77,0,0);//East
-	SpawnSpot ("ZH2LegacyZE15SteamSpawner", 78,0,224);//Southeast
-	SpawnSpot ("ZH2LegacyZE15SteamSpawner", 79,0,211);//Southeast > south /
-	SpawnSpot ("ZH2LegacyZE15SteamSpawner", 80,0,82);//Northwest > North \
-	SpawnSpot ("ZH2LegacyZE15SteamSpawner", 81,0,128);//West
-	SpawnSpot ("ZH2LegacyZE15SteamSpawner", 82,0,64);//north
-	AmbientSound("world/gas1", 100);
-	Game::KillUnsafePlayers(3);
-	delay(8*37);
-	Thing_Remove (62);//Removes the steam actors because they cause afterlag for the players.
-	Thing_Remove (76);
-	Thing_Remove (77);
-	Thing_Remove (78);
-	Thing_Remove (79);
-	Thing_Remove (80);
-	Thing_Remove (81);
-	Thing_Remove (82);
-}
-
-script 28 (void)//Second resist vent trap.
-{
-	Ceiling_LowerByValue(110, 55, 6*8);
-	TagWait(83);
-	delay(15*37);
-	Ceiling_raiseByValue(110, 55, 6*8);
-}
-
-// Zombie has escaped message.
-Script 13 (void)
-{
-	If(Player::GetIsZombie())
-	{
-		SetFont("BIGFONT");
-		HudmessageBold(s:"\cgWARNING: \cjSubject ", n:0, s:" \cjhas Escaped. Initiating self-Destruct sequence."; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 5.5, 0.5);//--Warning message
-	}
-	Else
-	{
-	}
-}
-
-script 36 open // Redkey randomizer, Should spawn 2 possible redkey cards in the map for a total of 3.
-{
-	redkeyspawn = random(1,7);
-	delay(35);
-	if(redkeyspawn==1)
-	{
-		spawnspot(KEY_RED_KEYCARD, 84,0,0);
-		spawnspot(KEY_RED_KEYCARD, 127,0,0);
-	}
-	else if (redkeyspawn==2)
-	{
-		spawnspot(KEY_RED_KEYCARD, 88,0,0);
-		spawnspot(KEY_RED_KEYCARD, 84,0,0);
-	}
-	else if (redkeyspawn==3)
-	{
-		spawnspot(KEY_RED_KEYCARD, 121,0,0);
-		spawnspot(KEY_RED_KEYCARD, 88,0,0);
-	}
-	else if (redkeyspawn==4)
-	{
-		spawnspot(KEY_RED_KEYCARD, 122,0,0);
-		spawnspot(KEY_RED_KEYCARD, 121,0,0);
-	}
-	else if (redkeyspawn==5)
-	{
-		spawnspot(KEY_RED_KEYCARD, 123,0,0);
-		spawnspot(KEY_RED_KEYCARD, 122,0,0);
-	}
-	else if (redkeyspawn==6)
-	{
-		spawnspot(KEY_RED_KEYCARD, 124,0,0);
-		spawnspot(KEY_RED_KEYCARD, 123,0,0);
-	}
-	else if (redkeyspawn==7)
-	{
-		spawnspot(KEY_RED_KEYCARD, 127,0,0);
-		spawnspot(KEY_RED_KEYCARD, 124,0,0);
-	}
-}
-
-//-------------------------------------------------------Escape 5-----------------Scripts:
-
-script 37 (void)//Final resist
-{
-	int time;
-	for(time=42;time>0;time--)
-	{
-		SetFont("BIGFONT");
-		Hudmessage(s:"\cqSingularity Matrix activating in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-		SetFont("SmallFont");
-		HudmessageBold(s:"Runaway"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-		delay(35);
+		else
+		{
+			delay(2);
+			SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+			Nyaned = 0;
+		}
 	}
 
-	SetLineBlocking(10, ON);
-	Delay(35*2);
-	SetFont("BIGFONT");
-	HudmessageBold(s:"\cgWARNING: \cjSingularity Matrix is @ct1v3"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 3.5, 0.5);
-	delay(35*2);
-	AmbientSound("sound/braincube", 100);
-
-	// Light effect
-	fadeto(128,0,255, 1.0, 0);
-	fadeto(0,0,0, 1.0, 0.75);
-	delay(30*2);
-	setlinespecial(10,9,0,0,0,0,0);
-	Game::KillUnsafePlayers(1);
-	delay(25);
-	fadeto(0,0,0, 0, 0.75);
-}
-
-Script 41 (void)
-{
-     Print(s:"\cjThe shaft is already opened.");
-}
-
-script 43 (void)
-{
-	SetActivator(-1);
-	Radius_Quake(5, 58, 0, 30,90);
-	FloorAndCeiling_LowerByValue(87,58,17*8);
-	delay(12);
-	FloorAndCeiling_LowerByValue(88,28,16);
-	delay(37);
-	Radius_Quake(5, 28, 0, 30,90);
-	FloorAndCeiling_LowerByValue(87,28,16*8);
-	FloorAndCeiling_LowerByValue(88,28,16*8);
-	delay(27);
-	Sector_SetDamage(83,10000,0);
-	Sector_SetDamage(84,10000,0);
-	Sector_SetDamage(85,10000,0);
-	Sector_SetDamage(82,10000,0);
-	Sector_SetDamage(68,10000,0);
-}
-
-script 44 (void)
-{
-     Printbold(s:"\cjGet to the ship!");
-}
-
-script 45 (void)
-{
-	SetActivator(-1);
-	if (Nyaned < 5)
+	script 46 (void)
 	{
+		SetActivator(-1);
 		SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME1");
 		delay(3);
 		SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME2");
@@ -759,42 +798,6 @@ script 45 (void)
 		SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME11");
 		delay(3);
 		SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME0");
-		Nyaned ++;
-		acs_executealways(45,0,0,0,0);
+		acs_executealways(46,0,0,0,0);
 	}
-	else
-	{
-		delay(2);
-		SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "-");
-		Nyaned = 0;
-	}
-}
-
-script 46 (void)
-{
-	SetActivator(-1);
-	SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME1");
-	delay(3);
-	SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME2");
-	delay(3);
-	SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME3");
-	delay(3);
-	SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME4");
-	delay(3);
-	SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME5");
-	delay(3);
-	SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME6");
-	delay(3);
-	SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME7");
-	delay(3);
-	SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME8");
-	delay(3);
-	SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME9");
-	delay(3);
-	SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME10");
-	delay(3);
-	SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME11");
-	delay(3);
-	SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME0");
-	acs_executealways(46,0,0,0,0);
 }
