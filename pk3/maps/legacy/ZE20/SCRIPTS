@@ -9,386 +9,386 @@
 
 strict namespace
 {
-	int State = 0;
-	int shield = 0;
-	int ZombieIn[BCSUtils::MAX_PLAYERS];
+    int State = 0;
+    int shield = 0;
+    int ZombieIn[BCSUtils::MAX_PLAYERS];
 
-	// Tracks how often the player was informed not to "cheat".
-	internal int _warnCount[BCSUtils::MAX_PLAYERS];
+    // Tracks how often the player was informed not to "cheat".
+    internal int _warnCount[BCSUtils::MAX_PLAYERS];
 
-	// Tracks who interacted with the dynamite to plant
-	internal int _hasDynamite[BCSUtils::MAX_PLAYERS];
+    // Tracks who interacted with the dynamite to plant
+    internal int _hasDynamite[BCSUtils::MAX_PLAYERS];
 
-	str cometname[4] = {"ZH2LegacyZE20CometSpawnerA", "ZH2LegacyZE20CometSpawnerB", "ZH2LegacyZE20CometSpawnerC", "ZH2LegacyZE20CometSpawnerD"};
+    str cometname[4] = {"ZH2LegacyZE20CometSpawnerA", "ZH2LegacyZE20CometSpawnerB", "ZH2LegacyZE20CometSpawnerC", "ZH2LegacyZE20CometSpawnerD"};
 
-	function void ResistMessageNew3(int time, int color)
-	{
-	    SetFont("BIGFONT");
-	    if(time == 1) HudMessageBold(s:"Resist: \cd", d:time; HUDMSG_FADEOUT, 422, color, 0.5, 0.1, 0, 1.0);
-	    else if(time < 5) HudMessageBold(s:"Resist: \cd", d:time; HUDMSG_PLAIN, 422, color, 0.5, 0.1, 0);
-	    else if(time < 10) HudMessageBold(s:"Resist: \ck", d:time; HUDMSG_PLAIN, 422, color, 0.5, 0.1, 0);
-	    else if(time < 15) HudMessageBold(s:"Resist: \ci", d:time; HUDMSG_PLAIN, 422, color, 0.5, 0.1, 0);
-	    else HudMessageBold(s:"Resist: \cg", d:time; HUDMSG_PLAIN, 422, color, 0.5, 0.1, 0);
-	}
+    function void ResistMessageNew3(int time, int color)
+    {
+        SetFont("BIGFONT");
+        if(time == 1) HudMessageBold(s:"Resist: \cd", d:time; HUDMSG_FADEOUT, 422, color, 0.5, 0.1, 0, 1.0);
+        else if(time < 5) HudMessageBold(s:"Resist: \cd", d:time; HUDMSG_PLAIN, 422, color, 0.5, 0.1, 0);
+        else if(time < 10) HudMessageBold(s:"Resist: \ck", d:time; HUDMSG_PLAIN, 422, color, 0.5, 0.1, 0);
+        else if(time < 15) HudMessageBold(s:"Resist: \ci", d:time; HUDMSG_PLAIN, 422, color, 0.5, 0.1, 0);
+        else HudMessageBold(s:"Resist: \cg", d:time; HUDMSG_PLAIN, 422, color, 0.5, 0.1, 0);
+    }
 
-	function void SpawnComet(int num)
-	{
-	    SpawnSpot(cometname[num], 150 + num);
-	}
+    function void SpawnComet(int num)
+    {
+        SpawnSpot(cometname[num], 150 + num);
+    }
 
-	script 1 (void)
-	{
-	    if(GetActorZ(0) < 192.0)
-	        terminate;
+    script 1 (void)
+    {
+        if(GetActorZ(0) < 192.0)
+            terminate;
 
-	    ThrustThingZ(0, 16, 0, 0);
-	}
+        ThrustThingZ(0, 16, 0, 0);
+    }
 
-	script 4 (void)
-	{
-	    if(GetActorZ(0) > 216.0)
-	    {
-	        SetFont("CONFONT");
-	        switch(_warnCount[PlayerNumber()])
-	        {
-	            case 0:
-	                HudMessage(s:"No cheating!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.5, 1.0, 1.0);
-	                break;
-	            case 1:
-	                HudMessage(s:"Hey, stop it!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.5, 1.0, 1.0);
-	                break;
-	            case 2:
-	                HudMessage(s:"This is your last warning!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.5, 1.0, 1.0);
-	                break;
-	            default:
-	                HudMessage(s:"As you wish ..."; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.5, 1.0, 1.0);
-	                DamageThing(0, MOD_UNKNOWN);
-	                break;
-	        }
-	        _warnCount[PlayerNumber()]++;
-	        delay(70);
-	        terminate;
-	    }
+    script 4 (void)
+    {
+        if(GetActorZ(0) > 216.0)
+        {
+            SetFont("CONFONT");
+            switch(_warnCount[PlayerNumber()])
+            {
+                case 0:
+                    HudMessage(s:"No cheating!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.5, 1.0, 1.0);
+                    break;
+                case 1:
+                    HudMessage(s:"Hey, stop it!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.5, 1.0, 1.0);
+                    break;
+                case 2:
+                    HudMessage(s:"This is your last warning!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.5, 1.0, 1.0);
+                    break;
+                default:
+                    HudMessage(s:"As you wish ..."; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.5, 1.0, 1.0);
+                    DamageThing(0, MOD_UNKNOWN);
+                    break;
+            }
+            _warnCount[PlayerNumber()]++;
+            delay(70);
+            terminate;
+        }
 
-	    SetActivator(-1);
-	    SetLineSpecial(10, 0, 0, 0, 0);
-	    SetLineTexture(10, SIDE_FRONT, TEXTURE_BOTTOM, "SW2GRAY");
-	    SetFont("BIGFONT");
-	    HudMessageBold(s:"Power generator starting"; HUDMSG_PLAIN, 421, CR_BLUE, 0.5, 0.02, 0);
-	    for(int i = 35; i > 0; i--)
-	    {
-	        if(!State) {
-	            ResistMessageNew3(i, CR_BLUE);
-	            if(i == 15) SpawnComet(random(0, 3));
-	        }
-	        Delay(35);
-	    }
-	    Door_Open(17, 16, 0);
-	    ChangeFloor(24, "W_140");
-	    ChangeFloor(25, "CRATELT3");
-	    Floor_RaiseByValue(24, 65535, 64);
-	    Floor_RaiseByValue(25, 65535, 32);
-	    Thing_Remove(7);
-	    if(State) terminate;
-	    Thing_Activate(201); // power
-	    Thing_Deactivate(202); // dynamite
-	    SetFont("BIGFONT");
-	    HudMessageBold(s:"Power online"; HUDMSG_FADEOUT, 421, CR_DARKGRAY, 0.5, 0.02, 3.0, 1.0);
-	    State = 1;
-	    SetFont("CONFONT");
-	    HudMessageBold(s:"Get \cgdynamite\c- to blow up path underground."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.04, 3.0, 1.0);
-	}
+        SetActivator(-1);
+        SetLineSpecial(10, 0, 0, 0, 0);
+        SetLineTexture(10, SIDE_FRONT, TEXTURE_BOTTOM, "SW2GRAY");
+        SetFont("BIGFONT");
+        HudMessageBold(s:"Power generator starting"; HUDMSG_PLAIN, 421, CR_BLUE, 0.5, 0.02, 0);
+        for(int i = 35; i > 0; i--)
+        {
+            if(!State) {
+                ResistMessageNew3(i, CR_BLUE);
+                if(i == 15) SpawnComet(random(0, 3));
+            }
+            Delay(35);
+        }
+        Door_Open(17, 16, 0);
+        ChangeFloor(24, "W_140");
+        ChangeFloor(25, "CRATELT3");
+        Floor_RaiseByValue(24, 65535, 64);
+        Floor_RaiseByValue(25, 65535, 32);
+        Thing_Remove(7);
+        if(State) terminate;
+        Thing_Activate(201); // power
+        Thing_Deactivate(202); // dynamite
+        SetFont("BIGFONT");
+        HudMessageBold(s:"Power online"; HUDMSG_FADEOUT, 421, CR_DARKGRAY, 0.5, 0.02, 3.0, 1.0);
+        State = 1;
+        SetFont("CONFONT");
+        HudMessageBold(s:"Get \cgdynamite\c- to blow up path underground."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.04, 3.0, 1.0);
+    }
 
-	script 5 (void) CLIENTSIDE
-	{
-	    if(ConsolePlayerNumber() != PlayerNumber())
-	        terminate;
+    script 5 (void) CLIENTSIDE
+    {
+        if(ConsolePlayerNumber() != PlayerNumber())
+            terminate;
 
-	    SetFont("CONFONT");
-	    HudMessage(s:"Place \cgdynamite\c- near graveyard."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.5, 2.0, 1.0);
-	    Thing_Activate(201); // power
-	    Thing_Activate(202); // dynamite
-	    Thing_Deactivate(203); // explosion
-	}
+        SetFont("CONFONT");
+        HudMessage(s:"Place \cgdynamite\c- near graveyard."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.5, 2.0, 1.0);
+        Thing_Activate(201); // power
+        Thing_Activate(202); // dynamite
+        Thing_Deactivate(203); // explosion
+    }
 
-	script 6 (void)
-	{
-	    if(_hasDynamite[PlayerNumber()])
-	        terminate;
+    script 6 (void)
+    {
+        if(_hasDynamite[PlayerNumber()])
+            terminate;
 
-	    _hasDynamite[PlayerNumber()] = true;
-	    ACS_Execute(5, 0, 0, 0);
-	}
+        _hasDynamite[PlayerNumber()] = true;
+        ACS_Execute(5, 0, 0, 0);
+    }
 
 
-	script 7 (void)
-	{
-	    if(State > 1)
-	        terminate;
+    script 7 (void)
+    {
+        if(State > 1)
+            terminate;
 
-	    if(!_hasDynamite[PlayerNumber()])
-	        terminate;
+        if(!_hasDynamite[PlayerNumber()])
+            terminate;
 
-	    SetActivator(-1);
-	    Thing_Activate(201); // power
-	    Thing_Activate(202); // dynamite
-	    Thing_Deactivate(203); // explosion
-	    State = 2;
-	    SetFont("BIGFONT");
-	    HudMessageBold(s:"Dynamite set, prepare for explosion."; HUDMSG_FADEOUT, 421, CR_RED, 0.5, 0.02, 10.0, 1.0);
-	    SpawnSpot("zh2legacydynamite", 8, 7);
-	    SpawnComet(random(0, 3));
+        SetActivator(-1);
+        Thing_Activate(201); // power
+        Thing_Activate(202); // dynamite
+        Thing_Deactivate(203); // explosion
+        State = 2;
+        SetFont("BIGFONT");
+        HudMessageBold(s:"Dynamite set, prepare for explosion."; HUDMSG_FADEOUT, 421, CR_RED, 0.5, 0.02, 10.0, 1.0);
+        SpawnSpot("zh2legacydynamite", 8, 7);
+        SpawnComet(random(0, 3));
 
-	    for(int i = 10; i > 0; i--)
-	    {
-	        ResistMessageNew3(i, CR_RED);
-	        Delay(35);
-	    }
+        for(int i = 10; i > 0; i--)
+        {
+            ResistMessageNew3(i, CR_RED);
+            Delay(35);
+        }
 
-	    Thing_Activate(203); // explosion
-	    Floor_MoveToValue(1, 65535, 64, 1);
-	    Floor_MoveToValue(19, 65535, 64, 1);
-	    TagWait(1);
-	    Spawn("ZH2LegacyZE20Explosion", GetActorX(8), GetActorY(8), 88.0);
-	    Thing_Remove(7);
-	    Floor_MoveToValue(18, 65535, 48, 0);
-	    Floor_MoveToValue(27, 65535, 48, 0);
-	    Floor_MoveToValue(20, 65535, 48, 0);
-	    Floor_MoveToValue(26, 65535, 80, 0);
-	    ChangeFloor(1, "TRANS");
-	    ChangeFloor(19, "TRANS");
-	    State = 3;
-	    Delay(70);
-	    SetFont("BIGFONT");
-	    HudMessageBold(s:"Cataclism is comming!"; HUDMSG_PLAIN, 421, CR_RED, 0.5, 0.02, 0);
-	    SetFont("CONFONT");
-	    HudMessageBold(s:"Hide in the \ctmagic\c- protected building before it comes!"; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.04, 3.0, 1.0);
-	    Music::PlayMusic("d_sland");
-	    Thing_Deactivate(204); // underground
-	    SpawnComet(random(0, 3));
-	    Delay(100);
-	    SetFont("BIGFONT");
-	    ACS_Execute(57, 0, 0, 0, 0);
-	    HudMessageBold(s:"Cataclism is coming!"; HUDMSG_PLAIN, 421, CR_RED, 0.5, 0.02, 0);
+        Thing_Activate(203); // explosion
+        Floor_MoveToValue(1, 65535, 64, 1);
+        Floor_MoveToValue(19, 65535, 64, 1);
+        TagWait(1);
+        Spawn("ZH2LegacyZE20Explosion", GetActorX(8), GetActorY(8), 88.0);
+        Thing_Remove(7);
+        Floor_MoveToValue(18, 65535, 48, 0);
+        Floor_MoveToValue(27, 65535, 48, 0);
+        Floor_MoveToValue(20, 65535, 48, 0);
+        Floor_MoveToValue(26, 65535, 80, 0);
+        ChangeFloor(1, "TRANS");
+        ChangeFloor(19, "TRANS");
+        State = 3;
+        Delay(70);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"Cataclism is comming!"; HUDMSG_PLAIN, 421, CR_RED, 0.5, 0.02, 0);
+        SetFont("CONFONT");
+        HudMessageBold(s:"Hide in the \ctmagic\c- protected building before it comes!"; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.04, 3.0, 1.0);
+        Music::PlayMusic("d_sland");
+        Thing_Deactivate(204); // underground
+        SpawnComet(random(0, 3));
+        Delay(100);
+        SetFont("BIGFONT");
+        ACS_Execute(57, 0, 0, 0, 0);
+        HudMessageBold(s:"Cataclism is coming!"; HUDMSG_PLAIN, 421, CR_RED, 0.5, 0.02, 0);
 
-	    for(i = 55; i > 0; i--)
-	    {
-	        ResistMessageNew3(i, CR_YELLOW);
-	        if(i == 45 || i == 30 || i == 15) SpawnComet(random(0, 3));
-	        if(i < 12 && i > 5) SpawnComet(random(0, 3));
-	        Delay(35);
-	    }
+        for(i = 55; i > 0; i--)
+        {
+            ResistMessageNew3(i, CR_YELLOW);
+            if(i == 45 || i == 30 || i == 15) SpawnComet(random(0, 3));
+            if(i < 12 && i > 5) SpawnComet(random(0, 3));
+            Delay(35);
+        }
 
-	    HudMessageBold(s:"Cataclism is here!"; HUDMSG_FADEOUT, 421, CR_RED, 0.5, 0.02, 0.5, 0.5);
-	    Music::PlayMusic("d_null");
-	    Delay(35);
-	    AmbientSound("world/nuke1", 127);
+        HudMessageBold(s:"Cataclism is here!"; HUDMSG_FADEOUT, 421, CR_RED, 0.5, 0.02, 0.5, 0.5);
+        Music::PlayMusic("d_null");
+        Delay(35);
+        AmbientSound("world/nuke1", 127);
 
-	    Game::KillUnsafePlayers();
-	}
+        Game::KillUnsafePlayers();
+    }
 
-	script 9 (void)
-	{
-	    if(State != 3)
-	        terminate;
+    script 9 (void)
+    {
+        if(State != 3)
+            terminate;
 
-	    if(PlayerNumber() != -1)
-	        terminate;
+        if(PlayerNumber() != -1)
+            terminate;
 
-	    TeleportGroup(0, 8, 9, 0, 0);
-	}
+        TeleportGroup(0, 8, 9, 0, 0);
+    }
 
-	// grenade generator
-	script 50 (void)
-	{
-	    if(Player::GetIsZombie())
-	    {
-	        SetFont("CONFONT");
-	        HudMessage(s:"dis not brainsssss"; HUDMSG_FADEOUT, 0, CR_DARKRED, 0.5, 0.5, 1.0, 1.0);
-	        terminate;
-	    }
-	    Ceiling_LowerByValue(22, 16, 64);
-	    TagWait(22);
-	    Delay(35);
-	    SpawnSpot(WEAPON_FIREGRENADE_SPAWN_NAME, 12);
-	    Ceiling_RaiseByValue(22, 16, 64);
-	}
+    // grenade generator
+    script 50 (void)
+    {
+        if(Player::GetIsZombie())
+        {
+            SetFont("CONFONT");
+            HudMessage(s:"dis not brainsssss"; HUDMSG_FADEOUT, 0, CR_DARKRED, 0.5, 0.5, 1.0, 1.0);
+            terminate;
+        }
+        Ceiling_LowerByValue(22, 16, 64);
+        TagWait(22);
+        Delay(35);
+        SpawnSpot(WEAPON_FIREGRENADE_SPAWN_NAME, 12);
+        Ceiling_RaiseByValue(22, 16, 64);
+    }
 
-	// water trap
-	script 51 (void)
-	{
-	    if(PlayerNumber() == -1)
-	        terminate;
+    // water trap
+    script 51 (void)
+    {
+        if(PlayerNumber() == -1)
+            terminate;
 
-	    Thing_Remove(13);
-	    delay(16);
-	    SetFont("CONFONT");
-	    HudMessage(s:"Seems like you have managed to trap yourself in my map."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.5, 2.0, 1.0);
-	    SpawnComet(random(0, 3));
+        Thing_Remove(13);
+        delay(16);
+        SetFont("CONFONT");
+        HudMessage(s:"Seems like you have managed to trap yourself in my map."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.5, 2.0, 1.0);
+        SpawnComet(random(0, 3));
 
-	    delay(80);
+        delay(80);
 
-	    if(Player::GetIsZombie() || CheckInventory(WEAPON_AMMO_FIREGRENADE_NAME))
-	    {
-	        SetFont("CONFONT");
-	        HudMessage(s:"Well, this could help."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.5, 2.0, 1.0);
-	        Floor_RaiseByValue(23, 4, 64);
-	    }
-	    else
-	    {
-	        SpawnComet(random(0, 3));
-	        SetFont("CONFONT");
-	        HudMessage(s:"My bad. Here, take this grenade and flare."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.5, 2.0, 1.0);
+        if(Player::GetIsZombie() || CheckInventory(WEAPON_AMMO_FIREGRENADE_NAME))
+        {
+            SetFont("CONFONT");
+            HudMessage(s:"Well, this could help."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.5, 2.0, 1.0);
+            Floor_RaiseByValue(23, 4, 64);
+        }
+        else
+        {
+            SpawnComet(random(0, 3));
+            SetFont("CONFONT");
+            HudMessage(s:"My bad. Here, take this grenade and flare."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.5, 2.0, 1.0);
 
-	        GiveInventory(WEAPON_FIREGRENADE_SPAWN_NAME, 1);
-	        GiveInventory(FLARE_ITEM, 1);
+            GiveInventory(WEAPON_FIREGRENADE_SPAWN_NAME, 1);
+            GiveInventory(FLARE_ITEM, 1);
 
-	        delay(35);
-	        Floor_RaiseByValue(23, 16, 64);
-	    }
-	}
+            delay(35);
+            Floor_RaiseByValue(23, 16, 64);
+        }
+    }
 
-	script 52 (int quest)
-	{
-	    if(quest && State)
-	        terminate;
+    script 52 (int quest)
+    {
+        if(quest && State)
+            terminate;
 
-	    ActivatorSound("sound/locked1", 127);
-	    delay(15);
-	}
+        ActivatorSound("sound/locked1", 127);
+        delay(15);
+    }
 
-	script 53 (int check)
-	{
-	    if(check && GetActorZ(0) > 0)
-	        terminate;
+    script 53 (int check)
+    {
+        if(check && GetActorZ(0) > 0)
+            terminate;
 
-	    if(shield)
-	    {
-	        SetFont("CONFONT");
-	        HudMessage(s:"broken"; HUDMSG_FADEOUT, 0, CR_DARKRED, 0.5, 0.5, 1.0, 1.0);
-	        terminate;
-	    }
+        if(shield)
+        {
+            SetFont("CONFONT");
+            HudMessage(s:"broken"; HUDMSG_FADEOUT, 0, CR_DARKRED, 0.5, 0.5, 1.0, 1.0);
+            terminate;
+        }
 
-	    if(Player::GetIsZombie())
-	    {
-	        SetFont("CONFONT");
-	        HudMessage(s:"dis not brainsssss"; HUDMSG_FADEOUT, 0, CR_DARKRED, 0.5, 0.5, 1.0, 1.0);
-	        terminate;
-	    }
+        if(Player::GetIsZombie())
+        {
+            SetFont("CONFONT");
+            HudMessage(s:"dis not brainsssss"; HUDMSG_FADEOUT, 0, CR_DARKRED, 0.5, 0.5, 1.0, 1.0);
+            terminate;
+        }
 
-	    SetFont("BIGFONT");
-	    HudMessageBold(n:0, s:"\c- activated the anti-zombie shield."; HUDMSG_PLAIN, 500, CR_GREEN, 0.5, 0.2, 0);
+        SetFont("BIGFONT");
+        HudMessageBold(n:0, s:"\c- activated the anti-zombie shield."; HUDMSG_PLAIN, 500, CR_GREEN, 0.5, 0.2, 0);
 
-	    for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-	    {
-	        if(ZombieIn[i])
-	        {
-	            if(Player::GetPlayerIsZombie(i))
-	                DamageThing(Identity::GetTid(i), MOD_UNKNOWN);
-	        }
-	    }
+        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+        {
+            if(ZombieIn[i])
+            {
+                if(Player::GetPlayerIsZombie(i))
+                    DamageThing(Identity::GetTid(i), MOD_UNKNOWN);
+            }
+        }
 
-	    SetActivator(-1);
-	    shield = 1;
-	    SetLineTexture(11, SIDE_FRONT, TEXTURE_MIDDLE, "LASER1");
-	    SetLineTexture(11, SIDE_BACK, TEXTURE_MIDDLE, "LASER1");
-	    delay(35);
+        SetActivator(-1);
+        shield = 1;
+        SetLineTexture(11, SIDE_FRONT, TEXTURE_MIDDLE, "LASER1");
+        SetLineTexture(11, SIDE_BACK, TEXTURE_MIDDLE, "LASER1");
+        delay(35);
 
-	    for(i = 25; i > 0; i--)
-	    {
-	        SetFont("CONFONT");
-	        HudMessageBold(s:"\cdanti-zombie shield\c- collapses in ", d:i; HUDMSG_PLAIN, 500, CR_RED, 0.5, 0.15, 0);
-	        delay(35);
-	    }
+        for(i = 25; i > 0; i--)
+        {
+            SetFont("CONFONT");
+            HudMessageBold(s:"\cdanti-zombie shield\c- collapses in ", d:i; HUDMSG_PLAIN, 500, CR_RED, 0.5, 0.15, 0);
+            delay(35);
+        }
 
-	    SetLineTexture(11, SIDE_FRONT, TEXTURE_MIDDLE, "-");
-	    SetLineTexture(11, SIDE_BACK, TEXTURE_MIDDLE, "-");
-	    shield = 2;
+        SetLineTexture(11, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+        SetLineTexture(11, SIDE_BACK, TEXTURE_MIDDLE, "-");
+        shield = 2;
 
-	    SetFont("CONFONT");
-	    HudMessageBold(s:"\cdanti-zombie shield\c- collapsed! "; HUDMSG_PLAIN, 500, CR_RED, 0.5, 0.15, 1.0);
-	}
+        SetFont("CONFONT");
+        HudMessageBold(s:"\cdanti-zombie shield\c- collapsed! "; HUDMSG_PLAIN, 500, CR_RED, 0.5, 0.15, 1.0);
+    }
 
-	script 54 (int angle)
-	{
-	    if(shield == 1 && Player::GetIsZombie())
-	        ThrustThing(angle, 64, 1, 0);
-	}
+    script 54 (int angle)
+    {
+        if(shield == 1 && Player::GetIsZombie())
+            ThrustThing(angle, 64, 1, 0);
+    }
 
-	script 55 (void)
-	{
-	    if(shield == 0)
-	    {
-	        if(LineSide()) ZombieIn[PlayerNumber()] = 0;
-	        else ZombieIn[PlayerNumber()] = 1;
-	    }
-	    else if(shield == 1 && Player::GetIsZombie())
-	        DamageThing(0, MOD_UNKNOWN);
-	}
+    script 55 (void)
+    {
+        if(shield == 0)
+        {
+            if(LineSide()) ZombieIn[PlayerNumber()] = 0;
+            else ZombieIn[PlayerNumber()] = 1;
+        }
+        else if(shield == 1 && Player::GetIsZombie())
+            DamageThing(0, MOD_UNKNOWN);
+    }
 
-	// comet impact
-	script 56 (void)
-	{
-	    AmbientSound("world/nuke1", 64);
-	    Radius_Quake(9, 35, 0, 255, 0);
-	    delay(35);
-	    Radius_Quake(4, 16, 0, 255, 0);
-	}
+    // comet impact
+    script 56 (void)
+    {
+        AmbientSound("world/nuke1", 64);
+        Radius_Quake(9, 35, 0, 255, 0);
+        delay(35);
+        Radius_Quake(4, 16, 0, 255, 0);
+    }
 
-	// alt shield button show
-	script 57 (void)
-	{
-	    delay(35 * 20 + random(0, 20) * 35);
-	    SetFont("CONFONT");
-	    HudMessageBold(s:"Earthquake revealed a secret."; HUDMSG_FADEOUT, 500, CR_TAN, 0.5, 0.2, 1.0, 0.5);
-	    Floor_LowerByValue(11, 65535, 8);
-	    Floor_LowerByValue(10, 65535, 16);
-	    Floor_LowerByValue(9, 65535, 24);
-	    Floor_LowerByValue(8, 65535, 32);
-	    Floor_LowerByValue(7, 65535, 40);
-	    Floor_LowerByValue(6, 65535, 48);
-	    Floor_LowerByValue(5, 65535, 56);
-	    Floor_LowerByValue(4, 65535, 64);
-	    SetLineTexture(123, SIDE_FRONT, TEXTURE_BOTTOM, "SW1COMM");
-	    SetLineSpecial (123, 80, 53, 0, 1, 0, 0);
-	}
+    // alt shield button show
+    script 57 (void)
+    {
+        delay(35 * 20 + random(0, 20) * 35);
+        SetFont("CONFONT");
+        HudMessageBold(s:"Earthquake revealed a secret."; HUDMSG_FADEOUT, 500, CR_TAN, 0.5, 0.2, 1.0, 0.5);
+        Floor_LowerByValue(11, 65535, 8);
+        Floor_LowerByValue(10, 65535, 16);
+        Floor_LowerByValue(9, 65535, 24);
+        Floor_LowerByValue(8, 65535, 32);
+        Floor_LowerByValue(7, 65535, 40);
+        Floor_LowerByValue(6, 65535, 48);
+        Floor_LowerByValue(5, 65535, 56);
+        Floor_LowerByValue(4, 65535, 64);
+        SetLineTexture(123, SIDE_FRONT, TEXTURE_BOTTOM, "SW1COMM");
+        SetLineSpecial (123, 80, 53, 0, 1, 0, 0);
+    }
 
-	script 100 OPEN
-	{
-	    for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-		{
-	        ZombieIn[i] = 0;
-	    }
+    script 100 OPEN
+    {
+        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+        {
+            ZombieIn[i] = 0;
+        }
 
-	    for(i = 1; i < 5; i++)
-	        SetLineSpecial(i, 80, 99, 0, i); // glass lines
+        for(i = 1; i < 5; i++)
+            SetLineSpecial(i, 80, 99, 0, i); // glass lines
 
-	    SetLineSpecial(10, 80, 4, 0, 0);
-	    Thing_Activate(202); // dynamite
-	    Thing_Activate(203); // explosion
-	    Thing_Activate(204); // underground
+        SetLineSpecial(10, 80, 4, 0, 0);
+        Thing_Activate(202); // dynamite
+        Thing_Activate(203); // explosion
+        Thing_Activate(204); // underground
 
-	    if(random(0, 255) < 64)
-	    {
-	        SpawnSpot(CRYSTAL_ITEM, 200);
-	        ChangeFloor(34, "GRASS1");
-	    }
-	}
+        if(random(0, 255) < 64)
+        {
+            SpawnSpot(CRYSTAL_ITEM, 200);
+            ChangeFloor(34, "GRASS1");
+        }
+    }
 
-	script 99 (int id) // glassbreak
-	{
-	    SetLineBlocking(id, BLOCK_NOTHING);
-	    SetLineTexture(id, SIDE_FRONT, TEXTURE_MIDDLE, "-");
-	    SetLineTexture(id, SIDE_BACK, TEXTURE_MIDDLE, "-");
-	    Thing_Activate(id);
-	}
+    script 99 (int id) // glassbreak
+    {
+        SetLineBlocking(id, BLOCK_NOTHING);
+        SetLineTexture(id, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+        SetLineTexture(id, SIDE_BACK, TEXTURE_MIDDLE, "-");
+        Thing_Activate(id);
+    }
 
-	script 98 ENTER
-	{
-	    SetFont("CONFONT");
-	    HudMessage(s:"Turn on the \cgthermal generator\c- to supply base with power."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.04, 3.0, 1.0);
-	    Delay(70);
-	    SetFont("CONFONT");
-	    HudMessage(s:"If you are lost, use the map and follow the markers."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.5, 3.0, 1.0);
-	}
+    script 98 ENTER
+    {
+        SetFont("CONFONT");
+        HudMessage(s:"Turn on the \cgthermal generator\c- to supply base with power."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.04, 3.0, 1.0);
+        Delay(70);
+        SetFont("CONFONT");
+        HudMessage(s:"If you are lost, use the map and follow the markers."; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.5, 3.0, 1.0);
+    }
 }

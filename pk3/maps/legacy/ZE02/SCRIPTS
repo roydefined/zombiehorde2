@@ -9,126 +9,126 @@
 
 strict namespace
 {
-	script "ze02_open" open
-	{
-		Sector_SetColor(2, 0, 0, 205);
-	}
+    script "ze02_open" open
+    {
+        Sector_SetColor(2, 0, 0, 205);
+    }
 
-	/* RESIST EVENT */
-	script "ze02_internal_event_resistelapsed" (raw packetRaw)
-	{
-		Event::ReceiveTimerElapsed((str)packetRaw);
-		int index = Event::GetReceiveData(0);
+    /* RESIST EVENT */
+    script "ze02_internal_event_resistelapsed" (raw packetRaw)
+    {
+        Event::ReceiveTimerElapsed((str)packetRaw);
+        int index = Event::GetReceiveData(0);
 
-		switch(index)
-		{
-			case 0:
-				Floor_LowerByValue(17, 8, 136);
-				break;
-			case 1:
-				Floor_LowerByValue(15, 8, 136);
-				break;
-		}
-	}
+        switch(index)
+        {
+            case 0:
+                Floor_LowerByValue(17, 8, 136);
+                break;
+            case 1:
+                Floor_LowerByValue(15, 8, 136);
+                break;
+        }
+    }
 
-	Script 4 (void) // Volcano Reached
-	{
+    Script 4 (void) // Volcano Reached
+    {
 
-		Ceiling_RaiseByValue(14, 8, 64);
-		Radius_Quake(2, 70, 0, 10, 15);
+        Ceiling_RaiseByValue(14, 8, 64);
+        Radius_Quake(2, 70, 0, 10, 15);
 
-	}
+    }
 
-	Script 7 (void)  // Volcanic erruption
-	{
-		Floor_LowerByValue(16, 2, 16);
-		Ceiling_LowerByValue(16, 2, 16);
-		Floor_LowerByValue(19, 2, 16);
+    Script 7 (void)  // Volcanic erruption
+    {
+        Floor_LowerByValue(16, 2, 16);
+        Ceiling_LowerByValue(16, 2, 16);
+        Floor_LowerByValue(19, 2, 16);
 
-		SetFont("CONFONT");
-		HudMessageBold(n:0, s:" has ignited the dynamites!\nPrepare for a huge volcanic eruption!!";
-					HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+        SetFont("CONFONT");
+        HudMessageBold(n:0, s:" has ignited the dynamites!\nPrepare for a huge volcanic eruption!!";
+                    HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
 
-		SetActivator(-1);
+        SetActivator(-1);
 
-		Delay(35*5);
+        Delay(35*5);
 
-		Thing_Activate(1);
+        Thing_Activate(1);
 
-		Delay(Resist::StartResistByIndex(2));
+        Delay(Resist::StartResistByIndex(2));
 
-		//Generic_Ceiling(14, 2, 64, 5, 16); //ZH2 [AQW]
-		Ceiling_LowerAndCrush(14,2,50,2); //ZH2 [AQW]
-		TagWait(14); //ZH2 [AQW]
-		Ceiling_LowerByValueTimes8(14,16,1); //ZH2 [AQW]
-		Radius_Quake(9, 35*15, 0, 50, 15);
+        //Generic_Ceiling(14, 2, 64, 5, 16); //ZH2 [AQW]
+        Ceiling_LowerAndCrush(14,2,50,2); //ZH2 [AQW]
+        TagWait(14); //ZH2 [AQW]
+        Ceiling_LowerByValueTimes8(14,16,1); //ZH2 [AQW]
+        Radius_Quake(9, 35*15, 0, 50, 15);
 
-		Delay(35*8);
+        Delay(35*8);
 
-		SetFont("BIGFONT");
-		HudMessageBold(s:"\cGWarning : \cKVolcanic Eruption!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"\cGWarning : \cKVolcanic Eruption!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
 
-		Delay(35*3);
+        Delay(35*3);
 
-		AmbientSound("world/volcano1", 127);
+        AmbientSound("world/volcano1", 127);
 
-		Delay(35);
+        Delay(35);
 
-		Game::KillUnsafePlayers();
-	}
+        Game::KillUnsafePlayers();
+    }
 
-	Script 10 (void) // Falling into Lava
-	{
-		Thing_Damage2(0, 200, "Fire");
-		If(Player::GetIsZombie())
-			Teleport(16);
-	}
+    Script 10 (void) // Falling into Lava
+    {
+        Thing_Damage2(0, 200, "Fire");
+        If(Player::GetIsZombie())
+            Teleport(16);
+    }
 
-	/*
-	Script 12 (void) // Lift
-	{
-		SetActivator(-1);
-		Delay(20);
-		Floor_MoveToValue(22, 16, 2052, 0);
-		Ceiling_MoveToValue(22, 16, 2056, 0);
-		Delay(35*5);
-		Floor_MoveToValue(22, 16, 1800, 0);
-		Ceiling_MoveToValue(22, 16, 1804, 0);
-		TagWait(22);
-	}
-	*/
+    /*
+    Script 12 (void) // Lift
+    {
+        SetActivator(-1);
+        Delay(20);
+        Floor_MoveToValue(22, 16, 2052, 0);
+        Ceiling_MoveToValue(22, 16, 2056, 0);
+        Delay(35*5);
+        Floor_MoveToValue(22, 16, 1800, 0);
+        Ceiling_MoveToValue(22, 16, 1804, 0);
+        TagWait(22);
+    }
+    */
 
-	Script 13 (void) // Pillars
-	{
-		PrintBold(n:0, s:" has raised the pillars!\n\nThey will automatically lower in 25 seconds.");
-		SetActivator(-1);
-		Floor_RaiseByValue(23, 16, 128);
-		Delay(35*27);
-		Floor_LowerByValue(23, 16, 128);
-		PrintBold(s:"Pillars lowered!");
-	}
+    Script 13 (void) // Pillars
+    {
+        PrintBold(n:0, s:" has raised the pillars!\n\nThey will automatically lower in 25 seconds.");
+        SetActivator(-1);
+        Floor_RaiseByValue(23, 16, 128);
+        Delay(35*27);
+        Floor_LowerByValue(23, 16, 128);
+        PrintBold(s:"Pillars lowered!");
+    }
 
-	Script 15 (void) // Locker
-	{
-		// TODO: Add remaining checks?
-		//if(!CheckInventory("hasalreadypanicked") || CheckInventory("PanickSpeed") || CheckInventory(WEAPON_SHOTGUN_NAME))
-		if(CheckInventory(WEAPON_SHOTGUN_NAME))
-			terminate;
+    Script 15 (void) // Locker
+    {
+        // TODO: Add remaining checks?
+        //if(!CheckInventory("hasalreadypanicked") || CheckInventory("PanickSpeed") || CheckInventory(WEAPON_SHOTGUN_NAME))
+        if(CheckInventory(WEAPON_SHOTGUN_NAME))
+            terminate;
 
-		if(Player::GetIsHuman())
-		{
-			GiveInventory(WEAPON_SHOTGUN_NAME, 1);
-			ActivatorSound("weapons/PICKUP", 100);
-		}
-	}
+        if(Player::GetIsHuman())
+        {
+            GiveInventory(WEAPON_SHOTGUN_NAME, 1);
+            ActivatorSound("weapons/PICKUP", 100);
+        }
+    }
 
-	Script 16 (void) // Falling into Lava
-	{
-	    if(Player::GetIsHuman())
-	        Thing_Damage2(0, 20, "Fire");
-		else
-	        Thing_Damage2(0, 100, "Fire");
+    Script 16 (void) // Falling into Lava
+    {
+        if(Player::GetIsHuman())
+            Thing_Damage2(0, 20, "Fire");
+        else
+            Thing_Damage2(0, 100, "Fire");
 
-		Teleport(19);
-	}
+        Teleport(19);
+    }
 }

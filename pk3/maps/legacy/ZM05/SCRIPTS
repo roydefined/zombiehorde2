@@ -9,104 +9,104 @@
 
 strict namespace
 {
-	bool LightSwitch[256];
+    bool LightSwitch[256];
 
-	script "zm05_open" open // Setups
-	{
-	    if(random(0,255) < 8)
-	    {
-	        Thing_Move(104, 100, 1);
-	    }
-	    Thing_Move(80, random(81, 83), 1); // Lara's room key
-	    Thing_Move(95, random(96, 98), 1); // Winery key
-	    TranslucentLine(8, 96, 0);
-	    Sector_SetRotation(20, 90, 0);
-	    Sector_SetRotation(22, 90, 0);
-	    Sector_SetRotation(29, 90, 90); // Rotation sol et plafond
-	    Sector_SetRotation(62, 0, 90); // Rotation plafond
-	    Sector_SetRotation(72, 90, 90); // Rotation sol et plafond
-	    TranslucentLine(2, 96, 0);
-	    TranslucentLine(3, 128, 0);
-	    TranslucentLine(22, 64, 0);
-	    Sector_SetCeilingPanning(55, 0, 0, 32, 0);
-	}
+    script "zm05_open" open // Setups
+    {
+        if(random(0,255) < 8)
+        {
+            Thing_Move(104, 100, 1);
+        }
+        Thing_Move(80, random(81, 83), 1); // Lara's room key
+        Thing_Move(95, random(96, 98), 1); // Winery key
+        TranslucentLine(8, 96, 0);
+        Sector_SetRotation(20, 90, 0);
+        Sector_SetRotation(22, 90, 0);
+        Sector_SetRotation(29, 90, 90); // Rotation sol et plafond
+        Sector_SetRotation(62, 0, 90); // Rotation plafond
+        Sector_SetRotation(72, 90, 90); // Rotation sol et plafond
+        TranslucentLine(2, 96, 0);
+        TranslucentLine(3, 128, 0);
+        TranslucentLine(22, 64, 0);
+        Sector_SetCeilingPanning(55, 0, 0, 32, 0);
+    }
 
-	Script "zm05_open_client" OPEN CLIENTSIDE
-	{
-	    // Lights are on
-	    for(int i=0; i<256; i++)
-	        LightSwitch[i] = true;
-	}
+    Script "zm05_open_client" OPEN CLIENTSIDE
+    {
+        // Lights are on
+        for(int i=0; i<256; i++)
+            LightSwitch[i] = true;
+    }
 
-	Script 1 (void) // Door is locked
-	{
-		Print(s:"Lara has sealed this door.");
-		ActivatorSound("sound/locked2", 127);
-		delay(15);
-	}
+    Script 1 (void) // Door is locked
+    {
+        Print(s:"Lara has sealed this door.");
+        ActivatorSound("sound/locked2", 127);
+        delay(15);
+    }
 
-	Script 2 (int lightNumber, int sound) Clientside
-	{
-		if (LightSwitch[lightNumber])
-		{
-			Thing_Deactivate(lightNumber);
-			SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "BSW07B");
-			LightSwitch[lightNumber] = 0;
+    Script 2 (int lightNumber, int sound) Clientside
+    {
+        if (LightSwitch[lightNumber])
+        {
+            Thing_Deactivate(lightNumber);
+            SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "BSW07B");
+            LightSwitch[lightNumber] = 0;
 
-			if(!sound)
-				ActivatorSound("sound/lighton1", 127);
-		}
-		else
-		{
-			Thing_Activate(lightNumber);
-			SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "BSW07A");
-			LightSwitch[lightNumber] = 1;
-			if(!sound)
-				ActivatorSound("sound/lightoff1", 127);
-		}
-	}
+            if(!sound)
+                ActivatorSound("sound/lighton1", 127);
+        }
+        else
+        {
+            Thing_Activate(lightNumber);
+            SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "BSW07A");
+            LightSwitch[lightNumber] = 1;
+            if(!sound)
+                ActivatorSound("sound/lightoff1", 127);
+        }
+    }
 
-	Script 3 (void)
-	{
-	// removed
-	}
+    Script 3 (void)
+    {
+    // removed
+    }
 
-	Script 4 (void) // Can't escape!
-	{
-		Print(s:"The main door is locked.");
-		ActivatorSound("sound/locked1", 127);
-		delay(15);
-	}
+    Script 4 (void) // Can't escape!
+    {
+        Print(s:"The main door is locked.");
+        ActivatorSound("sound/locked1", 127);
+        delay(15);
+    }
 
-	Script 5 (void) // Not accessible anymore
-	{
-		Print(s:"That part of the mansion is under renovation.");
-		ActivatorSound("sound/locked2", 127);
-		delay(15);
-	}
+    Script 5 (void) // Not accessible anymore
+    {
+        Print(s:"That part of the mansion is under renovation.");
+        ActivatorSound("sound/locked2", 127);
+        delay(15);
+    }
 
-	Script 6 (void) // cupboard
-	{
-		Print(s:"This cupboard won't open.");
-		ActivatorSound("sound/locked1", 127);
-		delay(15);
-	}
+    Script 6 (void) // cupboard
+    {
+        Print(s:"This cupboard won't open.");
+        ActivatorSound("sound/locked1", 127);
+        delay(15);
+    }
 
-	// TODO: Is this called?
-	Script 7 (void)
-	{
-		// TODO: Implement. This gives a bonus in ZH1
-		//Acs_ExecuteAlways(164, 0, PlayerNumber(), 0, 0);
-	}
+    // TODO: Is this called?
+    Script 7 (void)
+    {
+        // TODO: Implement. This gives a bonus in ZH1
+        //Acs_ExecuteAlways(164, 0, PlayerNumber(), 0, 0);
+    }
 
-	Script 8 Enter
-	{
-		GiveInventory(FLARE_ITEM, 1);
-	}
+    Script 8 Enter
+    {
+        GiveInventory(FLARE_ITEM, 1);
+    }
 
-	Script 9 (void)
-	{
-		Print(s:"The fire is blocking the exit.");
-		delay(15);
-	}
+    Script 9 (void)
+    {
+        Print(s:"The fire is blocking the exit.");
+        delay(15);
+    }
 }

@@ -9,287 +9,287 @@
 
 strict namespace
 {
-	int ruby = 0;
-	int sapphire = 0;
-	int secondpass = 0;
-	int resist1 = 20;
-	int resist2 = 30;
-	int resist3 = 60;
+    int ruby = 0;
+    int sapphire = 0;
+    int secondpass = 0;
+    int resist1 = 20;
+    int resist2 = 30;
+    int resist3 = 60;
 
-	bool switchactivated = false;
+    bool switchactivated = false;
 
-	Script "ze13_open" open
-	{
-		scroll_wall(5,0,-5,0,2);
-		scroll_wall(5,0,-5,1,2);
-		delay(70);
-		SetFont("ze13logo");
-		HudMessageBold(s:"A"; HUDMSG_FADEINOUT, 1, 0, 0.5, 0.2, 3, 3.0, 2.0, 2.0);
-		SetFont("CONFONT");
-		HudMessageBold(s:"By Dr. Doctor"; HUDMSG_FADEINOUT, 2, 0, 0.8, 0.38, 3, 3.0, 2.0, 2.0);
-	}
+    Script "ze13_open" open
+    {
+        scroll_wall(5,0,-5,0,2);
+        scroll_wall(5,0,-5,1,2);
+        delay(70);
+        SetFont("ze13logo");
+        HudMessageBold(s:"A"; HUDMSG_FADEINOUT, 1, 0, 0.5, 0.2, 3, 3.0, 2.0, 2.0);
+        SetFont("CONFONT");
+        HudMessageBold(s:"By Dr. Doctor"; HUDMSG_FADEINOUT, 2, 0, 0.8, 0.38, 3, 3.0, 2.0, 2.0);
+    }
 
-	/* RESIST EVENT */
-	script "ze13_internal_event_resistelapsed" (raw packetRaw)
-	{
-		Event::ReceiveTimerElapsed((str)packetRaw);
-		int index = Event::GetReceiveData(0);
+    /* RESIST EVENT */
+    script "ze13_internal_event_resistelapsed" (raw packetRaw)
+    {
+        Event::ReceiveTimerElapsed((str)packetRaw);
+        int index = Event::GetReceiveData(0);
 
-		switch(index)
-		{
-			case 0:
-				floor_Raisetonearest(29,128);
-				ceiling_Raisetonearest(36,128);
-				break;
+        switch(index)
+        {
+            case 0:
+                floor_Raisetonearest(29,128);
+                ceiling_Raisetonearest(36,128);
+                break;
 
-			case 1:
-				floor_Raisetonearest(32,128);
-				ceiling_Raisetonearest(37,128);
-				break;
+            case 1:
+                floor_Raisetonearest(32,128);
+                ceiling_Raisetonearest(37,128);
+                break;
 
-			case 2:
-				Ceiling_raisetonearest(16,32);
-				thing_destroy(35);
-				thing_activate(36);
-				thing_activate(37);
-				break;
+            case 2:
+                Ceiling_raisetonearest(16,32);
+                thing_destroy(35);
+                thing_activate(36);
+                thing_activate(37);
+                break;
 
-			case 3:
-				Ceiling_raisetonearest(30,32);
-				break;
-		}
-	}
+            case 3:
+                Ceiling_raisetonearest(30,32);
+                break;
+        }
+    }
 
-	script 2 (void)
-	{
-		PrintBold(n:0, s:"\c- has raised the gate! It will lower in \ca20 \c-seconds");
-		SetActivator(-1);
-		floor_raisebyvalue(5,32, 128);
-		delay(35*20);
-		floor_lowerbyvalue(5,32, 128);
-		PrintBold(s:"Gate lowered!");
-	}
+    script 2 (void)
+    {
+        PrintBold(n:0, s:"\c- has raised the gate! It will lower in \ca20 \c-seconds");
+        SetActivator(-1);
+        floor_raisebyvalue(5,32, 128);
+        delay(35*20);
+        floor_lowerbyvalue(5,32, 128);
+        PrintBold(s:"Gate lowered!");
+    }
 
-	script 4 (void) //2nd door
-	{
-		if(GetActorZ(0) >= 592.0 && !switchactivated)
-		{
-			PrintBold(s:"The secondary door has been opened!");
-			ceiling_raisetonearest(8,128);
-			thing_destroy(37);
-			switchactivated=true;
-		}
-	}
+    script 4 (void) //2nd door
+    {
+        if(GetActorZ(0) >= 592.0 && !switchactivated)
+        {
+            PrintBold(s:"The secondary door has been opened!");
+            ceiling_raisetonearest(8,128);
+            thing_destroy(37);
+            switchactivated=true;
+        }
+    }
 
-	script 5 (void) //start music
-	{
-		Music::PlayMusic("CASTLE1", 0);
-		SetFont("CONFONT");
-		HudMessageBold(s:"\ccYou need a \cgBlood Ruby \ccand a \chNight Sapphire \n\ccto proceed deeper into the castle"; HUDMSG_PLAIN, 1, CR_GOLD, 0.5, 0.25, 5.0);
-	}
+    script 5 (void) //start music
+    {
+        Music::PlayMusic("CASTLE1", 0);
+        SetFont("CONFONT");
+        HudMessageBold(s:"\ccYou need a \cgBlood Ruby \ccand a \chNight Sapphire \n\ccto proceed deeper into the castle"; HUDMSG_PLAIN, 1, CR_GOLD, 0.5, 0.25, 5.0);
+    }
 
-	//===================EPITAPH DOOR============================
+    //===================EPITAPH DOOR============================
 
-	Script 6 (void) // EPITAPH - Rubydoor
-	{
-		if(CheckInventory(KEY_BLOODRUBY_NAME))
-		{
-			ClearLineSpecial();
+    Script 6 (void) // EPITAPH - Rubydoor
+    {
+        if(CheckInventory(KEY_BLOODRUBY_NAME))
+        {
+            ClearLineSpecial();
 
-			//do other things here
-			Print(s:"\c- A Blood Ruby has been placed!");
-			SetLineTexture(2, SIDE_FRONT, TEXTURE_BOTTOM, "EPITAPH2");
-			ruby = 1;
+            //do other things here
+            Print(s:"\c- A Blood Ruby has been placed!");
+            SetLineTexture(2, SIDE_FRONT, TEXTURE_BOTTOM, "EPITAPH2");
+            ruby = 1;
 
-			if(sapphire==1)
-				acs_execute(8,0,0,0,0);
-		}
-		else Print(s:"A Blood Ruby is needed!");
-	}
-
-
-	Script 7 (void) // EPITAPH - Sapphiredoor
-	{
-		if(CheckInventory(KEY_NIGHTSAPPHIRE_NAME))
-		{
-			ClearLineSpecial();
-
-			//do other things here
-			Print(s:"\c- A Night Sapphire has been placed!");
-			SetLineTexture(3, SIDE_FRONT, TEXTURE_BOTTOM, "EPITAPH2");
-			sapphire = 1;
-			if(ruby==1)
-				acs_execute(8,0,0,0,0);
-		}
-		else Print(s:"A Night Sapphire is needed!");
-	}
+            if(sapphire==1)
+                acs_execute(8,0,0,0,0);
+        }
+        else Print(s:"A Blood Ruby is needed!");
+    }
 
 
-	Script 8  (void)// EPITAPH - Open
-	{
-		if(sapphire==1 && ruby==1)
-		{
-			acs_execute(53,0,0,0,0);
-			PrintBold(s:"\c- The way to the castle center has been opened!");
-			floor_lowertonearest(11,16);
-		}
-		else Print(s:"");
-	}
+    Script 7 (void) // EPITAPH - Sapphiredoor
+    {
+        if(CheckInventory(KEY_NIGHTSAPPHIRE_NAME))
+        {
+            ClearLineSpecial();
 
-	//===================Chapel Secret============================
+            //do other things here
+            Print(s:"\c- A Night Sapphire has been placed!");
+            SetLineTexture(3, SIDE_FRONT, TEXTURE_BOTTOM, "EPITAPH2");
+            sapphire = 1;
+            if(ruby==1)
+                acs_execute(8,0,0,0,0);
+        }
+        else Print(s:"A Night Sapphire is needed!");
+    }
 
 
-	Script 9  (void) // Chapel Secret
-	{
-		SetActivator(-1);
-		Print(s:"\c- Something happened somewhere!");
-		floor_lowerbyvalue(15,32,96);
-		Ceiling_lowerbyvalue(15,32,96);
-		delay(35*30);
-		floor_raisebyvalue(15,32,96);
-		Ceiling_raisebyvalue(15,32,96);
-	}
+    Script 8  (void)// EPITAPH - Open
+    {
+        if(sapphire==1 && ruby==1)
+        {
+            acs_execute(53,0,0,0,0);
+            PrintBold(s:"\c- The way to the castle center has been opened!");
+            floor_lowertonearest(11,16);
+        }
+        else Print(s:"");
+    }
 
-	Script 30 (void) // PICKUP CROSS
-	{
-		PrintBold(s:"\cgWARNING!\n",n:0, s:"\cj has picked up the \cvCross!");
-	}
+    //===================Chapel Secret============================
 
-	Script 13 (void) // final -death approches
-	{
-		SetFont("CONFONT");
-		HudMessageBold(s:"\cgDeath is seeking out intruders!\n\ccGet to the catacombs before it's too late!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-		SetActivator(-1);
-		Delay(35*3);
-		Delay(Resist::StartResistByIndex(4));
 
-		// Changed in ZH2: The door no longer inflicts instant death, instead delayed damage using hexen's crushing style.
-		// 2 is Hexen crushing mode.
-		Ceiling_LowerAndCrush(31, 16, 500, 2);
-		Tagwait(31);
-		Ceiling_LowerByValueTimes8(31, 16, 1);
+    Script 9  (void) // Chapel Secret
+    {
+        SetActivator(-1);
+        Print(s:"\c- Something happened somewhere!");
+        floor_lowerbyvalue(15,32,96);
+        Ceiling_lowerbyvalue(15,32,96);
+        delay(35*30);
+        floor_raisebyvalue(15,32,96);
+        Ceiling_raisebyvalue(15,32,96);
+    }
 
-		Delay(35*3);
-		SetFont("BIGFONT");
-		HudMessageBold(s:"\cGWarning : \cKDeath is Here!!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-		Delay(35*5);
-		Game::KillUnsafePlayers();
-	}
+    Script 30 (void) // PICKUP CROSS
+    {
+        PrintBold(s:"\cgWARNING!\n",n:0, s:"\cj has picked up the \cvCross!");
+    }
 
-	Script 40 (void) //Shop=============================
-	{
-		if (Player::GetIsHuman())
-		{
-			if(CheckInventory(CURRENCY_CASH_NAME) < 50)
-			{
-				print(s:"You don't have enough gold.");
-				terminate;
-			}
+    Script 13 (void) // final -death approches
+    {
+        SetFont("CONFONT");
+        HudMessageBold(s:"\cgDeath is seeking out intruders!\n\ccGet to the catacombs before it's too late!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+        SetActivator(-1);
+        Delay(35*3);
+        Delay(Resist::StartResistByIndex(4));
 
-			else if(CheckInventory(LEAPSTONE_ITEM))
-			{
-				print(s:"You already have a Leap Stone.");
-				terminate;
-			}
+        // Changed in ZH2: The door no longer inflicts instant death, instead delayed damage using hexen's crushing style.
+        // 2 is Hexen crushing mode.
+        Ceiling_LowerAndCrush(31, 16, 500, 2);
+        Tagwait(31);
+        Ceiling_LowerByValueTimes8(31, 16, 1);
 
-			else
-			{
-				print(s:"Here's your Leap Stone. Use it wisely.");
-				SpawnSpot (LEAPSTONE_ITEM, 34, 0);
-				TakeInventory(CURRENCY_CASH_NAME, 50);
-				activatorsound("item/cash",128);
-			}
-		}
-		else if(Player::GetIsZombie())
-			print(s:"I don't sell to zombie scum!");
+        Delay(35*3);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"\cGWarning : \cKDeath is Here!!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+        Delay(35*5);
+        Game::KillUnsafePlayers();
+    }
 
-	}
+    Script 40 (void) //Shop=============================
+    {
+        if (Player::GetIsHuman())
+        {
+            if(CheckInventory(CURRENCY_CASH_NAME) < 50)
+            {
+                print(s:"You don't have enough gold.");
+                terminate;
+            }
 
-	// Changed in ZH2: The door no longer inflicts instant death, instead delayed damage using hexen's crushing style.
-	script 41 (void)
-	{
-		PrintBold(n:0, s:"\c- has locked the dining room");
+            else if(CheckInventory(LEAPSTONE_ITEM))
+            {
+                print(s:"You already have a Leap Stone.");
+                terminate;
+            }
 
-		// 2 is Hexen crushing mode.
-		Ceiling_LowerAndCrush(35, 64, 5, 2);
-		Tagwait(35);
-		Ceiling_LowerByValueTimes8(35, 64, 1);
-	}
+            else
+            {
+                print(s:"Here's your Leap Stone. Use it wisely.");
+                SpawnSpot (LEAPSTONE_ITEM, 34, 0);
+                TakeInventory(CURRENCY_CASH_NAME, 50);
+                activatorsound("item/cash",128);
+            }
+        }
+        else if(Player::GetIsZombie())
+            print(s:"I don't sell to zombie scum!");
 
-	//OTHER=====================
+    }
 
-	script 53 (void)
-	{
-		SetActivator(-1);
-		SetLineBlocking(6, OFF);
-		TranslucentLine(6,255,0);
-		delay(1);
-		TranslucentLine(6,254,0);
-		delay(1);
-		TranslucentLine(6,253,0);
-		delay(1);
-		TranslucentLine(6,252,0);
-		delay(1);
-		TranslucentLine(6,251,0);
-		delay(1);
-		TranslucentLine(6,250,0);
-		delay(5);
-		TranslucentLine(6,240,0);
-		delay(5);
-		TranslucentLine(6,230,0);
-		delay(5);
-		TranslucentLine(6,220,0);
-		delay(5);
-		TranslucentLine(6,210,0);
-		delay(5);
-		TranslucentLine(6,200,0);
-		delay(5);
-		TranslucentLine(6,190,0);
-		delay(5);
-		TranslucentLine(6,180,0);
-		delay(5);
-		TranslucentLine(6,170,0);
-		delay(5);
-		TranslucentLine(6,160,0);
-		delay(5);
-		TranslucentLine(6,150,0);
-		delay(5);
-		TranslucentLine(6,140,0);
-		delay(5);
-		TranslucentLine(6,130,0);
-		delay(5);
-		TranslucentLine(6,120,0);
-		delay(5);
-		TranslucentLine(6,110,0);
-		delay(5);
-		TranslucentLine(6,100,0);
-		delay(5);
-		TranslucentLine(6,90,0);
-		delay(5);
-		TranslucentLine(6,80,0);
-		delay(5);
-		TranslucentLine(6,70,0);
-		delay(5);
-		TranslucentLine(6,60,0);
-		delay(5);
-		TranslucentLine(6,50,0);
-		delay(5);
-		TranslucentLine(6,40,0);
-		delay(5);
-		TranslucentLine(6,30,0);
-		delay(5);
-		TranslucentLine(6,20,0);
-		delay(5);
-		TranslucentLine(6,10,0);
-		delay(5);
-		TranslucentLine(6,0,0);
-		delay(5);
-		acs_terminate(6,0);
-	}
+    // Changed in ZH2: The door no longer inflicts instant death, instead delayed damage using hexen's crushing style.
+    script 41 (void)
+    {
+        PrintBold(n:0, s:"\c- has locked the dining room");
 
-	script 54 (void) //zombie blocker
-	{
-		if(Player::GetIsZombie())
-			ThrustThing(128, 32, 1, 0);
-	}
+        // 2 is Hexen crushing mode.
+        Ceiling_LowerAndCrush(35, 64, 5, 2);
+        Tagwait(35);
+        Ceiling_LowerByValueTimes8(35, 64, 1);
+    }
+
+    //OTHER=====================
+
+    script 53 (void)
+    {
+        SetActivator(-1);
+        SetLineBlocking(6, OFF);
+        TranslucentLine(6,255,0);
+        delay(1);
+        TranslucentLine(6,254,0);
+        delay(1);
+        TranslucentLine(6,253,0);
+        delay(1);
+        TranslucentLine(6,252,0);
+        delay(1);
+        TranslucentLine(6,251,0);
+        delay(1);
+        TranslucentLine(6,250,0);
+        delay(5);
+        TranslucentLine(6,240,0);
+        delay(5);
+        TranslucentLine(6,230,0);
+        delay(5);
+        TranslucentLine(6,220,0);
+        delay(5);
+        TranslucentLine(6,210,0);
+        delay(5);
+        TranslucentLine(6,200,0);
+        delay(5);
+        TranslucentLine(6,190,0);
+        delay(5);
+        TranslucentLine(6,180,0);
+        delay(5);
+        TranslucentLine(6,170,0);
+        delay(5);
+        TranslucentLine(6,160,0);
+        delay(5);
+        TranslucentLine(6,150,0);
+        delay(5);
+        TranslucentLine(6,140,0);
+        delay(5);
+        TranslucentLine(6,130,0);
+        delay(5);
+        TranslucentLine(6,120,0);
+        delay(5);
+        TranslucentLine(6,110,0);
+        delay(5);
+        TranslucentLine(6,100,0);
+        delay(5);
+        TranslucentLine(6,90,0);
+        delay(5);
+        TranslucentLine(6,80,0);
+        delay(5);
+        TranslucentLine(6,70,0);
+        delay(5);
+        TranslucentLine(6,60,0);
+        delay(5);
+        TranslucentLine(6,50,0);
+        delay(5);
+        TranslucentLine(6,40,0);
+        delay(5);
+        TranslucentLine(6,30,0);
+        delay(5);
+        TranslucentLine(6,20,0);
+        delay(5);
+        TranslucentLine(6,10,0);
+        delay(5);
+        TranslucentLine(6,0,0);
+        delay(5);
+        acs_terminate(6,0);
+    }
+
+    script 54 (void) //zombie blocker
+    {
+        if(Player::GetIsZombie())
+            ThrustThing(128, 32, 1, 0);
+    }
 }

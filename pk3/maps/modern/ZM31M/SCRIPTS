@@ -11,1558 +11,1558 @@
 
 strict namespace
 {
-	#define HUDID_INTERACTION 60
-	#define HUDID_TEMPERATURE 50
-
-	// The TID that is used for synchronising the event
-	#define SYNC_EVENT 100
-
-	// Note: The base is the base value shown (and lowest value).
-	#define TEMPERATURE_MAX 9
-	#define TEMPERATURE_BASE 28
-
-	// Tics below indicates the delay between temperature changes used.
-	#define TEMPERATURE_TIC_NORMAL 35 * 4
-	#define TEMPERATURE_TIC_NIGHT 35 * 2
-	#define TEMPERATURE_TIC_WATER 28
-	#define TEMPERATURE_TIC_WARM 18
-
-	#define TEMPERATURE_ISCOLD_ITEM "ZH2ZM31MIsCold"
-	#define TEMPERATURE_VALUE_ITEM "ZH2ZM31MTemperature"
-	#define TEMPERATURE_NEXTTIC_ITEM "ZH2ZM31MNextTemperatureTic"
-	#define IN_BUNKER_ITEM "ZH2ZM31MIsInBunker"
-
-	#define AT_ELEVATOR_DOORS_ITEM "ZH2ZM31MAtElevatorDoors"
-	#define IN_ELEVATOR_ITEM "ZH2ZM31MInElevator"
-
-	#define EVENT_NIGHT_STARTTICS 35 * 30
-	#define EVENT_NUKE_STARTTICS 35 * 36
-	#define EVENT_NUKE_BLOWOVERTICS 35 * 11
-
-	internal struct NukeBoundaryRockT
-	{
-		int SectorTag;
-		int Height;
-	};
-
-	internal struct ElevatorDataT
-	{
-		int PolyTagRight;
-		int PolyRightAngle;
-		int DingSoundAndSourceTeleportTag;
-		int SourceSectorTag;
-		int TempTargetTeleportTag;
-		int TempTargetSectorTag;
-		int TargetTeleportTag;
-		bool IsInBunker;
-		int CrushThrustAngle;
-	};
-
-	internal enum
-	{
-		EVENTSTATE_NONE,
-		EVENTSTATE_NIGHT,
-		EVENTSTATE_NUKE
-	};
-
-	internal int _eventState = EVENTSTATE_NONE;
-	internal int _eventStartTimestamp = 0;
-
-	// Used with the temperature gauge, which hooks on the HUD.
-	internal Hud::HudHookDataT? _hudHookDataRef;
-
-	// Guardhouse / toxic reactor room / lab unlocked
-	internal bool _guardhouseUnlocked,
-				  _crossRoomUnlocked,
-				  _labUnlocked;
-
-	// Player in toxic reactor room / decontermination room
-	internal bool _inToxicRoom[BCSUtils::MAX_PLAYERS],
-				  _inDeconterminationRoom[BCSUtils::MAX_PLAYERS];
-
-	// Temperature
-	internal bool _firstDamageTic[BCSUtils::MAX_PLAYERS];
-	internal bool _isColdLast[BCSUtils::MAX_PLAYERS];
-	internal bool _hasExplainedTemperature;
-
-	internal NukeBoundaryRockT _nukeBoundaryRocks[6] =
-	{
-		{ 36, 176 },
-		{ 39, 120 },
-		{ 40, 88 },
-		{ 41, 136 },
-		{ 43, 32 },
-		{ 44, 16 },
-	};
-
-	// Shelter markers for the nuke effect.
-	// Map amrkers that show where to hide.
-	internal int _shelterMarkers[2] = {
-		37, 38
-	};
-
-	internal bool _elevatorInUse[4];
-
-	// Elevator data
-	internal ElevatorDataT _elevatorData[4] = {
-		{ 1, 192, 31, 53, 50, 54, 34, false, 128 },
-		{ 3, 192, 34, 55, 21, 32, 31, true, 128 },
-		{ 5, 128, 36, 30, 22, 33, 39, false, 64 },
-		{ 7, 128, 39, 56, 52, 51, 36, true, 64 }
-	};
-
-	#define LOGSOURCE "Map"
-
-	internal void SetLevelAtmosphere (int fade, int color1, int color2)
-	{
-		static int colorTags[] =
-		{
-			0, 1, 3, 5, 6, 10, 36,
-			25, 26, 27, 28, 29
-		};
-
-		// General relevant map geometry.
-		for(int i = 0; i < lengthof(colorTags); ++i)
-		{
-			sector_setfade(colorTags[i], fade, fade, fade);
-			sector_setcolor(colorTags[i], color1, color2, color2);
-		}
-
-		// Boundary rocks.
-		for (i = 0; i < lengthof(_nukeBoundaryRocks); ++i)
-		{
-			sector_setfade(_nukeBoundaryRocks[i].SectorTag, fade, fade, fade);
-			sector_setcolor(_nukeBoundaryRocks[i].SectorTag, color1, color2, color2);
-		}
-	}
-
-	Script "OnOpen" open
-	{
-		// Red key card spawner
-		spawnspot(KEY_RED_KEYCARD, random(10, 16));
-
-		// The underground water stream
-		scroll_floor(4, 0, 100, CARRY);
-		scroll_ceiling(5, 0, 150, SCROLL);
-
-		// Holy cross room
-		sector_setfade(14, 0, 255, 0);
-		sector_setcolor(14, 255, 200, 255);
-		sector_setfade(15, 0, 255, 0);
-		sector_setcolor(15, 255, 200, 255);
-
-		// Skybox
-		scroll_floor(48, 1, 10, 0);
-		scroll_floor(49, 3, 5, 0);
-
-		// Reset nuke boundaries to display snow.
-		for (int i = 0; i < lengthof(_nukeBoundaryRocks); ++i)
-		{
-			int sectorTag = _nukeBoundaryRocks[i].SectorTag;
-			Floor_MoveToValue(sectorTag, 999, 0);
-			ChangeFloor(sectorTag, "SNOW");
-		}
-
-		ACS_NamedExecute("TemperatureLoop", 0);
-
-		int gameTime = GetCvar("sv_zh2_zm31meventtics");
-		while (--gameTime)
-			delay(1);
-
-		// Events. In case of random pick:
-		// - Night: 2/6
-		// - Nuke:  1/6
-		// - Nothing: 3/6
-		int eventIndex = GetCVar("sv_zh2_zm31mevent");
-		if (eventIndex == 0)
-		{
-			int chance = Random(0, 5);
-			switch(chance)
-			{
-				case 0:
-				case 1:
-					eventIndex = 2;
-					break;
-				case 2:
-					eventIndex = 3;
-					break;
-				default:
-					eventIndex = 1;
-					break;
-			}
-		}
-
-		str event;
-		switch(eventIndex)
-		{
-			case 2: event = "Event_Night"; break;
-			case 3: event = "Event_Nuke"; break;
-			default: return;
-		}
-
-		if (!ACS_NamedExecute(event, 0))
-			Logger::LogError(LOGSOURCE, StrParam(s:"Failed to call script ", s:event, s:"."));
-	}
-
-	Script "OnOpenClient" Open CLIENTSIDE
-	{
-		ClientSyncEvent();
-
-		Hook::Register(Hook::HOOK_CLIENTDRAWHUD, OnDrawTemperatureGaugeHud);
-
-		// Atmosphere and music depends on current events.
-		// If clients join later and an event has triggered, this ensures the atmosphere and music is correct.
-		// FYI, if the event JUST started, they still don't get the correct data since they didn't trigger the script.
-		// These checks ensure everything works.
-		if (_eventState == EVENTSTATE_NONE)
-		{
-			Music::SetDefaultMusic("PSXMUS05");
-			Music::PlayDefaultMusic();
-
-			SetLevelAtmosphere(156, 255, 255);
-		}
-		else if (_eventState == EVENTSTATE_NIGHT)
-		{
-			Music::SetDefaultMusic("SUBZERO");
-			Music::PlayDefaultMusic();
-
-			SetLevelAtmosphere(20, 120, 120);
-		}
-		else
-		{
-			Music::SetDefaultMusic("DISPOSAL");
-			Music::PlayDefaultMusic();
-
-			SetLevelAtmosphere(10, 255, 10);
-			SpawnSpot("ZH2ZM31MNuke", 6);
-			ChangeFloor(48, "-");
-			ChangeFloor(49, "-");
-
-			// Nuke wind
-			Thing_Activate(57);
-		}
-
-		ACS_NamedExecute("FrozenDebug", 0);
-	}
-
-	script "enter" enter
-	{
-		ACS_NamedExecuteAlways("enter_respawn", 0);
-	}
-
-	script "respawn" enter
-	{
-		ACS_NamedExecuteAlways("enter_respawn", 0);
-	}
-
-	script "enter_respawn"
-	{
-		SetIsCold(CheckActorCeilingTexture(ActivatorTid(), "F_SKY1"));
-		SetTemperature(TEMPERATURE_MAX);
-
-		UnsetPlayerIsInElevator(PlayerNumber());
-		UnsetPlayerIsAtElevatorDoors(PlayerNumber());
-
-		_inToxicRoom[PlayerNumber()] = false;
-		_inDeconterminationRoom[PlayerNumber()] = false;
-
-		SetIsInBunker(false);
-	}
-
-	script "enterClient" enter clientside
-	{
-		if (ConsolePlayerNumber() != PlayerNumber())
-			terminate;
-
-		// Small delay to give the state some time to prepare.
-		delay(const: 5);
-
-		while(BCSUtils::IsAlive())
-		{
-			BCSUtils::SetActivatorToConsolePlayer();
-			TemperatureTickClient();
-			Delay(const: 1);
-		}
-	}
-
-	// When players turn zombie their temperature must reset in case they revert later on.
-	script "zm31m_internal_event_playerspeciechanged" (raw packetRaw)
-	{
-		Event::ReceivePlayerSpecieChanged((str)packetRaw);
-		int id = Event::GetReceiveData(0);
-		int specie = Event::GetReceiveData(1);
-
-		if (specie == Player::SPECIEZOMBIE)
-		{
-			SetPlayerIsCold(id, false);
-			SetPlayerTemperature(id, TEMPERATURE_MAX);
-		}
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** General scripts
-	** -----------------------------------------------------------------------------
-	*/
-
-	// Interaction messages
-	script 2 (int messageIndex)
-	{
-		static str interactionMessages[10][2] = {
-			{ "The lock is jammed. This door cannot be opened.",  "sound/locked1" },
-			{ "This door is damaged beyond use.",				  (raw)0 },
-			{ "The engine will not start.", 					  (raw)0 },
-			{ "The guardhouse is locked and will not open.", 	  "sound/locked3" },
-			{ "Quarantine protocols have sealed this room.",	  "sound/itemfail1" },
-			{ "The radio is dead. No one will come to help you.", (raw)0 },
-			{ "These guns are just for show.",					  (raw)0 },
-			{ "the gas has spoiled.",							  (raw)0 },
-			{ "Locked. Maybe a terminal can open it.",			  "sound/itemfail1" },
-			{ "This does not appear to be working.",			  (raw)0 }
-		};
-
-		if((messageIndex == 3 && _guardhouseUnlocked) ||
-		   (messageIndex == 8 && _crossRoomUnlocked))
-		{
-
-			// The guardhouse door is unlocked and will open like normal.
-			if (messageIndex == 3)
-			{
-				Door_Raise(7, 32, 140);
-			}
-
-			terminate;
-		}
-
-		setFont("smallfont");
-		SetHudSize(640, 480, false);
-		HudMessage(s:interactionMessages[messageIndex][0]; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
-
-		if (interactionMessages[messageIndex][1] != (raw)0)
-			ActivatorSound(interactionMessages[messageIndex][1], 127);
-	}
-
-	Script 3
-	{
-		static str boundaryMessages[4] =
-		{
-			"This place is too far out in the wilderness to escape on foot.",
-			"I don't feel like freezing to death.",
-			"I'd feel better leaving in a truck.",
-			"Leaving on foot would be suicide."
-		};
-
-		HudMessage(s:"\cj", s:boundaryMessages[random(0, lengthof(boundaryMessages) - 1)]; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-	}
-
-	Script "UnlockLabs"
-	{
-		SetFont("smallfont");
-		SetHudSize(640, 480, FALSE);
-
-		if(!CheckInventory(KEY_RED_KEYCARD))
-		{
-			HudMessage(s:"Clearance required."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
-			delay(35);
-			terminate;
-		}
-
-		ACS_NamedExecute("UnlockLabs_Rest", 0);
-	}
-
-	Script "UnlockLabs_Rest"
-	{
-		SetFont("smallfont");
-		SetHudSize(640, 480, FALSE);
-
-		ClearLineSpecial();
-		Logger::LogBold(StrParam(n:0, s:" has cleared the quarantine. Elevators are now activated."));
-		AmbientSound("world/reveal1", 255);
-		door_open(35, 8);
-
-		_labUnlocked = true;
-	}
-
-	// Guardhouse unlocks after entering it after a while
-	script "EnterGuardHouse"
-	{
-		if(_guardhouseUnlocked)
-			terminate;
-
-		Logger::LogActivator("Upon entering the house, you hear a trigger beneath your feet go off...");
-		delay(35*10);
-		_guardhouseUnlocked = true;
-	}
-
-	Script 20 (int index)
-	{
-		static int flares[3] = { 10, 10, 10 };
-
-		if(Player::GetIsZombie())
-			terminate;
-
-		setFont("smallfont");
-		SetHudSize(640, 480, FALSE);
-
-		if(!flares[index] || CheckInventory(FLARE_ITEM) == 2)
-		{
-			if(!flares[index])
-				HudMessage(s:"This locker has no flares left."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
-			else
-				HudMessage(s:"You've got enough flares!"; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
-
-			LocalAmbientSound("generic/itemlocked", 128);
-			terminate;
-		}
-
-		HudMessage(s:"Grabbed a flare. This locker has ", d:--flares[index], s:" flare", s:(flares[index] != 1 ? "s" : ""), s:" left."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
-		LocalAmbientSound("generic/itemget", 128);
-		GiveInventory(FLARE_ITEM, 1);
-	}
-
-	// Bunker teleport system
-	script "SetInBunker" (int inBunker, int targetTid)
-	{
-		SetIsInBunker(inBunker);
-		Teleport_NoFog(targetTid);
-
-		// Apply velocity if entering, otherwise the teleporting removes it.
-		if (inBunker)
-			SetActorVelocity(ActivatorTID(), 0, 0, GetActorVelZ(ActivatorTID()), FALSE, FALSE);
-
-		NamedExecuteClientScript("SetInBunker_Client", PlayerNumber(), inBunker);
-	}
-
-	script "SetInBunker_Client" (int inBunker) clientside
-	{
-		if (inBunker)
-			Weather::StartEmitterWeather(Weather::EMITTERWEATHER_DUST);
-		else
-			Weather::StopEmitterWeather(Weather::EMITTERWEATHER_DUST);
-	}
-
-	// For debugging.
-	script "FrozenDebug" clientside
-	{
-		if (!Environment::IsDevelopment())
-			terminate;
-
-		while(true)
-		{
-			if (!BCSUtils::SetActivatorToConsolePlayer() || GetCVar("cl_zh2_zm31mdebug") == 0)
-			{
-				Delay(const: 1);
-				continue;
-			}
-
-			SetHudSize(640, 480, FALSE);
-			SetFont("smallfont");
-
-			str message;
-			buildmsg(message = StrParam())
-			{
-				str currentEvent;
-				switch(_eventState)
-				{
-					case EVENTSTATE_NIGHT:
-						currentEvent = "night";
-						break;
-					case EVENTSTATE_NUKE:
-						currentEvent = "nuke";
-						break;
-					default:
-						currentEvent = "none";
-						break;
-				}
-
-				Append(s:"Current event: ", s:currentEvent, s:"\n");
-
-				if (_eventStartTimestamp != 0)
-				{
-					int elapsed = Utils::GetSynchronizedTimer() - _eventStartTimestamp;
-					Append(s:"Elapsed since event start: ", d:elapsed, s:"\n");
-				}
-
-				if (_eventState == EVENTSTATE_NIGHT)
-				{
-					Append(s:"Night falls in: ", d:GetTicsUntilNightFallen(), s:"\n");
-					Append(s:"Night has fallen: ", s:(NightHasFallen() ? "true" : "false"), s:"\n");
-				}
-
-				if (_eventState == EVENTSTATE_NUKE)
-				{
-					Append(s:"Nuke explosion in: ", d:GetTicsUntilDrop(), s:"\n");
-					Append(s:"Nuke has dropped: ", s:(NukeHasDropped() ? "true" : "false"), s:"\n");
-					Append(s:"Nuke has blown over: ", s:(NukeHasBlownOver() ? "true" : "false"), s:"\n");
-				}
-
-				Append(s:"Is cold: ", s:(GetIsCold() ? "true" : "false"), s:"\n");
-				Append(s:"Temperature: ", d:GetTemperature(), s:"\n");
-				Append(s:"Next temperature update: ", d:(GetNextTemperatureTic() - Utils::GetSynchronizedTimer()), s:"\n");
-
-				Append(s:"Is in bunker: ", s:(GetIsInBunker() ? "true" : "false"), s:"\n");
-
-				Append(s:"Is at elevator doors: ", d:CheckActorInventory(ActivatorTid(), AT_ELEVATOR_DOORS_ITEM), s:"\n");
-				Append(s:"Is in elevator: ", d:CheckActorInventory(ActivatorTid(), IN_ELEVATOR_ITEM), s:"\n");
-			}
-
-			HudMessage(s:message; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 45.0, 0.03);
-			Delay(const: 1);
-		}
-	}
-
-	internal bool GetIsInBunker()
-	{
-		return GetPlayerIsInBunker(PlayerNumber());
-	}
-
-	internal bool GetPlayerIsInBunker(int id)
-	{
-		return CheckActorInventory(Identity::GetTid(id), IN_BUNKER_ITEM);
-	}
-
-	internal void SetIsInBunker(bool value)
-	{
-		SetPlayerIsInBunker(PlayerNumber(), value);
-	}
-
-	internal void SetPlayerIsInBunker(int id, bool value)
-	{
-		BCSUtils::SetActorInventory(Identity::GetTid(id), IN_BUNKER_ITEM, value);
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** Holy cross flow
-	** -----------------------------------------------------------------------------
-	*/
-
-	script 21
-	{
-		if (Player::GetIsZombie())
-			terminate;
-
-		setFont("smallfont");
-		SetHudSize(640, 480, FALSE);
-		HudMessage(s:"You thoroughly search the locker"; HUDMSG_TYPEON, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 4.0, 0.04, 0);
-
-		int searchingCount = 35*5;
-		while (--searchingCount)
-		{
-			if (Utils::GetIsMoving() || Player::GetIsZombie())
-			{
-				if (Player::GetIsZombie())
-				{
-					BCSUtils::ClearHudMessage(HUDID_INTERACTION);
-					BCSUtils::ClearHudMessage(HUDID_INTERACTION+1);
-				}
-				else
-				{
-					HudMessage(s:"You are unable to properly search the locker when moving."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
-					BCSUtils::ClearHudMessage(HUDID_INTERACTION+1);
-				}
-
-				terminate;
-			}
-
-			if (searchingCount == 35*4)
-				HudMessage(s:"..."; HUDMSG_TYPEON, HUDID_INTERACTION+1, CR_WHITE, 445.0, 120.0, 0, 1.0, 0.0);
-
-			delay(1);
-		}
-
-		HudMessage(s:"The locker is stuffed with radiation suits."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 1.0);
-		HudMessage(s:"You take one, but what use would it have here?"; HUDMSG_FADEOUT, HUDID_INTERACTION+1, CR_WHITE, 320.0, 130.0, 3.0, 1.0);
-		GiveInventory("ZH2ZM31MIronFeet", 1);
-	}
-
-	// Opening the cross room
-	script "OpenCrossRoom"
-	{
-		ClearLineSpecial();
-		ActivatorSound("switches/normbutn", 255);
-		SetActivator(-1);
-		_crossRoomUnlocked = true;
-
-		floor_movetovalue(31, 10, -248);
-		ceiling_movetovalue(31, 10, -144);
-		tagwait(31);
-
-		delay(35);
-
-		floor_movetovalue(34, 10, -248);
-		ceiling_movetovalue(34, 10, -144);
-	}
-
-	// Hacking for the holy cross
-	script "HackHolyCross"
-	{
-		if(Player::GetIsZombie())
-			terminate;
-
-		setFont("smallfont");
-		SetHudSize(640, 480, FALSE);
-
-		int hackingPercentage = 100;
-		while (hackingPercentage)
-		{
-			if (Utils::GetIsMoving() || Player::GetIsZombie())
-			{
-				if (Player::GetIsZombie())
-				{
-					BCSUtils::ClearHudMessage(HUDID_INTERACTION);
-					BCSUtils::ClearHudMessage(HUDID_INTERACTION+1);
-				} else
-				{
-					HudMessage(s:"Do not move if you want to hack the terminal."; HUDMSG_FADEOUT, HUDID_INTERACTION+1, CR_WHITE, 320.0, 130.0, 3.0, 1.0);
-				}
-
-				terminate;
-			}
-
-			if (!(timer() % 8))
-				hackingPercentage--;
-
-			HudMessage(s:"Hacking: ", d:100-hackingPercentage, s:"%"; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 1.0);
-			HudMessage(s:"Do not move."; HUDMSG_FADEOUT, HUDID_INTERACTION + 1, CR_WHITE, 320.0, 130.0, 3.0, 1.0);
-			delay(1);
-		}
-
-		floor_lowerbyvalue(15, 8, 96);
-		ClearLineSpecial();
-	}
-
-	// Handle damaging players that are in the toxic room, and are not protected.
-	script "ToxicRoomTrigger"
-	{
-		bool toxicLineSide = LineSide() == LINE_FRONT;
-		_inToxicRoom[PlayerNumber()] = toxicLineSide;
-
-		while (_inToxicRoom[PlayerNumber()])
-		{
-			if (!CheckInventory("ZH2ZM31MIronFeet")
-				&& Player::GetIsHuman()
-				&& Timer() % 2 == 0)
-			{
-				Thing_damage2(ActivatorTID(), 1, "silent");
-			}
-
-			delay(const: 1);
-		}
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** Elevator flow
-	** -----------------------------------------------------------------------------
-	*/
-
-	// Trigger the player as outside / inside an elevator
-	script "TogglePlayerElevatorId" (int elevatorId)
-	{
-		bool entersElevator = LineSide() == LINE_FRONT;
-		if (entersElevator)
-		{
-			Logger::LogDebug(LOGSOURCE, StrParam(s:"Player ", n:0, s:" has entered elevator ", d:elevatorId));
-
-			UnsetPlayerIsAtElevatorDoors(PlayerNumber());
-			SetPlayerIsInElevator(PlayerNumber(), elevatorId);
-
-			terminate;
-		}
-
-		Logger::LogDebug(LOGSOURCE, StrParam(s:"Player ", n:0, s:" has exited the elevator"));
-
-		UnsetPlayerIsInElevator(PlayerNumber());
-		SetPlayerIsAtElevatorDoors(PlayerNumber(), elevatorId);
-	}
-
-	script "TogglePlayerAtElevatorDoorsId" (int elevatorId)
-	{
-		bool entersElevator = LineSide() == LINE_FRONT;
-		if (entersElevator)
-		{
-			SetPlayerIsAtElevatorDoors(PlayerNumber(), elevatorId);
-			terminate;
-		}
-
-		UnsetPlayerIsAtElevatorDoors(PlayerNumber());
-	}
-
-	// Main elevator logic. Parameters indicate pressed elevator id, target elevator id, and wether the button inside the elevator was pressed.
-	script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
-	{
-		bool isInBunker = _elevatorData[elevatorId].IsInBunker;
-		bool targetIsInBunker = _elevatorData[targetElevatorId].IsInBunker;
-
-		// Checks should never prevent players from getting out of an elevator.
-		if (!pressedInside)
-		{
-			// Can't do this one, because then players can just hide in the elevator forever.
-			//if(Player::GetIsZombie())
-			//{
-			//	Chat::SendSelfActivator("Brainz...?");
-			//	terminate;
-			//}
-
-			// These checks have all also been moved downwards to make sure the doors can open after the nuke to avoid camping.
-			//if(NukeHasDropped())
-			//{
-			//	Logger::LogActivator("The lift circuits are fried by the nuke. The elevator can not be used.");
-			//	terminate;
-			//}
-
-			//if (isInBunker && _eventState == EVENTSTATE_NUKE)
-			//{
-			//	Logger::LogActivator("Don't go back up! You're safe down here from the nuke.");
-			//	terminate;
-			//}
-
-			if(!_labUnlocked)
-			{
-				Logger::LogActivator("The lifts have been locked down for quarantine.");
-				terminate;
-			}
-		}
-
-		if(_elevatorInUse[elevatorId])
-		{
-			Logger::LogActivator("The elevator is currently in use.");
-			terminate;
-		}
-
-		int id = PlayerNumber();
-		SetActivator(-1);
-
-		// Elevator is now in use
-		_elevatorInUse[elevatorId] = true;
-		_elevatorInUse[targetElevatorId] = true;
-
-		// Elevator sound.
-		int dingSoundTag = _elevatorData[elevatorId].DingSoundAndSourceTeleportTag;
-		ThingSound(dingSoundTag, "sound/ding1", 127);
-		Delay(35);
-
-		Logger::LogDebug(LOGSOURCE, StrParam(s:"Start elevator logic. Elevator id: ", d:elevatorId, s:", target elevatorId: ", d:targetElevatorId));
-
-		// Open doors.
-		int polyRightTag = _elevatorData[elevatorId].PolyTagRight;
-		int polyLeftTag = polyRightTag++;
-		int polyRightAngle = _elevatorData[elevatorId].PolyRightAngle;
-		int polyLeftAngle = polyRightAngle + 128;
-		Polyobj_OR_Move(polyRightTag, 5, polyRightAngle, 32);
-		Polyobj_OR_Move(polyLeftTag, 5, polyLeftAngle, 32);
-		PolyWait(polyRightTag);
-		PolyWait(polyLeftTag);
-
-		Delay(35*4);
-
-		Polyobj_OR_Move(polyRightTag, 5, polyLeftAngle, 32);
-		Polyobj_OR_Move(polyLeftTag, 5, polyRightAngle, 32);
-
-		ACS_NamedExecuteAlways("CrushPlayersBetweenDoors", 0, elevatorId);
-
-		// Stop here if we pressed from the inside.
-		if (pressedInside)
-		{
-			delay(35);
-
-			_elevatorInUse[elevatorId] = false;
-			_elevatorInUse[targetElevatorId] = false;
-			terminate;
-		}
-
-		// To avoid the elevators not working because people block it, we should not wait for these to close.
-		//PolyWait(polyRightTag);
-		//PolyWait(polyLeftTag);
-
-		delay(35 * 2);
-
-		// Check if elevator or target elevator have occupands.
-		if (!GetElevatorHasOccupands(elevatorId) && !GetElevatorHasOccupands(targetElevatorId))
-		{
-			_elevatorInUse[elevatorId] = false;
-			_elevatorInUse[targetElevatorId] = false;
-			terminate;
-		}
-
-		// Can't use the elevator after the nuke has blow over.
-		if(NukeHasBlownOver() && isInBunker)
-		{
-			for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-			{
-				if (!PlayerInGame(i) || !GetPlayerIsInElevator(i, elevatorId))
-					continue;
-
-				Logger::LogTo(i, "The elevator does not respond. The nuke must have fried its circuits.");
-			}
-
-			_elevatorInUse[elevatorId] = false;
-			_elevatorInUse[targetElevatorId] = false;
-			terminate;
-		}
-
-		// Remaining logic to move the elevators on both sides.
-		ACS_NamedExecuteAlways("ElevatorLogic2", 0, elevatorId, targetElevatorId);
-		ACS_NamedExecuteAlways("ElevatorLogic2", 0, targetElevatorId, elevatorId);
-
-		// This must match the inner delay in ElevatorLogic2
-		delay(35 * 8);
-
-		// Failsafe, anybody that just took the elevator going outside the bunker will die when the nuke dropped.
-		if (NukeHasBlownOver())
-		{
-			int killElevatorId = isInBunker ? elevatorId : targetElevatorId;
-			for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-			{
-				if (!PlayerInGame(i) || !GetPlayerIsInElevator(i, killElevatorId))
-					continue;
-
-	            Game::KillPlayer(i, MOD_EXIT);
-			}
-		}
-
-		// Set occupands in the elevator as in/outside the bunker
-		for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-		{
-			if (PlayerInGame(i) && GetPlayerIsInElevator(i, elevatorId))
-				SetPlayerIsInBunker(i, targetIsInBunker);
-
-			else if (PlayerInGame(i) && GetPlayerIsInElevator(i, targetElevatorId))
-				SetPlayerIsInBunker(i, isInBunker);
-		}
-
-		// Switch players into the new elevator
-		for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-		{
-			if (GetPlayerIsInElevator(i, elevatorId))
-				SetPlayerIsInElevator(i, targetElevatorId);
-			else if (GetPlayerIsInElevator(i, targetElevatorId))
-				SetPlayerIsInElevator(i, elevatorId);
-		}
-
-		// Remaining time to close the doors, plus 1 second to close them fully.
-		delay(35 * 4 + 35);
-
-		// Elevators no longer in use.
-		_elevatorInUse[elevatorId] = false;
-		_elevatorInUse[targetElevatorId] = false;
-	}
-
-	script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
-	{
-		// Move to a temporary room.
-		int sourceTag = _elevatorData[elevatorId].DingSoundAndSourceTeleportTag;
-		int sourceSectorTag = _elevatorData[elevatorId].SourceSectorTag;
-		int tempDestTag = _elevatorData[elevatorId].TempTargetTeleportTag;
-		int tempDestSectorTag = _elevatorData[elevatorId].TempTargetSectorTag;
-		int destTag = _elevatorData[elevatorId].TargetTeleportTag;
-		delay(35*3);
-
-		// Move all players in the elevator to the new one.
-		for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-		{
-			if (GetPlayerIsInElevator(i, elevatorId))
-				TeleportInSector(sourceSectorTag, sourceTag, tempDestTag, false, Identity::GetTid(i));
-		}
-
-		PlaySound(tempDestTag, "sound/lift1", CHAN_AUTO, 1.0);
-		delay(35*5);
-
-		// Move all players from the temporary elevator to the final one.
-		// This one doesn't need a special check since we're in a temporary room anyway.
-		TeleportInSector(tempDestSectorTag, tempDestTag, destTag, false);
-
-		ThingSound(destTag, "sound/ding1", 127);
-
-		// Open doors.
-		int polyRightTag = _elevatorData[targetElevatorId].PolyTagRight;
-		int polyLeftTag = polyRightTag++;
-		int polyRightAngle = _elevatorData[targetElevatorId].PolyRightAngle;
-		int polyLeftAngle = polyRightAngle + 128;
-		Polyobj_OR_Move(polyRightTag, 5, polyRightAngle, 32);
-		Polyobj_OR_Move(polyLeftTag, 5, polyLeftAngle, 32);
-		PolyWait(polyRightTag);
-		PolyWait(polyLeftTag);
-
-		Delay(35*4);
-
-		Polyobj_OR_Move(polyRightTag, 5, polyLeftAngle, 32);
-		Polyobj_OR_Move(polyLeftTag, 5, polyRightAngle, 32);
-
-		ACS_NamedExecuteAlways("CrushPlayersBetweenDoors", 0, elevatorId);
-
-		// Don't wait here either, doors will properly reopen if recalled anyway.
-		//PolyWait(polyRightTag);
-		//PolyWait(polyLeftTag);
-	}
-
-	script "CrushPlayersBetweenDoors"(int elevatorId)
-	{
-		Delay(35);
-
-		int angle = _elevatorData[elevatorId].CrushThrustAngle;
-		for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-		{
-			if (!PlayerInGame(i) || !GetPlayerIsAtElevatorDoors(i, elevatorId))
-				continue;
-
-			int tid = Identity::GetTid(i);
-			Thing_Damage(tid, 20, MOD_CRUSH);
-			ThrustThing(angle, 10, false, tid);
-			Logger::LogTo(i, "You got crushed by the elevator doors, careful!");
-		}
-	}
-
-	internal bool GetElevatorHasOccupands(int elevatorId)
-	{
-		// Check if anybody has entered the elevator.
-		for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-		{
-			if (!GetPlayerIsInElevator(i, elevatorId))
-				continue;
-
-			return true;
-		}
-
-		return false;
-	}
-
-	internal bool GetPlayerIsAtElevatorDoors(int id, int value)
-	{
-		return CheckActorInventory(Identity::GetTid(id), AT_ELEVATOR_DOORS_ITEM) == (value + 1);
-	}
-
-	internal void SetPlayerIsAtElevatorDoors(int id, int value)
-	{
-		BCSUtils::SetActorInventory(Identity::GetTid(id), AT_ELEVATOR_DOORS_ITEM, value + 1);
-	}
-
-	internal void UnsetPlayerIsAtElevatorDoors(int id)
-	{
-		BCSUtils::SetActorInventory(Identity::GetTid(id), AT_ELEVATOR_DOORS_ITEM, 0);
-	}
-
-
-	internal bool GetPlayerIsInElevator(int id, int value)
-	{
-		return CheckActorInventory(Identity::GetTid(id), IN_ELEVATOR_ITEM) == value + 1;
-	}
-
-	internal void SetPlayerIsInElevator(int id, int value)
-	{
-		BCSUtils::SetActorInventory(Identity::GetTid(id), IN_ELEVATOR_ITEM, value + 1);
-	}
-
-	internal void UnsetPlayerIsInElevator(int id)
-	{
-		BCSUtils::SetActorInventory(Identity::GetTid(id), IN_ELEVATOR_ITEM, 0);
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** EVENTS - Night
-	** -----------------------------------------------------------------------------
-	*/
-
-	// Nighttime event
-	Script "Event_Night"
-	{
-		if (_eventState != EVENTSTATE_NONE)
-			terminate;
-
-		_eventState = EVENTSTATE_NIGHT;
-		_eventStartTimestamp = Timer();
-		SyncEvent();
-
-		// Note: we don't run a loop as soon as the map starts, as anybody that joins after this script starts should see the changes immediately.
-		ACS_NamedExecute("Event_Night_client", 0);
-	}
-
-	Script "Event_Night_client" clientside
-	{
-		// Safety guard, to ensure that we received all info necessary to run the event.
-		while (_eventState != EVENTSTATE_NIGHT
-			|| _eventStartTimestamp == 0)
-		{
-			delay(const: 1);
-		}
-
-		int fadeValue  = 156,
-			colorValue = 255;
-
-		setFont("bigfont");
-		SetHudSize(640, 480, FALSE);
-		HudMessage(s:"Night approaches"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 100.0, 5.0, 1.0, 5.0);
-
-		delay(35 * 3);
-		Music::PlayMusic("");
-		Music::SetDefaultMusic("SUBZERO");
-		delay(35 * 8);
-
-		while (--fadeValue > 20 && --colorValue)
-		{
-			if (fadeValue < 30 && Player::GetPlayerIsHuman(ConsolePlayerNumber()))
-			{
-				SetHudSize(640, 480, FALSE);
-				HudMessage(s:"As the night approaches"; HUDMSG_TYPEON, 0, CR_WHITE, 320.0, 93.0, 3.0, 0.04, 1.0);
-				HudMessage(s:"it suddenly becomes very, very cold..."; HUDMSG_TYPEON, 0, CR_WHITE, 320.0, 107.0, 2.5, 0.04, 1.0);
-			}
-
-			SetLevelAtmosphere(fadeValue, colorValue, colorValue);
-			delay(5);
-		}
-
-		Music::PlayDefaultMusic();
-	}
-
-	internal bool NightHasFallen()
-	{
-		return _eventState == EVENTSTATE_NIGHT && GetTicsUntilNightFallen() == 0;
-	}
-
-	internal int GetTicsUntilNightFallen()
-	{
-		if (_eventState != EVENTSTATE_NIGHT)
-			return 0;
-
-		return BCSUtils::Max(_eventStartTimestamp + EVENT_NIGHT_STARTTICS - Utils::GetSynchronizedTimer(), 0);
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** EVENTS - Nuke
-	** -----------------------------------------------------------------------------
-	*/
-
-	Script "Event_Nuke"
-	{
-		if (_eventState != EVENTSTATE_NONE)
-			terminate;
-
-		_eventState = EVENTSTATE_NUKE;
-		_eventStartTimestamp = Timer();
-		SyncEvent();
-
-		// Note: we don't run a loop as soon as the map starts, as anybody that joins after this script starts should see the changes immediately.
-		ACS_NamedExecute("Event_Nuke_client", 0);
-
-		int waitTics = EVENT_NUKE_STARTTICS;
-		while(--waitTics)
-			Delay(const: 1);
-
-		// Delay before the nuke truly hits
-		Delay(EVENT_NUKE_BLOWOVERTICS);
-
-		for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-		{
-			if (!PlayerInGame(i))
-				continue;
-
-			NamedExecuteClientScript("Event_Nuke_Final_client", i);
-		}
-
-		Delay(12);
-
-		for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-		{
-			if (!PlayerInGame(i) || GetPlayerIsInBunker(i))
-				continue;
-
-	        Game::KillPlayer(i, MOD_EXIT);
-		}
-
-		// Set boundaries by raising rocks
-		SetLineBlocking(2, BLOCK_PLAYERS);
-		for (i = 0; i < lengthof(_nukeBoundaryRocks); ++i)
-		{
-			int tag = _nukeBoundaryRocks[i].SectorTag;
-			int height = _nukeBoundaryRocks[i].Height;
-
-			Floor_MoveToValue(tag, 999, height);
-			ChangeFloor(tag, "FLAT5_8");
-		}
-	}
-
-	Script "Event_Nuke_client" clientside
-	{
-		// Safety guard, to ensure that we received all info necessary to run the event.
-		while (_eventState != EVENTSTATE_NUKE
-			|| _eventStartTimestamp == 0)
-		{
-			delay(const: 1);
-		}
-
-		int timeLeft = EVENT_NUKE_STARTTICS;
-		int passedTime = 0;
-
-		Music::SetDefaultMusic("");
-		Music::PlayDefaultMusic();
-
-		while(timeLeft--)
-		{
-			BCSUtils::SetActivatorToConsolePlayer();
-			SetHudSize(640, 480, FALSE);
-
-			// Alarm every four seconds.
-			if (passedTime % (35 * 4) == 0)
-			{
-				AmbientSound("sound/nukealarm", 255);
-			}
-
-			// Message every two seconds.
-			if (passedTime % (35 * 2) == 0)
-			{
-				setFont("bigfont");
-				HudMessage(s:"Civil defence siren"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 93.0, 1.0, 0.6, 0.6);
-			}
-
-			// After at least two seconds, every two seconds.
-			if (passedTime > (35 * 2) && passedTime % (35 * 2) == 0)
-			{
-				setFont("bigfont");
-				HudMessage(s:"Nuke incoming"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 107.0, 1.0, 0.6, 0.6);
-			}
-
-			// Once after four seconds.
-			if (passedTime == 35 * 4)
-			{
-				Music::SetDefaultMusic("Disposal");
-				Music::PlayDefaultMusic();
-			}
-
-			// Inform of shelter after 6 seconds.
-			if (passedTime == 35 * 6)
-			{
-				if (!GetIsInBunker())
-				{
-					setFont("smallfont");
-					HudMessage(s:"Seek shelter in the indicated bunkers"; HUDMSG_TYPEON, 0, CR_WHITE, 320.0, 120.0, 2.0, 0.04, 1.0);
-				}
-
-				for (int i = 0; i < lengthof(_shelterMarkers); ++i)
-					SpawnSpotForced("ZH2ZM31MNukeMarker", _shelterMarkers[i], 0, 0);
-			}
-
-			// Display time until explosion after 10.5 seconds.
-			if(passedTime > 35 * 10 + 18)
-			{
-				setFont("smallfont");
-				HudMessage(s:"Explosion in: ", s:Utils::FormatTics(GetTicsUntilDrop(), true); HUDMSG_PLAIN, 0, CR_WHITE, 320.0, 120.0, BCSUtils::HUDTIC);
-			}
-
-			// Display safety markers on map avery tic after 6 seconds.
-			// Don't display them if we're spectating somebody else.
-			if(passedTime > 35 * 6 && !GetIsInBunker() && CheckPlayerCamera(ConsolePlayerNumber()) == ActivatorTid())
-			{
-				BCSUtils::HudResetState();
-				BCSUtils::HudSetCameraActor(0);
-				BCSUtils::HudSetVirtualSize(120.0, 90.0);
-				BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-				BCSUtils::HudSetShowOnFullAutomap(FALSE);
-
-				for (i = 0; i < lengthof(_shelterMarkers); ++i)
-				{
-					int tag = _shelterMarkers[i];
-
-					fixed distance = BCSUtils::ActorDistance2D(0, tag);
-					if (distance < 1000.0 || distance > 12000.0 || GetIsInBunker())
-						continue;
-
-					BCSUtils::HudSetPoint3D(GetActorX(tag), GetActorY(tag), GetActorZ(tag)+150.0);
-					BCSUtils::HudDrawImage(0, "NMARA0");
-				}
-			}
-
-			passedTime++;
-			Delay(const: 1);
-		}
-
-		ACS_NamedExecute("Event_Nuke_Fade_client", 0);
-
-		// Spawn nuke, red atmosphere, and remove clouds which actually also mess with the nuke's flare.
-		SetLevelAtmosphere(10, 255, 10);
-		SpawnSpot("ZH2ZM31MNuke", 6);
-		ChangeFloor(48, "-");
-		ChangeFloor(49, "-");
-		Radius_Quake2(0, 1, 35*5, 0, 1, "");
-		delay(35);
-
-		delay(35*2);
-		for (i = 2; i <= 4; ++i)
-		{
-			Radius_Quake2(0, i, 35*2, 0, 1, "");
-			delay(35*2);
-		}
-
-		Radius_Quake2(0, i, 35*3, 0, 1, "");
-	}
-
-	script "Event_Nuke_Fade_client" clientside
-	{
-		// Camera must be on somebody that is in the bunker.
-		int tid = CheckPlayerCamera(ConsolePlayerNumber());
-		if (!Identity::IsValidTid(tid))
-			terminate;
-
-		if (GetPlayerIsInBunker(Identity::GetId(tid)))
-			terminate;
-
-		SetActivator(tid);
-
-		// Player is not in the bunker.
-		FadeTo(150, 20, 20, 1.0, 0);
-		delay(35);
-		FadeTo(0, 0, 0, 0, 8.0);
-	}
-
-	script "Event_Nuke_Final_client" clientside
-	{
-		SetActivatorToPlayer(ConsolePlayerNumber());
-		if (!GetIsInBunker())
-		{
-			AmbientSound("sound/nukeexplosion", 255);
-			delay(6);
-			Spawn("ZH2ZM31MNukeSmoke", GetActorX(0), GetActorY(0), GetActorZ(0));
-		}
-		else
-		{
-			AmbientSound("sound/nukeexplosionfar", 255);
-			delay(6);
-			SpawnSpotForced("ZH2ZM31MNukeSmokeBunker", 1, 0, 0);
-			SpawnSpotForced("ZH2ZM31MNukeSmokeBunker", 4, 0, 0);
-		}
-
-		// Nuke wind
-		Thing_Activate(57);
-
-		// TODO: Doesn't work.
-		for (int i = 0; i < lengthof(_shelterMarkers); ++i)
-			Thing_Remove(_shelterMarkers[i]);
-	}
-
-	internal bool NukeHasDropped()
-	{
-		return _eventState == EVENTSTATE_NUKE && GetTicsUntilDrop() == 0;
-	}
-
-	internal int GetTicsUntilDrop()
-	{
-		if (_eventState != EVENTSTATE_NUKE)
-			return 0;
-
-		return BCSUtils::Max(_eventStartTimestamp + EVENT_NUKE_STARTTICS - Utils::GetSynchronizedTimer(), 0);
-	}
-
-	internal bool NukeHasBlownOver()
-	{
-		return _eventState == EVENTSTATE_NUKE && GetTicsUntilBlowOver() == 0;
-	}
-
-	internal int GetTicsUntilBlowOver()
-	{
-		if (_eventState != EVENTSTATE_NUKE)
-			return 0;
-
-		return BCSUtils::Max(_eventStartTimestamp + EVENT_NUKE_STARTTICS + EVENT_NUKE_BLOWOVERTICS - Utils::GetSynchronizedTimer(), 0);
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** Temperature - CLIENTSIDE
-	** -----------------------------------------------------------------------------
-	*/
-
-	internal void TemperatureTickClient()
-	{
-		VALIDATE_IS_CLIENTSIDE_FUNCTION();
-
-		if (Round::GetGameIsEnding())
-			return;
-
-		if (Player::GetIsZombie())
-			return;
-
-		// Client is in water
-		bool inWater = BCSutils::GetActorWaterLevel(ActivatorTID()) > 0;
-		if (GetIsCold() && inWater)
-		{
-			SetHudSize(640, 480, false);
-			SetFont("smallfont");
-			HudMessage(s:"Watch out! The water is incredibly cold, get out!"; HUDMSG_FADEOUT, HUDID_INTERACTION + 1, CR_YELLOW, 320.0, 400.0, 5.0, 0.6, 0.6);
-		}
-
-		// Inform client to get warm
-		else if (GetIsCold() && NightHasFallen())
-		{
-			SetHudSize(640, 480, false);
-			SetFont("smallfont");
-			HudMessage(s:"Caution! It is very cold at night, get somewhere warm!"; HUDMSG_FADEOUT, HUDID_INTERACTION + 1, CR_YELLOW, 320.0, 400.0, 5.0, 0.6, 0.6);
-		}
-
-		// Explain the temperature system once when we go below maximum temperature.
-		if (!_hasExplainedTemperature && GetTemperature() < TEMPERATURE_MAX)
-		{
-			_hasExplainedTemperature = true;
-
-			setFont("smallfont");
-			SetHudSize(640, 480, FALSE);
-			HudMessage(s:"Careful, this place is freezing!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 360.0, 5.0, 1.0, 5.0);
-			HudMessage(s:"Either stay inside, or make sure you find warm places."; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 370.0, 5.0, 1.0, 5.0);
-			HudMessage(s:"Keep your body temperature above \cf28 degrees \cjat all times."; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 380.0, 5.0, 1.0, 5.0);
-		}
-
-		SetHudSize(480, 480, 0);
-		DrawFrostScreen(240.0, 240.0, HUDID_TEMPERATURE);
-	}
-
-	internal raw OnDrawTemperatureGaugeHud(void[]* data)
-	{
-		if (data == null)
-			return 0;
-
-		_hudHookDataRef = data;
-
-		if (_hudHookDataRef.Type != Hud::HUDHOOK_PLAYERSTATUS)
-			return 0;
-
-		if (GetIsInBunker())
-			return 0;
-
-		if (Player::GetIsZombie())
-			return 0;
-
-		Hud::SetRelativePoint(160.0, -80.0);
-		BCSUtils::HudDrawImage(HUDID_TEMPERATURE + 4, "TEMPICON");
-
-		int temperature = GetTemperature();
-
-		// Flicker effect for the value.
-		if (temperature == 0 && Timer() % 10 >= 5)
-			return 0;
-
-		int color = temperature > 5
-			? CR_WHITE
-			: temperature > 3
-				? CR_YELLOW
-				: CR_RED;
-
-		Hud::SetRelativePoint(176.0, -85.0);
-		BCSUtils::HudSetTextColor(color);
-		BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_TOP);
-		BCSUtils::HudDrawText(HUDID_TEMPERATURE + 5, str((int)(temperature + TEMPERATURE_BASE)));
-		return 0;
-	}
-
-	internal void DrawFrostScreen(int x, int y, int id)
-	{
-		// The values at which the graphics are going to be displayed.
-		static int frostGraphicValues[4] = {
-			7, 5, 3, 1
-		};
-
-		// Update every three tics.
-		if (Timer() % 3 != 0)
-			return;
-
-		int temperature = GetTemperature();
-
-		// Determine graphic.
-		int graphicIndex = 0;
-		for (int i = lengthof(frostGraphicValues) - 1; i >= 0; --i)
-		{
-			if (temperature > frostGraphicValues[i])
-				continue;
-
-			graphicIndex = i + 1;
-			break;
-		}
-
-		// Always show the last graphic if outside at night or in water.
-		bool inWater = BCSUtils::GetActorWaterLevel(ActivatorTID()) > 0;
-		if (GetIsCold() && (NightHasFallen() || inWater))
-			graphicIndex = 4;
-
-		if (graphicIndex == 0)
-			return;
-
-		SetFont(StrParam(s:"FROSTSC", d:graphicIndex));
-		HudMessage(s:"a"; HUDMSG_FADEINOUT | HUDMSG_ADDBLEND, 0, CR_UNTRANSLATED, 240.0, 240.0, 0.0, 0.5, 0.1);
-	}
-
-	internal int GetTemperature()
-	{
-		return GetPlayerTemperature(PlayerNumber());
-	}
-
-	internal int GetPlayerTemperature(int id)
-	{
-		return CheckActorInventory(Identity::GetTid(id), TEMPERATURE_VALUE_ITEM);
-	}
-
-	internal void SetTemperature(int value)
-	{
-		SetPlayerTemperature(PlayerNumber(), value);
-	}
-
-	internal void SetPlayerTemperature(int id, int value)
-	{
-		BCSUtils::SetActorInventory(Identity::GetTid(id), TEMPERATURE_VALUE_ITEM, value);
-	}
-
-
-
-	internal int GetNextTemperatureTic()
-	{
-		return GetPlayerNextTemperatureTic(PlayerNumber());
-	}
-
-	internal int GetPlayerNextTemperatureTic(int id)
-	{
-		return CheckActorInventory(Identity::GetTid(id), TEMPERATURE_NEXTTIC_ITEM);
-	}
-
-	internal void SetNextTemperatureTic(int value)
-	{
-		SetPlayerNextTemperatureTic(PlayerNumber(), value);
-	}
-
-	internal void SetPlayerNextTemperatureTic(int id, int value)
-	{
-		BCSUtils::SetActorInventory(Identity::GetTid(id), TEMPERATURE_NEXTTIC_ITEM, value);
-	}
-
-
-
-	internal bool GetIsCold()
-	{
-		return GetPlayerIsCold(PlayerNumber());
-	}
-
-	internal bool GetPlayerIsCold(int id)
-	{
-		return CheckActorInventory(Identity::GetTid(id), TEMPERATURE_ISCOLD_ITEM);
-	}
-
-	internal void SetIsCold(bool value)
-	{
-		SetPlayerIsCold(PlayerNumber(), value);
-	}
-
-	internal void SetPlayerIsCold(int id, bool value)
-	{
-		BCSUtils::SetActorInventory(Identity::GetTid(id), TEMPERATURE_ISCOLD_ITEM, value);
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** Temperature - SERVERSIDE
-	** -----------------------------------------------------------------------------
-	*/
-
-	// Mark the player as inside/outside depending on lineside.
-	script "SetPlayerWarm"
-	{
-		SetIsCold(LineSide() != LINE_FRONT);
-	}
-
-	// Main loop of the temperature system.
-	// This script handles the behavior of the temperature timer and ensures it increments/decrements.
-	script "TemperatureLoop"
-	{
-		while(true)
-		{
-			for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-			{
-				int tid = Identity::GetTid(i);
-
-				if (!BCSUtils::ActorIsAlive(tid) || Player::GetPlayerIsZombie(i) || Round::GetGameIsEnding())
-					continue;
-
-				int temperature = GetPlayerTemperature(i);
-				bool isCold = GetPlayerIsCold(i);
-				bool isInWater = BCSUtils::GetActorWaterLevel(tid) > 0;
-
-				// Hurt the player every 5 tics if they are at minimum temperature.
-				if (temperature == 0 && isCold)
-				{
-					if (!_firstDamageTic[i])
-					{
-						_firstDamageTic[i] = true;
-						Logger::LogTo(i, "You are freezing to death! Seek shelter.");
-					}
-
-					if (Timer() % 5 == 0)
-						Thing_damage2(tid, 1, "silent");
-
-					continue;
-				}
-
-				_firstDamageTic[i] = false;
-
-				// Check if the next tic passed.
-				if (GetPlayerNextTemperatureTic(i) > Timer())
-					continue;
-
-				// Change temperature if the player's situation is the same.
-				if (_isColdLast[i] == isCold)
-				{
-					temperature += isCold ? -1 : 1;
-					temperature = BCSUtils::clamp(temperature, 0, TEMPERATURE_MAX);
-					SetPlayerTemperature(i, temperature);
-				}
-
-				int nextTic;
-				if (!isCold) nextTic = TEMPERATURE_TIC_WARM;
-				else if (isInWater) nextTic = TEMPERATURE_TIC_WATER;
-				else if (NightHasFallen()) nextTic = TEMPERATURE_TIC_NIGHT;
-				else nextTic = TEMPERATURE_TIC_NORMAL;
-
-				SetPlayerNextTemperatureTic(i, Timer() + nextTic);
-				_isColdLast[i] = isCold;
-			}
-
-			Delay(const: 1);
-		}
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** EVENT STATE SYNC
-	** -----------------------------------------------------------------------------
-	*/
-
-	internal void SyncEvent()
-	{
-		VALIDATE_IS_SERVERSIDE_FUNCTION();
-
-		if (!IsNetworkGame())
-			return;
-
-		BCSUtils::SyncVariable(SYNC_EVENT, _eventState);
-		BCSUtils::SyncVariable(SYNC_EVENT + 1, _eventStartTimestamp);
-
-		ACS_NamedExecuteAlways("SyncEvent_Client", 0);
-	}
-
-	script "SyncEvent_Client" clientside
-	{
-		ClientSyncEvent();
-	}
-
-	// Called clientside to fetch the synced state.
-	internal void ClientSyncEvent()
-	{
-		VALIDATE_IS_CLIENTSIDE_FUNCTION();
-
-		if (!IsNetworkGame())
-			return;
-
-		_eventState = BCSUtils::GetSyncVarDefault(SYNC_EVENT, EVENTSTATE_NONE);
-		_eventStartTimestamp = BCSUtils::GetSyncVarDefault(SYNC_EVENT + 1, 0);
-
-		Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced event state client: ", d:_eventState, s:", event start timestamp: ", d:_eventStartTimestamp));
-	}
-
-	#undef LOGSOURCE
+    #define HUDID_INTERACTION 60
+    #define HUDID_TEMPERATURE 50
+
+    // The TID that is used for synchronising the event
+    #define SYNC_EVENT 100
+
+    // Note: The base is the base value shown (and lowest value).
+    #define TEMPERATURE_MAX 9
+    #define TEMPERATURE_BASE 28
+
+    // Tics below indicates the delay between temperature changes used.
+    #define TEMPERATURE_TIC_NORMAL 35 * 4
+    #define TEMPERATURE_TIC_NIGHT 35 * 2
+    #define TEMPERATURE_TIC_WATER 28
+    #define TEMPERATURE_TIC_WARM 18
+
+    #define TEMPERATURE_ISCOLD_ITEM "ZH2ZM31MIsCold"
+    #define TEMPERATURE_VALUE_ITEM "ZH2ZM31MTemperature"
+    #define TEMPERATURE_NEXTTIC_ITEM "ZH2ZM31MNextTemperatureTic"
+    #define IN_BUNKER_ITEM "ZH2ZM31MIsInBunker"
+
+    #define AT_ELEVATOR_DOORS_ITEM "ZH2ZM31MAtElevatorDoors"
+    #define IN_ELEVATOR_ITEM "ZH2ZM31MInElevator"
+
+    #define EVENT_NIGHT_STARTTICS 35 * 30
+    #define EVENT_NUKE_STARTTICS 35 * 36
+    #define EVENT_NUKE_BLOWOVERTICS 35 * 11
+
+    internal struct NukeBoundaryRockT
+    {
+        int SectorTag;
+        int Height;
+    };
+
+    internal struct ElevatorDataT
+    {
+        int PolyTagRight;
+        int PolyRightAngle;
+        int DingSoundAndSourceTeleportTag;
+        int SourceSectorTag;
+        int TempTargetTeleportTag;
+        int TempTargetSectorTag;
+        int TargetTeleportTag;
+        bool IsInBunker;
+        int CrushThrustAngle;
+    };
+
+    internal enum
+    {
+        EVENTSTATE_NONE,
+        EVENTSTATE_NIGHT,
+        EVENTSTATE_NUKE
+    };
+
+    internal int _eventState = EVENTSTATE_NONE;
+    internal int _eventStartTimestamp = 0;
+
+    // Used with the temperature gauge, which hooks on the HUD.
+    internal Hud::HudHookDataT? _hudHookDataRef;
+
+    // Guardhouse / toxic reactor room / lab unlocked
+    internal bool _guardhouseUnlocked,
+                  _crossRoomUnlocked,
+                  _labUnlocked;
+
+    // Player in toxic reactor room / decontermination room
+    internal bool _inToxicRoom[BCSUtils::MAX_PLAYERS],
+                  _inDeconterminationRoom[BCSUtils::MAX_PLAYERS];
+
+    // Temperature
+    internal bool _firstDamageTic[BCSUtils::MAX_PLAYERS];
+    internal bool _isColdLast[BCSUtils::MAX_PLAYERS];
+    internal bool _hasExplainedTemperature;
+
+    internal NukeBoundaryRockT _nukeBoundaryRocks[6] =
+    {
+        { 36, 176 },
+        { 39, 120 },
+        { 40, 88 },
+        { 41, 136 },
+        { 43, 32 },
+        { 44, 16 },
+    };
+
+    // Shelter markers for the nuke effect.
+    // Map amrkers that show where to hide.
+    internal int _shelterMarkers[2] = {
+        37, 38
+    };
+
+    internal bool _elevatorInUse[4];
+
+    // Elevator data
+    internal ElevatorDataT _elevatorData[4] = {
+        { 1, 192, 31, 53, 50, 54, 34, false, 128 },
+        { 3, 192, 34, 55, 21, 32, 31, true, 128 },
+        { 5, 128, 36, 30, 22, 33, 39, false, 64 },
+        { 7, 128, 39, 56, 52, 51, 36, true, 64 }
+    };
+
+    #define LOGSOURCE "Map"
+
+    internal void SetLevelAtmosphere (int fade, int color1, int color2)
+    {
+        static int colorTags[] =
+        {
+            0, 1, 3, 5, 6, 10, 36,
+            25, 26, 27, 28, 29
+        };
+
+        // General relevant map geometry.
+        for(int i = 0; i < lengthof(colorTags); ++i)
+        {
+            sector_setfade(colorTags[i], fade, fade, fade);
+            sector_setcolor(colorTags[i], color1, color2, color2);
+        }
+
+        // Boundary rocks.
+        for (i = 0; i < lengthof(_nukeBoundaryRocks); ++i)
+        {
+            sector_setfade(_nukeBoundaryRocks[i].SectorTag, fade, fade, fade);
+            sector_setcolor(_nukeBoundaryRocks[i].SectorTag, color1, color2, color2);
+        }
+    }
+
+    Script "OnOpen" open
+    {
+        // Red key card spawner
+        spawnspot(KEY_RED_KEYCARD, random(10, 16));
+
+        // The underground water stream
+        scroll_floor(4, 0, 100, CARRY);
+        scroll_ceiling(5, 0, 150, SCROLL);
+
+        // Holy cross room
+        sector_setfade(14, 0, 255, 0);
+        sector_setcolor(14, 255, 200, 255);
+        sector_setfade(15, 0, 255, 0);
+        sector_setcolor(15, 255, 200, 255);
+
+        // Skybox
+        scroll_floor(48, 1, 10, 0);
+        scroll_floor(49, 3, 5, 0);
+
+        // Reset nuke boundaries to display snow.
+        for (int i = 0; i < lengthof(_nukeBoundaryRocks); ++i)
+        {
+            int sectorTag = _nukeBoundaryRocks[i].SectorTag;
+            Floor_MoveToValue(sectorTag, 999, 0);
+            ChangeFloor(sectorTag, "SNOW");
+        }
+
+        ACS_NamedExecute("TemperatureLoop", 0);
+
+        int gameTime = GetCvar("sv_zh2_zm31meventtics");
+        while (--gameTime)
+            delay(1);
+
+        // Events. In case of random pick:
+        // - Night: 2/6
+        // - Nuke:  1/6
+        // - Nothing: 3/6
+        int eventIndex = GetCVar("sv_zh2_zm31mevent");
+        if (eventIndex == 0)
+        {
+            int chance = Random(0, 5);
+            switch(chance)
+            {
+                case 0:
+                case 1:
+                    eventIndex = 2;
+                    break;
+                case 2:
+                    eventIndex = 3;
+                    break;
+                default:
+                    eventIndex = 1;
+                    break;
+            }
+        }
+
+        str event;
+        switch(eventIndex)
+        {
+            case 2: event = "Event_Night"; break;
+            case 3: event = "Event_Nuke"; break;
+            default: return;
+        }
+
+        if (!ACS_NamedExecute(event, 0))
+            Logger::LogError(LOGSOURCE, StrParam(s:"Failed to call script ", s:event, s:"."));
+    }
+
+    Script "OnOpenClient" Open CLIENTSIDE
+    {
+        ClientSyncEvent();
+
+        Hook::Register(Hook::HOOK_CLIENTDRAWHUD, OnDrawTemperatureGaugeHud);
+
+        // Atmosphere and music depends on current events.
+        // If clients join later and an event has triggered, this ensures the atmosphere and music is correct.
+        // FYI, if the event JUST started, they still don't get the correct data since they didn't trigger the script.
+        // These checks ensure everything works.
+        if (_eventState == EVENTSTATE_NONE)
+        {
+            Music::SetDefaultMusic("PSXMUS05");
+            Music::PlayDefaultMusic();
+
+            SetLevelAtmosphere(156, 255, 255);
+        }
+        else if (_eventState == EVENTSTATE_NIGHT)
+        {
+            Music::SetDefaultMusic("SUBZERO");
+            Music::PlayDefaultMusic();
+
+            SetLevelAtmosphere(20, 120, 120);
+        }
+        else
+        {
+            Music::SetDefaultMusic("DISPOSAL");
+            Music::PlayDefaultMusic();
+
+            SetLevelAtmosphere(10, 255, 10);
+            SpawnSpot("ZH2ZM31MNuke", 6);
+            ChangeFloor(48, "-");
+            ChangeFloor(49, "-");
+
+            // Nuke wind
+            Thing_Activate(57);
+        }
+
+        ACS_NamedExecute("FrozenDebug", 0);
+    }
+
+    script "enter" enter
+    {
+        ACS_NamedExecuteAlways("enter_respawn", 0);
+    }
+
+    script "respawn" enter
+    {
+        ACS_NamedExecuteAlways("enter_respawn", 0);
+    }
+
+    script "enter_respawn"
+    {
+        SetIsCold(CheckActorCeilingTexture(ActivatorTid(), "F_SKY1"));
+        SetTemperature(TEMPERATURE_MAX);
+
+        UnsetPlayerIsInElevator(PlayerNumber());
+        UnsetPlayerIsAtElevatorDoors(PlayerNumber());
+
+        _inToxicRoom[PlayerNumber()] = false;
+        _inDeconterminationRoom[PlayerNumber()] = false;
+
+        SetIsInBunker(false);
+    }
+
+    script "enterClient" enter clientside
+    {
+        if (ConsolePlayerNumber() != PlayerNumber())
+            terminate;
+
+        // Small delay to give the state some time to prepare.
+        delay(const: 5);
+
+        while(BCSUtils::IsAlive())
+        {
+            BCSUtils::SetActivatorToConsolePlayer();
+            TemperatureTickClient();
+            Delay(const: 1);
+        }
+    }
+
+    // When players turn zombie their temperature must reset in case they revert later on.
+    script "zm31m_internal_event_playerspeciechanged" (raw packetRaw)
+    {
+        Event::ReceivePlayerSpecieChanged((str)packetRaw);
+        int id = Event::GetReceiveData(0);
+        int specie = Event::GetReceiveData(1);
+
+        if (specie == Player::SPECIEZOMBIE)
+        {
+            SetPlayerIsCold(id, false);
+            SetPlayerTemperature(id, TEMPERATURE_MAX);
+        }
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** General scripts
+    ** -----------------------------------------------------------------------------
+    */
+
+    // Interaction messages
+    script 2 (int messageIndex)
+    {
+        static str interactionMessages[10][2] = {
+            { "The lock is jammed. This door cannot be opened.",  "sound/locked1" },
+            { "This door is damaged beyond use.",                  (raw)0 },
+            { "The engine will not start.",                       (raw)0 },
+            { "The guardhouse is locked and will not open.",       "sound/locked3" },
+            { "Quarantine protocols have sealed this room.",      "sound/itemfail1" },
+            { "The radio is dead. No one will come to help you.", (raw)0 },
+            { "These guns are just for show.",                      (raw)0 },
+            { "the gas has spoiled.",                              (raw)0 },
+            { "Locked. Maybe a terminal can open it.",              "sound/itemfail1" },
+            { "This does not appear to be working.",              (raw)0 }
+        };
+
+        if((messageIndex == 3 && _guardhouseUnlocked) ||
+           (messageIndex == 8 && _crossRoomUnlocked))
+        {
+
+            // The guardhouse door is unlocked and will open like normal.
+            if (messageIndex == 3)
+            {
+                Door_Raise(7, 32, 140);
+            }
+
+            terminate;
+        }
+
+        setFont("smallfont");
+        SetHudSize(640, 480, false);
+        HudMessage(s:interactionMessages[messageIndex][0]; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+
+        if (interactionMessages[messageIndex][1] != (raw)0)
+            ActivatorSound(interactionMessages[messageIndex][1], 127);
+    }
+
+    Script 3
+    {
+        static str boundaryMessages[4] =
+        {
+            "This place is too far out in the wilderness to escape on foot.",
+            "I don't feel like freezing to death.",
+            "I'd feel better leaving in a truck.",
+            "Leaving on foot would be suicide."
+        };
+
+        HudMessage(s:"\cj", s:boundaryMessages[random(0, lengthof(boundaryMessages) - 1)]; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+    }
+
+    Script "UnlockLabs"
+    {
+        SetFont("smallfont");
+        SetHudSize(640, 480, FALSE);
+
+        if(!CheckInventory(KEY_RED_KEYCARD))
+        {
+            HudMessage(s:"Clearance required."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+            delay(35);
+            terminate;
+        }
+
+        ACS_NamedExecute("UnlockLabs_Rest", 0);
+    }
+
+    Script "UnlockLabs_Rest"
+    {
+        SetFont("smallfont");
+        SetHudSize(640, 480, FALSE);
+
+        ClearLineSpecial();
+        Logger::LogBold(StrParam(n:0, s:" has cleared the quarantine. Elevators are now activated."));
+        AmbientSound("world/reveal1", 255);
+        door_open(35, 8);
+
+        _labUnlocked = true;
+    }
+
+    // Guardhouse unlocks after entering it after a while
+    script "EnterGuardHouse"
+    {
+        if(_guardhouseUnlocked)
+            terminate;
+
+        Logger::LogActivator("Upon entering the house, you hear a trigger beneath your feet go off...");
+        delay(35*10);
+        _guardhouseUnlocked = true;
+    }
+
+    Script 20 (int index)
+    {
+        static int flares[3] = { 10, 10, 10 };
+
+        if(Player::GetIsZombie())
+            terminate;
+
+        setFont("smallfont");
+        SetHudSize(640, 480, FALSE);
+
+        if(!flares[index] || CheckInventory(FLARE_ITEM) == 2)
+        {
+            if(!flares[index])
+                HudMessage(s:"This locker has no flares left."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+            else
+                HudMessage(s:"You've got enough flares!"; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+
+            LocalAmbientSound("generic/itemlocked", 128);
+            terminate;
+        }
+
+        HudMessage(s:"Grabbed a flare. This locker has ", d:--flares[index], s:" flare", s:(flares[index] != 1 ? "s" : ""), s:" left."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+        LocalAmbientSound("generic/itemget", 128);
+        GiveInventory(FLARE_ITEM, 1);
+    }
+
+    // Bunker teleport system
+    script "SetInBunker" (int inBunker, int targetTid)
+    {
+        SetIsInBunker(inBunker);
+        Teleport_NoFog(targetTid);
+
+        // Apply velocity if entering, otherwise the teleporting removes it.
+        if (inBunker)
+            SetActorVelocity(ActivatorTID(), 0, 0, GetActorVelZ(ActivatorTID()), FALSE, FALSE);
+
+        NamedExecuteClientScript("SetInBunker_Client", PlayerNumber(), inBunker);
+    }
+
+    script "SetInBunker_Client" (int inBunker) clientside
+    {
+        if (inBunker)
+            Weather::StartEmitterWeather(Weather::EMITTERWEATHER_DUST);
+        else
+            Weather::StopEmitterWeather(Weather::EMITTERWEATHER_DUST);
+    }
+
+    // For debugging.
+    script "FrozenDebug" clientside
+    {
+        if (!Environment::IsDevelopment())
+            terminate;
+
+        while(true)
+        {
+            if (!BCSUtils::SetActivatorToConsolePlayer() || GetCVar("cl_zh2_zm31mdebug") == 0)
+            {
+                Delay(const: 1);
+                continue;
+            }
+
+            SetHudSize(640, 480, FALSE);
+            SetFont("smallfont");
+
+            str message;
+            buildmsg(message = StrParam())
+            {
+                str currentEvent;
+                switch(_eventState)
+                {
+                    case EVENTSTATE_NIGHT:
+                        currentEvent = "night";
+                        break;
+                    case EVENTSTATE_NUKE:
+                        currentEvent = "nuke";
+                        break;
+                    default:
+                        currentEvent = "none";
+                        break;
+                }
+
+                Append(s:"Current event: ", s:currentEvent, s:"\n");
+
+                if (_eventStartTimestamp != 0)
+                {
+                    int elapsed = Utils::GetSynchronizedTimer() - _eventStartTimestamp;
+                    Append(s:"Elapsed since event start: ", d:elapsed, s:"\n");
+                }
+
+                if (_eventState == EVENTSTATE_NIGHT)
+                {
+                    Append(s:"Night falls in: ", d:GetTicsUntilNightFallen(), s:"\n");
+                    Append(s:"Night has fallen: ", s:(NightHasFallen() ? "true" : "false"), s:"\n");
+                }
+
+                if (_eventState == EVENTSTATE_NUKE)
+                {
+                    Append(s:"Nuke explosion in: ", d:GetTicsUntilDrop(), s:"\n");
+                    Append(s:"Nuke has dropped: ", s:(NukeHasDropped() ? "true" : "false"), s:"\n");
+                    Append(s:"Nuke has blown over: ", s:(NukeHasBlownOver() ? "true" : "false"), s:"\n");
+                }
+
+                Append(s:"Is cold: ", s:(GetIsCold() ? "true" : "false"), s:"\n");
+                Append(s:"Temperature: ", d:GetTemperature(), s:"\n");
+                Append(s:"Next temperature update: ", d:(GetNextTemperatureTic() - Utils::GetSynchronizedTimer()), s:"\n");
+
+                Append(s:"Is in bunker: ", s:(GetIsInBunker() ? "true" : "false"), s:"\n");
+
+                Append(s:"Is at elevator doors: ", d:CheckActorInventory(ActivatorTid(), AT_ELEVATOR_DOORS_ITEM), s:"\n");
+                Append(s:"Is in elevator: ", d:CheckActorInventory(ActivatorTid(), IN_ELEVATOR_ITEM), s:"\n");
+            }
+
+            HudMessage(s:message; HUDMSG_PLAIN, 0, CR_WHITE, 20.1, 45.0, 0.03);
+            Delay(const: 1);
+        }
+    }
+
+    internal bool GetIsInBunker()
+    {
+        return GetPlayerIsInBunker(PlayerNumber());
+    }
+
+    internal bool GetPlayerIsInBunker(int id)
+    {
+        return CheckActorInventory(Identity::GetTid(id), IN_BUNKER_ITEM);
+    }
+
+    internal void SetIsInBunker(bool value)
+    {
+        SetPlayerIsInBunker(PlayerNumber(), value);
+    }
+
+    internal void SetPlayerIsInBunker(int id, bool value)
+    {
+        BCSUtils::SetActorInventory(Identity::GetTid(id), IN_BUNKER_ITEM, value);
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** Holy cross flow
+    ** -----------------------------------------------------------------------------
+    */
+
+    script 21
+    {
+        if (Player::GetIsZombie())
+            terminate;
+
+        setFont("smallfont");
+        SetHudSize(640, 480, FALSE);
+        HudMessage(s:"You thoroughly search the locker"; HUDMSG_TYPEON, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 4.0, 0.04, 0);
+
+        int searchingCount = 35*5;
+        while (--searchingCount)
+        {
+            if (Utils::GetIsMoving() || Player::GetIsZombie())
+            {
+                if (Player::GetIsZombie())
+                {
+                    BCSUtils::ClearHudMessage(HUDID_INTERACTION);
+                    BCSUtils::ClearHudMessage(HUDID_INTERACTION+1);
+                }
+                else
+                {
+                    HudMessage(s:"You are unable to properly search the locker when moving."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+                    BCSUtils::ClearHudMessage(HUDID_INTERACTION+1);
+                }
+
+                terminate;
+            }
+
+            if (searchingCount == 35*4)
+                HudMessage(s:"..."; HUDMSG_TYPEON, HUDID_INTERACTION+1, CR_WHITE, 445.0, 120.0, 0, 1.0, 0.0);
+
+            delay(1);
+        }
+
+        HudMessage(s:"The locker is stuffed with radiation suits."; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 1.0);
+        HudMessage(s:"You take one, but what use would it have here?"; HUDMSG_FADEOUT, HUDID_INTERACTION+1, CR_WHITE, 320.0, 130.0, 3.0, 1.0);
+        GiveInventory("ZH2ZM31MIronFeet", 1);
+    }
+
+    // Opening the cross room
+    script "OpenCrossRoom"
+    {
+        ClearLineSpecial();
+        ActivatorSound("switches/normbutn", 255);
+        SetActivator(-1);
+        _crossRoomUnlocked = true;
+
+        floor_movetovalue(31, 10, -248);
+        ceiling_movetovalue(31, 10, -144);
+        tagwait(31);
+
+        delay(35);
+
+        floor_movetovalue(34, 10, -248);
+        ceiling_movetovalue(34, 10, -144);
+    }
+
+    // Hacking for the holy cross
+    script "HackHolyCross"
+    {
+        if(Player::GetIsZombie())
+            terminate;
+
+        setFont("smallfont");
+        SetHudSize(640, 480, FALSE);
+
+        int hackingPercentage = 100;
+        while (hackingPercentage)
+        {
+            if (Utils::GetIsMoving() || Player::GetIsZombie())
+            {
+                if (Player::GetIsZombie())
+                {
+                    BCSUtils::ClearHudMessage(HUDID_INTERACTION);
+                    BCSUtils::ClearHudMessage(HUDID_INTERACTION+1);
+                } else
+                {
+                    HudMessage(s:"Do not move if you want to hack the terminal."; HUDMSG_FADEOUT, HUDID_INTERACTION+1, CR_WHITE, 320.0, 130.0, 3.0, 1.0);
+                }
+
+                terminate;
+            }
+
+            if (!(timer() % 8))
+                hackingPercentage--;
+
+            HudMessage(s:"Hacking: ", d:100-hackingPercentage, s:"%"; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 1.0);
+            HudMessage(s:"Do not move."; HUDMSG_FADEOUT, HUDID_INTERACTION + 1, CR_WHITE, 320.0, 130.0, 3.0, 1.0);
+            delay(1);
+        }
+
+        floor_lowerbyvalue(15, 8, 96);
+        ClearLineSpecial();
+    }
+
+    // Handle damaging players that are in the toxic room, and are not protected.
+    script "ToxicRoomTrigger"
+    {
+        bool toxicLineSide = LineSide() == LINE_FRONT;
+        _inToxicRoom[PlayerNumber()] = toxicLineSide;
+
+        while (_inToxicRoom[PlayerNumber()])
+        {
+            if (!CheckInventory("ZH2ZM31MIronFeet")
+                && Player::GetIsHuman()
+                && Timer() % 2 == 0)
+            {
+                Thing_damage2(ActivatorTID(), 1, "silent");
+            }
+
+            delay(const: 1);
+        }
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** Elevator flow
+    ** -----------------------------------------------------------------------------
+    */
+
+    // Trigger the player as outside / inside an elevator
+    script "TogglePlayerElevatorId" (int elevatorId)
+    {
+        bool entersElevator = LineSide() == LINE_FRONT;
+        if (entersElevator)
+        {
+            Logger::LogDebug(LOGSOURCE, StrParam(s:"Player ", n:0, s:" has entered elevator ", d:elevatorId));
+
+            UnsetPlayerIsAtElevatorDoors(PlayerNumber());
+            SetPlayerIsInElevator(PlayerNumber(), elevatorId);
+
+            terminate;
+        }
+
+        Logger::LogDebug(LOGSOURCE, StrParam(s:"Player ", n:0, s:" has exited the elevator"));
+
+        UnsetPlayerIsInElevator(PlayerNumber());
+        SetPlayerIsAtElevatorDoors(PlayerNumber(), elevatorId);
+    }
+
+    script "TogglePlayerAtElevatorDoorsId" (int elevatorId)
+    {
+        bool entersElevator = LineSide() == LINE_FRONT;
+        if (entersElevator)
+        {
+            SetPlayerIsAtElevatorDoors(PlayerNumber(), elevatorId);
+            terminate;
+        }
+
+        UnsetPlayerIsAtElevatorDoors(PlayerNumber());
+    }
+
+    // Main elevator logic. Parameters indicate pressed elevator id, target elevator id, and wether the button inside the elevator was pressed.
+    script "ElevatorLogic" (int elevatorId, int targetElevatorId, int pressedInside)
+    {
+        bool isInBunker = _elevatorData[elevatorId].IsInBunker;
+        bool targetIsInBunker = _elevatorData[targetElevatorId].IsInBunker;
+
+        // Checks should never prevent players from getting out of an elevator.
+        if (!pressedInside)
+        {
+            // Can't do this one, because then players can just hide in the elevator forever.
+            //if(Player::GetIsZombie())
+            //{
+            //    Chat::SendSelfActivator("Brainz...?");
+            //    terminate;
+            //}
+
+            // These checks have all also been moved downwards to make sure the doors can open after the nuke to avoid camping.
+            //if(NukeHasDropped())
+            //{
+            //    Logger::LogActivator("The lift circuits are fried by the nuke. The elevator can not be used.");
+            //    terminate;
+            //}
+
+            //if (isInBunker && _eventState == EVENTSTATE_NUKE)
+            //{
+            //    Logger::LogActivator("Don't go back up! You're safe down here from the nuke.");
+            //    terminate;
+            //}
+
+            if(!_labUnlocked)
+            {
+                Logger::LogActivator("The lifts have been locked down for quarantine.");
+                terminate;
+            }
+        }
+
+        if(_elevatorInUse[elevatorId])
+        {
+            Logger::LogActivator("The elevator is currently in use.");
+            terminate;
+        }
+
+        int id = PlayerNumber();
+        SetActivator(-1);
+
+        // Elevator is now in use
+        _elevatorInUse[elevatorId] = true;
+        _elevatorInUse[targetElevatorId] = true;
+
+        // Elevator sound.
+        int dingSoundTag = _elevatorData[elevatorId].DingSoundAndSourceTeleportTag;
+        ThingSound(dingSoundTag, "sound/ding1", 127);
+        Delay(35);
+
+        Logger::LogDebug(LOGSOURCE, StrParam(s:"Start elevator logic. Elevator id: ", d:elevatorId, s:", target elevatorId: ", d:targetElevatorId));
+
+        // Open doors.
+        int polyRightTag = _elevatorData[elevatorId].PolyTagRight;
+        int polyLeftTag = polyRightTag++;
+        int polyRightAngle = _elevatorData[elevatorId].PolyRightAngle;
+        int polyLeftAngle = polyRightAngle + 128;
+        Polyobj_OR_Move(polyRightTag, 5, polyRightAngle, 32);
+        Polyobj_OR_Move(polyLeftTag, 5, polyLeftAngle, 32);
+        PolyWait(polyRightTag);
+        PolyWait(polyLeftTag);
+
+        Delay(35*4);
+
+        Polyobj_OR_Move(polyRightTag, 5, polyLeftAngle, 32);
+        Polyobj_OR_Move(polyLeftTag, 5, polyRightAngle, 32);
+
+        ACS_NamedExecuteAlways("CrushPlayersBetweenDoors", 0, elevatorId);
+
+        // Stop here if we pressed from the inside.
+        if (pressedInside)
+        {
+            delay(35);
+
+            _elevatorInUse[elevatorId] = false;
+            _elevatorInUse[targetElevatorId] = false;
+            terminate;
+        }
+
+        // To avoid the elevators not working because people block it, we should not wait for these to close.
+        //PolyWait(polyRightTag);
+        //PolyWait(polyLeftTag);
+
+        delay(35 * 2);
+
+        // Check if elevator or target elevator have occupands.
+        if (!GetElevatorHasOccupands(elevatorId) && !GetElevatorHasOccupands(targetElevatorId))
+        {
+            _elevatorInUse[elevatorId] = false;
+            _elevatorInUse[targetElevatorId] = false;
+            terminate;
+        }
+
+        // Can't use the elevator after the nuke has blow over.
+        if(NukeHasBlownOver() && isInBunker)
+        {
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            {
+                if (!PlayerInGame(i) || !GetPlayerIsInElevator(i, elevatorId))
+                    continue;
+
+                Logger::LogTo(i, "The elevator does not respond. The nuke must have fried its circuits.");
+            }
+
+            _elevatorInUse[elevatorId] = false;
+            _elevatorInUse[targetElevatorId] = false;
+            terminate;
+        }
+
+        // Remaining logic to move the elevators on both sides.
+        ACS_NamedExecuteAlways("ElevatorLogic2", 0, elevatorId, targetElevatorId);
+        ACS_NamedExecuteAlways("ElevatorLogic2", 0, targetElevatorId, elevatorId);
+
+        // This must match the inner delay in ElevatorLogic2
+        delay(35 * 8);
+
+        // Failsafe, anybody that just took the elevator going outside the bunker will die when the nuke dropped.
+        if (NukeHasBlownOver())
+        {
+            int killElevatorId = isInBunker ? elevatorId : targetElevatorId;
+            for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            {
+                if (!PlayerInGame(i) || !GetPlayerIsInElevator(i, killElevatorId))
+                    continue;
+
+                Game::KillPlayer(i, MOD_EXIT);
+            }
+        }
+
+        // Set occupands in the elevator as in/outside the bunker
+        for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (PlayerInGame(i) && GetPlayerIsInElevator(i, elevatorId))
+                SetPlayerIsInBunker(i, targetIsInBunker);
+
+            else if (PlayerInGame(i) && GetPlayerIsInElevator(i, targetElevatorId))
+                SetPlayerIsInBunker(i, isInBunker);
+        }
+
+        // Switch players into the new elevator
+        for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (GetPlayerIsInElevator(i, elevatorId))
+                SetPlayerIsInElevator(i, targetElevatorId);
+            else if (GetPlayerIsInElevator(i, targetElevatorId))
+                SetPlayerIsInElevator(i, elevatorId);
+        }
+
+        // Remaining time to close the doors, plus 1 second to close them fully.
+        delay(35 * 4 + 35);
+
+        // Elevators no longer in use.
+        _elevatorInUse[elevatorId] = false;
+        _elevatorInUse[targetElevatorId] = false;
+    }
+
+    script "ElevatorLogic2" (int elevatorId, int targetElevatorId)
+    {
+        // Move to a temporary room.
+        int sourceTag = _elevatorData[elevatorId].DingSoundAndSourceTeleportTag;
+        int sourceSectorTag = _elevatorData[elevatorId].SourceSectorTag;
+        int tempDestTag = _elevatorData[elevatorId].TempTargetTeleportTag;
+        int tempDestSectorTag = _elevatorData[elevatorId].TempTargetSectorTag;
+        int destTag = _elevatorData[elevatorId].TargetTeleportTag;
+        delay(35*3);
+
+        // Move all players in the elevator to the new one.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (GetPlayerIsInElevator(i, elevatorId))
+                TeleportInSector(sourceSectorTag, sourceTag, tempDestTag, false, Identity::GetTid(i));
+        }
+
+        PlaySound(tempDestTag, "sound/lift1", CHAN_AUTO, 1.0);
+        delay(35*5);
+
+        // Move all players from the temporary elevator to the final one.
+        // This one doesn't need a special check since we're in a temporary room anyway.
+        TeleportInSector(tempDestSectorTag, tempDestTag, destTag, false);
+
+        ThingSound(destTag, "sound/ding1", 127);
+
+        // Open doors.
+        int polyRightTag = _elevatorData[targetElevatorId].PolyTagRight;
+        int polyLeftTag = polyRightTag++;
+        int polyRightAngle = _elevatorData[targetElevatorId].PolyRightAngle;
+        int polyLeftAngle = polyRightAngle + 128;
+        Polyobj_OR_Move(polyRightTag, 5, polyRightAngle, 32);
+        Polyobj_OR_Move(polyLeftTag, 5, polyLeftAngle, 32);
+        PolyWait(polyRightTag);
+        PolyWait(polyLeftTag);
+
+        Delay(35*4);
+
+        Polyobj_OR_Move(polyRightTag, 5, polyLeftAngle, 32);
+        Polyobj_OR_Move(polyLeftTag, 5, polyRightAngle, 32);
+
+        ACS_NamedExecuteAlways("CrushPlayersBetweenDoors", 0, elevatorId);
+
+        // Don't wait here either, doors will properly reopen if recalled anyway.
+        //PolyWait(polyRightTag);
+        //PolyWait(polyLeftTag);
+    }
+
+    script "CrushPlayersBetweenDoors"(int elevatorId)
+    {
+        Delay(35);
+
+        int angle = _elevatorData[elevatorId].CrushThrustAngle;
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i) || !GetPlayerIsAtElevatorDoors(i, elevatorId))
+                continue;
+
+            int tid = Identity::GetTid(i);
+            Thing_Damage(tid, 20, MOD_CRUSH);
+            ThrustThing(angle, 10, false, tid);
+            Logger::LogTo(i, "You got crushed by the elevator doors, careful!");
+        }
+    }
+
+    internal bool GetElevatorHasOccupands(int elevatorId)
+    {
+        // Check if anybody has entered the elevator.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!GetPlayerIsInElevator(i, elevatorId))
+                continue;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    internal bool GetPlayerIsAtElevatorDoors(int id, int value)
+    {
+        return CheckActorInventory(Identity::GetTid(id), AT_ELEVATOR_DOORS_ITEM) == (value + 1);
+    }
+
+    internal void SetPlayerIsAtElevatorDoors(int id, int value)
+    {
+        BCSUtils::SetActorInventory(Identity::GetTid(id), AT_ELEVATOR_DOORS_ITEM, value + 1);
+    }
+
+    internal void UnsetPlayerIsAtElevatorDoors(int id)
+    {
+        BCSUtils::SetActorInventory(Identity::GetTid(id), AT_ELEVATOR_DOORS_ITEM, 0);
+    }
+
+
+    internal bool GetPlayerIsInElevator(int id, int value)
+    {
+        return CheckActorInventory(Identity::GetTid(id), IN_ELEVATOR_ITEM) == value + 1;
+    }
+
+    internal void SetPlayerIsInElevator(int id, int value)
+    {
+        BCSUtils::SetActorInventory(Identity::GetTid(id), IN_ELEVATOR_ITEM, value + 1);
+    }
+
+    internal void UnsetPlayerIsInElevator(int id)
+    {
+        BCSUtils::SetActorInventory(Identity::GetTid(id), IN_ELEVATOR_ITEM, 0);
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** EVENTS - Night
+    ** -----------------------------------------------------------------------------
+    */
+
+    // Nighttime event
+    Script "Event_Night"
+    {
+        if (_eventState != EVENTSTATE_NONE)
+            terminate;
+
+        _eventState = EVENTSTATE_NIGHT;
+        _eventStartTimestamp = Timer();
+        SyncEvent();
+
+        // Note: we don't run a loop as soon as the map starts, as anybody that joins after this script starts should see the changes immediately.
+        ACS_NamedExecute("Event_Night_client", 0);
+    }
+
+    Script "Event_Night_client" clientside
+    {
+        // Safety guard, to ensure that we received all info necessary to run the event.
+        while (_eventState != EVENTSTATE_NIGHT
+            || _eventStartTimestamp == 0)
+        {
+            delay(const: 1);
+        }
+
+        int fadeValue  = 156,
+            colorValue = 255;
+
+        setFont("bigfont");
+        SetHudSize(640, 480, FALSE);
+        HudMessage(s:"Night approaches"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 100.0, 5.0, 1.0, 5.0);
+
+        delay(35 * 3);
+        Music::PlayMusic("");
+        Music::SetDefaultMusic("SUBZERO");
+        delay(35 * 8);
+
+        while (--fadeValue > 20 && --colorValue)
+        {
+            if (fadeValue < 30 && Player::GetPlayerIsHuman(ConsolePlayerNumber()))
+            {
+                SetHudSize(640, 480, FALSE);
+                HudMessage(s:"As the night approaches"; HUDMSG_TYPEON, 0, CR_WHITE, 320.0, 93.0, 3.0, 0.04, 1.0);
+                HudMessage(s:"it suddenly becomes very, very cold..."; HUDMSG_TYPEON, 0, CR_WHITE, 320.0, 107.0, 2.5, 0.04, 1.0);
+            }
+
+            SetLevelAtmosphere(fadeValue, colorValue, colorValue);
+            delay(5);
+        }
+
+        Music::PlayDefaultMusic();
+    }
+
+    internal bool NightHasFallen()
+    {
+        return _eventState == EVENTSTATE_NIGHT && GetTicsUntilNightFallen() == 0;
+    }
+
+    internal int GetTicsUntilNightFallen()
+    {
+        if (_eventState != EVENTSTATE_NIGHT)
+            return 0;
+
+        return BCSUtils::Max(_eventStartTimestamp + EVENT_NIGHT_STARTTICS - Utils::GetSynchronizedTimer(), 0);
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** EVENTS - Nuke
+    ** -----------------------------------------------------------------------------
+    */
+
+    Script "Event_Nuke"
+    {
+        if (_eventState != EVENTSTATE_NONE)
+            terminate;
+
+        _eventState = EVENTSTATE_NUKE;
+        _eventStartTimestamp = Timer();
+        SyncEvent();
+
+        // Note: we don't run a loop as soon as the map starts, as anybody that joins after this script starts should see the changes immediately.
+        ACS_NamedExecute("Event_Nuke_client", 0);
+
+        int waitTics = EVENT_NUKE_STARTTICS;
+        while(--waitTics)
+            Delay(const: 1);
+
+        // Delay before the nuke truly hits
+        Delay(EVENT_NUKE_BLOWOVERTICS);
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            NamedExecuteClientScript("Event_Nuke_Final_client", i);
+        }
+
+        Delay(12);
+
+        for (i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i) || GetPlayerIsInBunker(i))
+                continue;
+
+            Game::KillPlayer(i, MOD_EXIT);
+        }
+
+        // Set boundaries by raising rocks
+        SetLineBlocking(2, BLOCK_PLAYERS);
+        for (i = 0; i < lengthof(_nukeBoundaryRocks); ++i)
+        {
+            int tag = _nukeBoundaryRocks[i].SectorTag;
+            int height = _nukeBoundaryRocks[i].Height;
+
+            Floor_MoveToValue(tag, 999, height);
+            ChangeFloor(tag, "FLAT5_8");
+        }
+    }
+
+    Script "Event_Nuke_client" clientside
+    {
+        // Safety guard, to ensure that we received all info necessary to run the event.
+        while (_eventState != EVENTSTATE_NUKE
+            || _eventStartTimestamp == 0)
+        {
+            delay(const: 1);
+        }
+
+        int timeLeft = EVENT_NUKE_STARTTICS;
+        int passedTime = 0;
+
+        Music::SetDefaultMusic("");
+        Music::PlayDefaultMusic();
+
+        while(timeLeft--)
+        {
+            BCSUtils::SetActivatorToConsolePlayer();
+            SetHudSize(640, 480, FALSE);
+
+            // Alarm every four seconds.
+            if (passedTime % (35 * 4) == 0)
+            {
+                AmbientSound("sound/nukealarm", 255);
+            }
+
+            // Message every two seconds.
+            if (passedTime % (35 * 2) == 0)
+            {
+                setFont("bigfont");
+                HudMessage(s:"Civil defence siren"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 93.0, 1.0, 0.6, 0.6);
+            }
+
+            // After at least two seconds, every two seconds.
+            if (passedTime > (35 * 2) && passedTime % (35 * 2) == 0)
+            {
+                setFont("bigfont");
+                HudMessage(s:"Nuke incoming"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 107.0, 1.0, 0.6, 0.6);
+            }
+
+            // Once after four seconds.
+            if (passedTime == 35 * 4)
+            {
+                Music::SetDefaultMusic("Disposal");
+                Music::PlayDefaultMusic();
+            }
+
+            // Inform of shelter after 6 seconds.
+            if (passedTime == 35 * 6)
+            {
+                if (!GetIsInBunker())
+                {
+                    setFont("smallfont");
+                    HudMessage(s:"Seek shelter in the indicated bunkers"; HUDMSG_TYPEON, 0, CR_WHITE, 320.0, 120.0, 2.0, 0.04, 1.0);
+                }
+
+                for (int i = 0; i < lengthof(_shelterMarkers); ++i)
+                    SpawnSpotForced("ZH2ZM31MNukeMarker", _shelterMarkers[i], 0, 0);
+            }
+
+            // Display time until explosion after 10.5 seconds.
+            if(passedTime > 35 * 10 + 18)
+            {
+                setFont("smallfont");
+                HudMessage(s:"Explosion in: ", s:Utils::FormatTics(GetTicsUntilDrop(), true); HUDMSG_PLAIN, 0, CR_WHITE, 320.0, 120.0, BCSUtils::HUDTIC);
+            }
+
+            // Display safety markers on map avery tic after 6 seconds.
+            // Don't display them if we're spectating somebody else.
+            if(passedTime > 35 * 6 && !GetIsInBunker() && CheckPlayerCamera(ConsolePlayerNumber()) == ActivatorTid())
+            {
+                BCSUtils::HudResetState();
+                BCSUtils::HudSetCameraActor(0);
+                BCSUtils::HudSetVirtualSize(120.0, 90.0);
+                BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+                BCSUtils::HudSetShowOnFullAutomap(FALSE);
+
+                for (i = 0; i < lengthof(_shelterMarkers); ++i)
+                {
+                    int tag = _shelterMarkers[i];
+
+                    fixed distance = BCSUtils::ActorDistance2D(0, tag);
+                    if (distance < 1000.0 || distance > 12000.0 || GetIsInBunker())
+                        continue;
+
+                    BCSUtils::HudSetPoint3D(GetActorX(tag), GetActorY(tag), GetActorZ(tag)+150.0);
+                    BCSUtils::HudDrawImage(0, "NMARA0");
+                }
+            }
+
+            passedTime++;
+            Delay(const: 1);
+        }
+
+        ACS_NamedExecute("Event_Nuke_Fade_client", 0);
+
+        // Spawn nuke, red atmosphere, and remove clouds which actually also mess with the nuke's flare.
+        SetLevelAtmosphere(10, 255, 10);
+        SpawnSpot("ZH2ZM31MNuke", 6);
+        ChangeFloor(48, "-");
+        ChangeFloor(49, "-");
+        Radius_Quake2(0, 1, 35*5, 0, 1, "");
+        delay(35);
+
+        delay(35*2);
+        for (i = 2; i <= 4; ++i)
+        {
+            Radius_Quake2(0, i, 35*2, 0, 1, "");
+            delay(35*2);
+        }
+
+        Radius_Quake2(0, i, 35*3, 0, 1, "");
+    }
+
+    script "Event_Nuke_Fade_client" clientside
+    {
+        // Camera must be on somebody that is in the bunker.
+        int tid = CheckPlayerCamera(ConsolePlayerNumber());
+        if (!Identity::IsValidTid(tid))
+            terminate;
+
+        if (GetPlayerIsInBunker(Identity::GetId(tid)))
+            terminate;
+
+        SetActivator(tid);
+
+        // Player is not in the bunker.
+        FadeTo(150, 20, 20, 1.0, 0);
+        delay(35);
+        FadeTo(0, 0, 0, 0, 8.0);
+    }
+
+    script "Event_Nuke_Final_client" clientside
+    {
+        SetActivatorToPlayer(ConsolePlayerNumber());
+        if (!GetIsInBunker())
+        {
+            AmbientSound("sound/nukeexplosion", 255);
+            delay(6);
+            Spawn("ZH2ZM31MNukeSmoke", GetActorX(0), GetActorY(0), GetActorZ(0));
+        }
+        else
+        {
+            AmbientSound("sound/nukeexplosionfar", 255);
+            delay(6);
+            SpawnSpotForced("ZH2ZM31MNukeSmokeBunker", 1, 0, 0);
+            SpawnSpotForced("ZH2ZM31MNukeSmokeBunker", 4, 0, 0);
+        }
+
+        // Nuke wind
+        Thing_Activate(57);
+
+        // TODO: Doesn't work.
+        for (int i = 0; i < lengthof(_shelterMarkers); ++i)
+            Thing_Remove(_shelterMarkers[i]);
+    }
+
+    internal bool NukeHasDropped()
+    {
+        return _eventState == EVENTSTATE_NUKE && GetTicsUntilDrop() == 0;
+    }
+
+    internal int GetTicsUntilDrop()
+    {
+        if (_eventState != EVENTSTATE_NUKE)
+            return 0;
+
+        return BCSUtils::Max(_eventStartTimestamp + EVENT_NUKE_STARTTICS - Utils::GetSynchronizedTimer(), 0);
+    }
+
+    internal bool NukeHasBlownOver()
+    {
+        return _eventState == EVENTSTATE_NUKE && GetTicsUntilBlowOver() == 0;
+    }
+
+    internal int GetTicsUntilBlowOver()
+    {
+        if (_eventState != EVENTSTATE_NUKE)
+            return 0;
+
+        return BCSUtils::Max(_eventStartTimestamp + EVENT_NUKE_STARTTICS + EVENT_NUKE_BLOWOVERTICS - Utils::GetSynchronizedTimer(), 0);
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** Temperature - CLIENTSIDE
+    ** -----------------------------------------------------------------------------
+    */
+
+    internal void TemperatureTickClient()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (Round::GetGameIsEnding())
+            return;
+
+        if (Player::GetIsZombie())
+            return;
+
+        // Client is in water
+        bool inWater = BCSutils::GetActorWaterLevel(ActivatorTID()) > 0;
+        if (GetIsCold() && inWater)
+        {
+            SetHudSize(640, 480, false);
+            SetFont("smallfont");
+            HudMessage(s:"Watch out! The water is incredibly cold, get out!"; HUDMSG_FADEOUT, HUDID_INTERACTION + 1, CR_YELLOW, 320.0, 400.0, 5.0, 0.6, 0.6);
+        }
+
+        // Inform client to get warm
+        else if (GetIsCold() && NightHasFallen())
+        {
+            SetHudSize(640, 480, false);
+            SetFont("smallfont");
+            HudMessage(s:"Caution! It is very cold at night, get somewhere warm!"; HUDMSG_FADEOUT, HUDID_INTERACTION + 1, CR_YELLOW, 320.0, 400.0, 5.0, 0.6, 0.6);
+        }
+
+        // Explain the temperature system once when we go below maximum temperature.
+        if (!_hasExplainedTemperature && GetTemperature() < TEMPERATURE_MAX)
+        {
+            _hasExplainedTemperature = true;
+
+            setFont("smallfont");
+            SetHudSize(640, 480, FALSE);
+            HudMessage(s:"Careful, this place is freezing!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 360.0, 5.0, 1.0, 5.0);
+            HudMessage(s:"Either stay inside, or make sure you find warm places."; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 370.0, 5.0, 1.0, 5.0);
+            HudMessage(s:"Keep your body temperature above \cf28 degrees \cjat all times."; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 380.0, 5.0, 1.0, 5.0);
+        }
+
+        SetHudSize(480, 480, 0);
+        DrawFrostScreen(240.0, 240.0, HUDID_TEMPERATURE);
+    }
+
+    internal raw OnDrawTemperatureGaugeHud(void[]* data)
+    {
+        if (data == null)
+            return 0;
+
+        _hudHookDataRef = data;
+
+        if (_hudHookDataRef.Type != Hud::HUDHOOK_PLAYERSTATUS)
+            return 0;
+
+        if (GetIsInBunker())
+            return 0;
+
+        if (Player::GetIsZombie())
+            return 0;
+
+        Hud::SetRelativePoint(160.0, -80.0);
+        BCSUtils::HudDrawImage(HUDID_TEMPERATURE + 4, "TEMPICON");
+
+        int temperature = GetTemperature();
+
+        // Flicker effect for the value.
+        if (temperature == 0 && Timer() % 10 >= 5)
+            return 0;
+
+        int color = temperature > 5
+            ? CR_WHITE
+            : temperature > 3
+                ? CR_YELLOW
+                : CR_RED;
+
+        Hud::SetRelativePoint(176.0, -85.0);
+        BCSUtils::HudSetTextColor(color);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_TOP);
+        BCSUtils::HudDrawText(HUDID_TEMPERATURE + 5, str((int)(temperature + TEMPERATURE_BASE)));
+        return 0;
+    }
+
+    internal void DrawFrostScreen(int x, int y, int id)
+    {
+        // The values at which the graphics are going to be displayed.
+        static int frostGraphicValues[4] = {
+            7, 5, 3, 1
+        };
+
+        // Update every three tics.
+        if (Timer() % 3 != 0)
+            return;
+
+        int temperature = GetTemperature();
+
+        // Determine graphic.
+        int graphicIndex = 0;
+        for (int i = lengthof(frostGraphicValues) - 1; i >= 0; --i)
+        {
+            if (temperature > frostGraphicValues[i])
+                continue;
+
+            graphicIndex = i + 1;
+            break;
+        }
+
+        // Always show the last graphic if outside at night or in water.
+        bool inWater = BCSUtils::GetActorWaterLevel(ActivatorTID()) > 0;
+        if (GetIsCold() && (NightHasFallen() || inWater))
+            graphicIndex = 4;
+
+        if (graphicIndex == 0)
+            return;
+
+        SetFont(StrParam(s:"FROSTSC", d:graphicIndex));
+        HudMessage(s:"a"; HUDMSG_FADEINOUT | HUDMSG_ADDBLEND, 0, CR_UNTRANSLATED, 240.0, 240.0, 0.0, 0.5, 0.1);
+    }
+
+    internal int GetTemperature()
+    {
+        return GetPlayerTemperature(PlayerNumber());
+    }
+
+    internal int GetPlayerTemperature(int id)
+    {
+        return CheckActorInventory(Identity::GetTid(id), TEMPERATURE_VALUE_ITEM);
+    }
+
+    internal void SetTemperature(int value)
+    {
+        SetPlayerTemperature(PlayerNumber(), value);
+    }
+
+    internal void SetPlayerTemperature(int id, int value)
+    {
+        BCSUtils::SetActorInventory(Identity::GetTid(id), TEMPERATURE_VALUE_ITEM, value);
+    }
+
+
+
+    internal int GetNextTemperatureTic()
+    {
+        return GetPlayerNextTemperatureTic(PlayerNumber());
+    }
+
+    internal int GetPlayerNextTemperatureTic(int id)
+    {
+        return CheckActorInventory(Identity::GetTid(id), TEMPERATURE_NEXTTIC_ITEM);
+    }
+
+    internal void SetNextTemperatureTic(int value)
+    {
+        SetPlayerNextTemperatureTic(PlayerNumber(), value);
+    }
+
+    internal void SetPlayerNextTemperatureTic(int id, int value)
+    {
+        BCSUtils::SetActorInventory(Identity::GetTid(id), TEMPERATURE_NEXTTIC_ITEM, value);
+    }
+
+
+
+    internal bool GetIsCold()
+    {
+        return GetPlayerIsCold(PlayerNumber());
+    }
+
+    internal bool GetPlayerIsCold(int id)
+    {
+        return CheckActorInventory(Identity::GetTid(id), TEMPERATURE_ISCOLD_ITEM);
+    }
+
+    internal void SetIsCold(bool value)
+    {
+        SetPlayerIsCold(PlayerNumber(), value);
+    }
+
+    internal void SetPlayerIsCold(int id, bool value)
+    {
+        BCSUtils::SetActorInventory(Identity::GetTid(id), TEMPERATURE_ISCOLD_ITEM, value);
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** Temperature - SERVERSIDE
+    ** -----------------------------------------------------------------------------
+    */
+
+    // Mark the player as inside/outside depending on lineside.
+    script "SetPlayerWarm"
+    {
+        SetIsCold(LineSide() != LINE_FRONT);
+    }
+
+    // Main loop of the temperature system.
+    // This script handles the behavior of the temperature timer and ensures it increments/decrements.
+    script "TemperatureLoop"
+    {
+        while(true)
+        {
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            {
+                int tid = Identity::GetTid(i);
+
+                if (!BCSUtils::ActorIsAlive(tid) || Player::GetPlayerIsZombie(i) || Round::GetGameIsEnding())
+                    continue;
+
+                int temperature = GetPlayerTemperature(i);
+                bool isCold = GetPlayerIsCold(i);
+                bool isInWater = BCSUtils::GetActorWaterLevel(tid) > 0;
+
+                // Hurt the player every 5 tics if they are at minimum temperature.
+                if (temperature == 0 && isCold)
+                {
+                    if (!_firstDamageTic[i])
+                    {
+                        _firstDamageTic[i] = true;
+                        Logger::LogTo(i, "You are freezing to death! Seek shelter.");
+                    }
+
+                    if (Timer() % 5 == 0)
+                        Thing_damage2(tid, 1, "silent");
+
+                    continue;
+                }
+
+                _firstDamageTic[i] = false;
+
+                // Check if the next tic passed.
+                if (GetPlayerNextTemperatureTic(i) > Timer())
+                    continue;
+
+                // Change temperature if the player's situation is the same.
+                if (_isColdLast[i] == isCold)
+                {
+                    temperature += isCold ? -1 : 1;
+                    temperature = BCSUtils::clamp(temperature, 0, TEMPERATURE_MAX);
+                    SetPlayerTemperature(i, temperature);
+                }
+
+                int nextTic;
+                if (!isCold) nextTic = TEMPERATURE_TIC_WARM;
+                else if (isInWater) nextTic = TEMPERATURE_TIC_WATER;
+                else if (NightHasFallen()) nextTic = TEMPERATURE_TIC_NIGHT;
+                else nextTic = TEMPERATURE_TIC_NORMAL;
+
+                SetPlayerNextTemperatureTic(i, Timer() + nextTic);
+                _isColdLast[i] = isCold;
+            }
+
+            Delay(const: 1);
+        }
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** EVENT STATE SYNC
+    ** -----------------------------------------------------------------------------
+    */
+
+    internal void SyncEvent()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        BCSUtils::SyncVariable(SYNC_EVENT, _eventState);
+        BCSUtils::SyncVariable(SYNC_EVENT + 1, _eventStartTimestamp);
+
+        ACS_NamedExecuteAlways("SyncEvent_Client", 0);
+    }
+
+    script "SyncEvent_Client" clientside
+    {
+        ClientSyncEvent();
+    }
+
+    // Called clientside to fetch the synced state.
+    internal void ClientSyncEvent()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+            return;
+
+        _eventState = BCSUtils::GetSyncVarDefault(SYNC_EVENT, EVENTSTATE_NONE);
+        _eventStartTimestamp = BCSUtils::GetSyncVarDefault(SYNC_EVENT + 1, 0);
+
+        Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced event state client: ", d:_eventState, s:", event start timestamp: ", d:_eventStartTimestamp));
+    }
+
+    #undef LOGSOURCE
 }

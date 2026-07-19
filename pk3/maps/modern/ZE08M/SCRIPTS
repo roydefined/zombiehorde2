@@ -9,300 +9,300 @@
 
 strict namespace
 {
-	Int resist1 = 10;
-	Int resist2 = 15;
-	Int resist3 = 10;
-	Int resist4 = 30;
-	Int resistairaid = 50;
+    Int resist1 = 10;
+    Int resist2 = 15;
+    Int resist3 = 10;
+    Int resist4 = 30;
+    Int resistairaid = 50;
 
-	// ZH2: ported from zh-beta29
-	function void ResistMessage (int restime)
-	{
-		SetFont("BIGFONT");
-		HudMessageBold(s:"Resist for \cJ", d:restime, s:" \cGseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-	}
+    // ZH2: ported from zh-beta29
+    function void ResistMessage (int restime)
+    {
+        SetFont("BIGFONT");
+        HudMessageBold(s:"Resist for \cJ", d:restime, s:" \cGseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+    }
 
-	Script 1 OPEN
-	{
-		SpawnSpotForced("ZH2LegacyZm21OldKey", random(73,77), 0, 0);
-		SetLineSpecial(13, 80, 5, 0, 13);
-		TranslucentLine(13, 96, 0);
-		SetLineSpecial(14, 80, 5, 0, 14);
-		TranslucentLine(14, 96, 0);
-		SetLineSpecial(17, 80, 5, 0, 17);
-		TranslucentLine(17, 96, 0);
-		SetLineSpecial(18, 80, 5, 0, 18);
-		TranslucentLine(18, 96, 0);
-		SetLineSpecial(30, 80, 5, 0, 30);
-		TranslucentLine(30, 96, 0);
-		SetLineSpecial(31, 80, 5, 0, 31);
-		TranslucentLine(31, 96, 0);
-		SetLineSpecial(43, 80, 5, 0, 43);
-		TranslucentLine(43, 96, 0);
-		SetLineSpecial(44, 80, 5, 0, 44);
-		TranslucentLine(44, 96, 0);
-		SetLineSpecial(59, 80, 5, 0, 59);
-		TranslucentLine(59, 96, 0);
-		SetLineSpecial(60, 80, 5, 0, 60);
-		TranslucentLine(60, 96, 0);
-		Sector_setcolor(3, 140, 255, 140);
-		Delay(25*20);
-		Floor_LowerByValue(6, 32, 120);
+    Script 1 OPEN
+    {
+        SpawnSpotForced("ZH2LegacyZm21OldKey", random(73,77), 0, 0);
+        SetLineSpecial(13, 80, 5, 0, 13);
+        TranslucentLine(13, 96, 0);
+        SetLineSpecial(14, 80, 5, 0, 14);
+        TranslucentLine(14, 96, 0);
+        SetLineSpecial(17, 80, 5, 0, 17);
+        TranslucentLine(17, 96, 0);
+        SetLineSpecial(18, 80, 5, 0, 18);
+        TranslucentLine(18, 96, 0);
+        SetLineSpecial(30, 80, 5, 0, 30);
+        TranslucentLine(30, 96, 0);
+        SetLineSpecial(31, 80, 5, 0, 31);
+        TranslucentLine(31, 96, 0);
+        SetLineSpecial(43, 80, 5, 0, 43);
+        TranslucentLine(43, 96, 0);
+        SetLineSpecial(44, 80, 5, 0, 44);
+        TranslucentLine(44, 96, 0);
+        SetLineSpecial(59, 80, 5, 0, 59);
+        TranslucentLine(59, 96, 0);
+        SetLineSpecial(60, 80, 5, 0, 60);
+        TranslucentLine(60, 96, 0);
+        Sector_setcolor(3, 140, 255, 140);
+        Delay(25*20);
+        Floor_LowerByValue(6, 32, 120);
 
-	}
+    }
 
-	Script 2 (void) // First Door
-	{
-		SetActivator(-1);
-		for(int i = resist3; i > 0; i--)
-	{
-			ResistMessage(i);
-			Delay(35);
-		}
-		Floor_LowerByValue(5, 16, 120);
-	}
+    Script 2 (void) // First Door
+    {
+        SetActivator(-1);
+        for(int i = resist3; i > 0; i--)
+    {
+            ResistMessage(i);
+            Delay(35);
+        }
+        Floor_LowerByValue(5, 16, 120);
+    }
 
-	Script 3 (Void) // Depot Door
-	{
-		Door_Close(7, 32);
-		Delay(25*25);
-		Door_Open(7, 32);
-	}
+    Script 3 (Void) // Depot Door
+    {
+        Door_Close(7, 32);
+        Delay(25*25);
+        Door_Open(7, 32);
+    }
 
-	Script 4 (void) // Second Resist
-	{
-		SetActivator(-1);
-		for(int i = resist2; i > 0; i--)
-	{
-			ResistMessage(i);
-			Delay(35);
-		}
-		Floor_LowerByValue(10, 32, 128);
-	}
+    Script 4 (void) // Second Resist
+    {
+        SetActivator(-1);
+        for(int i = resist2; i > 0; i--)
+    {
+            ResistMessage(i);
+            Delay(35);
+        }
+        Floor_LowerByValue(10, 32, 128);
+    }
 
-	script 5 (int id) // glassbreak
-	{
-		SetLineBlocking(id, BLOCK_NOTHING);
-		SetLineTexture(id, SIDE_FRONT, TEXTURE_MIDDLE, "-");
-		SetLineTexture(id, SIDE_BACK, TEXTURE_MIDDLE, "-");
-		Thing_Activate(id);
-	}
+    script 5 (int id) // glassbreak
+    {
+        SetLineBlocking(id, BLOCK_NOTHING);
+        SetLineTexture(id, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+        SetLineTexture(id, SIDE_BACK, TEXTURE_MIDDLE, "-");
+        Thing_Activate(id);
+    }
 
-	script 6 (void)
-	{
-		Floor_Raisebyvalue(10, 128, 128);
-		Delay(18*18);
-		Floor_Lowerbyvalue(10, 32, 128);
-	}
+    script 6 (void)
+    {
+        Floor_Raisebyvalue(10, 128, 128);
+        Delay(18*18);
+        Floor_Lowerbyvalue(10, 32, 128);
+    }
 
-	Script 7 (void)
+    Script 7 (void)
 
-	{
-		SetActivator(-1);
-		for(int i = resist1; i > 0; i--)
-		{
-			ResistMessage(i);
-			Delay(35);
-		}
-		Floor_LowerByValue(19, 32, 128);
-	}
+    {
+        SetActivator(-1);
+        for(int i = resist1; i > 0; i--)
+        {
+            ResistMessage(i);
+            Delay(35);
+        }
+        Floor_LowerByValue(19, 32, 128);
+    }
 
-	script 8 (void)
-	{
-		Floor_Raisebyvalue(19, 128, 128);
-		Delay(18*18);
-		Floor_Lowerbyvalue(19, 32, 128);
-	}
+    script 8 (void)
+    {
+        Floor_Raisebyvalue(19, 128, 128);
+        Delay(18*18);
+        Floor_Lowerbyvalue(19, 32, 128);
+    }
 
-	script 9 (void)
-	{
-		Thing_Remove(21);
-		SpawnSpot("ZH2LegacyZE29Explosion", 20, 0, 0);
-		Floor_Lowerbyvalue(24, 255, 40);
-		Delay(20);
-		Thing_Remove(22);
-		SpawnSpot("ZH2LegacyZE29Explosion", 23, 0, 0);
-		Floor_Lowerbyvalue(25, 255, 40);
-		Delay(40);
-		Thing_Remove(26);
-		SpawnSpot("ZH2LegacyZE29Explosion", 27, 0, 0);
-		Floor_Lowerbyvalue(28, 255, 40);
-		Delay(70);
-		Thing_Remove(33);
-		SpawnSpot("ZH2LegacyZE29Explosion", 34, 0, 0);
-		Floor_Lowerbyvalue(35, 255, 40);
-	}
+    script 9 (void)
+    {
+        Thing_Remove(21);
+        SpawnSpot("ZH2LegacyZE29Explosion", 20, 0, 0);
+        Floor_Lowerbyvalue(24, 255, 40);
+        Delay(20);
+        Thing_Remove(22);
+        SpawnSpot("ZH2LegacyZE29Explosion", 23, 0, 0);
+        Floor_Lowerbyvalue(25, 255, 40);
+        Delay(40);
+        Thing_Remove(26);
+        SpawnSpot("ZH2LegacyZE29Explosion", 27, 0, 0);
+        Floor_Lowerbyvalue(28, 255, 40);
+        Delay(70);
+        Thing_Remove(33);
+        SpawnSpot("ZH2LegacyZE29Explosion", 34, 0, 0);
+        Floor_Lowerbyvalue(35, 255, 40);
+    }
 
-	Script 10 (void)
-	{
-		SetActivator(-1);
-		for(int i = resist2; i > 0; i--)
-		{
-			ResistMessage(i);
-			Delay(35);
-		}
-		Floor_LowerByValue(32, 32, 128);
-	}
+    Script 10 (void)
+    {
+        SetActivator(-1);
+        for(int i = resist2; i > 0; i--)
+        {
+            ResistMessage(i);
+            Delay(35);
+        }
+        Floor_LowerByValue(32, 32, 128);
+    }
 
-	script 11 (void)
-	{
-		Floor_Raisebyvalue(32, 128, 128);
-		Delay(35*15);
-		Floor_Lowerbyvalue(32, 32, 128);
-	}
+    script 11 (void)
+    {
+        Floor_Raisebyvalue(32, 128, 128);
+        Delay(35*15);
+        Floor_Lowerbyvalue(32, 32, 128);
+    }
 
-	Script 12 (void)
-	{
-		SetActivator(-1);
-		for(int i = resist4; i > 0; i--)
-		{
-			ResistMessage(i);
-			Delay(35);
-		}
-		Floor_LowerByValue(42, 32, 128);
-	}
+    Script 12 (void)
+    {
+        SetActivator(-1);
+        for(int i = resist4; i > 0; i--)
+        {
+            ResistMessage(i);
+            Delay(35);
+        }
+        Floor_LowerByValue(42, 32, 128);
+    }
 
-	Script 13 (Void)
-	{
-		SetActivator(-1);
-		for(int i = resist3; i > 0; i--)
-		{
-			ResistMessage(i);
-			Delay(35);
-		}
-		Door_Open(45, 32);
-	}
+    Script 13 (Void)
+    {
+        SetActivator(-1);
+        for(int i = resist3; i > 0; i--)
+        {
+            ResistMessage(i);
+            Delay(35);
+        }
+        Door_Open(45, 32);
+    }
 
-	Script 14 (Void)
-	{
-	Door_Close(45, 128);
-	Delay(20*20);
-	Door_Open(45, 32);
+    Script 14 (Void)
+    {
+    Door_Close(45, 128);
+    Delay(20*20);
+    Door_Open(45, 32);
 
-	}
+    }
 
-	script 15 (Void)
-	{
-		Floor_Lowerbyvalue(47, 8, 128);
-		Thing_Remove(46);
-		PrintBold(s:"\cdCaptain: \cfMarines... hope you are listening this");
-		Delay(100);
-		PrintBold(s:"\cdCaptain: \cfhere's coming an air raid to destroy the entire base");
-		Delay(100);
-		PrintBold(s:"\cdCaptain: \cfWe will not take the risk of leaving any alive zombie");
-		Delay(100);
-		PrintBold(s:"\cdCaptain: \cfReach safety with us at the shelter.");
-	}
+    script 15 (Void)
+    {
+        Floor_Lowerbyvalue(47, 8, 128);
+        Thing_Remove(46);
+        PrintBold(s:"\cdCaptain: \cfMarines... hope you are listening this");
+        Delay(100);
+        PrintBold(s:"\cdCaptain: \cfhere's coming an air raid to destroy the entire base");
+        Delay(100);
+        PrintBold(s:"\cdCaptain: \cfWe will not take the risk of leaving any alive zombie");
+        Delay(100);
+        PrintBold(s:"\cdCaptain: \cfReach safety with us at the shelter.");
+    }
 
-	Script 16 (Void)
-	{
-		SetActivator(-1);
-		for(int i = resist1; i > 0; i--)
-		{
-			ResistMessage(i);
-			Delay(35);
-		}
-		Door_Open(50, 32);
-		Floor_LowerByValue(52, 255, 32);
-	}
+    Script 16 (Void)
+    {
+        SetActivator(-1);
+        for(int i = resist1; i > 0; i--)
+        {
+            ResistMessage(i);
+            Delay(35);
+        }
+        Door_Open(50, 32);
+        Floor_LowerByValue(52, 255, 32);
+    }
 
-	Script 17 (Void)
-	{
-		Door_Close(51, 224);
-	}
+    Script 17 (Void)
+    {
+        Door_Close(51, 224);
+    }
 
-	Script 18 (Void)
-	{
-		SetActivator(-1);
-		for(int i = resist1; i > 0; i--)
-		{
-			ResistMessage(i);
-			Delay(35);
-		}
-		Door_Open(55, 32);
-		Floor_lowerbyvalue(54, 255, 96);
-		Ceiling_lowerbyvalue(54, 255, 96);
-	}
+    Script 18 (Void)
+    {
+        SetActivator(-1);
+        for(int i = resist1; i > 0; i--)
+        {
+            ResistMessage(i);
+            Delay(35);
+        }
+        Door_Open(55, 32);
+        Floor_lowerbyvalue(54, 255, 96);
+        Ceiling_lowerbyvalue(54, 255, 96);
+    }
 
-	Script 19 (Void)
-	{
-		Delay(25*10);
-		Door_Open(56, 32);
-		Delay(20*15);
-		Door_Open(57, 32);
-		Door_Open(58, 32);
-	}
+    Script 19 (Void)
+    {
+        Delay(25*10);
+        Door_Open(56, 32);
+        Delay(20*15);
+        Door_Open(57, 32);
+        Door_Open(58, 32);
+    }
 
-	Script 20 (Void)
-	{
-		Floor_Raisebyvalue(5, 128, 128);
-		Delay(16*20);
-		Floor_Lowerbyvalue(5, 32, 128);
-	}
+    Script 20 (Void)
+    {
+        Floor_Raisebyvalue(5, 128, 128);
+        Delay(16*20);
+        Floor_Lowerbyvalue(5, 32, 128);
+    }
 
-	script 21 (void)
-	{
-		Floor_Raisebyvalue(42, 128, 128);
-		Delay(20*15);
-		Floor_Lowerbyvalue(42, 32, 128);
-	}
+    script 21 (void)
+    {
+        Floor_Raisebyvalue(42, 128, 128);
+        Delay(20*15);
+        Floor_Lowerbyvalue(42, 32, 128);
+    }
 
-	script 22 (void)
-	{
-		Floor_Raisebyvalue(63, 64, 128);
-		Delay(35*8);
-		Floor_Lowerbyvalue(63, 32, 128);
-	}
+    script 22 (void)
+    {
+        Floor_Raisebyvalue(63, 64, 128);
+        Delay(35*8);
+        Floor_Lowerbyvalue(63, 32, 128);
+    }
 
-	Script 24 (Void)
-	{
-		SetActivator(-1);
-		for(int i = resistairaid; i > 0; i--)
-		{
-			ResistMessage(i);
-			Delay(35);
-		}
-		//Generic_Ceiling(69, 16, 144, 5, 16); //ZH2 [AQW]
-		Ceiling_LowerAndCrush(69,16,20,2); //ZH2 [AQW]
-		TagWait(69); //ZH2 [AQW]
-		Ceiling_LowerByValueTimes8(69,16,1); //ZH2 [AQW]
-		Delay(35*2);
-		SetFont("BIGFONT");
-		HudMessageBold(s:"\cGWarning : \cKAir Raid attack!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-		Delay(35*2);
-		AmbientSound("world/rocket1", 100);
-		Radius_Quake(10, 500, 0, 64, 68);
-		SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
-		Delay(35);
-		SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
-		Delay(15);
-		SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
-		Delay(35);
-		Game::KillUnsafePlayers();
-		SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
-		Delay(35);
-		SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
-		Delay(25);
-		SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
-		Delay(15);
-		SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
-		Delay(15);
-		SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
-		Delay(25);
-		SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
-		Delay(15*2);
-		SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
-		Delay(35);
-		SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
-		Delay(25);
-		SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
-		Delay(15);
-		SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
-		Delay(35);
-		SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
-		Delay(25);
-		SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
-		Delay(35);
-	}
+    Script 24 (Void)
+    {
+        SetActivator(-1);
+        for(int i = resistairaid; i > 0; i--)
+        {
+            ResistMessage(i);
+            Delay(35);
+        }
+        //Generic_Ceiling(69, 16, 144, 5, 16); //ZH2 [AQW]
+        Ceiling_LowerAndCrush(69,16,20,2); //ZH2 [AQW]
+        TagWait(69); //ZH2 [AQW]
+        Ceiling_LowerByValueTimes8(69,16,1); //ZH2 [AQW]
+        Delay(35*2);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"\cGWarning : \cKAir Raid attack!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+        Delay(35*2);
+        AmbientSound("world/rocket1", 100);
+        Radius_Quake(10, 500, 0, 64, 68);
+        SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
+        Delay(35);
+        SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
+        Delay(15);
+        SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
+        Delay(35);
+        Game::KillUnsafePlayers();
+        SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
+        Delay(35);
+        SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
+        Delay(25);
+        SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
+        Delay(15);
+        SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
+        Delay(15);
+        SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
+        Delay(25);
+        SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
+        Delay(15*2);
+        SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
+        Delay(35);
+        SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
+        Delay(25);
+        SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
+        Delay(15);
+        SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
+        Delay(35);
+        SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
+        Delay(25);
+        SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
+        Delay(35);
+    }
 
 }

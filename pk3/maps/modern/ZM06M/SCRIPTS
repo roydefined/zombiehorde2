@@ -9,1349 +9,1349 @@
 
 strict namespace
 {
-	// Hud ids
-	#define HUDID_INTERACTION 4200
-	#define HUDID_DISCO 4201
-
-	#define TAG_UBOA 4000
-
-	// Default map color
-	#define DEFAULTLEVELCOLOR 128
-
-	// Spots of all lamps.
-	#define TAG_MAPSPOTDISCOBOWL 24
-	#define TAG_MAPSPOTCEILINGLAMP 57
-	#define TAG_MAPSPOTLIGHTBULB 82
-
-	// Uboa event
-	#define UBOA_LIGHT_FADE_DELAY_EXTRA_MIN 5
-	#define UBOA_LIGHT_FADE_DELAY_EXTRA_MAX 12
-	#define UBOA_LIGHT_FADE_TICS_MIN 0
-	#define UBOA_LIGHT_FADE_TICS_MAX 12
-	#define UBOA_LIGHT_FADE_MIN 80
-	#define UBOA_LIGHT_FADE_MAX 200
-
-	// Spider event
-	#define MAX_SPIDER 250
-	#define MAX_SPIDERSPOT 4
-	#define TAG_SPIDER 4100
-	#define TAG_SPIDERSPAWNMIN 100
-	#define TAG_SPIDERSPAWNMAX 127
-
-	// The min/max delay for the initial batch
-	#define SPIDER_INITIAL_SPAWN_DELAY_MIN 30
-	#define SPIDER_INITIAL_SPAWN_DELAY_MAX 60
-
-	// The min/max delay for spiders that refill after other spiders died, after the initial batch.
-	#define SPIDER_REFILL_SPAWN_DELAY_MIN 100
-	#define SPIDER_REFILL_SPAWN_DELAY_MAX 140
-
-	// Drop the item every nth death of a spider.
-	#define SPIDER_KILL_GRENADE_INTERVAL 10
-	#define SPIDER_KILL_JACKSGUN_INTERVAL 40
-	#define SPIDER_KILL_DOUBLESHOTGUN_INTERVAL 60
-
-	#define SPIDER_DIED_ITEM_SPAWN_DISTANCE_MIN 0.0
-	#define SPIDER_DIED_ITEM_SPAWN_DISTANCE_MAX 4.0
-	#define SPIDER_DIED_ITEM_SPAWN_HEIGHT_MIN 0.0
-	#define SPIDER_DIED_ITEM_SPAWN_HEIGHT_MAX 4.0
-
-	// Angel event
-	#define TAG_ANGEL 4001
-	#define TAG_ANGELSPAWN 129
-	#define MAX_ANGELS 5
-
-	#define ANGELS_LIGHT_FADE_MIN 40
-	#define ANGELS_LIGHT_FADE_MAX 210
-	#define ANGELS_LIGHT_FADE_TICS_MIN 12
-	#define ANGELS_LIGHT_FADE_TICS_MAX 35
-	#define ANGELS_LIGHT_FADE_DELAY_EXTRA_MIN 5
-	#define ANGELS_LIGHT_FADE_DELAY_EXTRA_MAX 18
-
-	// Manage how many items to spawn when Uboa dies
-	#define UBOA_DIED_JACKSGUN_SINGLE_BULLET_COUNT 6
-	#define UBOA_DIED_JACKSGUN_DOUBLE_BULLET_COUNT 3
-	#define UBOA_DIED_JACKSGUN_WEAPON_COUNT 2
-
-	// Configurable behavior to spawn the items
-	#define UBOA_DIED_ITEM_SPAWN_DISTANCE_MIN 48.0
-	#define UBOA_DIED_ITEM_SPAWN_DISTANCE_MAX 128.0
-	#define UBOA_DIED_ITEM_SPAWN_HEIGHT_MIN 16.0
-	#define UBOA_DIED_ITEM_SPAWN_HEIGHT_MAX 64.0
-	#define UBOA_DIED_ITEM_SPAWN_DELAY 14
-
-	// Configurable behavior to spawn the items
-	#define ANGEL_DIED_ITEM_SPAWN_DISTANCE_MIN 32.0
-	#define ANGEL_DIED_ITEM_SPAWN_DISTANCE_MAX 96.0
-	#define ANGEL_DIED_ITEM_SPAWN_HEIGHT_MIN 16.0
-	#define ANGEL_DIED_ITEM_SPAWN_HEIGHT_MAX 48.0
-
-	// Handles the see state of the angel to know when to scream next
-	#define ANGEL_NEXT_SEE_SCREAM 35 * 6
-
-	// Possible events
-	#define EVENTSTATE_NONE 0
-	#define EVENTSTATE_DISCO 1
-	#define EVENTSTATE_UBOA 2
-	#define EVENTSTATE_NIGHTMARE 3
-	#define EVENTSTATE_SPIDERS 4
-	#define EVENTSTATE_PREANGELS 5
-	#define EVENTSTATE_ANGELS 6
-	#define SYNC_EVENTSTATE 4500
-	bool eventTriggered = false;	  // Indicates an event has been triggered.
-	bool angelsSpawned = false;		  // Indicates if the angels have been spawned. Checked byt he event to ensure there is anything to teleport, should it be called directly.
-	int eventState = EVENTSTATE_NONE; // Synchronized with clients.
-
-	// Angel context
-	// We track the number spawned, and how many are left.
-	// The one for the number left is used to determine when the event ends, but we also need to make sure they all spawned.
-	#define ANGEL_SPAWNS_MAX 5
-	internal bool _angelsSpawned;
-	internal bool _angelsLeft = ANGEL_SPAWNS_MAX;
-
-	// Spider context
-	// Track total spider kills to reward players.
-	internal int _spidersKilled;
-
-	bool doorcheck2flr;
-
-	// Possible key position.
-	bool keySpot[6];
-
-	// Flare spots.
-	int Flaresleft[3] = { 10, 10, 10 };
-
-	// All the tags of the relevant rooms that should have its color/light level changed
-	internal int _roomTags[] = {
-		0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23, 27,
-		31, 32, 40, 42, 43, 44, 47, 53, 54, 55, 58, 59, 68, 73, 74,
-		75, 76, 77, 78, 79, 81, 92, 93
-	};
-
-	#define LOGSOURCE "Map"
-
-	function void InteractionMessage(str message)
-	{
-		setFont("smallfont");
-		SetHudSize(640, 480, FALSE);
-		HudMessage(s:message; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
-	}
-
-	function void InteractionMessageBold(str message)
-	{
-		setFont("smallfont");
-		SetHudSize(640, 480, FALSE);
-		HudMessageBold(s:message; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
-	}
-
-	// Set level color.
-	// If red is the base level color, tag 62 needs only its first argument above 0.
-	function void SetLevelAtmosphere (int red, int green, int blue)
-	{
-		for(int i = 0; i < lengthof(_roomTags); i++)
-			Sector_Setcolor(_roomTags[i], red, green, blue);
-
-		Sector_Setcolor(62, red, 0, 0);
-	}
-
-	function void TurnOffGenerator(void)
-	{
-		eventTriggered = true;
-		thing_deactivate(56);
-		PlaySound(56, "sound/powerstop", 128);
-	}
-
-	Script "OnOpen" OPEN
-	{
-		// Set a random wall as containing the key.
-		keySpot[random(0,5)] = true;
-
-		Scroll_Floor(4, 2, 2, 0);
-	}
-
-	script "OnOpenClient" open clientside
-	{
-		SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
-
-		// Check for active events.
-		ClientSyncEventState();
-		switch(eventState)
-		{
-			case EVENTSTATE_NONE:
-				terminate;
-
-			case EVENTSTATE_DISCO:
-				ACS_NamedExecute("Event_Disco_Client", 0);
-				terminate;
-
-			case EVENTSTATE_UBOA:
-				ACS_NamedExecute("Event_Uboa_Client", 0);
-				terminate;
-
-			case EVENTSTATE_NIGHTMARE:
-				ACS_NamedExecute("Event_Nightmare_Client", 0);
-				terminate;
-
-			case EVENTSTATE_ANGELS:
-				ACS_NamedExecute("Event_Angels_Client", 0);
-				terminate;
-		}
-	}
-
-	// Handles giving rewards when uboa dies.
-	script "OnEvent" (raw type, raw damage, raw unused) event
-	{
-		if (type != GAMEEVENT_ACTOR_DAMAGED)
-			terminate;
-
-		str actorClass = GetActorClass(ActivatorTID());
-
-		bool isUboa = BCSUtils::StrEquals(actorClass, "ZH2Uboa");
-		bool isAngel = BCSUtils::StrEquals(actorClass, "ZH2Angel");
-		bool isSpider = BCSUtils::StrEquals(actorClass, "ZH2SpiderRed")
-			|| BCSUtils::StrEquals(actorClass, "ZH2SpiderGreen")
-			|| BCSUtils::StrEquals(actorClass, "ZH2SpiderBlue")
-			|| BCSUtils::StrEquals(actorClass, "ZH2SpiderBlack")
-			|| BCSUtils::StrEquals(actorClass, "ZH2SpiderGray");
-
-		if (!isUboa && !isAngel && !isSpider)
-			terminate;
-
-		int targetHealth = BCSUtils::GetActorHealth(0);
-		bool targetDied = targetHealth - damage <= 0;
-
-		if (!targetDied)
-			terminate;
-
-		if (isUboa)
-			ACS_NamedExecuteAlways("UboaDied", 0);
-
-		if (isAngel)
-			ACS_NamedExecuteAlways("AngelDied", 0);
-
-		if (isSpider)
-			ACS_NamedExecuteAlways("SpiderDied", 0);
-	}
-
-	script "ToggleWeather" (void) clientside
-	{
-		if (ConsolePlayerNumber() != PlayerNumber())
-		{
-			terminate;
-		}
-
-		if (LineSide() == LINE_FRONT)
-		{
-			Weather::StopEmitterWeather(Weather::EMITTERWEATHER_SNOW);
-			terminate;
-		}
-
-		Weather::StartEmitterWeather(Weather::EMITTERWEATHER_SNOW);
-	}
-
-	script "kitchen_lowerwall"
-	{
-		// 2 is Hexen crushing mode.
-		Ceiling_LowerAndCrush(53, 16, 5, 2);
-		Tagwait(53);
-		Ceiling_LowerByValueTimes8(53, 16, 1);
-	}
-
-	// This simplifies the Angel's logic a lot by conditionally triggering its see behavior based on a timer.
-	script "zh2_dec_angel_checksee"
-	{
-		static int nextSeeTrigger;
-		if (nextSeeTrigger < Timer())
-		{
-			nextSeeTrigger = Timer() + ANGEL_NEXT_SEE_SCREAM;
-			SetResultValue((int)true);
-		}
-		else
-		{
-			SetResultValue((int)false);
-		}
-	}
-
-	Script "FlareLocker" (int whatfloor)
-	{
-		if(Player::GetIsZombie())
-			terminate;
-
-		if(!Flaresleft[whatfloor])
-		{
-			delay(10);
-			InteractionMessage("\caThere are no more flares.");
-			LocalAmbientSound("sound/itemfail1", 128);
-			terminate;
-		}
-		if(CheckInventory(FLARE_ITEM) == 2)
-		{
-			InteractionMessage("You have enough flares.");
-			LocalAmbientSound("sound/itemfail1", 128);
-			terminate;
-		}
-
-		InteractionMessage("You got a flare.");
-		GiveInventory(FLARE_ITEM, 1);
-		LocalAmbientSound("sound/itemget1", 128);
-		Flaresleft[whatfloor]--;
-	}
-
-	// Search the wall for a key.
-	Script "CheckForKey" (int spot)
-	{
-		if (Player::GetIsZombie())
-		{
-			InteractionMessage("Dis not brainz...");
-			terminate;
-		}
-
-		if (CheckInventory(KEY_CAVEKEY))
-		{
-			InteractionMessage("You have already found the generator key.");
-			terminate;
-		}
-
-		if(!keySpot[spot])
-		{
-			InteractionMessage("Nothing there.");
-			terminate;
-		}
-
-		InteractionMessage("You found a key that says ''Generator switch''");
-		GiveInventory(KEY_CAVEKEY, 1);
-		LocalAmbientSound("sound/itemget1",128);
-
-		// Disabled so anybody can get the key.
-		//keySpot[spot] = false;
-	}
-
-	Script "OpenGeneratorBox" (void)
-	{
-		if (Player::GetIsZombie())
-		{
-			InteractionMessage("Brainz behind dis?");
-			terminate;
-		}
-
-		if(!CheckInventory(KEY_CAVEKEY))
-		{
-			InteractionMessage("It won't open, must be locked.");
-			ActivatorSound("sound/locked1", 127);
-			terminate;
-		}
-
-		InteractionMessage("Be Warned. Bad things can happen in the dark.");
-		Takeinventory("sound/itemget1", 1);
-		Ceiling_RaiseInstant(55, 0, 16);
-		clearlinespecial();
-	}
-
-	Script "TurnOffGenerator"
-	{
-		if(eventTriggered)
-		{
-			InteractionMessage("It no longer works.");
-			terminate;
-		}
-
-		if (Player::GetIsZombie())
-		{
-			InteractionMessage("Switch for brainz?");
-			terminate;
-		}
-
-		int eventIndex = GetCVar("sv_zh2_zm06mevent");
-
-		// Do not pick the event by chance if we have a preset index.
-		if (eventIndex == 0)
-		{
-			switch(random(0, 10))
-			{
-				case 0:
-				case 1:
-				case 2:
-				case 3:
-				case 4:
-					eventIndex = 1;
-					break;
-
-				case 5:
-				case 6:
-				case 7:
-					eventIndex = 2;
-					break;
-
-				case 8:
-				case 9:
-					eventIndex = 3;
-					break;
-
-				case 10:
-					eventIndex = 4;
-					break;
-			}
-		}
-
-		switch(eventIndex)
-		{
-			case 1: ACS_NamedExecute("Event_Disco", 0); break;
-			case 2: ACS_NamedExecute("Event_Uboa", 0); break;
-			case 3: ACS_NamedExecute("Event_Nightmare", 0); break;
-			case 4: ACS_NamedExecute("Event_Spiders", 0); break;
-		}
-	}
-
-	Script "UboaDied"
-	{
-		static bool hasRun;
-		if (hasRun)
-			terminate;
-
-		hasRun = true;
-
-		ACS_NamedExecuteAlways("UboaSpawnLoot", 0, GetActorX(0), GetActorY(0), GetActorZ(0));
-
-		Music::SetDefaultMusic("UBOADEAD");
-		Music::PlayDefaultMusic();
-
-		SetEventState(EVENTSTATE_NONE);
-
-		AmbientSound("ZH2Uboa/death", 127);
-
-		radius_quake(128,1000,0,500,0);
-		HudMessageBold(s:"Someone has slain Uboa!"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-		delay(17);
-		radius_quake(128,70,0,500,80);
-		delay(70);
-		radius_quake(64,35,0,500,80);
-		delay(35);
-		radius_quake(32,17,0,500,80);
-	}
-
-	Script "UboaSpawnLoot" (raw x, raw y, raw z)
-	{
-		int singleBulletsSpawned = 0;
-		int doubleBulletsSpawned = 0;
-		int weaponsSpawned = 0;
-
-		// Manage the total count to spawn so we know when to break out
-		int totalAmount =
-			UBOA_DIED_JACKSGUN_SINGLE_BULLET_COUNT +
-			UBOA_DIED_JACKSGUN_DOUBLE_BULLET_COUNT +
-			UBOA_DIED_JACKSGUN_WEAPON_COUNT;
-
-		for (int i = 0; i < totalAmount; ++i)
-		{
-			// Note, always reassign or the value from the last iteration actually sticks.
-			str spawnName = (raw)0;
-
-			while (spawnName == (raw)0)
-			{
-				switch (random(0, 2))
-				{
-					case 0:
-						if (singleBulletsSpawned < UBOA_DIED_JACKSGUN_SINGLE_BULLET_COUNT)
-						{
-							spawnName = WEAPON_JACKSGUN_AMMOSINGLE_NAME;
-							++singleBulletsSpawned;
-						}
-						break;
-
-					case 1:
-						if (doubleBulletsSpawned < UBOA_DIED_JACKSGUN_DOUBLE_BULLET_COUNT)
-						{
-							spawnName = WEAPON_JACKSGUN_AMMODOUBLE_NAME;
-							++doubleBulletsSpawned;
-						}
-						break;
-
-					case 2:
-						if (weaponsSpawned < UBOA_DIED_JACKSGUN_WEAPON_COUNT)
-						{
-							spawnName = WEAPON_JACKSGUN_SPAWN_NAME;
-							++weaponsSpawned;
-						}
-						break;
-				}
-			}
-
-			fixed angle = Math::FRandom(0.0, 1.0);
-			fixed offsetX = FixedMul(cos(angle), Math::FRandom(UBOA_DIED_ITEM_SPAWN_DISTANCE_MIN, UBOA_DIED_ITEM_SPAWN_DISTANCE_MAX));
-			fixed offsetY = FixedMul(sin(angle), Math::FRandom(UBOA_DIED_ITEM_SPAWN_DISTANCE_MIN, UBOA_DIED_ITEM_SPAWN_DISTANCE_MAX));
-
-			fixed spawnX = x + offsetX;
-			fixed spawnY = y + offsetY;
-			fixed spawnZ = z + Math::FRandom(UBOA_DIED_ITEM_SPAWN_HEIGHT_MIN, UBOA_DIED_ITEM_SPAWN_HEIGHT_MAX);
-
-			SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
-			Delay(const: UBOA_DIED_ITEM_SPAWN_DELAY);
-		}
-	}
-
-	Script "AngelDied"
-	{
-		// This one can run multiple times as there are multiple angels.
-		//static bool hasRun;
-		//if (hasRun)
-		//	terminate;
-
-		//hasRun = true;
-
-		ACS_NamedExecuteAlways("AngelSpawnLoot", 0, GetActorX(0), GetActorY(0), GetActorZ(0));
-		_angelsLeft--;
-
-		radius_quake(20, 46, 0, 500, 0);
-		HudMessageBold(s:GetAngelDeathMessage(_angelsLeft); HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-
-		if (_angelsLeft == 0)
-			SetEventState(EVENTSTATE_NONE);
-
-		delay(46);
-		radius_quake(16, 35, 0, 500, 0);
-		delay(35);
-		radius_quake(12, 35, 0, 500, 0);
-		delay(35);
-		radius_quake(8, 17, 0, 500, 0);
-	}
-
-	str GetAngelDeathMessage(int angelsLeft)
-	{
-		switch (angelsLeft)
-		{
-			case 0:
-				return "The last angel has fallen.";
-
-			case 1:
-				return "Only one angel remains.";
-
-			case 2:
-				return "The host is weakening.";
-
-			case 3:
-				return "The heavens recoil.";
-
-			default:
-				return "An angel has fallen.";
-		}
-	}
-
-	Script "AngelSpawnLoot" (raw x, raw y, raw z)
-	{
-		void SpawnLoot(str spawnName)
-		{
-			fixed angle = Math::FRandom(0.0, 1.0);
-			fixed offsetX = FixedMul(cos(angle), Math::FRandom(ANGEL_DIED_ITEM_SPAWN_DISTANCE_MIN, ANGEL_DIED_ITEM_SPAWN_DISTANCE_MAX));
-			fixed offsetY = FixedMul(sin(angle), Math::FRandom(ANGEL_DIED_ITEM_SPAWN_DISTANCE_MIN, ANGEL_DIED_ITEM_SPAWN_DISTANCE_MAX));
-
-			fixed spawnX = x + offsetX;
-			fixed spawnY = y + offsetY;
-			fixed spawnZ = z + Math::FRandom(ANGEL_DIED_ITEM_SPAWN_HEIGHT_MIN, ANGEL_DIED_ITEM_SPAWN_HEIGHT_MAX);
-
-			SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
-		}
-
-		SpawnLoot(WEAPON_JACKSGUN_AMMODOUBLE_NAME);
-		SpawnLoot(WEAPON_JACKSGUN_SPAWN_NAME);
-	}
-
-	Script "SpiderDied"
-	{
-		_spidersKilled++;
-
-		fixed x = GetActorX(0),
-			  y = GetActorY(0),
-	          z = GetActorZ(0);
-
-		if (_spidersKilled % SPIDER_KILL_GRENADE_INTERVAL == 0)
-		{
-			ACS_NamedExecuteWithResult("SpiderSpawnLoot", x, y, z, WEAPON_FIREGRENADE_SPAWN_NAME);
-		}
-
-		if (_spidersKilled % SPIDER_KILL_JACKSGUN_INTERVAL == 0)
-		{
-			HudMessageBold(s:"A spider has dropped something interesting"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-
-			ACS_NamedExecuteWithResult("SpiderSpawnLoot", x, y, z, WEAPON_JACKSGUN_SPAWN_NAME);
-			//ACS_NamedExecuteWithResult("SpiderSpawnLoot", x, y, z, WEAPON_JACKSGUN_AMMOSINGLE_NAME);
-		}
-
-		if (_spidersKilled % SPIDER_KILL_DOUBLESHOTGUN_INTERVAL == 0)
-		{
-			HudMessageBold(s:"A spider has dropped something interesting"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-
-			ACS_NamedExecuteWithResult("SpiderSpawnLoot", x, y, z, WEAPON_DOUBLESHOTGUN_SPAWN_NAME);
-		}
-	}
-
-	Script "SpiderSpawnLoot" (raw x, raw y, raw z, raw spawnName)
-	{
-		fixed angle = Math::FRandom(0.0, 1.0);
-		fixed offsetX = FixedMul(cos(angle), Math::FRandom(SPIDER_DIED_ITEM_SPAWN_DISTANCE_MIN, SPIDER_DIED_ITEM_SPAWN_DISTANCE_MAX));
-		fixed offsetY = FixedMul(sin(angle), Math::FRandom(SPIDER_DIED_ITEM_SPAWN_DISTANCE_MIN, SPIDER_DIED_ITEM_SPAWN_DISTANCE_MAX));
-
-		fixed spawnX = x + offsetX;
-		fixed spawnY = y + offsetY;
-		fixed spawnZ = z + Math::FRandom(SPIDER_DIED_ITEM_SPAWN_HEIGHT_MIN, SPIDER_DIED_ITEM_SPAWN_HEIGHT_MAX);
-
-		SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
-	}
-
-	// guitar riff
-	Script 5 (void)
-	{
-		if(Player::GetIsHuman())
-		{
-	        ThingSound(1, "sound/guitarriff", 127);
-	        Delay(35 * 5);
-	    }
-		else
-		{
-	        InteractionMessage("Zombies don't know how to rock.");
-	    }
-	}
-
-	// vending machines
-	Script 9 (void) {
-
-		if(Player::GetIsHuman())
-			InteractionMessage("This is no time for snacks.");
-		else
-			InteractionMessage("No brainz here...");
-	}
-
-	// unopenable doors
-	Script 10 (void) {
-
-		if(eventState != EVENTSTATE_DISCO)
-		{
-			InteractionMessage("The lock is jammed. This door cannot be opened.");
-			ActivatorSound("sound/locked2", 127);
-			terminate;
-		}
-
-		InteractionMessage("GET DOWN!!");
-	}
-
-	Script 11 (void){
-
-		if(eventState != EVENTSTATE_DISCO)
-		{
-			InteractionMessage("It's too dangerous to go out there.");
-			terminate;
-		}
-
-		InteractionMessage("Where ya goin'? The party just started!");
-	}
-
-	script "GeneratorDoor" (int side)
-	{
-		static bool doorOpened = false;
-		if (side && !doorOpened)
-		{
-			InteractionMessage("Locked from the other side.");
-			ActivatorSound("sound/locked2", 127);
-			terminate;
-		}
-
-		Door_open(40, 10);
-		doorOpened = true;
-	}
-
-	// elevators
-	Script 14 (void)
-	{
-		if(eventState != EVENTSTATE_DISCO)
-		{
-			InteractionMessage("Elevator doesn't work.");
-			ActivatorSound("sound/itemfail1", 127);
-			terminate;
-		}
-
-		InteractionMessage("DIG IT!");
-	}
-
-	// elevators
-	Script 15 (void) {
-
-		if(eventState != EVENTSTATE_DISCO)
-		{
-			InteractionMessage("The Elevator is stuck on this floor.");
-			ActivatorSound("sound/itemfail1", 127);
-			terminate;
-		}
-
-		InteractionMessage("DISCO INFERNO!");
-	}
-
-	// locked door
-	Script 3 (void)
-	{
-		if(doorcheck2flr)
-			terminate;
-
-		InteractionMessage("Locked from the other side.");
-		ActivatorSound("sound/locked2", 127);
-	}
-
-	// unlocked the door
-	Script 4 (void)
-	{
-		if(doorcheck2flr)
-			terminate;
-
-		Door_open(47,128);
-		doorcheck2flr = true;
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** EVENT STATE
-	** -----------------------------------------------------------------------------
-	*/
-
-	function void SetEventState(int state)
-	{
-		Logger::LogDebug(LOGSOURCE, StrParam(s:"Setting event state to ", d:state));
-		eventState = state;
-		SyncEventState();
-	}
-
-	function void SyncEventState(void)
-	{
-		if (!BCSUtils::IsServer())
-		{
-			Logger::LogError(LOGSOURCE, "SyncEventState was called clientside.");
-			return;
-		}
-
-		// Do not sync when not in a network game.
-		if (!IsNetworkGame())
-			return;
-
-		BCSUtils::SyncVariable(SYNC_EVENTSTATE, eventState);
-
-		// Receive on all clients.
-		if (!ACS_NamedExecuteAlways("SyncEventState_Client", 0))
-			Logger::LogError(LOGSOURCE, "Failed to execute SyncEventState_Client.");
-	}
-
-	script "SyncEventState_Client" (void) clientside
-	{
-		ClientSyncEventState();
-	}
-
-	// Called clientside to fetch the synced state.
-	function void ClientSyncEventState(void)
-	{
-		if (!BCSUtils::IsClient())
-		{
-			Logger::LogError(LOGSOURCE, "ClientSyncEventState was called serverside.");
-			return;
-		}
-
-		// Do not sync when not in a network game.
-		if (!IsNetworkGame())
-			return;
-
-		int state = BCSUtils::GetSyncVarDefault(SYNC_EVENTSTATE, EVENTSTATE_NONE);
-		eventState = state;
-
-		Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced event state client: ", d:eventState));
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** EVENT - DISCO
-	** -----------------------------------------------------------------------------
-	*/
-
-	function void DrawDiscoMessageHeader (str message)
-	{
-		setfont("BIGFONT");
-		SetHudSize(320, 240, false);
-
-		for (int i = 0; i < StrLen(message); ++i)
-			hudmessageBold(c:GetChar(message, i); HUDMSG_PLAIN, HUDID_DISCO + i,  random(1, 20), 70.0 + (20.0 * i), random(20.0, 22.0), 1.0);
-	}
-
-	function void DrawDiscoMessage (void)
-	{
-		static str discoMessages[5] = {
-			"GET DOWN!",
-			"DISCO INFERNO!",
-			"DIG IT!",
-			"OUT OF SIGHT",
-			"MOVE YOUR BODY"
-		};
-
-		setFont("smallfont");
-		SetHudSize(320, 240, false);
-		HudMessage(s:discoMessages[random(0,4)]; HUDMSG_FADEOUT, 0, random(1, 20), random(100.0, 200.0), random(50.0, 150.0), 0, 1.0);
-	}
-
-	script "Event_Disco" (void)
-	{
-		if (eventState != EVENTSTATE_NONE)
-			terminate;
-
-		TurnOffGenerator();
-		SetEventState(EVENTSTATE_DISCO);
-		ACS_NamedExecuteAlways("Event_Disco_Client", 0);
-
-		delay(35*8);
-
-		// Replace lights.
-		SpawnSpotForced("ZH2DiscoBowl", TAG_MAPSPOTCEILINGLAMP, TAG_MAPSPOTDISCOBOWL);
-		Thing_Remove(TAG_MAPSPOTCEILINGLAMP);
-
-		// Stop the event after a certain time
-		// This is exactly how long the track takes.
-		delay(35 * 177 + 18);
-
-		// Replace lights again.
-		SpawnSpotForced("ZH2CeilingLamp", TAG_MAPSPOTDISCOBOWL, TAG_MAPSPOTCEILINGLAMP);
-		Thing_Remove(TAG_MAPSPOTDISCOBOWL);
-
-		SetEventState(EVENTSTATE_NONE);
-	}
-
-	script "Event_Disco_Client" (void) clientside
-	{
-		// This wait until the client is aware of the new event.
-		while (eventState != EVENTSTATE_DISCO)
-			delay(const: 1);
-
-		Music::SetDefaultMusic("DISCO2");
-		Music::PlayDefaultMusic();
-
-		delay(35*2);
-
-		Log(s:"It's getting a bit funky in here!");
-
-		delay(35*6);
-
-		// Stop the event after a certain time
-		// This is exactly how long the track takes.
-		int discoTime = 35 * 177 + 18;
-
-		str message = "DISCOPARTY";
-		int counter;
-		while (discoTime--)
-		{
-			if (counter % 150 == 0 && counter != 0) {
-				DrawDiscoMessage();
-			}
-
-			if (counter % 18 == 0)
-			{
-				SetLevelAtmosphere(random(1,255), random(1,255), random(1,255));
-				DrawDiscoMessageHeader(message);
-			}
-
-			counter++;
-			delay(const: 1);
-		}
-
-		Log(s:"The hospital has returned to its former charm.");
-
-		Music::SetDefaultMusic("UNSETTLE");
-		Music::PlayDefaultMusic();
-
-		SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
-
-		for (int i = 0; i < StrLen(message); ++i) {
-			BCSUtils::ClearHudMessageBold(HUDID_DISCO + i);
-		}
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** EVENT - UBOA
-	** -----------------------------------------------------------------------------
-	*/
-
-	script "Event_Uboa"
-	{
-		if (eventState != EVENTSTATE_NONE)
-		{
-			terminate;
-		}
-
-		TurnOffGenerator();
-		SetEventState(EVENTSTATE_UBOA);
-		ACS_NamedExecuteAlways("Event_Uboa_Client", 0);
-		ACS_NamedExecuteAlways("Event_Uboa_Teleporter", 0);
-
-		SpawnSpot("ZH2Uboa", 80, TAG_UBOA);
-
-		FadeTo(0, 0, 0, 1.0, 0);
-		FadeTo(0, 0, 0, 0, 1.0);
-
-		// Replace hospital textures
-		SetActorState(TAG_MAPSPOTCEILINGLAMP, "inactive");
-		SetActorState(TAG_MAPSPOTLIGHTBULB, "inactive");
-		ReplaceTextures("0_RUS21", "0_RUS28" , 0);
-		ReplaceTextures("0_RUS25", "0_RUS28" , 0);
-		ReplaceTextures("0_RUS17", "0_RUS26" , 0);
-		ReplaceTextures("0_RUS23", "0_RUS26" , 0);
-		ReplaceTextures("0_RUS20", "0_RUS27" , 0);
-		ReplaceTextures("0_RUS24", "0_RUS27" , 0);
-		ReplaceTextures("0694", "0880" , 0);
-		SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QUAKE2_2");
-	}
-
-	script "Event_Uboa_Teleporter" (void)
-	{
-		SetActivator(-1);
-		while(true)
-		{
-			delay(random(150, 700));
-			teleportother(TAG_UBOA, Random(500, 517), 1);
-		}
-	}
-
-	script "Event_Uboa_Client" (void) clientside
-	{
-		// This wait until the client is aware of the new event.
-		while (eventState != EVENTSTATE_UBOA)
-		{
-			delay(const: 1);
-		}
-
-		// Should not matter, just done in case scripts are being puked manually.
-		SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
-
-		Music::SetDefaultMusic(BCSUtils::cond(Random(0, 1), "FUCKED", "FUCKED2"));
-		Music::PlayDefaultMusic();
-
-		int startTimestamp = Timer();
-
-		while(eventState == EVENTSTATE_UBOA)
-		{
-			if (Timer() - startTimestamp == 35 * 2)
-			{
-				Log(s:"Uboa has entered the hospital.");
-			}
-
-			int targetLightLevel = Random(UBOA_LIGHT_FADE_MIN, UBOA_LIGHT_FADE_MAX);
-			int fadeTics = Random(UBOA_LIGHT_FADE_TICS_MIN, UBOA_LIGHT_FADE_TICS_MAX);
-
-			for (int i = 0; i < lengthof(_roomTags); ++i)
-			{
-				Light_Fade(_roomTags[i], targetLightLevel, fadeTics);
-			}
-
-			Delay(fadeTics + Random(UBOA_LIGHT_FADE_DELAY_EXTRA_MIN, UBOA_LIGHT_FADE_DELAY_EXTRA_MAX));
-		}
-
-		// Should not matter, just done in case scripts are being puked manually.
-		SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
-
-		// Can't really revert back to the defaults so just assume 128
-		for (i = 0; i < lengthof(_roomTags); ++i)
-		{
-			Light_Fade(_roomTags[i], 128, 35 * 10);
-		}
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** EVENT - NIGHTMARE
-	** -----------------------------------------------------------------------------
-	*/
-
-	script "Event_Nightmare" (void)
-	{
-		if (eventState != EVENTSTATE_NONE)
-		{
-			terminate;
-		}
-
-		TurnOffGenerator();
-		SetEventState(EVENTSTATE_NIGHTMARE);
-		ACS_NamedExecuteAlways("Event_Nightmare_Client", 0);
-
-		FadeTo(0, 0, 0, 1.0, 0);
-		FadeTo(0, 0, 0, 0, 1.0);
-
-		// Turns on sounds
-		Thing_Activate(83);
-
-		// Turn off extra dynamic lights
-		thing_deactivate(56);
-
-		// Floor and door next to the green floor portal to nightmare land
-		ChangeFloor(77, "SFLR6_4");
-		ChangeFloor(78, "SFLR6_4");
-		floor_lowerbyvalue(77,32,8);
-		floor_lowerbyvalue(78,32,16);
-		ceiling_raisebyvalue(79, 32, 64);
-
-		// Door to the blue floor portal
-		floor_lowerbyvalue(93,32,120);
-
-		// Door to the basement portal
-		door_open(81, 32);
-
-		// Replace hospital textures
-		SetActorState(TAG_MAPSPOTCEILINGLAMP, "inactive");
-		SetActorState(TAG_MAPSPOTLIGHTBULB, "inactive");
-		ReplaceTextures("0_RUS21", "0_RUS28" , 0);
-		ReplaceTextures("0_RUS25", "0_RUS28" , 0);
-		ReplaceTextures("0_RUS17", "0_RUS26" , 0);
-		ReplaceTextures("0_RUS23", "0_RUS26" , 0);
-		ReplaceTextures("0_RUS20", "0_RUS27" , 0);
-		ReplaceTextures("0_RUS24", "0_RUS27" , 0);
-		ReplaceTextures("0694", "0880" , 0);
-
-		// Child room textures
-		SetLineTexture(99, SIDE_FRONT, TEXTURE_MIDDLE, "WSKSNAK2");
-		SetLineTexture(99, SIDE_FRONT, TEXTURE_BOTTOM, "WSKSNAK2");
-		SetLineTexture(99, SIDE_FRONT, TEXTURE_TOP, "WSKSNAK2");
-		SetLineTexture(99, SIDE_BACK, TEXTURE_MIDDLE, "WSKSNAK2");
-		SetLineTexture(99, SIDE_BACK, TEXTURE_BOTTOM, "WSKSNAK2");
-		SetLineTexture(99, SIDE_BACK, TEXTURE_TOP, "WSKSNAK2");
-		SetLineTexture(100, SIDE_FRONT, TEXTURE_BOTTOM, "WSKSNAK2");
-		SetLineTexture(100, SIDE_FRONT, TEXTURE_TOP, "WSKSNAK2");
-		SetLineTexture(100, SIDE_BACK, TEXTURE_BOTTOM, "WSKSNAK2");
-		SetLineTexture(100, SIDE_BACK, TEXTURE_TOP, "WSKSNAK2");
-		SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QUAKE2_2");
-		ChangeFloor(58, "SFLR6_4");
-		ChangeCeiling(58, "SFLR6_4");
-		ChangeCeiling(59, "SFLR6_4");
-
-		delay(35 * 2);
-
-		// Blood pool
-		ceiling_raisebyvalue(62, 1, 200);
-	}
-
-	script "FallsInNightmare" (void)
-	{
-		teleport(19);
-		ACS_NamedExecute("FallsInNightmare_Client", 0);
-	}
-
-	script "FallsInNightmare_Client" (void) clientside
-	{
-		if (ConsolePlayerNumber() != PlayerNumber())
-			terminate;
-
-		Weather::StartEmitterWeather(Weather::EMITTERWEATHER_SNOW);
-	}
-
-	script "Event_Nightmare_Client" (void) clientside
-	{
-		// This wait until the client is aware of the new event.
-		while (eventState != EVENTSTATE_NIGHTMARE)
-		{
-			delay(const: 1);
-		}
-
-		Music::SetDefaultMusic("SCARYMUS");
-		Music::PlayDefaultMusic();
-
-		SetLevelAtmosphere(DEFAULTLEVELCOLOR - 20, DEFAULTLEVELCOLOR - 20, DEFAULTLEVELCOLOR - 20);
-		delay(35*2);
-		Log(s:"This place turned into your worst nightmare!");
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** EVENT - SPIDERS
-	** -----------------------------------------------------------------------------
-	*/
-
-	script "Event_Spiders" (void)
-	{
-		if (eventState != EVENTSTATE_NONE)
-		{
-			terminate;
-		}
-
-		TurnOffGenerator();
-		SetEventState(EVENTSTATE_SPIDERS);
-		ACS_NamedExecuteAlways("Event_Spiders_Client", 0);
-
-		SetActorState (TAG_MAPSPOTCEILINGLAMP, "inactive");
-		SetActorState (TAG_MAPSPOTLIGHTBULB, "inactive");
-
-		ReplaceTextures("0_RUS21", "WEBBIN03", 0);
-		ReplaceTextures("0_RUS25", "WEBBIN03", 0);
-		ReplaceTextures("0_RUS28", "WEBBIN03", 0);
-
-		ReplaceTextures("0_RUS17", "WEBBIN03", 0);
-		ReplaceTextures("0_RUS23", "WEBBIN03", 0);
-		ReplaceTextures("0_RUS26", "WEBBIN03", 0);
-
-		ReplaceTextures("0_RUS20", "WEBBIN03", 0);
-		ReplaceTextures("0_RUS24", "WEBBIN03", 0);
-		ReplaceTextures("0_RUS27", "WEBBIN03", 0);
-
-		ReplaceTextures("0694", "WEBBIN03" , 0);
-
-		ReplaceTextures("0690", "WEBBIN03", 0);
-		ReplaceTextures("0691", "WEBBIN03", 0);
-		ReplaceTextures("0_RUS14", "WEBBIN03", 0);
-		ReplaceTextures("1171", "WEBBIN03", 0);
-
-
-		ReplaceTextures("GRAFFI00", "WEBBIN03", 0);
-		ReplaceTextures("GRAFFI00", "WEBBIN03", 0);
-
-		SetLineTexture(69, SIDE_FRONT, TEXTURE_MIDDLE, "WEBBIN05");
-		SetLineTexture(69, SIDE_BACK, TEXTURE_MIDDLE, "WEBBIN05");
-		SetLineTexture(66, SIDE_FRONT, TEXTURE_MIDDLE, "WEBBIN04");
-		SetLineTexture(66, SIDE_BACK, TEXTURE_MIDDLE, "WEBBIN04");
-		SetLineTexture(73, SIDE_FRONT, TEXTURE_MIDDLE, "WEBBIN08");
-
-		// This loop determines if each spot has had its initial count filled in. After each iteration we decrement.
-		// It's a bit of a loose check but each spot will have been iterated once when it reaches 0.
-		int initialSpidersLeft = MAX_SPIDERSPOT;
-
-		// A constant loop checking if there needs to be any refilling of spiders on each spot.
-		while(true)
-		{
-			// Prevent the map from getting too many spiders.
-			// THis is an extra failsafe.
-			int totalSpiderCount = thingcountname("ZH2SpiderRed", 0)
-				+ thingcountname("ZH2SpiderGreen", 0)
-				+ thingcountname("ZH2SpiderBlue", 0)
-				+ thingcountname("ZH2SpiderBlack", 0)
-				+ thingcountname("ZH2SpiderGray", 0);
-
-			if (totalSpiderCount >= MAX_SPIDER)
-				terminate;
-
-			for(int i = 0; i < TAG_SPIDERSPAWNMAX - TAG_SPIDERSPAWNMIN; i++)
-			{
-				int spiderCount = thingcountname("ZH2SpiderRed", TAG_SPIDER + i)
-					+ thingcountname("ZH2SpiderGreen", TAG_SPIDER + i)
-					+ thingcountname("ZH2SpiderBlue", TAG_SPIDER + i)
-					+ thingcountname("ZH2SpiderBlack", TAG_SPIDER + i)
-					+ thingcountname("ZH2SpiderGray", TAG_SPIDER + i);
-
-				// Enough spiders on spot.
-				if (spiderCount >= MAX_SPIDERSPOT)
-					continue;
-
-				int spot = TAG_SPIDERSPAWNMIN + i;
-				spawnspot("ZH2SpiderSpawner", spot, TAG_SPIDER + i);
-			}
-
-			int tics = initialSpidersLeft > 0
-				? random(SPIDER_INITIAL_SPAWN_DELAY_MIN, SPIDER_INITIAL_SPAWN_DELAY_MAX)
-				: random(SPIDER_REFILL_SPAWN_DELAY_MIN, SPIDER_REFILL_SPAWN_DELAY_MAX);
-
-			delay(tics);
-			initialSpidersLeft--;
-		}
-	}
-
-	script "Event_Spiders_Client" (void) clientside
-	{
-		// This wait until the client is aware of the new event.
-		while (eventState != EVENTSTATE_SPIDERS)
-		{
-			delay(const: 1);
-		}
-
-		Music::SetDefaultMusic("AVERY");
-		Music::PlayDefaultMusic();
-
-		delay(35*2);
-		Log(s:"This place turned a spidernest!");
-	}
-
-	/*
-	** -----------------------------------------------------------------------------
-	** EVENT - ANGEL
-	** -----------------------------------------------------------------------------
-	*/
-
-	Script "AltarMessage" (void)
-	{
-		InteractionMessage("???");
-		delay(random(120,240));
-		thing_activate(32);
-	}
-
-	Script "EnterAltar" (void)
-	{
-		static bool angelEventTriggered = false;
-
-		if (eventState == EVENTSTATE_PREANGELS || eventState == EVENTSTATE_ANGELS)
-		{
-			teleport(19);
-			terminate;
-		}
-
-		SetEventState(EVENTSTATE_PREANGELS);
-
-		// TODO: Support parameter?
-		Music::PlayMusic("");//, MAPMUSICLOCAL | MAPMUSICREPLACERADIO);
-		LocalAmbientSound("sound/musicsting", 50);
-
-		Setfont("smallfont");
-		HudMessageBold(n:0, s:" found the door to heaven."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-		teleport_nofog(6, true, 0);
-
-		int tid = ActivatorTID();
-		SetActivator(-1);
-
-		// Spawn angels
-		if(!angelsSpawned)
-		{
-			angelsSpawned = true;
-
-			for(int i = 0; i < MAX_ANGELS; i++) {
-				SpawnSpot("ZH2Angel", TAG_ANGELSPAWN + i, TAG_ANGEL + i);
-			}
-		}
-
-		delay(35*4);
-
-		// Not triggering the event if the player died.
-		if (!BCSUtils::ActorIsAlive(tid))
-		{
-			SetEventState(EVENTSTATE_NONE);
-			terminate;
-		}
-
-		SetActivator(tid);
-		teleport(19);
-
-		if (angelEventTriggered)
-			terminate;
-
-		angelEventTriggered = true;
-
-		Setfont("smallfont");
-		InteractionMessageBold(StrParam(n:0, s:" has come back from heaven! ...that was a mistake."));
-		SetActivator(-1);
-
-		Music::SetDefaultMusic("");
-		Music::PlayDefaultMusic();
-
-		delay(35 * 10);
-		ACS_NamedExecute("Event_Angels", 0);
-	}
-
-	script "Event_Angels" (void)
-	{
-		if (eventState != EVENTSTATE_NONE && eventState != EVENTSTATE_PREANGELS)
-			terminate;
-
-		// Spawn angels (should already be the case but it would not be if this script is called directly)
-		if(!angelsSpawned)
-		{
-			angelsSpawned = true;
-
-			for(int i = 0; i < MAX_ANGELS; i++)
-				SpawnSpot("ZH2Angel", TAG_ANGELSPAWN + i, TAG_ANGEL + i);
-		}
-
-		while(true)
-		{
-			delay(35 * (random(10, 20) * _angelsSpawned));
-
-			InteractionMessageBold(GetAngelSpawnMessage(_angelsSpawned));
-
-			// Teleport an angel.
-			teleportother(TAG_ANGEL + _angelsSpawned, Random(500, 517), 1);
-			_angelsSpawned++;
-
-			// Replace hospital and music on first spawn
-			if (_angelsSpawned == 1)
-			{
-				SetEventState(EVENTSTATE_ANGELS);
-				ACS_NamedExecuteAlways("Event_Angels_Client", 0);
-
-				// Replace hospital textures
-				SetActorState(TAG_MAPSPOTCEILINGLAMP, "inactive");
-				SetActorState(TAG_MAPSPOTLIGHTBULB, "inactive");
-				ReplaceTextures("0_RUS21", "HORRFLR1", 0);
-				ReplaceTextures("0_RUS25", "HORRFLR1", 0);
-				ReplaceTextures("0_RUS28", "HORRFLR1", 0);
-				ReplaceTextures("0_RUS17", "HORRFLR1", 0);
-				ReplaceTextures("0_RUS23", "HORRFLR1", 0);
-				ReplaceTextures("0_RUS26", "HORRFLR1", 0);
-				ReplaceTextures("0_RUS20", "HORRFLR1", 0);
-				ReplaceTextures("0_RUS24", "HORRFLR1", 0);
-				ReplaceTextures("0_RUS27", "HORRFLR1", 0);
-				ReplaceTextures("0694", "HORRFLR1", 0);
-				ReplaceTextures("0690", "HORRFLR1", 0);
-				ReplaceTextures("0691", "HORRFLR1", 0);
-				ReplaceTextures("FLAT3", "HORRFLR1", 0);
-				ReplaceTextures("RROCK03", "HORRFLR1", 0);
-				ReplaceTextures("0_RUS14", "HORRFLR1", 0);
-				ReplaceTextures("0_RUS15", "HORRFLR1", 0);
-				ReplaceTextures("0_RUS05", "HORRFLR1", 0);
-				SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "HORRFLR1");
-			}
-
-			Logger::LogDebug(LOGSOURCE, StrParam(s:"Angel count: ", d:_angelsSpawned));
-
-			if (_angelsSpawned == ANGEL_SPAWNS_MAX)
-				terminate;
-		}
-	}
-
-	str GetAngelSpawnMessage(int angelsSpawned)
-	{
-		switch (angelsSpawned)
-		{
-			case 0:
-				return "\cgSomething has crossed from beyond...";
-
-			case 1:
-				return "\cgAnother presence has crossed from beyond...";
-
-			case 2:
-				return "\cgThe veil is breaking...";
-
-			case 3:
-				return "\cgThe air grows heavy with unseen eyes...";
-
-			default:
-				return "\cgThe crossing will not stop...";
-		}
-	}
-
-	script "Event_Angels_Client" (void) clientside
-	{
-		// This wait until the client is aware of the new event.
-		while (eventState != EVENTSTATE_ANGELS)
-		{
-			delay(const: 1);
-		}
-
-		Music::SetDefaultMusic("ANGELS");
-		Music::PlayDefaultMusic();
-
-		int startTimestamp = Timer();
-
-		while(eventState == EVENTSTATE_ANGELS)
-		{
-			int targetLightLevel = Random(ANGELS_LIGHT_FADE_MIN, ANGELS_LIGHT_FADE_MAX);
-			int fadeTics = Random(ANGELS_LIGHT_FADE_TICS_MIN, ANGELS_LIGHT_FADE_TICS_MAX);
-
-			for (int i = 0; i < lengthof(_roomTags); ++i)
-			{
-				Light_Fade(_roomTags[i], targetLightLevel, fadeTics);
-			}
-
-			Delay(fadeTics + Random(ANGELS_LIGHT_FADE_DELAY_EXTRA_MIN, ANGELS_LIGHT_FADE_DELAY_EXTRA_MAX));
-		}
-
-		// Should not matter, just done in case scripts are being puked manually.
-		SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
-
-		// Can't really revert back to the defaults so just assume 128.
-		for (i = 0; i < lengthof(_roomTags); ++i)
-		{
-			Light_Fade(_roomTags[i], 128, 35 * 10);
-		}
-	}
+    // Hud ids
+    #define HUDID_INTERACTION 4200
+    #define HUDID_DISCO 4201
+
+    #define TAG_UBOA 4000
+
+    // Default map color
+    #define DEFAULTLEVELCOLOR 128
+
+    // Spots of all lamps.
+    #define TAG_MAPSPOTDISCOBOWL 24
+    #define TAG_MAPSPOTCEILINGLAMP 57
+    #define TAG_MAPSPOTLIGHTBULB 82
+
+    // Uboa event
+    #define UBOA_LIGHT_FADE_DELAY_EXTRA_MIN 5
+    #define UBOA_LIGHT_FADE_DELAY_EXTRA_MAX 12
+    #define UBOA_LIGHT_FADE_TICS_MIN 0
+    #define UBOA_LIGHT_FADE_TICS_MAX 12
+    #define UBOA_LIGHT_FADE_MIN 80
+    #define UBOA_LIGHT_FADE_MAX 200
+
+    // Spider event
+    #define MAX_SPIDER 250
+    #define MAX_SPIDERSPOT 4
+    #define TAG_SPIDER 4100
+    #define TAG_SPIDERSPAWNMIN 100
+    #define TAG_SPIDERSPAWNMAX 127
+
+    // The min/max delay for the initial batch
+    #define SPIDER_INITIAL_SPAWN_DELAY_MIN 30
+    #define SPIDER_INITIAL_SPAWN_DELAY_MAX 60
+
+    // The min/max delay for spiders that refill after other spiders died, after the initial batch.
+    #define SPIDER_REFILL_SPAWN_DELAY_MIN 100
+    #define SPIDER_REFILL_SPAWN_DELAY_MAX 140
+
+    // Drop the item every nth death of a spider.
+    #define SPIDER_KILL_GRENADE_INTERVAL 10
+    #define SPIDER_KILL_JACKSGUN_INTERVAL 40
+    #define SPIDER_KILL_DOUBLESHOTGUN_INTERVAL 60
+
+    #define SPIDER_DIED_ITEM_SPAWN_DISTANCE_MIN 0.0
+    #define SPIDER_DIED_ITEM_SPAWN_DISTANCE_MAX 4.0
+    #define SPIDER_DIED_ITEM_SPAWN_HEIGHT_MIN 0.0
+    #define SPIDER_DIED_ITEM_SPAWN_HEIGHT_MAX 4.0
+
+    // Angel event
+    #define TAG_ANGEL 4001
+    #define TAG_ANGELSPAWN 129
+    #define MAX_ANGELS 5
+
+    #define ANGELS_LIGHT_FADE_MIN 40
+    #define ANGELS_LIGHT_FADE_MAX 210
+    #define ANGELS_LIGHT_FADE_TICS_MIN 12
+    #define ANGELS_LIGHT_FADE_TICS_MAX 35
+    #define ANGELS_LIGHT_FADE_DELAY_EXTRA_MIN 5
+    #define ANGELS_LIGHT_FADE_DELAY_EXTRA_MAX 18
+
+    // Manage how many items to spawn when Uboa dies
+    #define UBOA_DIED_JACKSGUN_SINGLE_BULLET_COUNT 6
+    #define UBOA_DIED_JACKSGUN_DOUBLE_BULLET_COUNT 3
+    #define UBOA_DIED_JACKSGUN_WEAPON_COUNT 2
+
+    // Configurable behavior to spawn the items
+    #define UBOA_DIED_ITEM_SPAWN_DISTANCE_MIN 48.0
+    #define UBOA_DIED_ITEM_SPAWN_DISTANCE_MAX 128.0
+    #define UBOA_DIED_ITEM_SPAWN_HEIGHT_MIN 16.0
+    #define UBOA_DIED_ITEM_SPAWN_HEIGHT_MAX 64.0
+    #define UBOA_DIED_ITEM_SPAWN_DELAY 14
+
+    // Configurable behavior to spawn the items
+    #define ANGEL_DIED_ITEM_SPAWN_DISTANCE_MIN 32.0
+    #define ANGEL_DIED_ITEM_SPAWN_DISTANCE_MAX 96.0
+    #define ANGEL_DIED_ITEM_SPAWN_HEIGHT_MIN 16.0
+    #define ANGEL_DIED_ITEM_SPAWN_HEIGHT_MAX 48.0
+
+    // Handles the see state of the angel to know when to scream next
+    #define ANGEL_NEXT_SEE_SCREAM 35 * 6
+
+    // Possible events
+    #define EVENTSTATE_NONE 0
+    #define EVENTSTATE_DISCO 1
+    #define EVENTSTATE_UBOA 2
+    #define EVENTSTATE_NIGHTMARE 3
+    #define EVENTSTATE_SPIDERS 4
+    #define EVENTSTATE_PREANGELS 5
+    #define EVENTSTATE_ANGELS 6
+    #define SYNC_EVENTSTATE 4500
+    bool eventTriggered = false;      // Indicates an event has been triggered.
+    bool angelsSpawned = false;          // Indicates if the angels have been spawned. Checked byt he event to ensure there is anything to teleport, should it be called directly.
+    int eventState = EVENTSTATE_NONE; // Synchronized with clients.
+
+    // Angel context
+    // We track the number spawned, and how many are left.
+    // The one for the number left is used to determine when the event ends, but we also need to make sure they all spawned.
+    #define ANGEL_SPAWNS_MAX 5
+    internal bool _angelsSpawned;
+    internal bool _angelsLeft = ANGEL_SPAWNS_MAX;
+
+    // Spider context
+    // Track total spider kills to reward players.
+    internal int _spidersKilled;
+
+    bool doorcheck2flr;
+
+    // Possible key position.
+    bool keySpot[6];
+
+    // Flare spots.
+    int Flaresleft[3] = { 10, 10, 10 };
+
+    // All the tags of the relevant rooms that should have its color/light level changed
+    internal int _roomTags[] = {
+        0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23, 27,
+        31, 32, 40, 42, 43, 44, 47, 53, 54, 55, 58, 59, 68, 73, 74,
+        75, 76, 77, 78, 79, 81, 92, 93
+    };
+
+    #define LOGSOURCE "Map"
+
+    function void InteractionMessage(str message)
+    {
+        setFont("smallfont");
+        SetHudSize(640, 480, FALSE);
+        HudMessage(s:message; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+    }
+
+    function void InteractionMessageBold(str message)
+    {
+        setFont("smallfont");
+        SetHudSize(640, 480, FALSE);
+        HudMessageBold(s:message; HUDMSG_FADEOUT, HUDID_INTERACTION, CR_WHITE, 320.0, 120.0, 3.0, 0.5);
+    }
+
+    // Set level color.
+    // If red is the base level color, tag 62 needs only its first argument above 0.
+    function void SetLevelAtmosphere (int red, int green, int blue)
+    {
+        for(int i = 0; i < lengthof(_roomTags); i++)
+            Sector_Setcolor(_roomTags[i], red, green, blue);
+
+        Sector_Setcolor(62, red, 0, 0);
+    }
+
+    function void TurnOffGenerator(void)
+    {
+        eventTriggered = true;
+        thing_deactivate(56);
+        PlaySound(56, "sound/powerstop", 128);
+    }
+
+    Script "OnOpen" OPEN
+    {
+        // Set a random wall as containing the key.
+        keySpot[random(0,5)] = true;
+
+        Scroll_Floor(4, 2, 2, 0);
+    }
+
+    script "OnOpenClient" open clientside
+    {
+        SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
+
+        // Check for active events.
+        ClientSyncEventState();
+        switch(eventState)
+        {
+            case EVENTSTATE_NONE:
+                terminate;
+
+            case EVENTSTATE_DISCO:
+                ACS_NamedExecute("Event_Disco_Client", 0);
+                terminate;
+
+            case EVENTSTATE_UBOA:
+                ACS_NamedExecute("Event_Uboa_Client", 0);
+                terminate;
+
+            case EVENTSTATE_NIGHTMARE:
+                ACS_NamedExecute("Event_Nightmare_Client", 0);
+                terminate;
+
+            case EVENTSTATE_ANGELS:
+                ACS_NamedExecute("Event_Angels_Client", 0);
+                terminate;
+        }
+    }
+
+    // Handles giving rewards when uboa dies.
+    script "OnEvent" (raw type, raw damage, raw unused) event
+    {
+        if (type != GAMEEVENT_ACTOR_DAMAGED)
+            terminate;
+
+        str actorClass = GetActorClass(ActivatorTID());
+
+        bool isUboa = BCSUtils::StrEquals(actorClass, "ZH2Uboa");
+        bool isAngel = BCSUtils::StrEquals(actorClass, "ZH2Angel");
+        bool isSpider = BCSUtils::StrEquals(actorClass, "ZH2SpiderRed")
+            || BCSUtils::StrEquals(actorClass, "ZH2SpiderGreen")
+            || BCSUtils::StrEquals(actorClass, "ZH2SpiderBlue")
+            || BCSUtils::StrEquals(actorClass, "ZH2SpiderBlack")
+            || BCSUtils::StrEquals(actorClass, "ZH2SpiderGray");
+
+        if (!isUboa && !isAngel && !isSpider)
+            terminate;
+
+        int targetHealth = BCSUtils::GetActorHealth(0);
+        bool targetDied = targetHealth - damage <= 0;
+
+        if (!targetDied)
+            terminate;
+
+        if (isUboa)
+            ACS_NamedExecuteAlways("UboaDied", 0);
+
+        if (isAngel)
+            ACS_NamedExecuteAlways("AngelDied", 0);
+
+        if (isSpider)
+            ACS_NamedExecuteAlways("SpiderDied", 0);
+    }
+
+    script "ToggleWeather" (void) clientside
+    {
+        if (ConsolePlayerNumber() != PlayerNumber())
+        {
+            terminate;
+        }
+
+        if (LineSide() == LINE_FRONT)
+        {
+            Weather::StopEmitterWeather(Weather::EMITTERWEATHER_SNOW);
+            terminate;
+        }
+
+        Weather::StartEmitterWeather(Weather::EMITTERWEATHER_SNOW);
+    }
+
+    script "kitchen_lowerwall"
+    {
+        // 2 is Hexen crushing mode.
+        Ceiling_LowerAndCrush(53, 16, 5, 2);
+        Tagwait(53);
+        Ceiling_LowerByValueTimes8(53, 16, 1);
+    }
+
+    // This simplifies the Angel's logic a lot by conditionally triggering its see behavior based on a timer.
+    script "zh2_dec_angel_checksee"
+    {
+        static int nextSeeTrigger;
+        if (nextSeeTrigger < Timer())
+        {
+            nextSeeTrigger = Timer() + ANGEL_NEXT_SEE_SCREAM;
+            SetResultValue((int)true);
+        }
+        else
+        {
+            SetResultValue((int)false);
+        }
+    }
+
+    Script "FlareLocker" (int whatfloor)
+    {
+        if(Player::GetIsZombie())
+            terminate;
+
+        if(!Flaresleft[whatfloor])
+        {
+            delay(10);
+            InteractionMessage("\caThere are no more flares.");
+            LocalAmbientSound("sound/itemfail1", 128);
+            terminate;
+        }
+        if(CheckInventory(FLARE_ITEM) == 2)
+        {
+            InteractionMessage("You have enough flares.");
+            LocalAmbientSound("sound/itemfail1", 128);
+            terminate;
+        }
+
+        InteractionMessage("You got a flare.");
+        GiveInventory(FLARE_ITEM, 1);
+        LocalAmbientSound("sound/itemget1", 128);
+        Flaresleft[whatfloor]--;
+    }
+
+    // Search the wall for a key.
+    Script "CheckForKey" (int spot)
+    {
+        if (Player::GetIsZombie())
+        {
+            InteractionMessage("Dis not brainz...");
+            terminate;
+        }
+
+        if (CheckInventory(KEY_CAVEKEY))
+        {
+            InteractionMessage("You have already found the generator key.");
+            terminate;
+        }
+
+        if(!keySpot[spot])
+        {
+            InteractionMessage("Nothing there.");
+            terminate;
+        }
+
+        InteractionMessage("You found a key that says ''Generator switch''");
+        GiveInventory(KEY_CAVEKEY, 1);
+        LocalAmbientSound("sound/itemget1",128);
+
+        // Disabled so anybody can get the key.
+        //keySpot[spot] = false;
+    }
+
+    Script "OpenGeneratorBox" (void)
+    {
+        if (Player::GetIsZombie())
+        {
+            InteractionMessage("Brainz behind dis?");
+            terminate;
+        }
+
+        if(!CheckInventory(KEY_CAVEKEY))
+        {
+            InteractionMessage("It won't open, must be locked.");
+            ActivatorSound("sound/locked1", 127);
+            terminate;
+        }
+
+        InteractionMessage("Be Warned. Bad things can happen in the dark.");
+        Takeinventory("sound/itemget1", 1);
+        Ceiling_RaiseInstant(55, 0, 16);
+        clearlinespecial();
+    }
+
+    Script "TurnOffGenerator"
+    {
+        if(eventTriggered)
+        {
+            InteractionMessage("It no longer works.");
+            terminate;
+        }
+
+        if (Player::GetIsZombie())
+        {
+            InteractionMessage("Switch for brainz?");
+            terminate;
+        }
+
+        int eventIndex = GetCVar("sv_zh2_zm06mevent");
+
+        // Do not pick the event by chance if we have a preset index.
+        if (eventIndex == 0)
+        {
+            switch(random(0, 10))
+            {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                    eventIndex = 1;
+                    break;
+
+                case 5:
+                case 6:
+                case 7:
+                    eventIndex = 2;
+                    break;
+
+                case 8:
+                case 9:
+                    eventIndex = 3;
+                    break;
+
+                case 10:
+                    eventIndex = 4;
+                    break;
+            }
+        }
+
+        switch(eventIndex)
+        {
+            case 1: ACS_NamedExecute("Event_Disco", 0); break;
+            case 2: ACS_NamedExecute("Event_Uboa", 0); break;
+            case 3: ACS_NamedExecute("Event_Nightmare", 0); break;
+            case 4: ACS_NamedExecute("Event_Spiders", 0); break;
+        }
+    }
+
+    Script "UboaDied"
+    {
+        static bool hasRun;
+        if (hasRun)
+            terminate;
+
+        hasRun = true;
+
+        ACS_NamedExecuteAlways("UboaSpawnLoot", 0, GetActorX(0), GetActorY(0), GetActorZ(0));
+
+        Music::SetDefaultMusic("UBOADEAD");
+        Music::PlayDefaultMusic();
+
+        SetEventState(EVENTSTATE_NONE);
+
+        AmbientSound("ZH2Uboa/death", 127);
+
+        radius_quake(128,1000,0,500,0);
+        HudMessageBold(s:"Someone has slain Uboa!"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+        delay(17);
+        radius_quake(128,70,0,500,80);
+        delay(70);
+        radius_quake(64,35,0,500,80);
+        delay(35);
+        radius_quake(32,17,0,500,80);
+    }
+
+    Script "UboaSpawnLoot" (raw x, raw y, raw z)
+    {
+        int singleBulletsSpawned = 0;
+        int doubleBulletsSpawned = 0;
+        int weaponsSpawned = 0;
+
+        // Manage the total count to spawn so we know when to break out
+        int totalAmount =
+            UBOA_DIED_JACKSGUN_SINGLE_BULLET_COUNT +
+            UBOA_DIED_JACKSGUN_DOUBLE_BULLET_COUNT +
+            UBOA_DIED_JACKSGUN_WEAPON_COUNT;
+
+        for (int i = 0; i < totalAmount; ++i)
+        {
+            // Note, always reassign or the value from the last iteration actually sticks.
+            str spawnName = (raw)0;
+
+            while (spawnName == (raw)0)
+            {
+                switch (random(0, 2))
+                {
+                    case 0:
+                        if (singleBulletsSpawned < UBOA_DIED_JACKSGUN_SINGLE_BULLET_COUNT)
+                        {
+                            spawnName = WEAPON_JACKSGUN_AMMOSINGLE_NAME;
+                            ++singleBulletsSpawned;
+                        }
+                        break;
+
+                    case 1:
+                        if (doubleBulletsSpawned < UBOA_DIED_JACKSGUN_DOUBLE_BULLET_COUNT)
+                        {
+                            spawnName = WEAPON_JACKSGUN_AMMODOUBLE_NAME;
+                            ++doubleBulletsSpawned;
+                        }
+                        break;
+
+                    case 2:
+                        if (weaponsSpawned < UBOA_DIED_JACKSGUN_WEAPON_COUNT)
+                        {
+                            spawnName = WEAPON_JACKSGUN_SPAWN_NAME;
+                            ++weaponsSpawned;
+                        }
+                        break;
+                }
+            }
+
+            fixed angle = Math::FRandom(0.0, 1.0);
+            fixed offsetX = FixedMul(cos(angle), Math::FRandom(UBOA_DIED_ITEM_SPAWN_DISTANCE_MIN, UBOA_DIED_ITEM_SPAWN_DISTANCE_MAX));
+            fixed offsetY = FixedMul(sin(angle), Math::FRandom(UBOA_DIED_ITEM_SPAWN_DISTANCE_MIN, UBOA_DIED_ITEM_SPAWN_DISTANCE_MAX));
+
+            fixed spawnX = x + offsetX;
+            fixed spawnY = y + offsetY;
+            fixed spawnZ = z + Math::FRandom(UBOA_DIED_ITEM_SPAWN_HEIGHT_MIN, UBOA_DIED_ITEM_SPAWN_HEIGHT_MAX);
+
+            SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
+            Delay(const: UBOA_DIED_ITEM_SPAWN_DELAY);
+        }
+    }
+
+    Script "AngelDied"
+    {
+        // This one can run multiple times as there are multiple angels.
+        //static bool hasRun;
+        //if (hasRun)
+        //    terminate;
+
+        //hasRun = true;
+
+        ACS_NamedExecuteAlways("AngelSpawnLoot", 0, GetActorX(0), GetActorY(0), GetActorZ(0));
+        _angelsLeft--;
+
+        radius_quake(20, 46, 0, 500, 0);
+        HudMessageBold(s:GetAngelDeathMessage(_angelsLeft); HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+
+        if (_angelsLeft == 0)
+            SetEventState(EVENTSTATE_NONE);
+
+        delay(46);
+        radius_quake(16, 35, 0, 500, 0);
+        delay(35);
+        radius_quake(12, 35, 0, 500, 0);
+        delay(35);
+        radius_quake(8, 17, 0, 500, 0);
+    }
+
+    str GetAngelDeathMessage(int angelsLeft)
+    {
+        switch (angelsLeft)
+        {
+            case 0:
+                return "The last angel has fallen.";
+
+            case 1:
+                return "Only one angel remains.";
+
+            case 2:
+                return "The host is weakening.";
+
+            case 3:
+                return "The heavens recoil.";
+
+            default:
+                return "An angel has fallen.";
+        }
+    }
+
+    Script "AngelSpawnLoot" (raw x, raw y, raw z)
+    {
+        void SpawnLoot(str spawnName)
+        {
+            fixed angle = Math::FRandom(0.0, 1.0);
+            fixed offsetX = FixedMul(cos(angle), Math::FRandom(ANGEL_DIED_ITEM_SPAWN_DISTANCE_MIN, ANGEL_DIED_ITEM_SPAWN_DISTANCE_MAX));
+            fixed offsetY = FixedMul(sin(angle), Math::FRandom(ANGEL_DIED_ITEM_SPAWN_DISTANCE_MIN, ANGEL_DIED_ITEM_SPAWN_DISTANCE_MAX));
+
+            fixed spawnX = x + offsetX;
+            fixed spawnY = y + offsetY;
+            fixed spawnZ = z + Math::FRandom(ANGEL_DIED_ITEM_SPAWN_HEIGHT_MIN, ANGEL_DIED_ITEM_SPAWN_HEIGHT_MAX);
+
+            SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
+        }
+
+        SpawnLoot(WEAPON_JACKSGUN_AMMODOUBLE_NAME);
+        SpawnLoot(WEAPON_JACKSGUN_SPAWN_NAME);
+    }
+
+    Script "SpiderDied"
+    {
+        _spidersKilled++;
+
+        fixed x = GetActorX(0),
+              y = GetActorY(0),
+              z = GetActorZ(0);
+
+        if (_spidersKilled % SPIDER_KILL_GRENADE_INTERVAL == 0)
+        {
+            ACS_NamedExecuteWithResult("SpiderSpawnLoot", x, y, z, WEAPON_FIREGRENADE_SPAWN_NAME);
+        }
+
+        if (_spidersKilled % SPIDER_KILL_JACKSGUN_INTERVAL == 0)
+        {
+            HudMessageBold(s:"A spider has dropped something interesting"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+
+            ACS_NamedExecuteWithResult("SpiderSpawnLoot", x, y, z, WEAPON_JACKSGUN_SPAWN_NAME);
+            //ACS_NamedExecuteWithResult("SpiderSpawnLoot", x, y, z, WEAPON_JACKSGUN_AMMOSINGLE_NAME);
+        }
+
+        if (_spidersKilled % SPIDER_KILL_DOUBLESHOTGUN_INTERVAL == 0)
+        {
+            HudMessageBold(s:"A spider has dropped something interesting"; HUDMSG_FADEOUT, 99, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+
+            ACS_NamedExecuteWithResult("SpiderSpawnLoot", x, y, z, WEAPON_DOUBLESHOTGUN_SPAWN_NAME);
+        }
+    }
+
+    Script "SpiderSpawnLoot" (raw x, raw y, raw z, raw spawnName)
+    {
+        fixed angle = Math::FRandom(0.0, 1.0);
+        fixed offsetX = FixedMul(cos(angle), Math::FRandom(SPIDER_DIED_ITEM_SPAWN_DISTANCE_MIN, SPIDER_DIED_ITEM_SPAWN_DISTANCE_MAX));
+        fixed offsetY = FixedMul(sin(angle), Math::FRandom(SPIDER_DIED_ITEM_SPAWN_DISTANCE_MIN, SPIDER_DIED_ITEM_SPAWN_DISTANCE_MAX));
+
+        fixed spawnX = x + offsetX;
+        fixed spawnY = y + offsetY;
+        fixed spawnZ = z + Math::FRandom(SPIDER_DIED_ITEM_SPAWN_HEIGHT_MIN, SPIDER_DIED_ITEM_SPAWN_HEIGHT_MAX);
+
+        SpawnForced(spawnName, spawnX, spawnY, spawnZ, 0, angle);
+    }
+
+    // guitar riff
+    Script 5 (void)
+    {
+        if(Player::GetIsHuman())
+        {
+            ThingSound(1, "sound/guitarriff", 127);
+            Delay(35 * 5);
+        }
+        else
+        {
+            InteractionMessage("Zombies don't know how to rock.");
+        }
+    }
+
+    // vending machines
+    Script 9 (void) {
+
+        if(Player::GetIsHuman())
+            InteractionMessage("This is no time for snacks.");
+        else
+            InteractionMessage("No brainz here...");
+    }
+
+    // unopenable doors
+    Script 10 (void) {
+
+        if(eventState != EVENTSTATE_DISCO)
+        {
+            InteractionMessage("The lock is jammed. This door cannot be opened.");
+            ActivatorSound("sound/locked2", 127);
+            terminate;
+        }
+
+        InteractionMessage("GET DOWN!!");
+    }
+
+    Script 11 (void){
+
+        if(eventState != EVENTSTATE_DISCO)
+        {
+            InteractionMessage("It's too dangerous to go out there.");
+            terminate;
+        }
+
+        InteractionMessage("Where ya goin'? The party just started!");
+    }
+
+    script "GeneratorDoor" (int side)
+    {
+        static bool doorOpened = false;
+        if (side && !doorOpened)
+        {
+            InteractionMessage("Locked from the other side.");
+            ActivatorSound("sound/locked2", 127);
+            terminate;
+        }
+
+        Door_open(40, 10);
+        doorOpened = true;
+    }
+
+    // elevators
+    Script 14 (void)
+    {
+        if(eventState != EVENTSTATE_DISCO)
+        {
+            InteractionMessage("Elevator doesn't work.");
+            ActivatorSound("sound/itemfail1", 127);
+            terminate;
+        }
+
+        InteractionMessage("DIG IT!");
+    }
+
+    // elevators
+    Script 15 (void) {
+
+        if(eventState != EVENTSTATE_DISCO)
+        {
+            InteractionMessage("The Elevator is stuck on this floor.");
+            ActivatorSound("sound/itemfail1", 127);
+            terminate;
+        }
+
+        InteractionMessage("DISCO INFERNO!");
+    }
+
+    // locked door
+    Script 3 (void)
+    {
+        if(doorcheck2flr)
+            terminate;
+
+        InteractionMessage("Locked from the other side.");
+        ActivatorSound("sound/locked2", 127);
+    }
+
+    // unlocked the door
+    Script 4 (void)
+    {
+        if(doorcheck2flr)
+            terminate;
+
+        Door_open(47,128);
+        doorcheck2flr = true;
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** EVENT STATE
+    ** -----------------------------------------------------------------------------
+    */
+
+    function void SetEventState(int state)
+    {
+        Logger::LogDebug(LOGSOURCE, StrParam(s:"Setting event state to ", d:state));
+        eventState = state;
+        SyncEventState();
+    }
+
+    function void SyncEventState(void)
+    {
+        if (!BCSUtils::IsServer())
+        {
+            Logger::LogError(LOGSOURCE, "SyncEventState was called clientside.");
+            return;
+        }
+
+        // Do not sync when not in a network game.
+        if (!IsNetworkGame())
+            return;
+
+        BCSUtils::SyncVariable(SYNC_EVENTSTATE, eventState);
+
+        // Receive on all clients.
+        if (!ACS_NamedExecuteAlways("SyncEventState_Client", 0))
+            Logger::LogError(LOGSOURCE, "Failed to execute SyncEventState_Client.");
+    }
+
+    script "SyncEventState_Client" (void) clientside
+    {
+        ClientSyncEventState();
+    }
+
+    // Called clientside to fetch the synced state.
+    function void ClientSyncEventState(void)
+    {
+        if (!BCSUtils::IsClient())
+        {
+            Logger::LogError(LOGSOURCE, "ClientSyncEventState was called serverside.");
+            return;
+        }
+
+        // Do not sync when not in a network game.
+        if (!IsNetworkGame())
+            return;
+
+        int state = BCSUtils::GetSyncVarDefault(SYNC_EVENTSTATE, EVENTSTATE_NONE);
+        eventState = state;
+
+        Logger::LogDebug(LOGSOURCE, StrParam(s:"Synced event state client: ", d:eventState));
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** EVENT - DISCO
+    ** -----------------------------------------------------------------------------
+    */
+
+    function void DrawDiscoMessageHeader (str message)
+    {
+        setfont("BIGFONT");
+        SetHudSize(320, 240, false);
+
+        for (int i = 0; i < StrLen(message); ++i)
+            hudmessageBold(c:GetChar(message, i); HUDMSG_PLAIN, HUDID_DISCO + i,  random(1, 20), 70.0 + (20.0 * i), random(20.0, 22.0), 1.0);
+    }
+
+    function void DrawDiscoMessage (void)
+    {
+        static str discoMessages[5] = {
+            "GET DOWN!",
+            "DISCO INFERNO!",
+            "DIG IT!",
+            "OUT OF SIGHT",
+            "MOVE YOUR BODY"
+        };
+
+        setFont("smallfont");
+        SetHudSize(320, 240, false);
+        HudMessage(s:discoMessages[random(0,4)]; HUDMSG_FADEOUT, 0, random(1, 20), random(100.0, 200.0), random(50.0, 150.0), 0, 1.0);
+    }
+
+    script "Event_Disco" (void)
+    {
+        if (eventState != EVENTSTATE_NONE)
+            terminate;
+
+        TurnOffGenerator();
+        SetEventState(EVENTSTATE_DISCO);
+        ACS_NamedExecuteAlways("Event_Disco_Client", 0);
+
+        delay(35*8);
+
+        // Replace lights.
+        SpawnSpotForced("ZH2DiscoBowl", TAG_MAPSPOTCEILINGLAMP, TAG_MAPSPOTDISCOBOWL);
+        Thing_Remove(TAG_MAPSPOTCEILINGLAMP);
+
+        // Stop the event after a certain time
+        // This is exactly how long the track takes.
+        delay(35 * 177 + 18);
+
+        // Replace lights again.
+        SpawnSpotForced("ZH2CeilingLamp", TAG_MAPSPOTDISCOBOWL, TAG_MAPSPOTCEILINGLAMP);
+        Thing_Remove(TAG_MAPSPOTDISCOBOWL);
+
+        SetEventState(EVENTSTATE_NONE);
+    }
+
+    script "Event_Disco_Client" (void) clientside
+    {
+        // This wait until the client is aware of the new event.
+        while (eventState != EVENTSTATE_DISCO)
+            delay(const: 1);
+
+        Music::SetDefaultMusic("DISCO2");
+        Music::PlayDefaultMusic();
+
+        delay(35*2);
+
+        Log(s:"It's getting a bit funky in here!");
+
+        delay(35*6);
+
+        // Stop the event after a certain time
+        // This is exactly how long the track takes.
+        int discoTime = 35 * 177 + 18;
+
+        str message = "DISCOPARTY";
+        int counter;
+        while (discoTime--)
+        {
+            if (counter % 150 == 0 && counter != 0) {
+                DrawDiscoMessage();
+            }
+
+            if (counter % 18 == 0)
+            {
+                SetLevelAtmosphere(random(1,255), random(1,255), random(1,255));
+                DrawDiscoMessageHeader(message);
+            }
+
+            counter++;
+            delay(const: 1);
+        }
+
+        Log(s:"The hospital has returned to its former charm.");
+
+        Music::SetDefaultMusic("UNSETTLE");
+        Music::PlayDefaultMusic();
+
+        SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
+
+        for (int i = 0; i < StrLen(message); ++i) {
+            BCSUtils::ClearHudMessageBold(HUDID_DISCO + i);
+        }
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** EVENT - UBOA
+    ** -----------------------------------------------------------------------------
+    */
+
+    script "Event_Uboa"
+    {
+        if (eventState != EVENTSTATE_NONE)
+        {
+            terminate;
+        }
+
+        TurnOffGenerator();
+        SetEventState(EVENTSTATE_UBOA);
+        ACS_NamedExecuteAlways("Event_Uboa_Client", 0);
+        ACS_NamedExecuteAlways("Event_Uboa_Teleporter", 0);
+
+        SpawnSpot("ZH2Uboa", 80, TAG_UBOA);
+
+        FadeTo(0, 0, 0, 1.0, 0);
+        FadeTo(0, 0, 0, 0, 1.0);
+
+        // Replace hospital textures
+        SetActorState(TAG_MAPSPOTCEILINGLAMP, "inactive");
+        SetActorState(TAG_MAPSPOTLIGHTBULB, "inactive");
+        ReplaceTextures("0_RUS21", "0_RUS28" , 0);
+        ReplaceTextures("0_RUS25", "0_RUS28" , 0);
+        ReplaceTextures("0_RUS17", "0_RUS26" , 0);
+        ReplaceTextures("0_RUS23", "0_RUS26" , 0);
+        ReplaceTextures("0_RUS20", "0_RUS27" , 0);
+        ReplaceTextures("0_RUS24", "0_RUS27" , 0);
+        ReplaceTextures("0694", "0880" , 0);
+        SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QUAKE2_2");
+    }
+
+    script "Event_Uboa_Teleporter" (void)
+    {
+        SetActivator(-1);
+        while(true)
+        {
+            delay(random(150, 700));
+            teleportother(TAG_UBOA, Random(500, 517), 1);
+        }
+    }
+
+    script "Event_Uboa_Client" (void) clientside
+    {
+        // This wait until the client is aware of the new event.
+        while (eventState != EVENTSTATE_UBOA)
+        {
+            delay(const: 1);
+        }
+
+        // Should not matter, just done in case scripts are being puked manually.
+        SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
+
+        Music::SetDefaultMusic(BCSUtils::cond(Random(0, 1), "FUCKED", "FUCKED2"));
+        Music::PlayDefaultMusic();
+
+        int startTimestamp = Timer();
+
+        while(eventState == EVENTSTATE_UBOA)
+        {
+            if (Timer() - startTimestamp == 35 * 2)
+            {
+                Log(s:"Uboa has entered the hospital.");
+            }
+
+            int targetLightLevel = Random(UBOA_LIGHT_FADE_MIN, UBOA_LIGHT_FADE_MAX);
+            int fadeTics = Random(UBOA_LIGHT_FADE_TICS_MIN, UBOA_LIGHT_FADE_TICS_MAX);
+
+            for (int i = 0; i < lengthof(_roomTags); ++i)
+            {
+                Light_Fade(_roomTags[i], targetLightLevel, fadeTics);
+            }
+
+            Delay(fadeTics + Random(UBOA_LIGHT_FADE_DELAY_EXTRA_MIN, UBOA_LIGHT_FADE_DELAY_EXTRA_MAX));
+        }
+
+        // Should not matter, just done in case scripts are being puked manually.
+        SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
+
+        // Can't really revert back to the defaults so just assume 128
+        for (i = 0; i < lengthof(_roomTags); ++i)
+        {
+            Light_Fade(_roomTags[i], 128, 35 * 10);
+        }
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** EVENT - NIGHTMARE
+    ** -----------------------------------------------------------------------------
+    */
+
+    script "Event_Nightmare" (void)
+    {
+        if (eventState != EVENTSTATE_NONE)
+        {
+            terminate;
+        }
+
+        TurnOffGenerator();
+        SetEventState(EVENTSTATE_NIGHTMARE);
+        ACS_NamedExecuteAlways("Event_Nightmare_Client", 0);
+
+        FadeTo(0, 0, 0, 1.0, 0);
+        FadeTo(0, 0, 0, 0, 1.0);
+
+        // Turns on sounds
+        Thing_Activate(83);
+
+        // Turn off extra dynamic lights
+        thing_deactivate(56);
+
+        // Floor and door next to the green floor portal to nightmare land
+        ChangeFloor(77, "SFLR6_4");
+        ChangeFloor(78, "SFLR6_4");
+        floor_lowerbyvalue(77,32,8);
+        floor_lowerbyvalue(78,32,16);
+        ceiling_raisebyvalue(79, 32, 64);
+
+        // Door to the blue floor portal
+        floor_lowerbyvalue(93,32,120);
+
+        // Door to the basement portal
+        door_open(81, 32);
+
+        // Replace hospital textures
+        SetActorState(TAG_MAPSPOTCEILINGLAMP, "inactive");
+        SetActorState(TAG_MAPSPOTLIGHTBULB, "inactive");
+        ReplaceTextures("0_RUS21", "0_RUS28" , 0);
+        ReplaceTextures("0_RUS25", "0_RUS28" , 0);
+        ReplaceTextures("0_RUS17", "0_RUS26" , 0);
+        ReplaceTextures("0_RUS23", "0_RUS26" , 0);
+        ReplaceTextures("0_RUS20", "0_RUS27" , 0);
+        ReplaceTextures("0_RUS24", "0_RUS27" , 0);
+        ReplaceTextures("0694", "0880" , 0);
+
+        // Child room textures
+        SetLineTexture(99, SIDE_FRONT, TEXTURE_MIDDLE, "WSKSNAK2");
+        SetLineTexture(99, SIDE_FRONT, TEXTURE_BOTTOM, "WSKSNAK2");
+        SetLineTexture(99, SIDE_FRONT, TEXTURE_TOP, "WSKSNAK2");
+        SetLineTexture(99, SIDE_BACK, TEXTURE_MIDDLE, "WSKSNAK2");
+        SetLineTexture(99, SIDE_BACK, TEXTURE_BOTTOM, "WSKSNAK2");
+        SetLineTexture(99, SIDE_BACK, TEXTURE_TOP, "WSKSNAK2");
+        SetLineTexture(100, SIDE_FRONT, TEXTURE_BOTTOM, "WSKSNAK2");
+        SetLineTexture(100, SIDE_FRONT, TEXTURE_TOP, "WSKSNAK2");
+        SetLineTexture(100, SIDE_BACK, TEXTURE_BOTTOM, "WSKSNAK2");
+        SetLineTexture(100, SIDE_BACK, TEXTURE_TOP, "WSKSNAK2");
+        SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "QUAKE2_2");
+        ChangeFloor(58, "SFLR6_4");
+        ChangeCeiling(58, "SFLR6_4");
+        ChangeCeiling(59, "SFLR6_4");
+
+        delay(35 * 2);
+
+        // Blood pool
+        ceiling_raisebyvalue(62, 1, 200);
+    }
+
+    script "FallsInNightmare" (void)
+    {
+        teleport(19);
+        ACS_NamedExecute("FallsInNightmare_Client", 0);
+    }
+
+    script "FallsInNightmare_Client" (void) clientside
+    {
+        if (ConsolePlayerNumber() != PlayerNumber())
+            terminate;
+
+        Weather::StartEmitterWeather(Weather::EMITTERWEATHER_SNOW);
+    }
+
+    script "Event_Nightmare_Client" (void) clientside
+    {
+        // This wait until the client is aware of the new event.
+        while (eventState != EVENTSTATE_NIGHTMARE)
+        {
+            delay(const: 1);
+        }
+
+        Music::SetDefaultMusic("SCARYMUS");
+        Music::PlayDefaultMusic();
+
+        SetLevelAtmosphere(DEFAULTLEVELCOLOR - 20, DEFAULTLEVELCOLOR - 20, DEFAULTLEVELCOLOR - 20);
+        delay(35*2);
+        Log(s:"This place turned into your worst nightmare!");
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** EVENT - SPIDERS
+    ** -----------------------------------------------------------------------------
+    */
+
+    script "Event_Spiders" (void)
+    {
+        if (eventState != EVENTSTATE_NONE)
+        {
+            terminate;
+        }
+
+        TurnOffGenerator();
+        SetEventState(EVENTSTATE_SPIDERS);
+        ACS_NamedExecuteAlways("Event_Spiders_Client", 0);
+
+        SetActorState (TAG_MAPSPOTCEILINGLAMP, "inactive");
+        SetActorState (TAG_MAPSPOTLIGHTBULB, "inactive");
+
+        ReplaceTextures("0_RUS21", "WEBBIN03", 0);
+        ReplaceTextures("0_RUS25", "WEBBIN03", 0);
+        ReplaceTextures("0_RUS28", "WEBBIN03", 0);
+
+        ReplaceTextures("0_RUS17", "WEBBIN03", 0);
+        ReplaceTextures("0_RUS23", "WEBBIN03", 0);
+        ReplaceTextures("0_RUS26", "WEBBIN03", 0);
+
+        ReplaceTextures("0_RUS20", "WEBBIN03", 0);
+        ReplaceTextures("0_RUS24", "WEBBIN03", 0);
+        ReplaceTextures("0_RUS27", "WEBBIN03", 0);
+
+        ReplaceTextures("0694", "WEBBIN03" , 0);
+
+        ReplaceTextures("0690", "WEBBIN03", 0);
+        ReplaceTextures("0691", "WEBBIN03", 0);
+        ReplaceTextures("0_RUS14", "WEBBIN03", 0);
+        ReplaceTextures("1171", "WEBBIN03", 0);
+
+
+        ReplaceTextures("GRAFFI00", "WEBBIN03", 0);
+        ReplaceTextures("GRAFFI00", "WEBBIN03", 0);
+
+        SetLineTexture(69, SIDE_FRONT, TEXTURE_MIDDLE, "WEBBIN05");
+        SetLineTexture(69, SIDE_BACK, TEXTURE_MIDDLE, "WEBBIN05");
+        SetLineTexture(66, SIDE_FRONT, TEXTURE_MIDDLE, "WEBBIN04");
+        SetLineTexture(66, SIDE_BACK, TEXTURE_MIDDLE, "WEBBIN04");
+        SetLineTexture(73, SIDE_FRONT, TEXTURE_MIDDLE, "WEBBIN08");
+
+        // This loop determines if each spot has had its initial count filled in. After each iteration we decrement.
+        // It's a bit of a loose check but each spot will have been iterated once when it reaches 0.
+        int initialSpidersLeft = MAX_SPIDERSPOT;
+
+        // A constant loop checking if there needs to be any refilling of spiders on each spot.
+        while(true)
+        {
+            // Prevent the map from getting too many spiders.
+            // THis is an extra failsafe.
+            int totalSpiderCount = thingcountname("ZH2SpiderRed", 0)
+                + thingcountname("ZH2SpiderGreen", 0)
+                + thingcountname("ZH2SpiderBlue", 0)
+                + thingcountname("ZH2SpiderBlack", 0)
+                + thingcountname("ZH2SpiderGray", 0);
+
+            if (totalSpiderCount >= MAX_SPIDER)
+                terminate;
+
+            for(int i = 0; i < TAG_SPIDERSPAWNMAX - TAG_SPIDERSPAWNMIN; i++)
+            {
+                int spiderCount = thingcountname("ZH2SpiderRed", TAG_SPIDER + i)
+                    + thingcountname("ZH2SpiderGreen", TAG_SPIDER + i)
+                    + thingcountname("ZH2SpiderBlue", TAG_SPIDER + i)
+                    + thingcountname("ZH2SpiderBlack", TAG_SPIDER + i)
+                    + thingcountname("ZH2SpiderGray", TAG_SPIDER + i);
+
+                // Enough spiders on spot.
+                if (spiderCount >= MAX_SPIDERSPOT)
+                    continue;
+
+                int spot = TAG_SPIDERSPAWNMIN + i;
+                spawnspot("ZH2SpiderSpawner", spot, TAG_SPIDER + i);
+            }
+
+            int tics = initialSpidersLeft > 0
+                ? random(SPIDER_INITIAL_SPAWN_DELAY_MIN, SPIDER_INITIAL_SPAWN_DELAY_MAX)
+                : random(SPIDER_REFILL_SPAWN_DELAY_MIN, SPIDER_REFILL_SPAWN_DELAY_MAX);
+
+            delay(tics);
+            initialSpidersLeft--;
+        }
+    }
+
+    script "Event_Spiders_Client" (void) clientside
+    {
+        // This wait until the client is aware of the new event.
+        while (eventState != EVENTSTATE_SPIDERS)
+        {
+            delay(const: 1);
+        }
+
+        Music::SetDefaultMusic("AVERY");
+        Music::PlayDefaultMusic();
+
+        delay(35*2);
+        Log(s:"This place turned a spidernest!");
+    }
+
+    /*
+    ** -----------------------------------------------------------------------------
+    ** EVENT - ANGEL
+    ** -----------------------------------------------------------------------------
+    */
+
+    Script "AltarMessage" (void)
+    {
+        InteractionMessage("???");
+        delay(random(120,240));
+        thing_activate(32);
+    }
+
+    Script "EnterAltar" (void)
+    {
+        static bool angelEventTriggered = false;
+
+        if (eventState == EVENTSTATE_PREANGELS || eventState == EVENTSTATE_ANGELS)
+        {
+            teleport(19);
+            terminate;
+        }
+
+        SetEventState(EVENTSTATE_PREANGELS);
+
+        // TODO: Support parameter?
+        Music::PlayMusic("");//, MAPMUSICLOCAL | MAPMUSICREPLACERADIO);
+        LocalAmbientSound("sound/musicsting", 50);
+
+        Setfont("smallfont");
+        HudMessageBold(n:0, s:" found the door to heaven."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+        teleport_nofog(6, true, 0);
+
+        int tid = ActivatorTID();
+        SetActivator(-1);
+
+        // Spawn angels
+        if(!angelsSpawned)
+        {
+            angelsSpawned = true;
+
+            for(int i = 0; i < MAX_ANGELS; i++) {
+                SpawnSpot("ZH2Angel", TAG_ANGELSPAWN + i, TAG_ANGEL + i);
+            }
+        }
+
+        delay(35*4);
+
+        // Not triggering the event if the player died.
+        if (!BCSUtils::ActorIsAlive(tid))
+        {
+            SetEventState(EVENTSTATE_NONE);
+            terminate;
+        }
+
+        SetActivator(tid);
+        teleport(19);
+
+        if (angelEventTriggered)
+            terminate;
+
+        angelEventTriggered = true;
+
+        Setfont("smallfont");
+        InteractionMessageBold(StrParam(n:0, s:" has come back from heaven! ...that was a mistake."));
+        SetActivator(-1);
+
+        Music::SetDefaultMusic("");
+        Music::PlayDefaultMusic();
+
+        delay(35 * 10);
+        ACS_NamedExecute("Event_Angels", 0);
+    }
+
+    script "Event_Angels" (void)
+    {
+        if (eventState != EVENTSTATE_NONE && eventState != EVENTSTATE_PREANGELS)
+            terminate;
+
+        // Spawn angels (should already be the case but it would not be if this script is called directly)
+        if(!angelsSpawned)
+        {
+            angelsSpawned = true;
+
+            for(int i = 0; i < MAX_ANGELS; i++)
+                SpawnSpot("ZH2Angel", TAG_ANGELSPAWN + i, TAG_ANGEL + i);
+        }
+
+        while(true)
+        {
+            delay(35 * (random(10, 20) * _angelsSpawned));
+
+            InteractionMessageBold(GetAngelSpawnMessage(_angelsSpawned));
+
+            // Teleport an angel.
+            teleportother(TAG_ANGEL + _angelsSpawned, Random(500, 517), 1);
+            _angelsSpawned++;
+
+            // Replace hospital and music on first spawn
+            if (_angelsSpawned == 1)
+            {
+                SetEventState(EVENTSTATE_ANGELS);
+                ACS_NamedExecuteAlways("Event_Angels_Client", 0);
+
+                // Replace hospital textures
+                SetActorState(TAG_MAPSPOTCEILINGLAMP, "inactive");
+                SetActorState(TAG_MAPSPOTLIGHTBULB, "inactive");
+                ReplaceTextures("0_RUS21", "HORRFLR1", 0);
+                ReplaceTextures("0_RUS25", "HORRFLR1", 0);
+                ReplaceTextures("0_RUS28", "HORRFLR1", 0);
+                ReplaceTextures("0_RUS17", "HORRFLR1", 0);
+                ReplaceTextures("0_RUS23", "HORRFLR1", 0);
+                ReplaceTextures("0_RUS26", "HORRFLR1", 0);
+                ReplaceTextures("0_RUS20", "HORRFLR1", 0);
+                ReplaceTextures("0_RUS24", "HORRFLR1", 0);
+                ReplaceTextures("0_RUS27", "HORRFLR1", 0);
+                ReplaceTextures("0694", "HORRFLR1", 0);
+                ReplaceTextures("0690", "HORRFLR1", 0);
+                ReplaceTextures("0691", "HORRFLR1", 0);
+                ReplaceTextures("FLAT3", "HORRFLR1", 0);
+                ReplaceTextures("RROCK03", "HORRFLR1", 0);
+                ReplaceTextures("0_RUS14", "HORRFLR1", 0);
+                ReplaceTextures("0_RUS15", "HORRFLR1", 0);
+                ReplaceTextures("0_RUS05", "HORRFLR1", 0);
+                SetLineTexture(120, SIDE_FRONT, TEXTURE_BOTTOM, "HORRFLR1");
+            }
+
+            Logger::LogDebug(LOGSOURCE, StrParam(s:"Angel count: ", d:_angelsSpawned));
+
+            if (_angelsSpawned == ANGEL_SPAWNS_MAX)
+                terminate;
+        }
+    }
+
+    str GetAngelSpawnMessage(int angelsSpawned)
+    {
+        switch (angelsSpawned)
+        {
+            case 0:
+                return "\cgSomething has crossed from beyond...";
+
+            case 1:
+                return "\cgAnother presence has crossed from beyond...";
+
+            case 2:
+                return "\cgThe veil is breaking...";
+
+            case 3:
+                return "\cgThe air grows heavy with unseen eyes...";
+
+            default:
+                return "\cgThe crossing will not stop...";
+        }
+    }
+
+    script "Event_Angels_Client" (void) clientside
+    {
+        // This wait until the client is aware of the new event.
+        while (eventState != EVENTSTATE_ANGELS)
+        {
+            delay(const: 1);
+        }
+
+        Music::SetDefaultMusic("ANGELS");
+        Music::PlayDefaultMusic();
+
+        int startTimestamp = Timer();
+
+        while(eventState == EVENTSTATE_ANGELS)
+        {
+            int targetLightLevel = Random(ANGELS_LIGHT_FADE_MIN, ANGELS_LIGHT_FADE_MAX);
+            int fadeTics = Random(ANGELS_LIGHT_FADE_TICS_MIN, ANGELS_LIGHT_FADE_TICS_MAX);
+
+            for (int i = 0; i < lengthof(_roomTags); ++i)
+            {
+                Light_Fade(_roomTags[i], targetLightLevel, fadeTics);
+            }
+
+            Delay(fadeTics + Random(ANGELS_LIGHT_FADE_DELAY_EXTRA_MIN, ANGELS_LIGHT_FADE_DELAY_EXTRA_MAX));
+        }
+
+        // Should not matter, just done in case scripts are being puked manually.
+        SetLevelAtmosphere(DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR, DEFAULTLEVELCOLOR);
+
+        // Can't really revert back to the defaults so just assume 128.
+        for (i = 0; i < lengthof(_roomTags); ++i)
+        {
+            Light_Fade(_roomTags[i], 128, 35 * 10);
+        }
+    }
 }

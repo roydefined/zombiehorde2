@@ -9,205 +9,205 @@
 
 strict namespace
 {
-	Int resist1 = 20;
-	Int resist2 = 25;
-	Int resist3 = 40;
+    Int resist1 = 20;
+    Int resist2 = 25;
+    Int resist3 = 40;
 
-	// ZH2: Both ported from zh-beta29
+    // ZH2: Both ported from zh-beta29
 
-	function void ResistMessage (int restime)
-	{
-		SetFont("BIGFONT");
-		HudMessageBold(s:"Resist for \cJ", d:restime, s:" \cGseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-	}
+    function void ResistMessage (int restime)
+    {
+        SetFont("BIGFONT");
+        HudMessageBold(s:"Resist for \cJ", d:restime, s:" \cGseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+    }
 
-	function void ResistMessage4 (int restime, str whyresist) // PURPLE
-	{
-		SetFont("BIGFONT");
-		HudMessageBold(s:"\cTResist for \cJ", d:restime, s:" \cTseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-		SetFont("SMALLFONT");
-		HudMessageBold(s:whyresist; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 1.5, 0.5);
-	}
+    function void ResistMessage4 (int restime, str whyresist) // PURPLE
+    {
+        SetFont("BIGFONT");
+        HudMessageBold(s:"\cTResist for \cJ", d:restime, s:" \cTseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
+        SetFont("SMALLFONT");
+        HudMessageBold(s:whyresist; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 1.5, 0.5);
+    }
 
 
-	Script 01 OPEN // Setups
-	{
-		SpawnSpot("ZH2LegacyZm21OldKey",random(41,43),0,0);
-		Delay(25*20);
-		Door_Open(51, 32);
-	}
+    Script 01 OPEN // Setups
+    {
+        SpawnSpot("ZH2LegacyZm21OldKey",random(41,43),0,0);
+        Delay(25*20);
+        Door_Open(51, 32);
+    }
 
-	Script 02 (void)
-	{
-		SetFont("CONFONT");
-		HudMessageBold(n:0, s:" \cGhas reached the rescue point!\nSecure the place until the helicopter flies!";
-				HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+    Script 02 (void)
+    {
+        SetFont("CONFONT");
+        HudMessageBold(n:0, s:" \cGhas reached the rescue point!\nSecure the place until the helicopter flies!";
+                HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
 
-		SetActivator(-1);
-		Thing_Remove(1);
-		Delay(35*5);
+        SetActivator(-1);
+        Thing_Remove(1);
+        Delay(35*5);
 
-		for(int k = resist3; k > 0; k--)
-		{
-			ResistMessage4(k, "The Helicopter is going to fly");
-			Delay(35);
-		}
+        for(int k = resist3; k > 0; k--)
+        {
+            ResistMessage4(k, "The Helicopter is going to fly");
+            Delay(35);
+        }
 
-		Delay(15*5);
+        Delay(15*5);
 
-		SetLineBlocking(21, BLOCK_PLAYERS);
-		Floor_RaiseByValue(30, 8, 256);
-		Ceiling_RaiseByValue(30, 8, 256);
+        SetLineBlocking(21, BLOCK_PLAYERS);
+        Floor_RaiseByValue(30, 8, 256);
+        Ceiling_RaiseByValue(30, 8, 256);
 
-		Delay(35*5);
+        Delay(35*5);
 
-		SetFont("BIGFONT");
-		HudMessageBold(s:"\cGWarning : \cKThe Island will collapse!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"\cGWarning : \cKThe Island will collapse!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
 
-		Delay(15*3);
+        Delay(15*3);
 
-		for(k = 0; k < BCSUtils::MAX_PLAYERS; k++)
-		{
-			if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
-				Acs_ExecuteAlways(3, 0, k, 0, 0);
-		}
+        for(k = 0; k < BCSUtils::MAX_PLAYERS; k++)
+        {
+            if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
+                Acs_ExecuteAlways(3, 0, k, 0, 0);
+        }
 
-		Delay(35 * 2 + 18);
+        Delay(35 * 2 + 18);
 
-		Sector_SetDamage(00, 10000, 12);
-		Sector_SetDamage(01, 10000, 12);
-		Sector_SetDamage(02, 10000, 12);
-		Sector_SetDamage(03, 10000, 12);
-		Sector_SetDamage(04, 10000, 12);
-		Sector_SetDamage(05, 10000, 12);
-		Sector_SetDamage(06, 10000, 12);
-		Sector_SetDamage(07, 10000, 12);
-		Sector_SetDamage(08, 10000, 12);
-		Sector_SetDamage(09, 10000, 12);
-		Sector_SetDamage(10, 10000, 12);
-		Sector_SetDamage(11, 10000, 12);
-		Sector_SetDamage(12, 10000, 12);
-		Sector_SetDamage(13, 10000, 12);
-		Sector_SetDamage(14, 10000, 12);
-		Sector_SetDamage(15, 10000, 12);
-		Sector_SetDamage(16, 10000, 12);
-		Sector_SetDamage(17, 10000, 12);
-		Sector_SetDamage(18, 10000, 12);
-		Sector_SetDamage(19, 10000, 12);
-		Sector_SetDamage(20, 10000, 12);
-		Sector_SetDamage(21, 10000, 12);
-		Sector_SetDamage(22, 10000, 12);
-		Sector_SetDamage(23, 10000, 12);
-		Sector_SetDamage(24, 10000, 12);
-		Sector_SetDamage(25, 10000, 12);
-		Sector_SetDamage(26, 10000, 12);
-		Sector_SetDamage(27, 10000, 12);
-		Sector_SetDamage(28, 10000, 12);
-		Sector_SetDamage(29, 10000, 12);
-		Sector_SetDamage(48, 10000, 12);
-		Sector_SetDamage(49, 10000, 12);
-		Sector_SetDamage(51, 10000, 12);
-		Sector_SetDamage(52, 10000, 12);
-		Sector_SetDamage(53, 10000, 12);
-		Sector_SetDamage(54, 10000, 12);
-		Sector_SetDamage(55, 10000, 12);
-		Sector_SetDamage(56, 10000, 12);
+        Sector_SetDamage(00, 10000, 12);
+        Sector_SetDamage(01, 10000, 12);
+        Sector_SetDamage(02, 10000, 12);
+        Sector_SetDamage(03, 10000, 12);
+        Sector_SetDamage(04, 10000, 12);
+        Sector_SetDamage(05, 10000, 12);
+        Sector_SetDamage(06, 10000, 12);
+        Sector_SetDamage(07, 10000, 12);
+        Sector_SetDamage(08, 10000, 12);
+        Sector_SetDamage(09, 10000, 12);
+        Sector_SetDamage(10, 10000, 12);
+        Sector_SetDamage(11, 10000, 12);
+        Sector_SetDamage(12, 10000, 12);
+        Sector_SetDamage(13, 10000, 12);
+        Sector_SetDamage(14, 10000, 12);
+        Sector_SetDamage(15, 10000, 12);
+        Sector_SetDamage(16, 10000, 12);
+        Sector_SetDamage(17, 10000, 12);
+        Sector_SetDamage(18, 10000, 12);
+        Sector_SetDamage(19, 10000, 12);
+        Sector_SetDamage(20, 10000, 12);
+        Sector_SetDamage(21, 10000, 12);
+        Sector_SetDamage(22, 10000, 12);
+        Sector_SetDamage(23, 10000, 12);
+        Sector_SetDamage(24, 10000, 12);
+        Sector_SetDamage(25, 10000, 12);
+        Sector_SetDamage(26, 10000, 12);
+        Sector_SetDamage(27, 10000, 12);
+        Sector_SetDamage(28, 10000, 12);
+        Sector_SetDamage(29, 10000, 12);
+        Sector_SetDamage(48, 10000, 12);
+        Sector_SetDamage(49, 10000, 12);
+        Sector_SetDamage(51, 10000, 12);
+        Sector_SetDamage(52, 10000, 12);
+        Sector_SetDamage(53, 10000, 12);
+        Sector_SetDamage(54, 10000, 12);
+        Sector_SetDamage(55, 10000, 12);
+        Sector_SetDamage(56, 10000, 12);
 
-		Game::KillUnsafePlayers();
-	}
+        Game::KillUnsafePlayers();
+    }
 
-	Script 3 (int who) // Drowning
-	{
-		SetActivator(Identity::GetTid(who));
-		Delay(35*2);
-		FadeTo(0, 0, 0.5, 1.0, 0.5);
-		Delay(18);
-		LocalAmbientSound("sound/drowning1", 127);
-		Game::Kill(MOD_WATER);
-		FadeTo(0, 0, 0.5, 0.0, 0.5);
-	}
+    Script 3 (int who) // Drowning
+    {
+        SetActivator(Identity::GetTid(who));
+        Delay(35*2);
+        FadeTo(0, 0, 0.5, 1.0, 0.5);
+        Delay(18);
+        LocalAmbientSound("sound/drowning1", 127);
+        Game::Kill(MOD_WATER);
+        FadeTo(0, 0, 0.5, 0.0, 0.5);
+    }
 
-	Script 6 (Void)
-	{
-		SetActivator(-1);
-		for(int i = resist1; i > 0; i--)
-		{
-			ResistMessage(i);
-			Delay(35);
-		}
-		Door_Open(53, 32);
-		Delay(35*35);
-		Floor_RaiseByValue(48, 255, 136);
-		Ceiling_RaiseByValue(48, 255, 136);
-	}
+    Script 6 (Void)
+    {
+        SetActivator(-1);
+        for(int i = resist1; i > 0; i--)
+        {
+            ResistMessage(i);
+            Delay(35);
+        }
+        Door_Open(53, 32);
+        Delay(35*35);
+        Floor_RaiseByValue(48, 255, 136);
+        Ceiling_RaiseByValue(48, 255, 136);
+    }
 
-	Script 7 (Void)
-	{
-		Door_Close(53, 128);
-		Delay(20*20);
-		Door_Open(53, 32);
-	}
+    Script 7 (Void)
+    {
+        Door_Close(53, 128);
+        Delay(20*20);
+        Door_Open(53, 32);
+    }
 
-	Script 8 (Void)
-	{
-		Floor_LowerByValue(57, 255, 32);
-		SetActivator(-1);
-		for(int i = resist1; i > 0; i--)
-		{
-			ResistMessage(i);
-			Delay(35);
-		}
-		Door_Open(54, 32);
-	}
+    Script 8 (Void)
+    {
+        Floor_LowerByValue(57, 255, 32);
+        SetActivator(-1);
+        for(int i = resist1; i > 0; i--)
+        {
+            ResistMessage(i);
+            Delay(35);
+        }
+        Door_Open(54, 32);
+    }
 
-	Script 9 (Void)
-	{
-		SetActivator(-1);
-		for(int i = resist2; i > 0; i--)
-		{
-			ResistMessage(i);
-			Delay(35);
-		}
-		Door_Open(55, 32);
-	}
+    Script 9 (Void)
+    {
+        SetActivator(-1);
+        for(int i = resist2; i > 0; i--)
+        {
+            ResistMessage(i);
+            Delay(35);
+        }
+        Door_Open(55, 32);
+    }
 
-	Script 10 (Void)
-	{
-		Door_Close(55, 128);
-		Delay(20*20);
-		Door_Open(55, 32);
-	}
+    Script 10 (Void)
+    {
+        Door_Close(55, 128);
+        Delay(20*20);
+        Door_Open(55, 32);
+    }
 
-	Script 11 (Void)
-	{
-		SetActivator(-1);
-		for(int i = resist1; i > 0; i--)
-		{
-			ResistMessage(i);
-			Delay(35);
-		}
-		SetLineBlocking(58, BLOCK_NOTHING);
-		Floor_LowerByValue(56, 32, 112);
-	}
+    Script 11 (Void)
+    {
+        SetActivator(-1);
+        for(int i = resist1; i > 0; i--)
+        {
+            ResistMessage(i);
+            Delay(35);
+        }
+        SetLineBlocking(58, BLOCK_NOTHING);
+        Floor_LowerByValue(56, 32, 112);
+    }
 
-	Script 12 (Void)
-	{
-		Floor_Raisebyvalue(56, 112, 128);
-		Delay(35*15);
-		Floor_Lowerbyvalue(56, 32, 128);
-	}
+    Script 12 (Void)
+    {
+        Floor_Raisebyvalue(56, 112, 128);
+        Delay(35*15);
+        Floor_Lowerbyvalue(56, 32, 128);
+    }
 
-	Script 13 (Void)
-	{
-		SetLineBlocking(59, BLOCK_NOTHING);
-		Delay(5*10);
-		Floor_LowerByValue(52, 32, 112);
-	}
+    Script 13 (Void)
+    {
+        SetLineBlocking(59, BLOCK_NOTHING);
+        Delay(5*10);
+        Floor_LowerByValue(52, 32, 112);
+    }
 
-	Script 14 (Void)
-	{
-		Door_Close(54, 128);
-		Delay(15*15);
-		Door_Open(54, 32);
-	}
+    Script 14 (Void)
+    {
+        Door_Close(54, 128);
+        Delay(15*15);
+        Door_Open(54, 32);
+    }
 }

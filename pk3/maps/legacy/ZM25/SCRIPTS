@@ -9,184 +9,184 @@
 
 strict namespace
 {
-	int Good = 0;
-	int Bad = 0;
-	int Ugly = 0;
-	bool GoodPresent = FALSE;
-	bool BadPresent = FALSE;
-	bool UglyPresent = FALSE;
-	bool GoodBadUgly = FALSE;
+    int Good = 0;
+    int Bad = 0;
+    int Ugly = 0;
+    bool GoodPresent = FALSE;
+    bool BadPresent = FALSE;
+    bool UglyPresent = FALSE;
+    bool GoodBadUgly = FALSE;
 
-	Script 1 OPEN
-	{ // Waiting for the weather ( Random delay ).
-		Thing_Move(230,random(240,242),1);
-		Thing_Move(231,random(243,244),1);
-		Thing_Move(232,random(245,246),1);
-		delay(35*random(90,300));
-		SetFont("BIGFONT");
-		HudMessageBold(s:"The Weather looks like strange, something will happen."; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 5.5, 0.5);
-		delay(35*8);
-		ACS_Execute(2,0,random(1,5),0,0);
-	}
+    Script 1 OPEN
+    { // Waiting for the weather ( Random delay ).
+        Thing_Move(230,random(240,242),1);
+        Thing_Move(231,random(243,244),1);
+        Thing_Move(232,random(245,246),1);
+        delay(35*random(90,300));
+        SetFont("BIGFONT");
+        HudMessageBold(s:"The Weather looks like strange, something will happen."; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 5.5, 0.5);
+        delay(35*8);
+        ACS_Execute(2,0,random(1,5),0,0);
+    }
 
-	script 2 (int Typ)
-	{ //Weather
-		if( Typ == 1)//  mist
-		{
-			changesky("ICESKY","ICESKY");
+    script 2 (int Typ)
+    { //Weather
+        if( Typ == 1)//  mist
+        {
+            changesky("ICESKY","ICESKY");
 
-			for (int i = 0; i < 500; ++i)
-				Sector_setfade(i, 127, 127, 127);
-			Light_fade(7,110,35);
-			Light_fade(8,110,35);
-			Light_fade(9,110,35);
-			Light_fade(48,110,35);
-			Light_fade(55,110,35);
+            for (int i = 0; i < 500; ++i)
+                Sector_setfade(i, 127, 127, 127);
+            Light_fade(7,110,35);
+            Light_fade(8,110,35);
+            Light_fade(9,110,35);
+            Light_fade(48,110,35);
+            Light_fade(55,110,35);
 
-			ACS_ExecuteAlways(3,0,0,0,0);// Incoming Misty 80% of chance to spawn
-			SetFont("BIGFONT");
-			HudMessageBold(s:"Here comes some mist."; HUDMSG_FADEOUT, 998, CR_GREY, 5.5, 0.2, 5.5, 0.5);
-		}
-		else if( Typ == 2)// thunder
-		{
-			Thing_SetSpecial(1550, 0, 255, 0, 0);
-			changesky("ICESKY","ICESKY");
-			SpawnSpotFacing("ZH2LegacyZm25ThunderZone",79,0);
-			ACS_ExecuteAlways(4,0,0,0,0);// Random thunder spawner
-			SetFont("BIGFONT");
-			HudMessageBold(s:"Here comes thunder!"; HUDMSG_FADEOUT, 998, CR_BLUE, 5.5, 0.2, 5.5, 0.5);
-		}
-		else if( Typ == 3)// cataclism
-		{
-			changesky("TSKYA","TSKYA");
-			ACS_Execute(5,0,0,0,0);// Random meteor spawner
-			SetFont("BIGFONT");
-			HudMessageBold(s:"Watchout, it's a cataclism !"; HUDMSG_FADEOUT, 998, CR_RED, 5.5, 0.2, 5.5, 0.5);
-		}
-		else if( Typ == 4)// night
-		{
-			changesky("STSKY8","STSKY8");
-			SetFont("BIGFONT");
-			HudMessageBold(s:"\cmIt's already night !"; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 5.5, 0.5);
-			Thing_Activate(86);
+            ACS_ExecuteAlways(3,0,0,0,0);// Incoming Misty 80% of chance to spawn
+            SetFont("BIGFONT");
+            HudMessageBold(s:"Here comes some mist."; HUDMSG_FADEOUT, 998, CR_GREY, 5.5, 0.2, 5.5, 0.5);
+        }
+        else if( Typ == 2)// thunder
+        {
+            Thing_SetSpecial(1550, 0, 255, 0, 0);
+            changesky("ICESKY","ICESKY");
+            SpawnSpotFacing("ZH2LegacyZm25ThunderZone",79,0);
+            ACS_ExecuteAlways(4,0,0,0,0);// Random thunder spawner
+            SetFont("BIGFONT");
+            HudMessageBold(s:"Here comes thunder!"; HUDMSG_FADEOUT, 998, CR_BLUE, 5.5, 0.2, 5.5, 0.5);
+        }
+        else if( Typ == 3)// cataclism
+        {
+            changesky("TSKYA","TSKYA");
+            ACS_Execute(5,0,0,0,0);// Random meteor spawner
+            SetFont("BIGFONT");
+            HudMessageBold(s:"Watchout, it's a cataclism !"; HUDMSG_FADEOUT, 998, CR_RED, 5.5, 0.2, 5.5, 0.5);
+        }
+        else if( Typ == 4)// night
+        {
+            changesky("STSKY8","STSKY8");
+            SetFont("BIGFONT");
+            HudMessageBold(s:"\cmIt's already night !"; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 5.5, 0.5);
+            Thing_Activate(86);
 
-			for (i = 0; i < 500; ++i)
-				Sector_Setcolor(i, 100, 100, 100);
-		}
-		else if( Typ == 5)// nothing
-		{
-			SetFont("BIGFONT");
-			HudMessageBold(s:"The weather stays calm."; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 5.5, 0.5);
-		}
-	}
+            for (i = 0; i < 500; ++i)
+                Sector_Setcolor(i, 100, 100, 100);
+        }
+        else if( Typ == 5)// nothing
+        {
+            SetFont("BIGFONT");
+            HudMessageBold(s:"The weather stays calm."; HUDMSG_FADEOUT, 998, CR_GOLD, 5.5, 0.2, 5.5, 0.5);
+        }
+    }
 
-	script 3 (void)
-	{
-		// Incoming Misty 80% of chance to spawn
-		Delay(35*random(45,120));
-		switch(random(1,5))
-		{
-			case 1:
-			case 2:
-			case 3:
-			case 4:
-				Thing_Activate(69);
-				SetFont("BIGFONT");
-				HudMessageBold(s:"Misty has been spoted !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.2, 2.5, 0.5);
-				SpawnSpotFacing("ZH2LegacyZm25Misty",260,250);
-				SpawnSpotFacing("ZH2LegacyZm25Misty",261,251);
-				TakeActorInventory(250,"ZH2LegacyZM18LabYouCanSeeMe",1);
-				GiveActorInventory(251,"ZH2LegacyZM18LabYouCanSeeMe",1);
-				Music::PlayMusic("D_MYST");
-				delay(35*5);
-				SETFONT("SmallFont");
-				HudMessageBold(s:"Misty can't go in buildings."; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.5, 0.24, 8.0, 4.0);
-				break;
-			case 5:
-				break;
-		}
-	}
+    script 3 (void)
+    {
+        // Incoming Misty 80% of chance to spawn
+        Delay(35*random(45,120));
+        switch(random(1,5))
+        {
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+                Thing_Activate(69);
+                SetFont("BIGFONT");
+                HudMessageBold(s:"Misty has been spoted !"; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.2, 2.5, 0.5);
+                SpawnSpotFacing("ZH2LegacyZm25Misty",260,250);
+                SpawnSpotFacing("ZH2LegacyZm25Misty",261,251);
+                TakeActorInventory(250,"ZH2LegacyZM18LabYouCanSeeMe",1);
+                GiveActorInventory(251,"ZH2LegacyZM18LabYouCanSeeMe",1);
+                Music::PlayMusic("D_MYST");
+                delay(35*5);
+                SETFONT("SmallFont");
+                HudMessageBold(s:"Misty can't go in buildings."; HUDMSG_FADEOUT, 0, CR_YELLOW, 0.5, 0.24, 8.0, 4.0);
+                break;
+            case 5:
+                break;
+        }
+    }
 
-	script 4 (void)
-	{// Random thunder spawner
-		SpawnSpotFacing("ZH2LegacyZM25ThunderWhite",random(970,980),0);
-		delay(35*random(1,5));
-		restart;
-	}
+    script 4 (void)
+    {// Random thunder spawner
+        SpawnSpotFacing("ZH2LegacyZM25ThunderWhite",random(970,980),0);
+        delay(35*random(1,5));
+        restart;
+    }
 
-	Script 5 (void)
-	{// Random meteor spawner
-		delay(35*random(2,15));
-		SpawnComet(random(0,4));
-		restart;
-	}
+    Script 5 (void)
+    {// Random meteor spawner
+        delay(35*random(2,15));
+        SpawnComet(random(0,4));
+        restart;
+    }
 
-	str cometname[4] = {"ZH2LegacyZE20CometSpawnerA", "ZH2LegacyZE20CometSpawnerB", "ZH2LegacyZE20CometSpawnerC", "ZH2LegacyZE20CometSpawnerD"};
-	function void SpawnComet(int num){SpawnSpot(cometname[num], 951 + num);}
+    str cometname[4] = {"ZH2LegacyZE20CometSpawnerA", "ZH2LegacyZE20CometSpawnerB", "ZH2LegacyZE20CometSpawnerC", "ZH2LegacyZE20CometSpawnerD"};
+    function void SpawnComet(int num){SpawnSpot(cometname[num], 951 + num);}
 
-	Script 6 (int Typ)
-	{// Good/Bad/Ugly
-		GiveInventory("Clip",1);
-		ACS_Execute(7,0,0,0,0);
-		if (Typ == 1){PrintBold(n:0, s:" is the good, he found the jacksgun !"); Good = PlayerNumber() + 1; GoodPresent = TRUE;}
-		else if (Typ == 2){PrintBold(n:0, s:" is the bad, he found the double shotgun !"); Bad = PlayerNumber() + 1; BadPresent = TRUE;}
-		else if (Typ == 3){PrintBold(n:0, s:" is the ugly, he found the dynamite !"); Ugly = PlayerNumber() + 1; UglyPresent = TRUE;}
-	}
+    Script 6 (int Typ)
+    {// Good/Bad/Ugly
+        GiveInventory("Clip",1);
+        ACS_Execute(7,0,0,0,0);
+        if (Typ == 1){PrintBold(n:0, s:" is the good, he found the jacksgun !"); Good = PlayerNumber() + 1; GoodPresent = TRUE;}
+        else if (Typ == 2){PrintBold(n:0, s:" is the bad, he found the double shotgun !"); Bad = PlayerNumber() + 1; BadPresent = TRUE;}
+        else if (Typ == 3){PrintBold(n:0, s:" is the ugly, he found the dynamite !"); Ugly = PlayerNumber() + 1; UglyPresent = TRUE;}
+    }
 
-	Script 7 (void)
-	{// Map information
-		SETFONT("SmallFont");
-		if(GoodPresent == TRUE)HudMessageBold(s:"The good: " ,n:Good,s:""; HUDMSG_FADEOUT, 2, CR_BLUE, 0.08, 0.09, 1.0, 1.0);
-		if(BadPresent == TRUE)HudMessageBold(s:"The bad: " ,n:Bad,s:""; HUDMSG_FADEOUT, 3, CR_RED, 0.08, 0.12, 1.0, 1.0);
-		if(UglyPresent == TRUE)HudMessageBold(s:"The ugly: " ,n:Ugly,s:""; HUDMSG_FADEOUT, 4, CR_YELLOW, 0.08, 0.15, 1.0, 1.0);
-		if(GoodPresent == TRUE && BadPresent == TRUE && UglyPresent == TRUE && GoodBadUgly == FALSE){GoodBadUgly = TRUE; ACS_ExecuteAlways(8,0,0,0,0);}
-		Delay(1);
-		Restart;
-	}
+    Script 7 (void)
+    {// Map information
+        SETFONT("SmallFont");
+        if(GoodPresent == TRUE)HudMessageBold(s:"The good: " ,n:Good,s:""; HUDMSG_FADEOUT, 2, CR_BLUE, 0.08, 0.09, 1.0, 1.0);
+        if(BadPresent == TRUE)HudMessageBold(s:"The bad: " ,n:Bad,s:""; HUDMSG_FADEOUT, 3, CR_RED, 0.08, 0.12, 1.0, 1.0);
+        if(UglyPresent == TRUE)HudMessageBold(s:"The ugly: " ,n:Ugly,s:""; HUDMSG_FADEOUT, 4, CR_YELLOW, 0.08, 0.15, 1.0, 1.0);
+        if(GoodPresent == TRUE && BadPresent == TRUE && UglyPresent == TRUE && GoodBadUgly == FALSE){GoodBadUgly = TRUE; ACS_ExecuteAlways(8,0,0,0,0);}
+        Delay(1);
+        Restart;
+    }
 
-	Script 8 (void)
-	{// Let's begin the party
-		delay(35*5);
-		PrintBold(s:"The 3 protagonist are present !");
-		delay(35*3);
-		PrintBold(s:"Now things become interesting !");
-		delay(35*8);
-		Music::PlayMusic("D_HANK");
-		SetFont("GBUA0");
-		HudMessageBold(s:"A"; HUDMSG_FADEINOUT,0,0,0.5,0.2,3,3.0,2.0,2.0);
-		SetFont("Bigfont");
-		HudMessageBold(s:"",n:Good,s:""; HUDMSG_FADEINOUT,0,CR_YELLOW,0.9,0.2,3,3.0,2.0,2.0);
-		HudMessageBold(s:"",n:Bad,s:""; HUDMSG_FADEINOUT,0,CR_YELLOW,0.9,0.7,3,3.0,2.0,2.0);
-		HudMessageBold(s:"",n:Ugly,s:""; HUDMSG_FADEINOUT,0,CR_YELLOW,0.1,0.4,3,3.0,2.0,2.0);
-		ACS_ExecuteAlways(9,0,0,0,0);
-	}
+    Script 8 (void)
+    {// Let's begin the party
+        delay(35*5);
+        PrintBold(s:"The 3 protagonist are present !");
+        delay(35*3);
+        PrintBold(s:"Now things become interesting !");
+        delay(35*8);
+        Music::PlayMusic("D_HANK");
+        SetFont("GBUA0");
+        HudMessageBold(s:"A"; HUDMSG_FADEINOUT,0,0,0.5,0.2,3,3.0,2.0,2.0);
+        SetFont("Bigfont");
+        HudMessageBold(s:"",n:Good,s:""; HUDMSG_FADEINOUT,0,CR_YELLOW,0.9,0.2,3,3.0,2.0,2.0);
+        HudMessageBold(s:"",n:Bad,s:""; HUDMSG_FADEINOUT,0,CR_YELLOW,0.9,0.7,3,3.0,2.0,2.0);
+        HudMessageBold(s:"",n:Ugly,s:""; HUDMSG_FADEINOUT,0,CR_YELLOW,0.1,0.4,3,3.0,2.0,2.0);
+        ACS_ExecuteAlways(9,0,0,0,0);
+    }
 
-	Script 9 (void)
-	{// Showing Image
-	    delay(35*random(30,65));
-	    SetFont("GBUA0");
-	    HudMessageBold(s:"A"; HUDMSG_FADEINOUT,0,0,0.5,0.2,3,3.0,2.0,2.0);
-	    SetFont("Bigfont");
-	    HudMessageBold(s:"",n:Good,s:""; HUDMSG_FADEINOUT,0,CR_YELLOW,0.9,0.2,3,3.0,2.0,2.0);
-	    HudMessageBold(s:"",n:Bad,s:""; HUDMSG_FADEINOUT,0,CR_YELLOW,0.9,0.7,3,3.0,2.0,2.0);
-	    HudMessageBold(s:"",n:Ugly,s:""; HUDMSG_FADEINOUT,0,CR_YELLOW,0.1,0.4,3,3.0,2.0,2.0);
-	    delay(1);
-	    restart;
-	}
+    Script 9 (void)
+    {// Showing Image
+        delay(35*random(30,65));
+        SetFont("GBUA0");
+        HudMessageBold(s:"A"; HUDMSG_FADEINOUT,0,0,0.5,0.2,3,3.0,2.0,2.0);
+        SetFont("Bigfont");
+        HudMessageBold(s:"",n:Good,s:""; HUDMSG_FADEINOUT,0,CR_YELLOW,0.9,0.2,3,3.0,2.0,2.0);
+        HudMessageBold(s:"",n:Bad,s:""; HUDMSG_FADEINOUT,0,CR_YELLOW,0.9,0.7,3,3.0,2.0,2.0);
+        HudMessageBold(s:"",n:Ugly,s:""; HUDMSG_FADEINOUT,0,CR_YELLOW,0.1,0.4,3,3.0,2.0,2.0);
+        delay(1);
+        restart;
+    }
 
-	script 56 (void)
-	{// Comet Death Effet
-		AmbientSound("world/nuke1", 64);
-		Radius_Quake(9, 35, 0, 255, 0);
-		delay(35);
-		Radius_Quake(4, 16, 0, 255, 0);
-	}
+    script 56 (void)
+    {// Comet Death Effet
+        AmbientSound("world/nuke1", 64);
+        Radius_Quake(9, 35, 0, 255, 0);
+        delay(35);
+        Radius_Quake(4, 16, 0, 255, 0);
+    }
 
-	script 99 (void)
-	{
-		for (int i = 0; i < 16; i++) {
-			PrintBold(n:i);
-			delay(35);
-		}
-	}
+    script 99 (void)
+    {
+        for (int i = 0; i < 16; i++) {
+            PrintBold(n:i);
+            delay(35);
+        }
+    }
 }

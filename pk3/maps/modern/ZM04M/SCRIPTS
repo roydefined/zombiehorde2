@@ -9,128 +9,128 @@
 
 strict namespace
 {
-	bool LightSwitch[256];
+    bool LightSwitch[256];
 
-	/* Find the secrets by yourself instead of looking into wads, it's much more fun! */
+    /* Find the secrets by yourself instead of looking into wads, it's much more fun! */
 
-	script "zm04m_open" open // Level Setups
-	{
-		Thing_Move(60, random(67,69), 1); // Makes the key spawn at random location
-		Sector_SetRotation(5, 90, 90);
-		SetLineSpecial(15, 80, 5, 0, 15);
-		TranslucentLine(15, 96, 0);
-		SetLineSpecial(20, 80, 5, 0, 20);
-		TranslucentLine(20, 96, 0);
-		Sector_SetCeilingPanning(30, -16, 0, 0, 0);
-		Sector_SetColor(36, 0, 48, 160); // pool
-		//Sector_SetFade(36, 0, 48, 160); // pool
-		Sector_SetColor(53, 0, 48, 160);
-		Sector_SetCeilingPanning(61, 32, 0, 0, 0);
-		Sector_SetFloorPanning(61, 32, 0, 0, 0);
-		Sector_SetFloorPanning(62, -16, 0, -16, 0);
-		Sector_SetCeilingPanning(62, -16, 0, -16, 0);
-	}
+    script "zm04m_open" open // Level Setups
+    {
+        Thing_Move(60, random(67,69), 1); // Makes the key spawn at random location
+        Sector_SetRotation(5, 90, 90);
+        SetLineSpecial(15, 80, 5, 0, 15);
+        TranslucentLine(15, 96, 0);
+        SetLineSpecial(20, 80, 5, 0, 20);
+        TranslucentLine(20, 96, 0);
+        Sector_SetCeilingPanning(30, -16, 0, 0, 0);
+        Sector_SetColor(36, 0, 48, 160); // pool
+        //Sector_SetFade(36, 0, 48, 160); // pool
+        Sector_SetColor(53, 0, 48, 160);
+        Sector_SetCeilingPanning(61, 32, 0, 0, 0);
+        Sector_SetFloorPanning(61, 32, 0, 0, 0);
+        Sector_SetFloorPanning(62, -16, 0, -16, 0);
+        Sector_SetCeilingPanning(62, -16, 0, -16, 0);
+    }
 
-	Script 2 (int lightNumber) NET Clientside
-	{
-		if (LightSwitch[lightNumber] == True)
-		{
-			Thing_Deactivate(lightNumber);
-			SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "BSW07B");
-			LightSwitch[lightNumber] = 0;
-			ActivatorSound("sound/lighton1", 127);
-		}
-		else
-		{
-			Thing_Activate(lightNumber);
-			SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "BSW07A");
-			LightSwitch[lightNumber] = 1;
-			ActivatorSound("sound/lightoff1", 127);
-		}
-	}
+    Script 2 (int lightNumber) NET Clientside
+    {
+        if (LightSwitch[lightNumber] == True)
+        {
+            Thing_Deactivate(lightNumber);
+            SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "BSW07B");
+            LightSwitch[lightNumber] = 0;
+            ActivatorSound("sound/lighton1", 127);
+        }
+        else
+        {
+            Thing_Activate(lightNumber);
+            SetLineTexture(lightNumber, SIDE_FRONT, TEXTURE_MIDDLE, "BSW07A");
+            LightSwitch[lightNumber] = 1;
+            ActivatorSound("sound/lightoff1", 127);
+        }
+    }
 
-	Script 3 (void) // Secret
-	{
-		Polyobj_Move(1, 16, 64, 56);
-		Delay(35*5);
-		Polyobj_Move(1, 16, 192, 56);
-	}
+    Script 3 (void) // Secret
+    {
+        Polyobj_Move(1, 16, 64, 56);
+        Delay(35*5);
+        Polyobj_Move(1, 16, 192, 56);
+    }
 
-	Script 4 (void) // Door is locked
-	{
-	Print(s:"That door is locked.");
-	ActivatorSound("sound/locked1", 127);
-	delay(15);
-	}
+    Script 4 (void) // Door is locked
+    {
+    Print(s:"That door is locked.");
+    ActivatorSound("sound/locked1", 127);
+    delay(15);
+    }
 
-	script 5 (int id) // glassbreak
-	{
-		SetLineBlocking(id, BLOCK_NOTHING);
-		SetLineTexture(id, SIDE_FRONT, TEXTURE_MIDDLE, "-");
-		SetLineTexture(id, SIDE_BACK, TEXTURE_MIDDLE, "-");
-		Thing_Activate(id);
-	}
+    script 5 (int id) // glassbreak
+    {
+        SetLineBlocking(id, BLOCK_NOTHING);
+        SetLineTexture(id, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+        SetLineTexture(id, SIDE_BACK, TEXTURE_MIDDLE, "-");
+        Thing_Activate(id);
+    }
 
-	Script 6 Enter
-	{
-		GiveInventory(FLARE_ITEM, 1);
-	}
+    Script 6 Enter
+    {
+        GiveInventory(FLARE_ITEM, 1);
+    }
 
 
-	Script 7 (void) // Door is locked 2
-	{
-	Print(s:"Something is blocking the door.");
-	ActivatorSound("sound/locked2", 127);
-	delay(15);
-	}
+    Script 7 (void) // Door is locked 2
+    {
+    Print(s:"Something is blocking the door.");
+    ActivatorSound("sound/locked2", 127);
+    delay(15);
+    }
 
-	Script 8 (void) // cupboard is locked too D: !!!!
-	{
-	Print(s:"This cupboard won't open.");
-	ActivatorSound("sound/locked2", 127);
-	delay(15);
-	}
+    Script 8 (void) // cupboard is locked too D: !!!!
+    {
+    Print(s:"This cupboard won't open.");
+    ActivatorSound("sound/locked2", 127);
+    delay(15);
+    }
 
-	Script 9 (void) // No medicine for you
-	{
-	Print(s:"This won't open either.");
-	ActivatorSound("sound/locked1", 127);
-	delay(15);
-	}
+    Script 9 (void) // No medicine for you
+    {
+    Print(s:"This won't open either.");
+    ActivatorSound("sound/locked1", 127);
+    delay(15);
+    }
 
-	Script 10 (void) // No handle OMFG
-	{
-		Print(s:"This door has no handle.");
-		delay(15);
-	}
+    Script 10 (void) // No handle OMFG
+    {
+        Print(s:"This door has no handle.");
+        delay(15);
+    }
 
-	Script 11 (void) // Secret switch that requires teamwork...
-	{
-		Floor_LowerByValue(42, 32, 128);
-		TagWait(42);
-		ChangeFloor(42, "RFLAT20");
-		PrintBold(s:"A secret has been opened...");
-	}
+    Script 11 (void) // Secret switch that requires teamwork...
+    {
+        Floor_LowerByValue(42, 32, 128);
+        TagWait(42);
+        ChangeFloor(42, "RFLAT20");
+        PrintBold(s:"A secret has been opened...");
+    }
 
-	Script 12 (void) // Secret switch in the winery
-	{
-		ActivatorSound("sound/lighton1", 127);
-		Floor_LowerByValue(28, 32, 56);
-		TagWait(28);
-		PrintBold(s:"A secret has been opened...");
-	}
+    Script 12 (void) // Secret switch in the winery
+    {
+        ActivatorSound("sound/lighton1", 127);
+        Floor_LowerByValue(28, 32, 56);
+        TagWait(28);
+        PrintBold(s:"A secret has been opened...");
+    }
 
-	Script 13 (void) // Door is locked
-	{
-		Print(s:"That door is locked.");
-		ActivatorSound("sound/lighton2", 127);
-		delay(15);
-	}
+    Script 13 (void) // Door is locked
+    {
+        Print(s:"That door is locked.");
+        ActivatorSound("sound/lighton2", 127);
+        delay(15);
+    }
 
-	Script 14 OPEN CLIENTSIDE
-	{
-	    // Lights are on
-	    for(int i=0; i<256; i++)
-	        LightSwitch[i] = true;
-	}
+    Script 14 OPEN CLIENTSIDE
+    {
+        // Lights are on
+        for(int i=0; i<256; i++)
+            LightSwitch[i] = true;
+    }
 }
