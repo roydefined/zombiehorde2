@@ -1,6 +1,8 @@
 #pragma raw include on
 #pragma raw define on
 
+#pragma pointer_space global 0
+
 #import "zcommon.bcs"
 #import "acs_source/bcsutils.acs"
 
@@ -35,9 +37,13 @@ strict namespace
     internal int _gameType = GAMETYPE_LINEAR;
     internal int _mapProgressState = STATE_NONE;
 
+    // Hook data for drawing resists.
+    // Used for the pillar resists to improve the drawn message.
+    internal Resist::ResistHookDataT? _resistHookDataRef;
+
     #define LOGSOURCE "Map"
 
-    script "OnOpen" open
+    script "open" open
     {
         // Unset the beam opacity to appear later.
         TranslucentLine(1, 0);
@@ -58,18 +64,6 @@ strict namespace
         Scroll_Floor(57,  80, -15, SCROLL_AND_CARRY);
         Scroll_Floor(58,  80, -80, SCROLL_AND_CARRY);
         Scroll_Floor(59,  15, -80, SCROLL_AND_CARRY);
-
-        // Resists
-        // TODO: Support the additional parameter?
-        Resist::CreateResist(20, "\cjActivating eastern Beacon", "\cc%t"); //, RESISTTYPEFADEOUT);
-        Resist::CreateResist(20, "\cjActivating northern Beacon", "\cc%t"); //, RESISTTYPEFADEOUT);
-        Resist::CreateResist(20, "\cjActivating western Beacon", "\cc%t"); //, RESISTTYPEFADEOUT);
-        Resist::CreateResist(20, "\cjActivating southern Beacon", "\cc%t"); //, RESISTTYPEFADEOUT);
-        Resist::CreateResist(30, "\cjOpening pyramid", "\ccResist for \cd%t \ccseconds"); //, RESISTTYPEFADEOUT);
-        Resist::CreateResist(40, "\cjReach the burial chamber", "%t \ciseconds left"); //, RESISTTYPEPLAIN);
-
-        // TODO: Support
-        //SetGlobalZombieTeleports(1);
 
         // Determine the game to run.
         // Randomize if 0. Do a randomized switch with chance for certain flows.
@@ -103,8 +97,10 @@ strict namespace
         SyncActivePillars();
     }
 
-    script "OnOpenClient" open clientside
+    script "open_client" open clientside
     {
+        Hook::Register(Hook::HOOK_CLIENTDRAWRESIST, OnDrawResistHud);
+
         ClientSyncGameType();
         ClientSyncActivePillars();
         ClientSyncMapProgressState();
@@ -279,6 +275,244 @@ strict namespace
         Logger::LogBold("A shortcut has been opened north of the beacon for anyone left behind.");
     }
 
+    /* [ZH2] RESISTS START */
+
+    script "pillar_resist_enter" (int resistIndex)
+    {
+        Resist::StartResistByIndex(resistIndex);
+
+        // TODO
+    }
+
+    script "pillar_resist_exit" (int resistIndex)
+    {
+        // TODO
+    }
+
+    script "pre_resist_handler" (int resistIndex)
+    {
+        str topReasonMessage;
+
+        switch(resistIndex)
+        {
+            case 5:
+            {
+                SetHudSize(640, 480, FALSE);
+                SetFont("BIGFONT");
+                HudMessageBold(s:"A curse is about to befall the area!"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 40.0, 0.5, 0.5);
+                HudMessageBold(s:"Take shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 55.0, 0.5, 0.5);
+                delay(18);
+                HudMessageBold(s:"A curse is about to befall the area!"; HUDMSG_FADEINOUT, 0, CR_RED, 320.0, 40.0, 0.0, 0.5, 0.5);
+                HudMessageBold(s:"Take shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEINOUT, 0, CR_RED, 320.0, 55.0, 0.0, 0.5, 0.5);
+                delay(18);
+                HudMessageBold(s:"A curse is about to befall the area!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 40.0, 2.0, 0.5, 0.5);
+                HudMessageBold(s:"Take shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 55.0, 2.0, 0.5, 0.5);
+                Delay(35*3);
+                ACS_NamedExecute("FinalMusic",0,0,0,0);
+                break;
+            }
+        }
+    }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            // East beacon
+            case 0:
+            {
+                floor_raisebyvalue(8,16,408);
+                floor_raisebyvalue(9,16,536);
+
+                // Only lowered in linear game types
+                if (_gameType == GAMETYPE_LINEAR || _gameType == GAMETYPE_QUICKLINEAR)
+                    floor_LowerByValue(36, 32, 150);
+
+                tagwait(9);
+                delay(35);
+
+                _pillarDone[0] = true;
+                TriggerBeaconActivateAmbience();
+                ActivateBeacon(0);
+                SyncActivePillars();
+                break;
+            }
+
+            // Noth beacon
+            case 1:
+            {
+                floor_raisebyvalue(5, 8, 128);
+
+                // Only lowered in linear gamemodes
+                if (_gameType == GAMETYPE_LINEAR)
+                    floor_LowerByValue(44, 16, 112);
+
+                tagwait(5);
+                delay(35);
+
+                _pillarDone[1] = true;
+                TriggerBeaconActivateAmbience();
+                ActivateBeacon(1);
+                SyncActivePillars();
+                break;
+            }
+
+            // West beacon
+            case 2:
+            {
+                door_open(42,128);
+                floor_raisebyvalue(17, 8, 48);
+                floor_raisebyvalue(11, 8, 48 + 128);
+
+                // Only risen in linear game types
+                if (_gameType == GAMETYPE_LINEAR)
+                {
+                    ceiling_raisebyvalue(43, 64, 108);
+                    ceiling_raisebyvalue(23, 64, 88);
+                    Floor_LowerByValue(18, 999, 120);
+                }
+
+                TagWait(11);
+                delay(35);
+
+                _pillarDone[2] = true;
+                TriggerBeaconActivateAmbience();
+                ActivateBeacon(2);
+                SyncActivePillars();
+                break;
+            }
+
+            // South beacon
+            case 3:
+            {
+                /*SpawnspotForced("Explosion", 29, 0, 0);
+                AmbientSound("REVEAL",127);*/
+
+                floor_raisebyvalue(32, 8, 64);
+                floor_raisebyvalue(10, 8, 64 + 128);
+
+                // Only lowered in linear game types
+                if (_gameType == GAMETYPE_LINEAR) {
+                    Floor_LowerByValue(3, 10, 40);
+                    SetLineBlocking(4, BLOCK_NOTHING);
+                }
+
+                tagwait(10);
+                delay(35);
+
+                _pillarDone[3] = true;
+                TriggerBeaconActivateAmbience();
+                ActivateBeacon(3);
+                SyncActivePillars();
+                break;
+            }
+
+            // Open pyramid
+            case 4:
+            {
+                floor_lowerinstant(28, 0, 2048);
+                ceiling_lowerinstant(28, 0, 2048);
+
+                _mapProgressState = STATE_PLAYINGINSIDE;
+                SyncMapProgressState();
+
+                SetHudSize(640, 480, FALSE);
+                AmbientSound("world/reveal1", 127);
+                HudMessageBold(s:"The top into the pyramid has been opened."; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 50.0, 2.0, 0.5);
+                break;
+            }
+
+            case 5:
+            {
+                //Generic_Ceiling(31, 16, 128, 5, 16);
+                Ceiling_LowerAndCrush(31,16,50,2);
+                tagwait(31);
+                delay(35);
+                SetFont("BIGFONT");
+                HudMessageBold(s:"The curse is here"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 40.0, 5.0, 3.0);
+                Delay(35);
+                for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+                {
+                    if (Game::GetPlayerIsSafe(i) || !PlayerInGame(i))
+                        continue;
+
+                    NamedExecuteClientScript("DeathQuake", i);
+                }
+
+                delay(35*4+18);
+                Game::KillUnsafePlayers();
+                break;
+            }
+        }
+    }
+
+    // Custom logic for some resists.
+    // TODO: Fetch top reason rather than hardcoding it.
+    internal raw OnDrawResistHud(void[]* data)
+    {
+        if (data == null)
+            return 0;
+
+        _resistHookDataRef = data;
+
+        int resistIndex = _resistHookDataRef.Index;
+
+        // All beacon resists are drawn using a percentage.
+        if (resistIndex >= 0 && resistIndex <= 3)
+        {
+            int maxTics = Resist::GetMaximumTicsByIndex(resistIndex);
+            int leftTics = Resist::GetTicsLeftByIndex(resistIndex);
+
+            int percentage = 100;
+
+            if (maxTics > 0)
+                percentage = ((maxTics - leftTics) * 100) / maxTics;
+
+            percentage = BCSUtils::Clamp(percentage, 0, 100);
+
+            str beaconName;
+
+            switch (resistIndex)
+            {
+                case 0:
+                    beaconName = "eastern";
+                    break;
+
+                case 1:
+                    beaconName = "northern";
+                    break;
+
+                case 2:
+                    beaconName = "western";
+                    break;
+
+                case 3:
+                    beaconName = "southern";
+                    break;
+            }
+
+            Hud::SetRelativePoint(0.0, 12.0);
+            BCSUtils::HudSetTextColor(CR_WHITE);
+            BCSUtils::HudSetFont("BigFont");
+            BCSUtils::HudDrawText(
+                500 + resistIndex,
+                StrParam(
+                    s:"\cjActivating ",
+                    s:beaconName,
+                    s:" Beacon ",
+                    d:percentage,
+                    s:"%"
+                )
+            );
+        }
+
+        return 0;
+    }
+
+    /* [ZH2] RESISTS END */
+
+
+
     // Resist to open the pyramid.
     // Specific to the quick linear game type.
     script "OpenPyramidResist"
@@ -286,24 +520,7 @@ strict namespace
         if(_gameType != GAMETYPE_QUICKLINEAR)
             terminate;
 
-        static bool hasRun;
-        if (hasRun)
-            terminate;
-
-        hasRun = true;
-
-        SetActivator(-1);
-        Delay(Resist::StartResistByIndex(4));
-
-        floor_lowerinstant(28, 0, 2048);
-        ceiling_lowerinstant(28, 0, 2048);
-
-        _mapProgressState = STATE_PLAYINGINSIDE;
-        SyncMapProgressState();
-
-        SetHudSize(640, 480, FALSE);
-        AmbientSound("world/reveal1", 127);
-        HudMessageBold(s:"The top into the pyramid has been opened."; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 50.0, 2.0, 0.5);
+        Resist::StartResistByIndex(4);
     }
 
     // Small teleport script that fixes the fade inside the pyramid for software users.
@@ -327,44 +544,6 @@ strict namespace
     function int GetPillarsDoneCount(void)
     {
         return (int)_pillarDone[0] + (int)_pillarDone[1] + (int)_pillarDone[2] + (int)_pillarDone[3];
-    }
-
-    Script "FinalResist" (void)
-    {
-        SetActivator(-1);
-
-        fixed y = 40.0;
-
-        SetHudSize(640, 480, FALSE);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"A curse is about to befall the area!"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, y, 0.5, 0.5);
-        HudMessageBold(s:"Take shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, y+15.0, 0.5, 0.5);
-        delay(18);
-        HudMessageBold(s:"A curse is about to befall the area!"; HUDMSG_FADEINOUT, 0, CR_RED, 320.0, y, 0.0, 0.5, 0.5);
-        HudMessageBold(s:"Take shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEINOUT, 0, CR_RED, 320.0, y+15.0, 0.0, 0.5, 0.5);
-        delay(18);
-        HudMessageBold(s:"A curse is about to befall the area!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, y, 2.0, 0.5, 0.5);
-        HudMessageBold(s:"Take shelter in the Pharaoh's burial chamber!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, y+15.0, 2.0, 0.5, 0.5);
-        Delay(35*3);
-        ACS_NamedExecute("FinalMusic",0,0,0,0);
-        Delay(Resist::StartResistByIndex(5));
-        //Generic_Ceiling(31, 16, 128, 5, 16);
-        Ceiling_LowerAndCrush(31,16,50,2);
-        tagwait(31);
-        delay(35);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"The curse is here"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, y, 5.0, 3.0);
-        Delay(35);
-        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-        {
-            if (Game::GetPlayerIsSafe(i) || !PlayerInGame(i))
-                continue;
-
-            NamedExecuteClientScript("DeathQuake", i);
-        }
-
-        delay(35*4+18);
-        Game::KillUnsafePlayers();
     }
 
     // The earthquake to trigger on clients that did not make it.
@@ -577,141 +756,6 @@ strict namespace
 
         _gameType = GAMETYPE_NONLINEAR;
         Logger::LogDebug(LOGSOURCE, "The game has been initialized as a non-linear game.");
-    }
-
-    // -------------------------------------------
-    //
-    // PILLAR RESISTS
-    //
-    // -------------------------------------------
-
-
-    script "BeaconEastResist"
-    {
-        static bool hasRun;
-        if (hasRun)
-            terminate;
-
-        hasRun = true;
-
-        SetActivator(-1);
-        SetHudSize(640, 480, FALSE);
-        SetFont("smallfont");
-
-        Delay(Resist::StartResistByIndex(0));
-
-        floor_raisebyvalue(8,16,408);
-        floor_raisebyvalue(9,16,536);
-
-        // Only lowered in linear game types
-        if (_gameType == GAMETYPE_LINEAR || _gameType == GAMETYPE_QUICKLINEAR)
-            floor_LowerByValue(36, 32, 150);
-
-        tagwait(9);
-        delay(35);
-
-        _pillarDone[0] = true;
-        TriggerBeaconActivateAmbience();
-        ActivateBeacon(0);
-        SyncActivePillars();
-    }
-
-    script "BeaconNorthResist"
-    {
-        static bool hasRun;
-        if (hasRun)
-            terminate;
-
-        hasRun = true;
-
-        SetActivator(-1);
-        SetHudSize(640, 480, FALSE);
-        SetFont("smallfont");
-
-        Delay(Resist::StartResistByIndex(1));
-
-        floor_raisebyvalue(5, 8, 128);
-
-        // Only lowered in linear gamemodes
-        if (_gameType == GAMETYPE_LINEAR)
-            floor_LowerByValue(44, 16, 112);
-
-        tagwait(5);
-        delay(35);
-
-        _pillarDone[1] = true;
-        TriggerBeaconActivateAmbience();
-        ActivateBeacon(1);
-        SyncActivePillars();
-    }
-
-    script "BeaconWestResist"
-    {
-        static bool hasRun;
-        if (hasRun)
-            terminate;
-
-        hasRun = true;
-
-        SetActivator(-1);
-        SetHudSize(640, 480, false);
-        SetFont("smallfont");
-
-        Delay(Resist::StartResistByIndex(2));
-
-        door_open(42,128);
-        floor_raisebyvalue(17, 8, 48);
-        floor_raisebyvalue(11, 8, 48 + 128);
-
-        // Only risen in linear game types
-        if (_gameType == GAMETYPE_LINEAR) {
-            ceiling_raisebyvalue(43, 64, 108);
-            ceiling_raisebyvalue(23, 64, 88);
-            Floor_LowerByValue(18, 999, 120);
-        }
-
-        TagWait(11);
-        delay(35);
-
-        _pillarDone[2] = true;
-        TriggerBeaconActivateAmbience();
-        ActivateBeacon(2);
-        SyncActivePillars();
-    }
-
-    script "BeaconSouthResist"
-    {
-        static bool hasRun;
-        if (hasRun)
-            terminate;
-
-        hasRun = true;
-
-        SetActivator(-1);
-        SetHudSize(640, 480, FALSE);
-        SetFont("smallfont");
-
-        Delay(Resist::StartResistByIndex(3));
-
-        /*SpawnspotForced("Explosion", 29, 0, 0);
-        AmbientSound("REVEAL",127);*/
-
-        floor_raisebyvalue(32, 8, 64);
-        floor_raisebyvalue(10, 8, 64 + 128);
-
-        // Only lowered in linear game types
-        if (_gameType == GAMETYPE_LINEAR) {
-            Floor_LowerByValue(3, 10, 40);
-            SetLineBlocking(4, BLOCK_NOTHING);
-        }
-
-        tagwait(10);
-        delay(35);
-
-        _pillarDone[3] = true;
-        TriggerBeaconActivateAmbience();
-        ActivateBeacon(3);
-        SyncActivePillars();
     }
 
     // -------------------------------------------
