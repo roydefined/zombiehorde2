@@ -77,12 +77,6 @@ strict namespace
 
     script "OnOpen" open
     {
-        // Resists
-        // TODO: Support third parameter?
-        Resist::CreateResist(20, "", "\cgResist for \cj%t \cgseconds"); //, RESISTTYPEFADEOUT);
-        Resist::CreateResist(20, "", "\cgResist for \cj%t \cgseconds"); //, RESISTTYPEFADEOUT);
-        Resist::CreateResist(80, "", "\cgYou have %t \cgseconds to reach safety!"); //, RESISTTYPEPLAIN);
-
         // Skybox
         scroll_floor(42, 1, 10, 0);
         scroll_floor(47, 3, 5, 0);
@@ -218,7 +212,7 @@ strict namespace
     script "OpenCastleDoors"
     {
         // Height check to avoid players from pressing the switch at the ground floor.
-        if(GetActorZ(0) < 592.0)
+        if(GetActorZ(0) < 300.0)
             terminate;
 
         ClearLineSpecial();
@@ -535,79 +529,87 @@ strict namespace
         Logger::LogBold(StrParam(n:0, s:"\cj has picked up the \cvHoly Cross\cj!"));
     }
 
-    Script "Resist1" (void)
+    /* RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
     {
-        SetActivator(-1);
-        ClearLineSpecial();
-        Delay(Resist::StartResistByIndex(0));
-        Ceiling_raisetonearest(16,32);
-        thing_destroy(35);
-        thing_activate(36);
-        thing_activate(37);
-    }
-
-    // 2nd lock doors. Winery and Dining room
-    Script "Resist2" (void)
-    {
-        static bool diningRoomDone;
-        if (diningRoomDone)
-            terminate;
-
-        SetActivator(-1);
-        ClearLineSpecial();
-        diningRoomDone = true;
-
-        Delay(Resist::StartResistByIndex(1));
-
-        Ceiling_raisetonearest(30,32);
-    }
-
-    // Final resist
-    Script "Resist3" (void)
-    {
-        SetActivator(-1);
-        SetHudSize(640, 480, FALSE);
-        SetFont("BIGFONT");
-
-        HudMessageBold(s:"Death is seeking out intruders."; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 40.0, 0.5, 0.5);
-        HudMessageBold(s:"Get to the catacombs before it's too late!"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 55.0, 0.5, 0.5);
-
-        delay(18);
-
-        HudMessageBold(s:"Death is seeking out intruders."; HUDMSG_FADEINOUT, 0, CR_RED, 320.0, 40.0, 0.0, 0.5, 0.5);
-        HudMessageBold(s:"Get to the catacombs before it's too late!"; HUDMSG_FADEINOUT, 0, CR_RED, 320.0, 55.0, 0.0, 0.5, 0.5);
-
-        delay(18);
-
-        HudMessageBold(s:"Death is seeking out intruders."; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 40.0, 2.0, 0.5, 0.5);
-        HudMessageBold(s:"Get to the catacombs before it's too late!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 55.0, 2.0, 0.5, 0.5);
-
-        Delay(35*3);
-        Delay(Resist::StartResistByIndex(2));
-        //Generic_Ceiling(31, 16, 128, 5, 16);
-
-        // 2 is Hexen crushing mode.
-        Ceiling_LowerAndCrush(31, 16, 500, 2);
-        Tagwait(31);
-        Ceiling_LowerByValueTimes8(31, 16, 1);
-
-        Delay(35*3);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"Death is here"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 40.0, 5.0, 3.0);
-        Delay(35);
-        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        switch(resistIndex)
         {
-            if (Game::GetPlayerIsSafe(i) || !PlayerInGame(i)) {
-                continue;
+            case 2:
+            {
+                SetActivator(-1);
+                SetHudSize(640, 480, FALSE);
+                SetFont("BIGFONT");
+
+                HudMessageBold(s:"Death is seeking out intruders."; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 40.0, 0.5, 0.5);
+                HudMessageBold(s:"Get to the catacombs before it's too late!"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 55.0, 0.5, 0.5);
+
+                delay(18);
+
+                HudMessageBold(s:"Death is seeking out intruders."; HUDMSG_FADEINOUT, 0, CR_RED, 320.0, 40.0, 0.0, 0.5, 0.5);
+                HudMessageBold(s:"Get to the catacombs before it's too late!"; HUDMSG_FADEINOUT, 0, CR_RED, 320.0, 55.0, 0.0, 0.5, 0.5);
+
+                delay(18);
+
+                HudMessageBold(s:"Death is seeking out intruders."; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 40.0, 2.0, 0.5, 0.5);
+                HudMessageBold(s:"Get to the catacombs before it's too late!"; HUDMSG_FADEINOUT, 0, CR_WHITE, 320.0, 55.0, 2.0, 0.5, 0.5);
+
+                Delay(35*3);
+                break;
+            }
+        }
+    }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                Ceiling_raisetonearest(16,32);
+                thing_destroy(35);
+                thing_activate(36);
+                thing_activate(37);
+                break;
             }
 
-            SetActivatorToPlayer(i);
-            ACS_NamedExecuteAlways("DeathQuake", 0);
-        }
+            case 1:
+            {
+                Ceiling_raisetonearest(30,32);
+                break;
+            }
 
-        delay(35*4+18);
-        Game::KillUnsafePlayers();
+            case 2:
+            {
+                //Generic_Ceiling(31, 16, 128, 5, 16);
+
+                // 2 is Hexen crushing mode.
+                Ceiling_LowerAndCrush(31, 16, 500, 2);
+                Tagwait(31);
+                Ceiling_LowerByValueTimes8(31, 16, 1);
+
+                Delay(35*3);
+                SetFont("BIGFONT");
+                HudMessageBold(s:"Death is here"; HUDMSG_FADEOUT, 0, CR_WHITE, 320.0, 40.0, 5.0, 3.0);
+                Delay(35);
+                for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+                {
+                    if (Game::GetPlayerIsSafe(i) || !PlayerInGame(i)) {
+                        continue;
+                    }
+
+                    SetActivatorToPlayer(i);
+                    ACS_NamedExecuteAlways("DeathQuake", 0);
+                }
+
+                delay(35*4+18);
+                Game::KillUnsafePlayers();
+                break;
+            }
+        }
     }
+
+    /* RESISTS END */
 
     script "DeathQuake" (void)
     {

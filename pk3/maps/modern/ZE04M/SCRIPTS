@@ -28,11 +28,6 @@ strict namespace
 
     script "OnOpen" open
     {
-        // Resists
-        Resist::CreateResist(20);
-        Resist::CreateResist(25);
-        Resist::CreateResist(20);
-
         // Resist blocking lines.
         SetLineBlocking(1, BLOCK_CREATURES);
         SetLineBlocking(2, BLOCK_CREATURES);
@@ -48,39 +43,46 @@ strict namespace
         ACS_NamedExecute("DeloreanMusicLoop", 0);
     }
 
-    script "Resist1"
+    /* RESISTS START */
+
+    script "post_resist_handler" (int resistIndex)
     {
-        SetActivator(-1);
-        Delay(Resist::StartResistByIndex(0));
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                Floor_LowerByValue(9, 32, 248);
+                SetLineBlocking(1, BLOCK_NOTHING);
 
-        Floor_LowerByValue(9, 32, 248);
-        SetLineBlocking(1, BLOCK_NOTHING);
+                Delay(35*5);
 
-        Delay(35*5);
+                Logger::LogBold("A secondary path has opened.");
+                Floor_LowerByValue(5, 32, 64);
+                break;
+            }
 
-        Logger::LogBold("A secondary path has opened.");
-        Floor_LowerByValue(5, 32, 64);
+            case 1:
+            {
+                Floor_LowerByValue(8, 16, 120);
+                SetLineBlocking(2, BLOCK_NOTHING);
+                break;
+            }
+
+            case 2:
+            {
+                Floor_LowerByValue(30, 16, 120);
+                SetLineBlocking(7, BLOCK_NOTHING);
+
+                Delay(35*5);
+
+                Logger::LogBold("A secondary path has opened.");
+                Floor_LowerByValue(15, 32, 64);
+                break;
+            }
+        }
     }
 
-    script "Resist2"
-    {
-        SetActivator(-1);
-        Delay(Resist::StartResistByIndex(1));
-        Floor_LowerByValue(8, 16, 120);
-        SetLineBlocking(2, BLOCK_NOTHING);
-    }
-
-    script "Resist3"
-    {
-        Delay(Resist::StartResistByIndex(2));
-        Floor_LowerByValue(30, 16, 120);
-        SetLineBlocking(7, BLOCK_NOTHING);
-
-        Delay(35*5);
-
-        Logger::LogBold("A secondary path has opened.");
-        Floor_LowerByValue(15, 32, 64);
-    }
+    /* RESISTS END */
 
     script "FellSouthSpawn"
     {

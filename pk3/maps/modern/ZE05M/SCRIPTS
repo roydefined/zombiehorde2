@@ -9,20 +9,12 @@
 
 strict namespace
 {
-    #define RESIST1_TIME 10
-    #define RESIST2_TIME 30
-    #define RESIST3_TIME 20
-    #define RESIST4_TIME 30
-    #define ESCAPE_TIME  20
-
     #define SONG_DURATION 165
 
     Bool b_lift_is_gone        = FALSE;
     Bool b_firstLiftActivation = FALSE;
     Bool b_AlertStopped        = FALSE;
     bool b_shieldactive        = FALSE;
-
-    Int timeleft = ESCAPE_TIME;
 
     Script "zm05m_open" open // Level setups
     {
@@ -106,27 +98,6 @@ strict namespace
         Sector_SetFloorPanning(126, 56, 0, 64, 0);
     }
 
-    /* RESIST EVENT */
-    script "ze05m_internal_event_resistelapsed" (raw packetRaw)
-    {
-        Event::ReceiveTimerElapsed((str)packetRaw);
-        int index = Event::GetReceiveData(0);
-
-        switch(index)
-        {
-            case 0:
-                Floor_LowerByValue(107, 21, 88);
-                break;
-            case 1:
-                SetLineBlocking(2, BLOCK_NOTHING);
-                TranslucentLine(2, 0, 0);
-                break;
-            case 2:
-                Door_Open(100, 64);
-                break;
-        }
-    }
-
     Script 2 (void) // Lift
     {
         SetActivator(-1);
@@ -190,36 +161,81 @@ strict namespace
         TranslucentLine(3, 0, 0);
     }
 
-    Script 7 (void) // Bomb has been planted
+    /* RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
     {
-        LocalAmbientSound("sound/plantbomb", 127);
-        SetActivator(-1);
-
-        Delay(35 * 3);
-        Delay(Resist::StartResistByIndex(3));
-        SetLineBlocking(4, BLOCK_NOTHING);
-        TranslucentLine(4, 0, 0);
-        Delay(35);
-
-        Acs_Execute(3, 0, 0, 0, 0);
-        Delay(35);
-
-        SetFont("CONFONT");
-        HudMessageBold(s:"The bomb has been planted!\nGet out of here before it blows up!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.05, 0.85, 3.0, 2.0);
-        Delay(Resist::StartResistByIndex(4));
-        b_AlertStopped = TRUE;
-        Delay(40);
-
-        //Generic_Ceiling(103, 32, 64, 5, 16); //ZH2 [AQW] ptn xsnake, t'aurais pu utiliser le bon lineaction bordel
-        Ceiling_LowerAndCrush(103,32,20,2); //ZH2 [AQW]
-        Tagwait(103);
-        Ceiling_LowerByValueTimes8(103,32,1);
-
-        AmbientSound("world/nuke1", 127);
-        Radius_Quake(10, 500, 0, 200, 110);
-
-        Game::KillUnsafePlayers();
+        switch(resistIndex)
+        {
+            case 3:
+            {
+                LocalAmbientSound("sound/plantbomb", 127);
+                SetActivator(-1);
+                Delay(35 * 3);
+                break;
+            }
+        }
     }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                Floor_LowerByValue(107, 21, 88);
+                break;
+            }
+
+            case 1:
+            {
+                SetLineBlocking(2, BLOCK_NOTHING);
+                TranslucentLine(2, 0, 0);
+                break;
+            }
+
+            case 2:
+            {
+                Door_Open(100, 64);
+                break;
+            }
+
+            case 3:
+            {
+                SetLineBlocking(4, BLOCK_NOTHING);
+                TranslucentLine(4, 0, 0);
+                Delay(35);
+
+                Acs_Execute(3, 0, 0, 0, 0);
+                Delay(35);
+
+                SetFont("CONFONT");
+                HudMessageBold(s:"The bomb has been planted!\nGet out of here before it blows up!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.05, 0.85, 3.0, 2.0);
+
+                Resist::StartResistByIndex(4);
+                break;
+            }
+
+            case 4:
+            {
+                b_AlertStopped = TRUE;
+                Delay(40);
+
+                //Generic_Ceiling(103, 32, 64, 5, 16); //ZH2 [AQW] ptn xsnake, t'aurais pu utiliser le bon lineaction bordel
+                Ceiling_LowerAndCrush(103,32,20,2); //ZH2 [AQW]
+                Tagwait(103);
+                Ceiling_LowerByValueTimes8(103,32,1);
+
+                AmbientSound("world/nuke1", 127);
+                Radius_Quake(10, 500, 0, 200, 110);
+
+                Game::KillUnsafePlayers();
+                break;
+            }
+        }
+    }
+
+    /* RESISTS END */
 
     Script 9 (int num, int angle)
     {
