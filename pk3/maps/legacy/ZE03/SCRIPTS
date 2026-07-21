@@ -10,34 +10,6 @@
 strict namespace
 {
     Int housereached = 0;
-    Int pearlreached = 0;
-
-    /* RESIST EVENT */
-    script "ze03_internal_event_resistelapsed" (raw packetRaw)
-    {
-        Event::ReceiveTimerElapsed((str)packetRaw);
-        int index = Event::GetReceiveData(0);
-        
-        switch(index)
-        {
-            case 0:
-                SetLineBlocking(2, BLOCK_NOTHING);
-                TranslucentLine(2, 0, 0);
-                SetFont("SMALLFONT");
-                PrintBold(s:"The prison will open itself in 5 seconds.");
-                Delay(35*5);
-                SetLineBlocking(1, BLOCK_NOTHING);
-                Floor_LowerByValue(12, 64, 120);
-                break;
-            case 1:
-                Floor_LowerByValue(21, 16, 120);
-                break;
-            case 2:
-                Floor_LowerByValue(11, 32, 112);
-                SetLineBlocking(3, BLOCK_NOTHING);
-                break;
-        }
-    }
 
     Script 1 (void) // Picking up Jack's Pistol
     {
@@ -79,15 +51,7 @@ strict namespace
         If(Player::GetIsHuman() && housereached == 0)
         {
             housereached = 1;
-            SetActivator(-1);
-
-            // Made more clear in ZH2.
-            TranslucentLine(24, 96, 0);
-
-            Delay(Resist::StartResistByIndex(3));
-
-            TranslucentLine(24, 0, 0);
-            housereached = 2;
+            Resist::StartResistByIndex(3);
         }
     }
 
@@ -105,27 +69,78 @@ strict namespace
         Music::PlayMusic("D_NULL");
     }
 
-    Script 10 (void) // Pearl reached
+    /* [ZH2] RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
     {
-        If(pearlreached==0)
+        switch(resistIndex)
         {
-            SetFont("CONFONT");
-            HudMessageBold(n:0, s:" has reached the \cMBlack Pearl!\n\cCLoad artillery before the infected come!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-            pearlreached++;
-            Acs_execute(11, 0, 0, 0, 0);
+            case 3:
+            {
+                // Made more clear in ZH2.
+                TranslucentLine(24, 96, 0);
+                break;
+            }
+
+            case 4:
+            {
+                SetFont("CONFONT");
+                HudMessageBold(n:0, s:" has reached the \cMBlack Pearl!\n\cCLoad artillery before the infected come!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+                break;
+            }
         }
     }
 
-    Script 11 (void)
+    script "post_resist_handler" (int resistIndex)
     {
-        SetActivator(-1);
-        Delay(Resist::StartResistByIndex(4));
-        Delay(35*1);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\cGWarning : \cKCannons Loaded!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-        Delay(35*5);
-        AmbientSound("world/nuke1", 127);
-        Game::KillUnsafePlayers();
-        Sector_SetDamage(23, 10000, 12);
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                SetLineBlocking(2, BLOCK_NOTHING);
+                TranslucentLine(2, 0, 0);
+                SetFont("SMALLFONT");
+                PrintBold(s:"The prison will open itself in 5 seconds.");
+                Delay(35*5);
+                SetLineBlocking(1, BLOCK_NOTHING);
+                Floor_LowerByValue(12, 64, 120);
+                break;
+            }
+
+            case 1:
+            {
+                Floor_LowerByValue(21, 16, 120);
+                break;
+            }
+
+            case 2:
+            {
+                Floor_LowerByValue(11, 32, 112);
+                SetLineBlocking(3, BLOCK_NOTHING);
+                break;
+            }
+
+            case 3:
+            {
+                // Made more clear in ZH2.
+                TranslucentLine(24, 0, 0);
+                housereached = 2;
+                break;
+            }
+
+            case 4:
+            {
+                Delay(35*1);
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\cGWarning : \cKCannons Loaded!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+                Delay(35*5);
+                AmbientSound("world/nuke1", 127);
+                Game::KillUnsafePlayers();
+                Sector_SetDamage(23, 10000, 12);
+                break;
+            }
+        }
     }
+
+    /* [ZH2] RESISTS END */
 }
