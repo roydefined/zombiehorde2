@@ -9,37 +9,8 @@
 
 strict namespace
 {
-    bool Resists[4] = {false, false, false, false}; //Needed to prevent a multiple trigger
-    Str Messages[4] = {"Opening lab entrance", "Opening laser research complex", "Opening east zone door", "Thalaron laser overcharge"};
     bool teleporter = false;
     bool teleporter2 = false; //[AQW] Anti Zombie Suicide.
-
-    Script 1 (int resist, int time)
-    {
-        SetActivator(-1);
-        if(Resists[resist] == false)
-        {
-            Resists[resist] = true;
-            for(int i = time ; i>0 ; i--)
-            {
-                CustomMessage(Messages[resist], i);
-                delay(35);
-            }
-            switch(resist)
-            {
-                case 0:
-                    polyobj_move(1,10,64,112);
-                    break;
-                case 1:
-                    door_open(7,20);
-                    break;
-                case 2:
-                    polyobj_move(3,10,64,56);
-                    door_open(5,20);
-                    break;
-            }
-        }
-    }
 
     Script 2 Open
     {
@@ -51,31 +22,6 @@ strict namespace
         SetLineTexture(13,SIDE_BACK,TEXTURE_MIDDLE,"-");
         SetLineBlocking(13,BLOCK_NOTHING);
         Polyobj_move(7,15,128,56);
-    }
-
-    Script 3 (void)
-    {
-        SetFont("CONFONT");
-        HudMessageBold(n:0, s:" has reached the subterrain bunker!\n\cCEscape from the lab before thatlaron generator explodes!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-        Delay(35*2);
-        SetActivator(-1);
-        Resists[3] = true;
-        for(int i = 30 ; i>0 ; i--)
-        {
-            CustomMessage(Messages[3], i);
-            delay(35);
-        }
-        //Generic_Ceiling(8,15,96,0,16); //ZH2 [AQW]
-        Ceiling_LowerAndCrush(8,15,20,2); //ZH2 [AQW]
-        tagwait(8);
-        Ceiling_LowerByValueTimes8(8,16,1);
-        Delay(50);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\cGWarning : \cFThalaron laser overheat!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-        delay(50);
-        Radius_Quake(100,35*5,0,100,0);
-        AmbientSound("world/thalarbeam",100);
-        Game::KillUnsafePlayers();
     }
 
     script 5 (void)
@@ -151,11 +97,63 @@ strict namespace
     }
 
 
-    Function void CustomMessage(Str msg1, int time)
+    /* [ZH2] RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
     {
-        SetFont("BIGFONT");
-        HudmessageBold(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-        SetFont("SmallFont");
-        HudmessageBold(s:msg1; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
+        switch(resistIndex)
+        {
+            case 3:
+            {
+                SetFont("CONFONT");
+                HudMessageBold(n:0, s:" has reached the subterrain bunker!\n\cCEscape from the lab before thatlaron generator explodes!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+                Delay(35*2);
+                SetActivator(-1);
+                break;
+            }
+        }
     }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                polyobj_move(1,10,64,112);
+                break;
+            }
+
+            case 1:
+            {
+                door_open(7,20);
+                break;
+            }
+
+            case 2:
+            {
+                polyobj_move(3,10,64,56);
+                door_open(5,20);
+                break;
+            }
+
+            case 3:
+            {
+                //Generic_Ceiling(8,15,96,0,16); //ZH2 [AQW]
+                Ceiling_LowerAndCrush(8,15,20,2); //ZH2 [AQW]
+                tagwait(8);
+                Ceiling_LowerByValueTimes8(8,16,1);
+                Delay(50);
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\cGWarning : \cFThalaron laser overheat!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+                delay(50);
+                Radius_Quake(100,35*5,0,100,0);
+                AmbientSound("world/thalarbeam",100);
+                Game::KillUnsafePlayers();
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 }

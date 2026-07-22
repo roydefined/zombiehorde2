@@ -22,6 +22,7 @@ strict namespace
     int Nyaned = 0;
     int redkeyspawn;
 
+    internal bool _disableFinalResist = false;
 
     //==========================---World scripts---==========================
     Script 4 open
@@ -30,9 +31,6 @@ strict namespace
         Thing_Activate(107); // Resist marker 2
         Thing_Activate(108); // Resist marker 3
         SetLineSpecial(4,80,12,0,0,0,0);
-        SetLineSpecial(1,80,2,0,0,0,0);//Resist1
-        SetLineSpecial(2,80,3,0,0,0,0);//Resist2
-        SetLineSpecial(3,80,5,0,0,0,0);//Resist3
         SetLineSpecial(5,80,12,0,0,0,0);
         SetLineSpecial(7,80,12,0,0,0,0);
         SetLineSpecial(9,80,10,0,0,0,0);
@@ -194,94 +192,30 @@ strict namespace
     }
 
     //============================---Resists---==========================
-    //------------------------------------------------------Lowering Gate
-    script 2 (void)
-    {
-        SetActivator(-1);
-        int time;
-        for(time=17;time>0;time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFont");
-            HudmessageBold(s:"Wait for the gate to lower..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-        SetLineBlocking(6, OFF);
-        Floor_LowerByValue(93, 16, 36*8);
-        delay(37);
-        Radius_Quake(5, 4*37, 0, 12,31);
-        Floor_LowerByValue(3, 16, 290);
-        Floor_LowerByValue(93, 16, 36*8);
-        SetLineSpecial(1,0,0,0,0,0,0);
-        SetLineSpecial(6,0,0,0,0,0,0);
-        Door_open(114,36);
-        SetLineSpecial(4,12,0,15,75,0,0);
-        Thing_Activate(106); // Resist marker 1
-        Thing_DeActivate(107); // Resist marker 2
-    }
-
-    //------------------------------------------------------Hacking door
-    script 3 (void)
-    {
-        SetActivator(-1);
-        int time;
-        for(time=28;time>0;time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFont");
-            HudmessageBold(s:"Hacking the door..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-        SetLineBlocking(8, OFF);
-        Door_open(22,55);
-        SetLineSpecial(2,0,0,0,0,0,0);
-        Thing_Activate(107); // Resist marker 2
-        Thing_DeActivate(108); // Resist marker 3
-    }
-
     //-----------------------------------------------------Survive (Longest script)
 
-    Script 5 (void)
+    script "ze15_survive_resist" (void)
     {
-        SetActivator(-1);
-        if (Nyan == 0)
-        {
-            Final_resist_Activated = 1;
-            int time;
-            for(time = 44;time > 0;time--)
-            {
-                SetFont("BIGFONT");
-                Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-                SetFont("SmallFont");
-                HudmessageBold(s:"Survive"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-                delay(35);
-            }
-
-            Final_resist_end = 1;
-            delay(1);
-            acs_execute (20,0,0,0,0);
-        }
-        Else
-        {
+        if (Nyan || _disableFinalResist)
             terminate;
-        }
+
+        Final_resist_activated = 1;
+        Resist::StartResistByIndex(2);
     }
 
     Script 20 (void)//The door seal.
     {
+        Door_Sealed = 1;
+        _disableFinalResist = true;
+
         if (Secret_Activated == 1 && Final_resist_Activated == 0)//Activated before you enter the endroom
         {
-            Door_Sealed = 1;
-
             delay(1);
             SetFont("BIGFONT");
             Hudmessage(s:"\cjDoor Sealing..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
             acs_terminate(26,0);//Stops the terminal counter
             acs_terminate(47,0);
             acs_terminate(48,0);
-            SetLineSpecial(3,0,0,0,0,0,0);
             Delay(35*3);
             ceiling_LowerAndCrush(30,16,10,2); //ZH2 [AQW]
             TagWait(30); //ZH2 [AQW]
@@ -295,18 +229,15 @@ strict namespace
             thing_activate(92);
             Door_open(59,15);
             delay(4*37);
-            Acs_execute(22,0,0,0,0);
+            Resist::StartResistByIndex(5);
         }
         else if (Final_resist_Activated == 1 && Secret_Activated == 1)//Activated after you enter the endroom
         {
-            Door_Sealed = 1;
-
             SetFont("BIGFONT");
             Hudmessage(s:"\cjDoor Sealing..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
             acs_terminate(26,0);//The terminal counter
             acs_terminate(47,0);
             acs_terminate(48,0);
-            SetLineSpecial(3,0,0,0,0,0,0);
             Delay(35*3);
             ceiling_LowerAndCrush(30,16,10,2); //ZH2 [AQW]
             TagWait(30); //ZH2 [AQW]
@@ -319,18 +250,15 @@ strict namespace
             acs_execute(42,0,0,0,0);
             delay(4*37);
             Door_open(59,15);
-            Acs_execute(22,0,0,0,0);
+            Resist::StartResistByIndex(5);
         }
         else if (Nyan == 1)
         {
-            Door_Sealed = 1;
-
             SetFont("BIGFONT");
             Hudmessage(s:"\cjNya..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
             acs_terminate(26,0);//The terminal counter
             acs_terminate(47,0);
             acs_terminate(48,0);
-            SetLineSpecial(3,0,0,0,0,0,0);
             Delay(35*3);
             ceiling_LowerAndCrush(30,16,10,2); //ZH2 [AQW]
             TagWait(30); //ZH2 [AQW]
@@ -344,14 +272,11 @@ strict namespace
         }
         else
         {
-            Door_Sealed = 1;
-
             SetFont("BIGFONT");
             Hudmessage(s:"\cjDoor Sealing..."; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
             acs_terminate(26,0);//The terminal counter
             acs_terminate(47,0);
             acs_terminate(48,0);
-            SetLineSpecial(3,0,0,0,0,0,0);
             Delay(35*3);
             ceiling_LowerAndCrush(30,16,10,2); //ZH2 [AQW]
             TagWait(30); //ZH2 [AQW]
@@ -424,13 +349,13 @@ strict namespace
         }
         else if (switchcount == 16)
         {
+            // TODO: These should all move into script 30
             PrintBold(n:0, s:"\cjThe shaft door has been opened!");
             Door_open(35,51);//opens the shaft
             acs_execute(47,0,0,0,0);// Shaft usage counter
             SetLineSpecial(9,80,41,0,0,0,0);//changes the shaft message
             acs_terminate(26,0);//The terminal counter
             SetLineSpecial(3,0,0,0,0,0,0);
-            acs_terminate(5,0);//3rd resist start
             acs_terminate(20,0);//Sealing door
             acs_execute(30,0,0,0,0);//Random
         }
@@ -440,6 +365,9 @@ strict namespace
     {
         if (Secret_Activated == 0)
         {
+            // Stop the final resist.
+            Resist::StopResistByIndex(2);
+
             // Aww yea, you can stack cases :3
             switch(random(1,10))
             {
@@ -523,19 +451,7 @@ strict namespace
         SetActivator(-1);
         if (Door_Sealed == 0)
         {
-            SetLineSpecial(5,80,21,0,0,0,0);
-            int time;
-            for(time=30;time>0;time--)
-            {
-                SetFont("BIGFONT");
-                Hudmessage(s:"\cqNyanyanyanyanya in \cj",d:time,s:" \cqnya!"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-                SetFont("SmallFont");
-                HudmessageBold(s:"Nyanyanyanyanya!"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-                delay(35);
-            }
-
-            Secret_Activated = 0;
-            Acs_execute(20,0,0,0,0);
+            Resist::StartResistByIndex(3);
         }
     }
 
@@ -545,72 +461,9 @@ strict namespace
         SetActivator(-1);
         if (Door_Sealed == 0)
         {
-            int time;
-            for(time=30;time>0;time--)
-            {
-                SetFont("BIGFONT");
-                Hudmessage(s:"\cqDoor seals in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-                SetFont("SmallFont");
-                HudmessageBold(s:"Preparing Toxins..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-                delay(35);
-            }
-            Acs_execute(20,0,0,0,0);
+            Resist::StartResistByIndex(4);
         }
     }
-    //----------------------------------------------------------Toxins 4-----------------Scripts:
-    script 22 (void)
-    {
-        SetFont("BIGFONT");
-        HudmessageBold(s:"Outbreak detected in bunker."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.2, 2.5, 0.5);
-        delay(3*35);
-
-        //[Fused] - adding this because Nyan cat will change this font when activated.
-        SetFont("BIGFONT");
-
-        HudmessageBold(s:"Activating Emergency Protocol."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.2, 1.5, 0.5);
-        delay(2*35);
-        int time;
-        for(time=8;time>0;time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"\cqReleasing Toxins in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFont");
-            HudmessageBold(s:""; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-        Door_close(59,15);
-        delay(1);
-        ceiling_LowerAndCrush(63,18,10,2); //ZH2 [AQW] hexen crushmode
-        delay(37);
-        ceiling_LowerAndCrush(64,18,10,2); //ZH2 [AQW] hexen crushmode
-        delay(3*37);
-        SetFont("BIGFONT");
-        Hudmessage(s:"\clReleasing Toxins"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 1.0, 1.5);
-        delay (30);
-        acs_execute(37,0,0,0,0);//Activates final Resist
-        ceiling_lowerbyvalue(65,15,4*8);
-        delay(3*37);
-        SpawnSpot ("ZH2LegacyZE15SteamSpawner", 62,0,192);//South
-        SpawnSpot ("ZH2LegacyZE15SteamSpawner", 76,0,32);//Northeast
-        SpawnSpot ("ZH2LegacyZE15SteamSpawner", 77,0,0);//East
-        SpawnSpot ("ZH2LegacyZE15SteamSpawner", 78,0,224);//Southeast
-        SpawnSpot ("ZH2LegacyZE15SteamSpawner", 79,0,211);//Southeast > south /
-        SpawnSpot ("ZH2LegacyZE15SteamSpawner", 80,0,82);//Northwest > North \
-        SpawnSpot ("ZH2LegacyZE15SteamSpawner", 81,0,128);//West
-        SpawnSpot ("ZH2LegacyZE15SteamSpawner", 82,0,64);//north
-        AmbientSound("world/gas1", 100);
-        Game::KillUnsafePlayers(3);
-        delay(8*37);
-        Thing_Remove (62);//Removes the steam actors because they cause afterlag for the players.
-        Thing_Remove (76);
-        Thing_Remove (77);
-        Thing_Remove (78);
-        Thing_Remove (79);
-        Thing_Remove (80);
-        Thing_Remove (81);
-        Thing_Remove (82);
-    }
-
     script 28 (void)//Second resist vent trap.
     {
         Ceiling_LowerByValue(110, 55, 6*8);
@@ -674,35 +527,6 @@ strict namespace
     }
 
     //-------------------------------------------------------Escape 5-----------------Scripts:
-
-    script 37 (void)//Final resist
-    {
-        int time;
-        for(time=42;time>0;time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"\cqSingularity Matrix activating in \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFont");
-            HudmessageBold(s:"Runaway"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-
-        SetLineBlocking(10, ON);
-        Delay(35*2);
-        SetFont("BIGFONT");
-        HudmessageBold(s:"\cgWARNING: \cjSingularity Matrix is @ct1v3"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 3.5, 0.5);
-        delay(35*2);
-        AmbientSound("sound/braincube", 100);
-
-        // Light effect
-        fadeto(128, 0, 255, 1.0, 0.0);
-        fadeto(0,0,0, 1.0, 0.75);
-        delay(30*2);
-        setlinespecial(10,9,0,0,0,0,0);
-        Game::KillUnsafePlayers(1);
-        delay(25);
-        fadeto(0, 0, 0, 0.0, 0.75);
-    }
 
     Script 41 (void)
     {
@@ -800,4 +624,144 @@ strict namespace
         SetLineTexture(20, SIDE_FRONT, TEXTURE_MIDDLE, "FRAME0");
         acs_executealways(46,0,0,0,0);
     }
+
+    /* [ZH2] RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 3:
+            {
+                SetLineSpecial(5,80,21,0,0,0,0);
+                break;
+            }
+
+            case 5:
+            {
+                SetFont("BIGFONT");
+                HudmessageBold(s:"Outbreak detected in bunker."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.2, 2.5, 0.5);
+                delay(3*35);
+
+                //[Fused] - adding this because Nyan cat will change this font when activated.
+                SetFont("BIGFONT");
+
+                HudmessageBold(s:"Activating Emergency Protocol."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.2, 1.5, 0.5);
+                delay(2*35);
+                break;
+            }
+        }
+    }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                SetLineBlocking(6, OFF);
+                Floor_LowerByValue(93, 16, 36*8);
+                delay(37);
+                Radius_Quake(5, 4*37, 0, 12,31);
+                Floor_LowerByValue(3, 16, 290);
+                Floor_LowerByValue(93, 16, 36*8);
+                SetLineSpecial(6,0,0,0,0,0,0);
+                Door_open(114,36);
+                SetLineSpecial(4,12,0,15,75,0,0);
+                Thing_Activate(106); // Resist marker 1
+                Thing_DeActivate(107); // Resist marker 2
+                break;
+            }
+
+            case 1:
+            {
+                SetLineBlocking(8, OFF);
+                Door_open(22,55);
+                Thing_Activate(107); // Resist marker 2
+                Thing_DeActivate(108); // Resist marker 3
+                break;
+            }
+
+            case 2:
+            {
+                Final_resist_end = 1;
+                delay(1);
+                acs_execute (20,0,0,0,0);
+                break;
+            }
+
+            case 3:
+            {
+                Secret_Activated = 0;
+                Acs_execute(20,0,0,0,0);
+                break;
+            }
+
+            case 4:
+            {
+                Acs_execute(20,0,0,0,0);
+                break;
+            }
+
+            case 5:
+            {
+                Door_close(59,15);
+                delay(1);
+                ceiling_LowerAndCrush(63,18,10,2); //ZH2 [AQW] hexen crushmode
+                delay(37);
+                ceiling_LowerAndCrush(64,18,10,2); //ZH2 [AQW] hexen crushmode
+                delay(3*37);
+                SetFont("BIGFONT");
+                Hudmessage(s:"\clReleasing Toxins"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 1.0, 1.5);
+                delay (30);
+
+                Resist::StartResistByIndex(6); //Activates final Resist
+
+                ceiling_lowerbyvalue(65,15,4*8);
+                delay(3*37);
+                SpawnSpot ("ZH2LegacyZE15SteamSpawner", 62,0,192);//South
+                SpawnSpot ("ZH2LegacyZE15SteamSpawner", 76,0,32);//Northeast
+                SpawnSpot ("ZH2LegacyZE15SteamSpawner", 77,0,0);//East
+                SpawnSpot ("ZH2LegacyZE15SteamSpawner", 78,0,224);//Southeast
+                SpawnSpot ("ZH2LegacyZE15SteamSpawner", 79,0,211);//Southeast > south /
+                SpawnSpot ("ZH2LegacyZE15SteamSpawner", 80,0,82);//Northwest > North \
+                SpawnSpot ("ZH2LegacyZE15SteamSpawner", 81,0,128);//West
+                SpawnSpot ("ZH2LegacyZE15SteamSpawner", 82,0,64);//north
+                AmbientSound("world/gas1", 100);
+                Game::KillUnsafePlayers(3);
+                delay(8*37);
+                Thing_Remove (62);//Removes the steam actors because they cause afterlag for the players.
+                Thing_Remove (76);
+                Thing_Remove (77);
+                Thing_Remove (78);
+                Thing_Remove (79);
+                Thing_Remove (80);
+                Thing_Remove (81);
+                Thing_Remove (82);
+                break;
+            }
+
+            case 6:
+            {
+                SetLineBlocking(10, ON);
+                Delay(35*2);
+                SetFont("BIGFONT");
+                HudmessageBold(s:"\cgWARNING: \cjSingularity Matrix is @ct1v3"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 3.5, 0.5);
+                delay(35*2);
+                AmbientSound("sound/braincube", 100);
+
+                // Light effect
+                fadeto(128, 0, 255, 1.0, 0.0);
+                fadeto(0,0,0, 1.0, 0.75);
+                delay(30*2);
+                setlinespecial(10,9,0,0,0,0,0);
+                Game::KillUnsafePlayers(1);
+                delay(25);
+                fadeto(0, 0, 0, 0.0, 0.75);
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 }

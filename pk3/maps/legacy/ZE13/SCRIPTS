@@ -12,9 +12,6 @@ strict namespace
     int ruby = 0;
     int sapphire = 0;
     int secondpass = 0;
-    int resist1 = 20;
-    int resist2 = 30;
-    int resist3 = 60;
 
     bool switchactivated = false;
 
@@ -27,37 +24,6 @@ strict namespace
         HudMessageBold(s:"A"; HUDMSG_FADEINOUT, 1, 0, 0.5, 0.2, 3.0, 3.0, 2.0, 2.0);
         SetFont("CONFONT");
         HudMessageBold(s:"By Dr. Doctor"; HUDMSG_FADEINOUT, 2, 0, 0.8, 0.38, 3.0, 3.0, 2.0, 2.0);
-    }
-
-    /* RESIST EVENT */
-    script "ze13_internal_event_resistelapsed" (raw packetRaw)
-    {
-        Event::ReceiveTimerElapsed((str)packetRaw);
-        int index = Event::GetReceiveData(0);
-
-        switch(index)
-        {
-            case 0:
-                floor_Raisetonearest(29,128);
-                ceiling_Raisetonearest(36,128);
-                break;
-
-            case 1:
-                floor_Raisetonearest(32,128);
-                ceiling_Raisetonearest(37,128);
-                break;
-
-            case 2:
-                Ceiling_raisetonearest(16,32);
-                thing_destroy(35);
-                thing_activate(36);
-                thing_activate(37);
-                break;
-
-            case 3:
-                Ceiling_raisetonearest(30,32);
-                break;
-        }
     }
 
     script 2 (void)
@@ -155,26 +121,75 @@ strict namespace
         PrintBold(s:"\cgWARNING!\n",n:0, s:"\cj has picked up the \cvCross!");
     }
 
-    Script 13 (void) // final -death approches
+    /* [ZH2] RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
     {
-        SetFont("CONFONT");
-        HudMessageBold(s:"\cgDeath is seeking out intruders!\n\ccGet to the catacombs before it's too late!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-        SetActivator(-1);
-        Delay(35*3);
-        Delay(Resist::StartResistByIndex(4));
-
-        // Changed in ZH2: The door no longer inflicts instant death, instead delayed damage using hexen's crushing style.
-        // 2 is Hexen crushing mode.
-        Ceiling_LowerAndCrush(31, 16, 500, 2);
-        Tagwait(31);
-        Ceiling_LowerByValueTimes8(31, 16, 1);
-
-        Delay(35*3);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\cGWarning : \cKDeath is Here!!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-        Delay(35*5);
-        Game::KillUnsafePlayers();
+        switch(resistIndex)
+        {
+            case 4:
+            {
+                SetFont("CONFONT");
+                HudMessageBold(s:"\cgDeath is seeking out intruders!\n\ccGet to the catacombs before it's too late!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+                SetActivator(-1);
+                Delay(35*3);
+                break;
+            }
+        }
     }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                floor_Raisetonearest(29,128);
+                ceiling_Raisetonearest(36,128);
+                break;
+            }
+
+            case 1:
+            {
+                floor_Raisetonearest(32,128);
+                ceiling_Raisetonearest(37,128);
+                break;
+            }
+
+            case 2:
+            {
+                Ceiling_raisetonearest(16,32);
+                thing_destroy(35);
+                thing_activate(36);
+                thing_activate(37);
+                break;
+            }
+
+            case 3:
+            {
+                Ceiling_raisetonearest(30,32);
+                break;
+            }
+
+            case 4:
+            {
+                // Changed in ZH2: The door no longer inflicts instant death, instead delayed damage using hexen's crushing style.
+                // 2 is Hexen crushing mode.
+                Ceiling_LowerAndCrush(31, 16, 500, 2);
+                Tagwait(31);
+                Ceiling_LowerByValueTimes8(31, 16, 1);
+
+                Delay(35*3);
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\cGWarning : \cKDeath is Here!!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+                Delay(35*5);
+                Game::KillUnsafePlayers();
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 
     Script 40 (void) //Shop=============================
     {

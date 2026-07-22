@@ -16,7 +16,6 @@ strict namespace
     #define GRAPHIC_WEEGEE_SMALL "Weegee"
     #define GRAPHIC_WEEGEE_BIG "Weegee2"
 
-    #define WEEGEE_MAIN_SCRIPT 99
     #define WEEGEE_DEATH_SCRIPT 96
     #define WEEGEE_HEALTH_SCRIPT 97
 
@@ -27,15 +26,10 @@ strict namespace
     int GrenadeRoom;                        //Random if an extra endroom / grenaderoom opens
     int LiftDirection;                      //Random if elevator goes up or down
     int FirstResistReached = 0;             //Check if the first resist already was activated
-    int HumansDie = 60;                     //Resist for weegee, humans die when the count is over
     int humancount = 0;                     //Counts how many humans there are left
     int zombiecount = 0;                    //Counts how many zimbas there are left
-    int AirStrike = 45;                     //Airstrike (3th) resist
-    int BookChase = 20;                     //Bookcase (1th) resist
-    int Door = 25;                          //Door (2th) resist
     int I2;                                 //A die check for zombies
     int I3;                                 //A die check for humans
-    int EndReached = 0;                     //Checks if the last resist already was activated
     int playernum;                          //Gives all players an unique number
     int Box = 0;                            //Check when the box must go open
     int ScrlX = 0;                          //Resolution check for weegee picture (X)
@@ -43,13 +37,6 @@ strict namespace
 
     // [ZH2] Indicates somebody reached the secret exit to the safezone.
     bool secretExitReached;
-
-    //Function for letting see the resists
-    function void ResistMessage1 (int restime, str todo)
-    {
-        SetFont("BIGFONT");
-        HudMessageBold(s:todo, d:restime, s:" seconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-    }
 
     //Explosion Function
     function void SX (int spawntag)
@@ -141,7 +128,7 @@ strict namespace
         {
             ClearLineSpecial();
             Door_open(128,25);
-            Acs_execute(WEEGEE_MAIN_SCRIPT,0,0,0,0); //Weegee script
+            Resist::StartResistByIndex(3);
             Acs_Terminate(14,0);
             Acs_Terminate(15,0);
             Terminate;
@@ -151,31 +138,6 @@ strict namespace
             Print(s:"You need at least 20 power supplies!"); //how sad
         }
     }
-
-    /* ##################################################*/
-
-    //First resist (Bookcase)
-
-    script 5 (void)
-    {
-        If(FirstResistReached == 0) //Checks if the script isnt activated yet, and that it wont be activated again
-        {
-            FirstResistReached++;
-            SetActivator(-1);
-            for(int i = BookChase; i > 0; i--)
-            {
-                ResistMessage1(i,"\cjBookcase lowers in ");
-                Delay(35);
-            }
-
-            Floor_lowertolowest(47,255);
-            Door_open(142,25);
-            Delay(35*15);
-            Floor_lowertolowest(21,255);
-        }
-    }
-
-    /* ##################################################*/
 
     //Random teleporter & checker for falling of the building / in the nukage etc...
 
@@ -192,29 +154,6 @@ strict namespace
             Thing_Damage(0, 150, MOD_FALLING);
 
         Acs_execute(6, 0, 0, 0, 0);
-    }
-
-    /* ##################################################*/
-
-    //2th resist (DOOR)
-
-    script 9 (void) // Door resist
-    {
-        SetActivator(-1);
-        for(int i = Door; i > 0; i--)
-        {
-            ResistMessage1(i,"\cjDoor opens in ");
-            Delay(35);
-        }
-
-        Door_open(63,25);
-        Delay(35*5);
-        Floor_RaiseByValue(80,50,1260);
-        FloorAndCeiling_RaiseByValue(178,50,1260);
-        Delay(35*35);
-        Floor_RaiseByValue(126,255,256);
-        SetLineSpecial(127,0);
-        Print(s:"The chute is available for zombies!");
     }
 
     /* ##################################################*/
@@ -337,38 +276,6 @@ strict namespace
         if (secretExitReached)
         {
             ACS_Execute(14, 0);
-        }
-    }
-
-    script 14 (void) // airstrike
-    {
-        if(EndReached == 0)
-        {
-            EndReached++;
-            SetActivator(-1);
-            for(int i = AirStrike; i > 0; i--)
-            {
-                ResistMessage1(i,"\cjAirstrike in... ");
-                Delay(35);
-            }
-            Acs_Terminate(15,0);
-            Acs_execute(16,0,0,0,0);
-            Acs_execute(33,0,0,0,0);
-            Ceiling_LowerAndCrush(235, 25, 20, 2); //ZH2 [AQW] Crushmode hexen and dmg 20.
-            Tagwait(235);
-            Ceiling_LowerByValueTimes8(235, 16, 1); //ZH2 [AQW]
-            for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-            {
-                if(!Game::GetPlayerIsSafe(i))
-                    Thing_Damage(Identity::GetTid(i), 10000, MOD_EXIT);
-            }
-            AmbientSound("world/nuke1",999);
-            Fadeto (255, 25, 25, 1.0, 0.0);
-            delay(105);
-            Fadeto (0, 0, 0, 0.0, 6.0);
-
-            // Opens the box
-            Box++;
         }
     }
 
@@ -609,36 +516,6 @@ strict namespace
 
     //WEEGEE !!!!!!!!!!!!!!!!!!
 
-    Script WEEGEE_MAIN_SCRIPT (void)
-    {
-        HudMessageBold(s:"KILL THE WEEGEE BEFORE THE HUMANS WILL DIE!!!"; HUDMSG_PLAIN, 0, CR_White, 0.05, 0.85, 0.1);
-        AmbientSound("world/weegeespawn", 127);
-        Acs_executeAlways(92,0);
-        SpawnSpot("ZH2LegacyZE25Weegee",99,98,0);
-        Acs_execute(98,0,98,0,0);
-        SetThingSpecial(98,Acs_execute,95,0,0,0,0);
-        Music::PlayMusic("D_WEEGEE");
-        Delay(35);
-        Acs_executealways(WEEGEE_HEALTH_SCRIPT,0,0,0,0);
-
-        SetActivator(-1);
-
-        for(int i = HumansDie; i > 0; i--)
-        {
-            ResistMessage1(i,"\cjHumans \cfdie in... ");
-            Delay(35);
-        }
-
-        for(int i = 0; i < BCSUtils::MAX_PLAYERS; ++i3)
-        {
-            int tid = Identity::GetTid(i);
-            if (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(tid) || !Player::GetPlayerIsHuman(i))
-                continue;
-
-            Game::KillPlayer(i, MOD_UNKNOWN);
-        }
-    }
-
     SCRIPT 98 (int weegeeTID) //Thx kurwa
     {
         for(int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
@@ -686,7 +563,7 @@ strict namespace
 
     Script 95 (void)
     {
-        Acs_Terminate(WEEGEE_MAIN_SCRIPT,0);
+        Resist::StopResistByIndex(3);
         AmbientSound("world/weegeedie", 127);
     }
 
@@ -701,4 +578,94 @@ strict namespace
 
         HudMessageBold(s:"A"; HUDMSG_FADEINOUT, 1, 0, 0.5, 0.2, 3.0, 3.0, 2.0, 2.0);
     }
+
+    /* [ZH2] RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 3:
+            {
+                HudMessageBold(s:"KILL THE WEEGEE BEFORE THE HUMANS WILL DIE!!!"; HUDMSG_PLAIN, 0, CR_White, 0.05, 0.85, 0.1);
+                AmbientSound("world/weegeespawn", 127);
+                Acs_executeAlways(92,0);
+                SpawnSpot("ZH2LegacyZE25Weegee",99,98,0);
+                Acs_execute(98,0,98,0,0);
+                SetThingSpecial(98,Acs_execute,95,0,0,0,0);
+                Music::PlayMusic("D_WEEGEE");
+                Delay(35);
+                Acs_executealways(WEEGEE_HEALTH_SCRIPT,0,0,0,0);
+
+                SetActivator(-1);
+                break;
+            }
+        }
+    }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                Floor_lowertolowest(47,255);
+                Door_open(142,25);
+                Delay(35*15);
+                Floor_lowertolowest(21,255);
+                break;
+            }
+
+            case 1:
+            {
+                Door_open(63,25);
+                Delay(35*5);
+                Floor_RaiseByValue(80,50,1260);
+                FloorAndCeiling_RaiseByValue(178,50,1260);
+                Delay(35*35);
+                Floor_RaiseByValue(126,255,256);
+                SetLineSpecial(127,0);
+                Print(s:"The chute is available for zombies!");
+                break;
+            }
+
+            case 2:
+            {
+                Acs_Terminate(15,0);
+                Acs_execute(16,0,0,0,0);
+                Acs_execute(33,0,0,0,0);
+                Ceiling_LowerAndCrush(235, 25, 20, 2); //ZH2 [AQW] Crushmode hexen and dmg 20.
+                Tagwait(235);
+                Ceiling_LowerByValueTimes8(235, 16, 1); //ZH2 [AQW]
+                for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+                {
+                    if(!Game::GetPlayerIsSafe(i))
+                        Thing_Damage(Identity::GetTid(i), 10000, MOD_EXIT);
+                }
+                AmbientSound("world/nuke1",999);
+                Fadeto (255, 25, 25, 1.0, 0.0);
+                delay(105);
+                Fadeto (0, 0, 0, 0.0, 6.0);
+
+                // Opens the box
+                Box++;
+                break;
+            }
+
+            case 3:
+            {
+                for(int i = 0; i < BCSUtils::MAX_PLAYERS; ++i3)
+                {
+                    int tid = Identity::GetTid(i);
+                    if (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(tid) || !Player::GetPlayerIsHuman(i))
+                        continue;
+
+                    Game::KillPlayer(i, MOD_UNKNOWN);
+                }
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 }
