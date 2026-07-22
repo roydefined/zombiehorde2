@@ -11,11 +11,6 @@ strict namespace
 {
     //Creating variables
 
-    int resist1 = 22; // 22 seconds
-    int resist2 = 30; // 30 seconds
-    int resist3 = 20; // 20 seconds
-    int resist4 = 35; // 35 seconds
-    int resist5 = 10; // 30 seconds
     int DiscoButtonUsed = 0;
     int SpecialRoomOpen;
     int AnotherEnd;
@@ -27,23 +22,12 @@ strict namespace
     fixed BoatZ = 0.0;
 
 
-    //Creating resist message function
-
-    function void ResistMessage1 (int restime, str todo)
-    {
-        SetFont("BIGFONT");
-        HudMessageBold(s:todo, d:restime, s:" seconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-    }
-
     //Start up script, sector color changings... watercolor, start message etc...
 
     script 99 open
     {
         SetLineSpecial(244,acs_execute,37,0);
-        Resist1 = Random(11,25);
-        Resist2 = Random(21,35);
-        Resist3 = Random(13,25);
-        Resist4 = Random(30,50);
+
         sector_setcolor(13,10,10,200);
         sector_setcolor(208,0,100,0);
         sector_setcolor(102,100,0,0);
@@ -140,78 +124,6 @@ strict namespace
     }
 
 
-    //First resist door
-
-    Script 1 (void)
-    {
-        SetActivator(-1);
-        for(int i = resist1; i > 0; i--)
-        {
-            ResistMessage1(i,"\cgDoor \cfopens in... ");
-            Delay(35);
-        }
-        Floor_LowerByValue(198,255,120);
-        SetLineBlocking(113,BLOCK_NOTHING);
-        Thing_destroy(62,no);
-        floor_lowertolowest(6,7);
-        floor_lowerbyvalue(7,7,48);
-    }
-
-    //2th resist for tram
-
-    Script 2 (void)
-    {
-        SetActivator(-1);
-        for(int i = resist2; i > 0; i--)
-        {
-            ResistMessage1(i,"\chTram \cfopens in... ");
-            Delay(35);
-        }
-        floor_lowertolowest(28,255);
-        delay(35*5);
-        //Floor_raiseAndCrush(167,255,255555555555555555555555555555);
-        ceiling_lowertoFloor(26,100);
-        ceiling_lowertoFloor(27,100);
-        floor_raisebyvalue(28,100,96);
-        Door_open(111,255);
-        Acs_terminate(12,0);
-        Acs_Execute(91,0);
-        SetLineSpecial(154,ThrustThing,64,255,0,0);
-        TagWait(28);
-
-        for(int j = 0; j < BCSUtils::MAX_PLAYERS; j++)
-        {
-            int tid = Identity::GetTid(j);
-            if(InTram[j])
-                SetActorPosition(tid, GetActorX(tid) + 3424.0, GetActorY(tid) - 8.0, GetActorZ(tid) + 8.0, false);
-        }
-
-        delay(70);
-        for(int i = 20; i < 1280; i += 20)
-        {
-            Scroll_Ceiling(29,-i/2,-10,0);
-            Scroll_Texture_Both(29,i,0,0,0);
-            delay(5);
-        }
-        delay(70);
-        for(int i = 1260; i > 20; i -= 10)
-        {
-            Scroll_Ceiling(29,-i/2,-10,0);
-            Scroll_Texture_Both(29,i,0,0,0);
-            delay(5);
-        }
-        Scroll_Ceiling(29,0,0,0);
-        Scroll_Texture_Both(29,0,0,0,0);
-        delay(70);
-        SetLineSpecial(154,ThrustThing,0,0,0,0);
-        floor_lowertolowest(35,100);
-        Acs_Terminate(91,0);
-        PrintBold(s:"The tram has arrived");
-        delay(35*20);
-        printbold(s:" \cfSewer doors opened!");
-        Door_open(224,255);
-        }
-
     Script 92 (void)
     {
         printbold(s:" \cfSewer doors opened!");
@@ -242,65 +154,6 @@ strict namespace
         floor_lowertolowest(58,25);
     }
 
-    //3th resist, the pillars
-
-    Script 4 (void) //3th timer
-    {
-        SetActivator(-1);
-        for(int i = resist3; i > 0; i--)
-        {
-            ResistMessage1(i,"\cjPillars \cflower in... ");
-            Delay(35);
-        }
-        SetLineBlocking(10,0);
-        floor_lowerbyvalue(65,7,116);
-        floor_lowerbyvalue(116,7,80);
-        Delay(35*5);
-        floor_lowertolowest(56,25);
-        floor_lowertolowest(58,25);
-    }
-
-
-
-
-    //4th resist, when boat leaves
-
-    script 5 (void)
-    {
-        Thing_Remove(48);
-        Floor_Lowertolowest(128,2);
-        Floor_Lowertolowest(94,2);
-        activatorsound("STIFFT04",127);
-        SetFont("CONFONT");
-        HudMessageBold(n:0, s:" \cfhas reached the \cgboat! \cfGet on it before the nuke \cgexplode!!!"; HUDMSG_FADEOUT, 0, CR_WHITE, 0.05, 0.85, 3.0, 2.0);
-        SetActivator(-1);
-        delay(175);
-        {
-            for(int i = resist4; i > 0; i--)
-            {
-                ResistMessage1(i,"\cgNuke\cf in... ");
-                Delay(35);
-            }
-            SetFont("BIGFONT");
-            printbold(s:"\cgNUKE!!!");
-            delay(35);
-            //SetActivator(-1);
-            Delay(70);
-            Game::KillUnsafePlayers();
-            Ceiling_LowerToFloor(170, 99999);
-            Radius_quake(255,100,0,255, no);
-            ActivatorSound("world/nuke1",127);
-            {
-                for(int g = 0; g < BCSUtils::MAX_PLAYERS; g++)
-                {
-                    int tid = Identity::GetTid(g);
-                    if(Game::GetPlayerIsSafe(g))
-                        SetActorPosition(tid, GetActorX(tid)+ BoatX, GetActorY(tid)+ BoatY, GetActorZ(tid)+ BoatZ, false);
-                }
-                Acs_executeAlways(44,0);
-            }
-        }
-    }
 
 
 
@@ -471,21 +324,6 @@ strict namespace
         Floor_LowerByValue(115,10,128);
     }
 
-    //Another resist on special island
-
-    Script 30 (void)
-    {
-
-        SetActivator(-1);
-        for(int i = resist5; i > 0; i--)
-        {
-            ResistMessage1(i,"\chWater \cfraises in... ");
-            Delay(35);
-        }
-        Acs_executeAlways(31,0);
-
-    }
-
     //Special island ending
 
     Script 31 (void)
@@ -565,4 +403,136 @@ strict namespace
         }
     }
     */
+
+    /* [ZH2] RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
+    {
+        switch (resistIndex)
+        {
+            // Nuke in...
+            case 3:
+            {
+                Thing_Remove(48);
+                Floor_Lowertolowest(128,2);
+                Floor_Lowertolowest(94,2);
+                activatorsound("STIFFT04",127);
+                SetFont("CONFONT");
+                HudMessageBold(n:0, s:" \cfhas reached the \cgboat! \cfGet on it before the nuke \cgexplode!!!"; HUDMSG_FADEOUT, 0, CR_WHITE, 0.05, 0.85, 3.0, 2.0);
+
+                delay(175);
+                break;
+            }
+        }
+    }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch (resistIndex)
+        {
+            // Door opens in...
+            case 0:
+            {
+                Floor_LowerByValue(198,255,120);
+                SetLineBlocking(113,BLOCK_NOTHING);
+                Thing_destroy(62,no);
+                floor_lowertolowest(6,7);
+                floor_lowerbyvalue(7,7,48);
+                break;
+            }
+
+            // Tram opens in...
+            case 1:
+            {
+                floor_lowertolowest(28,255);
+                delay(35*5);
+                //Floor_raiseAndCrush(167,255,255555555555555555555555555555);
+                ceiling_lowertoFloor(26,100);
+                ceiling_lowertoFloor(27,100);
+                floor_raisebyvalue(28,100,96);
+                Door_open(111,255);
+                Acs_terminate(12,0);
+                Acs_Execute(91,0);
+                SetLineSpecial(154,ThrustThing,64,255,0,0);
+                TagWait(28);
+
+                for(int j = 0; j < BCSUtils::MAX_PLAYERS; j++)
+                {
+                    int tid = Identity::GetTid(j);
+                    if(InTram[j])
+                        SetActorPosition(tid, GetActorX(tid) + 3424.0, GetActorY(tid) - 8.0, GetActorZ(tid) + 8.0, false);
+                }
+
+                delay(70);
+                for(int i = 20; i < 1280; i += 20)
+                {
+                    Scroll_Ceiling(29,-i/2,-10,0);
+                    Scroll_Texture_Both(29,i,0,0,0);
+                    delay(5);
+                }
+                delay(70);
+                for(int i = 1260; i > 20; i -= 10)
+                {
+                    Scroll_Ceiling(29,-i/2,-10,0);
+                    Scroll_Texture_Both(29,i,0,0,0);
+                    delay(5);
+                }
+                Scroll_Ceiling(29,0,0,0);
+                Scroll_Texture_Both(29,0,0,0,0);
+                delay(70);
+                SetLineSpecial(154,ThrustThing,0,0,0,0);
+                floor_lowertolowest(35,100);
+                Acs_Terminate(91,0);
+                PrintBold(s:"The tram has arrived");
+                delay(35*20);
+                printbold(s:" \cfSewer doors opened!");
+                Door_open(224,255);
+                break;
+            }
+
+            // Pillars lower in...
+            case 2:
+            {
+                SetLineBlocking(10,0);
+                floor_lowerbyvalue(65,7,116);
+                floor_lowerbyvalue(116,7,80);
+                Delay(35*5);
+                floor_lowertolowest(56,25);
+                floor_lowertolowest(58,25);
+                break;
+            }
+
+            // Nuke in...
+            case 3:
+            {
+                SetFont("BIGFONT");
+                printbold(s:"\cgNUKE!!!");
+                delay(35);
+                Delay(70);
+                Game::KillUnsafePlayers();
+                Ceiling_LowerToFloor(170, 99999);
+                Radius_quake(255,100,0,255, no);
+                ActivatorSound("world/nuke1",127);
+                {
+                    for(int g = 0; g < BCSUtils::MAX_PLAYERS; g++)
+                    {
+                        int tid = Identity::GetTid(g);
+                        if(Game::GetPlayerIsSafe(g))
+                            SetActorPosition(tid, GetActorX(tid)+ BoatX, GetActorY(tid)+ BoatY, GetActorZ(tid)+ BoatZ, false);
+                    }
+                    Acs_executeAlways(44,0);
+                }
+                break;
+            }
+
+            // Water raises in...
+            case 4:
+            {
+                Acs_executeAlways(31,0);
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 }

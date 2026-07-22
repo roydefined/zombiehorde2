@@ -1,6 +1,8 @@
 #pragma raw include on
 #pragma raw define on
 
+#pragma pointer_space global 0
+
 #import "zcommon.bcs"
 #import "acs_source/bcsutils.acs"
 
@@ -9,42 +11,14 @@
 
 strict namespace
 {
-    //This resist message is just like KGSWS' Resist message but the color is reversed.
+    // Hook data for drawing resists.
+    // Every resist on this map uses custom coloring on the countdown number through a hook.
+    internal Resist::ResistHookDataT? _resistHookDataRef;
 
-    function void ResistMessage4_TGK (int restime, str whyresist, int color)
+    script "open_client" open clientside
     {
-        SetFont("BIGFONT");
-        if (restime < 31){ //30 seconds is the maximum time to resist.
-            HudMessageBold(s:"Resist for \cj", d:restime, s:"\cd seconds"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 0.5, 0.5);
-        }
-        if (restime < 20){
-            HudMessageBold(s:"Resist for \cq", d:restime, s:"\cd seconds"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 0.5, 0.5);
-        }
-        if (restime < 15){
-            HudMessageBold(s:"Resist for \ck", d:restime, s:"\cd seconds"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 0.5, 0.5);
-        }
-        if (restime < 10){
-            HudMessageBold(s:"Resist for \ci", d:restime, s:"\cd seconds"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 0.5, 0.5);
-        }
-        if (restime < 5){
-            HudMessageBold(s:"Resist for \cg", d:restime, s:"\cd seconds"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 0.5, 0.5);
-        }
-        if (restime < 2){
-            HudMessageBold(s:"Resist for \cm", d:restime, s:"\cd second"; HUDMSG_FADEOUT, 999, CR_GREEN, 0.5, 0.2, 0.5, 0.5);
-        }
-        SetFont("SMALLFONT");
-        HudMessageBold(s:whyresist; HUDMSG_FADEOUT, 998, color, 0.5, 0.17, 1.5, 0.5);
+        Hook::Register(Hook::HOOK_CLIENTDRAWRESIST, OnDrawResistHud);
     }
-
-
-    int i = 25;
-    int j = 20;
-    int k = 15;
-    int l = 30;
-    int resist1 = 25;
-    int resist2 = 20;
-    int resist3 = 15;
-    int resist_final = 30;
 
     //Opening sequence and level setups
     Script 1 OPEN
@@ -68,17 +42,6 @@ strict namespace
         Door_Open (19, 20);
     }
 
-    /*First resist*/
-    Script 2 (void)
-    {
-        SetActivator(-1);
-        for(i = resist1; i > 0; i--) {
-            ResistMessage4_TGK(i, "Opening back doors...", CR_WHITE);
-            Delay(35);
-        }
-        Door_Open (2,20);
-    }
-
     Script 3 ENTER
     {
         GiveInventory (FLARE_ITEM, 1);
@@ -91,59 +54,6 @@ strict namespace
         ceiling_LowerAndCrush(7, 115, 5,2); //ZH2 [AQW] hexen crushmode
         TagWait(7);
         Ceiling_LowerByValueTimes8(7,16,1);
-    }
-
-    /*Second resist*/
-    Script 5 (void)
-    {
-        SetActivator(-1);
-        for(j = resist2; j > 0; j--)
-    {
-            ResistMessage4_TGK(j, "Deactivating security systems...", CR_WHITE);
-            Delay(35);
-        }
-        SetLineBlocking (1,OFF);
-        SetLineTexture (1,SIDE_BACK,TEXTURE_MIDDLE,"TRANS");
-        SetLineTexture (2,SIDE_FRONT, TEXTURE_MIDDLE, "LITEBLU4");
-        Door_Open (23, 20);
-    }
-
-    /*Third resist*/
-
-    Script 6 (void)
-    {
-        SetActivator(-1);
-        for(k = resist3; k > 0; k--)
-    {
-            ResistMessage4_TGK(k, "Lowering wall...", CR_WHITE);
-            Delay(35);
-        }
-        Floor_MoveToValue (10,20,8,0);
-        Door_Open (11,20);
-        SetLineBlocking (3, OFF);
-    }
-
-    /*Final resist*/
-    Script 7 (void)
-    {
-        SetActivator(-1);
-        SetFont ("CONFONT");
-        HudMessageBold(s:"\cgThe building will self-destruct!\nGet into the \cfsafe zone \cgbefore it's too late!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-        Delay (105);
-        for(l = resist_final; l > 0; l--) {
-            ResistMessage4_TGK(l, "Get in the \cfsafe zone!", CR_WHITE);
-            Delay(35);
-        }
-        ceiling_LowerAndCrush(14,10,5,2);
-        TagWait(14);
-        Ceiling_LowerByValueTimes8(14,16,1);
-
-        Delay(35*3);
-        SetFont ("BigFont");
-        HudMessageBold (s: "\cgWarning: \cjBuilding self-destruction!"; HUDMSG_FADEOUT,999,CR_GREEN,0.5,0.2, 2.0);
-        Delay(35*3);
-        AmbientSound ("world/nuke1", 127);
-        Game::KillUnsafePlayers();
     }
 
     Script 8 (void)
@@ -301,5 +211,115 @@ strict namespace
         }
     }
 
+    /* [ZH2] RESISTS START */
 
+    script "pre_resist_handler" (int resistIndex)
+    {
+        switch (resistIndex)
+        {
+            // Get in the safe zone!
+            case 3:
+            {
+                SetFont ("CONFONT");
+                HudMessageBold(s:"\cgThe building will self-destruct!\nGet into the \cfsafe zone \cgbefore it's too late!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+                Delay (105);
+                break;
+            }
+        }
+    }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch (resistIndex)
+        {
+            // Opening back doors...
+            case 0:
+            {
+                Door_Open (2,20);
+                break;
+            }
+
+            // Deactivating security systems...
+            case 1:
+            {
+                SetLineBlocking (1,OFF);
+                SetLineTexture (1,SIDE_BACK,TEXTURE_MIDDLE,"TRANS");
+                SetLineTexture (2,SIDE_FRONT, TEXTURE_MIDDLE, "LITEBLU4");
+                Door_Open (23, 20);
+                break;
+            }
+
+            // Lowering wall...
+            case 2:
+            {
+                Floor_MoveToValue (10,20,8,0);
+                Door_Open (11,20);
+                SetLineBlocking (3, OFF);
+                break;
+            }
+
+            // Get in the safe zone!
+            case 3:
+            {
+                ceiling_LowerAndCrush(14,10,5,2);
+                TagWait(14);
+                Ceiling_LowerByValueTimes8(14,16,1);
+
+                Delay(35*3);
+                SetFont ("BigFont");
+                HudMessageBold (s: "\cgWarning: \cjBuilding self-destruction!"; HUDMSG_FADEOUT,999,CR_GREEN,0.5,0.2, 2.0);
+                Delay(35*3);
+                AmbientSound ("world/nuke1", 127);
+                Game::KillUnsafePlayers();
+                break;
+            }
+        }
+    }
+
+    // This resist message is just like KGSWS' resist message but the color is reversed:
+    // the surrounding text stays green and only the countdown number itself changes color.
+    // TODO: Get time reason from resist data.
+    internal raw OnDrawResistHud(void[]* data)
+    {
+        if (data == null)
+            return 0;
+
+        _resistHookDataRef = data;
+
+        int resistIndex = _resistHookDataRef.Index;
+        int left = (Resist::GetTicsLeftByIndex(resistIndex) / 35) + 1;
+
+        str numColor = "\cj";
+
+        if (left < 20)
+            numColor = "\cq";
+
+        if (left < 15)
+            numColor = "\ck";
+
+        if (left < 10)
+            numColor = "\ci";
+
+        if (left < 5)
+            numColor = "\cg";
+
+        if (left < 2)
+            numColor = "\cm";
+
+        Hud::SetRelativePoint(0.0, 12.0);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudDrawText(
+            500,
+            StrParam(
+                s:"\cdResist for ",
+                s:numColor,
+                d:left,
+                s:"\cd second",
+                s:left == 1 ? "" : "s"
+            ));
+
+        return 0;
+    }
+
+    /* [ZH2] RESISTS END */
 }

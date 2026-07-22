@@ -14,10 +14,6 @@ strict namespace
     bool Block3on = false;
     bool Block4on = false;
 
-    //prevent multiple activations
-    bool resist2done=false;
-    bool resist3done=false;
-
     bool colhere = true;
 
     //Oxygen level specific
@@ -29,15 +25,6 @@ strict namespace
     bool InSpace[BCSUtils::MAX_PLAYERS];
     bool ContinueScript[BCSUtils::MAX_PLAYERS];
     bool MsgConsistent[BCSUtils::MAX_PLAYERS];
-
-    // ZH2: Added for the resists to work.
-    function void ResistMessage3 (int restime, str whyresist) // RED
-    {
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\cGResist for \cJ", d:restime, s:" \cGseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-        SetFont("SMALLFONT");
-        HudMessageBold(s:whyresist; HUDMSG_FADEOUT, 998, CR_WHITE, 0.5, 0.17, 1.5, 0.5);
-    }
 
     function void blockzombies(int setangle){
         if(Player::GetIsZombie()){
@@ -92,48 +79,10 @@ strict namespace
         delay(140);
         door_open(8, 15, 0);
         delay(140);
-        for(int i=20; i>0; i--)
-        {
-            if(i == 14){
-            SetLineBlocking(61, BLOCK_NOTHING);
-            SetLineTexture(61, SIDE_FRONT, TEXTURE_MIDDLE, "-");
-            SetLineTexture(61, SIDE_BACK, TEXTURE_MIDDLE, "-");
-            thingsound(66, "sound/ventbreak", 255);
-            spawnspotfacing("ZH2LegacyZe21MetalShardSpawn", 66, 0);}
 
-            ResistMessage3 (i, "\cdOpening the exit Doors");
-            delay(35);
-        }
-        Polyobj_RotateRight(1, 3, 64);
-        Polyobj_RotateLeft(2, 3, 64);
-        delay(35);
-
-        // [ZH2] Seems like the signature is wrong for this function in BCC.
-        sector_setgravity(22, 0, (raw)0.0004);
-        sector_setgravity(23, 0, (raw)0.0004);
-        sector_setgravity(12, 0, (raw)0.0004);
-        sector_setgravity(2, 0, (raw)0.0004);
-        sector_setgravity(3, 0, (raw)0.0004);
-        sector_setgravity(4, 0, (raw)0.0004);
-        sector_setgravity(8, 0, (raw)0.0004);
-        sector_setgravity(7, 0, (raw)0.0004);
-        sector_setgravity(6, 0, (raw)0.0004);
-        sector_setgravity(5, 0, (raw)0.0004);  //the whole spawn point loses its gravity
-        sector_setgravity(14, 0, (raw)0.0004);
-        sector_setgravity(15, 0, (raw)0.0004);
-        sector_setgravity(108, 0, (raw)0.0004);
-        delay(18);
-
-        // oxygen meter starts
-        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-        {
-            If(PlayerInGame(i))
-            {
-                SetActivator(Identity::GetTid(i));
-                InSpace[i] = True;
-                CheckPlayerOxygenLevel(True);
-            }
-        }
+        // Runs alongside resist 0's countdown to break the vent 6 seconds in.
+        ACS_NamedExecute("ze21_ventbreak_delayed", 0);
+        Resist::StartResistByIndex(0);
     }
 
     script 2 (void) //blockpoint 1
@@ -166,65 +115,6 @@ strict namespace
     {
         If(Block1on == True)
         blockzombies(128);
-    }
-
-    script 4 (void) //resist 2
-    {
-        if(!resist2done)
-        {
-            resist2done=true;
-            SetActivator(-1);
-            for(int i=15; i>0; i--)
-            {
-                ResistMessage3 (i, "\ckpressurising main teleport room");
-                delay(35);
-            }
-            floor_lowerbyvalue(35,10,100);
-            tagwait(35);
-            Polyobj_Move(3, 10, 64, 200);
-            spawnspot("ZH2LegacyReplacedBigSteamSpawner",1,4657,0);
-            delay(35*4);
-            delay(25);
-            thing_remove(4657);
-        }
-    }
-
-    script 6 (void) //resist 3
-    {
-        if(!resist3done)
-        {
-            resist3done=true;
-
-            SetActivator(-1);
-
-            for(int i=15; i>0; i--)
-            {
-                    ResistMessage3 (i, "\cfforcing emergency doors");
-                    delay(35);
-            }
-            floor_lowerbyvalue(48, 10, 60);
-            floor_lowerbyvalue(49, 15, 160);
-
-            delay(35);
-
-            SetLineTexture(50, SIDE_FRONT, TEXTURE_MIDDLE, "FIREBLU1");
-            SetLineTexture(50, SIDE_BACK, TEXTURE_MIDDLE, "FIREBLU1");
-
-            spawnspotfacing("ZH2LegacyZe21SparkSpawn", 51, 0);
-            thingsound(51, "sound/sparkon", 100);
-
-            delay(20);
-
-            thing_activate(58);
-
-            Block3on = true;
-            delay(35*9);
-            block3on = false;
-
-            SetLineTexture(50, SIDE_FRONT, TEXTURE_MIDDLE, "BLUEFLOR");
-            SetLineTexture(50, SIDE_BACK, TEXTURE_MIDDLE, "BLUEFLOR");
-            thing_deactivate(58);
-        }
     }
 
     script 7 (void) //block point 4
@@ -282,50 +172,9 @@ strict namespace
         tagwait(74);
         thing_remove(1999);
 
-        for(int i=40; i>0; i--)
-        {
-            ResistMessage3 (i, "\ccReach the \cfSeekNight");
-            delay(35);
-
-            if (i==6)
-            {Floor_raisebyvalue(83,10,124);}
-        }
-
-        floor_raiseandcrush(67, 10, 20, 2); //ZH2 [AQW] crushmode hexen; dmg to 20
-        ceiling_lowerandcrush(67, 10, 20, 2); //ZH2 [AQW] crushmode hexen; dmg to 20
-
-        tagwait(67);
-
-        floor_raisebyvalue(67, 10, 4);
-        ceiling_lowerbyvalue(67, 10, 4);
-
-        delay(35*3);
-
-        //multiple because it increased volume.
-        for(int i = 0; i < 3; i++)
-            ambientsound("sound/bigexplosion", 255);
-
-        delay(80);
-
-        colhere = false;
-        Game::KillUnsafePlayers();
-
-        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-        {
-            if(PlayerInGame(i) && !Game::GetPlayerIsSafe(i))
-            {
-                SetActivator(Identity::GetTid(i));
-                fadeto(255, 0, 0, 1.0, 0.2);
-            }
-        }
-
-        delay(35);
-
-        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-        {
-            SetActivator(Identity::GetTid(i));
-            fadeto(0, 0, 0, 0.0, 3.0);
-        }
+        // Runs alongside resist 3's countdown to raise the floor 34 seconds in.
+        ACS_NamedExecute("ze21_seeknight_floor_raise", 0);
+        Resist::StartResistByIndex(3);
     }
 
     script 13 (void) //falls at Seeknight
@@ -599,4 +448,152 @@ strict namespace
             Break;
         }
     }
+
+    /* --------- END OF OXYGEN ACS --------- */
+
+    /* [ZH2] RESISTS START */
+
+    script "ze21_ventbreak_delayed" (void)
+    {
+        delay((20 - 14) * 35);
+
+        SetLineBlocking(61, BLOCK_NOTHING);
+        SetLineTexture(61, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+        SetLineTexture(61, SIDE_BACK, TEXTURE_MIDDLE, "-");
+        thingsound(66, "sound/ventbreak", 255);
+        spawnspotfacing("ZH2LegacyZe21MetalShardSpawn", 66, 0);
+    }
+
+    script "ze21_seeknight_floor_raise" (void)
+    {
+        delay((40 - 6) * 35);
+
+        Floor_raisebyvalue(83,10,124);
+    }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch (resistIndex)
+        {
+            // Opening the exit Doors
+            case 0:
+            {
+                Polyobj_RotateRight(1, 3, 64);
+                Polyobj_RotateLeft(2, 3, 64);
+                delay(35);
+
+                // [ZH2] Seems like the signature is wrong for this function in BCC.
+                sector_setgravity(22, 0, (raw)0.0004);
+                sector_setgravity(23, 0, (raw)0.0004);
+                sector_setgravity(12, 0, (raw)0.0004);
+                sector_setgravity(2, 0, (raw)0.0004);
+                sector_setgravity(3, 0, (raw)0.0004);
+                sector_setgravity(4, 0, (raw)0.0004);
+                sector_setgravity(8, 0, (raw)0.0004);
+                sector_setgravity(7, 0, (raw)0.0004);
+                sector_setgravity(6, 0, (raw)0.0004);
+                sector_setgravity(5, 0, (raw)0.0004);  //the whole spawn point loses its gravity
+                sector_setgravity(14, 0, (raw)0.0004);
+                sector_setgravity(15, 0, (raw)0.0004);
+                sector_setgravity(108, 0, (raw)0.0004);
+                delay(18);
+
+                // oxygen meter starts
+                for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+                {
+                    If(PlayerInGame(i))
+                    {
+                        SetActivator(Identity::GetTid(i));
+                        InSpace[i] = True;
+                        CheckPlayerOxygenLevel(True);
+                    }
+                }
+                break;
+            }
+
+            // pressurising main teleport room
+            case 1:
+            {
+                floor_lowerbyvalue(35,10,100);
+                tagwait(35);
+                Polyobj_Move(3, 10, 64, 200);
+                spawnspot("ZH2LegacyReplacedBigSteamSpawner",1,4657,0);
+                delay(35*4);
+                delay(25);
+                thing_remove(4657);
+                break;
+            }
+
+            // forcing emergency doors
+            case 2:
+            {
+                floor_lowerbyvalue(48, 10, 60);
+                floor_lowerbyvalue(49, 15, 160);
+
+                delay(35);
+
+                SetLineTexture(50, SIDE_FRONT, TEXTURE_MIDDLE, "FIREBLU1");
+                SetLineTexture(50, SIDE_BACK, TEXTURE_MIDDLE, "FIREBLU1");
+
+                spawnspotfacing("ZH2LegacyZe21SparkSpawn", 51, 0);
+                thingsound(51, "sound/sparkon", 100);
+
+                delay(20);
+
+                thing_activate(58);
+
+                Block3on = true;
+                delay(35*9);
+                block3on = false;
+
+                SetLineTexture(50, SIDE_FRONT, TEXTURE_MIDDLE, "BLUEFLOR");
+                SetLineTexture(50, SIDE_BACK, TEXTURE_MIDDLE, "BLUEFLOR");
+                thing_deactivate(58);
+                break;
+            }
+
+            // Reach the SeekNight
+            case 3:
+            {
+                floor_raiseandcrush(67, 10, 20, 2); //ZH2 [AQW] crushmode hexen; dmg to 20
+                ceiling_lowerandcrush(67, 10, 20, 2); //ZH2 [AQW] crushmode hexen; dmg to 20
+
+                tagwait(67);
+
+                floor_raisebyvalue(67, 10, 4);
+                ceiling_lowerbyvalue(67, 10, 4);
+
+                delay(35*3);
+
+                //multiple because it increased volume.
+                for(int i = 0; i < 3; i++)
+                    ambientsound("sound/bigexplosion", 255);
+
+                delay(80);
+
+                colhere = false;
+                Game::KillUnsafePlayers();
+
+                for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+                {
+                    if(PlayerInGame(i) && !Game::GetPlayerIsSafe(i))
+                    {
+                        SetActivator(Identity::GetTid(i));
+                        fadeto(255, 0, 0, 1.0, 0.2);
+                    }
+                }
+
+                delay(35);
+
+                for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+                {
+                    SetActivator(Identity::GetTid(i));
+                    fadeto(0, 0, 0, 0.0, 3.0);
+                }
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 }

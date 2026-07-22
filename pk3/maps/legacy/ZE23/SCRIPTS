@@ -44,23 +44,6 @@ strict namespace
         SetThingSpecial(115, ACS_Execute, 24, 0, 0); // red skull activates scrpt24
     }
 
-    Script 2 (void) // First resist
-    {
-        SetActivator(-1);
-        for(int time=12;time>0;time--)
-        {
-            SetFont("BIGFONT");
-            HudMessageBold(s:"\caSurvive for \cc",d:time,s:" \caseconds"; HUDMSG_FADEOUT, 999, CR_WHITE, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SMALLFONT");
-            HudmessageBold(s:"Raising the first security door"; HUDMSG_FADEOUT, 998, CR_white, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-        Generic_Ceiling(1, 6, 100, 0, 8);
-        thing_activate(102);
-        Radius_Quake(9, 35*4, 0, 16, 111);
-        v++;
-    }
-
     Script 3 OPEN // more loads
     {
         spawnspot("ZH2LegacyFlareRed", 143, 0, 0);
@@ -93,24 +76,6 @@ strict namespace
         Generic_Floor(48, 18, 96, 0, 8);
         SetFont("SMALLFONT");
         PrintBold(s:"The side-building is now open");
-    }
-
-    Script 6 (void) // Second resist
-    {
-        SetActivator(-1);
-        for(int time=23;time>0;time--)
-        {
-            SetFont("BIGFONT");
-            HudMessageBold(s:"\caSurvive for \cc",d:time,s:" \caseconds"; HUDMSG_FADEOUT, 999, CR_WHITE, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SMALLFONT");
-            HudmessageBold(s:"Removing the floor grate"; HUDMSG_FADEOUT, 998, CR_white, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-        Generic_Ceiling(50, 222, 391, 0, 0);
-        delay(45);
-        SetLineTexture(74, SIDE_FRONT, TEXTURE_MIDDLE, "-");
-        SetLineTexture(74, SIDE_BACK, TEXTURE_MIDDLE, "-");
-        Thing_Activate(74);
     }
 
     Script 7 (void) // door message
@@ -201,38 +166,6 @@ strict namespace
     {
         SetFont("SMALLFONT");
         Print(s:"Press the switch on the dock");
-    }
-
-    Script 16 (void) // final resist, endgame
-    {
-        ACS_execute(17, 0, 0, 0, 0);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\caHurry to the end of the dam"; HUDMSG_FADEOUT, 997, CR_RED, 0.5, 0.2, 3.0, 2.0);
-        delay(35*6);
-        SetActivator(-1);
-        for(int time=34;time>0;time--)
-        {
-            SetFont("BIGFONT");
-            HudMessageBold(s:"\caDemolition in \cc",d:time,s:" \caseconds!"; HUDMSG_FADEOUT, 999, CR_WHITE, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SMALLFONT");
-            HudmessageBold(s:"The dam is being destroyed"; HUDMSG_FADEOUT, 998, CR_white, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-        //Generic_Ceiling(65, 12, 96, 0, 16); //ZH2 [AQW]
-        Ceiling_LowerAndCrush(65,12,20,2); //ZH2 [AQW]
-        TagWait(65); //ZH2 [AQW]
-        Ceiling_LowerByValueTimes8(65,16,1); //ZH2 [AQW]
-        delay(146); // =35*5 - 29
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\crT-minus 3 seconds!!!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 3.0, 2.0);
-        delay(75); // 35*3 - 30
-        AmbientSound("world/nuke1", 111);
-        Game::KillUnsafePlayers(0);
-        HudMessageBold(s:" "; HUDMSG_PLAIN, 116, CR_WHITE, 0.0, 0.0, 0.0);
-        HudMessageBold(s:" "; HUDMSG_PLAIN, 117, CR_WHITE, 0.0, 0.0, 0.0);
-        HudMessageBold(s:" "; HUDMSG_PLAIN, 118, CR_WHITE, 0.0, 0.0, 0.0);
-        ACS_execute(23, 0, 0, 0, 0);
-        Music::PlayMusic ("NK_DAMO", 0);
     }
 
     script 17 (void) // secret failsafe + warning!
@@ -331,27 +264,6 @@ strict namespace
         ThingSound (114, "seq/SECTORSTOP", 96);
     }
 
-    Script 21 (void) // Third resist - towers
-    {
-        Generic_Floor(139, 222, 64, 0, 0);
-        SetActivator(-1);
-        for(int time = 35; time > 0; time--)
-        {
-            SetFont("BIGFONT");
-            HudMessageBold(s:"\caSurvive for \cc",d:time,s:" \caseconds"; HUDMSG_FADEOUT, 999, CR_WHITE, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SMALLFONT");
-            HudmessageBold(s:"Opening the tower doors"; HUDMSG_FADEOUT, 998, CR_white, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-
-        // ZH2: This points to a nonexistand sound?
-        ThingSound (110, "doors/dr1_open", 127);
-
-        Generic_Floor(99, 222, 176, 0, 8);
-        Generic_Floor(94, 36, 120, 0, 8);
-        Generic_Floor(61, 111, 120, 0, 8); // proximal gate
-    }
-
     // First safezone can only be entered if the secret ending isn't active.
     script "enter_safezone"
     {
@@ -367,7 +279,7 @@ strict namespace
             HudMessageBold(s:" "; HUDMSG_PLAIN, 117, CR_WHITE, 0.0, 0.0, 0.0);
             HudMessageBold(s:" "; HUDMSG_PLAIN, 118, CR_WHITE, 0.0, 0.0, 0.0);
             Teleport(106);
-            ACS_terminate(16, 0);
+            Resist::StopResistByIndex(3);
             ACS_terminate(17, 0);
             //Generic_Ceiling(152, 255, 128, 0, 16); //ZH2 [AQW] crusher fix
             Ceiling_LowerAndCrush(152,255,50,2); //ZH2 [AQW]
@@ -385,36 +297,7 @@ strict namespace
             // [ZH2] First safezone is no longer safe.
             Game::SetAllPlayersSafe(false, 0);
 
-            delay(35);
-            Music::PlayMusic("NK_NACHO", 0);
-            SetFont("BIGFONT");
-            HudmessageBold(s:"\cnHOLA NACHO!!!"; HUDMSG_PLAIN, 699, CR_white, 0.5, 0.35, 2.0);
-            delay(35*5);
-            SetActivator(-1);
-            for(int time=40;time>0;time--)
-            {
-                SetFont("BIGFONT");
-                HudMessageBold(s:"\caParty starts in \cc",d:time,s:" \caseconds!!!"; HUDMSG_FADEOUT, 999, CR_WHITE, 0.5, 0.2, 0.5, 0.5);
-                SetFont("SMALLFONT");
-                HudmessageBold(s:"Everyone meet at the party"; HUDMSG_FADEOUT, 998, CR_white, 0.5, 0.17, 1.5, 0.5);
-                delay(35);
-            }
-            //Generic_Ceiling(151, 12, 152, 0, 16); //ZH2 [AQW]
-            Ceiling_LowerAndCrush(151,12,50,2); //ZH2 [AQW]
-            TagWait(151); //ZH2 [AQW]
-            Ceiling_LowerByValueTimes8(151,12,1); //ZH2 [AQW]
-            delay(35*4);
-            SetFont("BIGFONT");
-            HudMessageBold(s:"\crRamses doesn't like your singing!!!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 3.0, 2.0);
-            delay(155); // =35*5 - 20
-            AmbientSound("world/nuke1", 111);
-            Music::PlayMusic("D_NULL", 0);
-
-            Game::KillUnsafePlayers(1);
-
-            ACS_execute(23, 0, 0, 0, 0);
-            delay (35*9);
-            Generic_Ceiling(172, 69, 8, 0, 8);
+            Resist::StartResistByIndex(4);
         }
         Else if (!canActivateSecret)
         {
@@ -498,4 +381,124 @@ strict namespace
         Generic_Ceiling(165, 1, 64, 0, 8);
         thing_activate(166);
     }
+
+    /* [ZH2] RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
+    {
+        switch (resistIndex)
+        {
+            // Opening the tower doors
+            case 2:
+            {
+                Generic_Floor(139, 222, 64, 0, 0);
+                break;
+            }
+
+            // The dam is being destroyed
+            case 3:
+            {
+                ACS_execute(17, 0, 0, 0, 0);
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\caHurry to the end of the dam"; HUDMSG_FADEOUT, 997, CR_RED, 0.5, 0.2, 3.0, 2.0);
+                delay(35*6);
+                break;
+            }
+
+            // Everyone meet at the party
+            case 4:
+            {
+                delay(35);
+                Music::PlayMusic("NK_NACHO", 0);
+                SetFont("BIGFONT");
+                HudmessageBold(s:"\cnHOLA NACHO!!!"; HUDMSG_PLAIN, 699, CR_white, 0.5, 0.35, 2.0);
+                delay(35*5);
+                break;
+            }
+        }
+    }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch (resistIndex)
+        {
+            // Raising the first security door
+            case 0:
+            {
+                Generic_Ceiling(1, 6, 100, 0, 8);
+                thing_activate(102);
+                Radius_Quake(9, 35*4, 0, 16, 111);
+                v++;
+                break;
+            }
+
+            // Removing the floor grate
+            case 1:
+            {
+                Generic_Ceiling(50, 222, 391, 0, 0);
+                delay(45);
+                SetLineTexture(74, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+                SetLineTexture(74, SIDE_BACK, TEXTURE_MIDDLE, "-");
+                Thing_Activate(74);
+                break;
+            }
+
+            // Opening the tower doors
+            case 2:
+            {
+                // ZH2: This points to a nonexistand sound?
+                ThingSound (110, "doors/dr1_open", 127);
+
+                Generic_Floor(99, 222, 176, 0, 8);
+                Generic_Floor(94, 36, 120, 0, 8);
+                Generic_Floor(61, 111, 120, 0, 8); // proximal gate
+                break;
+            }
+
+            // The dam is being destroyed
+            case 3:
+            {
+                //Generic_Ceiling(65, 12, 96, 0, 16); //ZH2 [AQW]
+                Ceiling_LowerAndCrush(65,12,20,2); //ZH2 [AQW]
+                TagWait(65); //ZH2 [AQW]
+                Ceiling_LowerByValueTimes8(65,16,1); //ZH2 [AQW]
+                delay(146); // =35*5 - 29
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\crT-minus 3 seconds!!!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 3.0, 2.0);
+                delay(75); // 35*3 - 30
+                AmbientSound("world/nuke1", 111);
+                Game::KillUnsafePlayers(0);
+                HudMessageBold(s:" "; HUDMSG_PLAIN, 116, CR_WHITE, 0.0, 0.0, 0.0);
+                HudMessageBold(s:" "; HUDMSG_PLAIN, 117, CR_WHITE, 0.0, 0.0, 0.0);
+                HudMessageBold(s:" "; HUDMSG_PLAIN, 118, CR_WHITE, 0.0, 0.0, 0.0);
+                ACS_execute(23, 0, 0, 0, 0);
+                Music::PlayMusic ("NK_DAMO", 0);
+                break;
+            }
+
+            // Everyone meet at the party
+            case 4:
+            {
+                //Generic_Ceiling(151, 12, 152, 0, 16); //ZH2 [AQW]
+                Ceiling_LowerAndCrush(151,12,50,2); //ZH2 [AQW]
+                TagWait(151); //ZH2 [AQW]
+                Ceiling_LowerByValueTimes8(151,12,1); //ZH2 [AQW]
+                delay(35*4);
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\crRamses doesn't like your singing!!!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 3.0, 2.0);
+                delay(155); // =35*5 - 20
+                AmbientSound("world/nuke1", 111);
+                Music::PlayMusic("D_NULL", 0);
+
+                Game::KillUnsafePlayers(1);
+
+                ACS_execute(23, 0, 0, 0, 0);
+                delay (35*9);
+                Generic_Ceiling(172, 69, 8, 0, 8);
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 }

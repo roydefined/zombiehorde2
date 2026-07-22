@@ -1,6 +1,8 @@
 #pragma raw include on
 #pragma raw define on
 
+#pragma pointer_space global 0
+
 #import "zcommon.bcs"
 #import "acs_source/bcsutils.acs"
 
@@ -9,12 +11,20 @@
 
 strict namespace
 {
+    // The displayed countdown for the "Opening the second gates" resist (index 3) is
+    // offset from its real length; the hook below adds this to the displayed number only.
+    #define SECOND_GATES_RESIST_INDEX 3
+    #define SECOND_GATES_DISPLAY_OFFSET 2
+
+    // Hook data for drawing resists.
+    // Used specifically for the second gates resist, which has a custom displayed offset.
+    internal Resist::ResistHookDataT? _resistHookDataRef;
+
     int secretswitchcount = 0;
 
     bool Music1Used = FALSE;
     bool ScriptUsed = FALSE;
     bool ScriptUsed2 = FALSE;
-    bool ScriptUsed3 = FALSE;
     bool CriminalsHere = FALSE;
     bool SecretActivated = FALSE;
     bool TheGood = FALSE;
@@ -88,7 +98,7 @@ strict namespace
 
         delay(35*12);
 
-        acs_execute(2,0,0,0,0); //script 2 will start automaticly
+        Resist::StartResistByIndex(0);
 
         delay(35*15);
         Music::PlayMusic("D_NULL");
@@ -99,16 +109,9 @@ strict namespace
         SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
     }
 
-    script 2 (void) // Opening the Cave ( 1st resist )
+    script "open_client" open clientside
     {
-        SetActivator(-1);
-        for(int time=5; time>0; time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"Opening the Cave in \cc",d:time,s:""; HUDMSG_FADEOUT, 998, CR_Yellow, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-        Floor_MovetoValue(5, 16, -160, 0);
+        Hook::Register(Hook::HOOK_CLIENTDRAWRESIST, OnDrawResistHud);
     }
 
     script 4 (void) // Closing the exit Cave
@@ -125,55 +128,6 @@ strict namespace
         Floor_LowerByValue(95,50,246);
         PrintBold(s:"Another way is now open !");
         Floor_MovetoValue(6,10,16);
-    }
-
-    script 5 (void) // Lowering pillars the Cave ( 2nd resist )
-    {
-        SetActivator(-1);
-
-        for(int time = 20; time > 0; time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"Resist for \cc",d:time,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SMALLFONT");
-            HudmessageBold(s:"Lowering pillars"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-
-            delay(35);
-        }
-
-        ACS_Execute(24,0,1);
-        SetLineBlocking(1, BLOCK_NOTHING);
-        Floor_Lowerbyvalue(13,50,256);
-
-        delay(35);
-
-        PrintBold(s:"The jail will open in 10 seconds.");
-
-        delay(35*2);
-
-        Music::PlayMusic("D_GBU2");
-
-        delay(35*4+18);
-
-        SETFONT("SMALLFONT");
-        HudMessageBold(s:"The Good, the Bad and the Ugly"; HUDMSG_FADEINOUT, 0, CR_GREEN, 0.05, 0.85, 7.0);
-
-        delay(35*3);
-
-        SETFONT("SMALLFONT");
-        HudMessageBold(s:"A remake of Blood's map"; HUDMSG_FADEINOUT, 0, CR_WHITE, 0.05, 0.87, 4.0);
-
-        delay(18);
-
-        SetLineBlocking(2,BLOCK_NOTHING);
-        ACS_Execute(24,0,2);
-        PrintBold(s:"Jail opened!");
-        Floor_Lowerbyvalue(17,50,250);
-
-        delay(18);
-
-        SETFONT("SMALLFONT");
-        HudMessageBold(s:"By Fused"; HUDMSG_FADEINOUT, 0, CR_WHITE, 0.04, 0.89, 3.0);
     }
 
     Script 6 (void) //shortcut at the village
@@ -306,229 +260,6 @@ strict namespace
         }
     }
 
-    script 16 (void) // Final resists
-    {
-        SetFont("BIGFONT");
-        HudmessageBold(n:0, s:" \ckhas found the village !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 5.5, 2.0);
-        SetActivator(-1);
-        Music::PlayMusic("*");
-
-        delay(35*2);
-
-        Music::PlayMusic("D_GBU3");
-
-        delay(35*6);
-
-        for(int time=10;time>0;time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"Resist for \cc",d:time,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFONT");
-            HudmessageBold(s:"Opening the village gates"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-
-            delay(35);
-        }
-
-        thingsound(49,"sound/woodgateopen",255);
-
-        delay(18);
-
-        Polyobj_RotateRight(1, 1, 35);
-        Polyobj_RotateLeft(2, 1, 35);
-
-        delay(35*20+33); //this actually makes a difference
-
-        for(int time2=10;time2>=3;time2--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"Resist for \cc",d:time2,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFONT");
-            HudmessageBold(s:"Opening the second gates"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-
-            delay(35);
-        }
-
-        Music::PlayMusic("d_null");
-
-        spawnspot("ZH2LegacyZe17CriminalDummy1",66, 555, 0);
-
-        delay(35*2);
-
-        thing_remove(555);
-        spawnspot("ZH2LegacyZe17CriminalDummy3",66, 556, 0);
-
-        delay(35);
-
-        thingsound(68, "sound/cowboyshotsequence", 150);
-        thing_remove(556);
-        spawnspot("ZH2LegacyZe17CriminalDummy4",66, 557, 0);
-
-        delay(35*2);
-
-        spawnspot("ZH2LegacyZE29Explosion",69,0);
-        radius_quake(3,70, 0, 20, 70);
-        floor_lowerbyvalue(75, 999, 56);
-        floor_lowerbyvalue(71, 999, 16);
-        floor_lowerbyvalue(73, 999, 24);
-        floor_lowerbyvalue(74, 999, 48);
-        changefloor(75,"FLAT14-B");
-
-        floor_lowerbyvalue(76,10,80);
-        floor_lowerbyvalue(77,20,104);
-        floor_lowerbyvalue(78,5,60);
-        SetLineBlocking(79, BLOCK_NOTHING);
-
-        delay(35*2);
-
-        Music::PlayMusic("D_GBU4");
-
-        acs_execute(27,0,0,0,0);
-        SetFont("CONFONT");
-        HudMessageBold(s:"The criminal group has found you! Flee for the hotel and access the hiding room.";HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 6.0, 2.0);
-
-        delay(35);
-
-        thing_remove(557);
-        spawnspot("ZH2LegacyZe17CriminalDummy3",66, 558, 0);
-
-        delay(35);
-
-        thing_remove(558);
-        spawnspot("ZH2LegacyZe17CriminalDummy1",66, 0, 0);
-
-        delay(35*3);
-
-        for(int time3 = 45 ;time3 > 0; time3--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"Resist for \cc",d:time3,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFONT");
-            HudmessageBold(s:"Closing the hiding room"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-
-            delay(35);
-        }
-
-        ACS_Suspend(28,0);
-        floor_raiseandcrush(101, 10, 50, 2); //ZH2 [AQW] dmg to 50 because its the ending, hexen mode...
-        TagWait(101); //ZH2 [AQW]
-        Floor_RaiseByValueTimes8(101,16,1);//ZH2 [AQW]
-        CriminalsHere = TRUE;
-        SetFont("BIGFONT");
-        HudmessageBold(s:"\ckThe criminals are here !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 2.5, 0.5);
-
-        delay(35*2);
-
-        Music::PlayMusic("D_NULL");
-        fadeto(0,0,0,1.0,2.0);
-        SetPlayerProperty(1, 1, PROP_TOTALLYFROZEN);
-
-        delay(35*2);
-
-        SetLineBlocking(102,BLOCK_EVERYTHING);
-        spawnspot("ZH2LegacyZe17CriminalDummy1",108, 561, 0); //idle criminals
-        spawnspot("ZH2LegacyZe17CriminalDummy1",109, 562, 0); //shooting criminals
-        spawnspot("ZH2LegacyReplacedShopguy", 117,0,0);
-
-        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-        {
-            if(!Game::GetPlayerIsSafe(i))
-                Teleportother(Identity::GetTid(i),201+i,0);
-        }
-
-        delay(35);
-
-        acs_execute(30,0,0,0,0);
-        fadeto(0, 0, 0, 0.0, 1.0);
-        ambientsound("sound/showdown", 100);
-        CAMERA1 = TRUE;
-
-        delay(35*3);
-
-        fadeto(0, 0, 0, 1.0,1.0);
-
-        delay(35);
-
-        fadeto(0, 0, 0, 0.0, 1.0);
-
-        CAMERA1 = FALSE;
-        CAMERA2 = TRUE;
-
-        delay(35*3);
-
-        fadeto(0, 0, 0, 1.0, 1.0);
-
-        delay(35);
-
-        fadeto(0, 0, 0, 0.0, 1.0);
-
-        CAMERA2 = FALSE;
-        CAMERA3 = TRUE;
-
-        delay(35*6);
-
-        fadeto(0, 0, 0, 1.0, 1.0);
-
-        delay(35);
-
-        fadeto(0, 0, 0, 0.0, 1.0);
-
-        CAMERA3 = FALSE;
-        CAMERA4 = TRUE;
-
-        delay(35*3);
-
-        fadeto(0, 0, 0, 1.0, 3.0);
-
-        delay(35*4);
-
-        fadeto(0, 0, 0, 0.0, 3.0);
-
-        CAMERA4 = FALSE;
-        CAMERA5 = TRUE;
-
-        thing_remove(562);
-        spawnspot("ZH2LegacyZe17CriminalDummy3",109, 562, 0);
-
-        delay(35*2);
-
-        thing_remove(562);
-        spawnspot("ZH2LegacyZe17CriminalDummy4",109, 562, 0);
-
-        ambientsound("sound/cowboyshotend", 100);
-        sectordamage(102, 6000, "exit", (raw)0, DAMAGE_PLAYERS); //6000 because some bh zombies have this much apparantly
-
-        delay(35);
-
-        thing_remove(562);
-        spawnspot("ZH2LegacyZe17CriminalDummy3",109, 562, 0);
-
-        delay(35*2);
-
-        thing_remove(562);
-        spawnspot("ZH2LegacyZe17CriminalDummy4",109, 562, 0);
-        sectordamage(103, 6000, "exit", (raw)0, DAMAGE_PLAYERS);
-
-        delay(35);
-
-        thing_remove(562);
-        spawnspot("ZH2LegacyZe17CriminalDummy3",109, 562, 0);
-
-        delay(35*2);
-
-        sectordamage(107, 6000, "exit", (raw)0, DAMAGE_PLAYERS);
-        Game::KillUnsafePlayers(); // To be safe, let's use this aswell.
-
-        delay(35*2);
-
-        fadeto(0, 0, 0, 1.0, 1.0);
-
-        delay(35);
-
-        fadeto(0, 0, 0, 0.0, 1.0);
-        SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
-        CAMERA5 = FALSE;
-    }
-
     script 17 (void)
     {
         if(Player::GetIsHuman())
@@ -629,31 +360,6 @@ strict namespace
         LocalSetMusic("D_GBU2");
     }*/
 
-    script 26 (void) // new resist after the canyon part
-    {
-        if (ScriptUsed3  == FALSE )
-        {
-            ScriptUsed3 = TRUE;
-            SetActivator(-1);
-            for(int time2=30;time2>0;time2--)
-            {
-                SetFont("BIGFONT");
-                Hudmessage(s:"Resist for \cc",d:time2,s:" \ckseconds"; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.2, 0.5, 0.5);
-                SetFont("SmallFONT");
-                HudmessageBold(s:"Opening the second cave"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-
-                delay(35);
-            }
-            Floor_movetovalue(52, 20, 120);
-            Floor_movetovalue(53, 40, 120);
-            Floor_movetovalue(54, 50, 120);
-            Floor_movetovalue(55, 70, 120);
-
-            radius_quake(4, 105, 0, 10, 56);
-            SetLineBlocking(57, BLOCK_NOTHING);
-        }
-    }
-
     script 3 (void) //in criminal range for final village part.
     {
         if(LineSide()== LINE_FRONT) incriminalrange[PlayerNumber()] = true;
@@ -745,4 +451,323 @@ strict namespace
     {
         HudmessageBold(s:"Insufficient key"; HUDMSG_FADEOUT, 0, CR_White, 0.5, 0.8, 1.5, 0.5);
     }
+
+    /* [ZH2] RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
+    {
+        switch (resistIndex)
+        {
+            // Opening the village gates
+            case 2:
+            {
+                SetFont("BIGFONT");
+                HudmessageBold(n:0, s:" \ckhas found the village !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 5.5, 2.0);
+                Music::PlayMusic("*");
+
+                delay(35*2);
+
+                Music::PlayMusic("D_GBU3");
+
+                delay(35*6);
+                break;
+            }
+        }
+    }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch (resistIndex)
+        {
+            // Opening the Cave
+            case 0:
+            {
+                SetActivator(-1);
+                Floor_MovetoValue(5, 16, -160, 0);
+                break;
+            }
+
+            // Lowering pillars the Cave
+            case 1:
+            {
+                ACS_Execute(24,0,1);
+                SetLineBlocking(1, BLOCK_NOTHING);
+                Floor_Lowerbyvalue(13,50,256);
+
+                delay(35);
+
+                PrintBold(s:"The jail will open in 10 seconds.");
+
+                delay(35*2);
+
+                Music::PlayMusic("D_GBU2");
+
+                delay(35*4+18);
+
+                SETFONT("SMALLFONT");
+                HudMessageBold(s:"The Good, the Bad and the Ugly"; HUDMSG_FADEINOUT, 0, CR_GREEN, 0.05, 0.85, 7.0);
+
+                delay(35*3);
+
+                SETFONT("SMALLFONT");
+                HudMessageBold(s:"A remake of Blood's map"; HUDMSG_FADEINOUT, 0, CR_WHITE, 0.05, 0.87, 4.0);
+
+                delay(18);
+
+                SetLineBlocking(2,BLOCK_NOTHING);
+                ACS_Execute(24,0,2);
+                PrintBold(s:"Jail opened!");
+                Floor_Lowerbyvalue(17,50,250);
+
+                delay(18);
+
+                SETFONT("SMALLFONT");
+                HudMessageBold(s:"By Fused"; HUDMSG_FADEINOUT, 0, CR_WHITE, 0.04, 0.89, 3.0);
+                break;
+            }
+
+            // Opening the village gates
+            case 2:
+            {
+                thingsound(49,"sound/woodgateopen",255);
+
+                delay(18);
+
+                Polyobj_RotateRight(1, 1, 35);
+                Polyobj_RotateLeft(2, 1, 35);
+
+                delay(35*20+33); //this actually makes a difference
+
+                Resist::StartResistByIndex(SECOND_GATES_RESIST_INDEX);
+                break;
+            }
+
+            // Opening the second gates
+            case SECOND_GATES_RESIST_INDEX:
+            {
+                Music::PlayMusic("d_null");
+
+                spawnspot("ZH2LegacyZe17CriminalDummy1",66, 555, 0);
+
+                delay(35*2);
+
+                thing_remove(555);
+                spawnspot("ZH2LegacyZe17CriminalDummy3",66, 556, 0);
+
+                delay(35);
+
+                thingsound(68, "sound/cowboyshotsequence", 150);
+                thing_remove(556);
+                spawnspot("ZH2LegacyZe17CriminalDummy4",66, 557, 0);
+
+                delay(35*2);
+
+                spawnspot("ZH2LegacyZE29Explosion",69,0);
+                radius_quake(3,70, 0, 20, 70);
+                floor_lowerbyvalue(75, 999, 56);
+                floor_lowerbyvalue(71, 999, 16);
+                floor_lowerbyvalue(73, 999, 24);
+                floor_lowerbyvalue(74, 999, 48);
+                changefloor(75,"FLAT14-B");
+
+                floor_lowerbyvalue(76,10,80);
+                floor_lowerbyvalue(77,20,104);
+                floor_lowerbyvalue(78,5,60);
+                SetLineBlocking(79, BLOCK_NOTHING);
+
+                delay(35*2);
+
+                Music::PlayMusic("D_GBU4");
+
+                acs_execute(27,0,0,0,0);
+                SetFont("CONFONT");
+                HudMessageBold(s:"The criminal group has found you! Flee for the hotel and access the hiding room.";HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 6.0, 2.0);
+
+                delay(35);
+
+                thing_remove(557);
+                spawnspot("ZH2LegacyZe17CriminalDummy3",66, 558, 0);
+
+                delay(35);
+
+                thing_remove(558);
+                spawnspot("ZH2LegacyZe17CriminalDummy1",66, 0, 0);
+
+                delay(35*3);
+
+                Resist::StartResistByIndex(4);
+                break;
+            }
+
+            // Closing the hiding room
+            case 4:
+            {
+                ACS_Suspend(28,0);
+                floor_raiseandcrush(101, 10, 50, 2); //ZH2 [AQW] dmg to 50 because its the ending, hexen mode...
+                TagWait(101); //ZH2 [AQW]
+                Floor_RaiseByValueTimes8(101,16,1);//ZH2 [AQW]
+                CriminalsHere = TRUE;
+                SetFont("BIGFONT");
+                HudmessageBold(s:"\ckThe criminals are here !"; HUDMSG_FADEOUT, 1, CR_White, 0.5, 0.1, 2.5, 0.5);
+
+                delay(35*2);
+
+                Music::PlayMusic("D_NULL");
+                fadeto(0,0,0,1.0,2.0);
+                SetPlayerProperty(1, 1, PROP_TOTALLYFROZEN);
+
+                delay(35*2);
+
+                SetLineBlocking(102,BLOCK_EVERYTHING);
+                spawnspot("ZH2LegacyZe17CriminalDummy1",108, 561, 0); //idle criminals
+                spawnspot("ZH2LegacyZe17CriminalDummy1",109, 562, 0); //shooting criminals
+                spawnspot("ZH2LegacyReplacedShopguy", 117,0,0);
+
+                for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+                {
+                    if(!Game::GetPlayerIsSafe(i))
+                        Teleportother(Identity::GetTid(i),201+i,0);
+                }
+
+                delay(35);
+
+                acs_execute(30,0,0,0,0);
+                fadeto(0, 0, 0, 0.0, 1.0);
+                ambientsound("sound/showdown", 100);
+                CAMERA1 = TRUE;
+
+                delay(35*3);
+
+                fadeto(0, 0, 0, 1.0,1.0);
+
+                delay(35);
+
+                fadeto(0, 0, 0, 0.0, 1.0);
+
+                CAMERA1 = FALSE;
+                CAMERA2 = TRUE;
+
+                delay(35*3);
+
+                fadeto(0, 0, 0, 1.0, 1.0);
+
+                delay(35);
+
+                fadeto(0, 0, 0, 0.0, 1.0);
+
+                CAMERA2 = FALSE;
+                CAMERA3 = TRUE;
+
+                delay(35*6);
+
+                fadeto(0, 0, 0, 1.0, 1.0);
+
+                delay(35);
+
+                fadeto(0, 0, 0, 0.0, 1.0);
+
+                CAMERA3 = FALSE;
+                CAMERA4 = TRUE;
+
+                delay(35*3);
+
+                fadeto(0, 0, 0, 1.0, 3.0);
+
+                delay(35*4);
+
+                fadeto(0, 0, 0, 0.0, 3.0);
+
+                CAMERA4 = FALSE;
+                CAMERA5 = TRUE;
+
+                thing_remove(562);
+                spawnspot("ZH2LegacyZe17CriminalDummy3",109, 562, 0);
+
+                delay(35*2);
+
+                thing_remove(562);
+                spawnspot("ZH2LegacyZe17CriminalDummy4",109, 562, 0);
+
+                ambientsound("sound/cowboyshotend", 100);
+                sectordamage(102, 6000, "exit", (raw)0, DAMAGE_PLAYERS); //6000 because some bh zombies have this much apparantly
+
+                delay(35);
+
+                thing_remove(562);
+                spawnspot("ZH2LegacyZe17CriminalDummy3",109, 562, 0);
+
+                delay(35*2);
+
+                thing_remove(562);
+                spawnspot("ZH2LegacyZe17CriminalDummy4",109, 562, 0);
+                sectordamage(103, 6000, "exit", (raw)0, DAMAGE_PLAYERS);
+
+                delay(35);
+
+                thing_remove(562);
+                spawnspot("ZH2LegacyZe17CriminalDummy3",109, 562, 0);
+
+                delay(35*2);
+
+                sectordamage(107, 6000, "exit", (raw)0, DAMAGE_PLAYERS);
+                Game::KillUnsafePlayers(); // To be safe, let's use this aswell.
+
+                delay(35*2);
+
+                fadeto(0, 0, 0, 1.0, 1.0);
+
+                delay(35);
+
+                fadeto(0, 0, 0, 0.0, 1.0);
+                SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
+                CAMERA5 = FALSE;
+                break;
+            }
+
+            // Opening the second cave
+            case 5:
+            {
+                Floor_movetovalue(52, 20, 120);
+                Floor_movetovalue(53, 40, 120);
+                Floor_movetovalue(54, 50, 120);
+                Floor_movetovalue(55, 70, 120);
+
+                radius_quake(4, 105, 0, 10, 56);
+                SetLineBlocking(57, BLOCK_NOTHING);
+                break;
+            }
+        }
+    }
+
+    // TODO: Get top reason/time reason from resist data.
+    internal raw OnDrawResistHud(void[]* data)
+    {
+        if (data == null)
+            return 0;
+
+        _resistHookDataRef = data;
+
+        int resistIndex = _resistHookDataRef.Index;
+
+        if (resistIndex != SECOND_GATES_RESIST_INDEX)
+            return 0;
+
+        int left = (Resist::GetTicsLeftByIndex(resistIndex) / 35) + 1;
+        left += SECOND_GATES_DISPLAY_OFFSET;
+
+        Hud::SetRelativePoint(0.0, 12.0);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudDrawText(
+            500,
+            StrParam(
+                s:"\ckResist for \cc",
+                d:left,
+                s:" \cksecond",
+                s:left == 1 ? "" : "s"
+            ));
+
+        return 0;
+    }
+
+    /* [ZH2] RESISTS END */
 }

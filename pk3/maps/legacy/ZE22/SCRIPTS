@@ -82,65 +82,7 @@ strict namespace
         Music::PlayMusic("D_SCAPE");
 
         delay(35*5);
-        acs_execute(3,0,0,0,0);
-    }
-
-    script 3 (void) //first resist
-    {
-        int time;
-        for(time=25;time>0;time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFont");
-            HudmessageBold(s:"Opening back door..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-        Door_Open(27,96);
-    }
-
-    Script 4 (void) // Second resist
-    {
-        SetActivator(-1);
-
-        int time;
-        for(time=15;time>0;time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFont");
-            HudmessageBold(s:"Waiting for the elevators"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-
-        ceiling_raiseByvalue(28, 20, 64);
-        printbold(s:"Leaving in 5 seconds...");
-        delay(175);
-        //Generic_Ceiling(28, 32, 0, 4, 16); //ZH2 [AQW]
-        Ceiling_LowerAndCrush(28,32,5,2); //ZH2 [AQW]
-        TagWait(28); //ZH2 [AQW]
-        Ceiling_LowerByValueTimes8(28,32,1); //ZH2 [AQW]
-        floor_lowerbyvalue(68, 10, 100);
-        ceiling_lowerbyvalue(68, 10, 100);
-        ceiling_lowerbyvalue(69, 10, 100);
-        floor_lowerbyvalue(69, 10, 100);
-        tagwait(69);
-
-        floor_lowerbyvalue(68, 20, 824);
-        ceiling_lowerbyvalue(68, 20, 824);
-        ceiling_lowerbyvalue(69, 20, 824);
-        floor_lowerbyvalue(69, 20, 824);
-        tagwait(69);
-
-        floor_lowerbyvalue(68, 10, 100);
-        ceiling_lowerbyvalue(68, 10, 100);
-        ceiling_lowerbyvalue(69, 10, 100);
-        floor_lowerbyvalue(69, 10, 100);
-        tagwait(69);
-
-        door_open(35,96);
-        printbold(s:"stairs available");
-        door_open(30,96);
+        Resist::StartResistByIndex(0);
     }
 
     Script 5 (void) // pillars
@@ -150,88 +92,6 @@ strict namespace
         Delay(35*15);
         printbold(s:"\cGPillars lowering");
         floor_lowerbyvalue(57,20,160);
-    }
-    script 6 (void)//third resist
-    {
-        SetActivator(-1);
-        int time;
-            for(time=30;time>0;time--)
-        {
-            SetFont("BIGFONT");
-                Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-                SetFont("SmallFont");
-                HudmessageBold(s:"lowering pillars..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-
-                delay(35);
-            }
-
-        floor_lowerbyvalue(56, 100,250);
-
-    }
-
-
-    script 7 (void) // final resist
-    {
-        SetActivator(-1);
-        int time;
-            for(time=40;time>0;time--)
-        {
-            SetFont("BIGFONT");
-                Hudmessage(s:"\cqResist for \cj",d:time,s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-                SetFont("SmallFont");
-                HudmessageBold(s:"Calling in the airstrike"; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-                delay(35);
-            }
-
-            SetFont("BIGFONT");
-            printbold(s:"\cjincoming airstrike!");
-
-        delay(35*2);
-
-        ambientsound("sound/airstrike",255);
-
-        delay(18);
-
-        for(int tag=79;tag<=93;tag++)
-        {
-            spawnspot("ZH2LegacyZE22Jet",tag,0,0);
-            delay(2);
-        }
-
-        delay(18);
-
-        Airstrike_inbound = true;
-
-        ambientsound("world/nuke1", 255);
-        floor_lowerbyvalue(34, 35, 400);
-        ceiling_lowerbyvalue(34, 35, 400);
-        Radius_Quake(9, 35*5, 0, 50, 38);
-        floorandceiling_lowerbyvalue(114,10,180);
-
-        //extra script to make a good camp spot
-        floor_lowerbyvalue(16, 5, 50);
-        floorandceiling_lowerbyvalue(116, 5, 50);
-        floorandceiling_lowerbyvalue(118, 5, 50);
-
-        Game::KillUnsafePlayers();
-
-        for(int area=0;area<=999;area++) //random tag because i'm too damn lazy to check how many tags are used...
-        {
-            Light_fade(area,192,18);
-        }
-
-        spawnspot("ZH2LegacyZE22SlowExplosion",94,0,0);
-        delay(18);
-        spawnspot("ZH2LegacyZE22SlowExplosion",95,0,0);
-        delay(18);
-        spawnspot("ZH2LegacyZE22SlowExplosion",96,0,0);
-
-        delay(35*2);
-
-        for(int area3=0;area3<=999;area3++) //random tag because i'm too damn lazy to check how many tags are used...
-        {
-            Light_fade(area3,128,35);
-        }
     }
 
     script 8 (void) //falling in water
@@ -302,4 +162,117 @@ strict namespace
             break;
         }
     }
+
+    /* [ZH2] RESISTS START */
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch (resistIndex)
+        {
+            // Opening back door...
+            case 0:
+            {
+                Door_Open(27,96);
+                break;
+            }
+
+            // Waiting for the elevators
+            case 1:
+            {
+                ceiling_raiseByvalue(28, 20, 64);
+                printbold(s:"Leaving in 5 seconds...");
+                delay(175);
+                //Generic_Ceiling(28, 32, 0, 4, 16); //ZH2 [AQW]
+                Ceiling_LowerAndCrush(28,32,5,2); //ZH2 [AQW]
+                TagWait(28); //ZH2 [AQW]
+                Ceiling_LowerByValueTimes8(28,32,1); //ZH2 [AQW]
+                floor_lowerbyvalue(68, 10, 100);
+                ceiling_lowerbyvalue(68, 10, 100);
+                ceiling_lowerbyvalue(69, 10, 100);
+                floor_lowerbyvalue(69, 10, 100);
+                tagwait(69);
+
+                floor_lowerbyvalue(68, 20, 824);
+                ceiling_lowerbyvalue(68, 20, 824);
+                ceiling_lowerbyvalue(69, 20, 824);
+                floor_lowerbyvalue(69, 20, 824);
+                tagwait(69);
+
+                floor_lowerbyvalue(68, 10, 100);
+                ceiling_lowerbyvalue(68, 10, 100);
+                ceiling_lowerbyvalue(69, 10, 100);
+                floor_lowerbyvalue(69, 10, 100);
+                tagwait(69);
+
+                door_open(35,96);
+                printbold(s:"stairs available");
+                door_open(30,96);
+                break;
+            }
+
+            // lowering pillars...
+            case 2:
+            {
+                floor_lowerbyvalue(56, 100,250);
+                break;
+            }
+
+            // Calling in the airstrike
+            case 3:
+            {
+                SetFont("BIGFONT");
+                printbold(s:"\cjincoming airstrike!");
+
+                delay(35*2);
+
+                ambientsound("sound/airstrike",255);
+
+                delay(18);
+
+                for(int tag=79;tag<=93;tag++)
+                {
+                    spawnspot("ZH2LegacyZE22Jet",tag,0,0);
+                    delay(2);
+                }
+
+                delay(18);
+
+                Airstrike_inbound = true;
+
+                ambientsound("world/nuke1", 255);
+                floor_lowerbyvalue(34, 35, 400);
+                ceiling_lowerbyvalue(34, 35, 400);
+                Radius_Quake(9, 35*5, 0, 50, 38);
+                floorandceiling_lowerbyvalue(114,10,180);
+
+                //extra script to make a good camp spot
+                floor_lowerbyvalue(16, 5, 50);
+                floorandceiling_lowerbyvalue(116, 5, 50);
+                floorandceiling_lowerbyvalue(118, 5, 50);
+
+                Game::KillUnsafePlayers();
+
+                for(int area=0;area<=999;area++) //random tag because i'm too damn lazy to check how many tags are used...
+                {
+                    Light_fade(area,192,18);
+                }
+
+                spawnspot("ZH2LegacyZE22SlowExplosion",94,0,0);
+                delay(18);
+                spawnspot("ZH2LegacyZE22SlowExplosion",95,0,0);
+                delay(18);
+                spawnspot("ZH2LegacyZE22SlowExplosion",96,0,0);
+
+                delay(35*2);
+
+                for(int area3=0;area3<=999;area3++) //random tag because i'm too damn lazy to check how many tags are used...
+                {
+                    Light_fade(area3,128,35);
+                }
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 }
