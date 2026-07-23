@@ -447,7 +447,6 @@ strict namespace
     }
 
     // Custom logic for some resists.
-    // TODO: Fetch top reason rather than hardcoding it.
     internal raw OnDrawResistHud(void[]* data)
     {
         if (data == null)
@@ -470,36 +469,14 @@ strict namespace
 
             percentage = BCSUtils::Clamp(percentage, 0, 100);
 
-            str beaconName;
-
-            switch (resistIndex)
-            {
-                case 0:
-                    beaconName = "eastern";
-                    break;
-
-                case 1:
-                    beaconName = "northern";
-                    break;
-
-                case 2:
-                    beaconName = "western";
-                    break;
-
-                case 3:
-                    beaconName = "southern";
-                    break;
-            }
-
             Hud::SetRelativePoint(0.0, 12.0);
             BCSUtils::HudSetTextColor(CR_WHITE);
             BCSUtils::HudSetFont("BigFont");
             BCSUtils::HudDrawText(
                 500 + resistIndex,
                 StrParam(
-                    s:"\cjActivating ",
-                    s:beaconName,
-                    s:" Beacon ",
+                    s:Resist::GetTopReasonLabelByIndex(resistIndex),
+                    s:" ",
                     d:percentage,
                     s:"%"
                 )

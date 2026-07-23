@@ -739,7 +739,6 @@ strict namespace
         }
     }
 
-    // TODO: Get top reason/time reason from resist data.
     internal raw OnDrawResistHud(void[]* data)
     {
         if (data == null)
@@ -752,19 +751,14 @@ strict namespace
         if (resistIndex != SECOND_GATES_RESIST_INDEX)
             return 0;
 
-        int left = (Resist::GetTicsLeftByIndex(resistIndex) / 35) + 1;
-        left += SECOND_GATES_DISPLAY_OFFSET;
+        // Offset the tics fed into FormatLabel so both the displayed number and its plural
+        // resolution account for the intentional display offset in one go.
+        int ticsLeft = Resist::GetTicsLeftByIndex(resistIndex) + SECOND_GATES_DISPLAY_OFFSET * 35;
+        str label = Resist::FormatLabel(Resist::GetTimeReasonLabelByIndex(resistIndex), ticsLeft);
 
         Hud::SetRelativePoint(0.0, 12.0);
         BCSUtils::HudSetFont("BigFont");
-        BCSUtils::HudDrawText(
-            500,
-            StrParam(
-                s:"\ckResist for \cc",
-                d:left,
-                s:" \cksecond",
-                s:left == 1 ? "" : "s"
-            ));
+        BCSUtils::HudDrawText(500, label);
 
         return 0;
     }

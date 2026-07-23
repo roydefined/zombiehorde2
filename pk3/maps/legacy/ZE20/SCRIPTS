@@ -429,7 +429,6 @@ strict namespace
         }
     }
 
-    // TODO: Get top reason/time reason from resist data.
     internal raw OnDrawResistHud(void[]* data)
     {
         if (data == null)
@@ -442,8 +441,8 @@ strict namespace
         if (resistIndex != 0 && resistIndex != 1 && resistIndex != 2)
             return 0;
 
-        int leftTics = Resist::GetTicsLeftByIndex(resistIndex);
-        int left = (leftTics / 35) + 1;
+        int ticsLeft = Resist::GetTicsLeftByIndex(resistIndex);
+        int left = (ticsLeft / 35) + 1;
 
         str numColor;
         if (left < 5)
@@ -455,38 +454,20 @@ strict namespace
         else
             numColor = "\cg";
 
-        str resistTopMessage;
-        str resistBottomColorPrefix;
-        if (resistIndex == 0)
-        {
-            resistTopMessage = "\chPower generator starting";
-            resistBottomColorPrefix = "\ch";
-        }
-        else if (resistIndex == 1)
-        {
-            resistTopMessage = "\cgDynamite set, prepare for explosion.";
-            resistBottomColorPrefix = "\cg";
-        }
-        else if (resistIndex == 2)
-        {
-            resistTopMessage = "\cgCataclism is coming!";
-            resistBottomColorPrefix = "\ck";
-        }
+        str timeLabel = Resist::GetTimeReasonLabelByIndex(resistIndex);
+        int timeTokenIndex = Resist::GetTimeTokenIndex(timeLabel);
+        if (timeTokenIndex != -1)
+            timeLabel = StrMid(timeLabel, 0, timeTokenIndex) + numColor + StrMid(timeLabel, timeTokenIndex, StrLen(timeLabel) - timeTokenIndex);
+
+        timeLabel = Resist::FormatLabel(timeLabel, ticsLeft);
 
         Hud::SetRelativePoint();
         BCSUtils::HudSetFont("BigFont");
-        BCSUtils::HudDrawText(500 + resistIndex, resistTopMessage);
+        BCSUtils::HudDrawText(500 + resistIndex, Resist::GetTopReasonLabelByIndex(resistIndex));
 
         Hud::SetRelativePoint(0.0, 14.0);
         BCSUtils::HudSetFont("BigFont");
-        BCSUtils::HudDrawText(
-            501 + resistIndex,
-            StrParam(
-                s:resistBottomColorPrefix,
-                s:"Resist: ",
-                s:numColor,
-                d:left
-            ));
+        BCSUtils::HudDrawText(501 + resistIndex, timeLabel);
 
         return 0;
     }
