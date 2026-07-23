@@ -9,11 +9,6 @@
 
 strict namespace
 {
-    #define RESIST1_TIME 15
-    #define RESIST2_TIME 20
-    #define RESIST3_TIME 25
-    #define RESIST4_TIME 45
-
     bool b_thunder_is_active = TRUE;
 
     /* Level settings */
@@ -63,29 +58,6 @@ strict namespace
     }
 
 
-    /* RESIST EVENT */
-    script "ze02b_internal_event_resistelapsed" (raw packetRaw)
-    {
-        Event::ReceiveTimerElapsed((str)packetRaw);
-        int index = Event::GetReceiveData(0);
-        
-        switch(index)
-        {
-            case 0:
-                Floor_LowerByValue(8, 16, 216);
-                SetLineBlocking(1, BLOCK_NOTHING);
-                break;
-            case 1:
-                Floor_LowerByValue(5, 16, 216);
-                SetLineBlocking(2, BLOCK_NOTHING);
-                b_thunder_is_active = FALSE;
-
-                // ZH2: Remove the fire that blocks zombies.
-                Thing_Remove(30);
-                break;
-        }
-    }
-
     /* Bottom of crater teleporter */
     Script 2 (int num, int angle)
     {
@@ -102,47 +74,127 @@ strict namespace
     /* Third resist */
     Script 5 (void)
     {
-        SetActivator(-1);
-        Delay(Resist::StartResistByIndex(2));
+        Resist::StartResistByIndex(2);
+    }
 
-        Ceiling_RaiseByValue(35, 64, 104);
-        Ceiling_RaiseByValue(36, 64, 104);
+    /* Final resist */
+    Script 6 (void)
+    {
+        Resist::StartResistByIndex(3);
+    }
 
-        delay(35*5);
+    /* [ZH2] RESISTS START */
 
-        // Close the doors
-        //Generic_Ceiling(35, 32, 0, 4, 16); //ZH2 [AQW]
-        //Generic_Ceiling(36, 32, 0, 4, 16); //ZH2 [AQW]
-        Ceiling_LowerAndCrush(35,32,10,2); //ZH2 [AQW]
-        Ceiling_LowerAndCrush(36,32,10,2); //ZH2 [AQW]
-        TagWait(35); //ZH2 [AQW]
-        TagWait(36); //ZH2 [AQW]
-        Ceiling_LowerByValueTimes8(35,16,1); //ZH2 [AQW]
-        Ceiling_LowerByValueTimes8(36,16,1); //ZH2 [AQW]
+    script "pre_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 3:
+            {
+                Floor_LowerByValue(19, 2, 16);
+                Floor_LowerByValue(16, 2, 16);
+                Ceiling_LowerByValue(16, 2, 16);
 
-        delay(18); //ZH2 [AQW] Split the delay of 35 into 2.
+                SetFont("CONFONT");
+                HudMessageBold(n:0, s:" has ignited the dynamites!\nPrepare for a huge volcanic eruption!!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
 
-        //==Start of edit== [AQW]
-        //Because there is a gap between the door and the elevator, and if you use crushing ceiling, it will stop the elevators ceiling, making the elevators broken visually (but still works gameplay wise).
-        //So because Xsnake already gave a TID to the gap sectors, I suggest this fix: making them crushing ceiling before activating the elevators.
-        Ceiling_LowerAndCrush(37,32,50,2);
-        Ceiling_LowerAndCrush(38,32,50,2);
-        TagWait(37);
-        TagWait(38);
-        Ceiling_LowerByValueTimes8(37,16,1);
-        Ceiling_LowerByValueTimes8(38,16,1);
-        //==end of edit==
+                SetActivator(-1);
+                delay(35*3);
+                break;
+            }
+        }
+    }
 
-        delay(17); //ZH2 [AQW]
-        // Move the elevators
-        Generic_Floor(33, 32, 1760, 0, 16);
-        Generic_Ceiling(33, 32, 1760, 0, 16);
-        Generic_Floor(34, 32, 1760, 0, 16);
-        Generic_Ceiling(34, 32, 1760, 0, 16);
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                Floor_LowerByValue(8, 16, 216);
+                SetLineBlocking(1, BLOCK_NOTHING);
+                break;
+            }
 
-        Tagwait(33);
-        Tagwait(34);
+            case 1:
+            {
+                Floor_LowerByValue(5, 16, 216);
+                SetLineBlocking(2, BLOCK_NOTHING);
+                b_thunder_is_active = FALSE;
 
+                // ZH2: Remove the fire that blocks zombies.
+                Thing_Remove(30);
+                break;
+            }
+
+            case 2:
+            {
+                Ceiling_RaiseByValue(35, 64, 104);
+                Ceiling_RaiseByValue(36, 64, 104);
+
+                delay(35*5);
+
+                // Close the doors
+                //Generic_Ceiling(35, 32, 0, 4, 16); //ZH2 [AQW]
+                //Generic_Ceiling(36, 32, 0, 4, 16); //ZH2 [AQW]
+                Ceiling_LowerAndCrush(35,32,10,2); //ZH2 [AQW]
+                Ceiling_LowerAndCrush(36,32,10,2); //ZH2 [AQW]
+                TagWait(35); //ZH2 [AQW]
+                TagWait(36); //ZH2 [AQW]
+                Ceiling_LowerByValueTimes8(35,16,1); //ZH2 [AQW]
+                Ceiling_LowerByValueTimes8(36,16,1); //ZH2 [AQW]
+
+                delay(18); //ZH2 [AQW] Split the delay of 35 into 2.
+
+                //==Start of edit== [AQW]
+                //Because there is a gap between the door and the elevator, and if you use crushing ceiling, it will stop the elevators ceiling, making the elevators broken visually (but still works gameplay wise).
+                //So because Xsnake already gave a TID to the gap sectors, I suggest this fix: making them crushing ceiling before activating the elevators.
+                Ceiling_LowerAndCrush(37,32,50,2);
+                Ceiling_LowerAndCrush(38,32,50,2);
+                TagWait(37);
+                TagWait(38);
+                Ceiling_LowerByValueTimes8(37,16,1);
+                Ceiling_LowerByValueTimes8(38,16,1);
+                //==end of edit==
+
+                delay(17); //ZH2 [AQW]
+                // Move the elevators
+                Generic_Floor(33, 32, 1760, 0, 16);
+                Generic_Ceiling(33, 32, 1760, 0, 16);
+                Generic_Floor(34, 32, 1760, 0, 16);
+                Generic_Ceiling(34, 32, 1760, 0, 16);
+
+                Tagwait(33);
+                Tagwait(34);
+
+                ACS_NamedExecute("resist2_secondary_path", 0);
+                break;
+            }
+
+            case 3:
+            {
+                //Generic_Ceiling(14, 2, 64, 5, 16); //ZH2 [AQW]
+                Ceiling_LowerAndCrush(14,2,50,2); //ZH2 [AQW]
+
+                TagWait(14);
+                Ceiling_LowerByValueTimes8(14,16,1); //ZH2 [AQW]
+                Radius_Quake(15, 35*15, 0, 50, 15);
+
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\cGWarning : \cKVolcanic Eruption!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+                delay(35*2);
+
+                AmbientSound("world/volcano1", 127);
+                delay(35);
+
+                Game::KillUnsafePlayers();
+                break;
+            }
+        }
+    }
+
+    script "resist2_secondary_path"
+    {
         delay(35*5);
         Floor_LowerByValue(40, 21, 120);
 
@@ -150,36 +202,7 @@ strict namespace
         PrintBold(s:"The secondary path has been opened!");
     }
 
-    /* Final resist */
-    Script 6 (void)
-    {
-        Floor_LowerByValue(19, 2, 16);
-        Floor_LowerByValue(16, 2, 16);
-        Ceiling_LowerByValue(16, 2, 16);
-
-        SetFont("CONFONT");
-        HudMessageBold(n:0, s:" has ignited the dynamites!\nPrepare for a huge volcanic eruption!!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-
-        SetActivator(-1);
-        delay(35*3);
-        Delay(Resist::StartResistByIndex(3));
-
-        //Generic_Ceiling(14, 2, 64, 5, 16); //ZH2 [AQW]
-        Ceiling_LowerAndCrush(14,2,50,2); //ZH2 [AQW]
-
-        TagWait(14);
-        Ceiling_LowerByValueTimes8(14,16,1); //ZH2 [AQW]
-        Radius_Quake(15, 35*15, 0, 50, 15);
-
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\cGWarning : \cKVolcanic Eruption!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-        delay(35*2);
-
-        AmbientSound("world/volcano1", 127);
-        delay(35);
-
-        Game::KillUnsafePlayers();
-    }
+    /* [ZH2] RESISTS END */
 
     /* Falling into lava */
     Script 8 (int teleportid)

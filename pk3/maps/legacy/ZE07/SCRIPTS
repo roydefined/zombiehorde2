@@ -9,15 +9,10 @@
 
 strict namespace
 {
-    Int SubmarineStillReachable = 1;
-    Int SubmarineExitable = 0;
-    Int resist1 = 20;
-    Int resist2 = 20;
-    Int AllowManualActivation = 0;
-    Int resist3 = 30;
-    Int BaseReached = 0;
-    Int resistfinal = 30;
-    Int GateCrossable = 1;
+    int SubmarineStillReachable = 1;
+    int SubmarineExitable = 0;
+    int AllowManualActivation = 0;
+    int GateCrossable = 1;
     bool trapDisabled = false;
 
     Script "ze07_open" OPEN // Level Setups
@@ -44,39 +39,6 @@ strict namespace
         TranslucentLine(67, 144, 0);
         Scroll_Texture_Both(67, 0, 0, 0, -200);
         Scroll_Texture_Both(-67, 0, 0, 0, -200);
-    }
-
-    /* RESIST EVENT */
-    script "ze07_internal_event_resistelapsed" (raw packetRaw)
-    {
-        Event::ReceiveTimerElapsed((str)packetRaw);
-        int index = Event::GetReceiveData(0);
-        
-        switch(index)
-        {
-            case 0:
-                Door_Open(13, 32);
-                break;
-            case 1:
-                Acs_Execute(8, 0);
-                AllowManualActivation = 1;
-                break;
-            case 2:
-                SetLineBlocking(3, BLOCK_NOTHING);
-                TranslucentLine(3, 0, 0);
-                Delay(35*5);
-                Floor_LowerByValue(36, 16, 112);
-                break;
-            case 3:
-                SetFont("BIGFONT");
-                HudMessageBold(s:"\cGWarning : \cKGate being closed!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-                Delay(random(105, 140));
-                GateCrossable = 0;
-                AmbientSound("sound/poweroff1", 100);
-                TranslucentLine(4, 0, 0);
-                Delay(35*4);
-                Game::KillUnsafePlayers();
-        }
     }
 
     Script 2 (void) // Getting into the submarine
@@ -183,19 +145,72 @@ strict namespace
         if(GateCrossable==1)
         {
             Game::SetIsSafe(true);
-            if(BaseReached==0)
-            {
-                SetFont("CONFONT");
-                HudMessageBold(n:0, s:" has reached the base!\n\cCDefend it until the gate closes!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-                Resist::StartResistByIndex(3);
-                BaseReached=1;
-            }
+            Resist::StartResistByIndex(3);
+
             if(Player::GetIshuman())
                 Teleport_NoFog(250+PlayerNumber(), 1, 0);
             else
                 Teleport_NoFog(34, 1, 0);
         }
     }
+
+    /* [ZH2] RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 3:
+            {
+                SetFont("CONFONT");
+                HudMessageBold(n:0, s:" has reached the base!\n\cCDefend it until the gate closes!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+                break;
+            }
+        }
+    }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                Door_Open(13, 32);
+                break;
+            }
+
+            case 1:
+            {
+                Acs_Execute(8, 0);
+                AllowManualActivation = 1;
+                break;
+            }
+
+            case 2:
+            {
+                SetLineBlocking(3, BLOCK_NOTHING);
+                TranslucentLine(3, 0, 0);
+                Delay(35*5);
+                Floor_LowerByValue(36, 16, 112);
+                break;
+            }
+
+            case 3:
+            {
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\cGWarning : \cKGate being closed!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+                Delay(random(105, 140));
+                GateCrossable = 0;
+                AmbientSound("sound/poweroff1", 100);
+                TranslucentLine(4, 0, 0);
+                Delay(35*4);
+                Game::KillUnsafePlayers();
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 
     Script 14 (void) // Base -> gate
     {

@@ -396,140 +396,133 @@ strict namespace
         }
     }
 
-    //Resists
+    /* [ZH2] RESISTS START */
 
-    function void ResistMessage1 (int restime, str todo)
+    script "pre_resist_handler" (int resistIndex)
     {
-        SetFont("BIGFONT");
-        HudMessageBold(s:todo, d:restime, s:" seconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-    }
-
-    Int Resist2 = 30;
-    Int Resist3 = 27;
-    Int Resist4 = 12;
-    Int Resist5 = 16;
-    Int Resist6 = 15;
-    Int Resist7 = 20;
-    Int Resist10 = 60;
-    Int Resist11 = 42;
-
-    Script 93 (void) //Lavapillars 3
-    {
-        Acs_Executealways(67,0,170);
-        SetActivator(-1);
-        for(int i = resist6; i > 0; i--)
+        switch(resistIndex)
         {
-            ResistMessage1(i,"\ci3th Pillars lower in... ");
-            Delay(35);
+            case 0:
+            {
+                Acs_Executealways(67,0,170);
+                SetActivator(-1);
+                break;
+            }
+
+            case 1:
+            {
+                Acs_Executealways(67,0,170);
+                SetActivator(-1);
+                break;
+            }
+
+            case 2:
+            {
+                Acs_Executealways(67,0,170);
+                SetActivator(-1);
+                break;
+            }
+
+            case 3:
+            {
+                Acs_Executealways(67,0,170);
+                SetActivator(-1);
+                break;
+            }
+
+            case 6:
+            {
+                SetFont("BIGFONT");
+                printbold(n:0, s:" \cffound the anti-earthquake room!");
+                Delay(35*3);
+                SetActivator(-1);
+                break;
+            }
+
+            case 7:
+            {
+                SetFont("BIGFONT");
+                printbold(n:0, s:" \cffound the portal to heaven!");
+                Delay(35*3);
+                SetActivator(-1);
+                break;
+            }
         }
-        Floor_LowerToLowest(173,255);
-        SetLineBlocking(174,BLOCK_NOTHING);
-        Delay(35*3);
-        Floor_RaiseByValue(180,25,384);
     }
 
-    Script 94 (void) //Lavapillars 2
+    script "post_resist_handler" (int resistIndex)
     {
-        Acs_Executealways(67,0,170);
-        SetActivator(-1);
-        for(int i = resist5; i > 0; i--)
+        switch(resistIndex)
         {
-            ResistMessage1(i,"\ci2th Pillars lower in... ");
-            Delay(35);
+            case 0:
+            {
+                Floor_LowerToLowest(173,255);
+                SetLineBlocking(174,BLOCK_NOTHING);
+                Delay(35*3);
+                Floor_RaiseByValue(180,25,384);
+                break;
+            }
+
+            case 1:
+            {
+                Floor_LowerToLowest(172,255);
+                break;
+            }
+
+            case 2:
+            {
+                Floor_LowerToLowest(95,255);
+                break;
+            }
+
+            case 3:
+            {
+                Acs_Executealways(67,0,163);
+                SetLineBlocking(10,BLOCK_NOTHING);
+                SetLineBlocking(164,BLOCK_NOTHING);
+                Delay(35*5);
+                Door_Open(25,25);
+                break;
+            }
+
+            case 4:
+            {
+                Floor_LowerToLowest(162,255);
+                break;
+            }
+
+            case 5:
+            {
+                FloorAndCeiling_RaiseByValue(156,10,256);
+                Floor_RaiseByValue(157,10,256);
+                Delay(500);
+                Ceiling_LowerToFloor(161,255);
+                break;
+            }
+
+            case 6:
+            {
+                Ceiling_LowerByValue(191,15,32);
+                Radius_Quake(255,255,0,255,0);
+                Delay(35*3);
+                Game::KillUnsafePlayers();
+                SetLineBlocking(213,BLOCK_EVERYTHING);
+                Delay(35*5);
+                Door_open(189,255);
+                Door_open(191,255);
+                break;
+            }
+
+            case 7:
+            {
+                Game::KillUnsafePlayers();
+                SetLineBlocking(177,BLOCK_EVERYTHING);
+                break;
+            }
         }
-        Floor_LowerToLowest(172,255);
     }
 
-    Script 95 (void) //Lavapillars 1
-    {
-        Acs_Executealways(67,0,170);
-        SetActivator(-1);
-        for(int i = resist4; i > 0; i--)
-        {
-            ResistMessage1(i,"\ci1st Pillars lower in... ");
-            Delay(35);
-        }
-        Floor_LowerToLowest(95,255);
-    }
-
-    Script 96 (void) //Steam thingy
-    {
-        Acs_Executealways(67,0,170);
-        SetActivator(-1);
-        for(int i = resist2; i > 0; i--)
-        {
-            ResistMessage1(i,"\ciClosing pipe in... ");
-            Delay(35);
-        }
-        Acs_Executealways(67,0,163);
-        SetLineBlocking(10,BLOCK_NOTHING);
-        SetLineBlocking(164,BLOCK_NOTHING);
-        Delay(35*5);
-        Door_Open(25,25);
-    }
-
-    Script 97 (void) //Rock Thingy
-    {
-        SetActivator(-1);
-        for(int i = resist3; i > 0; i--)
-        {
-            ResistMessage1(i,"\ciStone lowers in... ");
-            Delay(35);
-        }
-        Floor_LowerToLowest(162,255);
-    }
-
-    Script 98 (void) //Object Thingy
-    {
-        SetActivator(-1);
-        for(int i = resist7; i > 0; i--)
-        {
-            ResistMessage1(i,"\ciObject Raises in... ");
-            Delay(35);
-        }
-        FloorAndCeiling_RaiseByValue(156,10,256);
-        Floor_RaiseByValue(157,10,256);
-        Delay(500);
-        Ceiling_LowerToFloor(161,255);
-    }
-
-    Script 99 (void) //EarthQuake :D
-    {
-        SetFont("BIGFONT");
-        printbold(n:0, s:" \cffound the anti-earthquake room!");
-        Delay(35*3);
-        SetActivator(-1);
-        for(int i = resist10; i > 0; i--)
-        {
-            ResistMessage1(i,"\ciEarthquake in... ");
-            Delay(35);
-        }
-        Ceiling_LowerByValue(191,15,32);
-        Radius_Quake(255,255,0,255,0);
-        Delay(35*3);
-        Game::KillUnsafePlayers();
-        SetLineBlocking(213,BLOCK_EVERYTHING);
-        Delay(35*5);
-        Door_open(189,255);
-        Door_open(191,255);
-    }
-
-
-
-    Script 92 (void) //Portal to heaven
-    {
-        SetFont("BIGFONT");
-        printbold(n:0, s:" \cffound the portal to heaven!");
-        Delay(35*3);
-        SetActivator(-1);
-        for(int i = resist11; i > 0; i--)
-        {
-            ResistMessage1(i,"\ciPortal to heaven closes in... ");
-            Delay(35);
-        }
-        Game::KillUnsafePlayers();
-        SetLineBlocking(177,BLOCK_EVERYTHING);
-    }
+    /* [ZH2] RESISTS END */
 
 
     //RANDOM SCRIPTS

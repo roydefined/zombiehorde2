@@ -9,19 +9,6 @@
 
 strict namespace
 {
-    Int resist1 = 10;
-    Int resist2 = 15;
-    Int resist3 = 10;
-    Int resist4 = 30;
-    Int resistairaid = 50;
-
-    // ZH2: ported from zh-beta29
-    function void ResistMessage (int restime)
-    {
-        SetFont("BIGFONT");
-        HudMessageBold(s:"Resist for \cJ", d:restime, s:" \cGseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-    }
-
     Script 1 OPEN
     {
         SpawnSpotForced("ZH2LegacyZm21OldKey", random(73,77), 0, 0);
@@ -51,33 +38,11 @@ strict namespace
 
     }
 
-    Script 2 (void) // First Door
-    {
-        SetActivator(-1);
-        for(int i = resist3; i > 0; i--)
-    {
-            ResistMessage(i);
-            Delay(35);
-        }
-        Floor_LowerByValue(5, 16, 120);
-    }
-
     Script 3 (Void) // Depot Door
     {
         Door_Close(7, 32);
         Delay(25*25);
         Door_Open(7, 32);
-    }
-
-    Script 4 (void) // Second Resist
-    {
-        SetActivator(-1);
-        for(int i = resist2; i > 0; i--)
-    {
-            ResistMessage(i);
-            Delay(35);
-        }
-        Floor_LowerByValue(10, 32, 128);
     }
 
     script 5 (int id) // glassbreak
@@ -93,18 +58,6 @@ strict namespace
         Floor_Raisebyvalue(10, 128, 128);
         Delay(18*18);
         Floor_Lowerbyvalue(10, 32, 128);
-    }
-
-    Script 7 (void)
-
-    {
-        SetActivator(-1);
-        for(int i = resist1; i > 0; i--)
-        {
-            ResistMessage(i);
-            Delay(35);
-        }
-        Floor_LowerByValue(19, 32, 128);
     }
 
     script 8 (void)
@@ -133,44 +86,11 @@ strict namespace
         Floor_Lowerbyvalue(35, 255, 40);
     }
 
-    Script 10 (void)
-    {
-        SetActivator(-1);
-        for(int i = resist2; i > 0; i--)
-        {
-            ResistMessage(i);
-            Delay(35);
-        }
-        Floor_LowerByValue(32, 32, 128);
-    }
-
     script 11 (void)
     {
         Floor_Raisebyvalue(32, 128, 128);
         Delay(35*15);
         Floor_Lowerbyvalue(32, 32, 128);
-    }
-
-    Script 12 (void)
-    {
-        SetActivator(-1);
-        for(int i = resist4; i > 0; i--)
-        {
-            ResistMessage(i);
-            Delay(35);
-        }
-        Floor_LowerByValue(42, 32, 128);
-    }
-
-    Script 13 (Void)
-    {
-        SetActivator(-1);
-        for(int i = resist3; i > 0; i--)
-        {
-            ResistMessage(i);
-            Delay(35);
-        }
-        Door_Open(45, 32);
     }
 
     Script 14 (Void)
@@ -194,34 +114,9 @@ strict namespace
         PrintBold(s:"\cdCaptain: \cfReach safety with us at the shelter.");
     }
 
-    Script 16 (Void)
-    {
-        SetActivator(-1);
-        for(int i = resist1; i > 0; i--)
-        {
-            ResistMessage(i);
-            Delay(35);
-        }
-        Door_Open(50, 32);
-        Floor_LowerByValue(52, 255, 32);
-    }
-
     Script 17 (Void)
     {
         Door_Close(51, 224);
-    }
-
-    Script 18 (Void)
-    {
-        SetActivator(-1);
-        for(int i = resist1; i > 0; i--)
-        {
-            ResistMessage(i);
-            Delay(35);
-        }
-        Door_Open(55, 32);
-        Floor_lowerbyvalue(54, 255, 96);
-        Ceiling_lowerbyvalue(54, 255, 96);
     }
 
     Script 19 (Void)
@@ -256,53 +151,114 @@ strict namespace
 
     Script 24 (Void)
     {
-        SetActivator(-1);
-        for(int i = resistairaid; i > 0; i--)
-        {
-            ResistMessage(i);
-            Delay(35);
-        }
-        //Generic_Ceiling(69, 16, 144, 5, 16); //ZH2 [AQW]
-        Ceiling_LowerAndCrush(69,16,20,2); //ZH2 [AQW]
-        TagWait(69); //ZH2 [AQW]
-        Ceiling_LowerByValueTimes8(69,16,1); //ZH2 [AQW]
-        Delay(35*2);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\cGWarning : \cKAir Raid attack!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-        Delay(35*2);
-        AmbientSound("world/rocket1", 100);
-        Radius_Quake(10, 500, 0, 64, 68);
-        SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
-        Delay(35);
-        SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
-        Delay(15);
-        SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
-        Delay(35);
-        Game::KillUnsafePlayers();
-        SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
-        Delay(35);
-        SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
-        Delay(25);
-        SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
-        Delay(15);
-        SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
-        Delay(15);
-        SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
-        Delay(25);
-        SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
-        Delay(15*2);
-        SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
-        Delay(35);
-        SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
-        Delay(25);
-        SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
-        Delay(15);
-        SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
-        Delay(35);
-        SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
-        Delay(25);
-        SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
-        Delay(35);
+        Resist::StartResistByIndex(8);
     }
 
+    /* RESISTS START */
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                Floor_LowerByValue(5, 16, 120);
+                break;
+            }
+
+            // Note, this resist is unused.
+            case 1:
+            {
+                Floor_LowerByValue(10, 32, 128);
+                break;
+            }
+
+            case 2:
+            {
+                Floor_LowerByValue(19, 32, 128);
+                break;
+            }
+
+            case 3:
+            {
+                Floor_LowerByValue(32, 32, 128);
+                break;
+            }
+
+            case 4:
+            {
+                Floor_LowerByValue(42, 32, 128);
+                break;
+            }
+
+            case 5:
+            {
+                Door_Open(45, 32);
+                break;
+            }
+
+            case 6:
+            {
+                Door_Open(50, 32);
+                Floor_LowerByValue(52, 255, 32);
+                break;
+            }
+
+            case 7:
+            {
+                Door_Open(55, 32);
+                Floor_lowerbyvalue(54, 255, 96);
+                Ceiling_lowerbyvalue(54, 255, 96);
+                break;
+            }
+
+            case 8:
+            {
+                //Generic_Ceiling(69, 16, 144, 5, 16); //ZH2 [AQW]
+                Ceiling_LowerAndCrush(69,16,20,2); //ZH2 [AQW]
+                TagWait(69); //ZH2 [AQW]
+                Ceiling_LowerByValueTimes8(69,16,1); //ZH2 [AQW]
+                Delay(35*2);
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\cGWarning : \cKAir Raid attack!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+                Delay(35*2);
+                AmbientSound("world/rocket1", 100);
+                Radius_Quake(10, 500, 0, 64, 68);
+                SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
+                Delay(35);
+                SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
+                Delay(15);
+                SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
+                Delay(35);
+                Game::KillUnsafePlayers();
+                SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
+                Delay(35);
+                SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
+                Delay(25);
+                SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
+                Delay(15);
+                SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
+                Delay(15);
+                SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
+                Delay(25);
+                SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
+                Delay(15*2);
+                SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
+                Delay(35);
+                SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
+                Delay(25);
+                SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
+                Delay(15);
+                SpawnSpot("ZH2LegacyZE29Explosion", 70, 0, 0);
+                Delay(35);
+                SpawnSpot("ZH2LegacyZE29Explosion", 71, 0, 0);
+                Delay(25);
+                SpawnSpot("ZH2LegacyZE29Explosion", 72, 0, 0);
+                Delay(35);
+                break;
+            }
+        }
+    }
+
+    /* RESISTS END */
 }

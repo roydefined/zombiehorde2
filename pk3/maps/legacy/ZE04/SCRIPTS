@@ -26,29 +26,6 @@ strict namespace
         SetPlayerProperty(1, 0, PROP_TOTALLYFROZEN);
     }
 
-    /* RESIST EVENT */
-    script "ze04_internal_event_resistelapsed" (raw packetRaw)
-    {
-        Event::ReceiveTimerElapsed((str)packetRaw);
-        int index = Event::GetReceiveData(0);
-
-        switch(index)
-        {
-            case 0:
-                Floor_LowerByValue(9, 32, 248);
-                SetLineBlocking(1, BLOCK_NOTHING);
-                Delay(35*5);
-                Floor_LowerByValue(5, 32, 184);
-                break;
-            case 1:
-                Floor_LowerByValue(8, 16, 120);
-                break;
-            case 2:
-                Floor_LowerByValue(30, 16, 120);
-                break;
-        }
-    }
-
     Script 6 (void)
     {
         if(!DeloreanReached)
@@ -177,4 +154,35 @@ strict namespace
         if(YouCanStillReachIt)
             Game::SetIsSafe(false);
     }
+
+    /* [ZH2] RESISTS START */
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                Floor_LowerByValue(9, 32, 248);
+                SetLineBlocking(1, BLOCK_NOTHING);
+                Delay(35*5);
+                Floor_LowerByValue(5, 32, 184);
+                break;
+            }
+
+            case 1:
+            {
+                Floor_LowerByValue(8, 16, 120);
+                break;
+            }
+
+            case 2:
+            {
+                Floor_LowerByValue(30, 16, 120);
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 }

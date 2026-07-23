@@ -66,91 +66,6 @@ strict namespace
         else Teleport_NoFog(100+PlayerNumber(), 1, 0);
     }
 
-    Script 3 (void) // Opening door
-    {
-        SetActivator(-1);
-
-        int time;
-        for(time = 15; time > 0; time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"\cqResist for \cj", d:time, s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFont");
-            HudMessageBold(s:"\ciOldman: i'll try to open the door"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 1.5, 2.0);
-
-            HudMessageBold(s:"Opening door..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-
-        thing_remove(120);
-        thing_move(121, 131);
-        Door_Open(19, 15);
-        delay(35*5);
-        Floor_RaiseByValue(20, 100, 16);
-        Floor_RaiseByValue(21, 100, 40);
-        Floor_RaiseByValue(22, 100, 64);
-        Floor_RaiseByValue(23, 100, 80);
-        SetLineBlocking(3, OFF);
-    }
-
-
-    script 4 (void) // trees
-    {
-        SetActivator(-1);
-
-        int time;
-        for(time = 25; time > 0; time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"\cqResist for \cj", d:time, s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFont");
-            HudMessageBold(s:"\ciOldman: Take the axe and help me"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 1.5, 2.0);
-
-            HudMessageBold(s:"Toppling trees..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-
-        SetLineBlocking(10, OFF);
-        Thing_Remove(29);
-        Thing_Remove(122);
-        thing_move(123, 133);
-    }
-
-    Script 6 (void) // final resist
-    {
-        SetActivator(-1);
-
-        int time;
-        for(time = 50; time > 0; time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"\cqResist for \cj", d:time, s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFont");
-            HudMessageBold(s:"The darkness is coming in..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-
-        Generic_Ceiling(44, 6, 0, 5, 16);
-        tagwait(44);
-        printbold(s:"The darkness is here");
-        delay(35*5);
-
-        for(int k = 0; k < BCSUtils::MAX_PLAYERS; k++)
-        {
-            if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
-            {
-                int tid = Identity::GetTid(k);
-                SetActivator(tid);
-                FadeTo(1, 1, 1, 1.0, 1.0);
-            }
-        }
-
-        SetActivator(-1);
-        delay(35*5);
-
-        Game::KillUnsafePlayers();
-    }
-
     Script 8 (void) // Checks if a human has reached the house
     {
         if(Player::GetIsHuman() && housereached == 0)
@@ -200,28 +115,6 @@ strict namespace
         SetLineBlocking(7, OFF);
         thing_remove(121);
         thing_move(122, 132);
-    }
-
-    script 12 (void) // wall resist
-    {
-        SetActivator(-1);
-
-        int time;
-        for(time = 30; time > 0; time--)
-        {
-            SetFont("BIGFONT");
-            Hudmessage(s:"\cqResist for \cj", d:time, s:" \cqseconds"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 0.5, 0.5);
-            SetFont("SmallFont");
-            HudMessageBold(s:"\ciOldman: Take the hammer and help me"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 1.5, 2.0);
-
-            HudMessageBold(s:"tearing down the wall..."; HUDMSG_FADEOUT, 998, CR_White, 0.5, 0.17, 1.5, 0.5);
-            delay(35);
-        }
-
-        SetLineBlocking(13, OFF);
-        SetLineTexture(13, SIDE_FRONT, TEXTURE_MIDDLE, "-");
-        thing_remove(126);
-        thing_move(127, 137, (raw)true);
     }
 
     script 13 (void)
@@ -308,4 +201,104 @@ strict namespace
             Light_fade(area, 192, 35);
         }
     }
+
+    /* [ZH2] RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            // Opening door
+            case 0:
+            {
+                SetFont("SmallFont");
+                HudMessageBold(s:"\ciOldman: i'll try to open the door"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 1.5, 2.0);
+                break;
+            }
+
+            // trees
+            case 1:
+            {
+                SetFont("SmallFont");
+                HudMessageBold(s:"\ciOldman: Take the axe and help me"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 1.5, 2.0);
+                break;
+            }
+
+            // wall resist
+            case 3:
+            {
+                SetFont("SmallFont");
+                HudMessageBold(s:"\ciOldman: Take the hammer and help me"; HUDMSG_FADEOUT, 999, CR_RED, 0.5, 0.2, 1.5, 2.0);
+                break;
+            }
+        }
+    }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            // Opening door
+            case 0:
+            {
+                thing_remove(120);
+                thing_move(121, 131);
+                Door_Open(19, 15);
+                delay(35*5);
+                Floor_RaiseByValue(20, 100, 16);
+                Floor_RaiseByValue(21, 100, 40);
+                Floor_RaiseByValue(22, 100, 64);
+                Floor_RaiseByValue(23, 100, 80);
+                SetLineBlocking(3, OFF);
+                break;
+            }
+
+            // trees
+            case 1:
+            {
+                SetLineBlocking(10, OFF);
+                Thing_Remove(29);
+                Thing_Remove(122);
+                thing_move(123, 133);
+                break;
+            }
+
+            // final resist
+            case 2:
+            {
+                Generic_Ceiling(44, 6, 0, 5, 16);
+                tagwait(44);
+                printbold(s:"The darkness is here");
+                delay(35*5);
+
+                for(int k = 0; k < BCSUtils::MAX_PLAYERS; k++)
+                {
+                    if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
+                    {
+                        int tid = Identity::GetTid(k);
+                        SetActivator(tid);
+                        FadeTo(1, 1, 1, 1.0, 1.0);
+                    }
+                }
+
+                SetActivator(-1);
+                delay(35*5);
+
+                Game::KillUnsafePlayers();
+                break;
+            }
+
+            // wall resist
+            case 3:
+            {
+                SetLineBlocking(13, OFF);
+                SetLineTexture(13, SIDE_FRONT, TEXTURE_MIDDLE, "-");
+                thing_remove(126);
+                thing_move(127, 137, (raw)true);
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 }

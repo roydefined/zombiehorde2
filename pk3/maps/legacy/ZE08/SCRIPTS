@@ -9,8 +9,6 @@
 
 strict namespace
 {
-    Int choppatime = 16;
-
     Script 11 Enter
     {
         GiveInventory(FLARE_ITEM, 1);
@@ -40,31 +38,6 @@ strict namespace
         TranslucentLine(10, 0, 0);
         SetLineBlocking(10, BLOCK_NOTHING);
         Music::PlayMusic("ROUTE5");
-    }
-
-    /* RESIST EVENT */
-    script "ze08_internal_event_resistelapsed" (raw packetRaw)
-    {
-        Event::ReceiveTimerElapsed((str)packetRaw);
-        int index = Event::GetReceiveData(0);
-        
-        switch(index)
-        {
-            case 0:
-                Door_Open(55, 96);
-                Delay(35*5);
-                Floor_LowerByValue(57, 32, 248);
-                TagWait(57);
-                PrintBold(s:"The secondary path has been opened");
-                break;
-            case 1:
-                Door_Open(25, 96);
-                break;
-            case 2:
-                TranslucentLine(1, 0, 0);
-                SetLineBlocking(1, BLOCK_NOTHING);
-                break;
-        }
     }
 
     Script 2 (void) // platform - UNUSED
@@ -100,32 +73,61 @@ strict namespace
         door_Open(42, 96);
     }
 
-    Script 8 (void) // third resist
+    /* [ZH2] RESISTS START */
+
+    script "post_resist_handler" (int resistIndex)
     {
-        SetActivator(-1);
-        Delay(Resist::StartResistByIndex(3));
-        door_Open(43, 16);
-        delay(35);
-        while(choppatime>0)
+        switch(resistIndex)
         {
-            choppatime--;
-            SetFont("SMALLFONT");
-            HudMessageBold(s:"The rescue Helicopter is leaving"; HUDMSG_FADEOUT, 998, CR_RED, 0.5, 0.17, 1.5, 0.5);
-            SetFont("BIGFONT");
-            HudMessageBold( d:choppatime, s:" \cGseconds"; HUDMSG_FADEOUT, 999, Cr_WHITE, 0.5, 0.2, 0.5, 0.5);
-            Delay(35);
+            case 0:
+            {
+                Door_Open(55, 96);
+                Delay(35*5);
+                Floor_LowerByValue(57, 32, 248);
+                TagWait(57);
+                PrintBold(s:"The secondary path has been opened");
+                break;
+            }
+
+            case 1:
+            {
+                Door_Open(25, 96);
+                break;
+            }
+
+            case 2:
+            {
+                TranslucentLine(1, 0, 0);
+                SetLineBlocking(1, BLOCK_NOTHING);
+                break;
+            }
+
+            case 3:
+            {
+                door_Open(43, 16);
+                delay(35);
+                Resist::StartResistByIndex(4);
+                break;
+            }
+
+            case 4:
+            {
+                Floor_RaiseByValue(46, 16, 512);
+                Ceiling_RaiseByValue(46, 16, 512);
+                Delay(35*2);
+                Radius_Quake(10, 350, 0, 64, 47);
+                AmbientSound("world/rocket1", 100);
+                Delay(35*2);
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\cGWarning : \cKRocket Launching!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+                Delay(35*5);
+                Game::KillUnsafePlayers();
+                break;
+            }
         }
-        Floor_RaiseByValue(46, 16, 512);
-        Ceiling_RaiseByValue(46, 16, 512);
-        Delay(35*2);
-        Radius_Quake(10, 350, 0, 64, 47);
-        AmbientSound("world/rocket1", 100);
-        Delay(35*2);
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\cGWarning : \cKRocket Launching!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-        Delay(35*5);
-        Game::KillUnsafePlayers();
     }
+
+    /* [ZH2] RESISTS END */
 
     Script 9 (void)
     {

@@ -50,26 +50,6 @@ strict namespace
         //GiveImmuneZE();
     }
 
-    /* RESIST EVENT */
-    script "ze09_internal_event_resistelapsed" (raw packetRaw)
-    {
-        Event::ReceiveTimerElapsed((str)packetRaw);
-        int index = Event::GetReceiveData(0);
-
-        switch(index)
-        {
-            case 0:
-                Door_Open(23,96);
-                break;
-            case 1:
-                Floor_LowerByvalue(27, 21, 120);
-                break;
-            case 2:
-                Door_Open(36, 96, 120);
-                break;
-        }
-    }
-
     Script 3 (void) // Earthquakes
     {
         int duration = random(2, 6);
@@ -158,45 +138,81 @@ strict namespace
         Game::SetIsSafe(false);
     }
 
-    Script 18 (void)
+    /* [ZH2] RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
     {
-        SetFont("CONFONT");
-        HudMessageBold(n:0, s:" \cGhas reached the rescue point!\nSecure the helipad until the chopper arrives!";
-                    HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-
-        SetActivator(-1);
-        Delay(35*5);
-
-        Delay(Resist::StartResistByIndex(3));
-
-        Thing_Activate(69);
-        Acs_Execute(20, 0);
-        Floor_LowerByValue(72, 30, 504);
-        Ceiling_LowerByValue(72, 30, 504);
-        TagWait(72);
-        SetLineBlocking(44, BLOCK_NOTHING);
-
-        Delay(35*5);
-
-        Floor_RaiseByValue(72, 8, 312);
-        Ceiling_RaiseByValue(72, 8, 312);
-
-        Delay(35*3);
-
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\cGWarning : \cKThe tanker is sinking!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-
-        Delay(35*3);
-
-        for(int k = 0; k < BCSUtils::MAX_PLAYERS; k++)
+        switch(resistIndex)
         {
-            if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
-                Acs_ExecuteAlways(19, 0, k, 0, 0);
-        }
+            case 3:
+            {
+                SetFont("CONFONT");
+                HudMessageBold(n:0, s:" \cGhas reached the rescue point!\nSecure the helipad until the chopper arrives!";
+                            HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
 
-        Delay(35 * 2 + 18);
-        Sector_SetDamage(44, 10000, 12);
+                Delay(35*5);
+                break;
+            }
+        }
     }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                Door_Open(23,96);
+                break;
+            }
+
+            case 1:
+            {
+                Floor_LowerByvalue(27, 21, 120);
+                break;
+            }
+
+            case 2:
+            {
+                Door_Open(36, 96, 120);
+                break;
+            }
+
+            case 3:
+            {
+                Thing_Activate(69);
+                Acs_Execute(20, 0);
+                Floor_LowerByValue(72, 30, 504);
+                Ceiling_LowerByValue(72, 30, 504);
+                TagWait(72);
+                SetLineBlocking(44, BLOCK_NOTHING);
+
+                Delay(35*5);
+
+                Floor_RaiseByValue(72, 8, 312);
+                Ceiling_RaiseByValue(72, 8, 312);
+
+                Delay(35*3);
+
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\cGWarning : \cKThe tanker is sinking!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+
+                Delay(35*3);
+
+                for(int k = 0; k < BCSUtils::MAX_PLAYERS; k++)
+                {
+                    if(PlayerInGame(k) && !Game::GetPlayerIsSafe(k))
+                        Acs_ExecuteAlways(19, 0, k, 0, 0);
+                }
+
+                Delay(35 * 2 + 18);
+                Sector_SetDamage(44, 10000, 12);
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 
     Script 19 (int who) // Drowning
     {

@@ -11,9 +11,6 @@ strict namespace
 {
     Int liftposition = 0;
     Int AlertStopped = 0;
-    Int resist1 = 10;
-    Int resist2 = 25;
-    Int resist4 = 20;
     Int timeleft = 35;
     Int bombplanted = 0;
     Int firstActivation = 0; //Lift message
@@ -50,24 +47,6 @@ strict namespace
         Scroll_Texture_Both(-9, 0, 0, 200, 0);
 
         TranslucentLine(15, 96, 0);
-    }
-
-    /* RESIST EVENT */
-    script "ze05_internal_event_resistelapsed" (raw packetRaw)
-    {
-        Event::ReceiveTimerElapsed((str)packetRaw);
-        int index = Event::GetReceiveData(0);
-
-        switch(index)
-        {
-            case 0:
-                Floor_LowerByValue(107, 21, 88);
-                break;
-            case 1:
-                SetLineBlocking(2, BLOCK_NOTHING);
-                TranslucentLine(2, 0, 0);
-                break;
-        }
     }
 
     Script 2 (void) // Lift
@@ -133,30 +112,56 @@ strict namespace
         TranslucentLine(3, 0, 0);
     }
 
-    Script 7 (void) // Bomb has been planted
+    /* [ZH2] RESISTS START */
+
+    script "post_resist_handler" (int resistIndex)
     {
-        SetActivator(-1);
-        Delay(Resist::StartResistByIndex(2));
-        SetLineBlocking(4, BLOCK_NOTHING);
-        TranslucentLine(4, 0, 0);
-        Delay(35);
-        Acs_Execute(3, 0, 0, 0, 0);
-        Polyobj_DoorSlide(6, 20, 128, 56, 35 * timeleft);
-        bombplanted++;
-        Delay(35);
-        SetFont("CONFONT");
-        HudMessageBold(s:"The bomb has been planted!\nGet out of here before it blows up!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.05, 0.85, 3.0, 2.0);
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                Floor_LowerByValue(107, 21, 88);
+                break;
+            }
 
-        Delay(Resist::StartResistByIndex(3));
+            case 1:
+            {
+                SetLineBlocking(2, BLOCK_NOTHING);
+                TranslucentLine(2, 0, 0);
+                break;
+            }
 
-        AlertStopped = 1;
-        Delay(40);
+            case 2:
+            {
+                SetLineBlocking(4, BLOCK_NOTHING);
+                TranslucentLine(4, 0, 0);
+                Delay(35);
+                Acs_Execute(3, 0, 0, 0, 0);
+                Polyobj_DoorSlide(6, 20, 128, 56, 35 * timeleft);
+                bombplanted++;
+                Delay(35);
+                SetFont("CONFONT");
+                HudMessageBold(s:"The bomb has been planted!\nGet out of here before it blows up!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.05, 0.85, 3.0, 2.0);
 
-        AmbientSound("world/nuke1", 127);
-        Radius_Quake(10, 500, 0, 200, 110);
+                Resist::StartResistByIndex(3);
+                break;
+            }
 
-        Game::KillUnsafePlayers();
+            case 3:
+            {
+                AlertStopped = 1;
+                Delay(40);
+
+                AmbientSound("world/nuke1", 127);
+                Radius_Quake(10, 500, 0, 200, 110);
+
+                Game::KillUnsafePlayers();
+                break;
+            }
+        }
     }
+
+    /* [ZH2] RESISTS END */
 
     /*
     Script 9 (void) // Forcefield at start

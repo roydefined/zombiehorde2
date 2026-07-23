@@ -14,23 +14,6 @@ strict namespace
         Sector_SetColor(2, 0, 0, 205);
     }
 
-    /* RESIST EVENT */
-    script "ze02_internal_event_resistelapsed" (raw packetRaw)
-    {
-        Event::ReceiveTimerElapsed((str)packetRaw);
-        int index = Event::GetReceiveData(0);
-
-        switch(index)
-        {
-            case 0:
-                Floor_LowerByValue(17, 8, 136);
-                break;
-            case 1:
-                Floor_LowerByValue(15, 8, 136);
-                break;
-        }
-    }
-
     Script 4 (void) // Volcano Reached
     {
 
@@ -41,41 +24,77 @@ strict namespace
 
     Script 7 (void)  // Volcanic erruption
     {
-        Floor_LowerByValue(16, 2, 16);
-        Ceiling_LowerByValue(16, 2, 16);
-        Floor_LowerByValue(19, 2, 16);
-
-        SetFont("CONFONT");
-        HudMessageBold(n:0, s:" has ignited the dynamites!\nPrepare for a huge volcanic eruption!!";
-                    HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-
-        SetActivator(-1);
-
-        Delay(35*5);
-
-        Thing_Activate(1);
-
-        Delay(Resist::StartResistByIndex(2));
-
-        //Generic_Ceiling(14, 2, 64, 5, 16); //ZH2 [AQW]
-        Ceiling_LowerAndCrush(14,2,50,2); //ZH2 [AQW]
-        TagWait(14); //ZH2 [AQW]
-        Ceiling_LowerByValueTimes8(14,16,1); //ZH2 [AQW]
-        Radius_Quake(9, 35*15, 0, 50, 15);
-
-        Delay(35*8);
-
-        SetFont("BIGFONT");
-        HudMessageBold(s:"\cGWarning : \cKVolcanic Eruption!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
-
-        Delay(35*3);
-
-        AmbientSound("world/volcano1", 127);
-
-        Delay(35);
-
-        Game::KillUnsafePlayers();
+        Resist::StartResistByIndex(2);
     }
+
+    /* [ZH2] RESISTS START */
+
+    script "pre_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 2:
+            {
+                Floor_LowerByValue(16, 2, 16);
+                Ceiling_LowerByValue(16, 2, 16);
+                Floor_LowerByValue(19, 2, 16);
+
+                SetFont("CONFONT");
+                HudMessageBold(n:0, s:" has ignited the dynamites!\nPrepare for a huge volcanic eruption!!";
+                            HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+
+                SetActivator(-1);
+
+                Delay(35*5);
+
+                Thing_Activate(1);
+                break;
+            }
+        }
+    }
+
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                Floor_LowerByValue(17, 8, 136);
+                break;
+            }
+
+            case 1:
+            {
+                Floor_LowerByValue(15, 8, 136);
+                break;
+            }
+
+            case 2:
+            {
+                //Generic_Ceiling(14, 2, 64, 5, 16); //ZH2 [AQW]
+                Ceiling_LowerAndCrush(14,2,50,2); //ZH2 [AQW]
+                TagWait(14); //ZH2 [AQW]
+                Ceiling_LowerByValueTimes8(14,16,1); //ZH2 [AQW]
+                Radius_Quake(9, 35*15, 0, 50, 15);
+
+                Delay(35*8);
+
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\cGWarning : \cKVolcanic Eruption!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+
+                Delay(35*3);
+
+                AmbientSound("world/volcano1", 127);
+
+                Delay(35);
+
+                Game::KillUnsafePlayers();
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
 
     Script 10 (void) // Falling into Lava
     {
