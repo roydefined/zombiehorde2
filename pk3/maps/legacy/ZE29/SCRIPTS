@@ -567,10 +567,22 @@ strict namespace
             return;
 
         str typedMessage = "";
+        int len = StrLen(topReasonMessage);
 
-        for (int i = 0; i < StrLen(topReasonMessage); i++)
+        for (int i = 0; i < len;)
         {
+            // Fully type color codes so they don't draw garbled characters on screen.
+            int codeEnd = BCSUtils::SkipColorCodeAt(topReasonMessage, i);
+            if (codeEnd != i)
+            {
+                for (; i < codeEnd; i++)
+                    typedMessage = StrParam(s:typedMessage, c:GetChar(topReasonMessage, i));
+
+                continue;
+            }
+
             typedMessage = StrParam(s:typedMessage, c:GetChar(topReasonMessage, i));
+            i++;
 
             if (!Resist::PrepareResistMessageHud())
                 return;
