@@ -109,39 +109,15 @@ strict namespace Resist
         ResistT module& resist = GetRefByindex(index);
 
         // Explicit check for `(raw)0` as timereason meaning nothing was set at all.
-        // Default to "resist for %t seconds" then.
+        // Default to "resist for %t seconds" then, coloring the time token ourselves since nobody
+        // else gets the chance to. Any other label is used verbatim: if a mapper wants the
+        // substituted time colored, they must put the color codes around %t themselves.
         if (resist.InitialState.TimeReasonLabel == (raw)0)
-            resist.InitialState.TimeReasonLabel = "Resist for " + RESIST_TIME_TOKEN + " second" + RESIST_PLURAL_TOKEN;
+            resist.InitialState.TimeReasonLabel = "Resist for \cj" + RESIST_TIME_TOKEN + "\c- second" + RESIST_PLURAL_TOKEN;
 
-        // Determine if the top reason / time reason has a time token.
-        // If yes, also check if it's colored (if not, then the hud will add it).
-        str topReason = resist.InitialState.TopReasonLabel;
-        if (topReason != (raw)0 && topReason != "")
-        {
-            resist.InitialState.TopReasonTimeTokenIndex = BCSUtils::StrFind(topReason, RESIST_TIME_TOKEN);
-            if (resist.InitialState.TopReasonTimeTokenIndex > 3)
-            {
-                str before = StrMid(topReason, resist.InitialState.TopReasonTimeTokenIndex - 2, 2);
-                if (before == "\c" && BCSUtils::IsAlpha(topReason[resist.InitialState.TopReasonTimeTokenIndex - 1]))
-                    resist.InitialState.TopReasonHasColoredTimeToken = true;
-            }
-        }
-
-        str timeReason = resist.InitialState.TimeReasonLabel;
-        if (timeReason != (raw)0 && timeReason != "")
-        {
-            resist.InitialState.TimeReasonTimeTokenIndex = BCSUtils::StrFind(timeReason, RESIST_TIME_TOKEN);
-            if (resist.InitialState.TimeReasonTimeTokenIndex > 3)
-            {
-                str before = StrMid(timeReason, resist.InitialState.TimeReasonTimeTokenIndex - 2, 2);
-                if (before == "\c" && BCSUtils::IsAlpha(timeReason[resist.InitialState.TimeReasonTimeTokenIndex - 1]))
-                    resist.InitialState.TimeReasonHasColoredTimeToken = true;
-            }
-        }
-
-        str topReasonLog = topReason != (raw)0 && topReason != "" ? topReason : "N/A";
-        str timeReasonLog = timeReason != (raw)0 && timeReason != "" ? timeReason : "N/A";
-        Logger::LogDebug(LOGSOURCE, "Initialized new resist clientside at index \cd" + str(index) + "\cj. Time reason: " + timeReasonLog + ". Top reason: " + topReasonLog + ". Top reason has time token: \cd" + (resist.InitialState.TopReasonTimeTokenIndex != -1 ? "yes" : "no") + "\cj. Top reason time token has color: \cd" + (resist.InitialState.TopReasonHasColoredTimeToken ? "yes" : "no") + "\cj. Time reason has time token: \cd" + (resist.InitialState.TimeReasonTimeTokenIndex != -1 ? "yes" : "no") + "\cj. Time reason time token has color: \cd" + (resist.InitialState.TimeReasonHasColoredTimeToken ? "yes" : "no") + "\cj.");
+        str topReasonLog = resist.InitialState.TopReasonLabel != (raw)0 && resist.InitialState.TopReasonLabel != "" ? resist.InitialState.TopReasonLabel : "N/A";
+        str timeReasonLog = resist.InitialState.TimeReasonLabel != (raw)0 && resist.InitialState.TimeReasonLabel != "" ? resist.InitialState.TimeReasonLabel : "N/A";
+        Logger::LogDebug(LOGSOURCE, "Initialized new resist clientside at index \cd" + str(index) + "\cj. Time reason: " + timeReasonLog + ". Top reason: " + topReasonLog + ".");
     }
 
     internal int GetMaximumTics(int index)

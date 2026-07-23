@@ -6,19 +6,14 @@ strict namespace Resist
 {
     // Formats a resist reason label, substituting the time token with `ticsLeft` (as whole seconds)
     // and resolving the plural token depending on whether that rounds to exactly one second.
-    // `colorTimeToken` wraps the substituted time in color codes; callers should pass `false` if the
-    // label already carries its own color codes around the time token.
-    str FormatLabel(str label, int ticsLeft, bool colorTimeToken = false)
+    // Purely a text substitution; any color codes must already be part of `label` itself.
+    str FormatLabel(str label, int ticsLeft)
     {
         // We add 35 tics or we might display "0 seconds" which is weird.
         int ticsLeftPlusOne = ticsLeft + 35;
 
         if (BCSUtils::StrContains(label, RESIST_TIME_TOKEN))
-        {
-            // TODO: We want to somehow incorporate colored text here.
-            if (colorTimeToken) label = BCSUTILS::StrReplace(label, RESIST_TIME_TOKEN, "\cj" + str(ticsLeftPlusOne / 35) + "\c-");
-            else label = BCSUTILS::StrReplace(label, RESIST_TIME_TOKEN, str(ticsLeftPlusOne / 35));
-        }
+            label = BCSUTILS::StrReplace(label, RESIST_TIME_TOKEN, str(ticsLeftPlusOne / 35));
 
         // If the label contains the plural token in the string, then format it depending on the time left.
         // This is a very basic check which adds "s" and the point is that "second" and "seconds" get supported.
