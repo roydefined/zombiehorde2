@@ -42,14 +42,18 @@ strict namespace Hud
             if (!Resist::IsDefined(index))
                 continue;
 
-            if (Resist::GetRunState(index) != Resist::STATERUNNING)
+            Resist::ResistRunStateT state = Resist::GetRunState(index);
+            bool isPaused = state == Resist::STATEPAUSED;
+
+            if (state != Resist::STATERUNNING && !(isPaused && Resist::GetShowWhenPaused(index)))
                 continue;
 
             // Offset will propagate into the hooks by design.
             PrepareHud(320.0, yOffset + fixed(AddY), true);
 
             // Fade will propagate into the hooks by design.
-            if (Resist::GetNoFade(index))
+            // A paused resist that opts in to still being shown is always drawn at full opacity.
+            if (isPaused || Resist::GetNoFade(index))
                 BCSUtils::HudSetAlpha(1.0);
             else
                 BCSUtils::HudSetAlpha(alpha);
