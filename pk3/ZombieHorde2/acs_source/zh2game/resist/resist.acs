@@ -7,6 +7,7 @@
 #include "prepostscript.acs"
 #include "extern.acs"
 #include "sync.acs"
+#include "hud.acs"
 
 // Note:
 // - Resist ending tic will be -1 for inactive resists. If not, the resist is active.
@@ -108,39 +109,15 @@ strict namespace Resist
         ResistT module& resist = GetRefByindex(index);
 
         // Explicit check for `(raw)0` as timereason meaning nothing was set at all.
-        // Default to "resist for %t seconds" then.
+        // Default to "resist for %t seconds" then, coloring the time token ourselves since nobody
+        // else gets the chance to. Any other label is used verbatim: if a mapper wants the
+        // substituted time colored, they must put the color codes around %t themselves.
         if (resist.InitialState.TimeReasonLabel == (raw)0)
-            resist.InitialState.TimeReasonLabel = "Resist for " + RESIST_TIME_TOKEN + " second" + RESIST_PLURAL_TOKEN;
+            resist.InitialState.TimeReasonLabel = "Resist for \cj" + RESIST_TIME_TOKEN + "\c- second" + RESIST_PLURAL_TOKEN;
 
-        // Determine if the top reason / time reason has a time token.
-        // If yes, also check if it's colored (if not, then the hud will add it).
-        str topReason = resist.InitialState.TopReasonLabel;
-        if (topReason != (raw)0 && topReason != "")
-        {
-            resist.InitialState.TopReasonTimeTokenIndex = BCSUtils::StrFind(topReason, RESIST_TIME_TOKEN);
-            if (resist.InitialState.TopReasonTimeTokenIndex > 3)
-            {
-                str before = StrMid(topReason, resist.InitialState.TopReasonTimeTokenIndex - 2, 2);
-                if (before == "\c" && BCSUtils::IsAlpha(topReason[resist.InitialState.TopReasonTimeTokenIndex - 1]))
-                    resist.InitialState.TopReasonHasColoredTimeToken = true;
-            }
-        }
-
-        str timeReason = resist.InitialState.TimeReasonLabel;
-        if (timeReason != (raw)0 && timeReason != "")
-        {
-            resist.InitialState.TimeReasonTimeTokenIndex = BCSUtils::StrFind(timeReason, RESIST_TIME_TOKEN);
-            if (resist.InitialState.TimeReasonTimeTokenIndex > 3)
-            {
-                str before = StrMid(timeReason, resist.InitialState.TimeReasonTimeTokenIndex - 2, 2);
-                if (before == "\c" && BCSUtils::IsAlpha(timeReason[resist.InitialState.TimeReasonTimeTokenIndex - 1]))
-                    resist.InitialState.TimeReasonHasColoredTimeToken = true;
-            }
-        }
-
-        str topReasonLog = topReason != (raw)0 && topReason != "" ? topReason : "N/A";
-        str timeReasonLog = timeReason != (raw)0 && timeReason != "" ? timeReason : "N/A";
-        Logger::LogDebug(LOGSOURCE, "Initialized new resist clientside at index \cd" + str(index) + "\cj. Time reason: " + timeReasonLog + ". Top reason: " + topReasonLog + ". Top reason has time token: \cd" + (resist.InitialState.TopReasonTimeTokenIndex != -1 ? "yes" : "no") + "\cj. Top reason time token has color: \cd" + (resist.InitialState.TopReasonHasColoredTimeToken ? "yes" : "no") + "\cj. Time reason has time token: \cd" + (resist.InitialState.TimeReasonTimeTokenIndex != -1 ? "yes" : "no") + "\cj. Time reason time token has color: \cd" + (resist.InitialState.TimeReasonHasColoredTimeToken ? "yes" : "no") + "\cj.");
+        str topReasonLog = resist.InitialState.TopReasonLabel != (raw)0 && resist.InitialState.TopReasonLabel != "" ? resist.InitialState.TopReasonLabel : "N/A";
+        str timeReasonLog = resist.InitialState.TimeReasonLabel != (raw)0 && resist.InitialState.TimeReasonLabel != "" ? resist.InitialState.TimeReasonLabel : "N/A";
+        Logger::LogDebug(LOGSOURCE, "Initialized new resist clientside at index \cd" + str(index) + "\cj. Time reason: " + timeReasonLog + ". Top reason: " + topReasonLog + ".");
     }
 
     internal int GetMaximumTics(int index)
@@ -157,6 +134,24 @@ strict namespace Resist
     {
         ResistRunStateT state = GetRunState(index);
         return state != STATENONE && state != STATEENDED;
+    }
+
+    // Covers the pre/post-script and running state.
+    // Does not cover paused unlike `IsActive`.
+    internal bool IsRunning(int index)
+    {
+        return IsActive(index) && GetRunState(index) != STATEPAUSED;
+    }
+
+    internal bool IsPaused(int index)
+    {
+        return GetRunState(index) == STATEPAUSED;
+    }
+
+    // Covers both elapsed and stopped resists.
+    internal bool IsEnded(int index)
+    {
+        return GetRunState(index) == STATEENDED;
     }
 
     internal int GetTicsLeft(int index)
@@ -382,6 +377,16 @@ strict namespace Resist
         return (GetFlags(index) & flag) != 0;
     }
 
+    internal str GetTopReasonLabel(int index)
+    {
+        return GetRefByindex(index).InitialState.TopReasonLabel;
+    }
+
+    internal str GetTimeReasonLabel(int index)
+    {
+        return GetRefByindex(index).InitialState.TimeReasonLabel;
+    }
+
     internal bool GetHideTopReason(int index)
     {
         return HasFlag(index, FLAG_HIDE_TOP_REASON);
@@ -395,6 +400,21 @@ strict namespace Resist
     internal bool GetNoFade(int index)
     {
         return HasFlag(index, FLAG_NO_FADE);
+    }
+
+    internal bool GetShowWhenPaused(int index)
+    {
+        return HasFlag(index, FLAG_SHOW_WHEN_PAUSED);
+    }
+
+    internal bool GetDontAwaitPreScript(int index)
+    {
+        return HasFlag(index, FLAG_DONT_AWAIT_PRE_SCRIPT);
+    }
+
+    internal bool GetDontAwaitPostScript(int index)
+    {
+        return HasFlag(index, FLAG_DONT_AWAIT_POST_SCRIPT);
     }
 
     internal ResistRunStateT GetRunStateTypeByIndex(int stateIndex)

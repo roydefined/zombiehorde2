@@ -101,6 +101,45 @@ strict namespace Resist
         Resist::ElapseResist(index);
     }
 
+    void PauseResistByIndex(int index)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return;
+        }
+
+        Resist::PauseResist(index);
+    }
+
+    void ResumeResistByIndex(int index)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return;
+        }
+
+        Resist::ResumeResist(index);
+    }
+
+    void ResetResistByIndex(int index, bool preserveRunningState = false)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return;
+        }
+
+        Resist::ResetResist(index, preserveRunningState);
+    }
+
     int GetTicsLeftByIndex(int index)
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION_RETURN(0);
@@ -125,5 +164,68 @@ strict namespace Resist
         }
 
         return Resist::GetMaximumTics(index);
+    }
+
+    str GetTopReasonLabelByIndex(int index)
+    {
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return (raw)0;
+        }
+
+        return Resist::GetTopReasonLabel(index);
+    }
+
+    str GetTimeReasonLabelByIndex(int index)
+    {
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return (raw)0;
+        }
+
+        return Resist::GetTimeReasonLabel(index);
+    }
+
+    bool IsResistRunningByIndex(int index)
+    {
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return false;
+        }
+
+        return Resist::IsRunning(index);
+    }
+
+    bool IsResistPausedByIndex(int index)
+    {
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return false;
+        }
+
+        return Resist::IsPaused(index);
+    }
+
+    bool IsResistEndedByIndex(int index)
+    {
+        if (!Resist::IsDefined(index))
+        {
+            Logger::LogError(LOGSOURCE, "Resist with index " + str(index) + " does not exist.");
+            return false;
+        }
+
+        return Resist::IsEnded(index);
+    }
+
+    // Prepares the HUD coordinate space for drawing a message at the resist HUD's location.
+    bool PrepareResistMessageHud()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION_RETURN(false);
+
+        return Resist::PrepareResistHudPoint();
     }
 }

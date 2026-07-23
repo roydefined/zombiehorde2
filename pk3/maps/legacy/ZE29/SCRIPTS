@@ -486,17 +486,13 @@ strict namespace
 
     /* [ZH2] RESISTS START */
 
-    // TODO: Fetch top and time reason rather than hardcoding it.
     script "pre_resist_handler" (int resistIndex)
     {
-        str topReasonMessage;
-
         switch(resistIndex)
         {
             // Moving the rocks
             case 0:
             {
-                topReasonMessage = "Moving the rocks";
                 break;
             }
 
@@ -504,22 +500,18 @@ strict namespace
             case 1:
             {
                 acs_execute(11,0,1,0,0);
-                topReasonMessage = "Arming dynamite";
                 break;
             }
 
             // Overriding strange doors
             case 2:
             {
-                topReasonMessage = "Overriding strange doors";
                 break;
             }
 
             // Breaking through the far wall
             case 3:
             {
-                topReasonMessage = "Breaking through the far wall";
-
                 SetActivator(-1);
                 acs_execute(11,0,2,0,0);
                 thing_activate(69);
@@ -548,47 +540,64 @@ strict namespace
             case CUT_SHORT_RESIST_INDEX:
             {
                 acs_execute(11,0,3,0,0);
-                topReasonMessage = "Blowing up the final wall";
                 break;
             }
 
             case EXPERIMENT_RESIST_INDEX:
             {
-                topReasonMessage = "Releasing gasses inside the control room";
-
                 // [ZH2] Secret safezone is no longer safe
                 Game::SetAllPlayersSafe(false, 1);
                 break;
             }
         }
 
-        // TODO: Make the positioning a helper function instead.
+        // Every client types out the top reason for itself; wait here for roughly as long as that takes.
+        ACS_NamedExecuteAlways("ze29_resist_typeon_client", 0, resistIndex);
+
+        int charDelayTics = 2;
+        int endDelayTics = 20;
+        delay(StrLen(Resist::GetTopReasonLabelByIndex(resistIndex)) * charDelayTics + endDelayTics);
+    }
+
+    // Types out the resist's top reason on every client at once, positioned like a resist HUD entry.
+    script "ze29_resist_typeon_client" (int resistIndex) clientside
+    {
+        str topReasonMessage = Resist::GetTopReasonLabelByIndex(resistIndex);
+        if (topReasonMessage == (raw)0 || topReasonMessage == "")
+            return;
 
         str typedMessage = "";
+        int len = StrLen(topReasonMessage);
 
-        for (int i = 0; i < StrLen(topReasonMessage); i++)
+        for (int i = 0; i < len;)
         {
+            // Fully type color codes so they don't draw garbled characters on screen.
+            int codeEnd = BCSUtils::SkipColorCodeAt(topReasonMessage, i);
+            if (codeEnd != i)
+            {
+                for (; i < codeEnd; i++)
+                    typedMessage = StrParam(s:typedMessage, c:GetChar(topReasonMessage, i));
+
+                continue;
+            }
+
             typedMessage = StrParam(s:typedMessage, c:GetChar(topReasonMessage, i));
+            i++;
 
-            BCSUtils::HudResetState();
-            BCSUtils::HudSetVirtualSize(640.0, 480.0);
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
+            if (!Resist::PrepareResistMessageHud())
+                return;
 
-            BCSUtils::HudSetCenterText(true);
-            BCSUtils::HudSetShowToEveryone(true);
+            Hud::SetRelativePoint();
+
+            BCSUtils::HudSetAlpha(1.0);
             BCSUtils::HudSetStayTime(1.0);
             BCSUtils::HudSetDisappearTime(1.0);
-
             BCSUtils::HudSetTextColor(CR_ORANGE);
             BCSUtils::HudSetFont("SmallFont");
-            BCSUtils::HudSetPoint(320.0, BCSUtils::HudTop() + 50.0);
-
             BCSUtils::HudDrawText(500, typedMessage);
 
             delay(const: 2);
         }
-
-        delay(const: 20);
     }
 
     script "post_resist_handler" (int resistIndex)
@@ -882,7 +891,6 @@ strict namespace
     }
 
     // Custom logic for some resists.
-    // TODO: Fetch time reason rather than hardcoding it.
     internal raw OnDrawResistHud(void[]* data)
     {
         if (data == null)
@@ -899,13 +907,14 @@ strict namespace
             return 0;
         }
 
-        int leftTics = Resist::GetTicsLeftByIndex(resistIndex);
-        int left = leftTics / 35;
-
-        // This resist intentionally appears to have three seconds remaining
-        // when its actual timer reaches zero.
+        // This resist intentionally appears to have three seconds remaining when its actual timer
+        // reaches zero. Feeding the adjustment into the tics fed to FormatLabel (rather than the
+        // displayed seconds directly) keeps the displayed number and its plural resolution in sync.
+        int ticsLeft = Resist::GetTicsLeftByIndex(resistIndex);
         if (resistIndex == CUT_SHORT_RESIST_INDEX)
-            left += CUT_SHORT_RESIST_REMAINING_SECONDS;
+            ticsLeft += CUT_SHORT_RESIST_REMAINING_SECONDS * 35;
+
+        int left = ticsLeft / 35;
 
         str timeColor = "\cj";
 
@@ -924,18 +933,16 @@ strict namespace
         if (left < 2)
             timeColor = "\cm";
 
+        str label = Resist::GetTimeReasonLabelByIndex(resistIndex);
+        int timeTokenIndex = Resist::GetTimeTokenIndex(label);
+        if (timeTokenIndex != -1)
+            label = StrMid(label, 0, timeTokenIndex) + timeColor + StrMid(label, timeTokenIndex, StrLen(label) - timeTokenIndex);
+
+        label = Resist::FormatLabel(label, ticsLeft);
+
         Hud::SetRelativePoint(0.0, 12.0);
         BCSUtils::HudSetFont("BigFont");
-        BCSUtils::HudDrawText(
-            500,
-            StrParam(
-                s:"\cgResist for ",
-                s:timeColor,
-                d:left + 1,
-                s:"\cg second",
-                s:left == 1 ? "" : "s"
-            )
-        );
+        BCSUtils::HudDrawText(500, label);
 
         return 0;
     }

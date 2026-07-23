@@ -278,7 +278,6 @@ strict namespace
 
     // This resist message is just like KGSWS' resist message but the color is reversed:
     // the surrounding text stays green and only the countdown number itself changes color.
-    // TODO: Get time reason from resist data.
     internal raw OnDrawResistHud(void[]* data)
     {
         if (data == null)
@@ -287,7 +286,8 @@ strict namespace
         _resistHookDataRef = data;
 
         int resistIndex = _resistHookDataRef.Index;
-        int left = (Resist::GetTicsLeftByIndex(resistIndex) / 35) + 1;
+        int ticsLeft = Resist::GetTicsLeftByIndex(resistIndex);
+        int left = (ticsLeft / 35) + 1;
 
         str numColor = "\cj";
 
@@ -306,17 +306,16 @@ strict namespace
         if (left < 2)
             numColor = "\cm";
 
+        str label = Resist::GetTimeReasonLabelByIndex(resistIndex);
+        int timeTokenIndex = Resist::GetTimeTokenIndex(label);
+        if (timeTokenIndex != -1)
+            label = StrMid(label, 0, timeTokenIndex) + numColor + StrMid(label, timeTokenIndex, StrLen(label) - timeTokenIndex);
+
+        label = Resist::FormatLabel(label, ticsLeft);
+
         Hud::SetRelativePoint(0.0, 12.0);
         BCSUtils::HudSetFont("BigFont");
-        BCSUtils::HudDrawText(
-            500,
-            StrParam(
-                s:"\cdResist for ",
-                s:numColor,
-                d:left,
-                s:"\cd second",
-                s:left == 1 ? "" : "s"
-            ));
+        BCSUtils::HudDrawText(500, label);
 
         return 0;
     }

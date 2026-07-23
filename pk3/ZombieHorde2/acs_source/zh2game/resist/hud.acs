@@ -1,0 +1,62 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Resist
+{
+    // Formats a resist reason label, substituting the time token with `ticsLeft` (as whole seconds)
+    // and resolving the plural token depending on whether that rounds to exactly one second.
+    // Purely a text substitution; any color codes must already be part of `label` itself.
+    str FormatLabel(str label, int ticsLeft)
+    {
+        // We add 35 tics or we might display "0 seconds" which is weird.
+        int ticsLeftPlusOne = ticsLeft + 35;
+
+        if (BCSUtils::StrContains(label, RESIST_TIME_TOKEN))
+            label = BCSUTILS::StrReplace(label, RESIST_TIME_TOKEN, str(ticsLeftPlusOne / 35));
+
+        // If the label contains the plural token in the string, then format it depending on the time left.
+        // This is a very basic check which adds "s" and the point is that "second" and "seconds" get supported.
+        if (BCSUtils::StrContains(label, RESIST_PLURAL_TOKEN))
+        {
+            if (ticsLeftPlusOne > 35 && ticsLeftPlusOne <= 70)
+                label = BCSUtils::StrReplace(label, RESIST_PLURAL_TOKEN, "");
+            else
+                label = BCSUtils::StrReplace(label, RESIST_PLURAL_TOKEN, "s");
+        }
+
+        return label;
+    }
+
+    // Returns the position of the time token in `label`, or -1 if it has none.
+    int GetTimeTokenIndex(str label)
+    {
+        return BCSUtils::StrFind(label, RESIST_TIME_TOKEN);
+    }
+
+    // Sets up the same HUD coordinate space (virtual size, alignment, position) the built-in resist HUD
+    // uses, so other code can draw a message that looks and sits like a resist entry.
+    // `extraOffsetY` is only meant for internal stacking of multiple resists below one another.
+    // Returns `false` if nothing should be drawn at all (e.g. resists are hidden for zombies).
+    internal bool PrepareResistHudPoint(fixed extraOffsetY = 0.0)
+    {
+        // Client is a zombie, and the cvar to not show resists is enabled.
+        if (Player::GetIsZombie() && !ZH2Game::GetShowZombiesResists())
+            return false;
+
+        fixed scale = ZH2Game::GetHudResistsScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
+
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        // On a full server event, offset the resists downwards as to avoid overlapping with the wobbling text.
+        fixed fullServerAddY = Game::GetFullServerElapsedTics() > 0 ? 50.0 : 0.0;
+        fixed yOffset = BCSUtils::HudTop() + 50.0 + fullServerAddY;
+
+        Hud::PrepareHud(320.0, yOffset + extraOffsetY, true);
+        return true;
+    }
+}
