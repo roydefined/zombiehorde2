@@ -160,6 +160,24 @@ strict namespace Resist
         return state != STATENONE && state != STATEENDED;
     }
 
+    // Covers the pre/post-script and running state.
+    // Does not cover paused unlike `IsActive`.
+    internal bool IsRunning(int index)
+    {
+        return IsActive(index) && GetRunState(index) != STATEPAUSED;
+    }
+
+    internal bool IsPaused(int index)
+    {
+        return GetRunState(index) == STATEPAUSED;
+    }
+
+    // Covers both elapsed and stopped resists.
+    internal bool IsEnded(int index)
+    {
+        return GetRunState(index) == STATEENDED;
+    }
+
     internal int GetTicsLeft(int index)
     {
         int timeLeft = BCSUtils::Max(GetTicsDifference(index), 0);
