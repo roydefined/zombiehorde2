@@ -32,4 +32,30 @@ strict namespace Resist
 
         return label;
     }
+
+    // Sets up the same HUD coordinate space (virtual size, alignment, position) the built-in resist HUD
+    // uses, so other code can draw a message that looks and sits like a resist entry.
+    // `extraOffsetY` is only meant for internal stacking of multiple resists below one another.
+    // Returns `false` if nothing should be drawn at all (e.g. resists are hidden for zombies).
+    internal bool PrepareResistHudPoint(fixed extraOffsetY = 0.0)
+    {
+        // Client is a zombie, and the cvar to not show resists is enabled.
+        if (Player::GetIsZombie() && !ZH2Game::GetShowZombiesResists())
+            return false;
+
+        fixed scale = ZH2Game::GetHudResistsScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
+
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        // On a full server event, offset the resists downwards as to avoid overlapping with the wobbling text.
+        fixed fullServerAddY = Game::GetFullServerElapsedTics() > 0 ? 50.0 : 0.0;
+        fixed yOffset = BCSUtils::HudTop() + 50.0 + fullServerAddY;
+
+        Hud::PrepareHud(320.0, yOffset + extraOffsetY, true);
+        return true;
+    }
 }

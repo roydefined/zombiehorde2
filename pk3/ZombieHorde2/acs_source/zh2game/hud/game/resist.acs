@@ -8,27 +8,6 @@ strict namespace Hud
 
     internal void DrawResistsHud()
     {
-        // Client is a zombie, and the cvar to not show resists is enabled.
-        if (Player::GetIsZombie() && !ZH2Game::GetShowZombiesResists())
-            return;
-
-        fixed scale = ZH2Game::GetHudResistsScale();
-        BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
-
-        BCSUtils::HudSetCenterText(true);
-        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-
-        // On a full server event, offset the resists downwards as to avoid overlapping with the wobbling text.
-        fixed addY = Game::GetFullServerElapsedTics() > 0 ? 50.0 : 0.0;
-        fixed yOffset = BCSUtils::HudTop() + 50.0 + addY;
-
-        DrawResists(yOffset);
-    }
-
-    internal void DrawResists(fixed yOffset)
-    {
         // Ensure we have the hook data allocated.
         if (_resistHookData == null)
             _resistHookData = BCS::Malloc(lengthof(_resistHookData));
@@ -48,10 +27,10 @@ strict namespace Hud
             if (state != Resist::STATERUNNING && !(isPaused && Resist::GetShowWhenPaused(index)))
                 continue;
 
-            // Offset will propagate into the hooks by design.
-            PrepareHud(320.0, yOffset + fixed(AddY), true);
+            // The offset stacks resists below one another and will propagate into the hooks by design.
+            if (!Resist::PrepareResistHudPoint(fixed(AddY)))
+                return;
 
-            // Fade will propagate into the hooks by design.
             // A paused resist that opts in to still being shown is always drawn at full opacity.
             if (isPaused || Resist::GetNoFade(index))
                 BCSUtils::HudSetAlpha(1.0);
