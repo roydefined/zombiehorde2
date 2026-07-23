@@ -19,11 +19,19 @@ strict namespace Resist
             return;
         }
 
-        bool executed;
-        if (isGlobalScript)
-            executed = ACS_NamedExecute(scriptName, 0, index);
-        else
-            executed = ACS_NamedExecute(scriptName, 0);
+        bool executed = TryExecuteResistScript(scriptName, isGlobalScript, index);
+
+        // Most likely means the script is already running elsewhere. Fall back to a call that is
+        // guaranteed to execute, so it does not stall the resist.
+        if (!executed)
+        {
+            str flag = isPreScript ? "FLAG_DONT_AWAIT_PRE_SCRIPT" : "FLAG_DONT_AWAIT_POST_SCRIPT";
+            LogResistScriptWarning(index, isPreScript, scriptName, isGlobalScript,
+                "Already running; running it concurrently instead. Avoid this with " + flag
+                + ", running separate pre/post scripts instead of a global one, or by running a shorter script.");
+
+            executed = ExecuteResistScriptAlways(scriptName, isGlobalScript, index);
+        }
 
         if (!executed)
         {
@@ -44,23 +52,22 @@ strict namespace Resist
             SetResistReadyToElapse(index);
     }
 
-    internal void LogResistScriptError(
-        int index,
-        bool isPreScript,
-        str scriptName,
-        bool isGlobalScript,
-        str reason)
+    internal str FormatResistScriptSubject(int index, bool isPreScript, str scriptName, bool isGlobalScript)
     {
-        Logger::LogError(
-            LOGSOURCE,
-            RESIST_SCRIPT_HANDLER_NAME +
-            " failed to call " +
-            (isGlobalScript ? "global " : "") +
-            (isPreScript ? "pre" : "post") +
-            "-script " + scriptName +
-            " of resist " + str(index) +
-            ". " + reason
-        );
+        return (isGlobalScript ? "global " : "") + (isPreScript ? "pre" : "post")
+            + "-script " + scriptName + " of resist " + str(index);
+    }
+
+    internal void LogResistScriptError(int index, bool isPreScript, str scriptName, bool isGlobalScript, str message)
+    {
+        Logger::LogError(LOGSOURCE,
+            FormatResistScriptSubject(index, isPreScript, scriptName, isGlobalScript) + ": " + message);
+    }
+
+    internal void LogResistScriptWarning(int index, bool isPreScript, str scriptName, bool isGlobalScript, str message)
+    {
+        Logger::LogWarning(LOGSOURCE,
+            FormatResistScriptSubject(index, isPreScript, scriptName, isGlobalScript) + ": " + message);
     }
 
     internal void StartPreResistScript(int index)
@@ -124,14 +131,24 @@ strict namespace Resist
             return;
         }
 
-        bool executed;
-        if (isGlobalScript)
-            executed = ACS_NamedExecuteAlways(scriptName, 0, index);
-        else
-            executed = ACS_NamedExecuteAlways(scriptName, 0);
-
-        if (!executed)
+        if (!ExecuteResistScriptAlways(scriptName, isGlobalScript, index))
             LogResistScriptError(index, isPreScript, scriptName, isGlobalScript, "Script failed to execute.");
+    }
+
+    // A global script additionally receives the resist index as an argument, since it can't infer it otherwise.
+    internal bool TryExecuteResistScript(str scriptName, bool isGlobalScript, int index)
+    {
+        return isGlobalScript
+            ? ACS_NamedExecute(scriptName, 0, index)
+            : ACS_NamedExecute(scriptName, 0);
+    }
+
+    // As `TryExecuteResistScript`, but guaranteed to execute even if the script is already running.
+    internal bool ExecuteResistScriptAlways(str scriptName, bool isGlobalScript, int index)
+    {
+        return isGlobalScript
+            ? ACS_NamedExecuteAlways(scriptName, 0, index)
+            : ACS_NamedExecuteAlways(scriptName, 0);
     }
 
     internal void SetGlobalPreResistScript(str scriptName)
