@@ -89,8 +89,11 @@ strict namespace Hud
 
     internal fixed GetFadeOutAlpha()
     {
-        // We decrement a single tic because the HUD otherwise shows the previous second for a single tic as soon as it faded in.
-        int phase = (Utils::GetSynchronizedTimer() - 1) % 35;
+        // The alpha is aligned with an offset that is set when the first shown resist started.
+        // This offset exists to ensure resists can show instantly at full opacity.
+        // We also decrement a single tic because the HUD otherwise shows the previous second for a
+        // single tic as soon as it faded in.
+        int phase = (Utils::GetSynchronizedTimer() - Resist::GetFadeCycleOffsetTic() - 1) % 35;
         if (phase < 18)
             return 1.0;
 

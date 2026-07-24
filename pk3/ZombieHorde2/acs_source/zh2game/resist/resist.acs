@@ -136,6 +136,20 @@ strict namespace Resist
         return state != STATENONE && state != STATEENDED;
     }
 
+    // Whether any resist is explicitly visible on the HUD.
+    // This does not cover if any resist is actually active. It checks the running state.
+    internal bool GetAnyResistVisible()
+    {
+        ResistT[] module& resists = ZH2Game::GameContext.MapDetails.Resists;
+        for (int index = 0; index < lengthof(resists); ++index)
+        {
+            if (IsDefined(index) && GetRunState(index) == STATERUNNING)
+                return true;
+        }
+
+        return false;
+    }
+
     // Covers the pre/post-script and running state.
     // Does not cover paused unlike `IsActive`.
     internal bool IsRunning(int index)
@@ -285,11 +299,35 @@ strict namespace Resist
     {
         ResistT module& resist = GetRefByindex(index);
 
-        // The ending tic of a resist is set to an interval of 35 to keep in sync with other resists.
-        // This is mostly so the visualization of them remains equal between other resists.
-        int endingTic = Utils::GetSynchronizedTimer() + resist.InitialState.Length * 35;
-        resist.EndingTic = endingTic + (35 - (endingTic % 35));
+        // If this is the first visible resist then this resist determines the offset to add
+        // to the resist cycle, so we can show it instantly.
+        if (!GetAnyResistVisible())
+            SetFadeCycleOffsetTic(Utils::GetSynchronizedTimer());
+
+        int naturalEndingTic = Utils::GetSynchronizedTimer() + resist.InitialState.Length * 35;
+        resist.EndingTic = AlignTicToFadeCycle(naturalEndingTic);
         resist.PauseTic = -1;
+    }
+
+    // The tic the shared resist fade cycle is offset to: the point at which any resist following
+    // the cycle is at full opacity. Registered by whichever resist starts while nothing else is
+    // running, so subsequent resists have something to actually stay in sync with.
+    internal int GetFadeCycleOffsetTic()
+    {
+        return ZH2Game::GameContext.MapDetails.ResistFadeCycleOffsetTic;
+    }
+
+    internal void SetFadeCycleOffsetTic(int tic)
+    {
+        ZH2Game::GameContext.MapDetails.ResistFadeCycleOffsetTic = tic;
+    }
+
+    // Returns the smallest tic at or after `tic` that lands exactly on the fade cycle, so a resist
+    // ending there keeps its final second in sync with the shared fade instead of cutting off mid-fade.
+    internal int AlignTicToFadeCycle(int tic)
+    {
+        int misalignment = (tic - GetFadeCycleOffsetTic()) % 35;
+        return tic + (35 - misalignment) % 35;
     }
 
     internal void SetResistReadyToRun(int index)
