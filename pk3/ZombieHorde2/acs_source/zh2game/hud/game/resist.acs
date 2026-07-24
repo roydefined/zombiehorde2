@@ -27,6 +27,11 @@ strict namespace Hud
             if (state != Resist::STATERUNNING && !(isPaused && Resist::GetShowWhenPaused(index)))
                 continue;
 
+            // Skip entirely, hook included, while outside the resist's valid timespan.
+            int ticsLeft = Resist::GetTicsLeft(index);
+            if (ticsLeft > Resist::GetMaximumTics(index) || ticsLeft <= 0)
+                continue;
+
             // The offset stacks resists below one another and will propagate into the hooks by design.
             if (!Resist::PrepareResistHudPoint(fixed(AddY)))
                 return;
@@ -41,23 +46,13 @@ strict namespace Hud
             raw result = Hook::Call(Hook::HOOK_CLIENTDRAWRESIST, _resistHookData);
             AddY += (int)result;
 
-            AddY += DrawResist(index, offset++);
+            AddY += DrawResist(index, offset++, ticsLeft);
         }
     }
 
-    internal int DrawResist(int index, int offset)
+    internal int DrawResist(int index, int offset, int ticsLeft)
     {
         Resist::ResistT module& resist = Resist::GetRefByindex(index);
-        int maximumTics = Resist::GetMaximumTics(index);
-        int ticsLeft = Resist::GetTicsLeft(index);
-
-        // Do not draw if above the max tics
-        if (ticsLeft > maximumTics)
-            return 0;
-
-        // Failsafe, as online the client might not be informed in time of the resist ending.
-        if (ticsLeft <= 0)
-            return 0;
 
         bool hideTopReason = Resist::GetHideTopReason(index);
         bool hideTimeReason = Resist::GetHideTimeReason(index);
