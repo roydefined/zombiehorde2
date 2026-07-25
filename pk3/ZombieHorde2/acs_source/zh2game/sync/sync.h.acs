@@ -11,6 +11,8 @@ strict namespace Sync
     #define ACTOR_SYNC_RESIST_LABEL_TOP_TEMPLATE "__resistlabeltop%n"
     #define ACTOR_SYNC_RESIST_LABEL_BOTTOM_TEMPLATE "__resistlabelbottom%n"
 
+    #define ACTOR_SYNC_RADIO_LUMPNAME_TEMPLATE "__radiolumpname"
+
     // Sync base is what the sync TIDs will base off.
     // Each sync category then takes a certain length which they need to sync its data.
     // The length in this case is used to debug the result and to make sure the sync stays inbounds,
@@ -54,8 +56,13 @@ strict namespace Sync
     #define SYNC_AFKPREVENTION_LENGTH (BCSUtils::MAX_PLAYERS * 2)
     #define SYNC_AFKPREVENTION SYNC_MAPVOTING + SYNC_AFKPREVENTION_LENGTH
 
+    // We only sync the player id that owns the radio music.
+    // The track itself is tracked through a cvar.
+    #define SYNC_RADIO_LENGTH 1
+    #define SYNC_RADIO SYNC_AFKPREVENTION + SYNC_RADIO_LENGTH
+
     // When adding a new sync, also increase this number.
-    #define MAX_SYNC_TYPES 9
+    #define MAX_SYNC_TYPES 10
 
     internal enum SyncTypeT : int
     {
@@ -70,6 +77,7 @@ strict namespace Sync
         SYNCTYPE_GAME,
         SYNCTYPE_MAPVOTING,
         SYNCTYPE_AFKPREVENTION,
+        SYNCTYPE_RADIO,
     };
 
     struct SyncContextT

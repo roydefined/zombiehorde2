@@ -11,6 +11,26 @@ strict namespace Decorate
     // This constant is also defined in DECORATE and defines the TID on an actor that must always face the console player.
     #define FACEPLAYER_TID 1000000000
 
+    // Clientside actor that follows the current broadcaster and plays their track as a positional sound.
+    #define RADIO_MAPSPOT_TID_BASE 5100
+
+    // Uncomment to visualize the mapspot for debugging.
+    //#define RADIO_MAPSPOT_NAME "ZH2RadioMapSpotDebug"
+    #define RADIO_MAPSPOT_NAME "ZH2RadioMapSpot"
+
+    // Radio lumps are named like Doom music lumps (e.g. "D_LEGAC1"), which PlaySound won't resolve
+    // directly. Every track needs a sndinfo entry keyed as this prefix + its lump name instead.
+    #define RADIO_SOUND_ALIAS_PREFIX "zh2radio/"
+
+    // Data to handle the fading of music when nearing a radio broadcaster.
+    // Assuming proximity music + fading of music is enabled.
+    #define RADIO_MAPMUSIC_UNITS_PER_METER 32.0
+    #define RADIO_MAPMUSIC_FADE_END (5.0 * RADIO_MAPMUSIC_UNITS_PER_METER)
+    #define RADIO_MAPMUSIC_FADE_START (20.0 * RADIO_MAPMUSIC_UNITS_PER_METER)
+
+    // Epsilon value to use when detecting manual change to the music volume.
+    #define RADIO_MAPMUSIC_VOLUME_DRIFT_TOLERANCE 0.01
+
     struct RadioTrackCollectionContextT
     {
         RadioTrackContextT Collection[MAX_RADIO_TRACKS];
@@ -23,5 +43,28 @@ strict namespace Decorate
         str Name;
         str Author;
         str Remark;
+    };
+
+    // Who (if anyone) is currently broadcasting a radio track, and with what lump. Single owner only.
+    // Serverside this is authoritative and synced for joining clients; clientside it's a local mirror.
+    struct RadioBroadcastContextT
+    {
+        bool Active;
+        int PlayerId;
+        str LumpName;
+
+        // Clientside only, not synced. Last known value of `cl_zh2_radioproximity`, so we can tell
+        // when it changes and switch how we're hearing the current broadcast, if any.
+        bool ProximityWasEnabled;
+
+        // Clientside only, not synced. The player's real `snd_musicvolume`, cached the moment we
+        // start fading it so every step scales off the same baseline instead of whatever we
+        // ourselves last wrote to the cvar.
+        bool MapMusicVolumeCached;
+        fixed MapMusicVolumeBaseline;
+
+        // Clientside only, not synced. The fade fraction (0.0 - 1.0) from our last write to the
+        // cvar, so we know what value to expect back and can tell if the player changed it themselves.
+        fixed MapMusicVolumeLastFraction;
     };
 }

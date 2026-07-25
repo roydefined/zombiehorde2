@@ -13,6 +13,7 @@
 #include "actor/game.acs"
 #include "actor/mapvoting.acs"
 #include "actor/afkprevention.acs"
+#include "actor/radio.acs"
 
 strict namespace Sync
 {
@@ -49,6 +50,7 @@ strict namespace Sync
             case SYNCTYPE_GAME: SyncGameCore(); return;
             case SYNCTYPE_MAPVOTING: SyncMapVotingCore(); return;
             case SYNCTYPE_AFKPREVENTION: SyncAfkPreventionCore(); return;
+            case SYNCTYPE_RADIO: SyncRadioCore(); return;
 
             default:
                 Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to flush sync index " + str(syncId) + " as it's not known.");
@@ -104,6 +106,7 @@ strict namespace Sync
         Sync::SyncGame();
         Sync::SyncMapVoting();
         Sync::SyncAfkPrevention();
+        Sync::SyncRadio();
     }
 
     internal void CallClientSyncAll()
@@ -119,6 +122,7 @@ strict namespace Sync
         Sync::CallSyncGameOnClients();
         Sync::CallSyncMapVotingOnClients();
         Sync::CallSyncAfkPreventionOnClients();
+        Sync::CallSyncRadioOnClients();
     }
 
     internal void SyncAllClientside()
@@ -134,6 +138,7 @@ strict namespace Sync
         Sync::SyncGameClientside();
         Sync::SyncMapVotingClientside();
         Sync::SyncAfkPreventionClientside();
+        Sync::SyncRadioClientside();
     }
 
     /* PLAYERS */
@@ -584,6 +589,56 @@ strict namespace Sync
     {
         VALIDATE_IS_CLIENTSIDE_FUNCTION();
         Event::SendDataSynced(SYNCTYPE_AFKPREVENTION);
+    }
+
+    /* RADIO */
+
+    internal void SyncRadio()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (!IsNetworkGame())
+        {
+            FinalizeRadioSyncedClientside();
+            return;
+        }
+
+        DoSync(SYNCTYPE_RADIO);
+    }
+
+    internal void SyncRadioCore()
+    {
+        SyncRadioActor();
+        CallSyncRadioOnClients();
+    }
+
+    internal void CallSyncRadioOnClients()
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+
+        if (IsNetworkGame())
+            ACS_NamedExecute("zh2_internal_sync_radio_clientside", 0);
+    }
+
+    script "zh2_internal_sync_radio_clientside" clientside
+    {
+        SyncRadioClientside();
+    }
+
+    internal void SyncRadioClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+
+        if (IsNetworkGame())
+            SyncRadioActorClientside();
+
+        FinalizeRadioSyncedClientside();
+    }
+
+    internal void FinalizeRadioSyncedClientside()
+    {
+        VALIDATE_IS_CLIENTSIDE_FUNCTION();
+        Event::SendDataSynced(SYNCTYPE_RADIO);
     }
 }
 

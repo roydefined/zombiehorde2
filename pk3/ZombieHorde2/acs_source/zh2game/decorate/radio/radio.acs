@@ -3,6 +3,7 @@
 #endif
 
 #include "behaviour.acs"
+#include "event.acs"
 
 strict namespace Decorate
 {
@@ -43,5 +44,294 @@ strict namespace Decorate
         if (ZH2Game::GameContext.RadioTrackCooldownTimestamp == 0)
             return 0;
         return BCSUtils::Max(0, ZH2Game::GameContext.RadioTrackCooldownTimestamp - Utils::GetSynchronizedTimer());
+    }
+
+    /* Broadcast tracking (who is currently playing a radio track) */
+
+    internal bool GetRadioBroadcastActive() { return ZH2Game::GameContext.RadioBroadcast.Active; }
+    internal int GetRadioBroadcastPlayerId() { return ZH2Game::GameContext.RadioBroadcast.PlayerId; }
+    internal str GetRadioBroadcastLumpName() { return ZH2Game::GameContext.RadioBroadcast.LumpName; }
+
+    internal void SetRadioBroadcast(int playerId, str lump)
+    {
+        ZH2Game::GameContext.RadioBroadcast.Active = true;
+        ZH2Game::GameContext.RadioBroadcast.PlayerId = playerId;
+        ZH2Game::GameContext.RadioBroadcast.LumpName = lump;
+    }
+
+    internal void ClearRadioBroadcast()
+    {
+        ZH2Game::GameContext.RadioBroadcast.Active = false;
+        ZH2Game::GameContext.RadioBroadcast.PlayerId = -1;
+        ZH2Game::GameContext.RadioBroadcast.LumpName = (raw)0;
+    }
+
+    /* Broadcast tracking, clientside reactions (mapspot + local music) */
+
+    // Records who owns the music we're hearing (ourselves or someone else via mapspot) and plays it.
+    internal void SetRadioBroadcastClientside(int playerId, str lump)
+    {
+        Logger::LogDebug(LOGSOURCE, "Radio: setting broadcaster to (\cd" + str(playerId) + "\cj) "
+            + BCSUtils::PlayerName(playerId) + " with lump \cd" + lump + "\cj.");
+
+        // Somebody is taking over from whoever we were currently hearing (ourselves included), stop that first.
+        if (GetRadioBroadcastActive() && GetRadioBroadcastPlayerId() != playerId)
+            StopHearingCurrentRadioBroadcast();
+
+        SetRadioBroadcast(playerId, lump);
+        StartHearingRadioBroadcast(playerId, lump);
+    }
+
+    // Starts playing the given lump track on the player id.
+    // Depending on who this targets it's either proximity based or regular music.
+    internal void StartHearingRadioBroadcast(int playerId, str lump)
+    {
+        bool isSelf = playerId == ConsolePlayerNumber();
+
+        if (!isSelf && ZH2Game::GetIgnoreRadioMusic())
+        {
+            Logger::LogDebug(LOGSOURCE, "Radio: ignoring radio music, not actually playing anything.");
+            return;
+        }
+
+        if (isSelf)
+        {
+            Logger::LogDebug(LOGSOURCE, "Radio: playing our own broadcast directly.");
+            SetMusic(lump);
+            return;
+        }
+
+        if (ZH2Game::GetRadioProximityEnabled())
+        {
+            Logger::LogDebug(LOGSOURCE, "Radio: following the broadcaster by proximity.");
+            PlayRadioMapSpot(playerId, lump);
+        }
+        else
+        {
+            Logger::LogDebug(LOGSOURCE, "Radio: proximity is off, playing the broadcaster's track as regular music.");
+            SetMusic(lump);
+        }
+    }
+
+    // Stops hearing whoever we currently think owns the music, if anyone.
+    internal void StopHearingCurrentRadioBroadcast()
+    {
+        int currentOwnerId = GetRadioBroadcastPlayerId();
+        int mapSpotTid = currentOwnerId != ConsolePlayerNumber() ? GetRadioMapSpotTid(currentOwnerId) : -1;
+
+        Logger::LogDebug(LOGSOURCE, "Radio: no longer hearing (\cd" + str(currentOwnerId) + "\cj) "
+            + BCSUtils::PlayerName(currentOwnerId) + ".");
+
+        // Determine if we used a mapspot with proximity music.
+        if (mapSpotTid != -1 && ThingCount(T_NONE, mapSpotTid) != 0)
+            DisposeRadioMapSpot(currentOwnerId);
+        else
+            Music::PlayDefaultMusic();
+    }
+
+    internal void ClearRadioBroadcastClientside()
+    {
+        if (GetRadioBroadcastActive())
+        {
+            Logger::LogDebug(LOGSOURCE, "Radio: clearing broadcast state (was (\cd"
+                + str(GetRadioBroadcastPlayerId()) + "\cj)).");
+            StopHearingCurrentRadioBroadcast();
+        }
+
+        ClearRadioBroadcast();
+    }
+
+    internal int GetRadioMapSpotTid(int id)
+    {
+        VALIDATE_ID_VALID_FUNCTION_RETURN(id, -1);
+        return RADIO_MAPSPOT_TID_BASE + id;
+    }
+
+    // Spawns (or reuses) the mapspot following `id` and (re)starts the lump playing from it.
+    internal void PlayRadioMapSpot(int id, str lump)
+    {
+        int mapSpotTid = GetRadioMapSpotTid(id);
+
+        if (ThingCount(T_NONE, mapSpotTid) == 0)
+        {
+            int tid = Identity::GetTid(id);
+            SpawnForced(RADIO_MAPSPOT_NAME, GetActorX(tid), GetActorY(tid), GetActorZ(tid), mapSpotTid);
+
+            Logger::LogDebug(LOGSOURCE, "Radio: spawned mapspot (tid \cd" + str(mapSpotTid) + "\cj) for (\cd"
+                + str(id) + "\cj) " + BCSUtils::PlayerName(id) + ".");
+        }
+        else
+        {
+            // Already following this player, so just replace whatever they were previously playing.
+            Logger::LogDebug(LOGSOURCE, "Radio: reusing existing mapspot (tid \cd" + str(mapSpotTid)
+                + "\cj) for (\cd" + str(id) + "\cj) " + BCSUtils::PlayerName(id) + ".");
+            StopSound(mapSpotTid, CHAN_BODY);
+        }
+
+        // See `RADIO_SOUND_ALIAS_PREFIX` for why this can't just be `lump` directly.
+        str soundName = RADIO_SOUND_ALIAS_PREFIX + lump;
+        Logger::LogDebug(LOGSOURCE, "Radio: playing \cd" + soundName + "\cj on mapspot tid \cd" + str(mapSpotTid) + "\cj.");
+        PlaySound(mapSpotTid, soundName, CHAN_BODY, 1.0, true, ATTN_NORM);
+    }
+
+    internal void DisposeRadioMapSpot(int id)
+    {
+        int mapSpotTid = GetRadioMapSpotTid(id);
+        if (ThingCount(T_NONE, mapSpotTid) == 0)
+            return;
+
+        StopSound(mapSpotTid, CHAN_BODY);
+        Thing_Remove(mapSpotTid);
+
+        RestoreMapMusicVolumeCvar();
+
+        Logger::LogDebug(LOGSOURCE, "Radio: disposed mapspot (tid \cd" + str(mapSpotTid) + "\cj) for (\cd"
+            + str(id) + "\cj).");
+    }
+
+    internal bool GetMapMusicVolumeCached() { return ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeCached; }
+    internal fixed GetMapMusicVolumeBaseline() { return ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeBaseline; }
+    internal fixed GetMapMusicVolumeLastFraction() { return ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeLastFraction; }
+
+    // Stores the default baseline using the client's currently configured music volume (snd_musicvolume).
+    internal void CacheMapMusicVolumeBaseline()
+    {
+        if (GetMapMusicVolumeCached())
+            return;
+
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeBaseline = ZH2Game::GetSndMusicVolume();
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeLastFraction = 1.0;
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeCached = true;
+
+        Logger::LogDebug(LOGSOURCE, "Radio: cached snd_musicvolume baseline \cd"
+            + str(GetMapMusicVolumeBaseline()) + "\cj before fading it.");
+    }
+
+    // Handles changes to the music volume (snd_musicvolume) since the player can change it.
+    // So we need to make sure we keep support for changing it, and this is a best effort attempt to allow modifications.
+    internal void RebaseMapMusicVolumeIfChangedByUser()
+    {
+        if (!GetMapMusicVolumeCached())
+            return;
+
+        fixed lastFraction = GetMapMusicVolumeLastFraction();
+        fixed expected = GetMapMusicVolumeBaseline() * lastFraction;
+        fixed current = ZH2Game::GetSndMusicVolume();
+
+        if (BCSUtils::Abs(current - expected) <= RADIO_MAPMUSIC_VOLUME_DRIFT_TOLERANCE)
+            return;
+
+        fixed newBaseline = lastFraction > 0.0 ? current / lastFraction : current;
+
+        Logger::LogDebug(LOGSOURCE, "Radio: snd_musicvolume changed externally (\cd" + str(expected)
+            + "\cj -> \cd" + str(current) + "\cj); rebasing fade baseline to \cd" + str(newBaseline) + "\cj.");
+
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeBaseline = newBaseline;
+    }
+
+    // Sets snd_musicvolume to a fraction of the cached baseline, e.g. 0.5 for half volume.
+    internal void SetMapMusicVolumeCvar(fixed fraction)
+    {
+        RebaseMapMusicVolumeIfChangedByUser();
+
+        ZH2Game::SetSndMusicVolume(GetMapMusicVolumeBaseline() * fraction);
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeLastFraction = fraction;
+    }
+
+    // Puts snd_musicvolume back to the cached baseline and clears the cache, so the next fade
+    // activation picks up the player's current real preference again.
+    internal void RestoreMapMusicVolumeCvar()
+    {
+        if (!GetMapMusicVolumeCached())
+            return;
+
+        RebaseMapMusicVolumeIfChangedByUser();
+
+        ZH2Game::SetSndMusicVolume(GetMapMusicVolumeBaseline());
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeCached = false;
+    }
+
+    internal bool GetRadioProximityWasEnabled() { return ZH2Game::GameContext.RadioBroadcast.ProximityWasEnabled; }
+    internal void SetRadioProximityWasEnabled(bool value) { ZH2Game::GameContext.RadioBroadcast.ProximityWasEnabled = value; }
+
+    // Check and adjusts the proximity feature against the client's current setting.
+    internal void CheckRadioProximitySettingChanged()
+    {
+        bool proximity = ZH2Game::GetRadioProximityEnabled();
+        if (proximity == GetRadioProximityWasEnabled())
+            return;
+
+        SetRadioProximityWasEnabled(proximity);
+
+        if (!GetRadioBroadcastActive() || GetRadioBroadcastPlayerId() == ConsolePlayerNumber())
+            return;
+
+        // We never touch our own music for a broadcast we're ignoring, so there's nothing to switch.
+        if (ZH2Game::GetIgnoreRadioMusic())
+            return;
+
+        Logger::LogDebug(LOGSOURCE, "Radio: proximity setting changed to \cd" + str((int)proximity)
+            + "\cj, switching how we hear the current broadcast.");
+
+        StopHearingCurrentRadioBroadcast();
+        StartHearingRadioBroadcast(GetRadioBroadcastPlayerId(), GetRadioBroadcastLumpName());
+    }
+
+    // Keeps the broadcaster's mapspot following them; the sound's own attenuation handles falloff.
+    internal void RadioMapSpotTicClient()
+    {
+        CheckRadioProximitySettingChanged();
+
+        if (!GetRadioBroadcastActive())
+            return;
+
+        int id = GetRadioBroadcastPlayerId();
+
+        // We never spawn a mapspot for our own broadcast.
+        if (id == ConsolePlayerNumber())
+            return;
+
+        int mapSpotTid = GetRadioMapSpotTid(id);
+        if (ThingCount(T_NONE, mapSpotTid) == 0)
+            return;
+
+        int tid = Identity::GetTid(id);
+        if (!BCSUtils::ActorIsAlive(tid))
+        {
+            // Broadcaster's actor is gone (disconnected, etc). Stop for safety. The server will
+            // correct itself the next time somebody plays a track, or on the next full sync.
+            Logger::LogWarning(LOGSOURCE, "Radio: broadcaster (\cd" + str(id) + "\cj) actor is gone; "
+                + "disposing mapspot and clearing local broadcast state.");
+            DisposeRadioMapSpot(id);
+            ClearRadioBroadcast();
+            return;
+        }
+
+        if (!SetActivator(mapSpotTid))
+            return;
+
+        Warp(tid, 0.0, 0.0, 0.0, 0.0, WARPF_NOCHECKPOSITION);
+
+        BCSUtils::SetActivatorToConsolePlayer();
+
+        UpdateRadioMapMusicFade(tid);
+    }
+
+    // Determines the target volume to give the client based on how close they are to the radio broascaster.
+    // The closer they are, the lower the volume.
+    internal void UpdateRadioMapMusicFade(int broadcasterTid)
+    {
+        if (!ZH2Game::GetRadioFadeMapMusicEnabled())
+        {
+            RestoreMapMusicVolumeCvar();
+            return;
+        }
+
+        fixed distance = BCSUtils::ActorDistance(Identity::GetTid(ConsolePlayerNumber()), broadcasterTid);
+        fixed fadeFactor = (distance - RADIO_MAPMUSIC_FADE_END) / (RADIO_MAPMUSIC_FADE_START - RADIO_MAPMUSIC_FADE_END);
+        fixed fraction = (fixed)BCSUtils::Clamp(fadeFactor, 0.0, 1.0);
+
+        CacheMapMusicVolumeBaseline();
+        SetMapMusicVolumeCvar(fraction);
     }
 }
