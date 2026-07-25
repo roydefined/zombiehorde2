@@ -255,6 +255,15 @@ strict namespace ZH2Game
         Round::InitializeClient();
         Decorate::InitializeRadioClient();
 
+        // HACK-ish; this must run early for `PlayDefaultMusic` to work properly since it's based on it.
+        // The full sync is later, but we must also set `PlayDefaultMusic` higher for the radio to work.
+        // TODO: The round end music must flow through the music systen, then the check is not needed.
+        Sync::SyncRoundStateClientside();
+
+        // This must happen before the full sync below,
+        // so an active radio broadcast (applied through that sync) can override it afterwards instead of the other way around.
+        Music::PlayDefaultMusic();
+
         // Fully sync up the client.
         Sync::SyncAllClientside();
         Sync::LibSyncAllClientside();
@@ -281,9 +290,6 @@ strict namespace ZH2Game
                 Game::SpawnPlayerTeamIndicator(i);
             }
         }
-
-        // Inform the client to play the current default music.
-        Music::PlayDefaultMusic();
 
         // Damage feedback
         DamageFeedback::InitializeDamageFeedbackClient();
