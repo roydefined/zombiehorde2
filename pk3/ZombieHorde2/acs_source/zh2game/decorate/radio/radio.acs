@@ -183,8 +183,72 @@ strict namespace Decorate
         StopSound(mapSpotTid, CHAN_BODY);
         Thing_Remove(mapSpotTid);
 
+        RestoreMapMusicVolumeCvar();
+
         Logger::LogDebug(LOGSOURCE, "Radio: disposed mapspot (tid \cd" + str(mapSpotTid) + "\cj) for (\cd"
             + str(id) + "\cj).");
+    }
+
+    internal bool GetMapMusicVolumeCached() { return ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeCached; }
+    internal fixed GetMapMusicVolumeBaseline() { return ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeBaseline; }
+    internal fixed GetMapMusicVolumeLastFraction() { return ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeLastFraction; }
+
+    // Stores the default baseline using the client's currently configured music volume (snd_musicvolume).
+    internal void CacheMapMusicVolumeBaseline()
+    {
+        if (GetMapMusicVolumeCached())
+            return;
+
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeBaseline = ZH2Game::GetSndMusicVolume();
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeLastFraction = 1.0;
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeCached = true;
+
+        Logger::LogDebug(LOGSOURCE, "Radio: cached snd_musicvolume baseline \cd"
+            + str(GetMapMusicVolumeBaseline()) + "\cj before fading it.");
+    }
+
+    // Handles changes to the music volume (snd_musicvolume) since the player can change it.
+    // So we need to make sure we keep support for changing it, and this is a best effort attempt to allow modifications.
+    internal void RebaseMapMusicVolumeIfChangedByUser()
+    {
+        if (!GetMapMusicVolumeCached())
+            return;
+
+        fixed lastFraction = GetMapMusicVolumeLastFraction();
+        fixed expected = GetMapMusicVolumeBaseline() * lastFraction;
+        fixed current = ZH2Game::GetSndMusicVolume();
+
+        if (BCSUtils::Abs(current - expected) <= RADIO_MAPMUSIC_VOLUME_DRIFT_TOLERANCE)
+            return;
+
+        fixed newBaseline = lastFraction > 0.0 ? current / lastFraction : current;
+
+        Logger::LogDebug(LOGSOURCE, "Radio: snd_musicvolume changed externally (\cd" + str(expected)
+            + "\cj -> \cd" + str(current) + "\cj); rebasing fade baseline to \cd" + str(newBaseline) + "\cj.");
+
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeBaseline = newBaseline;
+    }
+
+    // Sets snd_musicvolume to a fraction of the cached baseline, e.g. 0.5 for half volume.
+    internal void SetMapMusicVolumeCvar(fixed fraction)
+    {
+        RebaseMapMusicVolumeIfChangedByUser();
+
+        ZH2Game::SetSndMusicVolume(GetMapMusicVolumeBaseline() * fraction);
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeLastFraction = fraction;
+    }
+
+    // Puts snd_musicvolume back to the cached baseline and clears the cache, so the next fade
+    // activation picks up the player's current real preference again.
+    internal void RestoreMapMusicVolumeCvar()
+    {
+        if (!GetMapMusicVolumeCached())
+            return;
+
+        RebaseMapMusicVolumeIfChangedByUser();
+
+        ZH2Game::SetSndMusicVolume(GetMapMusicVolumeBaseline());
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeCached = false;
     }
 
     internal bool GetRadioProximityWasEnabled() { return ZH2Game::GameContext.RadioBroadcast.ProximityWasEnabled; }
@@ -249,5 +313,25 @@ strict namespace Decorate
         Warp(tid, 0.0, 0.0, 0.0, 0.0, WARPF_NOCHECKPOSITION);
 
         BCSUtils::SetActivatorToConsolePlayer();
+
+        UpdateRadioMapMusicFade(tid);
+    }
+
+    // Determines the target volume to give the client based on how close they are to the radio broascaster.
+    // The closer they are, the lower the volume.
+    internal void UpdateRadioMapMusicFade(int broadcasterTid)
+    {
+        if (!ZH2Game::GetRadioFadeMapMusicEnabled())
+        {
+            RestoreMapMusicVolumeCvar();
+            return;
+        }
+
+        fixed distance = BCSUtils::ActorDistance(Identity::GetTid(ConsolePlayerNumber()), broadcasterTid);
+        fixed fadeFactor = (distance - RADIO_MAPMUSIC_FADE_END) / (RADIO_MAPMUSIC_FADE_START - RADIO_MAPMUSIC_FADE_END);
+        fixed fraction = (fixed)BCSUtils::Clamp(fadeFactor, 0.0, 1.0);
+
+        CacheMapMusicVolumeBaseline();
+        SetMapMusicVolumeCvar(fraction);
     }
 }

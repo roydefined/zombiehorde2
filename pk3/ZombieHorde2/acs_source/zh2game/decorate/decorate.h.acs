@@ -22,6 +22,15 @@ strict namespace Decorate
     // directly. Every track needs a sndinfo entry keyed as this prefix + its lump name instead.
     #define RADIO_SOUND_ALIAS_PREFIX "zh2radio/"
 
+    // Data to handle the fading of music when nearing a radio broadcaster.
+    // Assuming proximity music + fading of music is enabled.
+    #define RADIO_MAPMUSIC_UNITS_PER_METER 32.0
+    #define RADIO_MAPMUSIC_FADE_END (5.0 * RADIO_MAPMUSIC_UNITS_PER_METER)
+    #define RADIO_MAPMUSIC_FADE_START (20.0 * RADIO_MAPMUSIC_UNITS_PER_METER)
+
+    // Epsilon value to use when detecting manual change to the music volume.
+    #define RADIO_MAPMUSIC_VOLUME_DRIFT_TOLERANCE 0.01
+
     struct RadioTrackCollectionContextT
     {
         RadioTrackContextT Collection[MAX_RADIO_TRACKS];
@@ -47,5 +56,15 @@ strict namespace Decorate
         // Clientside only, not synced. Last known value of `cl_zh2_radioproximity`, so we can tell
         // when it changes and switch how we're hearing the current broadcast, if any.
         bool ProximityWasEnabled;
+
+        // Clientside only, not synced. The player's real `snd_musicvolume`, cached the moment we
+        // start fading it so every step scales off the same baseline instead of whatever we
+        // ourselves last wrote to the cvar.
+        bool MapMusicVolumeCached;
+        fixed MapMusicVolumeBaseline;
+
+        // Clientside only, not synced. The fade fraction (0.0 - 1.0) from our last write to the
+        // cvar, so we know what value to expect back and can tell if the player changed it themselves.
+        fixed MapMusicVolumeLastFraction;
     };
 }
