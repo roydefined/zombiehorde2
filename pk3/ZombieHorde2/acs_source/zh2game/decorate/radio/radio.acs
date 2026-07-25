@@ -71,21 +71,24 @@ strict namespace Decorate
     // Records who owns the music we're hearing (ourselves or someone else via mapspot) and plays it.
     internal void SetRadioBroadcastClientside(int playerId, str lump)
     {
-        bool isSelf = playerId == ConsolePlayerNumber();
-        bool ignoring = !isSelf && ZH2Game::GetIgnoreRadioMusic();
-        bool proximity = ZH2Game::GetRadioProximityEnabled();
-
         Logger::LogDebug(LOGSOURCE, "Radio: setting broadcaster to (\cd" + str(playerId) + "\cj) "
-            + BCSUtils::PlayerName(playerId) + " with lump \cd" + lump + "\cj. isSelf=\cd" + str((int)isSelf)
-            + "\cj ignoring=\cd" + str((int)ignoring) + "\cj proximity=\cd" + str((int)proximity) + "\cj.");
+            + BCSUtils::PlayerName(playerId) + " with lump \cd" + lump + "\cj.");
 
         // Somebody is taking over from whoever we were currently hearing (ourselves included), stop that first.
         if (GetRadioBroadcastActive() && GetRadioBroadcastPlayerId() != playerId)
             StopHearingCurrentRadioBroadcast();
 
         SetRadioBroadcast(playerId, lump);
+        StartHearingRadioBroadcast(playerId, lump);
+    }
 
-        if (ignoring)
+    // Starts playing the given lump track on the player id.
+    // Depending on who this targets it's either proximity based or regular music.
+    internal void StartHearingRadioBroadcast(int playerId, str lump)
+    {
+        bool isSelf = playerId == ConsolePlayerNumber();
+
+        if (!isSelf && ZH2Game::GetIgnoreRadioMusic())
         {
             Logger::LogDebug(LOGSOURCE, "Radio: ignoring radio music, not actually playing anything.");
             return;
@@ -98,7 +101,7 @@ strict namespace Decorate
             return;
         }
 
-        if (proximity)
+        if (ZH2Game::GetRadioProximityEnabled())
         {
             Logger::LogDebug(LOGSOURCE, "Radio: following the broadcaster by proximity.");
             PlayRadioMapSpot(playerId, lump);
@@ -184,9 +187,37 @@ strict namespace Decorate
             + str(id) + "\cj).");
     }
 
+    internal bool GetRadioProximityWasEnabled() { return ZH2Game::GameContext.RadioBroadcast.ProximityWasEnabled; }
+    internal void SetRadioProximityWasEnabled(bool value) { ZH2Game::GameContext.RadioBroadcast.ProximityWasEnabled = value; }
+
+    // Check and adjusts the proximity feature against the client's current setting.
+    internal void CheckRadioProximitySettingChanged()
+    {
+        bool proximity = ZH2Game::GetRadioProximityEnabled();
+        if (proximity == GetRadioProximityWasEnabled())
+            return;
+
+        SetRadioProximityWasEnabled(proximity);
+
+        if (!GetRadioBroadcastActive() || GetRadioBroadcastPlayerId() == ConsolePlayerNumber())
+            return;
+
+        // We never touch our own music for a broadcast we're ignoring, so there's nothing to switch.
+        if (ZH2Game::GetIgnoreRadioMusic())
+            return;
+
+        Logger::LogDebug(LOGSOURCE, "Radio: proximity setting changed to \cd" + str((int)proximity)
+            + "\cj, switching how we hear the current broadcast.");
+
+        StopHearingCurrentRadioBroadcast();
+        StartHearingRadioBroadcast(GetRadioBroadcastPlayerId(), GetRadioBroadcastLumpName());
+    }
+
     // Keeps the broadcaster's mapspot following them; the sound's own attenuation handles falloff.
     internal void RadioMapSpotTicClient()
     {
+        CheckRadioProximitySettingChanged();
+
         if (!GetRadioBroadcastActive())
             return;
 
