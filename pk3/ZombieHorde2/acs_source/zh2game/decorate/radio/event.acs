@@ -1,0 +1,55 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Decorate
+{
+    internal void InitializeRadioServer()
+    {
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_radio_specie_changed");
+    }
+
+    internal void InitializeRadioClient()
+    {
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_radio_specie_changed_client");
+    }
+
+    // Serverside: stop tracking an infected broadcaster so joining clients don't catch up on it.
+    // Already-connected clients are handled separately below, since that shouldn't wait on the debounced sync.
+    script "zh2_internal_radio_specie_changed" (raw packetStr)
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerSpecieChanged(packet);
+        int id = Event::GetReceiveData(0);
+        Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(Event::GetReceiveData(1));
+
+        if (specie != Player::SPECIEZOMBIE)
+            terminate;
+
+        if (!GetRadioBroadcastActive() || GetRadioBroadcastPlayerId() != id)
+            terminate;
+
+        Logger::LogDebug(LOGSOURCE, "Radio: clearing broadcast, (\cd" + str(id) + "\cj) " + BCSUtils::PlayerName(id) + " was infected.");
+        ClearRadioBroadcast();
+        Sync::SyncRadio();
+    }
+
+    // Clientside: drop the mapspot immediately if the infected player is who we're following.
+    script "zh2_internal_radio_specie_changed_client" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerSpecieChanged(packet);
+        int id = Event::GetReceiveData(0);
+        Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(Event::GetReceiveData(1));
+
+        if (specie != Player::SPECIEZOMBIE)
+            terminate;
+
+        if (GetRadioBroadcastActive() && GetRadioBroadcastPlayerId() == id)
+        {
+            Logger::LogDebug(LOGSOURCE, "Radio: dropping broadcast immediately, (\cd" + str(id) + "\cj) "
+                + BCSUtils::PlayerName(id) + " (our current broadcaster) was infected.");
+            ClearRadioBroadcastClientside();
+        }
+    }
+}

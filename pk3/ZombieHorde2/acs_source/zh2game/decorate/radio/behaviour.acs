@@ -46,7 +46,7 @@ strict namespace Decorate
         str lump = GetRadioTrackLumpName(trackIndex);
         str name = GetRadioTrackName(trackIndex);
         str author = GetRadioTrackAuthor(trackIndex);
-        SetMusic(lump);
+        SetRadioBroadcastClientside(PlayerNumber(), lump);
 
         str packet = Packet::New();
         packet = Packet::AppendStr(packet, lump);
@@ -69,13 +69,65 @@ strict namespace Decorate
             int secondsLeft = int(BCSUtils::Ceil(fixed(ticsLeft) / 35.0));
             str secondsPlural = secondsLeft == 1 ? "" : "s";
             Logger::LogActivator("The music recently changed, so the track change won't be shared. Try again in " + str(secondsLeft) + " second" + secondsPlural + ".");
+            Logger::LogDebug(LOGSOURCE, "Radio: rejected track change from (\cd" + str(PlayerNumber())
+                + "\cj) " + BCSUtils::PlayerName(PlayerNumber()) + " - \cd" + str(ticsLeft) + "\cj tics of cooldown left.");
             terminate;
         }
 
         UpdateRadioTrackCooldown();
 
+        // Peek the lump without consuming `packet`, which we still need to forward as-is below.
+        str peek = packet;
+        peek = Packet::ReadStr(peek);
+        str lump = Packet::Value;
+
+        int sourceId = PlayerNumber();
+
+        // Only one broadcaster at a time, so tell the previous one's client directly (with the new lump)
+        // so they switch immediately. The regular broadcast below won't reach them if they ignore radio.
+        if (GetRadioBroadcastActive() && GetRadioBroadcastPlayerId() != sourceId)
+        {
+            int previousBroadcasterId = GetRadioBroadcastPlayerId();
+
+            Logger::LogDebug(LOGSOURCE, "Radio: (\cd" + str(sourceId) + "\cj) " + BCSUtils::PlayerName(sourceId)
+                + " is taking over the radio from (\cd" + str(previousBroadcasterId) + "\cj) "
+                + BCSUtils::PlayerName(previousBroadcasterId) + ".");
+
+            str forceStopPacket = Packet::New();
+            forceStopPacket = Packet::Append(forceStopPacket, sourceId);
+            forceStopPacket = Packet::AppendStr(forceStopPacket, lump);
+            if (!Packet::Send("zh2_internal_radio_forcestop_client", forceStopPacket, previousBroadcasterId))
+                Logger::LogError(LOGSOURCE, "Failed to call zh2_internal_radio_forcestop_client");
+        }
+
+        SetRadioBroadcast(sourceId, lump);
+        Sync::SyncRadio();
+
+        Logger::LogDebug(LOGSOURCE, "Radio: (\cd" + str(sourceId) + "\cj) " + BCSUtils::PlayerName(sourceId)
+            + " is now broadcasting \cd" + lump + "\cj.");
+
         if (!Packet::Send("zh2_internal_radio_settracktoclient", packet))
             Logger::LogError(LOGSOURCE, "Failed to call zh2_internal_radio_settracktoclient");
+    }
+
+    script "zh2_internal_radio_forcestop_client" (raw packetRaw) clientside
+    {
+        BCSUtils::SetActivatorToConsolePlayer();
+
+        str packet = (str)packetRaw;
+        packet = Packet::Read(packet);
+        int newBroadcasterId = Packet::Value;
+
+        packet = Packet::ReadStr(packet);
+        str lump = Packet::Value;
+
+        Logger::LogDebug(LOGSOURCE, "Radio: our broadcast was displaced by (\cd" + str(newBroadcasterId)
+            + "\cj) " + BCSUtils::PlayerName(newBroadcasterId) + " playing \cd" + lump + "\cj.");
+
+        Logger::LogActivator("Your radio broadcast was stopped because \cd" + BCSUtils::PlayerName(newBroadcasterId) + "\cj started playing theirs.");
+
+        // Silences our own broadcast and immediately starts following the new one instead.
+        SetRadioBroadcastClientside(newBroadcasterId, lump);
     }
 
     script "zh2_internal_radio_settracktoclient" (raw packet) clientside
@@ -134,10 +186,16 @@ strict namespace Decorate
             }
 
             Logger::LogActivator(message);
+            Logger::LogDebug(LOGSOURCE, "Radio: (\cd" + str(sourceId) + "\cj) " + BCSUtils::PlayerName(sourceId)
+                + " played \cd" + lump + "\cj, but we have no tracks at all. ignore=\cd" + str((int)ignore) + "\cj.");
             terminate;
         }
 
         int trackIndex = GetRadioTrackIndexByLumpName(lump);
+
+        Logger::LogDebug(LOGSOURCE, "Radio: received track change from (\cd" + str(sourceId) + "\cj) "
+            + BCSUtils::PlayerName(sourceId) + " - lump=\cd" + lump + "\cj trackIndex=\cd" + str(trackIndex)
+            + "\cj ignore=\cd" + str((int)ignore) + "\cj playRandom=\cd" + str((int)playRandom) + "\cj.");
 
         // Possible random track if we didn't find the track we wanted.
         int replaceTrackIndex = Random(0, GetRadioCollectionSize() - 1);
@@ -192,15 +250,13 @@ strict namespace Decorate
             if (!playRandom)
                 terminate;
 
-            SetClientCurrentRadioTrackIndex(replaceTrackIndex);
-            SetMusic(replaceLump);
+            SetRadioBroadcastClientside(sourceId, replaceLump);
         }
 
         // Found: always play the exact match. `playRandom` only ever applies to the not-found case above.
         else
         {
-            SetClientCurrentRadioTrackIndex(trackIndex);
-            SetMusic(lump);
+            SetRadioBroadcastClientside(sourceId, lump);
         }
     }
 }

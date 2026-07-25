@@ -1,0 +1,41 @@
+// ACS spawns this on a client when they need to hear a radio track from wherever the broadcaster is
+// standing. It's warped to follow them every tic, and it IS the sound source (a looping, attenuated
+// `PlaySound` is played from it) - no visual/HUD purpose otherwise.
+actor ZH2RadioMapSpot
+{
+    Height 1
+    Radius 1
+
+    -SOLID
+    +THRUACTORS
+    +NOBLOCKMAP
+    +NOGRAVITY
+    +DONTSPLASH
+    +INVISIBLE
+    +CLIENTSIDEONLY
+
+    states
+    {
+        spawn:
+            TNT1 A 1
+            wait
+    }
+}
+
+// Debug variant of the above - visible with the same debug sprite the weather system uses, so its
+// position (and therefore the radio's audible range) can actually be seen while testing.
+// Swap it in via `RADIO_MAPSPOT_NAME` in decorate.h.acs.
+actor ZH2RadioMapSpotDebug : ZH2RadioMapSpot
+{
+    Scale 0.5
+    Renderstyle Translucent
+
+    -INVISIBLE
+
+    states
+    {
+        spawn:
+            DEBG A 1
+            loop
+    }
+}

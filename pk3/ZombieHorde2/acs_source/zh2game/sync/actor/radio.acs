@@ -1,0 +1,84 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Sync
+{
+    #define SYNC_CATEGORY "RADIO"
+
+    internal void SyncRadioActor()
+    {
+        int syncId = SYNC_RADIO;
+
+        syncId = SyncWriteRadioState(syncId);
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing radio pack through actors."));
+        VERIFY_SYNCID(syncId, SYNC_RADIO, SYNC_RADIO_LENGTH);
+    }
+
+    internal void SyncRadioActorClientside()
+    {
+        int syncId = SYNC_RADIO;
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading radio pack on client through actors. Sync id: " + str(syncId) + "."));
+
+        syncId = SyncReadRadioState(syncId);
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Synced radio to client."));
+        VERIFY_SYNCID(syncId, SYNC_RADIO, SYNC_RADIO_LENGTH);
+    }
+
+    internal int SyncWriteRadioState(int syncId)
+    {
+        bool active = Decorate::GetRadioBroadcastActive();
+
+        // -1 doubles as both "nobody is broadcasting" and the client-read default, so a missing/short
+        // sync packet degrades to "nobody" rather than an arbitrary stale player id.
+        int playerId = active ? Decorate::GetRadioBroadcastPlayerId() : -1;
+        BCSUtils::SyncVariable(--syncId, playerId);
+
+        // A broadcaster always has a lump; no separate "is it set" flag is needed like the resist labels use.
+        if (active)
+        {
+            str lump = Decorate::GetRadioBroadcastLumpName();
+            SetCVarString(ACTOR_SYNC_RADIO_LUMPNAME_TEMPLATE, lump);
+            Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Wrote broadcaster (\cd" + str(playerId)
+                + "\cj) playing \cd" + lump + "\cj."));
+        }
+        else
+        {
+            Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Wrote no active broadcaster."));
+        }
+
+        return syncId;
+    }
+
+    internal int SyncReadRadioState(int syncId)
+    {
+        int playerId = BCSUtils::GetSyncVarDefault(--syncId, -1);
+
+        if (playerId == -1)
+        {
+            Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Read no active broadcaster."));
+            Decorate::ClearRadioBroadcastClientside();
+            return syncId;
+        }
+
+        // Avoid re-triggering the mapspot/music setup on a redundant sync of the same broadcaster.
+        if (!Decorate::GetRadioBroadcastActive() || Decorate::GetRadioBroadcastPlayerId() != playerId)
+        {
+            str lump = GetCVarString(ACTOR_SYNC_RADIO_LUMPNAME_TEMPLATE);
+            Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Read broadcaster (\cd" + str(playerId)
+                + "\cj) playing \cd" + lump + "\cj."));
+            Decorate::SetRadioBroadcastClientside(playerId, lump);
+        }
+        else
+        {
+            Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Read broadcaster (\cd" + str(playerId)
+                + "\cj), already up to date."));
+        }
+
+        return syncId;
+    }
+
+    #undef SYNC_CATEGORY
+}
