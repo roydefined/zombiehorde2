@@ -4,6 +4,20 @@
 
 strict namespace Decorate
 {
+    internal str BuildTrackMessage(str name, str author)
+    {
+        return buildmsg(StrParam())
+        {
+            Append(s:"\cd");
+            Append(s:name);
+            if ((raw)author != 0 && author != "")
+            {
+                Append(s:"\cj by \cd");
+                Append(s:author);
+            }
+        }
+    }
+
     script "zh2_dec_radio_cyclemusic" (raw direction) net clientside
     {
         if (PlayerNumber() != ConsolePlayerNumber())
@@ -47,6 +61,7 @@ strict namespace Decorate
         str name = GetRadioTrackName(trackIndex);
         str author = GetRadioTrackAuthor(trackIndex);
         SetRadioBroadcastClientside(PlayerNumber(), lump);
+        Logger::LogActivator("Now playing " + BuildTrackMessage(name, author) + "\cj.");
 
         str packet = Packet::New();
         packet = Packet::AppendStr(packet, lump);
@@ -68,7 +83,12 @@ strict namespace Decorate
         {
             int secondsLeft = int(BCSUtils::Ceil(fixed(ticsLeft) / 35.0));
             str secondsPlural = secondsLeft == 1 ? "" : "s";
-            Logger::LogActivator("The music recently changed, so the track change won't be shared. Try again in " + str(secondsLeft) + " second" + secondsPlural + ".");
+
+            // Only makes sense to log when not playing alone.
+            // You won't notice the cooldown otherwise.
+            if (BCSUtils::ClientCount() > 1)
+                Logger::LogActivator("The music recently changed, so the track change won't be shared. Try again in " + str(secondsLeft) + " second" + secondsPlural + ".");
+
             Logger::LogDebug(LOGSOURCE, "Radio: rejected track change from (\cd" + str(PlayerNumber())
                 + "\cj) " + BCSUtils::PlayerName(PlayerNumber()) + " - \cd" + str(ticsLeft) + "\cj tics of cooldown left.");
             terminate;
@@ -144,28 +164,11 @@ strict namespace Decorate
         packet = Packet::ReadStr(packet);
         str author = Packet::Value;
 
-        str BuildTrackMessage(str name, str author)
-        {
-            return buildmsg(StrParam())
-            {
-                Append(s:"\cd");
-                Append(s:name);
-                if ((raw)author != 0 && author != "")
-                {
-                    Append(s:"\cj by \cd");
-                    Append(s:author);
-                }
-            }
-        }
+        // We're the source, we already switched tracks and confirmed it locally.
+        if (sourceId == ConsolePlayerNumber())
+            terminate;
 
         str trackMessage = BuildTrackMessage(name, author);
-
-        // We're the source. Log a message and leave because we already changed tracks.
-        if (sourceId == ConsolePlayerNumber())
-        {
-            Logger::LogActivator("Now playing " + trackMessage + "\cj.");
-            terminate;
-        }
 
         bool ignore = ZH2Game::GetIgnoreRadioMusic();
         bool playRandom = ZH2Game::GetTrackNotFoundPlayRandom();
