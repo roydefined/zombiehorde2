@@ -9,10 +9,12 @@ strict namespace Obituary
         str packet = (str)packetStr;
         Event::ReceiveInitialsChosen(packet);
 
-        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
-            QueueInitialsChosen();
-        else
-            LogInitialsChosen();
+        switch (ZH2Game::GetObituaryDisplayMode(ConsolePlayerNumber()))
+        {
+            case ZH2Game::OBITUARYDISPLAY_GRAPHICAL: QueueInitialsChosen(); break;
+            case ZH2Game::OBITUARYDISPLAY_LEGACYTEXT: LegacyLogInitialsChosen(); break;
+            case ZH2Game::OBITUARYDISPLAY_TEXT: LogInitialsChosen(); break;
+        }
     }
 
     script "zh2_internal_obituary_playersafe_client" (raw packetStr) clientside
@@ -33,10 +35,12 @@ strict namespace Obituary
         if (Game::GetSafeHidden(slot))
             terminate;
 
-        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
-            QueuePlayerSafe();
-        else
-            LogPlayerSafe();
+        switch (ZH2Game::GetObituaryDisplayMode(ConsolePlayerNumber()))
+        {
+            case ZH2Game::OBITUARYDISPLAY_GRAPHICAL: QueuePlayerSafe(); break;
+            case ZH2Game::OBITUARYDISPLAY_LEGACYTEXT: break; // Not supported: ZH1 had no safezone message.
+            case ZH2Game::OBITUARYDISPLAY_TEXT: LogPlayerSafe(); break;
+        }
     }
 
     script "zh2_internal_obituary_playerscratched" (raw packetStr) clientside
@@ -44,10 +48,12 @@ strict namespace Obituary
         str packet = (str)packetStr;
         Event::ReceivePlayerScratched(packet);
 
-        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
-            QueuePlayerScratched();
-        else
-            LogPlayerScratched();
+        switch (ZH2Game::GetObituaryDisplayMode(ConsolePlayerNumber()))
+        {
+            case ZH2Game::OBITUARYDISPLAY_GRAPHICAL: QueuePlayerScratched(); break;
+            case ZH2Game::OBITUARYDISPLAY_LEGACYTEXT: LegacyLogPlayerScratched(); break;
+            case ZH2Game::OBITUARYDISPLAY_TEXT: LogPlayerScratched(); break;
+        }
     }
 
     script "zh2_internal_obituary_playerinfected" (raw packetStr) clientside
@@ -66,10 +72,12 @@ strict namespace Obituary
         if (source == Game::INFECTSOURCE_PLAYER)
             terminate;
 
-        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
-            QueuePlayerInfected();
-        else
-            LogPlayerInfected();
+        switch (ZH2Game::GetObituaryDisplayMode(ConsolePlayerNumber()))
+        {
+            case ZH2Game::OBITUARYDISPLAY_GRAPHICAL: QueuePlayerInfected(); break;
+            case ZH2Game::OBITUARYDISPLAY_LEGACYTEXT: LegacyLogPlayerInfected(); break;
+            case ZH2Game::OBITUARYDISPLAY_TEXT: LogPlayerInfected(); break;
+        }
     }
 
     script "zh2_internal_obituary_playercured" (raw packetStr) clientside
@@ -77,10 +85,12 @@ strict namespace Obituary
         str packet = (str)packetStr;
         Event::ReceivePlayerCured(packet);
 
-        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
-            QueuePlayerCured();
-        else
-            LogPlayerCured();
+        switch (ZH2Game::GetObituaryDisplayMode(ConsolePlayerNumber()))
+        {
+            case ZH2Game::OBITUARYDISPLAY_GRAPHICAL: QueuePlayerCured(); break;
+            case ZH2Game::OBITUARYDISPLAY_LEGACYTEXT: LegacyLogPlayerCured(); break;
+            case ZH2Game::OBITUARYDISPLAY_TEXT: LogPlayerCured(); break;
+        }
     }
 
     script "zh2_internal_obituary_playerdied" (raw packetStr) clientside
@@ -88,10 +98,12 @@ strict namespace Obituary
         str packet = (str)packetStr;
         Event::ReceivePlayerDied(packet);
 
-        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
-            QueuePlayerDied();
-        else
-            LogPlayerDied();
+        switch (ZH2Game::GetObituaryDisplayMode(ConsolePlayerNumber()))
+        {
+            case ZH2Game::OBITUARYDISPLAY_GRAPHICAL: QueuePlayerDied(); break;
+            case ZH2Game::OBITUARYDISPLAY_LEGACYTEXT: LegacyLogPlayerDied(); break;
+            case ZH2Game::OBITUARYDISPLAY_TEXT: LogPlayerDied(); break;
+        }
     }
 
     script "zh2_internal_obituary_playerkilledByPlayer" (raw packetStr) clientside
@@ -105,10 +117,12 @@ strict namespace Obituary
         bool addFireEffect = Event::GetReceiveData(3);
         bool addAcidEffect = Event::GetReceiveData(4);
 
-        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
-            QueuePlayerKilledByPlayer(killedId, killerId, itemIndex, addFireEffect, addAcidEffect);
-        else
-            LogPlayerKilledByPlayer(killedId, killerId, itemIndex);
+        switch (ZH2Game::GetObituaryDisplayMode(ConsolePlayerNumber()))
+        {
+            case ZH2Game::OBITUARYDISPLAY_GRAPHICAL: QueuePlayerKilledByPlayer(killedId, killerId, itemIndex, addFireEffect, addAcidEffect); break;
+            case ZH2Game::OBITUARYDISPLAY_LEGACYTEXT: LegacyLogPlayerKilledByPlayer(killedId, killerId); break;
+            case ZH2Game::OBITUARYDISPLAY_TEXT: LogPlayerKilledByPlayer(killedId, killerId, itemIndex); break;
+        }
     }
 
     script "zh2_internal_obituary_playerkilledByMonster" (raw packetStr) clientside
@@ -119,9 +133,11 @@ strict namespace Obituary
         int id = Event::GetReceiveData(0);
         str monsterName = Event::GetReceiveData(1);
 
-        if (ZH2Game::GetSvEnableObituaries() && ZH2Game::GetClEnableObituaries(ConsolePlayerNumber()))
-            QueuePlayerKilledByMonster(id, monsterName);
-        else
-            LogPlayerKilledByMonster(id, monsterName);
+        switch (ZH2Game::GetObituaryDisplayMode(ConsolePlayerNumber()))
+        {
+            case ZH2Game::OBITUARYDISPLAY_GRAPHICAL: QueuePlayerKilledByMonster(id, monsterName); break;
+            case ZH2Game::OBITUARYDISPLAY_LEGACYTEXT: LegacyLogPlayerKilledByMonster(id); break;
+            case ZH2Game::OBITUARYDISPLAY_TEXT: LogPlayerKilledByMonster(id, monsterName); break;
+        }
     }
 }

@@ -62,8 +62,38 @@ strict namespace ZH2Game
     internal int GetAfkZombieMoveWarnSeconds() { return BCSUTILS::Clamp(GetCvar("sv_zh2_afkzombiemovewarnseconds"), 0, 20); }
 
     // Game - Obituary
-    internal bool GetSvEnableObituaries() { return (bool)GetCvar("sv_zh2_enableobituaries"); }
-    internal bool GetClEnableObituaries(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_enableobituaries"); }
+    internal ObituaryDisplayModeOverrideT GetSvObituaryDisplayModeOverride()
+    {
+        switch (BCSUTILS::Clamp(GetCvar("sv_zh2_forceobituarydisplaymode"), 0, 3))
+        {
+            case 1: return OBITUARYDISPLAYOVERRIDE_GRAPHICAL;
+            case 2: return OBITUARYDISPLAYOVERRIDE_TEXT;
+            case 3: return OBITUARYDISPLAYOVERRIDE_LEGACYTEXT;
+            default: return OBITUARYDISPLAYOVERRIDE_NONE;
+        }
+    }
+
+    internal ObituaryDisplayModeT GetClObituaryDisplayMode(int playerId)
+    {
+        switch (BCSUTILS::Clamp(GetUserCvar(playerId, "cl_zh2_obituarydisplaymode"), 0, 2))
+        {
+            case 1: return OBITUARYDISPLAY_TEXT;
+            case 2: return OBITUARYDISPLAY_LEGACYTEXT;
+            default: return OBITUARYDISPLAY_GRAPHICAL;
+        }
+    }
+
+    internal ObituaryDisplayModeT GetObituaryDisplayMode(int playerId)
+    {
+        switch (GetSvObituaryDisplayModeOverride())
+        {
+            case OBITUARYDISPLAYOVERRIDE_GRAPHICAL: return OBITUARYDISPLAY_GRAPHICAL;
+            case OBITUARYDISPLAYOVERRIDE_TEXT: return OBITUARYDISPLAY_TEXT;
+            case OBITUARYDISPLAYOVERRIDE_LEGACYTEXT: return OBITUARYDISPLAY_LEGACYTEXT;
+            default: return GetClObituaryDisplayMode(playerId);
+        }
+    }
+
     internal int GetShownObituaries(int playerId) { return BCSUTILS::Clamp(GetUserCvar(playerId, "cl_zh2_shownobituaries"), 1, OBITUARY_COLLECTION_MAX_SIZE); }
 
     // Game - Settings

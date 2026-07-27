@@ -1,0 +1,156 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Obituary
+{
+    internal str GetLegacyDefaultMessage(int id) { return BCSUtils::PlayerName(id) + " didn't make it."; }
+
+    internal void DrawLegacyAnnouncement(int id, fixed yFraction, int color, str text)
+    {
+        if (!BCSUtils::SetActivatorToConsolePlayer())
+            return;
+
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetFont("SMALLFONT");
+        BCSUtils::HudSetTextColor(color);
+        BCSUtils::HudSetStayTime(1.0);
+        BCSUtils::HudSetDisappearTime(2.0);
+        BCSUtils::HudSetPoint(320.0, yFraction * 480.0);
+        BCSUtils::HudDrawText(id, text);
+    }
+
+    internal void DrawLegacySelfInfectedMessage()
+    {
+        if (!BCSUtils::SetActivatorToConsolePlayer())
+            return;
+
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        BCSUtils::HudSetFont("BIGFONT");
+        BCSUtils::HudSetTextColor(CR_RED);
+        BCSUtils::HudSetStayTime(2.0);
+        BCSUtils::HudSetDisappearTime(2.0);
+        BCSUtils::HudSetPoint(320.0, 0.3 * 480.0);
+        BCSUtils::HudDrawText(HUDID_LEGACYOBITUARYPERSONAL, "You have been infected!");
+    }
+
+    // I did change how this behaves compared to ZH1.
+    // Normally with multiple zombies, two messages would be drawn underneath eachother.
+    // However, this would not work well when we can have way more than 2 zombies at a time now.
+    // Better to join it together in that case.
+    internal void LegacyLogInitialsChosen()
+    {
+        int count = Event::GetReceiveData(0);
+        bool multiple = count > 1;
+
+        str message;
+        buildmsg(message = StrParam())
+        {
+            int index = 1;
+            int position = 0;
+            while (count--)
+            {
+                int id = Event::GetReceiveData(index++);
+                position++;
+
+                Append(s:BCSUtils::PlayerName(id));
+
+                if (count == 1) Append(s:" and ");
+                else if (count != 0) Append(s:", ");
+
+                // Wrap onto a new line once the list gets long, so it doesn't run off the edges of the screen.
+                if (position == 2 || position == 6)
+                    Append(s:"\n");
+            }
+
+            Append(s:" \cg" + (multiple ? "have" : "has") + " been turned into " + (multiple ? "zombies" : "a zombie") + "!");
+        }
+
+        DrawLegacyAnnouncement(HUDID_LEGACYOBITUARYANNOUNCE, 0.4, CR_RED, message);
+    }
+
+    internal void LegacyLogPlayerScratched()
+    {
+        int infectedId = Event::GetReceiveData(0);
+        int infectorId = Event::GetReceiveData(1);
+
+        DrawLegacyAnnouncement(HUDID_LEGACYOBITUARYANNOUNCE, 0.4, CR_WHITE,
+            BCSUtils::PlayerName(infectedId) + " \cghas been infected by \ck" + BCSUtils::PlayerName(infectorId) + "\cg!");
+
+        if (infectedId == ConsolePlayerNumber())
+            DrawLegacySelfInfectedMessage();
+    }
+
+    internal void LegacyLogPlayerInfected()
+    {
+        int id = Event::GetReceiveData(0);
+
+        DrawLegacyAnnouncement(HUDID_LEGACYOBITUARYANNOUNCE, 0.4, CR_RED,
+            BCSUtils::PlayerName(id) + " \cghas been infected by an \ckadmin!");
+
+        if (id == ConsolePlayerNumber())
+            DrawLegacySelfInfectedMessage();
+    }
+
+    internal void LegacyLogPlayerCured()
+    {
+        int id = Event::GetReceiveData(0);
+        bool transformed = Event::GetReceiveData(1);
+
+        str text = transformed
+            ? BCSUtils::PlayerName(id) + " \cjhas miraculously been \cncured!"
+            : BCSUtils::PlayerName(id) + " \cjis now \cnimmune \cjto infection!";
+
+        DrawLegacyAnnouncement(HUDID_LEGACYOBITUARYANNOUNCE, 0.4, CR_BLUE, text);
+    }
+
+    internal void LegacyLogPlayerDied()
+    {
+        if (!ZH2Game::GetCompatNoObituaries())
+            return;
+
+        int id = Event::GetReceiveData(0);
+        int type = Event::GetReceiveData(1);
+
+        switch (type)
+        {
+            case ZH2Game::DEATHTYPE_SUICIDE: Logger::LogConsolePlayer(BCSUtils::PlayerName(id) + " lost a Russian Roulette game."); return;
+            case ZH2Game::DEATHTYPE_FALLING: Logger::LogConsolePlayer(BCSUtils::PlayerName(id) + " can't fly."); return;
+            case ZH2Game::DEATHTYPE_DROWNING: Logger::LogConsolePlayer(BCSUtils::PlayerName(id) + " drowned."); return;
+            default: Logger::LogConsolePlayer(GetLegacyDefaultMessage(id)); return;
+        }
+    }
+
+    // This has always been a bit weird since friendly fire was also considered killing a zombie here.
+    internal void LegacyLogPlayerKilledByPlayer(int killedId, int killerId)
+    {
+        if (!ZH2Game::GetCompatNoObituaries())
+            return;
+
+        if (!Player::GetPlayerIsZombie(killedId) || !Player::GetPlayerIsZombie(killerId))
+        {
+            Logger::LogConsolePlayer(GetLegacyDefaultMessage(killedId));
+            return;
+        }
+
+        static str messages[] =
+        {
+            " has put someone out of his misery.",
+            " wasted another zombie.",
+            " accidented a zombie.",
+            " spilled zombie blood.",
+        };
+
+        Logger::LogConsolePlayer(BCSUtils::PlayerName(killerId) + messages[Random(0, lengthof(messages) - 1)]);
+    }
+
+    internal void LegacyLogPlayerKilledByMonster(int id)
+    {
+        if (!ZH2Game::GetCompatNoObituaries())
+            return;
+
+        Logger::LogConsolePlayer(GetLegacyDefaultMessage(id));
+    }
+}
