@@ -70,8 +70,10 @@ strict namespace Resist
             return 0;
         }
 
-        Resist::StartResist(index);
-        Sync::SyncResists();
+        // Skip the sync if the resist was already playing in some form; nothing changed.
+        if (Resist::StartResist(index))
+            Sync::SyncResists();
+
         return Resist::GetTicsLeft(index);
     }
 

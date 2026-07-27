@@ -185,19 +185,21 @@ strict namespace Resist
         return resist.EndingTic - currentTic;
     }
 
-    internal void StartResist(int index)
+    // Returns whether the resist actually started, i.e. it wasn't already playing in some form.
+    internal bool StartResist(int index)
     {
         ResistRunStateT state = GetRunState(index);
         if (state != STATENONE)
-            return;
+            return false;
 
         if (HasPreResistScript(index))
         {
             StartPreResistScript(index);
-            return;
+            return true;
         }
 
         SetResistReadyToRun(index);
+        return true;
     }
 
     internal void ElapseResist(int index)
