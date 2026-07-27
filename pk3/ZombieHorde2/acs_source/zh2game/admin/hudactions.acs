@@ -293,7 +293,7 @@ strict namespace Admin
     script "zh2_internal_menu_start_resist" (int index) net
     {
         if (!GetIsAdmin()) terminate;
-        if (Resist::IsActive(index)) terminate;
+        if (Resist::GetRunState(index) != Resist::STATENONE) terminate;
         Resist::StartResist(index);
     }
 
@@ -306,7 +306,10 @@ strict namespace Admin
     script "zh2_internal_menu_elapse_resist" (int index) net
     {
         if (!GetIsAdmin()) terminate;
-        if (!Resist::IsActive(index)) terminate;
+
+        Resist::ResistRunStateT state = Resist::GetRunState(index);
+        if (state != Resist::STATERUNNING && state != Resist::STATEPAUSED) terminate;
+
         Resist::ElapseResist(index);
     }
 
@@ -319,7 +322,10 @@ strict namespace Admin
     script "zh2_internal_menu_stop_resist" (int index) net
     {
         if (!GetIsAdmin()) terminate;
-        if (!Resist::IsActive(index)) terminate;
+
+        Resist::ResistRunStateT state = Resist::GetRunState(index);
+        if (state != Resist::STATERUNNING && state != Resist::STATEPAUSED) terminate;
+
         Resist::StopResist(index);
     }
 
@@ -332,7 +338,7 @@ strict namespace Admin
     script "zh2_internal_menu_pause_resist" (int index) net
     {
         if (!GetIsAdmin()) terminate;
-        if (!Resist::IsActive(index)) terminate;
+        if (Resist::GetRunState(index) != Resist::STATERUNNING) terminate;
         Resist::PauseResist(index);
     }
 
@@ -345,7 +351,7 @@ strict namespace Admin
     script "zh2_internal_menu_resume_resist" (int index) net
     {
         if (!GetIsAdmin()) terminate;
-        if (!Resist::IsActive(index)) terminate;
+        if (Resist::GetRunState(index) != Resist::STATEPAUSED) terminate;
         Resist::ResumeResist(index);
     }
 
@@ -358,7 +364,10 @@ strict namespace Admin
     script "zh2_internal_menu_reset_resist" (int index) net
     {
         if (!GetIsAdmin()) terminate;
-        if (!Resist::IsActive(index)) terminate;
+
+        Resist::ResistRunStateT state = Resist::GetRunState(index);
+        if (state != Resist::STATERUNNING && state != Resist::STATEENDED) terminate;
+
         Resist::ResetResist(index, true);
     }
 
