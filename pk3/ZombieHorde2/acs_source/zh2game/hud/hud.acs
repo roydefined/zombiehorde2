@@ -8,6 +8,8 @@
 #include "cursor.acs"
 #include "draw.acs"
 
+#include "skins/default/draw.acs"
+
 #include "utils/utils.acs"
 #include "game/game.acs"
 #include "player/player.acs"
@@ -78,6 +80,33 @@ strict namespace Hud
             _hudX += _xShakeOffset;
             _hudY += _yShakeOffset;
         }
+    }
+
+    // Determines the HUD skin to use for the player's HUD.
+    // The server's setting has the highest priority.
+    // Then the client's setting is used.
+    // If neither care, use what is best for the map.
+    internal ZH2Game::HudSkinT GetHudSkin(int playerId)
+    {
+        switch (ZH2Game::GetSvForceHudSkin())
+        {
+            case ZH2Game::HUDSKINBEHAVIOUR_FORCEDEFAULTSKIN: return ZH2Game::HUDSKIN_DEFAULT;
+            default:
+            {
+                switch (ZH2Game::GetClHudSkin(playerId))
+                {
+                    case ZH2Game::HUDSKINPREFERENCE_DEFAULT: return ZH2Game::HUDSKIN_DEFAULT;
+                    default: return GetBestFitHudSkin();
+                }
+            }
+        }
+    }
+
+    // The hud skin the game considers the best one to use.
+    // For now only one.
+    internal ZH2Game::HudSkinT GetBestFitHudSkin()
+    {
+        return ZH2Game::HUDSKIN_DEFAULT;
     }
 
     internal fixed GetHudX()

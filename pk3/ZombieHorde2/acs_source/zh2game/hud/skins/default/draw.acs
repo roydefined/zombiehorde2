@@ -1,0 +1,74 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawHudDefault()
+    {
+        // Alongside checking individual categories, this boolean indicates if we draw the hud as a whole.
+        bool drawHud = ZH2Game::GetDrawHud();
+
+        if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
+            DrawFullServerHud();
+
+        if (drawHud && ZH2Game::GetDrawVersionHud())
+            DrawVersion();
+
+        if (drawHud && ZH2Game::GetDrawRoundHud())
+            DrawRoundHud();
+
+        // All of this is strictly during the playing game.
+        if (Round::GetActiveKnownRoundState() < Round::STATEENDING)
+        {
+            if (drawHud && ZH2Game::GetDrawResistsHud())
+                DrawResistsHud();
+
+            if (drawHud && ZH2Game::GetDrawDebugHud())
+                DrawDebugHud();
+
+            // NOTE: We do NOT allow drawing of the admin hud during the voting, because it is also clickable.
+            if (ZH2Game::GameContext.HasAdminHudOpen)
+                DrawAdminHud();
+
+            // Same as the admin hud
+            if (ZH2Game::GameContext.HasClientSettingsHudOpen)
+                DrawClientSettingsHud();
+
+            if (_clientCameraOnBody && Player::GetOnFire())
+                DrawClientSeparateHudFire(FIRETYPENORMAL);
+
+            if (_clientCameraOnBody && Player::GetOnFire() && Timer() % 10 == 0)
+                DrawClientSeparateHudFireBlur();
+
+            if (_clientCameraOnBody && Player::GetOnAcid() && Timer() % 10 == 0)
+                DrawClientSeparateHudAcidBlur();
+
+            if (Game::ClientDeathCameraEnabled() && Game::GetViewingDeathCamera())
+                DrawDeathCamHud();
+
+            if (_clientCameraOnBody && drawHud)
+            {
+                DrawWeaponsHud();
+                DrawPlayerHud();
+            }
+
+            if (drawHud && ZH2Game::GetDrawGameHud())
+                DrawGameHud();
+
+            DrawObituaryHud();
+            DrawDamageFeedback();
+        }
+
+        // Game must be ending and we must have a winning specie in order to draw the ending hud.
+        if (Round::GetActiveKnownRoundState() == Round::STATEENDING)
+            DrawEndingHud();
+
+        // Game must be ending and we must have a winning specie in order to draw the ending hud.
+        if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
+            DrawSummaryHud();
+
+        if (GetCursorEnabled())
+            DrawCursor();
+    }
+}
