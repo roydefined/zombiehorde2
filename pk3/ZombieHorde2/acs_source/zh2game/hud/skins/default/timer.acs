@@ -4,13 +4,24 @@
 
 strict namespace Hud
 {
-    internal void DrawTimer()
+    internal void DrawTimerDefault()
     {
         int id = HUDID_TIMER;
 
         int index = RoundTimer::GetActiveTimerIndex();
         if (!RoundTimer::GetTimerDefined(index) || !RoundTimer::GetTimerActive(index) || !RoundTimer::GetTimerVisible(index))
             return;
+
+        fixed scale = ZH2Game::GetHudRoundScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        PrepareHud(
+            ZH2Game::GetHudRoundOffsetX() + 320.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudRoundOffsetY() - 20.0,
+            false);
 
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetCenterText(true);
