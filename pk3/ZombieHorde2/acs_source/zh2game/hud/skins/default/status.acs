@@ -6,97 +6,6 @@ strict namespace Hud
 {
     #define PLAYERID_KEYROWCOUNT 5
 
-    // Specifies which hud states should be drawn.
-    // These are all determined when we draw.
-    internal bool _hudStates[MAX_HUD_STATES];
-
-    internal void DrawPlayerStatusHud()
-    {
-        // Hud scaling is done through `HudSetVirtualSize` as `HudSetScale` only applies scaling to the final sprite
-        // The issue here is that positioning will be wrong.
-
-        fixed scale = ZH2Game::GetHudPlayerStatusScale();
-        BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
-        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-
-        // Base x and y offsets used by the hud elements.
-        fixed baseX = BCSUtils::HudLeft() + ZH2Game::GetHudPlayerStatusOffsetX() + 30.0,
-              baseY = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 30.0;
-
-        PrepareHud(
-            baseX, baseY, true);
-        DrawPlayerBackground();
-
-        PrepareHud(
-            baseX + 25.0, baseY - 18.0, true);
-        DrawPlayerSkin();
-
-        PrepareHud(
-            baseX + 50.0, baseY - 30.0, true);
-        DrawKevlarArmor();
-
-        PrepareHud(
-            baseX + 50.0, baseY - 20.0, true);
-        DrawHealth();
-
-        PrepareHud(
-            baseX + 100.0, baseY - 125.0, true);
-        DrawCurrentOwnedItem();
-
-        PrepareHud(
-            baseX + 150.0, baseY - 40.0, true);
-        DrawCalculatedFactors();
-
-        PrepareHud(
-            baseX + 140.0, baseY - 100.0, true);
-        DrawZombieTeleportsLeft();
-
-        PrepareHud(
-            baseX + HUD_STATES_RADIUS + 5.0, baseY - 75.0, true);
-        DrawHudStates();
-
-        BCSUtils::HudSetVirtualSize(960.0 / scale, 720.0 / scale);
-
-        PrepareHud(
-            baseX + 130.0, baseY + 122.0, true);
-        DrawKeyList();
-
-        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
-
-        // Right side
-        // TODO: This is a whole different part of the HUD and should be moved.
-        PrepareHud(
-            BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 80.0,
-            BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 80.0,
-            true);
-
-        DrawWeaponBackground();
-
-        PrepareHud(
-            BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 110.0,
-            BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 80.0,
-            true);
-
-        DrawWeaponIcon();
-
-        if (Player::GetIsZombie())
-        {
-            PrepareHud(
-                BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 80.0,
-                BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 220.0,
-                true);
-
-            DrawZombieAbilities();
-        }
-
-        // Call hook for this part of the HUD.
-        PrepareHud(baseX, baseY, true);
-        _hudHookData.Type = HUDHOOK_PLAYERSTATUS;
-        Hook::Call(Hook::HOOK_CLIENTDRAWHUD, _hudHookData);
-    }
-
     internal void DrawPlayerBackground()
     {
         HudSetPointInternal();
@@ -146,9 +55,10 @@ strict namespace Hud
 
     internal void DrawKevlarArmor()
     {
-        int armount = Player::GetKevlarPoints();
-        if (armount == 0)
+        if (!GetSharedState().DrawKevlarArmor)
             return;
+
+        int armount = Player::GetKevlarPoints();
 
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetTextColor(CR_BLUE);
@@ -180,7 +90,7 @@ strict namespace Hud
 
     internal void DrawCurrentOwnedItem()
     {
-        if (Item::GetClientOwnedInventorySize() == 0)
+        if (!GetSharedState().DrawCurrentOwnedItem)
             return;
 
         int index = Item::GetInventoryIndex(Item::GetClientOwnedInventoryIndex(Item::_currentInventoryIndex));
@@ -214,18 +124,11 @@ strict namespace Hud
         fixed offsetY = 0.0;
         for (int i = 0; i < MAX_POWER_TYPES; ++i)
         {
+            if (!GetSharedState().DrawCalculatedFactorByIndex[i])
+                continue;
+
             fixed factor = Power::GetPlayerCalculatedPowerFactor(ConsolePlayerNumber(), i);
-
-            // Do not draw if 0.0
-            // This will be the case for a brief moment in online games, until we synchronized.
-            if (factor == 0.0)
-                continue;
-
             fixed defaultFactor = Power::GetPlayerPowerFactorDefaultValue(ConsolePlayerNumber(), i);
-
-            // Do not draw if the factor is the default.
-            if (factor == defaultFactor)
-                continue;
 
             BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
 
@@ -261,13 +164,7 @@ strict namespace Hud
 
     internal void DrawZombieTeleportsLeft()
     {
-        if (!ZH2Game::GetAllowZombieTeleporting())
-            return;
-
-        if (!Player::GetIsZombie())
-            return;
-
-        if (!Game::GetZombieTeleportingEnabled())
+        if (!GetSharedState().DrawZombieTeleportsLeft)
             return;
 
         str graphic = ConsolePlayerSkinToZombieTeleportGraphic();
@@ -293,33 +190,12 @@ strict namespace Hud
     {
         static str graphics[MAX_HUD_STATES] = { "ST_SAFE", "ST_CAFF", "ST_DAMFC", "ST_JUMP", "ST_SPEED", "ST_PANIC", "ST_CURE", "ST_HINV", "ST_UNSOL", "ST_SR50" };
 
-        // Update states before drawing.
-        // Safety is special as it has multiple slots. If we have at least one non-hidden safety slot set to `true`, it passes.
-        _hudStates[0] = false;
-        for (int i = 0; i < MAX_SAFETY_SLOTS; ++i)
-        {
-            if (Game::GetIsSafe(i) && !Game::GetSafeHidden(i))
-            {
-                _hudStates[0] = true;
-                break;
-            }
-        }
-        _hudStates[1] = Power::GetHasPower(Power::POWERCAFFEINE);
-        _hudStates[2] = Power::GetHasPower(Power::POWERREWARDHUMANWEAPONUPGRADE);
-        _hudStates[3] = Power::GetHasPower(Power::POWERREWARDZOMBIEJUMP);
-        _hudStates[4] = Power::GetHasPower(Power::POWERREWARDZOMBIESPEED);
-        _hudStates[5] = Power::GetHasPower(Power::POWERPANICKING);
-        _hudStates[6] = Power::GetHasPower(Power::POWERHUMANIMMUNITY);
-        _hudStates[7] = Power::GetHasPower(Power::POWERZOMBIEPROTECT);
-        _hudStates[8] = SpaceUtil::GetThruActorsState() != SpaceUtil::STATE_DEFAULT;
-        _hudStates[9] = Power::GetHasPower(Power::POWERANTISR50);
-
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
 
         int offset = 0;
         for (int i = 0; i < MAX_HUD_STATES; ++i)
         {
-            if (!_hudStates[i])
+            if (!GetSharedState().DrawHudStateByIndex[i])
                 continue;
 
             fixed angleDeg = 180.0 + fixed(offset) * HUD_STATES_ANGLE;
@@ -340,10 +216,10 @@ strict namespace Hud
 
     internal void DrawKeyList()
     {
-        // No keys to draw.
-        int keyCount = Item::GetClientOwnedKeySize();
-        if (keyCount == 0)
+        if (!GetSharedState().DrawKeyList)
             return;
+
+        int keyCount = Item::GetClientOwnedKeySize();
 
         // Start more left as we have more keys
         fixed adjustX = 10.0 * fixed(keyCount / (PLAYERID_KEYROWCOUNT + 1));
@@ -363,18 +239,14 @@ strict namespace Hud
     {
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
 
-        // TODO: CheckWeapon check should come from a lump.
-        bool drawSecondaryBackground = CheckWeapon(WEAPON_RIOTGUN_NAME);
-        if (drawSecondaryBackground)
+        if (GetSharedState().DrawSecondaryWeaponBackground)
         {
             HudSetPointInternal(20.0, 8.0);
             BCSUtils::HudDrawImage(--_drawnHudId, "HUDSBACK");
             DebugDraw();
         }
 
-        // TODO: CheckWeapon checks should come from a lump.
-        bool drawPrimaryBackground = !CheckWeapon(WEAPON_RADIO_NAME) && !CheckWeapon(WEAPON_CLAWS_NAME);
-        if (drawPrimaryBackground)
+        if (GetSharedState().DrawPrimaryWeaponBackground)
         {
             HudSetPointInternal();
             BCSUtils::HudDrawImage(--_drawnHudId, "HUDPBACK");
@@ -455,12 +327,8 @@ strict namespace Hud
     {
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
 
-        // Server disabled abilities or we have none, skip drawing.
-        if (!ZH2Game::GetUseZombieAbilities()
-            || Game::GetZombieAbilityFlags() == 0)
-        {
+        if (!GetSharedState().DrawZombieAbilities)
             return;
-        }
 
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetTextColor(CR_WHITE);
@@ -471,19 +339,8 @@ strict namespace Hud
 
         for (int i = ABILITY_COUNT - 1; i >= 0; --i)
         {
-            Game::ZombieAbilityTypeFlagsT flag = Game::GetZombieAbilityItemTypeByIndex(i + 1);
-
-            // Should not happen.
-            // If it does, we gracefully ignore for now and assume the ability can be used.
-            if (flag != Game::ABILITY_NONE)
-            {
-                // Server disabled this ability or we don't have it.
-                if (!Game::HasZombieAbility(flag)
-                    || (ZH2Game::GetDisabledZombieAbilityFlags() & flag) != 0)
-                {
-                    continue;
-                }
-            }
+            if (!GetSharedState().DrawZombieAbilityByIndex[i])
+                continue;
 
             bool selected = Game::GetSelectedAbilityIndex() == i;
 
