@@ -6,14 +6,10 @@ strict namespace Hud
 {
     internal void DrawSprintBar()
     {
-        // Draw the sprint bar if human, and if we are not at the maximum.
-        if (!Player::GetIsHuman())
+        if (!GetSharedState().DrawSprintBar)
             return;
 
         int left = Player::GetSprintLeft();
-        if (left == SPRINT_ITEM_MAX)
-            return;
-
         int id = HUDID_SPRINTBAR;
 
         HudSetPointInternal();
@@ -33,14 +29,10 @@ strict namespace Hud
 
     internal void DrawAirSupplyBar()
     {
-        // Note also that because zombies have no air supply, the bar will show empty even though they will never drown.
-        if (!Player::GetIsHuman())
+        if (!GetSharedState().DrawAirSupplyBar)
             return;
 
         int airSupply = GetAirSupply(ConsolePlayerNumber());
-        if (airSupply == MAX_AIRSUPPLY)
-            return;
-
         int id = HUDID_AIRBAR;
 
         HudSetPointInternal();
@@ -60,28 +52,11 @@ strict namespace Hud
 
     internal void DrawAfkBar()
     {
-        Round::KnownRoundStateT roundState = Round::GetActiveKnownRoundState();
-        if (roundState != Round::STATECOUNTDOWN && roundState != Round::STATEPLAYING)
+        if (!GetSharedState().DrawAfkBar)
             return;
 
-        // The bar requires the player to either have no moved, or have a warning he is going to get kicked.
-        // Priority is on having moved at round start.
-        int max, tics;
-        if (!AfkPrevention::GetHasMovedThisRound())
-        {
-            max = ZH2Game::GetAfkMoveAtRoundStartBeforeSeconds() * 35;
-            tics = AfkPrevention::GetTicsUntilRoundStartKick();
-        }
-        else if (AfkPrevention::GetHasAfkWarn())
-        {
-            max = ZH2Game::GetAfkZombieMoveWarnSeconds() * 35;
-            tics = AfkPrevention::GetZombieWarnTicsLeft();
-        }
-        else
-            return;
-
-        if (max == 0)
-            return;
+        int max = GetSharedState().AfkBarMaxTics;
+        int tics = GetSharedState().AfkBarTicsLeft;
 
         int id = HUDID_AFKBAR;
 
