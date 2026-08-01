@@ -1,0 +1,67 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawWeaponIconLegacy(fixed x, fixed y)
+    {
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
+
+        if (CheckWeapon(WEAPON_CHAINGUN_NAME))
+        {
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_WEAPON_CHAINGUN_NAME);
+
+            fixed percentage = fixed(CheckInventory(WEAPON_CHAINGUN_HEAT_NAME)) / fixed(WEAPON_CHAINGUN_MAX_HEAT);
+            fixed clipX = BCSUtils::Round(fixed(LEGACY_WEAPON_CHAINGUN_METER_WIDTH) * percentage);
+
+            BCSUtils::HudSetClipRect(fixed(-LEGACY_WEAPON_CHAINGUN_METER_WIDTH), fixed(-LEGACY_WEAPON_CHAINGUN_METER_HEIGHT) / 2.0, clipX, fixed(LEGACY_WEAPON_CHAINGUN_METER_HEIGHT));
+            BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_WEAPON_CHAINGUN_METER_NAME);
+            BCSUtils::HudRemoveClipRect();
+
+            DebugDraw();
+        }
+        else if (CheckWeapon(WEAPON_FIREGRENADE_NAME))
+        {
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_WEAPON_FIREGRENADE_NAME);
+
+            fixed percentage = fixed(CheckInventory(WEAPON_FIREGRENADE_THROWPOWER_NAME)) / fixed(WEAPON_FIREGRENADE_MAX_THROWPOWER);
+            fixed clipX = BCSUtils::Round(fixed(LEGACY_WEAPON_FIREGRENADE_METER_WIDTH) * percentage);
+
+            BCSUtils::HudSetClipRect(fixed(-LEGACY_WEAPON_FIREGRENADE_METER_WIDTH), fixed(-LEGACY_WEAPON_FIREGRENADE_METER_HEIGHT) / 2.0, clipX, fixed(LEGACY_WEAPON_FIREGRENADE_METER_HEIGHT));
+            BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_WEAPON_FIREGRENADE_METER_NAME);
+            BCSUtils::HudRemoveClipRect();
+
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_WEAPON_FIREGRENADE_OVERLAY_NAME);
+
+            DebugDraw();
+        }
+        else if (CheckWeapon(WEAPON_SHOTGUN_NAME))
+        {
+            int shells = CheckInventory(WEAPON_AMMO_SHOTGUN_NAME);
+            if (shells > 0)
+            {
+                int clamped = BCSUtils::Clamp(shells, 1, LEGACY_WEAPON_SHOTGUN_MAX_SHELLS);
+
+                BCSUtils::HudSetPoint(x, y);
+                BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_WEAPON_SHOTGUN_GRAPHIC_PREFIX + str(clamped));
+                DebugDraw();
+            }
+        }
+        else if (CheckWeapon(WEAPON_JACKSGUN_NAME))
+        {
+            int bullets = CheckInventory(WEAPON_AMMO_JACKSGUN_NAME);
+            if (bullets > 0)
+            {
+                int clamped = BCSUtils::Clamp(bullets, 1, LEGACY_WEAPON_JACKSGUN_MAX_BULLETS);
+
+                BCSUtils::HudSetPoint(x, y);
+                BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_WEAPON_JACKSGUN_GRAPHIC_PREFIX + str(clamped));
+                DebugDraw();
+            }
+        }
+    }
+}

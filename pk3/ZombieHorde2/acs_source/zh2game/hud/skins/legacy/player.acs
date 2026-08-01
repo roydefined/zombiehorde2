@@ -1,0 +1,39 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawPlayerSkinLegacy(fixed x, fixed y)
+    {
+        str skinIcon = (raw)0;
+        if (Player::GetIsHuman()) skinIcon = LEGACY_PLAYERSKIN_HUMAN_NAME;
+        else if (Player::GetIsZombie()) skinIcon = LEGACY_PLAYERSKIN_ZOMBIE_NAME;
+
+        if (skinIcon == (raw)0)
+            return;
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, skinIcon);
+    }
+
+    internal void DrawHealthLegacy(fixed x, fixed y)
+    {
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_HEALTH_ICON);
+        DebugDraw();
+
+        int health = BCSUtils::Max(0, PlayerHealth());
+
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_ORANGE);
+
+        BCSUtils::HudSetPoint(x, y + fixed(LEGACY_HEALTH_ICON_HEIGHT));
+        BCSUtils::HudDrawText(--_drawnHudId, str(health));
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+    }
+}

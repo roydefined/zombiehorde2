@@ -1,0 +1,33 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawKeyListLegacy(fixed x, fixed y)
+    {
+        if (!GetSharedState().DrawKeyList)
+            return;
+
+        int keyCount = Item::GetClientOwnedKeySize();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        for (int i = 0; i < keyCount; ++i)
+        {
+            fixed angleDeg = 270.0 - fixed(i) * LEGACY_KEYLIST_ANGLE;
+            fixed angle = angleDeg / 360.0;
+
+            fixed iconX = Cos(angle) * LEGACY_KEYLIST_RADIUS;
+            fixed iconY = Sin(angle) * LEGACY_KEYLIST_RADIUS;
+
+            int itemIndex = Item::GetKeyIndex(Item::GetClientOwnedKeyIndex(i));
+
+            BCSUtils::HudSetPoint(x + iconX, y + iconY);
+            BCSUtils::HudDrawImage(--_drawnHudId, Item::GetItemGraphic(itemIndex));
+            DebugDraw();
+        }
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+    }
+}

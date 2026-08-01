@@ -1,0 +1,61 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawZombieAbilitiesLegacy(fixed x, fixed y)
+    {
+        if (!GetSharedState().DrawZombieAbilities)
+            return;
+
+        // Unlike the default HUD, each graphic in the legacy HUD has its own dimensions.
+        static int widths[] = { LEGACY_ZOMBIEABILITY_PUSH_WIDTH, LEGACY_ZOMBIEABILITY_SPIT_WIDTH };
+        static int heights[] = { LEGACY_ZOMBIEABILITY_PUSH_HEIGHT, LEGACY_ZOMBIEABILITY_SPIT_HEIGHT };
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        fixed offsetY = 0.0;
+
+        for (int i = ABILITY_COUNT - 1; i >= 0; --i)
+        {
+            if (!GetSharedState().DrawZombieAbilityByIndex[i])
+                continue;
+
+            DrawZombieAbilityLegacy(x, y + offsetY, i, widths[i], heights[i]);
+
+            offsetY += LEGACY_ZOMBIEABILITY_SPACING_Y;
+        }
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+    }
+
+    internal void DrawZombieAbilityLegacy(fixed x, fixed y, int index, int width, int height)
+    {
+        bool selected = Game::GetSelectedAbilityIndex() == index;
+        int maxTics = Game::GetZombieAbilityCooldownMaxTicsByIndex(index);
+        int tics = Game::GetZombieAbilityCooldownTicsLeftByIndex(index);
+
+        // Displayed size is raw / scale (the legacy TEXTURES scale acts as a divisor here).
+        fixed clipWidth = fixed(width) / LEGACY_ZOMBIEABILITY_SCALE;
+        fixed clipHeight = fixed(height) / LEGACY_ZOMBIEABILITY_SCALE;
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, "LH_ZA" + str(index) + str(1));
+
+        fixed percentage = BCSUtils::Clamp(fixed(tics) / fixed(maxTics), 0.0, 1.0);
+        fixed clipX = clipWidth - BCSUtils::Round(clipWidth * percentage);
+
+        BCSUtils::HudSetClipRect(-clipWidth / 2.0, -clipHeight / 2.0, clipX, clipHeight);
+        BCSUtils::HudDrawImage(--_drawnHudId, "LH_ZA" + str(index) + str(2));
+        BCSUtils::HudRemoveClipRect();
+
+        if (selected)
+        {
+            BCSUtils::HudSetPoint(x - clipWidth / 2.0 - LEGACY_ZOMBIEABILITY_ARROW_GAP, y);
+            BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_ZOMBIEABILITY_ARROW);
+        }
+
+        DebugDraw();
+    }
+}
