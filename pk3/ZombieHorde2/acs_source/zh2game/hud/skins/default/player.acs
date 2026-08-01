@@ -1,0 +1,77 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawPlayerBackground(fixed x, fixed y)
+    {
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, "HUDBACK");
+        DebugDraw();
+
+        BCSUtils::HudSetPoint(x + 90.0, y - 40.0);
+        BCSUtils::HudDrawImage(--_drawnHudId, "HUDIBACK");
+        DebugDraw();
+    }
+
+    // TODO: Should come from a parsed lump.
+    internal void DrawPlayerSkin(fixed x, fixed y)
+    {
+        str skinIcon = (raw)0;
+        switch (GetSharedState().PlayerSkin)
+        {
+            case SKINTYPE_HUMAN_GRENADE: skinIcon = DEFAULT_PLAYER_HUD_SKIN_FIREGRENADE; break;
+            case SKINTYPE_HUMAN_HANDGUN: skinIcon = DEFAULT_PLAYER_HUD_SKIN_HANDGUN; break;
+            case SKINTYPE_HUMAN_JACKSGUN: skinIcon = DEFAULT_PLAYER_HUD_SKIN_JACKSGUN; break;
+            case SKINTYPE_HUMAN_SHOTGUN: skinIcon = DEFAULT_PLAYER_HUD_SKIN_SHOTGUN; break;
+            case SKINTYPE_HUMAN_DOUBLEBARRELEDSHOTGUN: skinIcon = DEFAULT_PLAYER_HUD_SKIN_DOUBLESHOTGUN; break;
+            case SKINTYPE_HUMAN_CHAINGUN: skinIcon = DEFAULT_PLAYER_HUD_SKIN_CHAINGUN; break;
+            case SKINTYPE_HUMAN_SNIPER: skinIcon = DEFAULT_PLAYER_HUD_SKIN_SNIPER; break;
+            case SKINTYPE_HUMAN_RIOTGUN: skinIcon = DEFAULT_PLAYER_HUD_SKIN_RIOTGUN; break;
+            case SKINTYPE_ZOMBIEOLD: skinIcon = DEFAULT_PLAYER_HUD_SKIN_OLDZOMBIE; break;
+            case SKINTYPE_ZOMBIEREGULAR: skinIcon = DEFAULT_PLAYER_HUD_SKIN_REGULARZOMBIE; break;
+            case SKINTYPE_ZOMBIEINITIAL: skinIcon = DEFAULT_PLAYER_HUD_SKIN_INITIALZOMBIE; break;
+        }
+
+        if (skinIcon == (raw)0)
+            return;
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, skinIcon);
+    }
+
+    internal void DrawKevlarArmor(fixed x, fixed y)
+    {
+        if (!GetSharedState().DrawKevlarArmor)
+            return;
+
+        int armount = Player::GetKevlarPoints();
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_BLUE);
+        BCSUtils::HudSetCenterText(true);
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawText(--_drawnHudId, str(armount));
+        DebugDraw();
+    }
+
+    internal int DrawHealth(fixed x, fixed y)
+    {
+        // Also flicker health based on current health.
+        int health = BCSUtils::Max(0, PlayerHealth());
+        bool flicker = health <= (Player::GetIsZombie() ? HEALTH_ZOMBIECRITICAL : HEALTH_HUMANCRITICAL);
+        if (!flicker || (flicker && Timer() % 50 < 25))
+        {
+            BCSUtils::HudSetFont("SmallFont");
+            BCSUtils::HudSetTextColor(flicker ? CR_RED : CR_WHITE);
+
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawText(--_drawnHudId, str(health));
+            DebugDraw();
+        }
+
+        return _drawnHudId;
+    }
+}

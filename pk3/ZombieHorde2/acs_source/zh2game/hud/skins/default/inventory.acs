@@ -1,0 +1,53 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawCurrentOwnedItem(fixed x, fixed y)
+    {
+        if (!GetSharedState().DrawCurrentOwnedItem)
+            return;
+
+        int index = Item::GetInventoryIndex(Item::GetClientOwnedInventoryIndex(Item::_currentInventoryIndex));
+        str graphic = Item::GetItemGraphic(index);
+        str name = Item::GetItemName(index);
+        int inventoryCount = CheckInventory(name);
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, graphic);
+        DebugDraw();
+
+        // Draw the current count of the item if we have more than one.
+        if (inventoryCount > 1)
+        {
+            BCSUtils::HudSetFont("SmallFont");
+            BCSUtils::HudSetTextColor(CR_YELLOW);
+
+            BCSUtils::HudSetPoint(x + 20.0, y - 10.0);
+            BCSUtils::HudDrawText(--_drawnHudId, str(inventoryCount));
+            DebugDraw();
+        }
+    }
+
+    internal void DrawKeyList(fixed x, fixed y)
+    {
+        if (!GetSharedState().DrawKeyList)
+            return;
+
+        int keyCount = Item::GetClientOwnedKeySize();
+
+        // Start more left as we have more keys
+        fixed adjustX = 10.0 * fixed(keyCount / (PLAYERID_KEYROWCOUNT + 1));
+
+        for (int i = 0; i < keyCount; ++i)
+        {
+            fixed addX = 15.0 * fixed(i / PLAYERID_KEYROWCOUNT) - adjustX;
+            fixed addY = 10.0 * fixed(i % PLAYERID_KEYROWCOUNT);
+            int itemIndex = Item::GetKeyIndex(Item::GetClientOwnedKeyIndex(i));
+
+            BCSUtils::HudSetPoint(x + addX, y + addY);
+            BCSUtils::HudDrawImage(--_drawnHudId, Item::GetItemGraphic(itemIndex));
+        }
+    }
+}

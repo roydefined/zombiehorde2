@@ -4,7 +4,7 @@
 
 strict namespace Hud
 {
-    internal void DrawSprintBar()
+    internal void DrawSprintBar(fixed x, fixed y)
     {
         if (!GetSharedState().DrawSprintBar)
             return;
@@ -12,7 +12,7 @@ strict namespace Hud
         int left = Player::GetSprintLeft();
         int id = DEFAULT_HUDID_SPRINTBAR;
 
-        HudSetPointInternal();
+        BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudDrawImage(--id, DEFAULT_BAR_SPRINT_NAME);
 
         fixed percentage = fixed(left) / fixed(SPRINT_ITEM_MAX);
@@ -27,7 +27,7 @@ strict namespace Hud
         DebugDraw();
     }
 
-    internal void DrawAirSupplyBar()
+    internal void DrawAirSupplyBar(fixed x, fixed y)
     {
         if (!GetSharedState().DrawAirSupplyBar)
             return;
@@ -35,7 +35,7 @@ strict namespace Hud
         int airSupply = GetAirSupply(ConsolePlayerNumber());
         int id = DEFAULT_HUDID_AIRBAR;
 
-        HudSetPointInternal();
+        BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudDrawImage(--id, DEFAULT_BAR_AIRSUPPLY_NAME);
 
         fixed percentage = fixed(airSupply) / fixed(MAX_AIRSUPPLY);
@@ -50,7 +50,7 @@ strict namespace Hud
         DebugDraw();
     }
 
-    internal void DrawAfkBar()
+    internal void DrawAfkBar(fixed x, fixed y)
     {
         if (!GetSharedState().DrawAfkBar)
             return;
@@ -60,7 +60,7 @@ strict namespace Hud
 
         int id = DEFAULT_HUDID_AFKBAR;
 
-        HudSetPointInternal();
+        BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudDrawImage(--id, DEFAULT_BAR_AFKPREVENTION_NAME);
 
         fixed percentage = fixed(tics) / fixed(max);
@@ -70,16 +70,24 @@ strict namespace Hud
         BCSUtils::HudSetClipRect(fixed(-DEFAULT_BAR_AFKPREVENTION_WIDTH / 2), fixed(-DEFAULT_BAR_AFKPREVENTION_HEIGHT), clipX, fixed(DEFAULT_BAR_AFKPREVENTION_HEIGHT));
         BCSUtils::HudDrawImage(--id, DEFAULT_BAR_AFKPREVENTION_METER_NAME);
         BCSUtils::HudRemoveClipRect();
-        DebugDraw();
-
         BCSUtils::HudSetAlpha(1.0);
+
+        DebugDraw();
+    }
+
+    internal void DrawAfkBarWarning(fixed x, fixed y)
+    {
+        if (!GetSharedState().DrawAfkBar)
+            return;
+
+        int id = DEFAULT_HUDID_AFKBARWARNING;
 
         BCSUtils::HudSetTextColor(CR_WHITE);
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetStayTime(0.0);
         BCSUtils::HudSetDisappearTime(1.0);
 
-        HudSetPointInternal(0.0, 10.0);
+        BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudDrawText(--id, "Move to avoid getting kicked for inactivity");
 
         DebugDraw();

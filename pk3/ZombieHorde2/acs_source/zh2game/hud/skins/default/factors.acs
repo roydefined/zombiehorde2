@@ -1,0 +1,53 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawCalculatedFactors(fixed x, fixed y)
+    {
+        // TODO: Make configurable from lumps
+        static str factorGraphics[] = { "FSPEED", "FJUMP", "FDAMFACT", "FDAMMULT", "FKNOCKBK" };
+        static int factorColors[] = { CR_WHITE, CR_WHITE, CR_RED, CR_WHITE, CR_WHITE };
+
+        fixed offsetY = 0.0;
+        for (int i = 0; i < MAX_POWER_TYPES; ++i)
+        {
+            if (!GetSharedState().DrawCalculatedFactorByIndex[i])
+                continue;
+
+            fixed factor = Power::GetPlayerCalculatedPowerFactor(ConsolePlayerNumber(), i);
+            fixed defaultFactor = Power::GetPlayerPowerFactorDefaultValue(ConsolePlayerNumber(), i);
+
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+            BCSUtils::HudSetPoint(x, y + offsetY);
+            BCSUtils::HudDrawImage(--_drawnHudId, factorGraphics[i]);
+            DebugDraw();
+
+            // Prefixed "x" symbol.
+            // TODO: Can this turn smaller?
+            BCSUtils::HudSetTextColor(factorColors[i]);
+            BCSUtils::HudSetPoint(x + 12.0, y + offsetY);
+            BCSUtils::HudDrawText(--_drawnHudId, "x");
+            DebugDraw();
+
+            // Calculate the actual difference.
+            // This improves how factors like jump (default 8.0) are drawn, should they be doubled (show 2.0 instead of 16.0)
+            fixed adjustedFactor = factor / defaultFactor;
+
+            // Only a single decimal is shown.
+            str formattedFactor = Utils::FormatDecimals(adjustedFactor, 1);
+
+            // Factor (also using the color as above).
+            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+            BCSUtils::HudSetPoint(x + 17.0, y + offsetY);
+            BCSUtils::HudDrawText(--_drawnHudId, formattedFactor);
+            DebugDraw();
+
+            offsetY -= 15.0;
+        }
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+    }
+}

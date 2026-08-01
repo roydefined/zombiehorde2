@@ -1,0 +1,61 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawZombieAbilities(fixed x, fixed y)
+    {
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        if (!GetSharedState().DrawZombieAbilities)
+            return;
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetCenterText(true);
+
+        // The vertical offset goes down with each ability.
+        fixed offsetY = 0.0;
+
+        for (int i = ABILITY_COUNT - 1; i >= 0; --i)
+        {
+            if (!GetSharedState().DrawZombieAbilityByIndex[i])
+                continue;
+
+            bool selected = Game::GetSelectedAbilityIndex() == i;
+
+            int maxTics = Game::GetZombieAbilityCooldownMaxTicsByIndex(i);
+            int tics = Game::GetZombieAbilityCooldownTicsLeftByIndex(i);
+
+            // Visual indication of the ability not being ready.
+            BCSUtils::HudSetAlpha(!selected && tics > 0 ? 0.4 : 1.0);
+
+            BCSUtils::HudSetPoint(x, y + offsetY);
+            BCSUtils::HudDrawImage(--_drawnHudId, "HUD_ZA" + str(i) + str(1));
+
+            // Visualize the time left before this ability can be used.
+            int graphicIndex = selected ? 3 : 2;
+            fixed percentage = BCSUtils::Clamp(fixed(tics) / fixed(maxTics), 0.0, 1.0);
+            fixed clipY = fixed(DEFAULT_HUD_ZOMBIEABILITY_METER_HEIGHT) - BCSUtils::Round(fixed(DEFAULT_HUD_ZOMBIEABILITY_METER_HEIGHT) * percentage);
+
+            BCSUtils::HudSetClipRect(fixed(-DEFAULT_HUD_ZOMBIEABILITY_METER_WIDTH), -clipY, fixed(DEFAULT_HUD_ZOMBIEABILITY_METER_WIDTH), fixed(DEFAULT_HUD_ZOMBIEABILITY_METER_HEIGHT));
+            BCSUtils::HudDrawImage(--_drawnHudId, "HUD_ZA" + str(i) + str(graphicIndex));
+            BCSUtils::HudRemoveClipRect();
+
+            DebugDraw();
+
+            // Show possible cooldown if selected
+            if (selected && tics > 0)
+            {
+                BCSUtils::HudSetAlpha(1.0);
+                str label = Utils::FormatTics(tics, true);
+
+                BCSUtils::HudSetPoint(x - 20.0, y + offsetY - 10.0);
+                BCSUtils::HudDrawText(--_drawnHudId, str(label));
+            }
+
+            offsetY -= 60.0;
+        }
+    }
+}
