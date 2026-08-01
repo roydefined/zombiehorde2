@@ -21,29 +21,19 @@ strict namespace Hud
     internal void DrawPlayerSkin()
     {
         str skinIcon = (raw)0;
-        int indexAcs = GetPlayerSkin(ConsolePlayerNumber(), PLAYERSKIN_VISIBLE);
-        if (indexAcs == -1)
-            return;
-
-        switch ((str)GetSkinProperty(indexAcs, "Name"))
+        switch (GetSharedState().PlayerSkin)
         {
-            case SKIN_HUMAN_GRENADE: skinIcon = PLAYER_HUD_SKIN_FIREGRENADE; break;
-            case SKIN_HUMAN_HANDGUN: skinIcon = PLAYER_HUD_SKIN_HANDGUN; break;
-            case SKIN_HUMAN_JACKSGUN: skinIcon = PLAYER_HUD_SKIN_JACKSGUN; break;
-            case SKIN_HUMAN_SHOTGUN: skinIcon = PLAYER_HUD_SKIN_SHOTGUN; break;
-            case SKIN_HUMAN_DOUBLEBARRELEDSHOTGUN: skinIcon = PLAYER_HUD_SKIN_DOUBLESHOTGUN; break;
-            case SKIN_HUMAN_CHAINGUN: skinIcon = PLAYER_HUD_SKIN_CHAINGUN; break;
-            case SKIN_HUMAN_SNIPER: skinIcon = PLAYER_HUD_SKIN_SNIPER; break;
-            case SKIN_HUMAN_RIOTGUN: skinIcon = PLAYER_HUD_SKIN_RIOTGUN; break;
-            case SKIN_ZOMBIEOLD: skinIcon = PLAYER_HUD_SKIN_OLDZOMBIE; break;
-            case SKIN_ZOMBIEREGULAR: skinIcon = PLAYER_HUD_SKIN_REGULARZOMBIE; break;
-            case SKIN_ZOMBIEINITIAL: skinIcon = PLAYER_HUD_SKIN_INITIALZOMBIE; break;
-
-            // No skin found, Fallback to default skin used for species.
-            default:
-                if (Player::GetIsHuman()) skinIcon = PLAYER_HUD_SKIN_FIREGRENADE;
-                else if (Player::GetIsZombie()) skinIcon = PLAYER_HUD_SKIN_OLDZOMBIE;
-                else return;
+            case SKINTYPE_HUMAN_GRENADE: skinIcon = PLAYER_HUD_SKIN_FIREGRENADE; break;
+            case SKINTYPE_HUMAN_HANDGUN: skinIcon = PLAYER_HUD_SKIN_HANDGUN; break;
+            case SKINTYPE_HUMAN_JACKSGUN: skinIcon = PLAYER_HUD_SKIN_JACKSGUN; break;
+            case SKINTYPE_HUMAN_SHOTGUN: skinIcon = PLAYER_HUD_SKIN_SHOTGUN; break;
+            case SKINTYPE_HUMAN_DOUBLEBARRELEDSHOTGUN: skinIcon = PLAYER_HUD_SKIN_DOUBLESHOTGUN; break;
+            case SKINTYPE_HUMAN_CHAINGUN: skinIcon = PLAYER_HUD_SKIN_CHAINGUN; break;
+            case SKINTYPE_HUMAN_SNIPER: skinIcon = PLAYER_HUD_SKIN_SNIPER; break;
+            case SKINTYPE_HUMAN_RIOTGUN: skinIcon = PLAYER_HUD_SKIN_RIOTGUN; break;
+            case SKINTYPE_ZOMBIEOLD: skinIcon = PLAYER_HUD_SKIN_OLDZOMBIE; break;
+            case SKINTYPE_ZOMBIEREGULAR: skinIcon = PLAYER_HUD_SKIN_REGULARZOMBIE; break;
+            case SKINTYPE_ZOMBIEINITIAL: skinIcon = PLAYER_HUD_SKIN_INITIALZOMBIE; break;
         }
 
         if (skinIcon == (raw)0)
@@ -167,7 +157,14 @@ strict namespace Hud
         if (!GetSharedState().DrawZombieTeleportsLeft)
             return;
 
-        str graphic = ConsolePlayerSkinToZombieTeleportGraphic();
+        str graphic = (raw)0;
+        switch (GetSharedState().ZombieTeleportSkin)
+        {
+            case ZTELESKIN_OLD: graphic = HUD_ZTELE_ZOMBIEOLD; break;
+            case ZTELESKIN_REGULAR: graphic = HUD_ZTELE_ZOMBIEREGULAR; break;
+            case ZTELESKIN_INITIAL: graphic = HUD_ZTELE_ZOMBIEINITIAL; break;
+        }
+
         int left = Game::GetZombieTeleportsLeft();
 
         HudSetPointInternal();
