@@ -1,0 +1,29 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Weapon
+{
+    // Determines the weapon skin to use.
+    // If the server doesn't care, use what is best for the map.
+    internal WeaponSkinT GetWeaponSkin()
+    {
+        switch (ZH2Game::GetSvForceWeaponSkin())
+        {
+            case WEAPONSKINBEHAVIOUR_FORCEDEFAULTSKIN: return WEAPONSKIN_DEFAULT;
+            case WEAPONSKINBEHAVIOUR_FORCELEGACYSKIN: return WEAPONSKIN_LEGACY;
+            default: return GetBestFitWeaponSkin();
+        }
+    }
+
+    // The weapon skin the game considers the best one to use for the current map.
+    internal WeaponSkinT GetBestFitWeaponSkin()
+    {
+        if (Map::GetCurrentMapIsLegacyMap())
+            return WEAPONSKIN_LEGACY;
+
+        return WEAPONSKIN_DEFAULT;
+    }
+
+    script "zh2_dec_getweaponskin" { SetResultValue(int(GetWeaponSkin())); }
+}
