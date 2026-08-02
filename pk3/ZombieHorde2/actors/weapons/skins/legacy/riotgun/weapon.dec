@@ -1,48 +1,4 @@
-
-// Indicates we're spinning
-actor ZH2WeaponRiotGunSpinning : Boolean {}
-
-// Indicates we move to reloading when we finished spinning down
-actor ZH2WeaponRiotGunSpinDownToReload : Boolean {}
-
-Actor ZH2WeaponRiotGunAmmoTotal : Ammo
-{
-    // Can hold 12 canisters total for now.
-    inventory.MaxAmount 12
-}
-
-Actor ZH2WeaponRiotGunAmmoCurrent : Ammo
-{
-    inventory.MaxAmount 12
-}
-
-actor ZH2WeaponRiotgunSpawn : ZH2WeaponSpawn 25198
-{
-    inventory.PickupMessage "Riot gun"
-    tag "Riot gun"
-
-    states
-    {
-        Spawn:
-            WRGI A -1
-            stop
-
-        Pickup:
-            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, 1)
-            stop
-            TNT1 A 0 A_JumpIfInventory("ZH2WeaponRiotGun", 1, "Ignore")
-            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGun", 1)
-            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunAmmoTotal", 1)
-            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunAmmoCurrent", 12)
-            stop
-
-        Ignore:
-            WRGI A 1
-            goto Spawn
-    }
-}
-
-actor ZH2WeaponRiotGun : ZH2Weapon
+actor ZH2WeaponRiotGunLegacy : ZH2Weapon
 {
     tag "Riot gun"
     weapon.PreferredSkin "Riotgun"

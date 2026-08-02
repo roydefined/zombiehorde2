@@ -1,0 +1,110 @@
+actor ZH2WeaponShotgunDefault : ZH2Weapon
+{
+    Tag "Hunting shotgun"
+    Weapon.PreferredSkin "Shotgun"
+
+    Weapon.SlotNumber 3
+    Weapon.Kickback 60
+
+    Weapon.AmmoUse 1
+    Weapon.AmmoGive 0
+    Weapon.AmmoType "ZH2WeaponShotgunAmmo"
+
+    +WEAPON.AMMO_OPTIONAL
+
+    States
+    {
+        Ready:
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponShotgunAmmo", 8, "Ready.Full")
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponShotgunMustPump", 1, "PumpNormal")
+            SHTX A 1 A_WeaponReady(WRF_ALLOWRELOAD)
+            wait
+
+        Ready.Full:
+            SHTX A 1 A_WeaponReady
+            wait
+
+        Deselect:
+            SHTS EDCBA 1
+            TNT1 A 0 A_Lower
+            wait
+
+        Select:
+            TNT1 A 0 A_Raise
+            TNT1 A 0 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
+            SHTS ABCDE 1
+            goto Ready
+
+        Fire:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+            TNT1 A 0 A_JumpIfNoAmmo("Fire.Empty")
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
+
+            TNT1 A 0 A_GiveInventory("ZH2WeaponShotgunMustPump", 1)
+            TNT1 A 0 Radius_Quake(2, 6, 0, 1, 0)
+            TNT1 A 0 A_TakeInventory("ZH2WeaponShotgunAmmo", 1)
+            TNT1 A 0 A_PlaySound("weapons/shotgun/FIRE", CHAN_WEAPON)
+            TNT1 A 0 A_GunFlash
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
+            TNT1 A 0 A_FireCustomMissile("ZH2WeaponShotgunSmoke", 0, false, 0)
+            TNT1 A 0 A_FireBullets(5.0, 5.0, 8, 25 + random(-1, 1) * 5, "ZH2WeaponBulletPuff", FBF_NOFLASH | FBF_NORANDOM | FBF_NORANDOMPUFFZ)
+            TNT1 A 0 A_AlertMonsters
+            TNT1 A 0 A_SetPitch(pitch-2.0)
+            SHTX B 1 bright
+            SHTX CD 1 A_SetPitch(pitch+1.0)
+            SHTX EFGH 1
+            SHTX A 3
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
+
+            goto PumpNormal
+
+        Fire.Empty:
+            SHTX A 5 A_PlayWeaponSound("weapons/shotgun/EMPTY")
+            goto Reload
+
+        PumpNormal:
+
+            // Brief moment where we are allowed to switch
+            SHTX IJKLMN 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
+            TNT1 A 0 A_PlaySoundEx("weapons/shotgun/COCKDOWN", "SoundSlot5")
+            SHTX OPQ 1 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
+            SHTX R 2 A_FireCustomMissile("ZH2ShotgunCase", 5, false, -4, -12)
+            SHTX S 3
+            TNT1 A 0 A_PlaySoundEx("weapons/shotgun/COCKUP", "SoundSlot5")
+            TNT1 A 0 A_TakeInventory("ZH2WeaponShotgunMustPump", 1)
+            TNT1 A 0
+            SHTX RQ 1
+            SHTX PONMLKJI 1
+            goto Ready
+
+        Reload:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponShotgunAmmo", 8, "Ready")
+            SHTX IJKLMNO 1
+            SHTR AB 1
+        Reload.Loop:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Reload.End")
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponShotgunAmmo", 8, "Reload.End")
+            SHTR C 3
+            SHTR DE 1
+            TNT1 A 0 A_PlaySoundEx("weapons/shotgun/INSERT", "SoundSlot5")
+            SHTR FG 1
+            TNT1 A 0 A_GiveInventory("ZH2WeaponShotgunAmmo", 1)
+            SHTR H 2  A_WeaponReady(WRF_NOBOB)
+            SHTR IJKLM 1
+            loop
+        Reload.End:
+            SHTR CBA 1
+            TNT1 A 0 A_PlaySoundEx("weapons/shotgun/COCKDOWN", "SoundSlot5")
+            SHTX PQR 1
+            SHTX S 2
+            TNT1 A 0 A_PlaySoundEx("weapons/shotgun/COCKUP", "SoundSlot5")
+            SHTX RQ 1
+            SHTX PONMLKJI 1
+            goto Ready
+    }
+}
