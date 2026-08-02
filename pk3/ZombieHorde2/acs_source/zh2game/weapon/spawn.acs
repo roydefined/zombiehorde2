@@ -1,0 +1,94 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Weapon"
+
+strict namespace Weapon
+{
+    // Note, the activator of this function must be a (fake) weapon spawn spot.
+    // It is assumed that this is the case when entering this function since it's checked beforehand.
+    internal void TrackWeaponSpawnSpot(WeaponTypeT weaponType)
+    {
+        // The spot is not expected to already have a tid, since we assign our own below.
+        // This is not required and should not be done, but it's not harmful either, so just inform about it.
+        int existingTid = ActivatorTID();
+        if (existingTid != 0)
+            Logger::LogInformation(LOGSOURCE, "Weapon spawn spot already had tid \cd" + str(existingTid) + "\cj before tracking. This is not required and should not be done.");
+
+        int tid = UniqueTID();
+        Thing_ChangeTID(0, tid);
+
+        // Validate the spot is not already tracked under this tid.
+        // This should not be possible since the tid is always freshly generated above, but better safe than sorry.
+        for (int i = 0; i < ZH2Game::GameContext.WeaponSpawnContext.SpotCount; ++i)
+        {
+            if (ZH2Game::GameContext.WeaponSpawnContext.Spots[i].Tid == tid)
+            {
+                Logger::LogWarning(LOGSOURCE, "Skipped tracking weapon spawn spot \cd" + str(tid) + "\cj: this tid is already tracked.");
+                return;
+            }
+        }
+
+        if (ZH2Game::GameContext.WeaponSpawnContext.SpotCount == MAX_WEAPONSPAWNSPOTS)
+        {
+            Logger::LogWarning(LOGSOURCE, "Unable to track weapon spawn spot: maximum number of trackable spots reached (" + str(MAX_WEAPONSPAWNSPOTS) + ").");
+            return;
+        }
+
+        int index = ZH2Game::GameContext.WeaponSpawnContext.SpotCount++;
+        ZH2Game::GameContext.WeaponSpawnContext.Spots[index].Tid = tid;
+        ZH2Game::GameContext.WeaponSpawnContext.Spots[index].WeaponType = weaponType;
+
+        Logger::LogDebug(LOGSOURCE, "Start tracking weapon spawn spot \cd" + str(tid) + "\cj, index \cd" + str(index) + "\cj.");
+    }
+
+    // Replaces every tracked (fake) weapon spawn spot with the actual spawn actor to give at that position.
+    internal void ReplaceWeaponSpawnSpots()
+    {
+        for (int i = 0; i < ZH2Game::GameContext.WeaponSpawnContext.SpotCount; ++i)
+        {
+            int tid = ZH2Game::GameContext.WeaponSpawnContext.Spots[i].Tid;
+            WeaponTypeT weaponType = ZH2Game::GameContext.WeaponSpawnContext.Spots[i].WeaponType;
+
+            if (ThingCount(T_NONE, tid) == 0)
+            {
+                Logger::LogWarning(LOGSOURCE, "Unable to replace weapon spawn spot \cd" + str(tid) + "\cj: the spot no longer exists.");
+                continue;
+            }
+
+            fixed x = GetActorX(tid);
+            fixed y = GetActorY(tid);
+            fixed z = GetActorZ(tid);
+
+            // Spawn()'s angle argument is a byte angle (0-255), not degrees.
+            int angle = int((GetActorAngle(tid) * 256.0) / 360.0);
+
+            Thing_Remove(tid);
+
+            str className = GetWeaponSpawnClassName(weaponType);
+            Spawn(className, x, y, z, tid, angle);
+        }
+    }
+
+    // Determines the class to spawn in place of a tracked (fake) weapon spawn spot.
+    // TODO: this currently always spawns the default skin's spawn actor directly. Replace once we know which one to use.
+    internal str GetWeaponSpawnClassName(WeaponTypeT weaponType)
+    {
+        if (weaponType == WEAPONTYPE_CHAINGUN) return "ZH2ChaingunSpawnDefault";
+        if (weaponType == WEAPONTYPE_CLAWS) return "ZH2WeaponClawsSpawnDefault";
+        if (weaponType == WEAPONTYPE_DOUBLESHOTGUN) return "ZH2WeaponDoubleShotgunSpawnDefault";
+        if (weaponType == WEAPONTYPE_FIREGRENADE) return "ZH2WeaponFireGrenadeSpawnDefault";
+        if (weaponType == WEAPONTYPE_HANDGUN) return "ZH2WeaponHandgunSpawnDefault";
+        if (weaponType == WEAPONTYPE_JACKSGUN) return "ZH2WeaponJacksGunSpawnDefault";
+        if (weaponType == WEAPONTYPE_RADIO) return "ZH2WeaponRadioSpawnDefault";
+        if (weaponType == WEAPONTYPE_RIOTGUN) return "ZH2WeaponRiotgunSpawnDefault";
+        if (weaponType == WEAPONTYPE_SHOTGUN) return "ZH2WeaponShotgunSpawnDefault";
+        if (weaponType == WEAPONTYPE_SNIPER) return "ZH2WeaponSniperSpawnDefault";
+
+        Logger::LogError(LOGSOURCE, "Unknown weapon type: " + str(weaponType) + ".");
+        return (str)0;
+    }
+}
+
+#undef LOGSOURCE
