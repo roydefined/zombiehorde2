@@ -28,12 +28,12 @@ strict namespace Hud
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
 
         str weaponIcon = "";
-        if      (CheckWeapon(WEAPON_SHOTGUN_NAME)) weaponIcon = DEFAULT_WEAPON_HUD_SKIN_SHOTGUN + str(CheckInventory(WEAPON_AMMO_SHOTGUN_NAME));
-        else if (CheckWeapon(WEAPON_DOUBLESHOTGUN_NAME)) weaponIcon = DEFAULT_WEAPON_HUD_SKIN_SUPERSHOTGUN  + str(CheckInventory(WEAPON_AMMO_DOUBLESHOTGUN_NAME));
-        else if (CheckWeapon(WEAPON_SNIPER_NAME)) weaponIcon = DEFAULT_WEAPON_HUD_SKIN_SNIPER + str(1 - CheckInventory(WEAPON_SNIPER_SHOULDEJECTCASE_NAME));
-        else if (CheckWeapon(WEAPON_JACKSGUN_NAME)) weaponIcon = DEFAULT_WEAPON_HUD_SKIN_JACKS + str(CheckInventory(WEAPON_AMMO_JACKSGUN_NAME));
-        else if (CheckWeapon(WEAPON_HANDGUN_NAME)) weaponIcon = DEFAULT_WEAPON_HUD_SKIN_PISTOL;
-        else if (CheckWeapon(WEAPON_RIOTGUN_NAME)) weaponIcon = DEFAULT_WEAPON_HUD_SKIN_RIOTGUN + str(CheckInventory(WEAPON_AMMO_RIOTGUN_CURRENT_NAME));
+        if      (Weapon::CheckWieldedShotgun()) weaponIcon = DEFAULT_WEAPON_HUD_SKIN_SHOTGUN + str(CheckInventory(WEAPON_AMMO_SHOTGUN_NAME));
+        else if (Weapon::CheckWieldedDoubleShotgun()) weaponIcon = DEFAULT_WEAPON_HUD_SKIN_SUPERSHOTGUN  + str(CheckInventory(WEAPON_AMMO_DOUBLESHOTGUN_NAME));
+        else if (Weapon::CheckWieldedSniper()) weaponIcon = DEFAULT_WEAPON_HUD_SKIN_SNIPER + str(1 - CheckInventory(WEAPON_SNIPER_SHOULDEJECTCASE_NAME));
+        else if (Weapon::CheckWieldedJacksGun()) weaponIcon = DEFAULT_WEAPON_HUD_SKIN_JACKS + str(CheckInventory(WEAPON_AMMO_JACKSGUN_NAME));
+        else if (Weapon::CheckWieldedHandgun()) weaponIcon = DEFAULT_WEAPON_HUD_SKIN_PISTOL;
+        else if (Weapon::CheckWieldedRiotGun()) weaponIcon = DEFAULT_WEAPON_HUD_SKIN_RIOTGUN + str(CheckInventory(WEAPON_AMMO_RIOTGUN_CURRENT_NAME));
 
         if (weaponIcon != "")
         {
@@ -43,7 +43,7 @@ strict namespace Hud
         }
 
         // Special logic for the chaingun and fire grenade, which have two graphics and some clipping.
-        if (CheckWeapon(WEAPON_CHAINGUN_NAME))
+        if (Weapon::CheckWieldedChaingun())
         {
             BCSUtils::HudSetPoint(x, y);
             BCSUtils::HudDrawImage(--_drawnHudId, DEFAULT_WEAPON_HUD_SKIN_CHAINGUN);
@@ -59,7 +59,7 @@ strict namespace Hud
 
             DebugDraw();
         }
-        else if (CheckWeapon(WEAPON_FIREGRENADE_NAME))
+        else if (Weapon::CheckWieldedFireGrenade())
         {
             BCSUtils::HudSetPoint(x, y);
             BCSUtils::HudDrawImage(--_drawnHudId, DEFAULT_WEAPON_HUD_SKIN_FIREGRENADE);
@@ -78,7 +78,7 @@ strict namespace Hud
 
         // The riotgun draws an extra indicator for how many canisters it has left.
         // This is a division of the total based on what fits in the gun.
-        else if (CheckWeapon(WEAPON_RIOTGUN_NAME))
+        else if (Weapon::CheckWieldedRiotGun())
         {
             BCSUtils::HudSetPoint(x + 50.0, y + 8.0);
             BCSUtils::HudDrawImage(--_drawnHudId, DEFAULT_WEAPON_HUD_SKIN_RIOTGUN_CLIP);

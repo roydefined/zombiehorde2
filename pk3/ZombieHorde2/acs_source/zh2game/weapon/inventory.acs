@@ -1,0 +1,39 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Weapon
+{
+    bool CheckOwnedShotgun() { return CheckInventory(WEAPON_SHOTGUN_DEFAULT_NAME) > 0 || CheckInventory(WEAPON_SHOTGUN_LEGACY_NAME) > 0; }
+    void GiveShotgun(int amount)
+    {
+        if (GetWeaponSkin() == WEAPONSKIN_LEGACY) GiveInventory(WEAPON_SHOTGUN_LEGACY_NAME, amount);
+        else GiveInventory(WEAPON_SHOTGUN_DEFAULT_NAME, amount);
+    }
+
+    internal bool CheckOwnedHandgun() { return CheckInventory(WEAPON_HANDGUN_DEFAULT_NAME) > 0 || CheckInventory(WEAPON_HANDGUN_LEGACY_NAME) > 0; }
+    internal void GiveHandgun(int amount)
+    {
+        if (GetWeaponSkin() == WEAPONSKIN_LEGACY) GiveInventory(WEAPON_HANDGUN_LEGACY_NAME, amount);
+        else GiveInventory(WEAPON_HANDGUN_DEFAULT_NAME, amount);
+    }
+
+    internal bool CheckActorOwnedRiotGun(int tid) { return CheckActorInventory(tid, WEAPON_RIOTGUN_DEFAULT_NAME) > 0 || CheckActorInventory(tid, WEAPON_RIOTGUN_LEGACY_NAME) > 0; }
+    internal void GiveActorRiotGun(int tid, int amount)
+    {
+        if (GetWeaponSkin() == WEAPONSKIN_LEGACY) GiveActorInventory(tid, WEAPON_RIOTGUN_LEGACY_NAME, amount);
+        else GiveActorInventory(tid, WEAPON_RIOTGUN_DEFAULT_NAME, amount);
+    }
+
+    internal void GiveFireGrenade(int amount)
+    {
+        if (GetWeaponSkin() == WEAPONSKIN_LEGACY) GiveInventory(WEAPON_FIREGRENADE_LEGACY_NAME, amount);
+        else GiveInventory(WEAPON_FIREGRENADE_DEFAULT_NAME, amount);
+    }
+
+    internal void SelectShotgun()
+    {
+        if (!SetWeapon(WEAPON_SHOTGUN_DEFAULT_NAME))
+            SetWeapon(WEAPON_SHOTGUN_LEGACY_NAME);
+    }
+}
