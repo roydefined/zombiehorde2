@@ -4,7 +4,9 @@ Actor ZH2WeaponJacksGunLegacy : ZH2Weapon
     weapon.PreferredSkin "Jacksgun"
 
     weapon.SlotNumber 2
-    weapon.Kickback 15
+
+    // weapon.Kickback 15
+    weapon.Kickback 75
 
     weapon.AmmoUse 1
     weapon.AmmoGive 2
@@ -16,42 +18,15 @@ Actor ZH2WeaponJacksGunLegacy : ZH2Weapon
     {
         Ready:
             JCGN A 1 A_WeaponReady
-
-            // Jump if still smoking
-            TNT1 A 0 A_JumpIfInventory("ZH2WeaponJacksGunSmokeCount", 1, 1)
-            loop
-
-            // Additional smoking from the gun.
-            TNT1 A 0 A_JumpIfInventory("ZH2WeaponJacksGunSmokeCount", 18, "Ready.Smoke1")
-            TNT1 A 0 A_JumpIfInventory("ZH2WeaponJacksGunSmokeCount", 15, "Ready.Smoke2")
-            TNT1 A 0 A_JumpIfInventory("ZH2WeaponJacksGunSmokeCount", 10,  "Ready.Smoke3")
-
-            TNT1 A 0 A_FireCustomMissile("ZH2WeaponJacksGunSmoke4", 0, false, 0)
-            Goto Ready
-
-        Ready.Smoke3:
-            TNT1 A 0 A_FireCustomMissile("ZH2WeaponJacksGunSmoke3", 0, false, 0)
-            Goto Ready
-
-        Ready.Smoke2:
-            TNT1 A 0 A_FireCustomMissile("ZH2WeaponJacksGunSmoke2", 0, false, 0)
-            Goto Ready
-
-        Ready.Smoke1:
-            TNT1 A 0 A_FireCustomMissile("ZH2WeaponJacksGunSmoke1", 0, false, 0)
-            Goto Ready
+            wait
 
         Deselect:
-            JCGS DCBA 1
-            TNT1 A 0 A_Lower
+            JCGN A 1 A_Lower
             wait
 
         Select:
-            TNT1 A 0 A_Raise
-            TNT1 A 0 A_WeaponReady(WRF_NOFIRE | WRF_NOSWITCH)
-            TNT1 A 0 A_PlaySoundEx("weapons/jacksgun/DEPLOY","SoundSlot6")
-            JCGS ABCD 1
-            goto Ready
+            JCGN A 1 A_Raise
+            wait
 
         Fire:
             TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
@@ -59,27 +34,17 @@ Actor ZH2WeaponJacksGunLegacy : ZH2Weapon
             TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
             TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
 
-            JCGN B 2 A_PlaySoundEx("weapons/jacksgun/FIRE",CHAN_WEAPON)
-            TNT1 A 0 Radius_Quake(4, 6, 0, 1, 0)
             TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
             TNT1 A 0 A_FireCustomMissile("ZH2WeaponJacksGunSmokeInitial", 0, false, 0)
-            TNT1 A 0 A_FireBullets (4.0, 4.0, 8, 200 + random(-1, 1) * 40, "ZH2WeaponBulletPuff", FBF_USEAMMO | FBF_NORANDOM)
-            TNT1 A 0 A_GiveInventory("ZH2WeaponJacksGunSmokeCount", 35)
+
+            // TNT1 A 0 A_FireBullets (4.0, 4.0, 8, 200 + random(-1, 1) * 40, "ZH2WeaponBulletPuff", FBF_USEAMMO | FBF_NORANDOM)
+            TNT1 A 0 A_FireBullets (2.0, 2.0, 8, 100, "ZH2WeaponBulletPuff", FBF_USEAMMO | FBF_NORANDOM)
+
             TNT1 A 0 A_AlertMonsters
-            TNT1 A 0 A_SetPitch(Pitch-8.0)
-            TNT1 A 0 A_Recoil(2)
-            JCGN C 1 bright A_FireCustomMissile("ZH2WeaponJacksGunSmoke1", 0, false, 0)
-            JCGN DE 1 A_FireCustomMissile("ZH2WeaponJacksGunSmoke1", 0, false, 0)
-            TNT1 A 0 A_SetPitch(Pitch+2.0)
-            JCGN F 1 A_FireCustomMissile("ZH2WeaponJacksGunSmoke1", 0, false, 0)
-            TNT1 A 0 A_SetPitch(Pitch+2.0)
-            JCGN F 1 A_FireCustomMissile("ZH2WeaponJacksGunSmoke1", 0, false, 0)
-            TNT1 A 0 A_SetPitch(Pitch+2.0)
-            JCGN G 1 A_FireCustomMissile("ZH2WeaponJacksGunSmoke1", 0, false, 0)
-            TNT1 A 0 A_SetPitch(Pitch+1.0)
-            JCGN G 1 A_FireCustomMissile("ZH2WeaponJacksGunSmoke1", 0, false, 0)
-            TNT1 A 0 A_SetPitch(Pitch+1.0)
-            JCGN GGIJ 1 A_FireCustomMissile("ZH2WeaponJacksGunSmoke1", 0, false, 0)
+            JCGN C 2 bright A_PlaySoundEx("weapons/jacksgun/legacy/FIRE",CHAN_WEAPON)
+            JCGN E 6
+            JCGN F 4
+            JCGN J 5
 
             TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
             TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
