@@ -51,6 +51,18 @@ strict namespace Hud
                 DebugDraw();
             }
         }
+        else if (Weapon::CheckWieldedRiotGun())
+        {
+            int shells = CheckInventory(WEAPON_AMMO_RIOTGUN_CURRENT_NAME) / LEGACY_WEAPON_RIOTGUN_AMMO_PER_SHELL;
+            if (shells > 0)
+            {
+                int clamped = BCSUtils::Clamp(shells, 1, LEGACY_WEAPON_RIOTGUN_MAX_SHELLS);
+
+                BCSUtils::HudSetPoint(x, y);
+                BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_WEAPON_RIOTGUN_GRAPHIC_PREFIX + str(clamped));
+                DebugDraw();
+            }
+        }
         else if (Weapon::CheckWieldedJacksGun())
         {
             int bullets = CheckInventory(WEAPON_AMMO_JACKSGUN_NAME);
