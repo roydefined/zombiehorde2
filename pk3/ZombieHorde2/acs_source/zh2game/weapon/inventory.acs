@@ -4,36 +4,29 @@
 
 strict namespace Weapon
 {
-    bool CheckOwnedShotgun() { return CheckInventory(WEAPON_SHOTGUN_DEFAULT_NAME) > 0 || CheckInventory(WEAPON_SHOTGUN_LEGACY_NAME) > 0; }
-    void GiveShotgun(int amount)
+    bool CheckOwned(int weaponType, int skin = WEAPONSKIN_BESTFIT)
     {
-        if (GetWeaponSkin() == WEAPONSKIN_LEGACY) GiveInventory(WEAPON_SHOTGUN_LEGACY_NAME, amount);
-        else GiveInventory(WEAPON_SHOTGUN_DEFAULT_NAME, amount);
+        str className = GetWeaponClassName(weaponType, skin);
+        return ((raw)className) != 0 && CheckInventory(className) > 0;
     }
 
-    internal bool CheckOwnedHandgun() { return CheckInventory(WEAPON_HANDGUN_DEFAULT_NAME) > 0 || CheckInventory(WEAPON_HANDGUN_LEGACY_NAME) > 0; }
-    internal void GiveHandgun(int amount)
+    void Give(int weaponType, int amount, int skin = WEAPONSKIN_BESTFIT)
     {
-        if (GetWeaponSkin() == WEAPONSKIN_LEGACY) GiveInventory(WEAPON_HANDGUN_LEGACY_NAME, amount);
-        else GiveInventory(WEAPON_HANDGUN_DEFAULT_NAME, amount);
+        str className = GetWeaponClassName(weaponType, skin);
+        if (((raw)className) != 0)
+            GiveInventory(className, amount);
     }
 
-    internal bool CheckActorOwnedRiotGun(int tid) { return CheckActorInventory(tid, WEAPON_RIOTGUN_DEFAULT_NAME) > 0 || CheckActorInventory(tid, WEAPON_RIOTGUN_LEGACY_NAME) > 0; }
-    internal void GiveActorRiotGun(int tid, int amount)
+    internal bool CheckActorOwned(int tid, int weaponType, int skin = WEAPONSKIN_BESTFIT)
     {
-        if (GetWeaponSkin() == WEAPONSKIN_LEGACY) GiveActorInventory(tid, WEAPON_RIOTGUN_LEGACY_NAME, amount);
-        else GiveActorInventory(tid, WEAPON_RIOTGUN_DEFAULT_NAME, amount);
+        str className = GetWeaponClassName(weaponType, skin);
+        return ((raw)className) != 0 && CheckActorInventory(tid, className) > 0;
     }
 
-    internal void GiveFireGrenade(int amount)
+    internal void GiveActor(int tid, int weaponType, int amount, int skin = WEAPONSKIN_BESTFIT)
     {
-        if (GetWeaponSkin() == WEAPONSKIN_LEGACY) GiveInventory(WEAPON_FIREGRENADE_LEGACY_NAME, amount);
-        else GiveInventory(WEAPON_FIREGRENADE_DEFAULT_NAME, amount);
-    }
-
-    internal void SelectShotgun()
-    {
-        if (!SetWeapon(WEAPON_SHOTGUN_DEFAULT_NAME))
-            SetWeapon(WEAPON_SHOTGUN_LEGACY_NAME);
+        str className = GetWeaponClassName(weaponType, skin);
+        if (((raw)className) != 0)
+            GiveActorInventory(tid, className, amount);
     }
 }

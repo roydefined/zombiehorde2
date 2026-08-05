@@ -9,6 +9,9 @@
 
 #define WEAPON_NOTHINGWEAPON_NAME "ZH2NothingWeapon"
 
+// Fake spawn spot placeholder classes. Also spawned directly by several maps'
+// own ACS (loot/reward mechanics), so these must stay even though the engine's
+// own spot-tracking now resolves them data-driven via WeaponSpawnerCollection.
 #define WEAPON_CHAINGUN_SPAWN_NAME "ZH2ChaingunSpawn"
 #define WEAPON_CLAWS_SPAWN_NAME "ZH2WeaponClawsSpawn"
 #define WEAPON_DOUBLESHOTGUN_SPAWN_NAME "ZH2WeaponDoubleShotgunSpawn"
@@ -59,36 +62,20 @@
 #define WEAPON_SHOTGUN_NAME "ZH2WeaponShotgun"
 #define WEAPON_SNIPER_NAME "ZH2WeaponSniper"
 
-// The actual wielded weapon classes, split per skin.
-#define WEAPON_CHAINGUN_DEFAULT_NAME "ZH2WeaponChaingunDefault"
-#define WEAPON_CHAINGUN_LEGACY_NAME "ZH2WeaponChaingunLegacy"
-#define WEAPON_CLAWS_DEFAULT_NAME "ZH2WeaponClawsDefault"
-#define WEAPON_CLAWS_LEGACY_NAME "ZH2WeaponClawsLegacy"
-#define WEAPON_DOUBLESHOTGUN_DEFAULT_NAME "ZH2WeaponDoubleShotgunDefault"
-#define WEAPON_DOUBLESHOTGUN_LEGACY_NAME "ZH2WeaponDoubleShotgunLegacy"
-#define WEAPON_FIREGRENADE_DEFAULT_NAME "ZH2WeaponFireGrenadeDefault"
-#define WEAPON_FIREGRENADE_LEGACY_NAME "ZH2WeaponFireGrenadeLegacy"
-#define WEAPON_HANDGUN_DEFAULT_NAME "ZH2WeaponHandgunDefault"
-#define WEAPON_HANDGUN_LEGACY_NAME "ZH2WeaponHandgunLegacy"
-#define WEAPON_JACKSGUN_DEFAULT_NAME "ZH2WeaponJacksGunDefault"
-#define WEAPON_JACKSGUN_LEGACY_NAME "ZH2WeaponJacksGunLegacy"
-#define WEAPON_RADIO_DEFAULT_NAME "ZH2WeaponRadioDefault"
-#define WEAPON_RADIO_LEGACY_NAME "ZH2WeaponRadioLegacy"
-#define WEAPON_RIOTGUN_DEFAULT_NAME "ZH2WeaponRiotGunDefault"
-#define WEAPON_RIOTGUN_LEGACY_NAME "ZH2WeaponRiotGunLegacy"
-#define WEAPON_SHOTGUN_DEFAULT_NAME "ZH2WeaponShotgunDefault"
-#define WEAPON_SHOTGUN_LEGACY_NAME "ZH2WeaponShotgunLegacy"
-#define WEAPON_SNIPER_DEFAULT_NAME "ZH2WeaponSniperDefault"
-#define WEAPON_SNIPER_LEGACY_NAME "ZH2WeaponSniperLegacy"
+#define WEAPONTYPE_COUNT 10
+
+// Number of skins supported.
+// TODO: Do this without hardcoding the count so custom skins can be added in the future.
+#define WEAPONSKIN_COUNT 2
 
 strict namespace Weapon
 {
-    // Called from map scripts, so these must stay linkable across libraries.
-    extern bool CheckOwnedShotgun();
-    extern void GiveShotgun(int amount);
+    extern bool CheckOwned(int weaponType, int skin = WEAPONSKIN_BESTFIT);
+    extern void Give(int weaponType, int amount, int skin = WEAPONSKIN_BESTFIT);
 
-    internal enum WeaponSkinT : int
+    enum WeaponSkinT : int
     {
+        WEAPONSKIN_BESTFIT,
         WEAPONSKIN_DEFAULT,
         WEAPONSKIN_LEGACY,
     };
@@ -100,7 +87,7 @@ strict namespace Weapon
         WEAPONSKINBEHAVIOUR_FORCELEGACYSKIN,
     };
 
-    internal enum WeaponTypeT : int
+    enum WeaponTypeT : int
     {
         WEAPONTYPE_CHAINGUN,
         WEAPONTYPE_CLAWS,
@@ -114,11 +101,13 @@ strict namespace Weapon
         WEAPONTYPE_SNIPER,
     };
 
-    // A tracked fake weapon spawn spot. `WeaponType` indicates what should be spawned in its place.
+    // A tracked fake weapon spawn spot. Classification of `ClassName` into a
+    // WeaponTypeT is deferred until ReplaceWeaponSpawnSpots (which runs after
+    // ZHMODDEF is parsed) since spawn events for these fire before that.
     internal struct WeaponSpawnSpotT
     {
         int Tid;
-        WeaponTypeT WeaponType;
+        str ClassName;
     };
 
     internal struct WeaponSpawnContextT
@@ -137,5 +126,12 @@ strict namespace Weapon
     {
         WeaponSpawnerConfigT Collection[MAX_WEAPONSPAWNERS];
         int Size;
+    };
+
+    struct WeaponSkinIndexT
+    {
+        int ItemIndex[WEAPONTYPE_COUNT * WEAPONSKIN_COUNT];
+        int SpawnerIndex[WEAPONTYPE_COUNT];
+        bool Built;
     };
 }

@@ -1,0 +1,125 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Weapon"
+
+strict namespace Weapon
+{
+    // TODO: Find a good way to determine this index in a generic way.
+    internal int ResolveWeaponTypeFromName(str name)
+    {
+        if (BCSUTILS::StrIEquals(name, "Chaingun")) return WEAPONTYPE_CHAINGUN;
+        if (BCSUTILS::StrIEquals(name, "Claws")) return WEAPONTYPE_CLAWS;
+        if (BCSUTILS::StrIEquals(name, "DoubleShotgun")) return WEAPONTYPE_DOUBLESHOTGUN;
+        if (BCSUTILS::StrIEquals(name, "FireGrenade")) return WEAPONTYPE_FIREGRENADE;
+        if (BCSUTILS::StrIEquals(name, "Handgun")) return WEAPONTYPE_HANDGUN;
+        if (BCSUTILS::StrIEquals(name, "JacksGun")) return WEAPONTYPE_JACKSGUN;
+        if (BCSUTILS::StrIEquals(name, "Radio")) return WEAPONTYPE_RADIO;
+        if (BCSUTILS::StrIEquals(name, "RiotGun")) return WEAPONTYPE_RIOTGUN;
+        if (BCSUTILS::StrIEquals(name, "Shotgun")) return WEAPONTYPE_SHOTGUN;
+        if (BCSUTILS::StrIEquals(name, "Sniper")) return WEAPONTYPE_SNIPER;
+        return -1;
+    }
+
+    // Returns a valid index for the given weapon + skin combo in the array.
+    // Collection is: [type0Skin0, type0Skin1, ..., type1Skin0, type1Skin1, ...]
+    internal int GetItemIndexSlot(int weaponType, int skin)
+    {
+        return weaponType * WEAPONSKIN_COUNT + (skin - 1);
+    }
+
+    // Builds the WeaponType/Skin -> Item/WeaponSpawner lookup from the parsed collections.
+    // Saves on a lot of extra lookups since it's a very frequent action taken in the code.
+    internal void BuildWeaponSkinIndex()
+    {
+        Weapon::WeaponSkinIndexT global:PERSISTINGGAMECONTEXTINDEX& index = ZH2Game::PersistingGameContext.WeaponSkinIndex;
+        if (index.Built)
+            return;
+
+        // Set defaults.
+        for (int i = 0; i < WEAPONTYPE_COUNT * WEAPONSKIN_COUNT; ++i)
+            index.ItemIndex[i] = -1;
+        for (int i = 0; i < WEAPONTYPE_COUNT; ++i)
+            index.SpawnerIndex[i] = -1;
+
+        Item::ItemCollectionContextT global:PERSISTINGGAMECONTEXTINDEX& items = ZH2Game::PersistingGameContext.ItemCollection;
+        for (int i = 0; i < items.Size; ++i)
+        {
+            Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& item = ZH2Game::PersistingGameContext.ItemCollection.Collection[i];
+            if (item.Type != Item::TYPE_WEAPON || item.Skin == int(Item::ITEMSKIN_NONE))
+                continue;
+
+            int weaponType = ResolveWeaponTypeFromName(item.WeaponType);
+            if (weaponType == -1)
+            {
+                Logger::LogWarning(LOGSOURCE, "Item \cd" + item.Name + "\cj has an unknown weapon type: '" + item.WeaponType + "'.");
+                continue;
+            }
+
+            index.ItemIndex[GetItemIndexSlot(weaponType, item.Skin)] = i;
+        }
+
+        Weapon::WeaponSpawnerCollectionContextT global:PERSISTINGGAMECONTEXTINDEX& spawners = ZH2Game::PersistingGameContext.WeaponSpawnerCollection;
+        for (int i = 0; i < spawners.Size; ++i)
+        {
+            int weaponType = ResolveWeaponTypeFromName(spawners.Collection[i].Name);
+            if (weaponType == -1)
+            {
+                Logger::LogWarning(LOGSOURCE, "Weapon spawner \cd" + spawners.Collection[i].Name + "\cj has an unknown weapon type.");
+                continue;
+            }
+
+            index.SpawnerIndex[weaponType] = i;
+        }
+
+        index.Built = true;
+    }
+
+    // Resolves a weaponType/skin pair to its Item collection index, or -1 if unresolved.
+    internal int GetWeaponItemIndex(int weaponType, int skin)
+    {
+        if (skin == WEAPONSKIN_BESTFIT)
+            skin = int(GetWeaponSkin());
+
+        return ZH2Game::PersistingGameContext.WeaponSkinIndex.ItemIndex[GetItemIndexSlot(weaponType, skin)];
+    }
+
+    // Resolves the concrete wielded weapon class name for a weapon type/skin.
+    internal str GetWeaponClassName(int weaponType, int skin = WEAPONSKIN_BESTFIT)
+    {
+        int itemIndex = GetWeaponItemIndex(weaponType, skin);
+        if (itemIndex == -1)
+        {
+            Logger::LogError(LOGSOURCE, "No item found for weapon type \cd" + str(weaponType) + "\cj.");
+            return (str)0;
+        }
+
+        return ZH2Game::PersistingGameContext.ItemCollection.Collection[itemIndex].Name;
+    }
+
+    // Called by the weapon resolver classes that can be given to give the real weapon.
+    // Since skins must be supported, this is not actually a real weapon and thus its onyl job is calling this.
+    script "zh2_dec_giveweapon" (int weaponType)
+    {
+        int itemIndex = GetWeaponItemIndex(weaponType, WEAPONSKIN_BESTFIT);
+        if (itemIndex == -1)
+        {
+            SetResultValue(int(false));
+            return;
+        }
+
+        Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& item = ZH2Game::PersistingGameContext.ItemCollection.Collection[itemIndex];
+        bool correctSpecie = item.HumanOwned ? Player::GetIsHuman() : Player::GetIsZombie();
+        if (!correctSpecie)
+        {
+            SetResultValue(int(false));
+            return;
+        }
+
+        GiveInventory(item.Name, 1);
+        SetResultValue(int(true));
+    }
+}
+
+#undef LOGSOURCE

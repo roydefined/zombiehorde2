@@ -91,6 +91,7 @@ strict namespace ZH2Game
         IO::ParseWeatherDefServerside();
         IO::ParseLoggerDefServerside();
         IO::ParseModDefLumpsServerside();
+        Weapon::BuildWeaponSkinIndex();
         IO::ParseMapDefLumps();
 
         // Weather must prepare internal default data before we parse the map which sets its own defaults.
@@ -220,6 +221,8 @@ strict namespace ZH2Game
 
             collection.HasSplitItems = true;
         }
+
+        Weapon::BuildWeaponSkinIndex();
 
         // Set the current game mode if we have it set.
         str gameMode = Map::GetCurrentMapGameMode();
@@ -505,12 +508,12 @@ strict namespace ZH2Game
             // TODO: Replace with better distribution.
             if (BCSUtils::RandBool())
             {
-                Weapon::GiveFireGrenade(1);
+                Weapon::Give(Weapon::WEAPONTYPE_FIREGRENADE, 1);
                 GiveInventory(WEAPON_AMMO_FIREGRENADE_NAME, 1);
             }
 
             // Ensure we always start with the shotgun to avoid weird behaviour.
-            Weapon::SelectShotgun();
+            SetWeapon(Weapon::GetWeaponClassName(Weapon::WEAPONTYPE_SHOTGUN));
         }
         else if (specie == Player::SPECIEZOMBIE)
         {
