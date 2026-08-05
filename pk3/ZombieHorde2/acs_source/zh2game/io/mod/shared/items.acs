@@ -86,7 +86,10 @@ strict namespace IO
                 || ParseItemKickback(handle, symbol)
                 || ParseItemTakeOnPanic(handle, symbol)
                 || ParseItemObituaryGraphic(handle, symbol)
-                || ParseItemObituaryGraphicWidth(handle, symbol))
+                || ParseItemObituaryGraphicWidth(handle, symbol)
+                || ParseItemWeaponType(handle, symbol)
+                || ParseItemSkin(handle, symbol)
+                || ParseItemSpawnClassName(handle, symbol))
             {
                 // Optional comma.
                 Tokenizer::Next(handle, false);
@@ -324,6 +327,50 @@ strict namespace IO
         context.ObituaryGraphicWidth = parsedValue;
 
         Logger::LogDebug(LOGSOURCE, "Parsed item obituary graphic width: \cd" + str(context.ObituaryGraphicWidth) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseItemWeaponType(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "weapontype")) return false;
+        Tokenizer::Next(handle);
+
+        Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        context.WeaponType = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed item weapon type: \cd" + context.WeaponType + "\cj.");
+        return true;
+    }
+
+    internal bool ParseItemSkin(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "skin")) return false;
+        Tokenizer::Next(handle);
+
+        str skin = Tokenizer::GetSymbol(handle);
+
+        Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        if (BCSUTILS::StrIEquals(skin, "default")) context.Skin = Item::ITEMSKIN_DEFAULT;
+        else if (BCSUTILS::StrIEquals(skin, "legacy")) context.Skin = Item::ITEMSKIN_LEGACY;
+        else
+        {
+            Tokenizer::SetErrored(handle, "The given value for skin is not a correct value. Expected 'Default' or 'Legacy', received '" + skin + "'.");
+            return false;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Parsed item skin: \cd" + str(context.Skin) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseItemSpawnClassName(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "spawnclassname")) return false;
+        Tokenizer::Next(handle);
+
+        Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        context.SpawnClassName = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed item spawn class name: \cd" + context.SpawnClassName + "\cj.");
         return true;
     }
 }
