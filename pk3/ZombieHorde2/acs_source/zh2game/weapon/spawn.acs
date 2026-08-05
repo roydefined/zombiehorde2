@@ -6,42 +6,42 @@
 
 strict namespace Weapon
 {
-    // Note, the activator of this function must be a (fake) weapon spawn spot.
+    // Note, the activator of this function must be a fake weapon spawn spot.
     // It is assumed that this is the case when entering this function since it's checked beforehand.
     // The class is stored and replaced later when we're done parsing the known info of all weapons.
-    internal void TrackWeaponSpawnSpot(str className)
+    internal void TrackFakeWeaponSpawnSpot(str className)
     {
         // The spot is not expected to already have a tid, since we assign our own below.
         // This is not required and should not be done, but it's not harmful either, so just inform about it.
         int existingTid = ActivatorTID();
         if (existingTid != 0)
-            Logger::LogInformation(LOGSOURCE, "Weapon spawn spot already had tid \cd" + str(existingTid) + "\cj before tracking. This is not required and should not be done.");
+            Logger::LogInformation(LOGSOURCE, "Fake weapon spawn spot already had tid \cd" + str(existingTid) + "\cj before tracking. This is not required and should not be done.");
 
         int tid = UniqueTID();
         Thing_ChangeTID(0, tid);
 
         // Validate the spot is not already tracked under this tid.
         // This should not be possible since the tid is always freshly generated above, but better safe than sorry.
-        for (int i = 0; i < ZH2Game::GameContext.WeaponSpawnContext.SpotCount; ++i)
+        for (int i = 0; i < ZH2Game::GameContext.FakeWeaponSpawnContext.SpotCount; ++i)
         {
-            if (ZH2Game::GameContext.WeaponSpawnContext.Spots[i].Tid == tid)
+            if (ZH2Game::GameContext.FakeWeaponSpawnContext.Spots[i].Tid == tid)
             {
-                Logger::LogWarning(LOGSOURCE, "Skipped tracking weapon spawn spot \cd" + str(tid) + "\cj: this tid is already tracked.");
+                Logger::LogWarning(LOGSOURCE, "Skipped tracking fake weapon spawn spot \cd" + str(tid) + "\cj: this tid is already tracked.");
                 return;
             }
         }
 
-        if (ZH2Game::GameContext.WeaponSpawnContext.SpotCount == MAX_WEAPONSPAWNSPOTS)
+        if (ZH2Game::GameContext.FakeWeaponSpawnContext.SpotCount == MAX_FAKEWEAPONSPAWNSPOTS)
         {
-            Logger::LogWarning(LOGSOURCE, "Unable to track weapon spawn spot: maximum number of trackable spots reached (" + str(MAX_WEAPONSPAWNSPOTS) + ").");
+            Logger::LogWarning(LOGSOURCE, "Unable to track fake weapon spawn spot: maximum number of trackable spots reached (" + str(MAX_FAKEWEAPONSPAWNSPOTS) + ").");
             return;
         }
 
-        int index = ZH2Game::GameContext.WeaponSpawnContext.SpotCount++;
-        ZH2Game::GameContext.WeaponSpawnContext.Spots[index].Tid = tid;
-        ZH2Game::GameContext.WeaponSpawnContext.Spots[index].ClassName = className;
+        int index = ZH2Game::GameContext.FakeWeaponSpawnContext.SpotCount++;
+        ZH2Game::GameContext.FakeWeaponSpawnContext.Spots[index].Tid = tid;
+        ZH2Game::GameContext.FakeWeaponSpawnContext.Spots[index].ClassName = className;
 
-        Logger::LogDebug(LOGSOURCE, "Start tracking weapon spawn spot \cd" + str(tid) + "\cj, index \cd" + str(index) + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "Start tracking fake weapon spawn spot \cd" + str(tid) + "\cj, index \cd" + str(index) + "\cj.");
     }
 
     // Resolves a fake weapon spawn spot's own class name to its weapon type.
@@ -60,24 +60,24 @@ strict namespace Weapon
         return -1;
     }
 
-    // Replaces every tracked (fake) weapon spawn spot with the actual spawn actor to give at that position.
-    internal void ReplaceWeaponSpawnSpots()
+    // Replaces every tracked fake weapon spawn spot with the actual spawn actor to give at that position.
+    internal void ReplaceFakeWeaponSpawnSpots()
     {
-        for (int i = 0; i < ZH2Game::GameContext.WeaponSpawnContext.SpotCount; ++i)
+        for (int i = 0; i < ZH2Game::GameContext.FakeWeaponSpawnContext.SpotCount; ++i)
         {
-            int tid = ZH2Game::GameContext.WeaponSpawnContext.Spots[i].Tid;
-            str spotClassName = ZH2Game::GameContext.WeaponSpawnContext.Spots[i].ClassName;
+            int tid = ZH2Game::GameContext.FakeWeaponSpawnContext.Spots[i].Tid;
+            str spotClassName = ZH2Game::GameContext.FakeWeaponSpawnContext.Spots[i].ClassName;
 
             int weaponType = ResolveFakeSpawnSpotWeaponType(spotClassName);
             if (weaponType == -1)
             {
-                Logger::LogWarning(LOGSOURCE, "Unable to replace weapon spawn spot \cd" + str(tid) + "\cj: unknown spawn spot class '" + spotClassName + "'.");
+                Logger::LogWarning(LOGSOURCE, "Unable to replace fake weapon spawn spot \cd" + str(tid) + "\cj: unknown spawn spot class '" + spotClassName + "'.");
                 continue;
             }
 
             if (ThingCount(T_NONE, tid) == 0)
             {
-                Logger::LogWarning(LOGSOURCE, "Unable to replace weapon spawn spot \cd" + str(tid) + "\cj: the spot no longer exists.");
+                Logger::LogWarning(LOGSOURCE, "Unable to replace fake weapon spawn spot \cd" + str(tid) + "\cj: the spot no longer exists.");
                 continue;
             }
 
@@ -95,7 +95,7 @@ strict namespace Weapon
         }
     }
 
-    // Determines the class to spawn in place of a tracked (fake) weapon spawn spot.
+    // Determines the class to spawn in place of a tracked fake weapon spawn spot.
     // This depends on the currently determined weapon skin.
     internal str GetWeaponSpawnClassName(int weaponType)
     {
