@@ -98,6 +98,16 @@ strict namespace Weapon
         return ZH2Game::PersistingGameContext.WeaponSkinIndex.ItemIndex[GetItemIndexSlot(weaponType, skin)];
     }
 
+    // Resolves a weapon type to its ammo class name, if one exists.
+    internal str GetWeaponAmmoClassName(int weaponType)
+    {
+        int spawnerIndex = ZH2Game::PersistingGameContext.WeaponSkinIndex.SpawnerIndex[weaponType];
+        if (spawnerIndex == -1)
+            return (str)0;
+
+        return ZH2Game::PersistingGameContext.WeaponSpawnerCollection.Collection[spawnerIndex].AmmoClassName;
+    }
+
     // Resolves the concrete wielded weapon class name for a weapon type/skin.
     internal str GetWeaponClassName(int weaponType, int skin = WEAPONSKIN_BESTFIT)
     {

@@ -51,8 +51,18 @@ strict namespace Weapon
                 if (((raw)newClassName) == 0)
                     continue;
 
+                // Preserve the ammo we have of this weapon.
+                // This fixes issues with weapons that give ammo on pickup like Jack's Gun.
+                // After switching we give the correct ammo count back.
+                str ammoClassName = GetWeaponAmmoClassName(weaponType);
+                bool hasAmmoClassName = ((raw)ammoClassName) != 0;
+                int ammoBeforeSwap = hasAmmoClassName ? CheckActorInventory(tid, ammoClassName) : 0;
+
                 TakeActorInventory(tid, oldClassName, 1);
                 GiveActorInventory(tid, newClassName, 1);
+
+                if (hasAmmoClassName)
+                    BCSUtils::SetActorInventory(tid, ammoClassName, ammoBeforeSwap);
             }
         }
 
