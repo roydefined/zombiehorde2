@@ -2,6 +2,8 @@
     #error This file must be #included.
 #endif
 
+#define LOGSOURCE "Weapon"
+
 strict namespace Weapon
 {
     // Determines the weapon skin to use.
@@ -24,4 +26,38 @@ strict namespace Weapon
 
         return WEAPONSKIN_DEFAULT;
     }
+
+    // Migrate's the given player's weapons to the ones used on the current map.
+    // Skin is determined on the best fit as based on map type or cvar.
+    internal void MigratePlayerWeaponSkin(int id)
+    {
+        WeaponSkinT currentSkin = GetWeaponSkin();
+        WeaponSkinT lastSkin = ZH2Game::PersistingGameContext.Players[id].LastKnownWeaponSkin;
+
+        // WEAPONSKIN_BESTFIT means we haven't recorded a skin for this player yet
+        // (e.g. they just connected), so there is nothing to migrate.
+        if (lastSkin != currentSkin && lastSkin != WEAPONSKIN_BESTFIT)
+        {
+            int tid = Identity::GetTID(id);
+            Logger::LogInformation(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(id) + "\cj's weapon skin changed from \cd" + str(lastSkin) + "\cj to \cd" + str(currentSkin) + "\cj. Migrating owned weapons.");
+
+            for (int weaponType = 0; weaponType < WEAPONTYPE_COUNT; ++weaponType)
+            {
+                str oldClassName = GetWeaponClassName(weaponType, lastSkin);
+                if (((raw)oldClassName) == 0 || CheckActorInventory(tid, oldClassName) == 0)
+                    continue;
+
+                str newClassName = GetWeaponClassName(weaponType, currentSkin);
+                if (((raw)newClassName) == 0)
+                    continue;
+
+                TakeActorInventory(tid, oldClassName, 1);
+                GiveActorInventory(tid, newClassName, 1);
+            }
+        }
+
+        ZH2Game::PersistingGameContext.Players[id].LastKnownWeaponSkin = currentSkin;
+    }
 }
+
+#undef LOGSOURCE
