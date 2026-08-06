@@ -19,9 +19,15 @@ strict namespace Player
         Logger::LogDebug(LOGSOURCE, "Giving default human inventory to player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");
         for (int i = 0; i < Item::GetItemCollectionSize(); ++i)
         {
+            str itemName = Item::GetItemName(i);
+
+            // Weapon resolvers are never actually kept in inventory so this must be accounted for.
+            int weaponType = Weapon::ResolveWeaponTypeFromResolverClassName(itemName);
+            if (weaponType != -1 && Weapon::CheckActorOwned(tid, weaponType))
+                continue;
+
             int spawnItemCount = Item::GetItemGiveOnSpawnCount(i);
             int itemCount = Item::GetItemGiveOnHumanCount(i);
-            str itemName = Item::GetItemName(i);
 
             if (includeSpawnItems && spawnItemCount > 0)
             {
@@ -45,8 +51,14 @@ strict namespace Player
         Logger::LogDebug(LOGSOURCE, "Giving default zombie inventory to player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");
         for (int i = 0; i < Item::GetItemCollectionSize(); ++i)
         {
-            int itemCount = Item::GetItemGiveOnZombieCount(i);
             str itemName = Item::GetItemName(i);
+
+            // Weapon resolvers are never actually kept in inventory so this must be accounted for.
+            int weaponType = Weapon::ResolveWeaponTypeFromResolverClassName(itemName);
+            if (weaponType != -1 && Weapon::CheckActorOwned(tid, weaponType))
+                continue;
+
+            int itemCount = Item::GetItemGiveOnZombieCount(i);
             if (itemCount == 0) continue;
 
             Logger::LogDebug(LOGSOURCE, "Giving \cd" + str(itemCount) + "\cj of \cd" + itemName + "\cj to player \cd" + BCSUTILS::PlayerName(id) + "\cj (\cd" + str(tid) + "\cj).");

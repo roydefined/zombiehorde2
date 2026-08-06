@@ -22,6 +22,19 @@ strict namespace Weapon
         return -1;
     }
 
+    // Resolves an item name to the weapon type it's the resolver class for.
+    internal int ResolveWeaponTypeFromResolverClassName(str name)
+    {
+        Weapon::WeaponSpawnerCollectionContextT global:PERSISTINGGAMECONTEXTINDEX& spawners = ZH2Game::PersistingGameContext.WeaponSpawnerCollection;
+        for (int i = 0; i < spawners.Size; ++i)
+        {
+            if (spawners.Collection[i].ResolverClassName == name)
+                return ResolveWeaponTypeFromName(spawners.Collection[i].Name);
+        }
+
+        return -1;
+    }
+
     // Returns a valid index for the given weapon + skin combo in the array.
     // Collection is: [type0Skin0, type0Skin1, ..., type1Skin0, type1Skin1, ...]
     internal int GetItemIndexSlot(int weaponType, int skin)

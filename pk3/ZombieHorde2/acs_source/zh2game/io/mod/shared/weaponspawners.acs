@@ -73,7 +73,8 @@ strict namespace IO
         while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) == braceLevel)
         {
             str symbol = Tokenizer::GetSymbol(handle);
-            if (ParseWeaponSpawnerSpawnSpotClassName(handle, symbol))
+            if (ParseWeaponSpawnerSpawnSpotClassName(handle, symbol)
+                || ParseWeaponSpawnerResolverClassName(handle, symbol))
             {
                 // Optional comma.
                 Tokenizer::Next(handle, false);
@@ -109,6 +110,18 @@ strict namespace IO
         context.SpawnSpotClassName = Tokenizer::GetSymbol(handle);
 
         Logger::LogDebug(LOGSOURCE, "Parsed weapon spawner spawn spot class name: \cd" + context.SpawnSpotClassName + "\cj.");
+        return true;
+    }
+
+    internal bool ParseWeaponSpawnerResolverClassName(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "resolverclassname")) return false;
+        Tokenizer::Next(handle);
+
+        Weapon::WeaponSpawnerConfigT global:PERSISTINGGAMECONTEXTINDEX& context = ZH2Game::PersistingGameContext.WeaponSpawnerCollection.Collection[ZH2Game::PersistingGameContext.WeaponSpawnerCollection.Size];
+        context.ResolverClassName = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed weapon spawner resolver class name: \cd" + context.ResolverClassName + "\cj.");
         return true;
     }
 }
