@@ -8,42 +8,67 @@
 
 strict namespace Sync
 {
+    // Run each tic to check if we need to flush any pending syncs called from the mod's code.
+    // This function handles both setting sup the serversided sync actors and notifying the client.
+    // - The server uses a buffer that is flushed when this function tics.
+    // - The client also uses a buffer, but depends on two timestamps that determine when to sync.
+    //   Only if these delays elapse, will the client be informed of the new data.
+    //   This ensures we do not constantly ask the client to update and to prevent sending too much traffic.
+    //
+    // NOTE: The server runs independedly to ensure it has time to set up the sync actors.
+    // This way there should be enough time to send the internal actor traffic before we ask the client to update.
     void LibFlushPendingSyncs()
     {
-        if (ZH2Lib::GetInitialSyncDelay() > Timer())
-            return;
-
         int min = 0;
         int max = MAX_LIB_SYNC_TYPES - 1;
         for (int i = min; i <= max; ++i)
         {
-            int tic = ZH2Lib::LibContext.SyncContext.FlushTic[i];
-            if (tic == 0 || tic > Timer())
-                continue;
+            if (ZH2Lib::LibContext.SyncContext.PendingWrite[i])
+            {
+                ZH2Lib::LibContext.SyncContext.PendingWrite[i] = false;
+                TriggerSyncWrite(i);
+            }
 
-            ZH2Lib::LibContext.SyncContext.FlushTic[i] = 0;
-            TriggerSyncCore(i);
+            int notifyTic = ZH2Lib::LibContext.SyncContext.NotifyTic[i];
+            if (notifyTic != 0 && Timer() >= notifyTic)
+            {
+                ZH2Lib::LibContext.SyncContext.NotifyTic[i] = 0;
+                TriggerSyncNotify(i);
+            }
         }
     }
 
-    internal void TriggerSyncCore(int syncId)
+    internal void TriggerSyncWrite(int syncId)
     {
         switch(syncId)
         {
-            case SYNCTYPE_WEATHER: SyncWeatherCore(); return;
+            case SYNCTYPE_WEATHER: SyncWeatherActor(); return;
 
             default:
-                Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to flush sync index " + str(syncId) + " as it's not known.");
+                Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to write sync index " + str(syncId) + " as it's not known.");
+                return;
+        }
+    }
+
+    internal void TriggerSyncNotify(int syncId)
+    {
+        switch(syncId)
+        {
+            case SYNCTYPE_WEATHER: CallSyncWeatherOnClients(); return;
+
+            default:
+                Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to notify sync index " + str(syncId) + " as it's not known.");
                 return;
         }
     }
 
     internal void DoSync(int syncId)
     {
-        // Buffering not enabled.
+        // Buffering not enabled - write and notify immediately, back to back.
         if (!ZH2Lib::GetUseSyncBuffer())
         {
-            TriggerSyncCore(syncId);
+            TriggerSyncWrite(syncId);
+            TriggerSyncNotify(syncId);
             return;
         }
 
@@ -55,11 +80,19 @@ strict namespace Sync
             return;
         }
 
-        // Already marked to sync.
-        if (ZH2Lib::LibContext.SyncContext.FlushTic[syncId] != 0)
-            return;
+        // Any number of calls collapse into one pending write - the write itself is never delayed,
+        // `LibFlushPendingSyncs` fires it as soon as it sees this flag.
+        ZH2Lib::LibContext.SyncContext.PendingWrite[syncId] = true;
 
-        ZH2Lib::LibContext.SyncContext.FlushTic[syncId] = Timer() + ZH2Lib::GetSyncDelay();
+        // The notify is what's actually delayed, and it's scheduled here rather than after the
+        // write happens - the write is immediate, but clients still need to wait long enough for
+        // it to replicate before being told to read it. Only schedule if one isn't already pending,
+        // so a burst of calls still only results in one notify, same as the write above.
+        if (ZH2Lib::LibContext.SyncContext.NotifyTic[syncId] == 0)
+        {
+            int earliestNotifyTic = Timer() + BCSUtils::Max(ZH2Lib::GetSyncDelay(), 1);
+            ZH2Lib::LibContext.SyncContext.NotifyTic[syncId] = BCSUtils::Max(earliestNotifyTic, ZH2Lib::GetInitialSyncDelay());
+        }
     }
 
     // Basic log formatter to include an additional sync category.
@@ -104,12 +137,6 @@ strict namespace Sync
         }
 
         DoSync(SYNCTYPE_WEATHER);
-    }
-
-    internal void SyncWeatherCore()
-    {
-        SyncWeatherActor();
-        CallSyncWeatherOnClients();
     }
 
     void CallSyncWeatherOnClients()

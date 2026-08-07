@@ -85,6 +85,15 @@ strict namespace Sync
 
     struct SyncContextT
     {
-        int FlushTic[MAX_SYNC_TYPES];
+        // Whether this sync type has a write waiting to happen. Any number of `DoSync` calls,
+        // whether bunched in one tic or spread across many, collapse into a single pending flag -
+        // the write itself is never delayed, just buffered down to one per batch.
+        bool PendingWrite[MAX_SYNC_TYPES];
+
+        // The tic each sync type is next allowed to notify clients, or 0 if none is scheduled.
+        // Set once by `DoSync` alongside `PendingWrite` (not after the write actually happens) -
+        // the write is immediate, but the notify still needs to wait long enough for that write to
+        // replicate to every client, so it's scheduled independently, using the delay cvars.
+        int NotifyTic[MAX_SYNC_TYPES];
     };
 }

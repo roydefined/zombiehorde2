@@ -17,53 +17,85 @@
 
 strict namespace Sync
 {
+    // Run each tic to check if we need to flush any pending syncs called from the mod's code.
+    // This function handles both setting sup the serversided sync actors and notifying the client.
+    // - The server uses a buffer that is flushed when this function tics.
+    // - The client also uses a buffer, but depends on two timestamps that determine when to sync.
+    //   Only if these delays elapse, will the client be informed of the new data.
+    //   This ensures we do not constantly ask the client to update and to prevent sending too much traffic.
+    //
+    // NOTE: The server runs independedly to ensure it has time to set up the sync actors.
+    // This way there should be enough time to send the internal actor traffic before we ask the client to update.
     void FlushPendingSyncs()
     {
-        if (ZH2Lib::GetInitialSyncDelay() > Timer())
-            return;
-
         int min = 0;
         int max = MAX_SYNC_TYPES - 1;
         for (int i = min; i <= max; ++i)
         {
-            int tic = ZH2Game::GameContext.SyncContext.FlushTic[i];
-            if (tic == 0 || tic > Timer())
-                continue;
+            if (ZH2Game::GameContext.SyncContext.PendingWrite[i])
+            {
+                ZH2Game::GameContext.SyncContext.PendingWrite[i] = false;
+                TriggerSyncWrite(i + MAX_LIB_SYNC_TYPES);
+            }
 
-            ZH2Game::GameContext.SyncContext.FlushTic[i] = 0;
-
-            int index = i + MAX_LIB_SYNC_TYPES;
-            TriggerSyncCore(index);
+            int notifyTic = ZH2Game::GameContext.SyncContext.NotifyTic[i];
+            if (notifyTic != 0 && Timer() >= notifyTic)
+            {
+                ZH2Game::GameContext.SyncContext.NotifyTic[i] = 0;
+                TriggerSyncNotify(i + MAX_LIB_SYNC_TYPES);
+            }
         }
     }
 
-    internal void TriggerSyncCore(int syncId)
+    internal void TriggerSyncWrite(int syncId)
     {
         switch(syncId)
         {
-            case SYNCTYPE_PLAYERS: SyncPlayersCore(); return;
-            case SYNCTYPE_TIMERS: SyncTimersCore(); return;
-            case SYNCTYPE_RESISTS: SyncResistsCore(); return;
-            case SYNCTYPE_ROUNDSTATE: SyncRoundStateCore(); return;
-            case SYNCTYPE_POWERS: SyncPowersCore(); return;
-            case SYNCTYPE_ADMINS: SyncAdminsCore(); return;
-            case SYNCTYPE_GAME: SyncGameCore(); return;
-            case SYNCTYPE_MAPVOTING: SyncMapVotingCore(); return;
-            case SYNCTYPE_AFKPREVENTION: SyncAfkPreventionCore(); return;
-            case SYNCTYPE_RADIO: SyncRadioCore(); return;
+            case SYNCTYPE_PLAYERS: SyncPlayersActor(); return;
+            case SYNCTYPE_TIMERS: SyncTimersActor(); return;
+            case SYNCTYPE_RESISTS: SyncResistsActor(); return;
+            case SYNCTYPE_ROUNDSTATE: SyncRoundStateActor(); return;
+            case SYNCTYPE_POWERS: SyncPowersActor(); return;
+            case SYNCTYPE_ADMINS: SyncAdminsActor(); return;
+            case SYNCTYPE_GAME: SyncGameActor(); return;
+            case SYNCTYPE_MAPVOTING: SyncMapVotingActor(); return;
+            case SYNCTYPE_AFKPREVENTION: SyncAfkPreventionActor(); return;
+            case SYNCTYPE_RADIO: SyncRadioActor(); return;
 
             default:
-                Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to flush sync index " + str(syncId) + " as it's not known.");
+                Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to write sync index " + str(syncId) + " as it's not known.");
+                return;
+        }
+    }
+
+    internal void TriggerSyncNotify(int syncId)
+    {
+        switch(syncId)
+        {
+            case SYNCTYPE_PLAYERS: CallSyncPlayersOnClients(); return;
+            case SYNCTYPE_TIMERS: CallSyncTimersOnClients(); return;
+            case SYNCTYPE_RESISTS: CallSyncResistsOnClients(); return;
+            case SYNCTYPE_ROUNDSTATE: CallSyncRoundStateOnClients(); return;
+            case SYNCTYPE_POWERS: CallSyncPowersOnClients(); return;
+            case SYNCTYPE_ADMINS: CallSyncAdminsOnClients(); return;
+            case SYNCTYPE_GAME: CallSyncGameOnClients(); return;
+            case SYNCTYPE_MAPVOTING: CallSyncMapVotingOnClients(); return;
+            case SYNCTYPE_AFKPREVENTION: CallSyncAfkPreventionOnClients(); return;
+            case SYNCTYPE_RADIO: CallSyncRadioOnClients(); return;
+
+            default:
+                Logger::LogError(LOGSOURCE, __FUNCTION__ + ": Failed to notify sync index " + str(syncId) + " as it's not known.");
                 return;
         }
     }
 
     internal void DoSync(int syncId)
     {
-        // Buffering not enabled.
+        // Buffering not enabled - write and notify immediately, back to back.
         if (!ZH2Lib::GetUseSyncBuffer())
         {
-            TriggerSyncCore(syncId);
+            TriggerSyncWrite(syncId);
+            TriggerSyncNotify(syncId);
             return;
         }
 
@@ -78,11 +110,19 @@ strict namespace Sync
             return;
         }
 
-        // Already marked to sync.
-        if (ZH2Game::GameContext.SyncContext.FlushTic[syncId] != 0)
-            return;
+        // Any number of calls collapse into one pending write - the write itself is never delayed,
+        // `FlushPendingSyncs` fires it as soon as it sees this flag.
+        ZH2Game::GameContext.SyncContext.PendingWrite[syncId] = true;
 
-        ZH2Game::GameContext.SyncContext.FlushTic[syncId] = Timer() + ZH2Lib::GetSyncDelay();
+        // The notify is what's actually delayed, and it's scheduled here rather than after the
+        // write happens - the write is immediate, but clients still need to wait long enough for
+        // it to replicate before being told to read it. Only schedule if one isn't already pending,
+        // so a burst of calls still only results in one notify, same as the write above.
+        if (ZH2Game::GameContext.SyncContext.NotifyTic[syncId] == 0)
+        {
+            int earliestNotifyTic = Timer() + BCSUtils::Max(ZH2Lib::GetSyncDelay(), 1);
+            ZH2Game::GameContext.SyncContext.NotifyTic[syncId] = BCSUtils::Max(earliestNotifyTic, ZH2Lib::GetInitialSyncDelay());
+        }
     }
 
     // Basic log formatter to include an additional sync category.
@@ -156,12 +196,6 @@ strict namespace Sync
         DoSync(SYNCTYPE_PLAYERS);
     }
 
-    internal void SyncPlayersCore()
-    {
-        SyncPlayersActor();
-        CallSyncPlayersOnClients();
-    }
-
     internal void CallSyncPlayersOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
@@ -204,12 +238,6 @@ strict namespace Sync
         }
 
         DoSync(SYNCTYPE_TIMERS);
-    }
-
-    internal void SyncTimersCore()
-    {
-        SyncTimersActor();
-        CallSyncTimersOnClients();
     }
 
     internal void CallSyncTimersOnClients()
@@ -256,12 +284,6 @@ strict namespace Sync
         DoSync(SYNCTYPE_RESISTS);
     }
 
-    internal void SyncResistsCore()
-    {
-        SyncResistsActor();
-        CallSyncResistsOnClients();
-    }
-
     internal void CallSyncResistsOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
@@ -304,12 +326,6 @@ strict namespace Sync
         }
 
         DoSync(SYNCTYPE_ROUNDSTATE);
-    }
-
-    internal void SyncRoundStateCore()
-    {
-        SyncRoundStateActor();
-        CallSyncRoundStateOnClients();
     }
 
     internal void CallSyncRoundStateOnClients()
@@ -356,12 +372,6 @@ strict namespace Sync
         DoSync(SYNCTYPE_POWERS);
     }
 
-    internal void SyncPowersCore()
-    {
-        SyncPowersActor();
-        CallSyncPowersOnClients();
-    }
-
     internal void CallSyncPowersOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
@@ -404,12 +414,6 @@ strict namespace Sync
         }
 
         DoSync(SYNCTYPE_ADMINS);
-    }
-
-    internal void SyncAdminsCore()
-    {
-        SyncAdminsActor();
-        CallSyncAdminsOnClients();
     }
 
     internal void CallSyncAdminsOnClients()
@@ -456,12 +460,6 @@ strict namespace Sync
         DoSync(SYNCTYPE_GAME);
     }
 
-    internal void SyncGameCore()
-    {
-        SyncGameActor();
-        CallSyncGameOnClients();
-    }
-
     internal void CallSyncGameOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
@@ -504,12 +502,6 @@ strict namespace Sync
         }
 
         DoSync(SYNCTYPE_MAPVOTING);
-    }
-
-    internal void SyncMapVotingCore()
-    {
-        SyncMapVotingActor();
-        CallSyncMapVotingOnClients();
     }
 
     internal void CallSyncMapVotingOnClients()
@@ -556,12 +548,6 @@ strict namespace Sync
         DoSync(SYNCTYPE_AFKPREVENTION);
     }
 
-    internal void SyncAfkPreventionCore()
-    {
-        SyncAfkPreventionActor();
-        CallSyncAfkPreventionOnClients();
-    }
-
     internal void CallSyncAfkPreventionOnClients()
     {
         VALIDATE_IS_SERVERSIDE_FUNCTION();
@@ -604,12 +590,6 @@ strict namespace Sync
         }
 
         DoSync(SYNCTYPE_RADIO);
-    }
-
-    internal void SyncRadioCore()
-    {
-        SyncRadioActor();
-        CallSyncRadioOnClients();
     }
 
     internal void CallSyncRadioOnClients()

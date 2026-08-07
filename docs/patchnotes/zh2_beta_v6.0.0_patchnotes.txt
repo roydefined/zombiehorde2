@@ -8,11 +8,9 @@ Clients will now trigger this event as soon as data is set, including offline wh
 This way there is now support for properly handling extra behavior when data has a finalize step, as has existed in various occasions.
 Previously this meant having to write duplicate code, but this is now gone.
 Additionally, sync data can now be debounced through buffers to reduce redundant work and traffic.
-Instead of sending sync data immediately every time, the new buffer collects it and sends it more efficiently.
-This behavior can be toggled with a setting to enable the new buffer, allowing hosts to opt in or revert to the previous behavior.
-Additionally, the sync system now supports configuring delays to better control when synchronization happens.
-A general sync delay can now be configured, and a separate initial sync delay can be set specifically for syncs on map start.
-This way the whole issue of doing duplicate sync calls is now completely fixed.
+Repeated triggers collapse into a single write instead of redoing the work every single time, and hosts can opt out of this through a setting to revert to the previous, always-immediate behavior.
+The system also supports configuring how long clients wait to be informed once something is synced, separately from the buffer above: a general delay for ongoing play, and a separate initial delay specifically for syncs at map start.
+The system writes the data in a way that ensures the engine has time to inform clients of the change, whilst also providing a proper throttle towards informing clients.
 
 * * Anti-SR50 system * *
 A new system was added which aims to remove SR50 from the game.
