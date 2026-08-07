@@ -88,11 +88,30 @@ Prefer the radio to take over the music for everyone instead? Turn `cl_zh2_radio
 * * Fade map music near proximity radios * *
 Want the radio to stand out more? Turning on `cl_zh2_radiofademapmusic` will gradually lower the map's music the closer you get to whoever is playing it, going silent entirely once you're close enough to them.
 
+* * HUD skin support and new legacy HUD skin * *
+The HUD now supports the ability to draw different HUD types (or skins) this beta. Included with this first version is a new skin which is called the legacy skin.
+The legacy skin aims to mimic the original HUD from Zombie Horde 1, providing a more nostalic look for players.
+Like the other systems below, the skin used is chosen automatically based on the map: legacy maps get the legacy HUD, newer maps get the current one. Server hosts can override this and force one skin for everyone through `sv_zh2_forcehudskin`.
+
+* * Weapon skins * *
+Weapons now also support skins, which are determined on round start. Included is a new skin for each weapon in a legacy variant that looks and plays like the original Zombie Horde 1 versions, alongside the current default versions.
+Just like the HUD skin, the weapon skin used is chosen automatically based on the map, and server hosts can force a specific skin for everyone through `sv_zh2_forceweaponskin`.
+The game will determine if a player must switch their weapon to a new skin on round start, and it will also ensure any spawns either given or picked up properly account for the skin supported that round.
+Legacy weapons aim to match their original counter part with their animation, sound and properties such as damage and knockback. Weapons will have their behavior matched with how the legacy weapons worked.
+For example, the sniper will not have its scope overlay, the double shotgun has no single barrel fire, and the chaingun does not require spinning up.
+
 * * Legacy obituary text mode * *
 The obituary display setting has been reworked into a three-way choice: graphical (the existing icon-based obituaries), text (the existing descriptive messages), or a new legacy text option that reproduces the original ZH1 wording and on-screen positioning instead.
 Server hosts can force a specific mode onto everyone through `sv_zh2_forceobituarydisplaymode`, or leave it up to each player's own preference set through `cl_zh2_obituarydisplaymode`. Graphical remains the default.
 In legacy text mode certain obituaries are shown in the middle of the screen with a colored string, instead of being part of the chat. The text used matches the original ZH1 strings.
 Zombie-on-zombie kills get their own randomized flavour lines, and suicides, falls and drownings get their own lines too; everything else falls back to a plain default message.
+
+* * Timer skins and customizable round timer templates * *
+Round timers can now have their top and bottom labels and fonts configured more freely, similar to what resists now also support. Either label can also be turned into a template that embeds the time itself, using `%d` for a plain whole-second count, `%c` for a clock-style `M:SS` format, or `%f` for a compact format that includes a decimal fraction.
+This support brings in the ability to change timers much more than what they used to be able to do.
+With this skin support is also added, similary to how the HUD and weapons support it.
+Like with the other two a new legacy timer skin has been added alongside the legacy HUD and weapon skins above, reproducing how Zombie Horde 1 presented its timers.
+Like the other skins, the legacy timer skin is chosen automatically based on the map, and server hosts can force one or the other through `sv_zh2_forcetimerskin`.
 
 * * Classic mode config * *
 Server hosts that want to use the new classic features simulating older Zombie Horde can now do so using the new classic mode config, used by calling `+exec` `docs/classicmode.cfg` on top of the existing `host.cfg`.
@@ -137,6 +156,15 @@ As a result, the runtime control described above, such as elapsing, pausing, res
 - [ZM14]:  Fix an issue where a key would not spawn properly.
 - [ZM17]:  Fix an issue where the light dimming did not work correctly.
 
+API changes (Could contain breaking changes for mappers. Make sure to check this list for migrations)
+------------------------------------------------
+
+* * Round timer `flags` parameter moved and is now optional * *
+`RoundTimer::DefineTimer` and `RoundTimer::DefineKnownTimer` used to take `flags` as their 4th parameter, directly after the timer's length and maximum time, with no default value.
+To make room for the new top/bottom template and font parameters described above, `flags` has moved to the very last parameter and now defaults to no flags at all.
+If your map calls either function with `flags` passed positionally, it will now be interpreted as one of the new template/font parameters instead of the flags you intended.
+Please move `flags` to the end of the call. If you need to reach it without changing a template or font parameter along the way, pass its matching default (`TIMER_DEFAULT_TOP_TEMPLATE`, `TIMER_DEFAULT_BOTTOM_TEMPLATE`, `TIMER_DEFAULT_TOP_FONT` or `TIMER_DEFAULT_BOTTOM_FONT`) for that parameter instead of omitting it.
+
 Other mod changes
 ------------------------------------------------
 
@@ -166,6 +194,7 @@ Other mod changes
 - Added `sv_zh2_disablepregamesprinting` which simulates how older Zombie Horde would behave when players would sprint before the game starts.
 - Removed a redundant A_Gunflash call in the shotgun's code.
 - Fix issue where the riot gun was not properly setting its firing state.
+The "+/- N seconds" visual shown when the play timer changes (for example on an infection) now also follows whichever template and font the active timer actually uses, instead of always using a fixed font and format regardless of skin.
 
 Repository changes
 ------------------------------------------------
