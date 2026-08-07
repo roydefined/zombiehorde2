@@ -30,6 +30,7 @@
 #include "admin/admin.acs"
 #include "hud/hud.acs"
 #include "io/io.acs"
+#include "weapon/weapon.acs"
 
 #define LOGSOURCE "Main"
 
@@ -90,6 +91,7 @@ strict namespace ZH2Game
         IO::ParseWeatherDefServerside();
         IO::ParseLoggerDefServerside();
         IO::ParseModDefLumpsServerside();
+        Weapon::BuildWeaponSkinIndex();
         IO::ParseMapDefLumps();
 
         // Weather must prepare internal default data before we parse the map which sets its own defaults.
@@ -101,6 +103,7 @@ strict namespace ZH2Game
 
         // Initialize core components.
         Game::InitializeZombieTeleport();
+        Weapon::ReplaceFakeWeaponSpawnSpots();
         Player::InitializeHealth();
         AfkPrevention::InitializeServer();
         Decorate::InitializeRadioServer();
@@ -218,6 +221,8 @@ strict namespace ZH2Game
 
             collection.HasSplitItems = true;
         }
+
+        Weapon::BuildWeaponSkinIndex();
 
         // Set the current game mode if we have it set.
         str gameMode = Map::GetCurrentMapGameMode();
@@ -478,6 +483,8 @@ strict namespace ZH2Game
 
         Identity::InitializeActivator();
 
+        Weapon::MigratePlayerWeaponSkin(PlayerNumber());
+
         // Set specie, possibly forced to a specific specie.
         // SPECIENONE defaults to SPECIEHUMAN.
         Player::PlayerSpecieT specie = Game::GetForceSpawnSpecie();
@@ -503,12 +510,12 @@ strict namespace ZH2Game
             // TODO: Replace with better distribution.
             if (BCSUtils::RandBool())
             {
-                GiveInventory(WEAPON_FIREGRENADE_NAME, 1);
+                Weapon::Give(Weapon::WEAPONTYPE_FIREGRENADE, 1);
                 GiveInventory(WEAPON_AMMO_FIREGRENADE_NAME, 1);
             }
 
             // Ensure we always start with the shotgun to avoid weird behaviour.
-            SetWeapon(WEAPON_SHOTGUN_NAME);
+            SetWeapon(Weapon::GetWeaponClassName(Weapon::WEAPONTYPE_SHOTGUN));
         }
         else if (specie == Player::SPECIEZOMBIE)
         {

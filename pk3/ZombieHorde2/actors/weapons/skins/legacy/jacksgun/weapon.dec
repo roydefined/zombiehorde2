@@ -1,0 +1,54 @@
+Actor ZH2WeaponJacksGunLegacy : ZH2Weapon
+{
+    tag "Jack's gun"
+    weapon.PreferredSkin "Jacksgun"
+
+    weapon.SlotNumber 2
+
+    // weapon.Kickback 15
+    weapon.Kickback 75
+
+    weapon.AmmoUse 1
+    weapon.AmmoGive 2
+    weapon.AmmoType "ZH2WeaponJacksGunAmmo"
+
+    scale .8
+
+    States
+    {
+        Ready:
+            JCGN A 1 A_WeaponReady
+            wait
+
+        Deselect:
+            JCGN A 1 A_Lower
+            wait
+
+        Select:
+            JCGN A 1 A_Raise
+            wait
+
+        Fire:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
+
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
+            TNT1 A 0 A_FireCustomMissile("ZH2WeaponJacksGunSmokeInitial", 0, false, 0)
+
+            // TNT1 A 0 A_FireBullets (4.0, 4.0, 8, 200 + random(-1, 1) * 40, "ZH2WeaponBulletPuff", FBF_USEAMMO | FBF_NORANDOM)
+            TNT1 A 0 A_FireBullets (2.0, 2.0, 8, 100, "ZH2WeaponBulletPuff", FBF_USEAMMO | FBF_NORANDOM)
+
+            TNT1 A 0 A_AlertMonsters
+            JCGN C 2 bright A_PlaySoundEx("weapons/jacksgun/legacy/FIRE",CHAN_WEAPON)
+            JCGN E 6
+            JCGN F 4
+            JCGN J 5
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
+
+            goto Ready
+    }
+}

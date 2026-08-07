@@ -1,0 +1,76 @@
+Actor ZH2WeaponDoubleShotgunLegacy : ZH2Weapon
+{
+    tag "Double barreled shotgun"
+    Weapon.PreferredSkin "Doubleshotgun"
+
+    Weapon.SlotNumber 3
+    Weapon.Kickback 60
+
+    Weapon.AmmoUse 1
+    weapon.AmmoGive 2
+    Weapon.AmmoType "ZH2WeaponDoubleShotgunShell"
+
+    States
+    {
+        Ready:
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgunShell", 2, "Ready.HasAmmo")
+            goto Reload
+
+        Ready.HasAmmo:
+            SG2I A 1 A_WeaponReady
+            wait
+
+        Deselect:
+            SG2I A 2 A_Lower
+            wait
+
+        Select:
+            SG2I A 1 A_Raise
+            wait
+
+        Fire:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgunShell", 2, "Fire.Rest")
+            goto Reload
+
+        Fire.Rest:
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
+
+            SG2I A 3
+
+            TNT1 A 0 A_TakeInventory("ZH2WeaponDoubleShotgunShell", 2)
+            TNT1 A 0 A_PlaySound("weapons/doubleshotgun/legacy/FIRE", CHAN_WEAPON)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
+            TNT1 A 0 A_FireBullets(11.0, 7.0, 16, 25 + random(-1, 1) * 5, "ZH2WeaponBulletPuff", FBF_NORANDOM)
+            TNT1 A 0 A_AlertMonsters
+
+            SG2I Z 7 bright
+            SG2I A 7
+            SG2R I 7
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
+            goto Reload
+
+        Reload:
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponDoubleShotgunShell", 2, "Ready")
+
+            TNT1 A 0 A_PlaySoundEx("weapons/doubleshotgun/legacy/OPEN", "SoundSlot6")
+
+            SG2R L 7
+            SG2R O 7
+
+            TNT1 A 0 A_PlaySoundEx("weapons/doubleshotgun/legacy/LOAD", "Auto")
+            TNT1 A 0 A_GiveInventory("ZH2WeaponDoubleShotgunShell", 2)
+
+            SG2R S 7
+            SG2Q I 6
+
+            TNT1 A 0 A_PlaySoundEx("weapons/doubleshotgun/legacy/CLOSE", "SoundSlot6")
+            SG2R K 6
+            SG2R N 5
+            goto Ready
+    }
+}

@@ -10,6 +10,7 @@ from utils import get_root, get_paths
 # By default the server uses a host config, located at 'docs/zh2-host.cfg'.
 # This can be disabled by passing `--nohostconfig`.
 # Note doing so will make the script add `+addmap` parameters instead for the maps.
+# Pass `--classicmode` to also load 'docs/classicmode.cfg' on top of the host config.
 
 PORT = "10666"
 
@@ -48,13 +49,17 @@ def get_host_config_args(root):
     return ["+exec", str(root / "docs" / "host.cfg")]
 
 
+def get_classic_mode_config_args(root):
+    return ["+exec", str(root / "docs" / "classicmode.cfg")]
+
+
 def log_cmd(label, cmd):
     print(f"{label}:")
     print(" ".join(f'"{c}"' if " " in c else c for c in cmd))
     print("")
 
 
-def start_host(root, paths, use_host_config):
+def start_host(root, paths, use_host_config, use_classic_mode):
     cmd = [
         str(paths["zandronum"]),
         "-host", "1",
@@ -68,6 +73,10 @@ def start_host(root, paths, use_host_config):
         cmd.extend(get_host_config_args(root))
     else:
         cmd.extend(get_map_args(root))
+
+    # Classic mode is loaded last so it overrides the host config's settings.
+    if use_classic_mode:
+        cmd.extend(get_classic_mode_config_args(root))
 
     log_cmd("Host command", cmd)
     return subprocess.Popen(cmd)
@@ -91,8 +100,9 @@ def main():
 
     # Disable the host config when --nohostconfig is passed.
     use_host_config = "--nohostconfig" not in sys.argv
+    use_classic_mode = "--classicmode" in sys.argv
 
-    host = start_host(root, paths, use_host_config)
+    host = start_host(root, paths, use_host_config, use_classic_mode)
 
     # Give the server a short moment to initialize before joining.
     time.sleep(0.5)

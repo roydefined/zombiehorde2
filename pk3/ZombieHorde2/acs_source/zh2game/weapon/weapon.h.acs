@@ -1,0 +1,141 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+// Fake weapon spawn spots could be unlimited but we need some limit here.
+#define MAX_FAKEWEAPONSPAWNSPOTS 200
+
+#define MAX_WEAPONSPAWNERS 20
+
+#define WEAPON_NOTHINGWEAPON_NAME "ZH2NothingWeapon"
+
+// Fake spawn spot placeholder classes. Also spawned directly by several maps'
+// own ACS (loot/reward mechanics), so these must stay even though the engine's
+// own spot-tracking now resolves them data-driven via WeaponSpawnerCollection.
+#define WEAPON_CHAINGUN_SPAWN_NAME "ZH2ChaingunSpawn"
+#define WEAPON_CLAWS_SPAWN_NAME "ZH2WeaponClawsSpawn"
+#define WEAPON_DOUBLESHOTGUN_SPAWN_NAME "ZH2WeaponDoubleShotgunSpawn"
+#define WEAPON_FIREGRENADE_SPAWN_NAME "ZH2WeaponFireGrenadeSpawn"
+#define WEAPON_HANDGUN_SPAWN_NAME "ZH2WeaponHandgunSpawn"
+#define WEAPON_JACKSGUN_SPAWN_NAME "ZH2WeaponJacksGunSpawn"
+#define WEAPON_JACKSGUN_AMMOSINGLE_NAME "ZH2WeaponJacksgunAmmoSpawnSingle"
+#define WEAPON_JACKSGUN_AMMODOUBLE_NAME "ZH2WeaponJacksgunAmmoSpawnDouble"
+#define WEAPON_RADIO_SPAWN_NAME "ZH2WeaponRadioSpawn"
+#define WEAPON_RIOTGUN_SPAWN_NAME "ZH2WeaponRiotgunSpawn"
+#define WEAPON_SHOTGUN_SPAWN_NAME "ZH2WeaponShotgunSpawn"
+#define WEAPON_SNIPER_SPAWN_NAME "ZH2WeaponSniperSpawn"
+
+#define WEAPON_AMMO_DOUBLESHOTGUN_NAME "ZH2WeaponDoubleShotgunShell"
+#define WEAPON_AMMO_FIREGRENADE_NAME "ZH2WeaponFireGrenadeAmmo"
+#define WEAPON_AMMO_JACKSGUN_NAME "ZH2WeaponJacksGunAmmo"
+#define WEAPON_AMMO_RIOTGUN_CURRENT_NAME "ZH2WeaponRiotGunAmmoCurrent"
+#define WEAPON_AMMO_RIOTGUN_TOTAL_NAME "ZH2WeaponRiotGunAmmoTotal"
+#define WEAPON_AMMO_SHOTGUN_NAME "ZH2WeaponShotgunAmmo"
+
+/* WEAPON MECHANICS */
+#define WEAPON_CHAINGUN_HEAT_NAME "ZH2Chaingunheat"
+#define WEAPON_FIREGRENADE_THROWPOWER_NAME "ZH2WeaponFireGrenadeThrowPower"
+#define WEAPON_JACKSGUN_SMOKE_COUNT_NAME "ZH2WeaponJacksGunSmokeCount"
+#define WEAPON_SNIPER_SHOULDEJECTCASE_NAME "ZH2WeaponSniperShouldEjectCase"
+#define WEAPON_SNIPER_ZOOM_LEVEL_NAME "ZH2WeaponSniperZoomlevel"
+#define WEAPON_SNIPER_IS_ZOOMED_NAME "ZH2WeaponSniperIsZoomed"
+#define WEAPON_SNIPER_BOLTING_NAME "ZH2WeaponSniperBolting"
+#define WEAPON_SHOTGUN_MUST_PUMP_NAME "ZH2WeaponShotgunMustPump"
+#define WEAPON_DOUBLESHOTGUN_EJECT_SHELLS_NAME "ZH2WeaponDoubleShotgunEjectShells"
+
+/* WEAPON AMMO VALUES */
+#define WEAPON_AMMO_CLIP_RIOTGUN 12
+
+/* WEAPON LIMITS */
+#define WEAPON_CHAINGUN_MAX_HEAT 50
+#define WEAPON_FIREGRENADE_MAX_THROWPOWER 100
+#define WEAPON_BLOCK_FIRING_ITEM "ZH2BlockWeaponFiring"
+
+#define WEAPON_CHAINGUN_NAME "ZH2WeaponChaingun"
+#define WEAPON_CLAWS_NAME "ZH2WeaponClaws"
+#define WEAPON_DOUBLESHOTGUN_NAME "ZH2WeaponDoubleShotgun"
+#define WEAPON_FIREGRENADE_NAME "ZH2WeaponFireGrenade"
+#define WEAPON_HANDGUN_NAME "ZH2WeaponHandgun"
+#define WEAPON_JACKSGUN_NAME "ZH2WeaponJacksGun"
+#define WEAPON_RADIO_NAME "ZH2WeaponRadio"
+#define WEAPON_RIOTGUN_NAME "ZH2WeaponRiotGun"
+#define WEAPON_SHOTGUN_NAME "ZH2WeaponShotgun"
+#define WEAPON_SNIPER_NAME "ZH2WeaponSniper"
+
+#define WEAPONTYPE_COUNT 10
+
+// Number of skins supported.
+// TODO: Do this without hardcoding the count so custom skins can be added in the future.
+#define WEAPONSKIN_COUNT 2
+
+strict namespace Weapon
+{
+    extern bool CheckOwned(int weaponType, int skin = WEAPONSKIN_BESTFIT);
+    extern void Give(int weaponType, int amount, int skin = WEAPONSKIN_BESTFIT);
+
+    enum WeaponSkinT : int
+    {
+        WEAPONSKIN_BESTFIT,
+        WEAPONSKIN_DEFAULT,
+        WEAPONSKIN_LEGACY,
+    };
+
+    internal enum WeaponSkinBehaviourT : int
+    {
+        WEAPONSKINBEHAVIOUR_DEFAULT,
+        WEAPONSKINBEHAVIOUR_FORCEDEFAULTSKIN,
+        WEAPONSKINBEHAVIOUR_FORCELEGACYSKIN,
+    };
+
+    enum WeaponTypeT : int
+    {
+        WEAPONTYPE_CHAINGUN,
+        WEAPONTYPE_CLAWS,
+        WEAPONTYPE_DOUBLESHOTGUN,
+        WEAPONTYPE_FIREGRENADE,
+        WEAPONTYPE_HANDGUN,
+        WEAPONTYPE_JACKSGUN,
+        WEAPONTYPE_RADIO,
+        WEAPONTYPE_RIOTGUN,
+        WEAPONTYPE_SHOTGUN,
+        WEAPONTYPE_SNIPER,
+    };
+
+    // A tracked fake weapon spawn spot. Classification of `ClassName` into a
+    // WeaponTypeT is deferred until ReplaceFakeWeaponSpawnSpots (which runs after
+    // ZHMODDEF is parsed) since spawn events for these fire before that.
+    internal struct FakeWeaponSpawnSpotT
+    {
+        int Tid;
+        str ClassName;
+    };
+
+    internal struct FakeWeaponSpawnContextT
+    {
+        FakeWeaponSpawnSpotT Spots[MAX_FAKEWEAPONSPAWNSPOTS];
+        int SpotCount;
+    };
+
+    struct WeaponSpawnerConfigT
+    {
+        str Name;
+        str SpawnSpotClassName;
+        str ResolverClassName;
+
+        // Optional to preserve ammo properly on skin changes.
+        str AmmoClassName;
+    };
+
+    struct WeaponSpawnerCollectionContextT
+    {
+        WeaponSpawnerConfigT Collection[MAX_WEAPONSPAWNERS];
+        int Size;
+    };
+
+    struct WeaponSkinIndexT
+    {
+        int ItemIndex[WEAPONTYPE_COUNT * WEAPONSKIN_COUNT];
+        int SpawnerIndex[WEAPONTYPE_COUNT];
+        bool Built;
+    };
+}

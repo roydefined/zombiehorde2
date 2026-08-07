@@ -2,20 +2,66 @@
     #error This file must be #included.
 #endif
 
-#include "ztele.acs"
-
 strict namespace Hud
 {
     internal SharedStateT _sharedState;
 
     internal void UpdateSharedState()
     {
+        PlayerSkinTypeT playerSkinType = SKINTYPE_NONE;
+        ZombieTeleportSkinT zombieTeleportSkin = ZTELESKIN_NONE;
+
+        int skinIndexAcs = GetPlayerSkin(ConsolePlayerNumber(), PLAYERSKIN_VISIBLE);
+        str skinName = skinIndexAcs != -1 ? (str)GetSkinProperty(skinIndexAcs, "Name") : (raw)0;
+
+        switch (skinName)
+        {
+            case SKIN_HUMAN_GRENADE: playerSkinType = SKINTYPE_HUMAN_GRENADE; break;
+            case SKIN_HUMAN_HANDGUN: playerSkinType = SKINTYPE_HUMAN_HANDGUN; break;
+            case SKIN_HUMAN_JACKSGUN: playerSkinType = SKINTYPE_HUMAN_JACKSGUN; break;
+            case SKIN_HUMAN_SHOTGUN: playerSkinType = SKINTYPE_HUMAN_SHOTGUN; break;
+            case SKIN_HUMAN_DOUBLEBARRELEDSHOTGUN: playerSkinType = SKINTYPE_HUMAN_DOUBLEBARRELEDSHOTGUN; break;
+            case SKIN_HUMAN_CHAINGUN: playerSkinType = SKINTYPE_HUMAN_CHAINGUN; break;
+            case SKIN_HUMAN_SNIPER: playerSkinType = SKINTYPE_HUMAN_SNIPER; break;
+            case SKIN_HUMAN_RIOTGUN: playerSkinType = SKINTYPE_HUMAN_RIOTGUN; break;
+
+            case SKIN_ZOMBIEOLD:
+                playerSkinType = SKINTYPE_ZOMBIEOLD;
+                zombieTeleportSkin = ZTELESKIN_OLD;
+                break;
+
+            case SKIN_ZOMBIEREGULAR:
+                playerSkinType = SKINTYPE_ZOMBIEREGULAR;
+                zombieTeleportSkin = ZTELESKIN_REGULAR;
+                break;
+
+            case SKIN_ZOMBIEINITIAL:
+                playerSkinType = SKINTYPE_ZOMBIEINITIAL;
+                zombieTeleportSkin = ZTELESKIN_INITIAL;
+                break;
+
+            // No skin found, or an unrecognized one. Fallback to the default skin used for the player's specie.
+            // The zombie teleport skin falls back to the modern skin.
+            default:
+                if (Player::GetIsHuman()) playerSkinType = SKINTYPE_HUMAN_GRENADE;
+                else if (Player::GetIsZombie())
+                {
+                    playerSkinType = SKINTYPE_ZOMBIEOLD;
+                    zombieTeleportSkin = ZTELESKIN_REGULAR;
+                }
+                break;
+        }
+
+        _sharedState.PlayerSkin = playerSkinType;
+        _sharedState.ZombieTeleportSkin = zombieTeleportSkin;
+
         _sharedState.DrawKevlarArmor = Player::GetKevlarPoints() != 0;
         _sharedState.DrawCurrentOwnedItem = Item::GetClientOwnedInventorySize() != 0;
         _sharedState.DrawKeyList = Item::GetClientOwnedKeySize() != 0;
 
-        _sharedState.DrawPrimaryWeaponBackground = !CheckWeapon(WEAPON_RADIO_NAME) && !CheckWeapon(WEAPON_CLAWS_NAME);
-        _sharedState.DrawSecondaryWeaponBackground = CheckWeapon(WEAPON_RIOTGUN_NAME);
+        // TODO: Should come from a lump instead of hardcoding what types have this.
+        _sharedState.DrawPrimaryWeaponBackground = !Weapon::CheckWielded(Weapon::WEAPONTYPE_RADIO) && !Weapon::CheckWielded(Weapon::WEAPONTYPE_CLAWS);
+        _sharedState.DrawSecondaryWeaponBackground = Weapon::CheckWielded(Weapon::WEAPONTYPE_RIOTGUN);
 
         _sharedState.DrawZombieTeleportsLeft = ZH2Game::GetAllowZombieTeleporting()
             && Player::GetIsZombie()

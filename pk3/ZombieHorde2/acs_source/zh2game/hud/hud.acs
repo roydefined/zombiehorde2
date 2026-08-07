@@ -7,8 +7,8 @@
 #include "extern.acs"
 #include "draw.acs"
 
-#include "skins/default/draw.acs"
-
+#include "skins/default/default.acs"
+#include "skins/legacy/legacy.acs"
 #include "skins/shared/shared.acs"
 
 #include "round/round.acs"
@@ -100,11 +100,13 @@ strict namespace Hud
         switch (ZH2Game::GetSvForceHudSkin())
         {
             case ZH2Game::HUDSKINBEHAVIOUR_FORCEDEFAULTSKIN: return ZH2Game::HUDSKIN_DEFAULT;
+            case ZH2Game::HUDSKINBEHAVIOUR_FORCELEGACYSKIN: return ZH2Game::HUDSKIN_LEGACY;
             default:
             {
                 switch (ZH2Game::GetClHudSkin(playerId))
                 {
                     case ZH2Game::HUDSKINPREFERENCE_DEFAULT: return ZH2Game::HUDSKIN_DEFAULT;
+                    case ZH2Game::HUDSKINPREFERENCE_LEGACY: return ZH2Game::HUDSKIN_LEGACY;
                     default: return GetBestFitHudSkin();
                 }
             }
@@ -112,9 +114,11 @@ strict namespace Hud
     }
 
     // The hud skin the game considers the best one to use.
-    // For now only one.
     internal ZH2Game::HudSkinT GetBestFitHudSkin()
     {
+        if (Map::GetCurrentMapIsLegacyMap())
+            return ZH2Game::HUDSKIN_LEGACY;
+
         return ZH2Game::HUDSKIN_DEFAULT;
     }
 
@@ -202,7 +206,7 @@ strict namespace Hud
         if (!Decorate::IsFiringWeapon())
             return;
 
-        if (!ZH2Game::GetEnableHudShaking())
+        if (!ZH2Game::GetSvEnableHudShaking() || !ZH2Game::GetClEnableHudShaking())
             return;
 
         // Do not shake if the camera is not on the client.

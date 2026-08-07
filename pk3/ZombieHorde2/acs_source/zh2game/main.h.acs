@@ -33,6 +33,7 @@
 #include "admin/admin.h.acs"
 #include "hud/hud.h.acs"
 #include "io/io.h.acs"
+#include "weapon/weapon.h.acs"
 
 strict namespace ZH2Game
 {
@@ -50,6 +51,21 @@ strict namespace ZH2Game
         BEHAVIOUR_DEFAULT,
         BEHAVIOUR_FORCEOLDSKIN,
         BEHAVIOUR_FORCENEWSKIN,
+    };
+
+    internal enum ObituaryDisplayModeT : int
+    {
+        OBITUARYDISPLAY_GRAPHICAL,
+        OBITUARYDISPLAY_TEXT,
+        OBITUARYDISPLAY_LEGACYTEXT,
+    };
+
+    internal enum ObituaryDisplayModeOverrideT : int
+    {
+        OBITUARYDISPLAYOVERRIDE_NONE,
+        OBITUARYDISPLAYOVERRIDE_GRAPHICAL,
+        OBITUARYDISPLAYOVERRIDE_TEXT,
+        OBITUARYDISPLAYOVERRIDE_LEGACYTEXT,
     };
 
     internal enum DropGrenadeOnInfectT : int
@@ -120,18 +136,21 @@ strict namespace ZH2Game
     internal enum HudSkinT : int
     {
         HUDSKIN_DEFAULT,
+        HUDSKIN_LEGACY,
     };
 
     internal enum HudSkinBehaviourT : int
     {
         HUDSKINBEHAVIOUR_DEFAULT,
         HUDSKINBEHAVIOUR_FORCEDEFAULTSKIN,
+        HUDSKINBEHAVIOUR_FORCELEGACYSKIN,
     };
 
     internal enum HudSkinPreferenceT : int
     {
         HUDSKINPREFERENCE_AUTO,
         HUDSKINPREFERENCE_DEFAULT,
+        HUDSKINPREFERENCE_LEGACY,
     };
 
     // General game info. Non-persisting between rounds.
@@ -195,6 +214,9 @@ strict namespace ZH2Game
         int InitialSpawnSpotCount;
 
         Game::ZombieTeleportContextT ZombieTeleportContext;
+
+        // Map specific fake weapon spawn spots, tracked to later replace with the real spawn actor.
+        Weapon::FakeWeaponSpawnContextT FakeWeaponSpawnContext;
 
         // Clientside, hud specific features
         Hud::HudContextT HudContext;
@@ -339,6 +361,8 @@ strict namespace ZH2Game
         Decorate::RadioTrackCollectionContextT RadioTrackCollection;
         Reward::RewardCollectionContextT RewardCollection;
         Game::TipCollectionContextT TipCollection;
+        Weapon::WeaponSpawnerCollectionContextT WeaponSpawnerCollection;
+        Weapon::WeaponSkinIndexT WeaponSkinIndex;
     };
 
     // General player info. Non-persisting between rounds.
@@ -397,5 +421,8 @@ strict namespace ZH2Game
         bool IsAdmin;
 
         Round::InitialPickContextT InitialPickContext;
+
+        // The weapon skin this player's owned weapons were last migrated to.
+        Weapon::WeaponSkinT LastKnownWeaponSkin;
     };
 }

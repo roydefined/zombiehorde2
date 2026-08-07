@@ -49,10 +49,10 @@ strict namespace Game
         EndingTypeT module& ending = _endingTypes[index];
 
         // The graphic needs a separate check for zombies as this one has two graphics.
-        // TODO: This does not account for when the skin is overridden
+        Player::ZombieSkinTypeT skinType = Player::GetZombieSkinType(false);
         ZH2Game::GameContext.WinGraphic = winningSpecie == Game::SPECIETIE
             ? ending.WinGraphics[0]
-            : ending.WinGraphics[(int)!Map::GetCurrentMapIsLegacyMap()];
+            : ending.WinGraphics[(int)(skinType != Player::ZOMBIESKIN_OLD)];
 
         // Messages
         ZH2Game::GameContext.WinMessageTop = ending.WinMessagesTop[Random(0, lengthof(ending.WinMessagesTop) - 1)];
@@ -64,7 +64,7 @@ strict namespace Game
             return;
 
         // Play a track for the winning type.
-        if (ending.TrackCount != 0 && !_hasStartedEndMusic)
+        if (ending.TrackCount != 0 && !_hasStartedEndMusic && !ZH2Game::GetSvNoEndMusic() && !ZH2Game::GetClNoEndMusic())
         {
             int index = Random(0, ending.TrackCount - 1);
             str track = ending.Tracks[index];

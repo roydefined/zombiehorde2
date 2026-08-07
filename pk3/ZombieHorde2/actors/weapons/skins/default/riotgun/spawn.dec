@@ -1,0 +1,25 @@
+actor ZH2WeaponRiotgunSpawnDefault : ZH2WeaponSpawn
+{
+    inventory.PickupMessage "Riot gun"
+    tag "Riot gun"
+
+    states
+    {
+        Spawn:
+            WRGI A -1
+            stop
+
+        Pickup:
+            TNT1 A 0 A_JumpIf(CallACS("zh2_dec_getishuman", 0, 0, 0) == true, 1)
+            stop
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponRiotGunDefault", 1, "Ignore")
+            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunDefault", 1)
+            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunAmmoTotal", 1)
+            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunAmmoCurrent", 12)
+            stop
+
+        Ignore:
+            WRGI A 1
+            goto Spawn
+    }
+}

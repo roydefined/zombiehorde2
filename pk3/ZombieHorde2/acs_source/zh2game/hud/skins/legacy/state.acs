@@ -1,0 +1,41 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawBuffsLegacy(fixed x, fixed y)
+    {
+        // We only draw part of the states we support when drawing in legacy mode.
+        static str graphics[4] = { LEGACY_BUFF_DAMAGE, LEGACY_BUFF_CURED, LEGACY_BUFF_HIGHJUMP, LEGACY_BUFF_SPEED };
+        static int stateIndexes[4] = { 2, 6, 3, 4 };
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        int offset = 0;
+
+        // This is not part of the list of states so it's done separately.
+        if (GetSharedState().DrawKevlarArmor)
+        {
+            BCSUtils::HudSetPoint(x + fixed(offset) * LEGACY_BUFF_SPACING_X, y);
+            BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_BUFF_KEVLAR);
+            DebugDraw();
+
+            offset++;
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            if (!GetSharedState().DrawHudStateByIndex[stateIndexes[i]])
+                continue;
+
+            BCSUtils::HudSetPoint(x + fixed(offset) * LEGACY_BUFF_SPACING_X, y);
+            BCSUtils::HudDrawImage(--_drawnHudId, graphics[i]);
+            DebugDraw();
+
+            offset++;
+        }
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+    }
+}

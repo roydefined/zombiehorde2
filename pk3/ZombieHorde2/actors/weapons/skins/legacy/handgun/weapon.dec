@@ -1,0 +1,55 @@
+Actor ZH2WeaponHandgunLegacy : ZH2Weapon
+{
+    tag "Handgun"
+    weapon.PreferredSkin "Handgun"
+
+    weapon.SlotNumber 2
+
+    // weapon.Kickback 120
+    weapon.Kickback 200
+
+    weapon.AmmoUse 0
+    weapon.AmmoGive 0
+
+    +WEAPON.NOAUTOFIRE
+
+    states
+    {
+        Ready:
+            PS1S G 1 A_WeaponReady
+            loop
+
+        Deselect:
+            PS1S G 1 A_Lower
+            wait
+
+        Select:
+            PS1S G 1 A_Raise
+            wait
+
+        Fire:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Fire.Stop")
+
+            PS1S G 4
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
+
+            TNT1 A 0 A_AlertMonsters
+            TNT1 A 0 A_PlaySound("weapons/pistol/legacy/FIRE", CHAN_WEAPON)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
+
+            // TNT1 A 0 A_FireBullets(5.0, 3.0, -1, 10 + random(-1, 1) * 2, "ZH2WeaponBulletPuff", FBF_NORANDOM)
+            TNT1 A 0 A_FireBullets(5.6, 0, 1, 5, "ZH2WeaponBulletPuff", FBF_NORANDOM)
+
+            PS1F A 3 bright
+            PS1F C 2
+            PS1F F 2 A_ReFire
+            goto Fire.Stop
+
+        Fire.Stop:
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
+            goto Ready
+    }
+}

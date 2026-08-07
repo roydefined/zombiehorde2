@@ -1,0 +1,100 @@
+actor ZH2WeaponShotgunLegacy : ZH2Weapon
+{
+    Tag "Hunting shotgun"
+    Weapon.PreferredSkin "Shotgun"
+
+    Weapon.SlotNumber 3
+
+    // Weapon.Kickback 60
+
+    Weapon.AmmoUse 1
+    Weapon.AmmoGive 0
+    Weapon.AmmoType "ZH2WeaponShotgunAmmo"
+
+    +WEAPON.AMMO_OPTIONAL
+
+    States
+    {
+        Ready:
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponShotgunAmmo", 8, "Ready.Full")
+            SHTX A 1 A_WeaponReady(WRF_ALLOWRELOAD)
+            wait
+
+        Ready.Full:
+            SHTX A 1 A_WeaponReady(WRF_NOSECONDARY)
+            wait
+
+        Deselect:
+            SHTX A 1 A_Lower
+            wait
+
+        Select:
+            SHTX A 1 A_Raise
+            wait
+
+        Fire:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+            TNT1 A 0 A_JumpIfNoAmmo("Fire.Empty")
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
+
+            TNT1 A 0 A_GiveInventory("ZH2WeaponShotgunMustPump", 1)
+            TNT1 A 0 A_TakeInventory("ZH2WeaponShotgunAmmo", 1)
+            TNT1 A 0 A_PlaySound("weapons/shotgun/legacy/FIRE", CHAN_WEAPON)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
+
+            // TNT1 A 0 A_FireBullets(5.0, 5.0, 8, 25 + random(-1, 1) * 5, "ZH2WeaponBulletPuff", FBF_NOFLASH | FBF_NORANDOM | FBF_NORANDOMPUFFZ)
+            TNT1 A 0 A_FireBullets(5.0, 5.0, 8, 10, "ZH2WeaponBulletPuff", FBF_NOFLASH | FBF_NORANDOM | FBF_NORANDOMPUFFZ)
+
+            TNT1 A 0 A_AlertMonsters
+            SHTX B 3 bright
+            SHTX C 3
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
+
+            goto PumpNormal
+
+        Fire.Empty:
+            SHTX A 5 A_PlayWeaponSound("weapons/shotgun/default/EMPTY")
+            goto Reload
+
+        PumpNormal:
+            SHTX K 2
+            SHTX M 2
+            SHTX N 5
+            SHTX O 5
+            TNT1 A 0 A_PlaySoundEx("weapons/shotgun/legacy/COCK", "SoundSlot5")
+            TNT1 A 0 A_TakeInventory("ZH2WeaponShotgunMustPump", 1)
+            TNT1 A 0 A_PlaySoundEx("weapons/shotgun/legacy/COCK", "SoundSlot5")
+            SHTX P 4
+            SHTX Q 4
+            SHTX P 4
+            SHTX M 4
+            goto Ready
+
+        Altfire:
+            goto Reload
+
+        Reload:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponShotgunAmmo", 8, "Ready")
+        Reload.Loop:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Reload.End")
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponShotgunAmmo", 8, "Reload.End")
+            SHTR C 8
+            SHTR F 6
+            SHTR H 4 A_PlaySoundEx("weapons/shotgun/legacy/RELOAD", "SoundSlot6")
+            TNT1 A 0 A_GiveInventory("ZH2WeaponShotgunAmmo", 1)
+            loop
+        Reload.End:
+            SHTX O 5
+            TNT1 A 0 A_PlaySoundEx("weapons/shotgun/legacy/COCK", "SoundSlot5")
+            SHTX P 4
+            SHTX Q 4
+            SHTX P 4
+            SHTX M 4
+            goto Ready
+    }
+}

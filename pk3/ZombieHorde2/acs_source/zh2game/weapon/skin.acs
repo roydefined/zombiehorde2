@@ -1,0 +1,73 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Weapon"
+
+strict namespace Weapon
+{
+    // Determines the weapon skin to use.
+    // If the server doesn't care, use what is best for the map.
+    internal WeaponSkinT GetWeaponSkin()
+    {
+        switch (ZH2Game::GetSvForceWeaponSkin())
+        {
+            case WEAPONSKINBEHAVIOUR_FORCEDEFAULTSKIN: return WEAPONSKIN_DEFAULT;
+            case WEAPONSKINBEHAVIOUR_FORCELEGACYSKIN: return WEAPONSKIN_LEGACY;
+            default: return GetBestFitWeaponSkin();
+        }
+    }
+
+    // The weapon skin the game considers the best one to use for the current map.
+    internal WeaponSkinT GetBestFitWeaponSkin()
+    {
+        if (Map::GetCurrentMapIsLegacyMap())
+            return WEAPONSKIN_LEGACY;
+
+        return WEAPONSKIN_DEFAULT;
+    }
+
+    // Migrate's the given player's weapons to the ones used on the current map.
+    // Skin is determined on the best fit as based on map type or cvar.
+    internal void MigratePlayerWeaponSkin(int id)
+    {
+        WeaponSkinT currentSkin = GetWeaponSkin();
+        WeaponSkinT lastSkin = ZH2Game::PersistingGameContext.Players[id].LastKnownWeaponSkin;
+
+        // WEAPONSKIN_BESTFIT means we haven't recorded a skin for this player yet
+        // (e.g. they just connected), so there is nothing to migrate.
+        if (lastSkin != currentSkin && lastSkin != WEAPONSKIN_BESTFIT)
+        {
+            int tid = Identity::GetTID(id);
+            Logger::LogInformation(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(id) + "\cj's weapon skin changed from \cd" + str(lastSkin) + "\cj to \cd" + str(currentSkin) + "\cj. Migrating owned weapons.");
+
+            for (int weaponType = 0; weaponType < WEAPONTYPE_COUNT; ++weaponType)
+            {
+                str oldClassName = GetWeaponClassName(weaponType, lastSkin);
+                if (((raw)oldClassName) == 0 || CheckActorInventory(tid, oldClassName) == 0)
+                    continue;
+
+                str newClassName = GetWeaponClassName(weaponType, currentSkin);
+                if (((raw)newClassName) == 0)
+                    continue;
+
+                // Preserve the ammo we have of this weapon.
+                // This fixes issues with weapons that give ammo on pickup like Jack's Gun.
+                // After switching we give the correct ammo count back.
+                str ammoClassName = GetWeaponAmmoClassName(weaponType);
+                bool hasAmmoClassName = ((raw)ammoClassName) != 0;
+                int ammoBeforeSwap = hasAmmoClassName ? CheckActorInventory(tid, ammoClassName) : 0;
+
+                TakeActorInventory(tid, oldClassName, 1);
+                GiveActorInventory(tid, newClassName, 1);
+
+                if (hasAmmoClassName)
+                    BCSUtils::SetActorInventory(tid, ammoClassName, ammoBeforeSwap);
+            }
+        }
+
+        ZH2Game::PersistingGameContext.Players[id].LastKnownWeaponSkin = currentSkin;
+    }
+}
+
+#undef LOGSOURCE

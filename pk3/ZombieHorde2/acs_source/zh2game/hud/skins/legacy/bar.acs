@@ -1,0 +1,37 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawSprintBarLegacy(fixed x, fixed y)
+    {
+        int left = Player::GetSprintLeft();
+        int id = LEGACY_HUDID_SPRINTBAR;
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(--id, LEGACY_SPRINTBAR_NAME);
+
+        fixed clipWidth = fixed(LEGACY_SPRINTBAR_WIDTH) / LEGACY_SPRINTBAR_SCALE;
+        fixed clipHeight = fixed(LEGACY_SPRINTBAR_HEIGHT) / LEGACY_SPRINTBAR_SCALE;
+
+        fixed percentage = fixed(left) / fixed(SPRINT_ITEM_MAX);
+        fixed clipY = BCSUtils::Round(clipHeight * percentage);
+
+        BCSUtils::HudSetClipRect(-clipWidth / 2.0, -clipY, clipWidth, clipY);
+        BCSUtils::HudDrawImage(--id, LEGACY_SPRINTBAR_METER_NAME);
+        BCSUtils::HudRemoveClipRect();
+
+        if (Power::GetHasPower(Power::POWERCAFFEINE))
+        {
+            BCSUtils::HudSetPoint(x, y);
+            BCSUtils::HudDrawImage(--id, LEGACY_SPRINTBAR_OVERLAY_NAME);
+        }
+
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+    }
+}

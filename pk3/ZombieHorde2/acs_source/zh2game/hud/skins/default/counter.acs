@@ -4,91 +4,117 @@
 
 strict namespace Hud
 {
-    internal void DrawPlayerCounters(Player::ZombieSkinTypeT skinType)
+    internal void DrawHumanPlayerCounter(fixed x, fixed y, int count)
+    {
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetPoint(x - 18.0, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, "HUDHBACK");
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetPoint(x - 4.0, y + 2.0);
+        BCSUtils::HudDrawImage(--_drawnHudId, "HUDCHUMN");
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetScale(0.6);
+        BCSUtils::HudSetPoint(x + 8.0, y + 2.0);
+        BCSUtils::HudDrawText(--_drawnHudId, str(count));
+        DebugDraw();
+        BCSUtils::HudSetScale(1.0);
+    }
+
+    internal void DrawZombiePlayerCounter(fixed x, fixed y, Player::ZombieSkinTypeT skinType, int count)
+    {
+        // NOTE: Initial not currently working because we don't check initial zombies by design.
+        str zombieGraphic;
+        switch (skinType)
+        {
+            case Player::ZOMBIESKIN_INITIAL:
+                zombieGraphic = "HUDCZOMI";
+                break;
+            case Player::ZOMBIESKIN_REGULAR:
+                zombieGraphic = "HUDCZOMR";
+                break;
+            case Player::ZOMBIESKIN_OLD:
+                zombieGraphic = "HUDCZOMO";
+                break;
+        }
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetPoint(x - 18.0, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, "HUDZBACK");
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetPoint(x, y + 1.0);
+        BCSUtils::HudDrawImage(--_drawnHudId, zombieGraphic);
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetScale(0.6);
+        BCSUtils::HudSetPoint(x + 10.0, y + 2.0);
+        BCSUtils::HudDrawText(--_drawnHudId, str(count));
+        DebugDraw();
+        BCSUtils::HudSetScale(1.0);
+    }
+
+    internal void DrawPlayerCounters(fixed x, fixed y, Player::ZombieSkinTypeT skinType)
     {
         int humanCount = Game::HumanCount();
         int zombieCount = Game::ZombieCount();
 
-        fixed x = 0.0;
+        fixed zombieX = x;
 
         if (humanCount > 0)
         {
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
-            HudSetPointInternal(-18.0, 0.0);
-            BCSUtils::HudDrawImage(--_drawnHudId, "HUDHBACK");
-            DebugDraw();
-
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
-            HudSetPointInternal(-4.0, 2.0);
-            BCSUtils::HudDrawImage(--_drawnHudId, "HUDCHUMN");
-            DebugDraw();
-
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
-            BCSUtils::HudSetScale(0.6);
-            HudSetPointInternal(8.0, 2.0);
-            BCSUtils::HudDrawText(--_drawnHudId, str(humanCount));
-            DebugDraw();
-            BCSUtils::HudSetScale(1.0);
-
-            x += 50.0;
+            DrawHumanPlayerCounter(x, y, humanCount);
+            zombieX += 50.0;
         }
 
         if (zombieCount > 0)
-        {
-            // NOTE: Initial not currently working because we don't check initial zombies by design.
-            str zombieGraphic;
-            switch(skinType)
-            {
-                case Player::ZOMBIESKIN_INITIAL:
-                    zombieGraphic = "HUDCZOMI";
-                    break;
-                case Player::ZOMBIESKIN_REGULAR:
-                    zombieGraphic = "HUDCZOMR";
-                    break;
-                case Player::ZOMBIESKIN_OLD:
-                    zombieGraphic = "HUDCZOMO";
-                    break;
-            }
-
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
-            HudSetPointInternal(x - 18.0, 0.0);
-            BCSUtils::HudDrawImage(--_drawnHudId, "HUDZBACK");
-            DebugDraw();
-
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
-            HudSetPointInternal(x + 0.0, 1.0);
-            BCSUtils::HudDrawImage(--_drawnHudId, zombieGraphic);
-            DebugDraw();
-
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
-            BCSUtils::HudSetScale(0.6);
-            HudSetPointInternal(x + 10.0, 2.0);
-            BCSUtils::HudDrawText(--_drawnHudId, str(zombieCount));
-            DebugDraw();
-            BCSUtils::HudSetScale(1.0);
-        }
+            DrawZombiePlayerCounter(zombieX, y, skinType, zombieCount);
     }
 
-    internal void DrawStatCounters(Player::ZombieSkinTypeT skinType)
+    internal void DrawStatCountersBackground(fixed x, fixed y)
+    {
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, "HUDTBACK");
+        DebugDraw();
+    }
+
+    // Generic icon+count widget shared by the kills/infects stat counters.
+    internal void DrawStatCounter(fixed x, fixed y, str iconGraphic, int count)
+    {
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetPoint(x + 2.0, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, iconGraphic);
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetScale(0.6);
+        BCSUtils::HudSetPoint(x + 8.0, y + 2.0);
+        BCSUtils::HudDrawText(--_drawnHudId, str(count));
+        DebugDraw();
+        BCSUtils::HudSetScale(1.0);
+    }
+
+    internal void DrawStatCounters(fixed x, fixed y, Player::ZombieSkinTypeT skinType)
     {
         int kills = Player::GetZombieKills();
         int infects = Player::GetInfects();
 
-        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
         if (kills > 0 || infects > 0)
-        {
-            HudSetPointInternal();
-            BCSUtils::HudDrawImage(--_drawnHudId, "HUDTBACK");
-            DebugDraw();
-        }
+            DrawStatCountersBackground(x, y);
 
-        fixed x = 48.0;
+        fixed statX = x + 48.0;
 
         if (kills > 0)
         {
             // NOTE: Initial not currently working because we don't check initial zombies by design.
             str zombieGraphic;
-            switch(skinType)
+            switch (skinType)
             {
                 case Player::ZOMBIESKIN_INITIAL:
                     zombieGraphic = "HUDKCZMI";
@@ -101,34 +127,11 @@ strict namespace Hud
                     break;
             }
 
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
-            HudSetPointInternal(x + 2.0, 0.0);
-            BCSUtils::HudDrawImage(--_drawnHudId, zombieGraphic);
-            DebugDraw();
-
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
-            BCSUtils::HudSetScale(0.6);
-            HudSetPointInternal(x + 8.0, 2.0);
-            BCSUtils::HudDrawText(--_drawnHudId, str(kills));
-            DebugDraw();
-            BCSUtils::HudSetScale(1.0);
-
-            x -= 30.0;
+            DrawStatCounter(statX, y, zombieGraphic, kills);
+            statX -= 30.0;
         }
 
         if (infects > 0)
-        {
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
-            HudSetPointInternal(x + 2.0, 0.0);
-            BCSUtils::HudDrawImage(--_drawnHudId, "HUDCINFC");
-            DebugDraw();
-
-            BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
-            BCSUtils::HudSetScale(0.6);
-            HudSetPointInternal(x + 8.0, 2.0);
-            BCSUtils::HudDrawText(--_drawnHudId, str(infects));
-            DebugDraw();
-            BCSUtils::HudSetScale(1.0);
-        }
+            DrawStatCounter(statX, y, "HUDCINFC", infects);
     }
 }
