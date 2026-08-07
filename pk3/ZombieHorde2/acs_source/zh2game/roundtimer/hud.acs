@@ -33,4 +33,52 @@ strict namespace RoundTimer
 
         return label;
     }
+
+    // Formats `tics` using whichever time token is present in the template.
+    // Returns `(raw)0` if the template has none.
+    internal str FormatTemplateTics(str template, int tics)
+    {
+        if (BCSUtils::StrContains(template, TIMER_SECONDS_TOKEN))
+            return str(tics / 35);
+
+        if (BCSUtils::StrContains(template, TIMER_CLOCK_TOKEN))
+            return Utils::FormatTics(tics, false);
+
+        if (BCSUtils::StrContains(template, TIMER_FORMATTED_TOKEN))
+            return Utils::FormatTics(tics, true);
+
+        return (raw)0;
+    }
+
+    // Formats `tics` using whichever style the timer with the given index uses.
+    // Matches the time left shown for this timer, depending on wether the top or bottom template has one.
+    internal str FormatUsingTimerStyle(int index, int tics)
+    {
+        str formatted = FormatTemplateTics(GetTimerTopTemplate(index), tics);
+        if (formatted != (raw)0)
+            return formatted;
+
+        return FormatTemplateTics(GetTimerBottomTemplate(index), tics);
+    }
+
+    // True if `template` has any of the time tokens (%d/%c/%f), regardless of which.
+    internal bool TemplateHasTimeToken(str template)
+    {
+        return BCSUtils::StrContains(template, TIMER_SECONDS_TOKEN)
+            || BCSUtils::StrContains(template, TIMER_CLOCK_TOKEN)
+            || BCSUtils::StrContains(template, TIMER_FORMATTED_TOKEN);
+    }
+
+    // Returns the font belonging to whichever template (top, then bottom) actually supplies the
+    // timer's time style, mirroring `FormatUsingTimerStyle`'s priority. Returns `(raw)0` if neither has one.
+    internal str GetTimerStyleFont(int index)
+    {
+        if (TemplateHasTimeToken(GetTimerTopTemplate(index)))
+            return GetTimerTopFont(index);
+
+        if (TemplateHasTimeToken(GetTimerBottomTemplate(index)))
+            return GetTimerBottomFont(index);
+
+        return (raw)0;
+    }
 }
