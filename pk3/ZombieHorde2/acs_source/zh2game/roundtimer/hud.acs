@@ -4,50 +4,62 @@
 
 strict namespace RoundTimer
 {
+    // Returns what token is used int he template.
+    internal str GetTemplateTimeToken(str template)
+    {
+        if (template == (raw)0)
+            return (raw)0;
+
+        if (BCSUtils::StrContains(template, TIMER_SECONDS_TOKEN))
+            return TIMER_SECONDS_TOKEN;
+
+        if (BCSUtils::StrContains(template, TIMER_CLOCK_TOKEN))
+            return TIMER_CLOCK_TOKEN;
+
+        if (BCSUtils::StrContains(template, TIMER_FORMATTED_TOKEN))
+            return TIMER_FORMATTED_TOKEN;
+
+        return (raw)0;
+    }
+
+    internal bool TemplateHasTimeToken(str template) { return GetTemplateTimeToken(template) != (raw)0; }
+
     // %d and %c are both whole-second formats, so they both add 1 second to their timer.
     // %f shows the fractional part directly instead, so it doesn't need it.
-    bool TemplateHasWholeSecondToken(str template)
+    internal bool TemplateHasWholeSecondToken(str template)
     {
-        return BCSUtils::StrContains(template, TIMER_SECONDS_TOKEN) || BCSUtils::StrContains(template, TIMER_CLOCK_TOKEN);
+        str token = GetTemplateTimeToken(template);
+        return token == TIMER_SECONDS_TOKEN || token == TIMER_CLOCK_TOKEN;
     }
 
     // Adjusts the whole second tokens with another second to better visualize the time left.
-    int GetTemplateAdjustedTicsLeft(str template, int ticsLeft)
+    internal int GetTemplateAdjustedTicsLeft(str template, int ticsLeft)
     {
         return (TemplateHasWholeSecondToken(template) && ticsLeft != 0) ? ticsLeft + 35 * BCSUtils::Sgn(ticsLeft) : ticsLeft;
-    }
-
-    // Perform formatting of the round timer, replacing keywords where the time should be displayed.
-    str FormatLabel(str label, int ticsLeft)
-    {
-        int adjustedTicsLeft = GetTemplateAdjustedTicsLeft(label, ticsLeft);
-
-        if (BCSUtils::StrContains(label, TIMER_SECONDS_TOKEN))
-            label = BCSUtils::StrReplace(label, TIMER_SECONDS_TOKEN, str(adjustedTicsLeft / 35));
-
-        if (BCSUtils::StrContains(label, TIMER_CLOCK_TOKEN))
-            label = BCSUtils::StrReplace(label, TIMER_CLOCK_TOKEN, Utils::FormatTics(adjustedTicsLeft, false));
-
-        if (BCSUtils::StrContains(label, TIMER_FORMATTED_TOKEN))
-            label = BCSUtils::StrReplace(label, TIMER_FORMATTED_TOKEN, Utils::FormatTics(ticsLeft, true));
-
-        return label;
     }
 
     // Formats `tics` using whichever time token is present in the template.
     // Returns `(raw)0` if the template has none.
     internal str FormatTemplateTics(str template, int tics)
     {
-        if (BCSUtils::StrContains(template, TIMER_SECONDS_TOKEN))
-            return str(tics / 35);
+        switch (GetTemplateTimeToken(template))
+        {
+            case TIMER_SECONDS_TOKEN: return str(tics / 35);
+            case TIMER_CLOCK_TOKEN: return Utils::FormatTics(tics, false);
+            case TIMER_FORMATTED_TOKEN: return Utils::FormatTics(tics, true);
+            default: return (raw)0;
+        }
+    }
 
-        if (BCSUtils::StrContains(template, TIMER_CLOCK_TOKEN))
-            return Utils::FormatTics(tics, false);
+    // Perform formatting of the round timer, replacing keywords where the time should be displayed.
+    internal str FormatLabel(str label, int ticsLeft)
+    {
+        str token = GetTemplateTimeToken(label);
+        if (token == (raw)0)
+            return label;
 
-        if (BCSUtils::StrContains(template, TIMER_FORMATTED_TOKEN))
-            return Utils::FormatTics(tics, true);
-
-        return (raw)0;
+        int adjustedTicsLeft = GetTemplateAdjustedTicsLeft(label, ticsLeft);
+        return BCSUtils::StrReplace(label, token, FormatTemplateTics(label, adjustedTicsLeft));
     }
 
     // Formats `tics` using whichever style the timer with the given index uses.
@@ -59,14 +71,6 @@ strict namespace RoundTimer
             return formatted;
 
         return FormatTemplateTics(GetTimerBottomTemplate(index), tics);
-    }
-
-    // True if `template` has any of the time tokens (%d/%c/%f), regardless of which.
-    internal bool TemplateHasTimeToken(str template)
-    {
-        return BCSUtils::StrContains(template, TIMER_SECONDS_TOKEN)
-            || BCSUtils::StrContains(template, TIMER_CLOCK_TOKEN)
-            || BCSUtils::StrContains(template, TIMER_FORMATTED_TOKEN);
     }
 
     // Returns the font belonging to whichever template (top, then bottom) actually supplies the
