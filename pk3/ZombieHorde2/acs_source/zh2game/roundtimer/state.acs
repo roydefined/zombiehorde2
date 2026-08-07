@@ -4,12 +4,28 @@
 
 strict namespace RoundTimer
 {
-    internal void DefineKnownTimer(KnownRoundTimerT timerType, int length, int maximumTime, int flags, str label = "")
+    internal void DefineKnownTimer(
+        KnownRoundTimerT timerType,
+        int length,
+        int maximumTime,
+        str topTemplate = TIMER_DEFAULT_TOP_TEMPLATE,
+        str bottomTemplate = TIMER_DEFAULT_BOTTOM_TEMPLATE,
+        str topFont = TIMER_DEFAULT_TOP_FONT,
+        str bottomFont = TIMER_DEFAULT_BOTTOM_FONT,
+        int flags = TIMER_DEFAULT_FLAGS)
     {
-        DefineTimer(GetIndexOfKnownType(timerType), length, maximumTime, flags, label);
+        DefineTimer(GetIndexOfKnownType(timerType), length, maximumTime, topTemplate, bottomTemplate, topFont, bottomFont, flags);
     }
 
-    internal void DefineTimer(int index, int length, int maximumTime, int flags, str label = "")
+    internal void DefineTimer(
+        int index,
+        int length,
+        int maximumTime,
+        str topTemplate = TIMER_DEFAULT_TOP_TEMPLATE,
+        str bottomTemplate = TIMER_DEFAULT_BOTTOM_TEMPLATE,
+        str topFont = TIMER_DEFAULT_TOP_FONT,
+        str bottomFont = TIMER_DEFAULT_BOTTOM_FONT,
+        int flags = TIMER_DEFAULT_FLAGS)
     {
         if (index < 0 || index >= MAX_TIMERS)
         {
@@ -31,8 +47,11 @@ strict namespace RoundTimer
         RoundTimerContextT module& timer = GetTimerRefByindex(index);
         timer.InitialState.Length = length;
         timer.InitialState.MaximumTime = maximumTime;
+        timer.InitialState.TopTemplate = topTemplate;
+        timer.InitialState.BottomTemplate = bottomTemplate;
+        timer.InitialState.TopFont = topFont;
+        timer.InitialState.BottomFont = bottomFont;
         timer.InitialState.Flags = flags;
-        timer.InitialState.Label = label;
         timer.EndingTic = -1;
         timer.PauseTic = -1;
         timer.Flags = flags;
@@ -64,7 +83,10 @@ strict namespace RoundTimer
 
     /* Properties */
 
-    internal str GetTimerLabel(int index) { return GetTimerRefByindex(index).InitialState.Label; }
+    internal str GetTimerTopTemplate(int index) { return GetTimerRefByindex(index).InitialState.TopTemplate; }
+    internal str GetTimerBottomTemplate(int index) { return GetTimerRefByindex(index).InitialState.BottomTemplate; }
+    internal str GetTimerTopFont(int index) { return GetTimerRefByindex(index).InitialState.TopFont; }
+    internal str GetTimerBottomFont(int index) { return GetTimerRefByindex(index).InitialState.BottomFont; }
 
     // Returns the actual time of the timer, also accounting for the fact it can be paused.
     // If paused, we take the pause tic. If not, we take the world timer.

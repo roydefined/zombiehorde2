@@ -1,0 +1,36 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace RoundTimer
+{
+    // %d and %c are both whole-second formats, so they both add 1 second to their timer.
+    // %f shows the fractional part directly instead, so it doesn't need it.
+    bool TemplateHasWholeSecondToken(str template)
+    {
+        return BCSUtils::StrContains(template, TIMER_SECONDS_TOKEN) || BCSUtils::StrContains(template, TIMER_CLOCK_TOKEN);
+    }
+
+    // Adjusts the whole second tokens with another second to better visualize the time left.
+    int GetTemplateAdjustedTicsLeft(str template, int ticsLeft)
+    {
+        return (TemplateHasWholeSecondToken(template) && ticsLeft != 0) ? ticsLeft + 35 * BCSUtils::Sgn(ticsLeft) : ticsLeft;
+    }
+
+    // Perform formatting of the round timer, replacing keywords where the time should be displayed.
+    str FormatLabel(str label, int ticsLeft)
+    {
+        int adjustedTicsLeft = GetTemplateAdjustedTicsLeft(label, ticsLeft);
+
+        if (BCSUtils::StrContains(label, TIMER_SECONDS_TOKEN))
+            label = BCSUtils::StrReplace(label, TIMER_SECONDS_TOKEN, str(adjustedTicsLeft / 35));
+
+        if (BCSUtils::StrContains(label, TIMER_CLOCK_TOKEN))
+            label = BCSUtils::StrReplace(label, TIMER_CLOCK_TOKEN, Utils::FormatTics(adjustedTicsLeft, false));
+
+        if (BCSUtils::StrContains(label, TIMER_FORMATTED_TOKEN))
+            label = BCSUtils::StrReplace(label, TIMER_FORMATTED_TOKEN, Utils::FormatTics(ticsLeft, true));
+
+        return label;
+    }
+}
