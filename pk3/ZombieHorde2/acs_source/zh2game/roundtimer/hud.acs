@@ -1,0 +1,88 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace RoundTimer
+{
+    // Returns what token is used int he template.
+    internal str GetTemplateTimeToken(str template)
+    {
+        if (template == (raw)0)
+            return (raw)0;
+
+        if (BCSUtils::StrContains(template, TIMER_SECONDS_TOKEN))
+            return TIMER_SECONDS_TOKEN;
+
+        if (BCSUtils::StrContains(template, TIMER_CLOCK_TOKEN))
+            return TIMER_CLOCK_TOKEN;
+
+        if (BCSUtils::StrContains(template, TIMER_FORMATTED_TOKEN))
+            return TIMER_FORMATTED_TOKEN;
+
+        return (raw)0;
+    }
+
+    internal bool TemplateHasTimeToken(str template) { return GetTemplateTimeToken(template) != (raw)0; }
+
+    // %d and %c are both whole-second formats, so they both add 1 second to their timer.
+    // %f shows the fractional part directly instead, so it doesn't need it.
+    internal bool TemplateHasWholeSecondToken(str template)
+    {
+        str token = GetTemplateTimeToken(template);
+        return token == TIMER_SECONDS_TOKEN || token == TIMER_CLOCK_TOKEN;
+    }
+
+    // Adjusts the whole second tokens with another second to better visualize the time left.
+    internal int GetTemplateAdjustedTicsLeft(str template, int ticsLeft)
+    {
+        return (TemplateHasWholeSecondToken(template) && ticsLeft != 0) ? ticsLeft + 35 * BCSUtils::Sgn(ticsLeft) : ticsLeft;
+    }
+
+    // Formats `tics` using whichever time token is present in the template.
+    // Returns `(raw)0` if the template has none.
+    internal str FormatTemplateTics(str template, int tics)
+    {
+        switch (GetTemplateTimeToken(template))
+        {
+            case TIMER_SECONDS_TOKEN: return str(tics / 35);
+            case TIMER_CLOCK_TOKEN: return Utils::FormatTics(tics, false);
+            case TIMER_FORMATTED_TOKEN: return Utils::FormatTics(tics, true);
+            default: return (raw)0;
+        }
+    }
+
+    // Perform formatting of the round timer, replacing keywords where the time should be displayed.
+    internal str FormatLabel(str label, int ticsLeft)
+    {
+        str token = GetTemplateTimeToken(label);
+        if (token == (raw)0)
+            return label;
+
+        int adjustedTicsLeft = GetTemplateAdjustedTicsLeft(label, ticsLeft);
+        return BCSUtils::StrReplace(label, token, FormatTemplateTics(label, adjustedTicsLeft));
+    }
+
+    // Formats `tics` using whichever style the timer with the given index uses.
+    // Matches the time left shown for this timer, depending on wether the top or bottom template has one.
+    internal str FormatUsingTimerStyle(int index, int tics)
+    {
+        str formatted = FormatTemplateTics(GetTimerTopTemplate(index), tics);
+        if (formatted != (raw)0)
+            return formatted;
+
+        return FormatTemplateTics(GetTimerBottomTemplate(index), tics);
+    }
+
+    // Returns the font belonging to whichever template (top, then bottom) actually supplies the
+    // timer's time style, mirroring `FormatUsingTimerStyle`'s priority. Returns `(raw)0` if neither has one.
+    internal str GetTimerStyleFont(int index)
+    {
+        if (TemplateHasTimeToken(GetTimerTopTemplate(index)))
+            return GetTimerTopFont(index);
+
+        if (TemplateHasTimeToken(GetTimerBottomTemplate(index)))
+            return GetTimerBottomFont(index);
+
+        return (raw)0;
+    }
+}

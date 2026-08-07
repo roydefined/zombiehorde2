@@ -65,7 +65,6 @@ strict namespace Game
 
     internal void DrawTimeDiff(fixed x, fixed y, int ticDiff)
     {
-        BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetCenterText(true);
         BCSUtils::HudSetAlpha(0.8);
         BCSUtils::HudSetStayTime(1.0);
@@ -73,8 +72,19 @@ strict namespace Game
 
         BCSUtils::HudSetTextColor(ticDiff < 0 ? CR_RED : CR_GREEN);
 
+        // Format and font the same way the current timer is formatted.
+        int index = RoundTimer::GetActiveTimerIndex();
+        str formattedTime = RoundTimer::FormatUsingTimerStyle(index, ticDiff);
+        str font = RoundTimer::GetTimerStyleFont(index);
+        if (formattedTime == (raw)0)
+        {
+            formattedTime = Utils::FormatTics(ticDiff, RoundTimer::GetTimerDrawDecimals(index));
+            font = "SmallFont";
+        }
+
+        BCSUtils::HudSetFont(font);
+
         // Add a '+' to the label for positive. '-' is added automatically.
-        str formattedTime = Utils::FormatTics(ticDiff, RoundTimer::GetTimerDrawDecimals(RoundTimer::GetActiveTimerIndex()));
         str label = ticDiff < 0 ? formattedTime : "+" + formattedTime;
 
         x += 5.0 * fixed(Random(-10, 10));

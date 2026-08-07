@@ -481,6 +481,12 @@ strict namespace ZH2Game
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"" + SCRIPT_ENTER_RESPAWN_NAME + "\"");
 
+        // It seems that ResetMap causes this script to trigger earlier than expected.
+        // Especially now with weapon skins being required when giving weapons, we must ensure we have parsed the map.
+        // So this delay should cover that since the OPEN script parses everything in the first tic.
+        if (!GameContext.ParsedMapDetails)
+            Delay(const: 1);
+
         Identity::InitializeActivator();
 
         Weapon::MigratePlayerWeaponSkin(PlayerNumber());

@@ -6,33 +6,77 @@
 
 #include "extern.acs"
 #include "state.acs"
+#include "hud.acs"
+#include "skin.acs"
 
 strict namespace RoundTimer
 {
+    // Definitions below differ their presentation between skins.
     internal void SetSurvivalDefaults()
     {
-        Logger::LogDebug(LOGSOURCE, "Setting survival gamemode profile for round timers.");
+        if (GetTimerSkin() == TIMERSKIN_LEGACY)
+            SetSurvivalDefaultsLegacy();
+        else
+            SetSurvivalDefaultsDefault();
+    }
+
+    internal void SetSurvivalDefaultsDefault()
+    {
+        Logger::LogDebug(LOGSOURCE, "Setting survival gamemode profile for round timers (default skin).");
 
         // TODO: play timer should be scalable.
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERPREGAMECOUNTDOWN, 10, 30, RoundTimer::TIMERDRAWDECIMALS, "Game is starting in");
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERCOUNTDOWN, 30, 30, RoundTimer::TIMERDRAWDECIMALS, "Picking a zombie in");
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERPLAYING, 60, 180, RoundTimer::TIMERDOCOUNTDOWN, "Time left");
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDING, 10, 10, RoundTimer::TIMERDRAWDECIMALS);
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDINGWITHRESTART, 5, 5, RoundTimer::TIMERDRAWDECIMALS, "Restarting...");
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTING, 20, 20, RoundTimer::TIMERDRAWDECIMALS); // TODO: RoundTimer::TIMERHIDDEN
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTED, 5, 5, RoundTimer::TIMERDRAWDECIMALS, "Moving to next map...");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERPREGAMECOUNTDOWN, 10, 30, "Game is starting in");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERCOUNTDOWN, 30, 30, "Picking a zombie in");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERPLAYING, 60, 180, "Time left", "%c", TIMER_DEFAULT_TOP_FONT, TIMER_DEFAULT_BOTTOM_FONT, RoundTimer::TIMERDOCOUNTDOWN);
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDING, 10, 10);
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDINGWITHRESTART, 5, 5, "Restarting...");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTING, 20, 20); // TODO: RoundTimer::TIMERHIDDEN
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTED, 5, 5, "Moving to next map...");
+    }
+
+    internal void SetSurvivalDefaultsLegacy()
+    {
+        Logger::LogDebug(LOGSOURCE, "Setting survival gamemode profile for round timers (legacy skin).");
+
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERPREGAMECOUNTDOWN, 10, 30, TIMER_DEFAULT_TOP_TEMPLATE, "Game is starting in %d s");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERCOUNTDOWN, 30, 30, TIMER_DEFAULT_TOP_TEMPLATE, "A zombie will be picked in... %d s");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERPLAYING, 60, 180, TIMER_DEFAULT_TOP_TEMPLATE, "TIME LEFT %c", TIMER_DEFAULT_TOP_FONT, "BigFont", RoundTimer::TIMERDOCOUNTDOWN);
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDING, 10, 10, TIMER_DEFAULT_TOP_TEMPLATE, "%d s");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDINGWITHRESTART, 5, 5, TIMER_DEFAULT_TOP_TEMPLATE, "Restarting... %d s");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTING, 20, 20, TIMER_DEFAULT_TOP_TEMPLATE, "%d s"); // TODO: RoundTimer::TIMERHIDDEN
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTED, 5, 5, TIMER_DEFAULT_TOP_TEMPLATE, "Moving to next map... %d s");
     }
 
     internal void SetEscapeDefaults()
     {
-        Logger::LogDebug(LOGSOURCE, "Setting escape gamemode profile for round timers.");
+        if (GetTimerSkin() == TIMERSKIN_LEGACY)
+            SetEscapeDefaultsLegacy();
+        else
+            SetEscapeDefaultsDefault();
+    }
 
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERPREGAMECOUNTDOWN, 10, 30, RoundTimer::TIMERDRAWDECIMALS, "Game is starting in");
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERCOUNTDOWN, 10, 30, RoundTimer::TIMERDRAWDECIMALS, "Picking a zombie in");
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDING, 10, 10, RoundTimer::TIMERDRAWDECIMALS);
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDINGWITHRESTART, 5, 5, RoundTimer::TIMERDRAWDECIMALS, "Restarting...");
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTING, 20, 20, RoundTimer::TIMERDRAWDECIMALS); // TODO: RoundTimer::TIMERHIDDEN
-        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTED, 5, 5, RoundTimer::TIMERDRAWDECIMALS, "Moving to next map...");
+    internal void SetEscapeDefaultsDefault()
+    {
+        Logger::LogDebug(LOGSOURCE, "Setting escape gamemode profile for round timers (default skin).");
+
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERPREGAMECOUNTDOWN, 10, 30, "Game is starting in");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERCOUNTDOWN, 10, 30, "Picking a zombie in");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDING, 10, 10);
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDINGWITHRESTART, 5, 5, "Restarting...");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTING, 20, 20); // TODO: RoundTimer::TIMERHIDDEN
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTED, 5, 5, "Moving to next map...");
+    }
+
+    internal void SetEscapeDefaultsLegacy()
+    {
+        Logger::LogDebug(LOGSOURCE, "Setting escape gamemode profile for round timers (legacy skin).");
+
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERPREGAMECOUNTDOWN, 10, 30, TIMER_DEFAULT_TOP_TEMPLATE, "Game is starting in %d s");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERCOUNTDOWN, 10, 30, TIMER_DEFAULT_TOP_TEMPLATE, "A zombie will be picked in... %d s");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDING, 10, 10, TIMER_DEFAULT_TOP_TEMPLATE, "%d s");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERENDINGWITHRESTART, 5, 5, TIMER_DEFAULT_TOP_TEMPLATE, "Restarting... %d s");
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTING, 20, 20, TIMER_DEFAULT_TOP_TEMPLATE, "%d s"); // TODO: RoundTimer::TIMERHIDDEN
+        RoundTimer::DefineKnownTimer(RoundTimer::TIMERVOTED, 5, 5, TIMER_DEFAULT_TOP_TEMPLATE, "Moving to next map... %d s");
     }
 
     // NOTE: Commented and unused until we get to allocating these again.
