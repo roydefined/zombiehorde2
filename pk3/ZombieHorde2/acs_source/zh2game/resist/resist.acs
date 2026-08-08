@@ -83,6 +83,14 @@ strict namespace Resist
             return;
         }
 
+        // Explicit check for `(raw)0` as timereason meaning nothing was set at all.
+        // Default to "resist for %t seconds" then, coloring the time token ourselves since nobody
+        // else gets the chance to. Any other label is used verbatim: if a mapper wants the
+        // substituted time colored, they must put the color codes around %t themselves.
+        // Resolved here instead of clientside, since the server syncs this field verbatim.
+        if (timeReasonLabel == (raw)0)
+            timeReasonLabel = "Resist for \cj" + RESIST_TIME_TOKEN + "\c- second" + RESIST_PLURAL_TOKEN;
+
         ResistT module& resist = GetRefByindex(index);
         resist.InitialState.Length = length;
         resist.InitialState.TopReasonLabel = topReasonLabel;
@@ -107,13 +115,6 @@ strict namespace Resist
     internal void InitializeResistClientside(int index)
     {
         ResistT module& resist = GetRefByindex(index);
-
-        // Explicit check for `(raw)0` as timereason meaning nothing was set at all.
-        // Default to "resist for %t seconds" then, coloring the time token ourselves since nobody
-        // else gets the chance to. Any other label is used verbatim: if a mapper wants the
-        // substituted time colored, they must put the color codes around %t themselves.
-        if (resist.InitialState.TimeReasonLabel == (raw)0)
-            resist.InitialState.TimeReasonLabel = "Resist for \cj" + RESIST_TIME_TOKEN + "\c- second" + RESIST_PLURAL_TOKEN;
 
         str topReasonLog = resist.InitialState.TopReasonLabel != (raw)0 && resist.InitialState.TopReasonLabel != "" ? resist.InitialState.TopReasonLabel : "N/A";
         str timeReasonLog = resist.InitialState.TimeReasonLabel != (raw)0 && resist.InitialState.TimeReasonLabel != "" ? resist.InitialState.TimeReasonLabel : "N/A";
@@ -465,10 +466,10 @@ strict namespace Resist
             STATEPRESCRIPT,
             STATEREADYTORUN,
             STATERUNNING,
-            STATEPAUSED,
             STATEPOSTSCRIPT,
             STATEREADYTOSTOP,
             STATEREADYTOELAPSE,
+            STATEPAUSED,
             STATEENDED
         };
 
