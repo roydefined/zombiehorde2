@@ -17,10 +17,10 @@ PORT = "10666"
 ZH2_FILES = [
     "libraries/ZombieHorde2Lib",
     "ZombieHorde2",
+    "ZombieHorde2Resources",
     "ZombieHorde2Doom",
     "ZombieHorde2Legacy",
     "ZombieHorde2Modern",
-    "ZombieHorde2Resources",
     "ZombieHorde2TestMaps",
 ]
 
