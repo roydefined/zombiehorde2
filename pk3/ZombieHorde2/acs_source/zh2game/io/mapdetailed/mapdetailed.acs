@@ -106,38 +106,24 @@ strict namespace IO
             if (Tokenizer::ParseBodyAsEmpty(handle, symbol, "properties"))
                 continue;
 
+            if (BCSUtils::IsClientOnly()
+                && (Tokenizer::ParseBodyAsEmpty(handle, symbol, "game")
+                    || Tokenizer::ParseBodyAsEmpty(handle, symbol, "resist")
+                    || Tokenizer::ParseBodyAsEmpty(handle, symbol, "safety")))
+                continue;
+
+            if (BCSUtils::IsServerOnly() && Tokenizer::ParseBodyAsEmpty(handle, symbol, "softwaretextures"))
+                continue;
+
             // Parsed on both sides.
             bool parsed = ParseResistCollectionDeprecated(handle, mapLump, symbol)
                 || ParseEventCollection(handle, mapLump, symbol)
                 || ParseWeatherProfiles(handle, mapLump, symbol);
 
-            // Game block is serverside
-            if (!parsed)
-            {
-                parsed = BCSUtils::IsServer() && ParseGameBlock(handle, mapLump, symbol)
-                    || BCSUtils::IsClientOnly() && Tokenizer::ParseBodyAsEmpty(handle, symbol, "game");
-            }
-
-            // Resist block is serverside
-            if (!parsed)
-            {
-                parsed = BCSUtils::IsServer() && ParseResistBlock(handle, mapLump, symbol)
-                    || BCSUtils::IsClientOnly() && Tokenizer::ParseBodyAsEmpty(handle, symbol, "resist");
-            }
-
-            // Safety block is serverside
-            if (!parsed)
-            {
-                parsed = BCSUtils::IsServer() && ParseSafety(handle, mapLump, symbol)
-                    || BCSUtils::IsClientOnly() && Tokenizer::ParseBodyAsEmpty(handle, symbol, "safety");
-            }
-
-            // SoftwareTextures block is clientside
-            if (!parsed)
-            {
-                parsed = BCSUtils::IsClient() && ParseSoftwareTextures(handle, mapLump, symbol)
-                    || BCSUtils::IsServerOnly() && Tokenizer::ParseBodyAsEmpty(handle, symbol, "softwaretextures");
-            }
+            if (!parsed) parsed = BCSUtils::IsServer() && ParseGameBlock(handle, mapLump, symbol);
+            if (!parsed) parsed = BCSUtils::IsServer() && ParseResistBlock(handle, mapLump, symbol);
+            if (!parsed) parsed = BCSUtils::IsServer() && ParseSafety(handle, mapLump, symbol);
+            if (!parsed) parsed = BCSUtils::IsClient() && ParseSoftwareTextures(handle, mapLump, symbol);
 
             if (parsed)
             {
