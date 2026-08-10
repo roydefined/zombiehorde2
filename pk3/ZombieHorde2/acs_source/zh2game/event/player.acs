@@ -153,7 +153,8 @@ strict namespace Event
             // We ignore this when the player is no longer connected, because you can't ban somebody that left.
             if (IsNetworkGame() && intentional && BCSUtils::PlayerIsConnected(id))
             {
-                int duration = ZH2Game::GetMaxBanDuration();
+                // Effective duration is always the lowest of the two, so either being 0 disables the ban.
+                int duration = BCSUtils::Min(ZH2Game::GetMaxBanDuration(), ZH2Game::GetMaxZombieBanDuration());
                 if (duration != 0)
                 {
                     Logger::LogDebug(LOGSOURCE, "Attempting to ban player (\cd" + str(id) + "\cj) " + BCSUtils::PlayerName(id) + " for \cd" + str(duration) + "\cj minute(s).");
