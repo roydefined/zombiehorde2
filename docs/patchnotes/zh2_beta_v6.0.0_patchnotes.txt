@@ -40,6 +40,8 @@ Additional to the compensation changes, the game now also supports banning a zom
 Zandronum now supports bannign through ACS with the cvar `sv_maxacsbanduration`.
 Server hosts will be able to enable banning through this cvar, or disable it by setting the vlaue to 0.
 The game also respects this value and banning a zombie will happen based on the time provided by `sv_maxacsbanduration`.
+Additionally, server hosts can now set their own cap on this ban duration through the new `sv_zh2_maxzombiebanduration` cvar.
+The actual duration used is always whichever of the two cvars is lower, and either being set to 0 disables the ban entirely.
 
 * * New AFK prevention system on round start * *
 The game now has detection of AFK players on round start. When a map starts, server hosts can configure a delay in which players must move.
@@ -53,6 +55,7 @@ Zombie players are expected to actively play the game and not go AFK. If they do
 The game will now be able to track the activity of zombies and determine if one of them has gone AFK.
 Just like with the checking done on round start, the player will be informed to stay active or risk getting kicked.
 The standard ruling will apply when they get kicked, where the game could ban them for leaving the game early.
+By default, zombies get a 6 second grace period followed by a 6 second check window before being warned, and 10 more seconds after the warning before being kicked.
 
 * * Resist system improvements and runtime control * *
 The resist system has been expanded significantly and is now much more flexible for both built-in gameplay and custom maps.
@@ -113,7 +116,7 @@ Like the other skins, the legacy timer skin is chosen automatically based on the
 
 * * Classic mode config * *
 Server hosts that want to use the new classic features simulating older Zombie Horde can now do so using the new classic mode config, used by calling `+exec` `docs/classicmode.cfg` on top of the existing `host.cfg`.
-It forces the new legacy hud skin, new legacy weapon skin, new legacy timer skin, new legacy text obituaries drawn in the middle of the screen, disables sprinting before the round starts, uses the legacy initial zombie pick method, allows only 1 panic per round, allows moving while zombie teleporting, and disables the pick chance display, end of round music, map voting, anti-SR50, the auto-use behaviour for medikits/kevlar/energy drinks, and every newer feature not present in the original Zombie Horde (blood, tracers, damage feedback, translucent allies, ally icons and player identification).
+It forces the new legacy hud skin, new legacy weapon skin, new legacy timer skin, new legacy zombie skin, new legacy text obituaries drawn in the middle of the screen, disables sprinting before the round starts, uses the legacy initial zombie pick method, allows only 1 panic per round, allows moving while zombie teleporting, and disables the pick chance display, end of round music, map voting, anti-SR50, the auto-use behaviour for medikits/kevlar/energy drinks, and every newer feature not present in the original Zombie Horde (blood, tracers, damage feedback, translucent allies, ally icons and player identification).
 Note this is simply a switch to turn off cvars, but these will not be forced. Server hosts can turn features back on if they want to.
 
 Map changes
@@ -198,6 +201,7 @@ Other mod changes
 - Added `cl_zh2_drawobituaryhud`, letting players toggle obituaries off independently. This fixes obituaries still showing up when the hud as a whole was disabled. The "+/- N seconds" visual shown when the play timer changes (for example on an infection) now also follows whichever template and font the active timer actually uses, instead of always using a fixed font and format regardless of skin.
 - Fix time diff visuals drawing when the HUD is disabled as a whole.
 - Fixed the (now called) default HUD's speed and high jump status icons being mixed up and showing a different graphic
+- Fix the final stats screen sometimes showing stale data for the player whose death or infection ended the round.
 
 Repository changes
 ------------------------------------------------
