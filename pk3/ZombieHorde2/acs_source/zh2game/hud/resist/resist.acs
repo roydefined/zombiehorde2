@@ -4,6 +4,14 @@
 
 strict namespace Hud
 {
+    // Both spacing below go beyond the existing gap created for the resist labels specifically.
+
+    // Extra spacing between resists.
+    #define RESIST_HUD_BETWEEN_RESISTS_SPACING 4
+
+    // Extra spacing between top reason and bottom reason.
+    #define RESIST_HUD_BETWEEN_LABELS_SPACING 2
+
     Resist::ResistHookDataT? _resistHookData;
 
     internal void DrawResistsHud()
@@ -14,7 +22,6 @@ strict namespace Hud
 
         fixed alpha = GetFadeOutAlpha();
 
-        int offset = 0;
         int AddY = 0;
         for (int index = 0; index < MAX_RESISTS; ++index)
         {
@@ -44,21 +51,28 @@ strict namespace Hud
 
             _resistHookData.Index = index;
             raw result = Hook::Call(Hook::HOOK_CLIENTDRAWRESIST, _resistHookData);
-            AddY += (int)result;
 
-            AddY += DrawResist(index, offset++, ticsLeft);
+            // A non-zero hook result fully replaces the normal draw offset.
+            // If zero, use whatever we get from drawing the resist ourselves.
+            int defaultOffset = DrawResist(index, ticsLeft);
+            int hookOffset = (int)result;
+            int drawnOffset = hookOffset != 0 ? hookOffset : defaultOffset;
+
+            AddY += drawnOffset + RESIST_HUD_BETWEEN_RESISTS_SPACING;
         }
     }
 
-    internal int DrawResist(int index, int offset, int ticsLeft)
+    internal int DrawResist(int index, int ticsLeft)
     {
         Resist::ResistT module& resist = Resist::GetRefByindex(index);
 
         bool hideTopReason = Resist::GetHideTopReason(index);
         bool hideTimeReason = Resist::GetHideTimeReason(index);
-        int addY = 12;
+        bool drawTopReason = !hideTopReason && resist.InitialState.TopReasonLabel != (raw)0 && resist.InitialState.TopReasonLabel != "";
+        bool drawTimeReason = !hideTimeReason && resist.InitialState.TimeReasonLabel != (raw)0 && resist.InitialState.TimeReasonLabel != "";
 
-        if (!hideTopReason && resist.InitialState.TopReasonLabel != (raw)0 && resist.InitialState.TopReasonLabel != "")
+        int addY = 0;
+        if (drawTopReason)
         {
             str topReasonLabel = Resist::FormatLabel(resist.InitialState.TopReasonLabel, ticsLeft);
 
@@ -68,9 +82,14 @@ strict namespace Hud
             HudSetPointInternal();
             BCSUtils::HudDrawText(--_drawnHudId, topReasonLabel);
             DebugDraw();
+
+            addY = 8;
+
+            if (drawTimeReason)
+                addY += RESIST_HUD_BETWEEN_LABELS_SPACING;
         }
 
-        if (!hideTimeReason && resist.InitialState.TimeReasonLabel != (raw)0 && resist.InitialState.TimeReasonLabel != "")
+        if (drawTimeReason)
         {
             str timeReasonLabel = Resist::FormatLabel(resist.InitialState.TimeReasonLabel, ticsLeft);
 
@@ -81,7 +100,8 @@ strict namespace Hud
             BCSUtils::HudDrawText(--_drawnHudId, timeReasonLabel);
             DebugDraw();
 
-            addY += 12;
+            // BigFont is taller than SmallFont, so it needs more room after it.
+            addY += 14;
         }
 
         return addY;
