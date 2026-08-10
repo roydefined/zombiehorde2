@@ -10,7 +10,10 @@ strict namespace Game
         Event::ReceiveDataSynced(packet);
 
         int type = Event::GetReceiveData(0);
-        if (type != Sync::SYNCTYPE_GAME)
+
+        // We check for both game and player syncs since we can't guarantee one is faster.
+        // But we need both for the ending, so if either get passed we will build it.
+        if (type != Sync::SYNCTYPE_GAME && type != Sync::SYNCTYPE_PLAYERS)
             terminate;
 
         // Build the ending if somebody won.
