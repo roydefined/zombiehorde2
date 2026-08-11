@@ -145,7 +145,7 @@ strict namespace Player
             case ZH2Game::INITIALZOMBIEPICKMETHOD_WEIGHT:
                 return GetPlayerInitialZombiePickChanceWeight(id, rememberLastMap);
             default:
-                return GetPlayerInitialZombiePickChanceRandom(id);
+                return GetPlayerInitialZombiePickChanceRandom(id, rememberLastMap);
         }
     }
 
@@ -200,8 +200,11 @@ strict namespace Player
         return fixed(remainingCount) / fixed(resetEligiblePlayers);
     }
 
-    internal fixed GetPlayerInitialZombiePickChanceRandom(int id)
+    internal fixed GetPlayerInitialZombiePickChanceRandom(int id, bool checkLastMap)
     {
+        if (checkLastMap && GetPlayerInitialZombieLastMap(id))
+            return 0.0;
+
         int eligiblePlayers = 0;
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
@@ -209,10 +212,17 @@ strict namespace Player
             if (!PlayerInGame(i))
                 continue;
 
+            if (checkLastMap && GetPlayerInitialZombieLastMap(i))
+                continue;
+
             eligiblePlayers++;
         }
 
-        return fixed(EligibleInitialZombieCount()) / fixed(eligiblePlayers);
+        int requiredCount = EligibleInitialZombieCount();
+        if (requiredCount >= eligiblePlayers)
+            return 1.0;
+
+        return fixed(requiredCount) / fixed(eligiblePlayers);
     }
 
     internal fixed GetPlayerInitialZombiePickChanceWeight(int id, bool checkLastMap)
