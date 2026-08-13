@@ -24,6 +24,12 @@ strict namespace
 
     #define EXPERIMENT_RESIST_INDEX 5
 
+    // The number of tics between each individual character when typing the resist using the pre-resist script handler.
+    #define TYPEON_CHAR_TICS 2
+
+    // Extra configured tics to wait before starting the resist.
+    #define TYPEON_END_DELAY_TICS 20
+
     Int TELE1 = 52;
     Int TELE2 = 62;
     Int TELE3 = 145;
@@ -554,9 +560,7 @@ strict namespace
         // Every client types out the top reason for itself; wait here for roughly as long as that takes.
         ACS_NamedExecuteAlways("ze29_resist_typeon_client", 0, resistIndex);
 
-        int charDelayTics = 2;
-        int endDelayTics = 20;
-        delay(StrLen(Resist::GetTopReasonLabelByIndex(resistIndex)) * charDelayTics + endDelayTics);
+        delay(StrLen(Resist::GetTopReasonLabelByIndex(resistIndex)) * TYPEON_CHAR_TICS + TYPEON_END_DELAY_TICS);
     }
 
     // Types out the resist's top reason on every client at once, positioned like a resist HUD entry.
@@ -584,20 +588,39 @@ strict namespace
             typedMessage = StrParam(s:typedMessage, c:GetChar(topReasonMessage, i));
             i++;
 
-            if (!Resist::PrepareResistMessageHud())
-                return;
+            // Delay before we go to the next character every time we draw a character.
+            for (int tic = 0; tic < TYPEON_CHAR_TICS; ++tic)
+            {
+                if (!Resist::PrepareResistMessageHud())
+                    return;
 
+                Hud::SetRelativePoint();
+
+                BCSUtils::HudSetAlpha(1.0);
+                BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+                BCSUtils::HudSetDisappearTime(0.0);
+                BCSUtils::HudSetTextColor(CR_ORANGE);
+                BCSUtils::HudSetFont("SmallFont");
+
+                BCSUtils::HudDrawText(0, typedMessage);
+
+                delay(const: 1);
+            }
+        }
+
+        // Hold the finished message on screen until we're ready to show the delay from the server.
+        // This is done loosely to kind of match what we expect the server to do.
+        if (Resist::PrepareResistMessageHud())
+        {
             Hud::SetRelativePoint();
 
             BCSUtils::HudSetAlpha(1.0);
-            BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
-            BCSUtils::HudSetDisappearTime(0.0);
+            BCSUtils::HudSetStayTime(fixed(TYPEON_END_DELAY_TICS) / 35.0);
+            BCSUtils::HudSetDisappearTime(0.5);
             BCSUtils::HudSetTextColor(CR_ORANGE);
             BCSUtils::HudSetFont("SmallFont");
 
             BCSUtils::HudDrawText(0, typedMessage);
-
-            delay(const: 2);
         }
     }
 
