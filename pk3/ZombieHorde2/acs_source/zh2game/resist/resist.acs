@@ -4,13 +4,23 @@
 
 #define LOGSOURCE "Resist"
 
-#include "extensions.acs"
+#include "prepostscript.acs"
+#include "extern.acs"
+#include "sync.acs"
+#include "hud.acs"
 
 // Note:
 // - Resist ending tic will be -1 for inactive resists. If not, the resist is active.
 
 strict namespace Resist
 {
+    internal void InitializeClient()
+    {
+        Logger::LogDebug(LOGSOURCE, "Initializing clientside.");
+
+        EventBus::AddCallbackByScriptName(EVENTDATASYNCED, "zh2_internal_event_resistdatasynced");
+    }
+
     // Tic checks for any expired resists and stops them.
     // Additionally, an event will be called.
     internal void TicServer()
@@ -23,19 +33,49 @@ strict namespace Resist
             if (!IsDefined(index))
                 continue;
 
-            if (!IsActive(index))
-                continue;
+            ResistT module& resist = resists[index];
 
-            if (GetTicsDifference(index) <= 0)
+            ResistRunStateT state = GetRunState(index);
+            if (state == STATEREADYTORUN)
+            {
+                SetRunState(index, STATERUNNING);
+                Event::SendResistStarted(index);
+                Sync::SyncResists();
+
+                Logger::LogDebug(LOGSOURCE, "Resist " + str(index) + " has started.");
+            }
+
+            else if (state == STATEREADYTOELAPSE)
             {
                 SetRunState(index, STATEENDED);
                 Event::SendResistElapsed(index);
                 Sync::SyncResists();
+
+                Logger::LogDebug(LOGSOURCE, "Resist " + str(index) + " has elapsed.");
             }
+
+            else if (state == STATEREADYTOSTOP)
+            {
+                SetRunState(index, STATEENDED);
+                Event::SendResistStopped(index);
+                Sync::SyncResists();
+
+                Logger::LogDebug(LOGSOURCE, "Resist " + str(index) + " has stopped.");
+            }
+
+            else if (state == STATERUNNING && GetTicsDifference(index) <= 0)
+                ElapseResist(index);
         }
     }
 
-    internal void DefineNewByIndex(int index, int length, str topReasonLabel = (raw)0, str timeReasonLabel = (raw)0)
+    internal void DefineNewByIndex(
+        int index,
+        int length,
+        str topReasonLabel = (raw)0,
+        str timeReasonLabel = (raw)0,
+        str preResistScript = (raw)0,
+        str postResistScript = (raw)0,
+        int flags = FLAG_NONE)
     {
         if (index < 0 || index >= MAX_RESISTS)
         {
@@ -43,68 +83,91 @@ strict namespace Resist
             return;
         }
 
+        // Explicit check for `(raw)0` as timereason meaning nothing was set at all.
+        // Default to "resist for %t seconds" then, coloring the time token ourselves since nobody
+        // else gets the chance to. Any other label is used verbatim: if a mapper wants the
+        // substituted time colored, they must put the color codes around %t themselves.
+        // Resolved here instead of clientside, since the server syncs this field verbatim.
+        if (timeReasonLabel == (raw)0)
+            timeReasonLabel = "Resist for \cj" + RESIST_TIME_TOKEN + "\c- second" + RESIST_PLURAL_TOKEN;
+
         ResistT module& resist = GetRefByindex(index);
         resist.InitialState.Length = length;
         resist.InitialState.TopReasonLabel = topReasonLabel;
         resist.InitialState.TimeReasonLabel = timeReasonLabel;
+        resist.InitialState.PreResistScript = preResistScript;
+        resist.InitialState.PostResistScript = postResistScript;
+        resist.InitialState.Flags = flags;
         resist.EndingTic = -1;
+        resist.PauseTic = -1;
+        resist.RunState = STATENONE;
         resist.Defined = true;
-
-        // Offline we want to initialize this resist clientside immediately.
-        // TODO: Move this when adding the sync callback system.
-        if (!IsNetworkGame())
-            InitializeResistClientside(index);
 
         Logger::LogDebug(LOGSOURCE, "Created new resist at index \cd" + str(index) + "\cj. Length: \cd" + str(length) + "\cj. Top reason: \cd" + topReasonLabel + "\cj. Time reason: \cd" + timeReasonLabel + ".");
     }
 
-    internal ResistT module& GetRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Resists[index]; }
+    internal ResistT module& GetRefByindex(int index)
+    {
+        return ZH2Game::GameContext.MapDetails.Resists[index];
+    }
 
     // Called by the client, which is used to determine some things about the resist that do not change after it was made.
     internal void InitializeResistClientside(int index)
     {
         ResistT module& resist = GetRefByindex(index);
 
-        // Explicit check for `(raw)0` as timereason meaning nothing was set at all.
-        // Default to "resist for %t seconds" then.
-        // TODO: Use a flag to explicitly indicate NOT to do this?
-        if (resist.InitialState.TimeReasonLabel == (raw)0)
-            resist.InitialState.TimeReasonLabel = "Resist for " + RESIST_TIME_TOKEN + " second" + RESIST_PLURAL_TOKEN;
-
-        // Determine if the top reason / time reason has a time token.
-        // If yes, also check if it's colored (if not, then the hud will add it).
-        str topReason = resist.InitialState.TopReasonLabel;
-        if (topReason != (raw)0 && topReason != "")
-        {
-            resist.InitialState.TopReasonTimeTokenIndex = BCSUtils::StrFind(topReason, RESIST_TIME_TOKEN);
-            if (resist.InitialState.TopReasonTimeTokenIndex > 3)
-            {
-                str before = StrMid(topReason, resist.InitialState.TopReasonTimeTokenIndex - 2, 2);
-                if (before == "\c" && BCSUtils::IsAlpha(topReason[resist.InitialState.TopReasonTimeTokenIndex - 1]))
-                    resist.InitialState.TopReasonHasColoredTimeToken = true;
-            }
-        }
-
-        str timeReason = resist.InitialState.TimeReasonLabel;
-        if (timeReason != (raw)0 && timeReason != "")
-        {
-            resist.InitialState.TimeReasonTimeTokenIndex = BCSUtils::StrFind(timeReason, RESIST_TIME_TOKEN);
-            if (resist.InitialState.TimeReasonTimeTokenIndex > 3)
-            {
-                str before = StrMid(timeReason, resist.InitialState.TimeReasonTimeTokenIndex - 2, 2);
-                if (before == "\c" && BCSUtils::IsAlpha(timeReason[resist.InitialState.TimeReasonTimeTokenIndex - 1]))
-                    resist.InitialState.TimeReasonHasColoredTimeToken = true;
-            }
-        }
-
-        str topReasonLog = topReason != (raw)0 && topReason != "" ? topReason : "N/A";
-        str timeReasonLog = timeReason != (raw)0 && timeReason != "" ? timeReason : "N/A";
-        Logger::LogDebug(LOGSOURCE, "Initialized new resist clientside at index \cd" + str(index) + "\cj. Time reason: " + timeReasonLog + ". Top reason: " + topReasonLog + ". Top reason has time token: \cd" + (resist.InitialState.TopReasonTimeTokenIndex != -1 ? "yes" : "no") + "\cj. Top reason time token has color: \cd" + (resist.InitialState.TopReasonHasColoredTimeToken ? "yes" : "no") + "\cj. Time reason has time token: \cd" + (resist.InitialState.TimeReasonTimeTokenIndex != -1 ? "yes" : "no") + "\cj. Time reason time token has color: \cd" + (resist.InitialState.TimeReasonHasColoredTimeToken ? "yes" : "no") + "\cj.");
+        str topReasonLog = resist.InitialState.TopReasonLabel != (raw)0 && resist.InitialState.TopReasonLabel != "" ? resist.InitialState.TopReasonLabel : "N/A";
+        str timeReasonLog = resist.InitialState.TimeReasonLabel != (raw)0 && resist.InitialState.TimeReasonLabel != "" ? resist.InitialState.TimeReasonLabel : "N/A";
+        Logger::LogDebug(LOGSOURCE, "Initialized new resist clientside at index \cd" + str(index) + "\cj. Time reason: " + timeReasonLog + ". Top reason: " + topReasonLog + ".");
     }
 
-    internal int GetMaximumTics(int index) { return GetRefByindex(index).InitialState.Length * 35; }
-    internal bool IsDefined(int index) { return GetRefByindex(index).Defined; }
-    internal bool IsActive(int index) { return GetRunState(index) == STATERUNNING; }
+    internal int GetMaximumTics(int index)
+    {
+        return GetRefByindex(index).InitialState.Length * 35;
+    }
+
+    internal bool IsDefined(int index)
+    {
+        return GetRefByindex(index).Defined;
+    }
+
+    internal bool IsActive(int index)
+    {
+        ResistRunStateT state = GetRunState(index);
+        return state != STATENONE && state != STATEENDED;
+    }
+
+    // Whether any resist is explicitly visible on the HUD.
+    // This does not cover if any resist is actually active. It checks the running state.
+    internal bool GetAnyResistVisible()
+    {
+        ResistT[] module& resists = ZH2Game::GameContext.MapDetails.Resists;
+        for (int index = 0; index < lengthof(resists); ++index)
+        {
+            if (IsDefined(index) && GetRunState(index) == STATERUNNING)
+                return true;
+        }
+
+        return false;
+    }
+
+    // Covers the pre/post-script and running state.
+    // Does not cover paused unlike `IsActive`.
+    internal bool IsRunning(int index)
+    {
+        return IsActive(index) && GetRunState(index) != STATEPAUSED;
+    }
+
+    internal bool IsPaused(int index)
+    {
+        return GetRunState(index) == STATEPAUSED;
+    }
+
+    // Covers both elapsed and stopped resists.
+    internal bool IsEnded(int index)
+    {
+        return GetRunState(index) == STATEENDED;
+    }
 
     internal int GetTicsLeft(int index)
     {
@@ -114,35 +177,220 @@ strict namespace Resist
 
     internal int GetTicsDifference(int index)
     {
-        return GetRefByindex(index).EndingTic - Utils::GetSynchronizedTimer();
+        ResistT module& resist = GetRefByindex(index);
+
+        int currentTic = GetRunState(index) == STATEPAUSED
+            ? resist.PauseTic
+            : Utils::GetSynchronizedTimer();
+
+        return resist.EndingTic - currentTic;
     }
 
-    internal void StartResist(int index, bool broadcast = true)
+    // Returns whether the resist actually started, i.e. it wasn't already playing in some form.
+    internal bool StartResist(int index)
     {
-        // Already running or finished.
-        if (GetRunState(index) != STATENONE)
+        ResistRunStateT state = GetRunState(index);
+        if (state != STATENONE)
+            return false;
+
+        if (HasPreResistScript(index))
+        {
+            StartPreResistScript(index);
+            return true;
+        }
+
+        SetResistReadyToRun(index);
+        return true;
+    }
+
+    internal void ElapseResist(int index)
+    {
+        ResistRunStateT state = GetRunState(index);
+        if (state != STATERUNNING && state != STATEPAUSED)
+            return;
+
+        if (HasPostResistScript(index))
+        {
+            StartPostResistScript(index);
+            return;
+        }
+
+        SetResistReadyToElapse(index);
+    }
+
+    internal void StopResist(int index)
+    {
+        ResistRunStateT state = GetRunState(index);
+        if (state != STATERUNNING && state != STATEPAUSED)
+            return;
+
+        SetResistReadyToStop(index);
+    }
+
+    internal void PauseResist(int index)
+    {
+        if (GetRunState(index) != STATERUNNING)
             return;
 
         ResistT module& resist = GetRefByindex(index);
 
-        // The ending tic of a resist is set to an interval of 35 to keep in sync with other resists.
-        // This is mostly so the visualization of them remains equal between other resists.
-        int endingTic = Utils::GetSynchronizedTimer() + resist.InitialState.Length * 35;
-        resist.EndingTic = endingTic + (35 - (endingTic % 35));
-        SetRunState(index, STATERUNNING);
+        resist.PauseTic = Utils::GetSynchronizedTimer();
+        SetRunState(index, STATEPAUSED);
+        Sync::SyncResists();
 
-        Logger::LogDebug(LOGSOURCE, "Starting resist. True length: \cd" + str(resist.EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
-
-        if (broadcast)
-            Event::SendResistStarted(index);
+        Logger::LogDebug(LOGSOURCE, "Paused resist \cd" + str(index) + "\cj.");
     }
 
-    internal void StopResist(int index, bool broadcast = true)
+    internal void ResumeResist(int index)
     {
-        GetRefByindex(index).EndingTic = -1;
+        if (GetRunState(index) != STATEPAUSED)
+            return;
 
-        if (broadcast)
-            Event::SendResistStopped(index);
+        ResistT module& resist = GetRefByindex(index);
+
+        resist.EndingTic += Utils::GetSynchronizedTimer() - resist.PauseTic;
+        resist.PauseTic = -1;
+
+        SetRunState(index, STATERUNNING);
+        Sync::SyncResists();
+
+        Logger::LogDebug(LOGSOURCE, "Resumed resist \cd" + str(index) + "\cj.");
+    }
+
+    internal void ResetResist(int index, bool preserveRunningState = false)
+    {
+        if (!IsDefined(index))
+            return;
+
+        ResistT module& resist = GetRefByindex(index);
+        bool preserveRunning = preserveRunningState && GetRunState(index) == STATERUNNING;
+
+        resist.EndingTic = -1;
+        resist.PauseTic = -1;
+        resist.RunState = STATENONE;
+
+        if (preserveRunning)
+        {
+            ResetEndingTic(index);
+            resist.RunState = STATERUNNING;
+
+            Logger::LogDebug(LOGSOURCE, "Reset running resist \cd" + str(index) + "\cj while preserving its running state. True length: \cd" + str(resist.EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
+            return;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Reset resist \cd" + str(index) + "\cj to its initial state.");
+    }
+
+    internal void ResetAllResists(bool preserveRunningState = false)
+    {
+        ResistT[] module& resists = ZH2Game::GameContext.MapDetails.Resists;
+
+        for (int index = 0; index < lengthof(resists); ++index)
+        {
+            if (!IsDefined(index))
+                continue;
+
+            ResetResist(index, preserveRunningState);
+        }
+
+        Sync::SyncResists();
+
+        Logger::LogDebug(LOGSOURCE, "Reset all resists to their initial state.");
+    }
+
+    internal void ResetEndingTic(int index)
+    {
+        ResistT module& resist = GetRefByindex(index);
+
+        // If this is the first visible resist then this resist determines the offset to add
+        // to the resist cycle, so we can show it instantly.
+        if (!GetAnyResistVisible())
+            SetFadeCycleOffsetTic(Utils::GetSynchronizedTimer());
+
+        int naturalEndingTic = Utils::GetSynchronizedTimer() + resist.InitialState.Length * 35;
+        resist.EndingTic = AlignTicToFadeCycle(naturalEndingTic);
+        resist.PauseTic = -1;
+    }
+
+    // The tic the shared resist fade cycle is offset to: the point at which any resist following
+    // the cycle is at full opacity. Registered by whichever resist starts while nothing else is
+    // running, so subsequent resists have something to actually stay in sync with.
+    internal int GetFadeCycleOffsetTic()
+    {
+        return ZH2Game::GameContext.MapDetails.ResistFadeCycleOffsetTic;
+    }
+
+    internal void SetFadeCycleOffsetTic(int tic)
+    {
+        ZH2Game::GameContext.MapDetails.ResistFadeCycleOffsetTic = tic;
+    }
+
+    // Returns the smallest tic at or after `tic` that lands exactly on the fade cycle, so a resist
+    // ending there keeps its final second in sync with the shared fade instead of cutting off mid-fade.
+    internal int AlignTicToFadeCycle(int tic)
+    {
+        int misalignment = (tic - GetFadeCycleOffsetTic()) % 35;
+        return tic + (35 - misalignment) % 35;
+    }
+
+    internal void SetResistReadyToRun(int index)
+    {
+        ResetEndingTic(index);
+
+        Logger::LogDebug(LOGSOURCE, "Resist is ready to run. True length: \cd" + str(GetRefByindex(index).EndingTic - Utils::GetSynchronizedTimer()) + "\cj tics.");
+        SetRunState(index, STATEREADYTORUN);
+    }
+
+    internal void SetResistReadyToElapse(int index)
+    {
+        ResistT module& resist = GetRefByindex(index);
+
+        resist.EndingTic = -1;
+        resist.PauseTic = -1;
+
+        Logger::LogDebug(LOGSOURCE, "Resist is ready to elapse.");
+        SetRunState(index, STATEREADYTOELAPSE);
+    }
+
+    internal void SetResistReadyToStop(int index)
+    {
+        ResistT module& resist = GetRefByindex(index);
+
+        resist.EndingTic = -1;
+        resist.PauseTic = -1;
+
+        Logger::LogDebug(LOGSOURCE, "Resist is ready to stop.");
+        SetRunState(index, STATEREADYTOSTOP);
+    }
+
+    internal void ElapseAllResists()
+    {
+        ResistT[] module& resists = ZH2Game::GameContext.MapDetails.Resists;
+        for (int index = 0; index < lengthof(resists); ++index)
+        {
+            if (!IsDefined(index))
+                continue;
+
+            if (!IsActive(index))
+                continue;
+
+            SetRunState(index, STATEREADYTOELAPSE);
+        }
+    }
+
+    internal void StopAllResists()
+    {
+        ResistT[] module& resists = ZH2Game::GameContext.MapDetails.Resists;
+        for (int index = 0; index < lengthof(resists); ++index)
+        {
+            if (!IsDefined(index))
+                continue;
+
+            if (!IsActive(index))
+                continue;
+
+            SetRunState(index, STATEREADYTOSTOP);
+        }
     }
 
     internal void SetRunState(int index, ResistRunStateT state)
@@ -155,12 +403,78 @@ strict namespace Resist
         return GetRefByindex(index).RunState;
     }
 
+    internal void SetFlags(int index, int flags)
+    {
+        GetRefByindex(index).InitialState.Flags = flags;
+    }
+
+    internal int GetFlags(int index)
+    {
+        return GetRefByindex(index).InitialState.Flags;
+    }
+
+    internal bool HasFlag(int index, ResistFlagT flag)
+    {
+        return (GetFlags(index) & flag) != 0;
+    }
+
+    internal str GetTopReasonLabel(int index)
+    {
+        return GetRefByindex(index).InitialState.TopReasonLabel;
+    }
+
+    internal str GetTimeReasonLabel(int index)
+    {
+        return GetRefByindex(index).InitialState.TimeReasonLabel;
+    }
+
+    internal bool GetHideTopReason(int index)
+    {
+        return HasFlag(index, FLAG_HIDE_TOP_REASON);
+    }
+
+    internal bool GetHideTimeReason(int index)
+    {
+        return HasFlag(index, FLAG_HIDE_TIME_REASON);
+    }
+
+    internal bool GetNoFade(int index)
+    {
+        return HasFlag(index, FLAG_NO_FADE);
+    }
+
+    internal bool GetShowWhenPaused(int index)
+    {
+        return HasFlag(index, FLAG_SHOW_WHEN_PAUSED);
+    }
+
+    internal bool GetDontAwaitPreScript(int index)
+    {
+        return HasFlag(index, FLAG_DONT_AWAIT_PRE_SCRIPT);
+    }
+
+    internal bool GetDontAwaitPostScript(int index)
+    {
+        return HasFlag(index, FLAG_DONT_AWAIT_POST_SCRIPT);
+    }
+
     internal ResistRunStateT GetRunStateTypeByIndex(int stateIndex)
     {
-        static ResistRunStateT collection[] = { STATENONE, STATERUNNING, STATEENDED };
+        static ResistRunStateT collection[] =
+        {
+            STATENONE,
+            STATEPRESCRIPT,
+            STATEREADYTORUN,
+            STATERUNNING,
+            STATEPOSTSCRIPT,
+            STATEREADYTOSTOP,
+            STATEREADYTOELAPSE,
+            STATEPAUSED,
+            STATEENDED
+        };
 
-        // No known round state.
-        if (stateIndex < STATENONE && stateIndex > STATEENDED)
+        // No known resist state.
+        if (stateIndex < STATENONE || stateIndex > STATEENDED)
             return STATENONE;
 
         return collection[stateIndex];

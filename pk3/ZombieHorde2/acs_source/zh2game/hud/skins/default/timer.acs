@@ -1,0 +1,58 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawTimerDefault(fixed x, fixed y)
+    {
+        if (!GetSharedState().DrawTimer)
+            return;
+
+        int index = RoundTimer::GetActiveTimerIndex();
+
+        if (!RoundTimer::GetTimerDefined(index))
+            return;
+
+        int id = DEFAULT_HUDID_TIMER;
+        int ticsLeft = RoundTimer::GetTimerTicsLeft(index);
+
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetAlpha(1.0);
+
+        // This won't show until the very last draw.
+        BCSUtils::HudSetStayTime(0.5);
+        BCSUtils::HudSetDisappearTime(0.5);
+
+        // Label
+        BCSUtils::HudSetFont(RoundTimer::GetTimerTopFont(index));
+        BCSUtils::HudSetPoint(x, y - 10.0);
+        BCSUtils::HudDrawText(--id, RoundTimer::FormatLabel(RoundTimer::GetTimerTopTemplate(index), ticsLeft));
+        DebugDraw();
+
+        // Time left.
+        str bottomTemplate = RoundTimer::GetTimerBottomTemplate(index);
+        str timerFormatted = RoundTimer::FormatLabel(bottomTemplate, ticsLeft);
+
+        BCSUtils::HudSetFont(RoundTimer::GetTimerBottomFont(index));
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawText(--id, timerFormatted);
+        DebugDraw();
+
+        // If the timer has countdowns enabled, then the last 10 seconds should have a fading red label on top.
+        // First 18 tics of every 35 we display this.
+        int flashTicsLeft = RoundTimer::GetTemplateAdjustedTicsLeft(bottomTemplate, ticsLeft);
+
+        if (RoundTimer::GetTimerDoCountdown(index) && flashTicsLeft <= 35 * 11)
+        {
+            int tics = flashTicsLeft % 35;
+            fixed alpha = (tics > 18) ? (1.0 - fixed(35 - tics) / 18.0) : 0.0;
+
+            BCSUtils::HudSetAlpha(alpha);
+            BCSUtils::HudSetTextColor(CR_RED);
+            BCSUtils::HudDrawText(--id, timerFormatted);
+            DebugDraw();
+        }
+    }
+}

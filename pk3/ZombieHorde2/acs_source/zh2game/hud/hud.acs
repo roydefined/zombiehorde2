@@ -5,24 +5,35 @@
 #define LOGSOURCE "Hud"
 
 #include "extern.acs"
-#include "cursor.acs"
 #include "draw.acs"
 
-#include "utils/utils.acs"
-#include "game/game.acs"
-#include "player/player.acs"
+#include "skins/default/default.acs"
+#include "skins/legacy/legacy.acs"
+#include "skins/shared/shared.acs"
+
+#include "round/round.acs"
+
+#include "clientsettings/clientsettings.acs"
+#include "deathcam/deathcam.acs"
+#include "identity/identity.acs"
+#include "inventory/inventory.acs"
+#include "blur/blur.acs"
+#include "resist/resist.acs"
+#include "fullserver/fullserver.acs"
+#include "power/power.acs"
+#include "ztele/ztele.acs"
+
 #include "ending/ending.acs"
 #include "voting/voting.acs"
 #include "damagefeedback/damagefeedback.acs"
 #include "obituary/obituary.acs"
 #include "separate/separate.acs"
 #include "decorate/decorate.acs"
-#include "round/round.acs"
 #include "admin/admin.acs"
 
-#include "other/cursor.acs"
-#include "other/version.acs"
-#include "other/debug.acs"
+#include "cursor/cursor.acs"
+#include "diagnostics/version.acs"
+#include "diagnostics/debug.acs"
 
 strict namespace Hud
 {
@@ -78,6 +89,37 @@ strict namespace Hud
             _hudX += _xShakeOffset;
             _hudY += _yShakeOffset;
         }
+    }
+
+    // Determines the HUD skin to use for the player's HUD.
+    // The server's setting has the highest priority.
+    // Then the client's setting is used.
+    // If neither care, use what is best for the map.
+    internal ZH2Game::HudSkinT GetHudSkin(int playerId)
+    {
+        switch (ZH2Game::GetSvForceHudSkin())
+        {
+            case ZH2Game::HUDSKINBEHAVIOUR_FORCEDEFAULTSKIN: return ZH2Game::HUDSKIN_DEFAULT;
+            case ZH2Game::HUDSKINBEHAVIOUR_FORCELEGACYSKIN: return ZH2Game::HUDSKIN_LEGACY;
+            default:
+            {
+                switch (ZH2Game::GetClHudSkin(playerId))
+                {
+                    case ZH2Game::HUDSKINPREFERENCE_DEFAULT: return ZH2Game::HUDSKIN_DEFAULT;
+                    case ZH2Game::HUDSKINPREFERENCE_LEGACY: return ZH2Game::HUDSKIN_LEGACY;
+                    default: return GetBestFitHudSkin();
+                }
+            }
+        }
+    }
+
+    // The hud skin the game considers the best one to use.
+    internal ZH2Game::HudSkinT GetBestFitHudSkin()
+    {
+        if (Map::GetCurrentMapIsLegacyMap())
+            return ZH2Game::HUDSKIN_LEGACY;
+
+        return ZH2Game::HUDSKIN_DEFAULT;
     }
 
     internal fixed GetHudX()
@@ -164,7 +206,7 @@ strict namespace Hud
         if (!Decorate::IsFiringWeapon())
             return;
 
-        if (!ZH2Game::GetEnableHudShaking())
+        if (!ZH2Game::GetSvEnableHudShaking() || !ZH2Game::GetClEnableHudShaking())
             return;
 
         // Do not shake if the camera is not on the client.

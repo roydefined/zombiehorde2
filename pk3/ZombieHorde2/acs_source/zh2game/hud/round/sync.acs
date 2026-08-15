@@ -1,0 +1,25 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Round
+{
+    script "zh2_internal_event_rounddatasynced" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceiveDataSynced(packet);
+
+        int type = Event::GetReceiveData(0);
+        if (type != Sync::SYNCTYPE_ROUNDSTATE)
+            terminate;
+
+        // Voting is active, so the client needs a mouse.
+        if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
+        {
+            Hud::SetCursorEnabled(true);
+            Player::LockMovement(true);
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Synchronized resists clientside.");
+    }
+}

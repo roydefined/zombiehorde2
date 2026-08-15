@@ -23,14 +23,18 @@ strict namespace Game
         int count = Game::ZombieCount(true) - Player::InitialZombieCount(true);
         int tics = BCSUtils::Max(0, 90 - 15 * count) + 10 * BCSUtils::Clamp(count / 6, 0, 1);
 
-        int ticDiff = RoundTimer::IncrementTimer(RoundTimer::GetActiveTimerIndex(), tics * 35);
+        int timerIndex = RoundTimer::GetActiveTimerIndex();
+        int ticDiff = RoundTimer::IncrementTimer(timerIndex, tics * 35);
 
         // No difference, then no need for an update.
         if (ticDiff != 0)
         {
             Logger::LogDebug(LOGSOURCE, "Increased timer by \cd" + str(ticDiff) + "\cj seconds.");
             Sync::SyncTimers();
-            CallVisualAddTime(ticDiff);
+
+            // Only show a visual increase if the timer is not hidden.
+            if (RoundTimer::GetTimerVisible(timerIndex))
+                CallVisualAddTime(ticDiff);
         }
     }
 
@@ -43,7 +47,7 @@ strict namespace Game
     script "zh2_internal_game_visualaddtime"(int ticDiff) clientside
     {
         BCSUtils::SetActivatorToConsolePlayer();
-        if (!ZH2Game::GetDrawRoundHud())
+        if (!ZH2Game::GetDrawHud() || !ZH2Game::GetDrawRoundHud())
             terminate;
 
         // TODO: This logic should be shared with the round timer logic so it's the same.
@@ -61,7 +65,6 @@ strict namespace Game
 
     internal void DrawTimeDiff(fixed x, fixed y, int ticDiff)
     {
-        BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetCenterText(true);
         BCSUtils::HudSetAlpha(0.8);
         BCSUtils::HudSetStayTime(1.0);
@@ -69,8 +72,19 @@ strict namespace Game
 
         BCSUtils::HudSetTextColor(ticDiff < 0 ? CR_RED : CR_GREEN);
 
+        // Format and font the same way the current timer is formatted.
+        int index = RoundTimer::GetActiveTimerIndex();
+        str formattedTime = RoundTimer::FormatUsingTimerStyle(index, ticDiff);
+        str font = RoundTimer::GetTimerStyleFont(index);
+        if (formattedTime == (raw)0)
+        {
+            formattedTime = Utils::FormatTics(ticDiff, RoundTimer::GetTimerDrawDecimals(index));
+            font = "SmallFont";
+        }
+
+        BCSUtils::HudSetFont(font);
+
         // Add a '+' to the label for positive. '-' is added automatically.
-        str formattedTime = Utils::FormatTics(ticDiff, RoundTimer::GetTimerDrawDecimals(RoundTimer::GetActiveTimerIndex()));
         str label = ticDiff < 0 ? formattedTime : "+" + formattedTime;
 
         x += 5.0 * fixed(Random(-10, 10));

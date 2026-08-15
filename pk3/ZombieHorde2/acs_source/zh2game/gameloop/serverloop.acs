@@ -4,7 +4,7 @@
 
 strict namespace GameLoop
 {
-    script "zh2_internal_serverloop"
+    script "zh2_internal_serverloop" busy
     {
         Logger::LogDebug(LOGSOURCE, "Server loop started.");
         while(true)
@@ -25,10 +25,17 @@ strict namespace GameLoop
             Resist::TicServer();
             Game::FullServerTicServer();
             Game::ModifiersTic();
+
+            if (Timer() % 8 == 0)
+                AfkPrevention::AfkPreventionBroadcastServer();
+
             Feature::TicServer();
 
             // Call hook for this tic.
             Hook::Call(Hook::HOOK_SERVERTIC, null);
+
+            Sync::LibFlushPendingSyncs();
+            Sync::FlushPendingSyncs();
 
             Delay(const: 1);
         }

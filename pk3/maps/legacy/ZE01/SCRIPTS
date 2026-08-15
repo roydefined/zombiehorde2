@@ -7,128 +7,129 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-// Holds the forcefield status.
-// 0 - never activated.
-// 1 - activated.
-// > 1 - always deactivated.
-int force = 0;
-
-Script "ze01_open" OPEN // Level setups
+strict namespace
 {
-	TranslucentLine(1, 0, 0);
-	Sector_SetColor(24, 0, 0, 192);
+    // Holds the forcefield status.
+    // 0 - never activated.
+    // 1 - activated.
+    // > 1 - always deactivated.
+    int force = 0;
 
-	// ZH2: The 'Dormant' flag would not work here.
-    Thing_Deactivate(22);
-}
+    Script "ze01_open" OPEN // Level setups
+    {
+        TranslucentLine(1, 0, 0);
+        Sector_SetColor(24, 0, 0, 192);
 
-/* RESIST EVENT */
-script "ze01_internal_event_resistelapsed" (raw packetRaw)
-{
-	Event::ReceiveTimerElapsed((str)packetRaw);
-	int index = Event::GetReceiveData(0);
-	
-	switch(index)
-	{
-		case 0:
-			Floor_LowerByValue(8, 8, 112);
-			break;
-		case 1:
-			Floor_LowerByValue(12, 8, 112);
-			break;
-	}
-}
+        // ZH2: The 'Dormant' flag would not work here.
+        Thing_Deactivate(22);
+    }
 
-// Traps before second resist
-Script 3 (int which)
-{
-	Floor_LowerInstant(which, 0, 16);
-	Floor_LowerInstant(which+21, 0, 16);
-}
+    /* RESIST HANDLERS */
 
-Script 8 (void)
-{
-	SetFont("SMALLFONT");
-	Print(s:"USe the switch to activate the forcefield.\n\nBut wait for your teammates!");
-}
+    // I've not moved this to global scripts for the sake of having a map that uses explicit pre/post handlers.
 
-Script 9 (void) // Forcefield ON
-{
-	PrintBold(n:0, s:" has activated the forcefield!");
-	SetActivator(-1);
-	SetLineBlocking(1, BLOCK_CREATURES);
-	TranslucentLine(1, 96, 0);
-	Scroll_Texture_Both(1, 0, 0, 0, 200);
-	Scroll_Texture_Both(-1, 0, 0, 0, 200);
+    script "ze01_internal_post_resist_handler1"
+    {
+        Floor_LowerByValue(8, 8, 112);
+    }
 
-	Delay(35*20);
+    script "ze01_internal_post_resist_handler2"
+    {
+        Floor_LowerByValue(12, 8, 112);
+    }
 
-	Floor_LowerByValue(18, 32, 88);
-	force++;
-}
+    script "ze01_internal_pre_resist_handler3"
+    {
+        SetFont("CONFONT");
+        HudMessageBold(n:0, s:"\c- has called the main land!\nTell them to send the damn helicopters!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+        SetActivator(-1);
 
-Script 10 (void) // Forcefield OFF
-{
-	if(force < 1)
-		terminate;
+        Delay(35*6);
+    }
 
-	PrintBold(s:"\cGForcefield has been deactivated!");
-	TranslucentLine(1, 0, 0);
-	SetLineBlocking(1, OFF);
-	force++;
-}
+    script "ze01_internal_post_resist_handler3"
+    {
+        Thing_Activate(22);
+        Floor_LowerByValue(21, 40, 1056);
+        Ceiling_LowerByValue(21, 40, 1056);
 
-// Emergency call + escape
-Script 11 (void)
-{
-    SetFont("CONFONT");
-    HudMessageBold(n:0, s:"\c- has called the main land!\nTell them to send the damn helicopters!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-    SetActivator(-1);
+        TagWait(21);
+        Delay(35*2);
 
-    Delay(35*6);
-	Delay(Resist::StartResistByIndex(2));
+        SetFont("BIGFONT");
+        HudMessageBold(s:"The chopper is leaving in 3 seconds!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 1.0, 0.5);
 
-    Thing_Activate(22);
-    Floor_LowerByValue(21, 40, 1056);
-    Ceiling_LowerByValue(21, 40, 1056);
+        Delay(35*3);
 
-    TagWait(21);
-	Delay(35*2);
+        Floor_RaiseByValue(21, 8, 800);
+        Ceiling_RaiseByValue(21, 8, 800);
 
-	SetFont("BIGFONT");
-    HudMessageBold(s:"The chopper is leaving in 3 seconds!"; HUDMSG_FADEOUT, 0, CR_RED, 0.5, 0.2, 1.0, 0.5);
+        Delay(35*10);
 
-	Delay(35*3);
+        SetFont("BIGFONT");
+        HudMessageBold(s:"\cGWarning : \cKIncoming Airstrike!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
 
-    Floor_RaiseByValue(21, 8, 800);
-    Ceiling_RaiseByValue(21, 8, 800);
+        Delay(35*7);
 
-    Delay(35*10);
+        AmbientSound("world/nuke1", 127);
+        Game::KillUnsafePlayers();
+    }
 
-    SetFont("BIGFONT");
-    HudMessageBold(s:"\cGWarning : \cKIncoming Airstrike!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+    // Traps before second resist
+    Script 3 (int which)
+    {
+        Floor_LowerInstant(which, 0, 16);
+        Floor_LowerInstant(which+21, 0, 16);
+    }
 
-    Delay(35*7);
+    Script 8 (void)
+    {
+        SetFont("SMALLFONT");
+        Print(s:"USe the switch to activate the forcefield.\n\nBut wait for your teammates!");
+    }
 
-    AmbientSound("world/nuke1", 127);
-	Game::KillUnsafePlayers();
-}
+    Script 9 (void) // Forcefield ON
+    {
+        PrintBold(n:0, s:" has activated the forcefield!");
+        SetActivator(-1);
+        SetLineBlocking(1, BLOCK_CREATURES);
+        TranslucentLine(1, 96, 0);
+        Scroll_Texture_Both(1, 0, 0, 0, 200);
+        Scroll_Texture_Both(-1, 0, 0, 0, 200);
 
-// Helicopter reached
-Script 13 (void)
-{
-	Game::SetIsSafe(true);
-}
+        Delay(35*20);
 
-// floor - Leaving helicopter
-Script 14 (void)
-{
-	Game::SetIsSafe(false);
-	Teleport_NoFog(23);
-}
+        Floor_LowerByValue(18, 32, 88);
+        force++;
+    }
 
-// Leaving helicopter
-Script 15 (void)
-{
-	Game::SetIsSafe(false);
+    Script 10 (void) // Forcefield OFF
+    {
+        if(force < 1)
+            terminate;
+
+        PrintBold(s:"\cGForcefield has been deactivated!");
+        TranslucentLine(1, 0, 0);
+        SetLineBlocking(1, OFF);
+        force++;
+    }
+
+    // Helicopter reached
+    Script 13 (void)
+    {
+        Game::SetIsSafe(true);
+    }
+
+    // floor - Leaving helicopter
+    Script 14 (void)
+    {
+        Game::SetIsSafe(false);
+        Teleport_NoFog(23);
+    }
+
+    // Leaving helicopter
+    Script 15 (void)
+    {
+        Game::SetIsSafe(false);
+    }
 }

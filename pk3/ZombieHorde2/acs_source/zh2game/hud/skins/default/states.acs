@@ -1,0 +1,34 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawHudStates(fixed x, fixed y)
+    {
+        static str graphics[MAX_HUD_STATES] = { "ST_SAFE", "ST_CAFF", "ST_DAMFC", "ST_JUMP", "ST_SPEED", "ST_PANIC", "ST_CURE", "ST_HINV", "ST_UNSOL", "ST_SR50" };
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        int offset = 0;
+        for (int i = 0; i < MAX_HUD_STATES; ++i)
+        {
+            if (!GetSharedState().DrawHudStateByIndex[i])
+                continue;
+
+            fixed angleDeg = 180.0 + fixed(offset) * DEFAULT_HUD_STATES_ANGLE;
+            fixed angle    = angleDeg / 360.0;
+
+            fixed iconX = Cos(angle) * DEFAULT_HUD_STATES_RADIUS;
+            fixed iconY = Sin(angle) * DEFAULT_HUD_STATES_RADIUS;
+
+            BCSUtils::HudSetPoint(x + iconX, y + iconY);
+            BCSUtils::HudDrawImage(--_drawnHudId, graphics[i]);
+            DebugDraw();
+
+            offset++;
+        }
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+    }
+}

@@ -20,7 +20,13 @@ strict namespace Hud
             BCSUtils::HudTop() + 80.0,
             false);
 
-        DrawEndingHeader();
+        Game::EndActionT action = Game::GetEndAction();
+        DrawEndingHeader(action);
+
+        // If the action isn't default then the normal flow doesn't run.
+        // So we don't draw the stats either.
+        if (action != Game::ACTION_DEFAULT)
+            return;
 
         // Offset is set based on what lists are shown, meaning we might shift lists to a different position if the stat has no data.
         int listOffset = 0;

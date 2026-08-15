@@ -5,26 +5,38 @@
 strict namespace Player
 {
     internal void SetHumanKills(int kills) { SetPlayerHumanKills(PlayerNumber(), kills); }
-    internal void SetPlayerHumanKills(int id, int kills) { ZH2Game::GameContext.Players[id].HumanKills = kills; }
+    internal void SetPlayerHumanKills(int id, int kills) { ZH2Game::GameContext.Players[id].StatsContext.HumanKills = kills; }
     internal void SetZombieKills(int kills) { SetPlayerZombieKills(PlayerNumber(), kills); }
-    internal void SetPlayerZombieKills(int id, int kills) { ZH2Game::GameContext.Players[id].ZombieKills = kills; }
+    internal void SetPlayerZombieKills(int id, int kills) { ZH2Game::GameContext.Players[id].StatsContext.ZombieKills = kills; }
 
     internal void SetInfects(int infects) { SetPlayerInfects(PlayerNumber(), infects); }
-    internal void SetPlayerInfects(int id, int infects) { ZH2Game::GameContext.Players[id].Infects = infects; }
+    internal void SetPlayerInfects(int id, int infects) { ZH2Game::GameContext.Players[id].StatsContext.Infects = infects; }
 
     internal void IncrementHumanKills() { IncrementPlayerHumanKills(PlayerNumber()); }
-    internal void IncrementPlayerHumanKills(int id) { ZH2Game::GameContext.Players[id].HumanKills++; }
+    internal void IncrementPlayerHumanKills(int id) { ZH2Game::GameContext.Players[id].StatsContext.HumanKills++; }
     internal void IncrementZombieKills() { IncrementPlayerZombieKills(PlayerNumber()); }
-    internal void IncrementPlayerZombieKills(int id) { ZH2Game::GameContext.Players[id].ZombieKills++; }
+    internal void IncrementPlayerZombieKills(int id) { ZH2Game::GameContext.Players[id].StatsContext.ZombieKills++; }
 
     internal void IncrementInfects() { IncrementPlayerInfects(PlayerNumber()); }
-    internal void IncrementPlayerInfects(int id) { ZH2Game::GameContext.Players[id].Infects++; }
+    internal void IncrementPlayerInfects(int id) { ZH2Game::GameContext.Players[id].StatsContext.Infects++; }
 
     internal int GetHumanKills() { return GetPlayerHumanKills(PlayerNumber()); }
-    internal int GetPlayerHumanKills(int id) { return ZH2Game::GameContext.Players[id].HumanKills; }
+    internal int GetPlayerHumanKills(int id) { return ZH2Game::GameContext.Players[id].StatsContext.HumanKills; }
     internal int GetZombieKills() { return GetPlayerZombieKills(PlayerNumber()); }
-    internal int GetPlayerZombieKills(int id) { return ZH2Game::GameContext.Players[id].ZombieKills; }
+    internal int GetPlayerZombieKills(int id) { return ZH2Game::GameContext.Players[id].StatsContext.ZombieKills; }
 
     internal int GetInfects() { return GetPlayerInfects(PlayerNumber()); }
-    internal int GetPlayerInfects(int id) { return ZH2Game::GameContext.Players[id].Infects; }
+    internal int GetPlayerInfects(int id) { return ZH2Game::GameContext.Players[id].StatsContext.Infects; }
+
+    internal int GetDamageToPlayer(int id) { return GetPlayerDamageToPlayer(PlayerNumber(), id); }
+    internal int GetPlayerDamageToPlayer(int selfId, int damagedId) { return ZH2Game::GameContext.Players[selfId].StatsContext.DamageToPlayers[damagedId]; }
+
+    internal void SetDamageToPlayer(int id, int damage) { SetPlayerDamageToPlayer(PlayerNumber(), id, damage); }
+    internal void SetPlayerDamageToPlayer(int selfId, int damagedId, int damage) { ZH2Game::GameContext.Players[selfId].StatsContext.DamageToPlayers[damagedId] = damage; }
+
+    internal void IncrementDamageToPlayer(int id, int damage) { IncrementPlayerDamageToPlayer(PlayerNumber(), id, damage); }
+    internal void IncrementPlayerDamageToPlayer(int selfId, int damagedId, int damage)
+    {
+        ZH2Game::GameContext.Players[selfId].StatsContext.DamageToPlayers[damagedId] = ZH2Game::GameContext.Players[selfId].StatsContext.DamageToPlayers[damagedId] + damage;
+    }
 }

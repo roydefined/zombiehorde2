@@ -10,6 +10,7 @@ strict namespace Sync
     {
         int syncId = SYNC_PLAYERS;
 
+        syncId = SyncWriteJoinTic(syncId);
         syncId = SyncWritePlayerNames(syncId);
         syncId = SyncWriteState(syncId);
         syncId = SyncWriteSafe(syncId);
@@ -26,21 +27,11 @@ strict namespace Sync
         VERIFY_SYNCID(syncId, SYNC_PLAYERS, SYNC_PLAYERS_LENGTH);
     }
 
-    internal void CallSyncPlayersActorOnClients()
-    {
-        if (!ACS_NamedExecuteAlways("zh2_internal_sync_players_actor_clientside", 0))
-            Logger::LogError(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for players."));
-    }
-
-    script "zh2_internal_sync_players_actor_clientside" clientside
-    {
-        SyncPlayersActorClientside();
-    }
-
     internal void SyncPlayersActorClientside()
     {
         int syncId = SYNC_PLAYERS;
 
+        syncId = SyncReadJoinTic(syncId);
         syncId = SyncReadPlayerNames(syncId);
         syncId = SyncReadState(syncId);
         syncId = SyncReadSafe(syncId);
@@ -55,6 +46,36 @@ strict namespace Sync
         syncId = SyncReadZombieKills(syncId);
 
         VERIFY_SYNCID(syncId, SYNC_PLAYERS, SYNC_PLAYERS_LENGTH);
+    }
+
+    internal int SyncWriteJoinTic(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing join tic packs through actors. Sync id: " + str(syncId) + "."));
+
+        // TODO: Same as above, could be more compact.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int tic = Player::GetPlayerJoinTic(i);
+            BCSUtils::SyncVariable(--syncId, tic);
+        }
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing join tic packs through actors. Sync id: " + str(syncId) + "."));
+        return syncId;
+    }
+
+    internal int SyncReadJoinTic(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading join tic packs through actors. Sync id: " + str(syncId) + "."));
+
+        // TODO: Same as above, could be more compact.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int tic = BCSUtils::GetSyncVarDefault(--syncId, 0);
+            Player::SetPlayerJoinTic(i, tic);
+        }
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished reading join tic packs through actors. Sync id: " + str(syncId) + "."));
+        return syncId;
     }
 
     internal int SyncWritePlayerNames(int syncId)

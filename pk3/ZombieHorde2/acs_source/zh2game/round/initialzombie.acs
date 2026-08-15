@@ -24,7 +24,7 @@ strict namespace Round
                 DetermineInitialZombiesWeight(totalZombies, rememberLastMap);
                 break;
             default:
-                DetermineInitialZombiesRandom(totalZombies);
+                DetermineInitialZombiesRandom(totalZombies, rememberLastMap);
                 break;
         }
 
@@ -80,11 +80,11 @@ strict namespace Round
         }
     }
 
-    internal void DetermineInitialZombiesRandom(int requiredCount)
+    internal void DetermineInitialZombiesRandom(int requiredCount, bool checkLastMap)
     {
         // Pick players at random to be initial zombie.
-        // Randomized doesn't use any extra stuff for picking zombies.
-        Shuffle::ShufflePickNextInitialZombies(false, false);
+        // Randomized doesn't track who was previously picked, only optionally the last map.
+        Shuffle::ShufflePickNextInitialZombies(false, checkLastMap);
         int size = Shuffle::GetRelevantSize();
 
         Logger::LogDebug(LOGSOURCE, "Picking initial zombies through randomized picking. Required count: \cd" + str(requiredCount) + "\cj. Relevant buffer size: \cd" + str(size) + "\cj.");

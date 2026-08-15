@@ -56,18 +56,51 @@ def get_paths():
 
         # ACSUtils
         "acsutils_dist": root / "modules" / "acsutils" / "dist",
-        "bcsutils_target": root / "pk3" / "lib" / "acs_source" / "bcsutils",
+        "bcsutils_target": root / "pk3" / "libraries" / "ZombieHorde2Lib" / "acs_source" / "bcsutils",
 
         # Library
-        "lib": root / "pk3" / "lib",
-        "lib_src": root / "pk3" / "lib" / "acs_source",
-        "lib_acs": root / "pk3" / "lib" / "acs",
+        "lib": root / "pk3" / "libraries" / "ZombieHorde2Lib",
+        "lib_src": root / "pk3" / "libraries" / "ZombieHorde2Lib" / "acs_source",
+        "lib_acs": root / "pk3" / "libraries" / "ZombieHorde2Lib" / "acs",
 
         # Core
         "core_src": root / "pk3" / "ZombieHorde2" / "acs_source",
         "core_out": root / "pk3" / "ZombieHorde2" / "acs",
+
+        # Versioning
+        "version": root / "version.txt",
+        "version_template": root / "templates" / "version.h.acs.template",
+        "version_build": root / "templates" / "version.h.acs",
+        "version_target": root / "pk3" / "ZombieHorde2" / "acs_source" / "zh2game" / "environment" / "version.h.acs",
     }
 
+def get_version():
+    import re
+
+    version_file = get_paths()["version"]
+
+    if not version_file.exists():
+        raise FileNotFoundError(f"Version file does not exist: {version_file}")
+
+    version_text = version_file.read_text(encoding="utf-8").strip()
+    match = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$", version_text)
+
+    if not match:
+        raise ValueError(
+            f'Invalid version "{version_text}". '
+            'Expected format: major.minor.patch or major.minor.patch-suffix.'
+        )
+
+    major, minor, patch, suffix = match.groups()
+
+    return {
+        "major": major,
+        "minor": minor,
+        "patch": patch,
+        "suffix": suffix or "",
+        "version": f"{major}.{minor}.{patch}",
+        "text": version_text,
+    }
 
 # Helper function to copy over a file.
 def copy_file(src: Path, dest: Path):
@@ -81,6 +114,16 @@ def copy_file(src: Path, dest: Path):
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dest)
 
+def move_file(src: Path, dest: Path):
+    import shutil
+
+    if not src.exists():
+        raise FileNotFoundError(f"Source does not exist: {src}")
+
+    logging.info(f"Move {src.name} -> {dest}")
+
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(src), str(dest))
 
 # Helper function to run an executable.
 def run_cmd(cmd: list[str]):

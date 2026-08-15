@@ -1,0 +1,210 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "player.acs"
+#include "inventory.acs"
+#include "factors.acs"
+#include "ztele.acs"
+#include "states.acs"
+#include "weapon.acs"
+#include "abilities.acs"
+#include "bar.acs"
+#include "counter.acs"
+#include "timer.acs"
+
+strict namespace Hud
+{
+    internal void DrawHudDefault()
+    {
+        bool drawHud = ZH2Game::GetDrawHud();
+
+        if (drawHud && ZH2Game::GetDrawRoundHud())
+            DrawRoundsHudDefault();
+
+        // Everything below is strictly during the playing game.
+        if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
+            return;
+
+        if (_clientCameraOnBody && drawHud && BCSUtils::ActorIsAlive(ActivatorTid()))
+        {
+            if (ZH2Game::GetDrawPlayerBarsHud())
+                DrawPlayerBarsHudDefault();
+
+            if (ZH2Game::GetDrawPlayerStatusHud())
+                DrawPlayerStatusHudDefault();
+        }
+
+        if (drawHud && ZH2Game::GetDrawGameHud() && PlayerCount() >= 2)
+            DrawGameHudDefault();
+    }
+
+    // Round-related HUD items (only the timer will change for now)
+    internal void DrawRoundsHudDefault()
+    {
+        fixed scale = ZH2Game::GetHudRoundScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        PrepareHud(
+            ZH2Game::GetHudRoundOffsetX() + 320.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudRoundOffsetY() - 20.0,
+            false);
+
+        DrawTimerDefault(GetHudX(), GetHudY());
+    }
+
+    // Bars (sprint, air, AFK)
+    internal void DrawPlayerBarsHudDefault()
+    {
+        fixed scale = ZH2Game::GetHudPlayerBarsScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetDisappearTime(1.0);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        PrepareHud(
+            320.0 + ZH2Game::GetHudPlayerBarsOffsetX(),
+            BCSUtils::HudBottom() - 100.0 - ZH2Game::GetHudPlayerBarsOffsetY(),
+            true);
+
+        DrawSprintBar(GetHudX(), GetHudY());
+
+        PrepareHud(
+            320.0 + ZH2Game::GetHudPlayerBarsOffsetX(),
+            BCSUtils::HudBottom() - 85.0 - ZH2Game::GetHudPlayerBarsOffsetY(),
+            true);
+
+        DrawAirSupplyBar(GetHudX(), GetHudY());
+
+        PrepareHud(
+            320.0 + ZH2Game::GetHudPlayerBarsOffsetX(),
+            BCSUtils::HudBottom() - 70.0 - ZH2Game::GetHudPlayerBarsOffsetY(),
+            true);
+
+        DrawAfkBar(GetHudX(), GetHudY());
+        DrawAfkBarWarning(GetHudX(), GetHudY() + 10.0);
+    }
+
+    // Player's actual HUD (Weapons, health, etc)
+    internal void DrawPlayerStatusHudDefault()
+    {
+        // Hud scaling is done through `HudSetVirtualSize` as `HudSetScale` only applies scaling to the final sprite
+        // The issue here is that positioning will be wrong.
+
+        fixed scale = ZH2Game::GetHudPlayerStatusScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        // Base x and y offsets used by the hud elements.
+        fixed baseX = BCSUtils::HudLeft() + ZH2Game::GetHudPlayerStatusOffsetX() + 30.0,
+              baseY = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 30.0;
+
+        PrepareHud(
+            baseX, baseY, true);
+        DrawPlayerBackground(GetHudX(), GetHudY());
+
+        PrepareHud(
+            baseX + 25.0, baseY - 18.0, true);
+        DrawPlayerSkin(GetHudX(), GetHudY());
+
+        PrepareHud(
+            baseX + 50.0, baseY - 30.0, true);
+        DrawKevlarArmor(GetHudX(), GetHudY());
+
+        PrepareHud(
+            baseX + 50.0, baseY - 20.0, true);
+        DrawHealth(GetHudX(), GetHudY());
+
+        PrepareHud(
+            baseX + 100.0, baseY - 125.0, true);
+        DrawCurrentOwnedItem(GetHudX(), GetHudY());
+
+        PrepareHud(
+            baseX + 150.0, baseY - 40.0, true);
+        DrawCalculatedFactors(GetHudX(), GetHudY());
+
+        PrepareHud(
+            baseX + 140.0, baseY - 100.0, true);
+        DrawZombieTeleportsLeft(GetHudX(), GetHudY());
+
+        PrepareHud(
+            baseX + DEFAULT_HUD_STATES_RADIUS + 5.0, baseY - 75.0, true);
+        DrawHudStates(GetHudX(), GetHudY());
+
+        BCSUtils::HudSetVirtualSize(960.0 / scale, 720.0 / scale);
+
+        PrepareHud(
+            baseX + 130.0, baseY + 122.0, true);
+        DrawKeyList(GetHudX(), GetHudY());
+
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+
+        // Right side
+        // TODO: This is a whole different part of the HUD and should be moved.
+        PrepareHud(
+            BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 80.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 80.0,
+            true);
+
+        DrawWeaponBackground(GetHudX(), GetHudY());
+
+        PrepareHud(
+            BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 110.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 80.0,
+            true);
+
+        DrawWeaponIcon(GetHudX(), GetHudY());
+
+        if (Player::GetIsZombie())
+        {
+            PrepareHud(
+                BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 80.0,
+                BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 220.0,
+                true);
+
+            DrawZombieAbilities(GetHudX(), GetHudY());
+        }
+
+        // Call hook for this part of the HUD.
+        PrepareHud(baseX, baseY, true);
+        _hudHookData.Type = HUDHOOK_PLAYERSTATUS;
+        Hook::Call(Hook::HOOK_CLIENTDRAWHUD, _hudHookData);
+    }
+
+    // Game-related HUD items.
+    internal void DrawGameHudDefault()
+    {
+        fixed scale = ZH2Game::GetHudGameScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        // Get general skin type to show for zombies.
+        Player::ZombieSkinTypeT skinType = Player::GetZombieSkinType(false);
+
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetFont("cybfont");
+
+        PrepareHud(
+            BCSUtils::HudLeft() + ZH2Game::GetHudPlayerStatusOffsetX() + 60.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 20.0,
+            true);
+
+        DrawPlayerCounters(GetHudX(), GetHudY(), skinType);
+
+        PrepareHud(
+            BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 170.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 20.0,
+            true);
+
+        DrawStatCounters(GetHudX(), GetHudY(), skinType);
+
+        BCSUtils::HudSetFont("smallfont");
+    }
+}

@@ -1,0 +1,116 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    Resist::ResistHookDataT? _resistHookData;
+
+    internal void DrawResistsHud()
+    {
+        // Ensure we have the hook data allocated.
+        if (_resistHookData == null)
+            _resistHookData = BCS::Malloc(lengthof(_resistHookData));
+
+        fixed alpha = GetFadeOutAlpha();
+
+        int AddY = 0;
+        for (int index = 0; index < MAX_RESISTS; ++index)
+        {
+            if (!Resist::IsDefined(index))
+                continue;
+
+            Resist::ResistRunStateT state = Resist::GetRunState(index);
+            bool isPaused = state == Resist::STATEPAUSED;
+
+            if (state != Resist::STATERUNNING && !(isPaused && Resist::GetShowWhenPaused(index)))
+                continue;
+
+            // Skip entirely, hook included, while outside the resist's valid timespan.
+            int ticsLeft = Resist::GetTicsLeft(index);
+            if (ticsLeft > Resist::GetMaximumTics(index) || ticsLeft <= 0)
+                continue;
+
+            // The offset stacks resists below one another and will propagate into the hooks by design.
+            if (!Resist::PrepareResistHudPoint(fixed(AddY)))
+                return;
+
+            // A paused resist that opts in to still being shown is always drawn at full opacity.
+            if (isPaused || Resist::GetNoFade(index))
+                BCSUtils::HudSetAlpha(1.0);
+            else
+                BCSUtils::HudSetAlpha(alpha);
+
+            _resistHookData.Index = index;
+            raw result = Hook::Call(Hook::HOOK_CLIENTDRAWRESIST, _resistHookData);
+
+            // A non-zero hook result fully replaces the normal draw offset.
+            // If zero, use whatever we get from drawing the resist ourselves.
+            int defaultOffset = DrawResist(index, ticsLeft);
+            int hookOffset = (int)result;
+            int drawnOffset = hookOffset != 0 ? hookOffset : defaultOffset;
+
+            AddY += drawnOffset + RESIST_HUD_BETWEEN_RESISTS_SPACING;
+        }
+    }
+
+    internal int DrawResist(int index, int ticsLeft)
+    {
+        Resist::ResistT module& resist = Resist::GetRefByindex(index);
+
+        bool hideTopReason = Resist::GetHideTopReason(index);
+        bool hideTimeReason = Resist::GetHideTimeReason(index);
+        bool drawTopReason = !hideTopReason && resist.InitialState.TopReasonLabel != (raw)0 && resist.InitialState.TopReasonLabel != "";
+        bool drawTimeReason = !hideTimeReason && resist.InitialState.TimeReasonLabel != (raw)0 && resist.InitialState.TimeReasonLabel != "";
+
+        int addY = 0;
+        if (drawTopReason)
+        {
+            str topReasonLabel = Resist::FormatLabel(resist.InitialState.TopReasonLabel, ticsLeft);
+
+            BCSUtils::HudSetTextColor(CR_WHITE);
+            BCSUtils::HudSetFont("SmallFont");
+
+            HudSetPointInternal();
+            BCSUtils::HudDrawText(--_drawnHudId, topReasonLabel);
+            DebugDraw();
+
+            addY = RESIST_HUD_SMALLFONT_LINE_HEIGHT;
+
+            if (drawTimeReason)
+                addY += RESIST_HUD_BETWEEN_LABELS_SPACING;
+        }
+
+        if (drawTimeReason)
+        {
+            str timeReasonLabel = Resist::FormatLabel(resist.InitialState.TimeReasonLabel, ticsLeft);
+
+            BCSUtils::HudSetTextColor(CR_RED);
+            BCSUtils::HudSetFont("BigFont");
+
+            HudSetPointInternal(0.0, fixed(addY));
+            BCSUtils::HudDrawText(--_drawnHudId, timeReasonLabel);
+            DebugDraw();
+
+            // BigFont is taller than SmallFont, so it needs more room after it.
+            addY += RESIST_HUD_BIGFONT_LINE_HEIGHT;
+        }
+
+        return addY;
+    }
+
+    internal fixed GetFadeOutAlpha()
+    {
+        // The alpha is aligned with an offset that is set when the first shown resist started.
+        // This offset exists to ensure resists can show instantly at full opacity.
+        // We also decrement a single tic because the HUD otherwise shows the previous second for a
+        // single tic as soon as it faded in.
+        int phase = (Utils::GetSynchronizedTimer() - Resist::GetFadeCycleOffsetTic() - 1) % 35;
+        if (phase < 18)
+            return 1.0;
+
+        // Fade over 18 tics.
+        int fadeStep = phase - 18;
+        return 1.0 - fixed(fadeStep) / 18.0;
+    }
+}

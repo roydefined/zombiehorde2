@@ -6,10 +6,15 @@ strict namespace Sync
 {
     #define ACTOR_SYNC_PLAYER_NAME_TEMPLATE "__playername%n"
 
-    #define ACTOR_SYNC_TIMER_LABEL_TEMPLATE "__timerlabel%n"
+    #define ACTOR_SYNC_TIMER_LABEL_TOP_TEMPLATE "__timerlabeltop%n"
+    #define ACTOR_SYNC_TIMER_LABEL_BOTTOM_TEMPLATE "__timerlabelbottom%n"
+    #define ACTOR_SYNC_TIMER_FONT_TOP_TEMPLATE "__timerfonttop%n"
+    #define ACTOR_SYNC_TIMER_FONT_BOTTOM_TEMPLATE "__timerfontbottom%n"
 
     #define ACTOR_SYNC_RESIST_LABEL_TOP_TEMPLATE "__resistlabeltop%n"
     #define ACTOR_SYNC_RESIST_LABEL_BOTTOM_TEMPLATE "__resistlabelbottom%n"
+
+    #define ACTOR_SYNC_RADIO_LUMPNAME_TEMPLATE "__radiolumpname"
 
     // Sync base is what the sync TIDs will base off.
     // Each sync category then takes a certain length which they need to sync its data.
@@ -24,15 +29,15 @@ strict namespace Sync
 
     // Start of actual TID definitions
 
-    // Player sync has at least three instances of 64 players needing their own sync tid.
+    // Player sync has at least four instances of 64 players needing their own sync tid.
     // We also require 32 ints from the safety slots (1 player requires 16 bits each at most)
-    #define SYNC_PLAYERS_LENGTH (BCSUtils::MAX_PLAYERS * 3 + 24) + 32 + SYNC_PLAYER_PICKWEIGHT_LENGTH
+    #define SYNC_PLAYERS_LENGTH (BCSUtils::MAX_PLAYERS * 4 + 24) + 32 + SYNC_PLAYER_PICKWEIGHT_LENGTH
     #define SYNC_PLAYERS SYNC_BASE + SYNC_PLAYERS_LENGTH
 
     #define SYNC_ROUNDTIMERS_LENGTH (MAX_TIMERS * 10)
     #define SYNC_ROUNDTIMERS SYNC_PLAYERS + SYNC_ROUNDTIMERS_LENGTH
 
-    #define SYNC_RESISTS_LENGTH (MAX_RESISTS * 10 + 10)
+    #define SYNC_RESISTS_LENGTH (MAX_RESISTS * 7 + 2)
     #define SYNC_RESISTS SYNC_ROUNDTIMERS + SYNC_RESISTS_LENGTH
 
     #define SYNC_ROUND_LENGTH (MAX_ROUNDSTATES * 3 + 20)
@@ -44,9 +49,51 @@ strict namespace Sync
     #define SYNC_ADMIN_LENGTH 10
     #define SYNC_ADMIN SYNC_POWER + SYNC_ADMIN_LENGTH
 
-    #define SYNC_GAME_LENGTH 23 + BCSUtils::MAX_PLAYERS
+    #define SYNC_GAME_LENGTH 24 + BCSUtils::MAX_PLAYERS
     #define SYNC_GAME SYNC_ADMIN + SYNC_GAME_LENGTH
 
     #define SYNC_MAPVOTING_LENGTH (BCSUtils::MAX_PLAYERS + MAX_VOTABLEMAPS + 10)
     #define SYNC_MAPVOTING SYNC_GAME + SYNC_MAPVOTING_LENGTH
+
+    // AFK prevention needs 64 * 2 for the last move tic and the warn tic.
+    #define SYNC_AFKPREVENTION_LENGTH (BCSUtils::MAX_PLAYERS * 2)
+    #define SYNC_AFKPREVENTION SYNC_MAPVOTING + SYNC_AFKPREVENTION_LENGTH
+
+    // We only sync the player id that owns the radio music.
+    // The track itself is tracked through a cvar.
+    #define SYNC_RADIO_LENGTH 1
+    #define SYNC_RADIO SYNC_AFKPREVENTION + SYNC_RADIO_LENGTH
+
+    // When adding a new sync, also increase this number.
+    #define MAX_SYNC_TYPES 10
+
+    internal enum SyncTypeT : int
+    {
+        // Slot 0 reserved by library sync
+
+        SYNCTYPE_PLAYERS = 1,
+        SYNCTYPE_TIMERS,
+        SYNCTYPE_RESISTS,
+        SYNCTYPE_ROUNDSTATE,
+        SYNCTYPE_POWERS,
+        SYNCTYPE_ADMINS,
+        SYNCTYPE_GAME,
+        SYNCTYPE_MAPVOTING,
+        SYNCTYPE_AFKPREVENTION,
+        SYNCTYPE_RADIO,
+    };
+
+    struct SyncContextT
+    {
+        // Whether this sync type has a write waiting to happen. Any number of `DoSync` calls,
+        // whether bunched in one tic or spread across many, collapse into a single pending flag -
+        // the write itself is never delayed, just buffered down to one per batch.
+        bool PendingWrite[MAX_SYNC_TYPES];
+
+        // The tic each sync type is next allowed to notify clients, or 0 if none is scheduled.
+        // Set once by `DoSync` alongside `PendingWrite` (not after the write actually happens) -
+        // the write is immediate, but the notify still needs to wait long enough for that write to
+        // replicate to every client, so it's scheduled independently, using the delay cvars.
+        int NotifyTic[MAX_SYNC_TYPES];
+    };
 }

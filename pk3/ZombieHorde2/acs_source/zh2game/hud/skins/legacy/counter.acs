@@ -1,0 +1,82 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawHumanCounterLegacy(fixed x, fixed y, int count)
+    {
+        BCSUtils::HudSetFont("ConFont");
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_TOP);
+        BCSUtils::HudSetTextColor(CR_BLUE);
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawText(--_drawnHudId, "Humans");
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_TOP);
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetPoint(x + 20.0, y);
+        BCSUtils::HudDrawText(--_drawnHudId, " : " + str(count));
+        DebugDraw();
+    }
+
+    internal void DrawZombieCounterLegacy(fixed x, fixed y, int count)
+    {
+        BCSUtils::HudSetFont("ConFont");
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_TOP);
+        BCSUtils::HudSetTextColor(CR_RED);
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawText(--_drawnHudId, "Zombies");
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_TOP);
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetPoint(x + 20.0, y);
+        BCSUtils::HudDrawText(--_drawnHudId, " : " + str(count));
+        DebugDraw();
+    }
+
+    internal void DrawPlayerCountersLegacy(fixed x, fixed y)
+    {
+        DrawHumanCounterLegacy(x, y, Game::HumanCount());
+        DrawZombieCounterLegacy(x, y + LEGACY_PLAYERCOUNTER_LINE_HEIGHT, Game::ZombieCount());
+    }
+
+    internal void DrawKillsCounterLegacy(fixed x, fixed y, int count)
+    {
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_STATCOUNTER_KILLS_ICON);
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_ORANGE);
+        BCSUtils::HudSetPoint(x + 8.0, y);
+        BCSUtils::HudDrawText(--_drawnHudId, str(count));
+        DebugDraw();
+    }
+
+    internal void DrawInfectsCounterLegacy(fixed x, fixed y, int count)
+    {
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_RIGHT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, LEGACY_STATCOUNTER_INFECTS_ICON);
+        DebugDraw();
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetFont("BigFont");
+        BCSUtils::HudSetTextColor(CR_RED);
+        BCSUtils::HudSetPoint(x + 8.0, y);
+        BCSUtils::HudDrawText(--_drawnHudId, str(count));
+        DebugDraw();
+    }
+
+    internal void DrawStatCountersLegacy(fixed x, fixed y)
+    {
+        DrawKillsCounterLegacy(x, y, Player::GetZombieKills());
+        DrawInfectsCounterLegacy(x, y + LEGACY_STATCOUNTER_LINE_HEIGHT, Player::GetInfects());
+    }
+}

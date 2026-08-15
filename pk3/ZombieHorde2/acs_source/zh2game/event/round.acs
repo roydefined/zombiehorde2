@@ -74,17 +74,26 @@ strict namespace Event
                 Game::SetGameStartTicNow();
                 Sync::SyncGame();
 
-                Delay(const: 35);
-
-                // Timer is completely optional in escape maps, so the map developer is free to leave it out.
+                // For the first second we hide the timer.
                 int index = RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERPLAYING);
-                if (RoundTimer::GetTimerDefined(index))
+                bool defined = RoundTimer::GetTimerDefined(index);
+                if (defined)
                 {
                     RoundTimer::SetActiveTimerByKnownType(RoundTimer::TIMERPLAYING);
                     RoundTimer::StartTimer(index);
+                    RoundTimer::HideTimer(index);
                 }
 
                 Sync::SyncTimers();
+
+                Delay(const: 35);
+
+                if (defined)
+                {
+                    RoundTimer::ShowTimer(index);
+                    Sync::SyncTimers();
+                }
+
                 Delay(const: 35 * 2);
 
                 // Log a message to players to inform them of their specie and their task.
@@ -96,18 +105,25 @@ strict namespace Event
 
             case Round::StateEnding:
             {
+                Game::EndActionT action = Game::GetEndAction();
+
+                // If the action is to restart the map, use a different timer. Otherwise just use the default.
                 // This timer is required. If not set we log an error.
                 // TODO: Ideally if we started the match we inform the map developer of this.
-                int index = RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERENDING);
+                RoundTimer::KnownRoundTimerT timerType = action == Game::ACTION_RESTART
+                    ? RoundTimer::TIMERENDINGWITHRESTART
+                    : RoundTimer::TIMERENDING;
+
+                int index = RoundTimer::GetIndexOfKnownType(timerType);
                 if (RoundTimer::GetTimerDefined(index))
                 {
-                    RoundTimer::SetActiveTimerByKnownType(RoundTimer::TIMERENDING);
+                    RoundTimer::SetActiveTimerByKnownType(timerType);
                     RoundTimer::StartTimer(index);
 
                     Sync::SyncTimers();
-                    Sync::CallSyncTimersOnClients();
                 }
-                else Logger::LogError(LOGSOURCE, "Missing required ending timer.");
+                else
+                    Logger::LogError(LOGSOURCE, "Missing required timer: " + RoundTimer::GetTimerIndexAsString(index) + ".");
 
                 for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
                 {
@@ -126,10 +142,12 @@ strict namespace Event
                     BCSUtils::SetActorInventory(tid, WEAPON_BLOCK_FIRING_ITEM, 1);
                 }
 
+                Resist::StopAllResists();
                 Sync::SyncPowers();
 
-                // Reward a random player.
-                Reward::GiveRandomPlayerRewardContainers(Reward::REWARDORBMINOR);
+                // Do not reward anybody if we don't use the default flow.
+                if (action == Game::ACTION_DEFAULT)
+                    Reward::GiveRandomPlayerRewardContainers(Reward::REWARDORBMINOR);
 
                 // The match has ended so we set the end tic.
                 Game::SetGameEndingTicNow();
@@ -179,21 +197,6 @@ strict namespace Event
             {
                 Settings::CloseClientSettingsMenu();
                 Admin::DisableAdminHud();
-
-                // Online this is handled through the sync.
-                // TODO: Move this when adding the sync callback system.
-                if (!IsNetworkGame())
-                    Game::ClientBuildEnding();
-
-                break;
-            }
-
-            case Round::STATEVOTING:
-            {
-                // TODO: Move this when adding the sync callback system.
-                // Turn the cursor (back) on and lock the player.
-                Hud::SetCursorEnabled(true);
-                Player::LockMovement(true);
                 break;
             }
         }

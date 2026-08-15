@@ -1,0 +1,228 @@
+New features
+------------------------------------------------
+
+* * New data sync callback system * *
+The way data is synchronized between server and clients has been improved with a new callback system.
+Previously the sync flow was scattered, but it has now been improved and a new event has been added that will be triggered whenever data is synchronized.
+Clients will now trigger this event as soon as data is set, including offline where generally this synchronization is skipped.
+This way there is now support for properly handling extra behavior when data has a finalize step, as has existed in various occasions.
+Previously this meant having to write duplicate code, but this is now gone.
+Additionally, sync data can now be debounced through buffers to reduce redundant work and traffic.
+Repeated triggers collapse into a single write instead of redoing the work every single time, and hosts can opt out of this through a setting to revert to the previous, always-immediate behavior.
+The system also supports configuring how long clients wait to be informed once something is synced, separately from the buffer above: a general delay for ongoing play, and a separate initial delay specifically for syncs at map start.
+The system writes the data in a way that ensures the engine has time to inform clients of the change, whilst also providing a proper throttle towards informing clients.
+
+* * Anti-SR50 system * *
+A new system was added which aims to remove SR50 from the game.
+This has always been a controversial topic. It's a mechanic that has existed for a long time.
+However, it's not something that players consider when playing the game. Especially when it comes to new or casual players this system is not known.
+I don't think SR50 has a place in a game where speed is important. With sprinting and varying other speeds at play, SR50 can make a big difference.
+This system will reduce the player speed if the game detects multiple inputs combined, causing SR50.
+In the event a server host does not want to remove SR50 from the game, they can still do so.
+This system will come with a cvar which will turn it off.
+
+* * Zombie leave compensation improvements * *
+The system that handles zombies leaving a round has been expanded.
+A leaving zombie will now cause the game to compensate other zombies based on their health.
+The health of the zombie will be distributed amongst other zombies, and based on the health left the timer will also increase based on a factor of it.
+This helps reduce situations where a round becomes significantly easier because a zombie suddenly leaves.
+The amount of time added or health returned is configurable through a cvar and can be disabled entirely if desired.
+Additionally, the system now supports optionally awarding a zombie kill to a human player if they dealt enough damage to the zombie before they left.
+Server hosts can configure the required damage percentage through a cvar.
+If multiple players qualify, the player who dealt the most damage will receive the kill and any associated rewards.
+This helps ensure players are still rewarded when a zombie leaves after taking significant damage.
+Should a zombie leave early, then server hosts can also configure a time period when the map will reset.
+If a zombie leaves before the period ends, the map will end with an indication of map reset.
+The round ends similar to normal endings, minus the stats. The map will reset quickly after.
+
+* * Zombie bans on leaving the round * *
+Additional to the compensation changes, the game now also supports banning a zombie if they were to leave mid-game.
+Zandronum now supports bannign through ACS with the cvar `sv_maxacsbanduration`.
+Server hosts will be able to enable banning through this cvar, or disable it by setting the vlaue to 0.
+The game also respects this value and banning a zombie will happen based on the time provided by `sv_maxacsbanduration`.
+Additionally, server hosts can now set their own cap on this ban duration through the new `sv_zh2_maxzombiebanduration` cvar.
+The actual duration used is always whichever of the two cvars is lower, and either being set to 0 disables the ban entirely.
+
+* * New AFK prevention system on round start * *
+The game now has detection of AFK players on round start. When a map starts, server hosts can configure a delay in which players must move.
+Players will be informed of this requirement on the HUD, and moving will get rid of this indication as the player will no longer be considered AFK.
+If a player does not move within the allotted time, they will be kicked from the game and pulled into spectator mode. The game will inform who gets kicked for inactivity.
+Players can still rejoin after getting kicked, as long as the round is joinable.
+
+* * New AFK prevention system for zombies * *
+Additionally to checking for AFK players on round start, the game can now also check for AFK zombies.
+Zombie players are expected to actively play the game and not go AFK. If they do it will just make it harder for zombies to win, and it's an easy kill for humans.
+The game will now be able to track the activity of zombies and determine if one of them has gone AFK.
+Just like with the checking done on round start, the player will be informed to stay active or risk getting kicked.
+The standard ruling will apply when they get kicked, where the game could ban them for leaving the game early.
+By default, zombies get a 6 second grace period followed by a 6 second check window before being warned, and 10 more seconds after the warning before being kicked.
+
+* * Resist system improvements and runtime control * *
+The resist system has been expanded significantly and is now much more flexible for both built-in gameplay and custom maps.
+Resists now support optional pre- and post-resist scripts which are invoked before a resist starts and after it ends.
+Additionally, maps can define global pre- and post-resist scripts which are automatically used for every resist that does not define its own scripts.
+This greatly reduces duplicate scripting when maps use many resists. Feel free to use one or the other. Note global ones are ignored if a specific pre- and/or post- script is specified.
+
+Resists now support hooks which allow you to control how a resist is drawn, or something else it might need to do when it tics.
+Use this to completely change a resist's visual or control it another way whilst still having the benefit of knowing where to draw and what the length of the resist is.
+
+Resists now support configurable flags which can alter their behavior.
+Currently maps can choose to hide the top reason, hide the timer reason, hide both, or disable the default fade animation.
+Combined with hooks you can completely change resists to how you like it.
+
+Resists can now be controlled much more easily during gameplay.
+Scripts can now elapse scripts at runtime. They can also get information such as their maximum length, and time left.
+
+Administrators can now control resists much better.
+Beyond the existing start and stop functionality you can now elapse, pause and resume a resist as well.
+Based on the resist state different options will be available.
+Please note, resists are created by maps and depending on their implementation behavior of this feature might vary.
+It is not guaranteed a map might fully support these options, and calling a resist multiple times likely doesn't work that well.
+Use this with caution, knowing that this is the case.
+
+* * Proximity radio * *
+The radio now has a proximity option, enabled by default. Instead of taking over the music for the whole server, other players will only hear your radio when they're close to you, while everyone else keeps enjoying the map's own music.
+Only one player can use the radio at a time. If someone else starts playing music while you're already broadcasting, yours will stop and you'll both be told about it.
+Joining a game while someone is already using the radio works correctly too, so you won't miss out on hearing it.
+Prefer the radio to take over the music for everyone instead? Turn `cl_zh2_radioproximity` off at any time to switch back to that.
+
+* * Fade map music near proximity radios * *
+Want the radio to stand out more? Turning on `cl_zh2_radiofademapmusic` will gradually lower the map's music the closer you get to whoever is playing it, going silent entirely once you're close enough to them.
+
+* * HUD skin support and new legacy HUD skin * *
+The HUD now supports the ability to draw different HUD types (or skins) this beta. Included with this first version is a new skin which is called the legacy skin.
+The legacy skin aims to mimic the original HUD from Zombie Horde 1, providing a more nostalic look for players.
+Like the other systems below, the skin used is chosen automatically based on the map: legacy maps get the legacy HUD, newer maps get the current one. Server hosts can override this and force one skin for everyone through `sv_zh2_forcehudskin`.
+
+* * Weapon skins * *
+Weapons now also support skins, which are determined on round start. Included is a new skin for each weapon in a legacy variant that looks and plays like the original Zombie Horde 1 versions, alongside the current default versions.
+Just like the HUD skin, the weapon skin used is chosen automatically based on the map, and server hosts can force a specific skin for everyone through `sv_zh2_forceweaponskin`.
+The game will determine if a player must switch their weapon to a new skin on round start, and it will also ensure any spawns either given or picked up properly account for the skin supported that round.
+Legacy weapons aim to match their original counter part with their animation, sound and properties such as damage and knockback. Weapons will have their behavior matched with how the legacy weapons worked.
+For example, the sniper will not have its scope overlay, the double shotgun has no single barrel fire, and the chaingun does not require spinning up.
+
+* * Legacy obituary text mode * *
+The obituary display setting has been reworked into a three-way choice: graphical (the existing icon-based obituaries), text (the existing descriptive messages), or a new legacy text option that reproduces the original ZH1 wording and on-screen positioning instead.
+Server hosts can force a specific mode onto everyone through `sv_zh2_forceobituarydisplaymode`, or leave it up to each player's own preference set through `cl_zh2_obituarydisplaymode`. Graphical remains the default.
+In legacy text mode certain obituaries are shown in the middle of the screen with a colored string, instead of being part of the chat. The text used matches the original ZH1 strings.
+Zombie-on-zombie kills get their own randomized flavour lines, and suicides, falls and drownings get their own lines too; everything else falls back to a plain default message.
+
+* * Timer skins and customizable round timer templates * *
+Round timers can now have their top and bottom labels and fonts configured more freely, similar to what resists now also support. Either label can also be turned into a template that embeds the time itself, using `%d` for a plain whole-second count, `%c` for a clock-style `M:SS` format, or `%f` for a compact format that includes a decimal fraction.
+This support brings in the ability to change timers much more than what they used to be able to do.
+With this skin support is also added, similary to how the HUD and weapons support it.
+Like with the other two a new legacy timer skin has been added alongside the legacy HUD and weapon skins above, reproducing how Zombie Horde 1 presented its timers.
+Like the other skins, the legacy timer skin is chosen automatically based on the map, and server hosts can force one or the other through `sv_zh2_forcetimerskin`.
+
+* * Classic mode config * *
+Server hosts that want to use the new classic features simulating older Zombie Horde can now do so using the new classic mode config, used by calling `+exec` `docs/classicmode.cfg` on top of the existing `host.cfg`.
+It forces the new legacy hud skin, new legacy weapon skin, new legacy timer skin, new legacy zombie skin, new legacy text obituaries drawn in the middle of the screen, disables sprinting before the round starts, uses the legacy initial zombie pick method, allows only 1 panic per round, allows moving while zombie teleporting, and disables the pick chance display, end of round music, map voting, anti-SR50, the auto-use behaviour for medikits/kevlar/energy drinks, and every newer feature not present in the original Zombie Horde (blood, tracers, damage feedback, translucent allies, ally icons and player identification).
+Note this is simply a switch to turn off cvars, but these will not be forced. Server hosts can turn features back on if they want to.
+
+Map changes
+------------------------------------------------
+
+* * All maps now support strict namespaces * *
+Starting this version, all ACS used by maps now support BCC strict namespaces.
+The added benefit to having strict namespaces is ensuring that functions are called correctly and we don't accidentally pass the wrong types.
+And as was found out with this change, a lot of maps actually had issues with wrong the types being used.
+Every single map has been reviewed and fixed when necessary. This solves a lot of underlying issues where weird behavior on maps might have popped up.
+
+* * All maps have been migrated to the new resist system * *
+Every map that previously implemented its resists through raw, hardcoded ACS now uses the new resist system.
+Resists are defined declaratively per map, with their lengths, top and time reason labels, and coloring all preserved exactly as they were before.
+Maps that relied on custom visuals or dynamic coloring now do so through the new hook system instead, keeping their original look.
+As a result, the runtime control described above, such as elapsing, pausing, resuming and administrator control, now also works on every built-in map.
+
+- [ZE01]:  Fix being able to skip the trigger of the first resist.
+- [ZE02]:  Added more linedef triggers to the final resist.
+- [ZE02B]: Added more linedef triggers to the final resist.
+- [ZE09]:  Fix final resist being skippable.
+- [ZE10]:  Fix second resist being skippable.
+- [ZE15]:  As part of the migration to the new resist system, the first resist will now activate more reliably.
+           Also fixed a weird issue where the first resist could start from a LOT of places due to a mistake in the code.
+- [ZE16]:  Fixed a hom at the elevators.
+- [ZE19]:  Removed the random lengths of the resist and instead made them all a static length.
+- [ZE20]:  As part of the migration to the new resist system, some messages have been repositioned.
+- [ZE20B]: As part of the migration to the new resist system, some messages have been repositioned.
+- [ZE24]:  Fix an issue where the map didn't properly kill players that fall out of the final helicopter.
+- [ZE27]:  Fix an issue where the artifacts didn't spawn near the end of the map.
+- [ZE29]:  As part of the migration to the new resist system, the typeon effect this map does when a resist starts now does so with centered characters.
+- [ZE32]:  Fix the old man messages staying on screen for a very long time.
+           Fix a bug (???) with the old man messages which would replace part of the resist message. I have no idea if it's indended because it seems
+           so obvious it's broken, but the code does explicitly draw the resist so it seems to just be completely overlooked.
+- [ZE12M]: As part of the migration to the new resist system, the map now shows a percentage for its pillar progress to match the behavior of the
+           older version of this map, back when it was not linear.
+- [ZM09]:  Fix a spot in the code where the game still looked for hardcoded 64 players.
+		   Also simplified the code around drawing images to use the functions from BCSUtils instead.
+- [ZM13]:  Fix the code that checks if the player already grabbed a fruit.
+- [ZM14]:  Fix an issue where a key would not spawn properly.
+- [ZM17]:  Fix an issue where the light dimming did not work correctly.
+
+API changes (Could contain breaking changes for mappers. Make sure to check this list for migrations)
+------------------------------------------------
+
+* * Round timer `flags` parameter moved and is now optional * *
+`RoundTimer::DefineTimer` and `RoundTimer::DefineKnownTimer` used to take `flags` as their 4th parameter, directly after the timer's length and maximum time, with no default value.
+To make room for the new top/bottom template and font parameters described above, `flags` has moved to the very last parameter and now defaults to no flags at all.
+If your map calls either function with `flags` passed positionally, it will now be interpreted as one of the new template/font parameters instead of the flags you intended.
+Please move `flags` to the end of the call. If you need to reach it without changing a template or font parameter along the way, pass its matching default (`TIMER_DEFAULT_TOP_TEMPLATE`, `TIMER_DEFAULT_BOTTOM_TEMPLATE`, `TIMER_DEFAULT_TOP_FONT` or `TIMER_DEFAULT_BOTTOM_FONT`) for that parameter instead of omitting it.
+
+Other mod changes
+------------------------------------------------
+
+- Added a new option to the round menu for administrators to both end the game and reset the current map. This is similar to how the map would reset if zombies leave the game early.
+- The transient and the persisting player context is now disposed on the clientside whenever the serversided variant also disposed. Before only the serversided ones would dispose.
+- The initial zombie pick chance HUD display can now be toggled off, both by server hosts (`sv_zh2_showpickchance`) and individually by players (`cl_zh2_showpickchance`).
+- Fixed an issue where the play timer was not set quick enough, causing early infections to not count towards the play timer.
+- The round timer will now only visually increase/decrease if it's actually visible. If hidden this effect is skipped.
+- Deprecated the `Resists` block in ZHMAPINFO lumps. Use the new `Resist` block instead.
+- Fix `sv_zh2_enableweather` not being a server cvar.
+- Changed how resists color the time displayed in either the top/time reason label. Before the time was colored internally and this caused issues.
+  This is now changed to only color if we set a default time reason (top reason doesn't have a default). This means that if a map defines a time reason
+  that doesn't actually colors the time (like ZE27) it will now correctly show.
+- Improved how first resists are shown. Before the resists stuck to a static interval which would delay them, even if they did not have to align with other resists.
+  First resists (so no other resist runs currently) will now show instantly instead of having a delay that can cause it to take up to a second to show.
+- Fixed the radio sometimes playing a random track for you instead of the one that was actually chosen, even when you had that exact track.
+- The radio will now clearly tell you when nothing is going to play for you, instead of leaving you guessing why you don't hear anything.
+- The radio no longer complains about not sharing your track change when you're playing alone. The cooldown between changes still applies.
+- Fix Uboa death sound being double defined.
+- Fix a regression causing the grenade and chaingun HUD meters to not function properly.
+- Fix legacy chandelier playing a gib sound instead of its explosion sound.
+- Added a pain sound for humans and zombies that take falldamage.
+- Fixed the win graphic always basing itself on the map's legacy flag instead of the zombie skin actually shown, so it now correctly accounts for a forced skin behaviour like everything else does.
+- Added the option to skip the music that plays at round end, both for server hosts (`sv_zh2_noendmusic`) and individually by players (`cl_zh2_noendmusic`).
+- Added `sv_zh2_shakehud`, a serversided setting to turn hud shaking off.
+- Add missing damage feedback check that caused some of the logic to trigger anyway.
+- Added `sv_zh2_disablepregamesprinting` which simulates how older Zombie Horde would behave when players would sprint before the game starts.
+- Added `sv_zh2_disableautouseitems`, letting server hosts disable the auto-use behaviour for medikits, kevlar suits and energy drinks for everyone regardless of each player's own preference.
+- Removed a redundant A_Gunflash call in the shotgun's code.
+- Fix issue where the riot gun was not properly setting its firing state.
+- Added `cl_zh2_drawobituaryhud`, letting players toggle obituaries off independently. This fixes obituaries still showing up when the hud as a whole was disabled. The "+/- N seconds" visual shown when the play timer changes (for example on an infection) now also follows whichever template and font the active timer actually uses, instead of always using a fixed font and format regardless of skin.
+- Fix time diff visuals drawing when the HUD is disabled as a whole.
+- Fixed the (now called) default HUD's speed and high jump status icons being mixed up and showing a different graphic
+- Fix the final stats screen sometimes showing stale data for the player whose death or infection ended the round.
+- The admin "add bot" options now check the player cap based on `sv_maxplayers` rather than hard checking the maximum limit supported by the engine.
+- The randomized initial zombie pick method now also respects `sv_zh2_initialpickrememberlastmap`.
+- Fix desync issue caused when switching weapon skins. The code has no knowledge of the shotgun being a priority, and this causes the engine to mistake what the current weapon is.
+  This caused the client to go out of sync with the server. As a temporary workaround we now always prioritize the shotgun.
+- Players will now receive a fire grenade after 1 second of playing. This fixes another desync issue, similary to the point above. The engine struggles with telling what weapon the client holds.
+  This causes desync where the client assumes they wield the shotgun, when in reality it's the fire grenade. For now, as a workaround, give the fire grenade 1 second later.
+- Nerfed the default variant Jack's Gun and sniper. These weapons had quite a big difference to damage and kickback compared to the legacy variant, and to put it more in line these weapons have been changed a bit.
+  This makes them weaker, but these two weapons have always been considerably stronger than the version that existed in ZH1.
+- To account for the increasing logic in the mod, especially if the mod runs with many players, the internal `open` and server loop script used in the mod now run with the `busy` script flag.
+  This combats runaway errors, even if not by the mod's faulth.
+
+Repository changes
+------------------------------------------------
+- The repository has more Python files for managing the project:
+    - A Python script that handles the compression of sounds using ffmpeg.
+    - A Python script that handles the compression of graphics using oxipng.
+    - A Python script that handles the creation of tags on the current commit based on the current version.
+    - A Python script that handles the updating of the mod version across multiple files to avoid having to updating multiple locations.
+- Moved contents used as templates from the build/ folder to the templates/ folder.
+- Renamed the 'pk3/lib' folder to 'pk3/libraries/ZombieHorde2Lib' and updated the project to point to its new location.
+- Added a version.txt file which will contain the current version of the mod. One of the new Python scripts will use this file as reference when updating.
+- Builds made of the mod through PubDoomer in this project are now in lowercase rather than PascalCase.
+- Fix issue with `play_local_server.py` causing the mod to load resources in the wrong order and causing certain things to not work.
+

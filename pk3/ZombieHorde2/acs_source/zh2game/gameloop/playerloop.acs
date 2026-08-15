@@ -21,6 +21,18 @@ strict namespace GameLoop
             Player::PanicTic();
             Player::ZombieTauntTic();
             Player::NameTic();
+            Player::Sr50Tic();
+            Weapon::FireGrenadeBonusTic();
+
+            Round::KnownRoundStateT roundState = Round::GetActiveKnownRoundState();
+            if (PlayerInGame(PlayerNumber()) && !PlayerIsBot(PlayerNumber())
+                && (
+                    roundState == Round::STATECOUNTDOWN || roundState == Round::STATEPLAYING
+                ))
+            {
+                AfkPrevention::PlayerAfkPreventionRoundStartServer();
+                AfkPrevention::PlayerAfkPreventionZombieServer();
+            }
 
             if (SpaceUtil::SpaceUtilTic())
                 Sync::SyncPlayers();

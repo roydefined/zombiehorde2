@@ -7,279 +7,305 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-int FloorNumber = 31;
-int OutsideReached = 0;
-
-// [ZH2] Handles terminating the push scripts.
-bool terminateLiftPushScripts;
-
-Script 1 OPEN // Level setups
+strict namespace
 {
-	Sector_SetCeilingScale2(2, 2.0, 2.0);
-	Sector_SetFloorPanning(5, 0, 0, 32, 0);
-	Sector_SetCeilingPanning(6, 0, 0, 32, 0);
-	Sector_SetRotation(10, 90, 90);
-	TranslucentLine(1, 96, 0);
-	SetLineBlocking(1, BLOCK_CREATURES);
-	TranslucentLine(2, 96, 0);
-	SetLineBlocking(2, BLOCK_CREATURES);
-	TranslucentLine(3, 96, 0);
-	SetLineBlocking(3, BLOCK_CREATURES);
-	Scroll_Texture_Both(3, 0, 0, 0, 175);
-	Scroll_Texture_Both(-3, 0, 0, 0, 175);
-	Sector_SetDamage(36, 10000, 0);
-	Sector_SetDamage(37, 10000, 0);
-	Sector_SetDamage(38, 10000, 0);
-	Sector_SetDamage(101, 10000, 0);
-}
+    int FloorNumber = 31;
+    int OutsideReached = 0;
 
-Script 2 (void) /* Teleport to the director's office */
-{
-	if(Player::GetIsZombie())
-		Teleport_NoFog(49, 1, 0);
-	else
-		Teleport_NoFog(100+PlayerNumber(), 1, 0);
-}
+    // [ZH2] Handles terminating the push scripts.
+    bool terminateLiftPushScripts;
 
-Script 3 (void) /* Waiting for the lift */
-{
-	SetActivator(-1);
+    Script 1 OPEN // Level setups
+    {
+        // [ZH2] Seems like the signature is wrong for this function in BCC.
+        Sector_SetCeilingScale2(2, (raw)2.0, (raw)2.0);
 
-	Delay(Resist::StartResistByIndex(0));
+        Sector_SetFloorPanning(5, 0, 0, 32, 0);
+        Sector_SetCeilingPanning(6, 0, 0, 32, 0);
+        Sector_SetRotation(10, 90, 90);
+        TranslucentLine(1, 96, 0);
+        SetLineBlocking(1, BLOCK_CREATURES);
+        TranslucentLine(2, 96, 0);
+        SetLineBlocking(2, BLOCK_CREATURES);
+        TranslucentLine(3, 96, 0);
+        SetLineBlocking(3, BLOCK_CREATURES);
+        Scroll_Texture_Both(3, 0, 0, 0, 175);
+        Scroll_Texture_Both(-3, 0, 0, 0, 175);
+        Sector_SetDamage(36, 10000, 0);
+        Sector_SetDamage(37, 10000, 0);
+        Sector_SetDamage(38, 10000, 0);
+        Sector_SetDamage(101, 10000, 0);
+    }
 
-	ThingSound(11, "sound/ding1", 127);
-	Polyobj_DoorSlide(2, 20, 128, 56, 35*7);
-	Polyobj_DoorSlide(12, 20, 128, 56, 35*7);
-	Delay(35*2);
+    Script 2 (void) /* Teleport to the director's office */
+    {
+        if(Player::GetIsZombie())
+            Teleport_NoFog(49, 1, 0);
+        else
+            Teleport_NoFog(100+PlayerNumber(), 1, 0);
+    }
 
-	Delay(Resist::StartResistByIndex(1));
+    // [ZH2] This exists to push off players that are on the lift ledges.
+    // It will do this constantly until terminated.
+    Script "ze06_lift_ledge_pusher" (raw index, raw angle)
+    {
+        while(!terminateLiftPushScripts)
+        {
+            for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+            {
+                int tid = Identity::GetTid(i);
 
-	ThingSound(11, "sound/ding1", 127);
-	Delay(35*3);
-	ACS_Execute(6, 0, 0, 0, 0);
-	Floor_LowerByValue(29, 24, 2048);
-	Ceiling_LowerByValue(29, 24, 2048);
-	Delay(35*3);
+                if (!BCSUtils::ActorIsAlive(tid))
+                    continue;
 
-	// Call lift pushers for the first lifts.
-	ACS_NamedExecuteAlways("ze06_lift_ledge_pusher", 0, 2, 192);
-	ACS_NamedExecuteAlways("ze06_lift_ledge_pusher", 0, 4, 64);
+                // Not in the lift the script is for.
+                if (!Game::GetPlayerIsSafe(i, index))
+                    continue;
 
-	SetFont("BIGFONT");
-	HudMessageBold(s:"Get into the second elevator before it leaves!!"; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.2, 1.5, 1.0);
-	Polyobj_DoorSlide(4, 20, 128, 56, 35*5);
-	Polyobj_DoorSlide(14, 20, 128, 56, 35*5);
-	Delay(35*7);
-	Floor_LowerByValue(30, 24, 2048);
-	ceiling_LowerByValue(30, 24, 2048);
-	ACS_Execute(7, 0, 0, 0, 0);
-	Delay(35*2);
+                // Actor is not on the ledge (-168 is the hardcoded z position of the ledge)
+                if (GetActorZ(tid) < -168.0)
+                    continue;
 
-	// Call lift pushers for the second lifts.
-	ACS_NamedExecuteAlways("ze06_lift_ledge_pusher", 0, 1, 192);
-	ACS_NamedExecuteAlways("ze06_lift_ledge_pusher", 0, 3, 64);
-
-	SetFont("BIGFONT");
-	HudMessageBold(s:"\cGWarning : \cKNeurotoxins released in 69-70th floors!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 1.0, 1.0);
-	AmbientSound("world/gas1", 100);
-	Delay(35*2);
-
-	Game::KillUnsafePlayers();
-
-	Delay(35*2);
-
-	TeleportInSector(12, 33, 32, 0, 0);
-	TeleportInSector(13, 33, 32, 0, 0);
-	TeleportInSector(14, 33, 32, 0, 0);
-	TeleportInSector(25, 35, 34, 0, 0);
-	TeleportInSector(26, 35, 34, 0, 0);
-	TeleportInSector(27, 35, 34, 0, 0);
-	TeleportInSector(12, 51, 54, 0, 0);
-	TeleportInSector(13, 51, 54, 0, 0);
-	TeleportInSector(14, 51, 54, 0, 0);
-	TeleportInSector(25, 52, 53, 0, 0);
-	TeleportInSector(26, 52, 53, 0, 0);
-	TeleportInSector(27, 52, 53, 0, 0);
-
-	ACS_Execute(4, 0, 0, 0, 0);
-
-	// Terminate the lift push scripts.
-	terminateLiftPushScripts = true;
-
-	Delay(35*2);
-	Floor_LowerByValue(21, 16, 960);
-	ceiling_LowerByValue(21, 16, 960);
-	TagWait(21);
-	Floor_Waggle(21, 64, 35, 0, 0);
-	Ceiling_Waggle(21, 64, 35, 0, 0);
-	Delay(35);
-	SetLineBlocking(3, BLOCK_NOTHING);
-	TranslucentLine(3, 0, 0);
-}
-
-// [ZH2] This exists to push off players that are on the lift ledges.
-// It will do this constantly until terminated.
-Script "ze06_lift_ledge_pusher" (raw index, raw angle)
-{
-	while(!terminateLiftPushScripts)
-	{
-		for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-		{
-			int tid = Identity::GetTid(i);
-
-			if (!BCSUtils::ActorIsAlive(tid))
-				continue;
-
-			// Not in the lift the script is for.
-			if (!Game::GetPlayerIsSafe(i, index))
-				continue;
-
-			// Actor is not on the ledge (-168 is the hardcoded z position of the ledge)
-			if (GetActorZ(tid) < -168.0)
-				continue;
-
-			ThrustThing(angle, 40, 1, tid);
-		}
+                ThrustThing(angle, 40, 1, tid);
+            }
 
 
-		Delay(const: 1);
-	}
-}
+            Delay(const: 1);
+        }
+    }
 
-Script 4 (void) /* Displays the floor number*/
-{
-	SetActivator(-1);
-	while(FloorNumber>1)
-	{
-		FloorNumber--;
-		if(FloorNumber==10)
-		{
-			Acs_Execute(12, 0, 0, 0, 0);
-			SetFont("BIGFONT");
-			HudMessageBold( d:FloorNumber,s:"th floor..."; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.1, 1.0, 1.0);
-		}
-		else if(FloorNumber==3)
-		{
-			SetFont("BIGFONT");
-			HudMessageBold( d:FloorNumber,s:"rd floor..."; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.1, 1.0, 1.0);
-		}
-		else if(FloorNumber==2)
-		{
-			SetFont("BIGFONT");
-			HudMessageBold( d:FloorNumber,s:"nd floor..."; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.1, 1.0, 1.0);
-		}
-		else if(FloorNumber==1)
-		{
-			SetFont("BIGFONT");
-			HudMessageBold( d:FloorNumber,s:"st floor..."; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.1, 1.0, 1.0);
-		}
-		else
-		{
-			SetFont("BIGFONT");
-			HudMessageBold( d:FloorNumber,s:"th floor..."; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.1, 1.0, 1.0);
-		}
-		Delay(70);
-	}
+    Script 4 (void) /* Displays the floor number*/
+    {
+        SetActivator(-1);
+        while(FloorNumber>1)
+        {
+            FloorNumber--;
+            if(FloorNumber==10)
+            {
+                Acs_Execute(12, 0, 0, 0, 0);
+                SetFont("BIGFONT");
+                HudMessageBold( d:FloorNumber,s:"th floor..."; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.1, 1.0, 1.0);
+            }
+            else if(FloorNumber==3)
+            {
+                SetFont("BIGFONT");
+                HudMessageBold( d:FloorNumber,s:"rd floor..."; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.1, 1.0, 1.0);
+            }
+            else if(FloorNumber==2)
+            {
+                SetFont("BIGFONT");
+                HudMessageBold( d:FloorNumber,s:"nd floor..."; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.1, 1.0, 1.0);
+            }
+            else if(FloorNumber==1)
+            {
+                SetFont("BIGFONT");
+                HudMessageBold( d:FloorNumber,s:"st floor..."; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.1, 1.0, 1.0);
+            }
+            else
+            {
+                SetFont("BIGFONT");
+                HudMessageBold( d:FloorNumber,s:"th floor..."; HUDMSG_FADEOUT, 999, CR_YELLOW, 0.5, 0.1, 1.0, 1.0);
+            }
+            Delay(70);
+        }
 
-}
+    }
 
-Script 5 OPEN   /* Second Lift sound */
-{
-	ThingSound(23, "sound/lift1", 127);
-	delay(134);
-	restart;
-}
+    Script 5 OPEN   /* Second Lift sound */
+    {
+        ThingSound(23, "sound/lift1", 127);
+        delay(134);
+        restart;
+    }
 
-Script 6 (void)  /* Lift sound */
-{
-	ThingSound(28, "sound/lift1", 127);
-	delay(134);
-	restart;
-}
+    Script 6 (void)  /* Lift sound */
+    {
+        ThingSound(28, "sound/lift1", 127);
+        delay(134);
+        restart;
+    }
 
-Script 7 (void)  /* Lift sound */
-{
-	ThingSound(31, "sound/lift1", 127);
-	delay(134);
-	restart;
-}
+    Script 7 (void)  /* Lift sound */
+    {
+        ThingSound(31, "sound/lift1", 127);
+        delay(134);
+        restart;
+    }
 
-Script 12 (void) /* 2nd teleport */
-{
-	SetActivator(-1);
-	Floor_LowerByValue(41, 20, 1780);
-	Ceiling_LowerByValue(41, 20, 1780);
+    Script 12 (void) /* 2nd teleport */
+    {
+        SetActivator(-1);
+        Floor_LowerByValue(41, 20, 1780);
+        Ceiling_LowerByValue(41, 20, 1780);
 
-	// Depending on which lift you took (north set or south set), and based on specie, we teleport the player.
-	for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-	{
-		int tid = Identity::GetTid(i);
+        // Depending on which lift you took (north set or south set), and based on specie, we teleport the player.
+        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
+        {
+            int tid = Identity::GetTid(i);
 
-		// Prevent dead bodies from being teleported.
-		if (!BCSUtils::ActorIsAlive(tid))
-			continue;
+            // Prevent dead bodies from being teleported.
+            if (!BCSUtils::ActorIsAlive(tid))
+                continue;
 
-		// Determine their lift index. 1 and 2 are the south ones.
-		int teleportTid = Game::GetPlayerIsSafe(i, 1) || Game::GetPlayerIsSafe(i, 2)
-			// South
-			? 200
-			// North
-			: 300;
+            // Determine their lift index. 1 and 2 are the south ones.
+            int teleportTid = Game::GetPlayerIsSafe(i, 1) || Game::GetPlayerIsSafe(i, 2)
+                // South
+                ? 200
+                // North
+                : 300;
 
-		// And if a human, we add 50 so they are moved to the side.
-		if (Player::GetPlayerIsHuman(i))
-			teleportTid += 50;
+            // And if a human, we add 50 so they are moved to the side.
+            if (Player::GetPlayerIsHuman(i))
+                teleportTid += 50;
 
-		TeleportOther(tid, teleportTid, 0);
-	}
+            TeleportOther(tid, teleportTid, 0);
+        }
 
-	TagWait(41);
-	Acs_Terminate(5, 0);
-	Acs_Terminate(6, 0);
-	Acs_Terminate(7, 0);
-	Polyobj_Move(8, 20, 128, 56);
-	Polyobj_Move(16, 20, 128, 56);
-	ThingSound(42, "sound/ding1", 127);
-	Delay(35*12);
-	Polyobj_Move(6, 20, 128, 56);
-	Polyobj_Move(18, 20, 128, 56);
-	ThingSound(45, "sound/ding1", 127);
-}
+        TagWait(41);
+        Acs_Terminate(5, 0);
+        Acs_Terminate(6, 0);
+        Acs_Terminate(7, 0);
+        Polyobj_Move(8, 20, 128, 56);
+        Polyobj_Move(16, 20, 128, 56);
+        ThingSound(42, "sound/ding1", 127);
+        Delay(35*12);
+        Polyobj_Move(6, 20, 128, 56);
+        Polyobj_Move(18, 20, 128, 56);
+        ThingSound(45, "sound/ding1", 127);
+    }
 
-Script 13 (void) /* Players get out of the shinra tower */
-{
-	SetFont("CONFONT");
-	HudMessageBold(n:0, s:" got out of the Shinra tower!\n\cCPrevent the infected from escaping!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
-	SetActivator(-1);
+    /* [ZH2] RESISTS START */
 
-	Delay(35*2);
-	Delay(Resist::StartResistByIndex(2));
+    script "pre_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 2:
+            {
+                SetFont("CONFONT");
+                HudMessageBold(n:0, s:" got out of the Shinra tower!\n\cCPrevent the infected from escaping!"; HUDMSG_FADEOUT, 0, CR_RED, 0.05, 0.85, 3.0, 2.0);
+                SetActivator(-1);
 
-	//Generic_Ceiling(50, 32, 160, 0, 16); //ZH2 [AQW]
-	Ceiling_LowerAndCrush(50,32,50,2); //ZH2 [AQW]
-	TagWait(50); //ZH2 [AQW]
-	Ceiling_LowerByValueTimes8(50,16,1); //ZH2 [AQW]
+                Delay(35*2);
+                break;
+            }
+        }
+    }
 
-	TagWait(50);
-	Delay(50);
+    script "post_resist_handler" (int resistIndex)
+    {
+        switch(resistIndex)
+        {
+            case 0:
+            {
+                ThingSound(11, "sound/ding1", 127);
+                Polyobj_DoorSlide(2, 20, 128, 56, 35*7);
+                Polyobj_DoorSlide(12, 20, 128, 56, 35*7);
+                Delay(35*2);
 
-	SetFont("BIGFONT");
-	HudMessageBold(s:"\cGWarning : \cKNeurotoxins released!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+                Resist::StartResistByIndex(1);
+                break;
+            }
 
-	AmbientSound("world/gas1", 100);
-	Delay(35*5);
+            case 1:
+            {
+                ThingSound(11, "sound/ding1", 127);
+                Delay(35*3);
+                ACS_Execute(6, 0, 0, 0, 0);
+                Floor_LowerByValue(29, 24, 2048);
+                Ceiling_LowerByValue(29, 24, 2048);
+                Delay(35*3);
 
-	Game::KillUnsafePlayers(0);
-}
+                // Call lift pushers for the first lifts.
+                ACS_NamedExecuteAlways("ze06_lift_ledge_pusher", 0, 2, 192);
+                ACS_NamedExecuteAlways("ze06_lift_ledge_pusher", 0, 4, 64);
 
-Script 14 OPEN /* Alert sound */
-{
-	ThingSound(99, "sound/alert1", 127);
-	delay(36);
-	restart;
-}
+                SetFont("BIGFONT");
+                HudMessageBold(s:"Get into the second elevator before it leaves!!"; HUDMSG_FADEOUT, 0, CR_GREEN, 0.5, 0.2, 1.5, 1.0);
+                Polyobj_DoorSlide(4, 20, 128, 56, 35*5);
+                Polyobj_DoorSlide(14, 20, 128, 56, 35*5);
+                Delay(35*7);
+                Floor_LowerByValue(30, 24, 2048);
+                ceiling_LowerByValue(30, 24, 2048);
+                ACS_Execute(7, 0, 0, 0, 0);
+                Delay(35*2);
 
-Script 15 (void) // Falling
-{
-	Game::Kill(MOD_FALLING);
+                // Call lift pushers for the second lifts.
+                ACS_NamedExecuteAlways("ze06_lift_ledge_pusher", 0, 1, 192);
+                ACS_NamedExecuteAlways("ze06_lift_ledge_pusher", 0, 3, 64);
+
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\cGWarning : \cKNeurotoxins released in 69-70th floors!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 1.0, 1.0);
+                AmbientSound("world/gas1", 100);
+                Delay(35*2);
+
+                Game::KillUnsafePlayers();
+
+                Delay(35*2);
+
+                TeleportInSector(12, 33, 32, 0, 0);
+                TeleportInSector(13, 33, 32, 0, 0);
+                TeleportInSector(14, 33, 32, 0, 0);
+                TeleportInSector(25, 35, 34, 0, 0);
+                TeleportInSector(26, 35, 34, 0, 0);
+                TeleportInSector(27, 35, 34, 0, 0);
+                TeleportInSector(12, 51, 54, 0, 0);
+                TeleportInSector(13, 51, 54, 0, 0);
+                TeleportInSector(14, 51, 54, 0, 0);
+                TeleportInSector(25, 52, 53, 0, 0);
+                TeleportInSector(26, 52, 53, 0, 0);
+                TeleportInSector(27, 52, 53, 0, 0);
+
+                ACS_Execute(4, 0, 0, 0, 0);
+
+                // Terminate the lift push scripts.
+                terminateLiftPushScripts = true;
+
+                Delay(35*2);
+                Floor_LowerByValue(21, 16, 960);
+                ceiling_LowerByValue(21, 16, 960);
+                TagWait(21);
+                Floor_Waggle(21, 64, 35, 0, 0);
+                Ceiling_Waggle(21, 64, 35, 0, 0);
+                Delay(35);
+                SetLineBlocking(3, BLOCK_NOTHING);
+                TranslucentLine(3, 0, 0);
+                break;
+            }
+
+            case 2:
+            {
+                //Generic_Ceiling(50, 32, 160, 0, 16); //ZH2 [AQW]
+                Ceiling_LowerAndCrush(50,32,50,2); //ZH2 [AQW]
+                TagWait(50); //ZH2 [AQW]
+                Ceiling_LowerByValueTimes8(50,16,1); //ZH2 [AQW]
+
+                TagWait(50);
+                Delay(50);
+
+                SetFont("BIGFONT");
+                HudMessageBold(s:"\cGWarning : \cKNeurotoxins released!!"; HUDMSG_FADEOUT, 0, CR_GOLD, 0.5, 0.2, 3.0, 2.0);
+
+                AmbientSound("world/gas1", 100);
+                Delay(35*5);
+
+                Game::KillUnsafePlayers(0);
+                break;
+            }
+        }
+    }
+
+    /* [ZH2] RESISTS END */
+
+    Script 14 OPEN /* Alert sound */
+    {
+        ThingSound(99, "sound/alert1", 127);
+        delay(36);
+        restart;
+    }
+
+    Script 15 (void) // Falling
+    {
+        Game::Kill(MOD_FALLING);
+    }
 }

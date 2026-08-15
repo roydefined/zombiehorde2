@@ -1,0 +1,74 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Sync
+{
+    #define SYNC_CATEGORY "AFKPREVENTION"
+
+    internal void SyncAfkPreventionActor()
+    {
+        int syncId = SYNC_AFKPREVENTION;
+
+        syncId = SyncWriteLastMoveTic(syncId);
+        syncId = SyncWriteWarnTic(syncId);
+
+        VERIFY_SYNCID(syncId, SYNC_AFKPREVENTION, SYNC_AFKPREVENTION_LENGTH);
+    }
+
+    internal void SyncAfkPreventionActorClientside()
+    {
+        int syncId = SYNC_AFKPREVENTION;
+
+        syncId = SyncReadLastMoveTic(syncId);
+        syncId = SyncReadWarnTic(syncId);
+
+        VERIFY_SYNCID(syncId, SYNC_AFKPREVENTION, SYNC_AFKPREVENTION_LENGTH);
+    }
+
+    internal int SyncWriteLastMoveTic(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing last move tic packs through actors. Sync id: " + str(syncId) + "."));
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            BCSUtils::SyncVariable(--syncId, AfkPrevention::GetPlayerLastMoveTic(i));
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing last move tic packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj."));
+        return syncId;
+    }
+
+    internal int SyncReadLastMoveTic(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading last move tic packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            AfkPrevention::SetPlayerLastMoveTic(i, BCSUtils::GetSyncVarDefault(--syncId, 0));
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing last move tic packs to client."));
+        return syncId;
+    }
+
+    internal int SyncWriteWarnTic(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing warn tic packs through actors. Sync id: " + str(syncId) + "."));
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            BCSUtils::SyncVariable(--syncId, AfkPrevention::GetPlayerWarnTic(i));
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished writing warn tic packs through actors. Pack1 \cd" + str(BitMath::GetBitPack1()) + "\cj, pack2 \cd" + str(BitMath::GetBitPack2()) + "\cj."));
+        return syncId;
+    }
+
+    internal int SyncReadWarnTic(int syncId)
+    {
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading warn tic packs on client through actors. Sync id: " + str(syncId) + "."));
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            AfkPrevention::SetPlayerWarnTic(i, BCSUtils::GetSyncVarDefault(--syncId, 0));
+
+        Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing warn tic packs to client."));
+        return syncId;
+    }
+
+    #undef SYNC_CATEGORY
+}

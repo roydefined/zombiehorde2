@@ -1,5 +1,5 @@
 bool rainfall_actived=false;
-int reflection_actived=true;
+bool reflection_actived=true;
 bool rain_sound=true;
 int  rain_detail=0;
 int zm09_weather=0;
@@ -9,38 +9,43 @@ int weather_quality=0;
 int pos_player_x;
 int pos_player_y;
 int pos_player_z;
-	
+
 int valid_rain_posz=0;
-	
+
 script 47 (void) clientside{// Rainfall Script, Long Distance rain
 
     int tid =unusedTID(1000,2000);
     int tid_player; //player tid
-    int posx; //Player posx   a before
-    int posy; //Player posy   b before
-    int posZ; //Player posz   c before
+    fixed posx; //Player posx   a before
+    fixed posy; //Player posy   b before
+    fixed posZ; //Player posz   c before
 	//posx,y,z are the player position
-    int x,y,z,c; // replaces x_heigh, y_heigh, z_heigh
+    fixed x,y,z,c; // replaces x_heigh, y_heigh, z_heigh
 	// x,y,z are the position where the rain drop will spawn
-    int i=0;
+    fixed i=0.0;
     int j=0;
-    int inc_i =1.0;
-    int distance = 10;
+    fixed inc_i =1.0;
+    fixed distance = 10.0;
     int loop_size=0;
-    int rnd=0;
+    fixed rnd=0.0;
     int jMAX;
     int k=0;
     int cnt=0;
-	int failed_to_validate=false;
-	if(rain_sound==1)thing_activate(144);
-    while(true){//START RAINFALL LOOP
+	bool failed_to_validate=false;
+
+	if(rain_sound)
+        thing_activate(144);
+
+    //START RAINFALL LOOP
+    while(true)
+    {
 		tid_player = consoleplayernumber()+PLAYER_TID;
         //Get Player Position
         posx = getactorx(tid_player); //Player posx
         posy = getactory(tid_player); //Player posy
         posZ = getactorz(tid_player); //Player posz
         //Check how far the rainfall will go
-        if     (weather_quality==-1){jMAX=4;}  
+        if     (weather_quality==-1){jMAX=4;}
         else if(weather_quality==0) {jMAX=7;}
         else if(weather_quality==1) {jMAX=10;}
         else if(weather_quality==2) {jMAX=14;}
@@ -49,9 +54,9 @@ script 47 (void) clientside{// Rainfall Script, Long Distance rain
         j=0;
         k=0;
         inc_i =1.0;
-        distance = 10;
+        distance = 10.0;
         delay(1);
-        rnd=0;
+        rnd=0.0;
         while(j<jMAX){
             k++;
             if(k>4) k=4;
@@ -64,18 +69,18 @@ script 47 (void) clientside{// Rainfall Script, Long Distance rain
                     break;
             }
             rnd+=40.0;
-            i=0;
+            i=0.0;
             cnt=0;
             while(i<=1.0){// 1.0 = MAX fixed point angle
-              x=sin(i)*distance+posx+random(-rnd,rnd);
-              y=cos(i)*distance+posy+random(-rnd,rnd);
+              x=sin(i)*distance+posx+Math::FRandom(-rnd,rnd);
+              y=cos(i)*distance+posy+Math::FRandom(-rnd,rnd);
                 cnt++;
 				//Get a valid z area 1086.0 , 790.0 and 558.0 are the three fixed f_sky sizes on the hole map
 				z=1068.0;//1040.0;
 				spawn("mapspot",x,y,z,tid,0);
 				if(thingcount(T_NONE,tid)==0){
 					z=772.0;//744.0;
-					spawn("mapspot",x,y,z,tid,0);				
+					spawn("mapspot",x,y,z,tid,0);
 					if(thingcount(T_NONE,tid)==0){
 						z=540.0;//512.0;
 						spawn("mapspot",x,y,z,tid,0);
@@ -110,18 +115,23 @@ script 47 (void) clientside{// Rainfall Script, Long Distance rain
 			      //  delay(35);
 				//}
 			}
-				
-            if(distance<=960){
-                rnd+=50.0;
-                distance= distance*2;
-            }else{
+
+            if(distance <= 960.0)
+            {
+                rnd += 50.0;
+                distance= distance*2.0;
+            }
+            else
+            {
                 distance= distance+100.0;
                 rnd+=100.0;
-            }j++;
-            if( inc_i>=0.03125 ) {//0.0625
-               inc_i =inc_i/2;
             }
-            
+
+            j++;
+            if( inc_i>=0.03125 ) {//0.0625
+               inc_i =inc_i/2.0;
+            }
+
         }
     }//END RAINFALL LOOP
 }
@@ -148,7 +158,7 @@ script 50 LIGHTNING {//RAIN SCRIPT
     AmbientSound("thunder",127);
 }
 
-function void Spawn_Raindrop_by_detail(int min, int max, int tid) 
+function void Spawn_Raindrop_by_detail(int min, int max, int tid)
 {
     int chance = random(min, max);
     if (chance < 35)

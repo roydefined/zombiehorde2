@@ -1,0 +1,37 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    internal void DrawZombieTeleportsLeft(fixed x, fixed y)
+    {
+        if (!GetSharedState().DrawZombieTeleportsLeft)
+            return;
+
+        str graphic = (raw)0;
+        switch (GetSharedState().ZombieTeleportSkin)
+        {
+            case ZTELESKIN_OLD: graphic = HUD_ZTELE_ZOMBIEOLD; break;
+            case ZTELESKIN_REGULAR: graphic = HUD_ZTELE_ZOMBIEREGULAR; break;
+            case ZTELESKIN_INITIAL: graphic = HUD_ZTELE_ZOMBIEINITIAL; break;
+        }
+
+        int left = Game::GetZombieTeleportsLeft();
+
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, graphic);
+        DebugDraw();
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+        BCSUtils::HudSetCenterText(true);
+        BCSUtils::HudSetAlpha(0.8);
+
+        BCSUtils::HudSetPoint(x + 5.0, y - 3.0);
+        BCSUtils::HudDrawText(--_drawnHudId, str(left));
+        DebugDraw();
+
+        BCSUtils::HudSetAlpha(1.0);
+    }
+}

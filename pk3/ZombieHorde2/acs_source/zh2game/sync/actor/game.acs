@@ -19,17 +19,6 @@ strict namespace Sync
         VERIFY_SYNCID(syncId, SYNC_GAME, SYNC_GAME_LENGTH);
     }
 
-    internal void CallSyncGameActorOnClients()
-    {
-        if (!ACS_NamedExecuteAlways("zh2_internal_sync_game_actor_clientside", 0))
-            Logger::LogError(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Failed to invoke clientside sync for game."));
-    }
-
-    script "zh2_internal_sync_game_actor_clientside" clientside
-    {
-        SyncGameActorClientside();
-    }
-
     internal void SyncGameActorClientside()
     {
         int syncId = SYNC_GAME;
@@ -38,10 +27,6 @@ strict namespace Sync
         syncId = SyncReadZombieTeleport(syncId);
         syncId = SyncReadZombieAbilities(syncId);
         syncId = SyncReadOtherGameData(syncId);
-
-        // Tell the client to update their ending stats.
-        // TODO: Move this when adding the sync callback system.
-        Game::ClientBuildEnding();
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Synced general game to client."));
         VERIFY_SYNCID(syncId, SYNC_GAME, SYNC_GAME_LENGTH);
@@ -155,6 +140,7 @@ strict namespace Sync
         BCSUtils::SyncVariable(--syncId, Game::GetGameVotingTic());
         BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.WinningSpecie);
         BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.EndReason);
+        BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.EndAction);
         BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.FullServerStartTimestamp);
         BCSUtils::SyncVariable(--syncId, Player::GetPlayFinalHeartbeat());
 
@@ -172,6 +158,9 @@ strict namespace Sync
 
         int endReasonIndex = BCSUtils::GetSyncVarDefault(--syncId, Game::REASONNONE);
         ZH2Game::GameContext.EndReason = Game::GetEndReasonTypeByIndex(endReasonIndex);
+
+        int endActionIndex = BCSUtils::GetSyncVarDefault(--syncId, Game::ACTION_DEFAULT);
+        ZH2Game::GameContext.EndAction = Game::GetEndActionTypeByIndex(endActionIndex);
 
         ZH2Game::GameContext.FullServerStartTimestamp = BCSUtils::GetSyncVarDefault(--syncId, 0);
 

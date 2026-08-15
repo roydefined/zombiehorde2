@@ -1,0 +1,82 @@
+actor ZH2WeaponRiotGunLegacy : ZH2Weapon
+{
+    tag "Riot gun"
+    weapon.PreferredSkin "Riotgun"
+
+    weapon.SlotNumber 4
+
+    // weapon.KickBack 140
+
+    // 3 units per shot against the shared 12-round mag = 4 shots before a reload.
+    // This is how ZH1's riot gun worked, reloading after 4 shots.
+    // weapon.AmmoUse 1
+    weapon.AmmoUse 3
+
+    weapon.AmmoGive 0
+    weapon.AmmoType "ZH2WeaponRiotGunAmmoCurrent"
+
+    +WEAPON.AMMO_OPTIONAL
+
+    States
+    {
+        Ready:
+            WRGR A 1 A_WeaponReady(WRF_ALLOWRELOAD)
+            loop
+
+        Deselect:
+            WRGR A 1 A_Lower
+            wait
+
+        Select:
+            TNT1 A 0 A_PlaySound("weapons/riotgun/legacy/select", CHAN_WEAPON)
+            WRGR A 1 A_Raise
+            wait
+
+        Altfire:
+            goto Reload
+
+        Reload:
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponRiotGunAmmoCurrent", 12, "Ready")
+
+            // ZH1's riot gun was infinite
+            //TNT1 A 0 A_JumpIfInventory("ZH2WeaponRiotGunAmmoTotal", 1, "Reload.Insert")
+            //goto Ready
+
+        Reload.Insert:
+            TNT1 A 0 A_PlaySound("weapons/riotgun/legacy/reload", CHAN_WEAPON)
+
+            // Reusing the select/deselect states from the default skin since it suits it better.
+            WRGS GE 1
+            WRGS C 15
+            WRGS EG 1
+
+            // ZH1's riot gun was infinite
+            //TNT1 A 0 A_TakeInventory("ZH2WeaponRiotGunAmmoTotal", 1)
+
+            TNT1 A 0 A_GiveInventory("ZH2WeaponRiotGunAmmoCurrent", 12)
+            goto Ready
+
+        Fire:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+            TNT1 A 0 A_JumpIfNoAmmo("Reload")
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
+
+            TNT1 A 0 A_AlertMonsters
+            TNT1 A 0 A_PlaySound("weapons/riotgun/legacy/fire", CHAN_AUTO)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_tracer_prepare", 0, 0)
+
+            // TNT1 A 0 A_FireBullets(8.0, 8.0, 8, 10 + random(-1, 1) * 5, "ZH2WeaponBulletPuff", FBF_USEAMMO | FBF_NORANDOM)
+            TNT1 A 0 A_FireBullets(3.0, 3.0, 8, 10, "ZH2WeaponBulletPuff", FBF_USEAMMO | FBF_NORANDOM)
+
+            WRGF B 1 bright
+            WRGF CB 1
+            WRGB D 7
+            WRGB F 7
+
+            TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, false)
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", false)
+            goto Ready
+    }
+}

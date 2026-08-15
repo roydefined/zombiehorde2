@@ -5,6 +5,7 @@
 #include "preprocessor/specie.h.acs"
 #include "common.h.acs"
 
+#include "afkprevention/afkprevention.h.acs"
 #include "environment/environment.h.acs"
 #include "debug/debug.h.acs"
 #include "game/game.h.acs"
@@ -32,6 +33,7 @@
 #include "admin/admin.h.acs"
 #include "hud/hud.h.acs"
 #include "io/io.h.acs"
+#include "weapon/weapon.h.acs"
 
 strict namespace ZH2Game
 {
@@ -49,6 +51,21 @@ strict namespace ZH2Game
         BEHAVIOUR_DEFAULT,
         BEHAVIOUR_FORCEOLDSKIN,
         BEHAVIOUR_FORCENEWSKIN,
+    };
+
+    internal enum ObituaryDisplayModeT : int
+    {
+        OBITUARYDISPLAY_GRAPHICAL,
+        OBITUARYDISPLAY_TEXT,
+        OBITUARYDISPLAY_LEGACYTEXT,
+    };
+
+    internal enum ObituaryDisplayModeOverrideT : int
+    {
+        OBITUARYDISPLAYOVERRIDE_NONE,
+        OBITUARYDISPLAYOVERRIDE_GRAPHICAL,
+        OBITUARYDISPLAYOVERRIDE_TEXT,
+        OBITUARYDISPLAYOVERRIDE_LEGACYTEXT,
     };
 
     internal enum DropGrenadeOnInfectT : int
@@ -116,6 +133,26 @@ strict namespace ZH2Game
         INITIALZOMBIEPICKMETHOD_WEIGHT
     };
 
+    internal enum HudSkinT : int
+    {
+        HUDSKIN_DEFAULT,
+        HUDSKIN_LEGACY,
+    };
+
+    internal enum HudSkinBehaviourT : int
+    {
+        HUDSKINBEHAVIOUR_DEFAULT,
+        HUDSKINBEHAVIOUR_FORCEDEFAULTSKIN,
+        HUDSKINBEHAVIOUR_FORCELEGACYSKIN,
+    };
+
+    internal enum HudSkinPreferenceT : int
+    {
+        HUDSKINPREFERENCE_AUTO,
+        HUDSKINPREFERENCE_DEFAULT,
+        HUDSKINPREFERENCE_LEGACY,
+    };
+
     // General game info. Non-persisting between rounds.
     internal struct GameContextT
     {
@@ -128,11 +165,6 @@ strict namespace ZH2Game
         // The last player id that joined the game.
         // This can be used for callbacks that rely on a player joining, to then know which id they took.
         int LastJoinedPlayerId;
-
-        // This boolean indicates if there should be a sync of certain things when a player joins the game.
-        // On map start we do not allow all things to sync to avoid possibly 64 players all syncing themselves.
-        // We should instead do one big sync. After a moment it will be allowed.
-        bool DoSyncOnEnter;
 
         // Map details, either parsed from a lump or defined through ACS.
         IO::MapDetailedT MapDetails;
@@ -160,8 +192,15 @@ strict namespace ZH2Game
         // Synced when a match ends to indicate what specie won the round.
         Game::WinningSpecieT WinningSpecie;
 
-        // Synced when a match ends to indicate the reason of ending.
+        // Synced when a match ends to indicate:
+        // - The reason of ending.
+        // - The action the game will now undertake.
         Game::EndReasonT EndReason;
+        Game::EndActionT EndAction;
+
+        Sync::SyncContextT SyncContext;
+
+        AfkPrevention::AfkPreventionContextT AfkPreventionContext;
 
         // This is the health that initial and regular zombies will be given when infected.
         // Not synchronized.
@@ -175,6 +214,9 @@ strict namespace ZH2Game
         int InitialSpawnSpotCount;
 
         Game::ZombieTeleportContextT ZombieTeleportContext;
+
+        // Map specific fake weapon spawn spots, tracked to later replace with the real spawn actor.
+        Weapon::FakeWeaponSpawnContextT FakeWeaponSpawnContext;
 
         // Clientside, hud specific features
         Hud::HudContextT HudContext;
@@ -219,6 +261,9 @@ strict namespace ZH2Game
 
         // Serverside, tracks when the next radio track can be played.
         int RadioTrackCooldownTimestamp;
+
+        // See `Decorate::RadioBroadcastContextT`.
+        Decorate::RadioBroadcastContextT RadioBroadcast;
 
         // Clientside, not synchronized.
         bool HasAdminHudOpen; // If true, the client has the admin HUD open.
@@ -316,6 +361,8 @@ strict namespace ZH2Game
         Decorate::RadioTrackCollectionContextT RadioTrackCollection;
         Reward::RewardCollectionContextT RewardCollection;
         Game::TipCollectionContextT TipCollection;
+        Weapon::WeaponSpawnerCollectionContextT WeaponSpawnerCollection;
+        Weapon::WeaponSkinIndexT WeaponSkinIndex;
     };
 
     // General player info. Non-persisting between rounds.
@@ -340,13 +387,16 @@ strict namespace ZH2Game
 
         Game::PlayerZombieTeleportContextT ZombieTeleportContext;
 
+        Player::HealthContextT HealthContext;
+        Player::PlayerLifecycleContextT LifecycleContext;
+
         // Synched, a bitflag representing what zombie powers are enabled on this particular player.
         // NOTE: Not defaults! Might differentiate from the defaults.
         int ZombieAbilityFlags;
 
-        int HumanKills;
-        int ZombieKills;
-        int Infects;
+        Player::StatsContextT StatsContext;
+
+        AfkPrevention::PlayerAfkPreventionContextT AfkPreventionContext;
 
         // Not synched, called on both sides from DECORATE code instead.
         int FiringTic;
@@ -371,5 +421,8 @@ strict namespace ZH2Game
         bool IsAdmin;
 
         Round::InitialPickContextT InitialPickContext;
+
+        // The weapon skin this player's owned weapons were last migrated to.
+        Weapon::WeaponSkinT LastKnownWeaponSkin;
     };
 }

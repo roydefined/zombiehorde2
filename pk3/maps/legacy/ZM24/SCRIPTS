@@ -7,311 +7,314 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-int powerbox;
-int jivetalk;
-int boogiered;
-int boogiegreen;
-int boogieblue;
-int foundkey;
-int locatekey;
-
-script 2 (void)
+strict namespace
 {
-    print (s:"This door is locked.");
-    ActivatorSound("sound/locked1", 127);
-}
+    int powerbox;
+    int jivetalk;
+    int boogiered;
+    int boogiegreen;
+    int boogieblue;
+    int foundkey;
+    int locatekey;
 
-Script 1 OPEN // Level setups
-{
-    foundkey = 0;
-    powerbox = 0;
-    jivetalk = 0;
-    boogiered = 0;
-    boogiegreen = 0;
-    boogieblue = 0;
-    locatekey = random(1, 2);
-    GiveInventory(FLARE_ITEM, 2);
-    Sector_SetPlaneReflection(23, 128, 0);
-    Sector_SetPlaneReflection(33, 128, 0);
-    Sector_SetRotation(46, 90, 90);
-    Scroll_Texture_Both(10, 0, 0, 0, 200);
-    Scroll_Texture_Both(-10, 0, 0, 0, 200);
-    TranslucentLine(10, 0, 0);
-    Sector_SetfloorPanning(73, 32, 0, 0, 0);
-    Sector_SetceilingPanning(73, 32, 0, 0, 0);
-    Sector_SetRotation(91, 90, 0);
-    Sector_SetRotation(110, 0, 90);
-    Delay(35);
-}
-
-Script 5 (void) // radio
-{
-	if(powerbox == 1)
-	{
-		HudMessage(s:"It no longer works."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-	}
-
-    if(powerbox == 0)
+    script 2 (void)
     {
-        switch(random(1, 4))
+        print (s:"This door is locked.");
+        ActivatorSound("sound/locked1", 127);
+    }
+
+    Script 1 OPEN // Level setups
+    {
+        foundkey = 0;
+        powerbox = 0;
+        jivetalk = 0;
+        boogiered = 0;
+        boogiegreen = 0;
+        boogieblue = 0;
+        locatekey = random(1, 2);
+        GiveInventory(FLARE_ITEM, 2);
+        Sector_SetPlaneReflection(23, 128, 0);
+        Sector_SetPlaneReflection(33, 128, 0);
+        Sector_SetRotation(46, 90, 90);
+        Scroll_Texture_Both(10, 0, 0, 0, 200);
+        Scroll_Texture_Both(-10, 0, 0, 0, 200);
+        TranslucentLine(10, 0, 0);
+        Sector_SetfloorPanning(73, 32, 0, 0, 0);
+        Sector_SetceilingPanning(73, 32, 0, 0, 0);
+        Sector_SetRotation(91, 90, 0);
+        Sector_SetRotation(110, 0, 90);
+        Delay(35);
+    }
+
+    Script 5 (void) // radio
+    {
+        if(powerbox == 1)
         {
-            case 1: // ==DISCO==
-                powerbox = 1;
-                jivetalk = 1;
-                thing_deactivate(28);
-                SetActorState (82, "active");
-                Music::PlayMusic("D_GL", 0);
-                //GiveInventory("ZH2ItemRewardOrbMajor", 1);
-                acs_execute(3, 0, 0, 0, 0);
-                delay (random(2400, 4800));
-                break;
+            HudMessage(s:"It no longer works."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+        }
 
-            case 2: // ==UBOA==
-                powerbox = 1;
-                //GiveInventory("ZH2ItemRewardOrbMajor", 1);
-                SetActorState (28, "inactive");
-                Music::PlayMusic("SINISTER", 0);
-                print (s:"UBOA is here to kill you!");
-                light_fade(0, 112, 2);
-                light_fade(1, 112, 2);
-                light_fade(2, 112, 2);
-                light_fade(3, 112, 2);
-                light_fade(4, 112, 2);
-                light_fade(5, 112, 2);
-                light_fade(6, 112, 2);
-                light_fade(7, 112, 2);
-                light_fade(8, 112, 2);
-                light_fade(9, 112, 2);
-                light_fade(10, 112, 2);
-                light_fade(11, 112, 2);
-                light_fade(12, 112, 2);
-                light_fade(13, 112, 2);
-                light_fade(14, 112, 2);
-                light_fade(15, 112, 2);
-                light_fade(16, 112, 2);
-                light_fade(17, 112, 2);
-                light_fade(18, 112, 2);
-                light_fade(19, 112, 2);
-                light_fade(20, 112, 2);
-                light_fade(21, 112, 2);
-                light_fade(22, 112, 2);
-                light_fade(23, 112, 2);
-                light_fade(24, 112, 2);
-                light_fade(25, 112, 2);
-                light_fade(26, 112, 2);
-                light_fade(27, 112, 2);
-                light_fade(28, 112, 2);
-                light_fade(29, 112, 2);
-                light_fade(30, 112, 2);
-                light_fade(31, 112, 2);
-                light_fade(33, 112, 2);
-                light_fade(34, 112, 2);
-                light_fade(35, 112, 2);
-                light_fade(36, 112, 2);
-                light_fade(37, 112, 2);
-                light_fade(39, 112, 2);
-                light_fade(40, 112, 2);
-                light_fade(41, 112, 2);
-                ReplaceTextures ("ERFLO1", "ERFLO3" , 0);
-                SpawnSpot("ZH2LegacyUboa", 29, 27);
-                Thing_remove(25);
-                acs_execute(7, 0, 0, 0, 0);
-                break;
+        if(powerbox == 0)
+        {
+            switch(random(1, 4))
+            {
+                case 1: // ==DISCO==
+                    powerbox = 1;
+                    jivetalk = 1;
+                    thing_deactivate(28);
+                    SetActorState (82, "active");
+                    Music::PlayMusic("D_GL", 0);
+                    //GiveInventory("ZH2ItemRewardOrbMajor", 1);
+                    acs_execute(3, 0, 0, 0, 0);
+                    delay (random(2400, 4800));
+                    break;
 
-            case 3: // ==BLOT==
-                powerbox = 1;
-                //GiveInventory("ZH2ItemRewardOrbMajor", 1);
-                SetActorState (28, "inactive");
-                Music::PlayMusic("SINISTER", 0);
-                print (s:"BLOT is here to kill you!");
-                light_fade(0, 112, 2);
-                light_fade(1, 112, 2);
-                light_fade(2, 112, 2);
-                light_fade(3, 112, 2);
-                light_fade(4, 112, 2);
-                light_fade(5, 112, 2);
-                light_fade(6, 112, 2);
-                light_fade(7, 112, 2);
-                light_fade(8, 112, 2);
-                light_fade(9, 112, 2);
-                light_fade(10, 112, 2);
-                light_fade(11, 112, 2);
-                light_fade(12, 112, 2);
-                light_fade(13, 112, 2);
-                light_fade(14, 112, 2);
-                light_fade(15, 112, 2);
-                light_fade(16, 112, 2);
-                light_fade(17, 112, 2);
-                light_fade(18, 112, 2);
-                light_fade(19, 112, 2);
-                light_fade(20, 112, 2);
-                light_fade(21, 112, 2);
-                light_fade(22, 112, 2);
-                light_fade(23, 112, 2);
-                light_fade(24, 112, 2);
-                light_fade(25, 112, 2);
-                light_fade(26, 112, 2);
-                light_fade(27, 112, 2);
-                light_fade(28, 112, 2);
-                light_fade(29, 112, 2);
-                light_fade(30, 112, 2);
-                light_fade(31, 112, 2);
-                light_fade(33, 112, 2);
-                light_fade(34, 112, 2);
-                light_fade(35, 112, 2);
-                light_fade(36, 112, 2);
-                light_fade(37, 112, 2);
-                light_fade(39, 112, 2);
-                light_fade(40, 112, 2);
-                light_fade(41, 112, 2);
-                ReplaceTextures ("ERFLO1", "ERFLO3" , 0);
-                SpawnSpot("ZH2LegacyZM24Blot", 29, 27);
-                Thing_remove(25);
-                acs_execute(7, 0, 0, 0, 0);
-                break;
+                case 2: // ==UBOA==
+                    powerbox = 1;
+                    //GiveInventory("ZH2ItemRewardOrbMajor", 1);
+                    SetActorState (28, "inactive");
+                    Music::PlayMusic("SINISTER", 0);
+                    print (s:"UBOA is here to kill you!");
+                    light_fade(0, 112, 2);
+                    light_fade(1, 112, 2);
+                    light_fade(2, 112, 2);
+                    light_fade(3, 112, 2);
+                    light_fade(4, 112, 2);
+                    light_fade(5, 112, 2);
+                    light_fade(6, 112, 2);
+                    light_fade(7, 112, 2);
+                    light_fade(8, 112, 2);
+                    light_fade(9, 112, 2);
+                    light_fade(10, 112, 2);
+                    light_fade(11, 112, 2);
+                    light_fade(12, 112, 2);
+                    light_fade(13, 112, 2);
+                    light_fade(14, 112, 2);
+                    light_fade(15, 112, 2);
+                    light_fade(16, 112, 2);
+                    light_fade(17, 112, 2);
+                    light_fade(18, 112, 2);
+                    light_fade(19, 112, 2);
+                    light_fade(20, 112, 2);
+                    light_fade(21, 112, 2);
+                    light_fade(22, 112, 2);
+                    light_fade(23, 112, 2);
+                    light_fade(24, 112, 2);
+                    light_fade(25, 112, 2);
+                    light_fade(26, 112, 2);
+                    light_fade(27, 112, 2);
+                    light_fade(28, 112, 2);
+                    light_fade(29, 112, 2);
+                    light_fade(30, 112, 2);
+                    light_fade(31, 112, 2);
+                    light_fade(33, 112, 2);
+                    light_fade(34, 112, 2);
+                    light_fade(35, 112, 2);
+                    light_fade(36, 112, 2);
+                    light_fade(37, 112, 2);
+                    light_fade(39, 112, 2);
+                    light_fade(40, 112, 2);
+                    light_fade(41, 112, 2);
+                    ReplaceTextures ("ERFLO1", "ERFLO3" , 0);
+                    SpawnSpot("ZH2LegacyUboa", 29, 27);
+                    Thing_remove(25);
+                    acs_execute(7, 0, 0, 0, 0);
+                    break;
 
-            case 4: // ==DISCO==
-                //GiveInventory("ZH2ItemRewardOrbMajor", 1);
-                powerbox = 1;
-                jivetalk = 1;
-                thing_deactivate(28);
-                SetActorState (82, "active");
-                Music::PlayMusic("D_WIL", 0);
-                acs_execute(3, 0, 0, 0, 0);
-                delay (random(2400, 4800));
-                break;
+                case 3: // ==BLOT==
+                    powerbox = 1;
+                    //GiveInventory("ZH2ItemRewardOrbMajor", 1);
+                    SetActorState (28, "inactive");
+                    Music::PlayMusic("SINISTER", 0);
+                    print (s:"BLOT is here to kill you!");
+                    light_fade(0, 112, 2);
+                    light_fade(1, 112, 2);
+                    light_fade(2, 112, 2);
+                    light_fade(3, 112, 2);
+                    light_fade(4, 112, 2);
+                    light_fade(5, 112, 2);
+                    light_fade(6, 112, 2);
+                    light_fade(7, 112, 2);
+                    light_fade(8, 112, 2);
+                    light_fade(9, 112, 2);
+                    light_fade(10, 112, 2);
+                    light_fade(11, 112, 2);
+                    light_fade(12, 112, 2);
+                    light_fade(13, 112, 2);
+                    light_fade(14, 112, 2);
+                    light_fade(15, 112, 2);
+                    light_fade(16, 112, 2);
+                    light_fade(17, 112, 2);
+                    light_fade(18, 112, 2);
+                    light_fade(19, 112, 2);
+                    light_fade(20, 112, 2);
+                    light_fade(21, 112, 2);
+                    light_fade(22, 112, 2);
+                    light_fade(23, 112, 2);
+                    light_fade(24, 112, 2);
+                    light_fade(25, 112, 2);
+                    light_fade(26, 112, 2);
+                    light_fade(27, 112, 2);
+                    light_fade(28, 112, 2);
+                    light_fade(29, 112, 2);
+                    light_fade(30, 112, 2);
+                    light_fade(31, 112, 2);
+                    light_fade(33, 112, 2);
+                    light_fade(34, 112, 2);
+                    light_fade(35, 112, 2);
+                    light_fade(36, 112, 2);
+                    light_fade(37, 112, 2);
+                    light_fade(39, 112, 2);
+                    light_fade(40, 112, 2);
+                    light_fade(41, 112, 2);
+                    ReplaceTextures ("ERFLO1", "ERFLO3" , 0);
+                    SpawnSpot("ZH2LegacyZM24Blot", 29, 27);
+                    Thing_remove(25);
+                    acs_execute(7, 0, 0, 0, 0);
+                    break;
 
+                case 4: // ==DISCO==
+                    //GiveInventory("ZH2ItemRewardOrbMajor", 1);
+                    powerbox = 1;
+                    jivetalk = 1;
+                    thing_deactivate(28);
+                    SetActorState (82, "active");
+                    Music::PlayMusic("D_WIL", 0);
+                    acs_execute(3, 0, 0, 0, 0);
+                    delay (random(2400, 4800));
+                    break;
+
+            }
         }
     }
-}
 
-Script 3 (void) // BOOGIE DOWN!!
-{
-    boogiered = random(1, 255);
-    boogiegreen = random(1, 255);
-    boogieblue = random(1, 255);
-    setfont("BIGFONT");
-    hudmessageBold(s: "D";HUDMSG_PLAIN, 10,  random(1, 20), 0.30, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "I";HUDMSG_PLAIN, 11,  random(1, 20), 0.34, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "S";HUDMSG_PLAIN, 12,  random(1, 20), 0.38, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "C";HUDMSG_PLAIN, 13,  random(1, 20), 0.42, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "O";HUDMSG_PLAIN, 14,  random(1, 20), 0.46, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "P";HUDMSG_PLAIN, 15,  random(1, 20), 0.54, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "A";HUDMSG_PLAIN, 16,  random(1, 20), 0.58, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "R";HUDMSG_PLAIN, 17,  random(1, 20), 0.62, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "T";HUDMSG_PLAIN, 18,  random(1, 20), 0.66, random(0.14, 0.16), 20,  1.5, 9999);
-    hudmessageBold(s: "Y";HUDMSG_PLAIN, 19,  random(1, 20), 0.70, random(0.14, 0.16), 20,  1.5, 9999);
-    Sector_Setcolor(0, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(1, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(2, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(3, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(4, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(5, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(6, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(7, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(8, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(9, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(10, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(11, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(15, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(16, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(18, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(19, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(20, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(21, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(23, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(25, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(26, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(28, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(29, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(30, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(31, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(34, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(35, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(36, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(37, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(38, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(39, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(40, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(41, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(42, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(43, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(44, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(45, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(46, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(47, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(48, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(49, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(50, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(51, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(52, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(53, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(54, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(55, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(58, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(59, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(62, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(68, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(73, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(74, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(75, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(76, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(77, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(78, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(79, boogiered, boogiegreen, boogieblue);
-    Sector_Setcolor(81, boogiered, boogiegreen, boogieblue);
-
-    delay (17);
-    restart;
-}
-
-Script 7 (void) // Blot tel
-{
-    delay(random(20, 240));
-    teleportother(27, 26, 1);
-    restart;
-}
-
-Script 9 (void) // door
-{
-    HudMessage(s:"You found a key"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-    GiveInventory("ZH2LegacyCaveKey", 1);
-    LocalAmbientSound("sound/itemget1", 128);
-}
-
-Script 10 (void) // door
-{
-    Print(s:"Nothing here.");
-}
-
-Script 12 (void) // door
-{
-    if(CheckInventory("ZH2LegacyCaveKey") == 1)
+    Script 3 (void) // BOOGIE DOWN!!
     {
-        HudMessage(s:"opened."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
-        Plat_DownWaitUpStay(29, 35, 0);
+        boogiered = random(1, 255);
+        boogiegreen = random(1, 255);
+        boogieblue = random(1, 255);
+        setfont("BIGFONT");
+        hudmessageBold(s: "D";HUDMSG_PLAIN, 10, Random(1, 20), 0.30, Math::FRandom(0.14, 0.16), 20.0, 1.5, 1.0);
+        hudmessageBold(s: "I";HUDMSG_PLAIN, 11, Random(1, 20), 0.34, Math::FRandom(0.14, 0.16), 20.0, 1.5, 1.0);
+        hudmessageBold(s: "S";HUDMSG_PLAIN, 12, Random(1, 20), 0.38, Math::FRandom(0.14, 0.16), 20.0, 1.5, 1.0);
+        hudmessageBold(s: "C";HUDMSG_PLAIN, 13, Random(1, 20), 0.42, Math::FRandom(0.14, 0.16), 20.0, 1.5, 1.0);
+        hudmessageBold(s: "O";HUDMSG_PLAIN, 14, Random(1, 20), 0.46, Math::FRandom(0.14, 0.16), 20.0, 1.5, 1.0);
+        hudmessageBold(s: "P";HUDMSG_PLAIN, 15, Random(1, 20), 0.54, Math::FRandom(0.14, 0.16), 20.0, 1.5, 1.0);
+        hudmessageBold(s: "A";HUDMSG_PLAIN, 16, Random(1, 20), 0.58, Math::FRandom(0.14, 0.16), 20.0, 1.5, 1.0);
+        hudmessageBold(s: "R";HUDMSG_PLAIN, 17, Random(1, 20), 0.62, Math::FRandom(0.14, 0.16), 20.0, 1.5, 1.0);
+        hudmessageBold(s: "T";HUDMSG_PLAIN, 18, Random(1, 20), 0.66, Math::FRandom(0.14, 0.16), 20.0, 1.5, 1.0);
+        hudmessageBold(s: "Y";HUDMSG_PLAIN, 19, Random(1, 20), 0.70, Math::FRandom(0.14, 0.16), 20.0, 1.5, 1.0);
+        Sector_Setcolor(0, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(1, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(2, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(3, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(4, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(5, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(6, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(7, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(8, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(9, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(10, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(11, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(15, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(16, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(18, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(19, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(20, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(21, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(23, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(25, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(26, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(28, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(29, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(30, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(31, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(34, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(35, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(36, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(37, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(38, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(39, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(40, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(41, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(42, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(43, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(44, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(45, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(46, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(47, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(48, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(49, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(50, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(51, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(52, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(53, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(54, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(55, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(58, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(59, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(62, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(68, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(73, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(74, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(75, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(76, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(77, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(78, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(79, boogiered, boogiegreen, boogieblue);
+        Sector_Setcolor(81, boogiered, boogiegreen, boogieblue);
+
+        delay (17);
+        restart;
     }
-    else
+
+    Script 7 (void) // Blot tel
     {
-        HudMessage(s:"you need the key"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+        delay(random(20, 240));
+        teleportother(27, 26, 1);
+        restart;
     }
-}
 
-script 13 (void)
-{
-    if(CheckInventory("ZH2LegacyBookKey"))
-        Plat_DownWaitUpStay(32, 35, 35);
+    Script 9 (void) // door
+    {
+        HudMessage(s:"You found a key"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+        GiveInventory("ZH2LegacyCaveKey", 1);
+        LocalAmbientSound("sound/itemget1", 128);
+    }
 
-    else
-        ActivatorSound("sound/locked1", 127);
-}
+    Script 10 (void) // door
+    {
+        Print(s:"Nothing here.");
+    }
 
-script 15 (void)
-{
-	print(s:"This door can be opened from the other side.");
-}
+    Script 12 (void) // door
+    {
+        if(CheckInventory("ZH2LegacyCaveKey") == 1)
+        {
+            HudMessage(s:"opened."; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+            Plat_DownWaitUpStay(29, 35, 0);
+        }
+        else
+        {
+            HudMessage(s:"you need the key"; HUDMSG_FADEOUT, 1, CR_GOLD, 0.5, 0.2, 3.0, 1.0, 1.0);
+        }
+    }
 
-script 16 (void)
-{
-	print(s:"Only Eandrave who can play on this piano.");
+    script 13 (void)
+    {
+        if(CheckInventory("ZH2LegacyBookKey"))
+            Plat_DownWaitUpStay(32, 35, 35);
+
+        else
+            ActivatorSound("sound/locked1", 127);
+    }
+
+    script 15 (void)
+    {
+        print(s:"This door can be opened from the other side.");
+    }
+
+    script 16 (void)
+    {
+        print(s:"Only Eandrave who can play on this piano.");
+    }
 }

@@ -1,0 +1,46 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Sync
+{
+    #define ACTOR_SYNC_AMBIENTWEATHER_SOUND_TEMPLATE "__syncambientweathersound%n"
+    #define ACTOR_SYNC_AMBIENTWEATHER_SHELTEREDSOUND_TEMPLATE "__syncambientweathershelteredsound%n"
+
+    #define LIB_SYNC_BASE 1600
+
+    #define SYNC_WEATHER_LENGTH EMITTERWEATHER_COUNT * 8 + RANDOMIZEDWEATHER_COUNT * 3 + AMBIENTWEATHER_COUNT * 4
+    #define SYNC_WEATHER LIB_SYNC_BASE + SYNC_WEATHER_LENGTH
+
+    // When adding a new sync, also increase this number.
+    #define MAX_LIB_SYNC_TYPES 1
+
+    internal enum LibSyncTypeT : int
+    {
+        SYNCTYPE_WEATHER,
+    };
+
+    struct LibSyncContextT
+    {
+        // Whether this sync type has a write waiting to happen. Any number of `DoSync` calls,
+        // whether bunched in one tic or spread across many, collapse into a single pending flag -
+        // the write itself is never delayed, just buffered down to one per batch.
+        bool PendingWrite[MAX_LIB_SYNC_TYPES];
+
+        // The tic each sync type is next allowed to notify clients, or 0 if none is scheduled.
+        // Set once by `DoSync` alongside `PendingWrite` (not after the write actually happens) -
+        // the write is immediate, but the notify still needs to wait long enough for that write to
+        // replicate to every client, so it's scheduled independently, using the delay cvars.
+        int NotifyTic[MAX_LIB_SYNC_TYPES];
+    };
+
+    extern void LibFlushPendingSyncs();
+
+    extern void LibSyncAll();
+    extern void CallClientLibSyncAll();
+    extern void LibSyncAllClientside();
+
+    extern void SyncWeather();
+    extern void CallSyncWeatherOnClients();
+    extern void SyncWeatherClientside();
+}

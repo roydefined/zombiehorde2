@@ -1,0 +1,221 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+// The script below is used to handle the pre and post scripts that must invoke before and after a resist.
+
+strict namespace Resist
+{
+    script RESIST_SCRIPT_HANDLER_NAME (
+        raw index,
+        raw isPreScript,
+        raw scriptName,
+        raw isGlobalScript)
+    {
+        if (!CheckScript(scriptName, true))
+        {
+            LogResistScriptError(index, isPreScript, scriptName, isGlobalScript, "Script not found.");
+            CompleteResistScript(index, isPreScript);
+            return;
+        }
+
+        bool executed = TryExecuteResistScript(scriptName, isGlobalScript, index);
+
+        // Most likely means the script is already running elsewhere. Fall back to a call that is
+        // guaranteed to execute, so it does not stall the resist.
+        if (!executed)
+        {
+            str flag = isPreScript ? "FLAG_DONT_AWAIT_PRE_SCRIPT" : "FLAG_DONT_AWAIT_POST_SCRIPT";
+            LogResistScriptWarning(index, isPreScript, scriptName, isGlobalScript,
+                "Already running; running it concurrently instead. Avoid this with " + flag
+                + ", running separate pre/post scripts instead of a global one, or by running a shorter script.");
+
+            executed = ExecuteResistScriptAlways(scriptName, isGlobalScript, index);
+        }
+
+        if (!executed)
+        {
+            LogResistScriptError(index, isPreScript, scriptName, isGlobalScript, "Script failed to execute.");
+            CompleteResistScript(index, isPreScript);
+            return;
+        }
+
+        NamedScriptWait(scriptName);
+        CompleteResistScript(index, isPreScript);
+    }
+
+    internal void CompleteResistScript(int index, bool isPreScript)
+    {
+        if (isPreScript)
+            SetResistReadyToRun(index);
+        else
+            SetResistReadyToElapse(index);
+    }
+
+    internal str FormatResistScriptSubject(int index, bool isPreScript, str scriptName, bool isGlobalScript)
+    {
+        return (isGlobalScript ? "global " : "") + (isPreScript ? "pre" : "post")
+            + "-script " + scriptName + " of resist " + str(index);
+    }
+
+    internal void LogResistScriptError(int index, bool isPreScript, str scriptName, bool isGlobalScript, str message)
+    {
+        Logger::LogError(LOGSOURCE,
+            FormatResistScriptSubject(index, isPreScript, scriptName, isGlobalScript) + ": " + message);
+    }
+
+    internal void LogResistScriptWarning(int index, bool isPreScript, str scriptName, bool isGlobalScript, str message)
+    {
+        Logger::LogWarning(LOGSOURCE,
+            FormatResistScriptSubject(index, isPreScript, scriptName, isGlobalScript) + ": " + message);
+    }
+
+    internal void StartPreResistScript(int index)
+    {
+        str specificScriptName = GetRefByindex(index).InitialState.PreResistScript;
+        str scriptName = GetResistScript(specificScriptName, GetGlobalPreResistScript());
+        bool isGlobalScript = specificScriptName == (raw)0 || specificScriptName == "";
+
+        SetRunState(index, STATEPRESCRIPT);
+
+        // Fire the script but don't wait for it, so it does not hold up the resist from starting.
+        if (GetDontAwaitPreScript(index))
+        {
+            ExecuteResistScriptFireAndForget(index, true, scriptName, isGlobalScript);
+            CompleteResistScript(index, true);
+            return;
+        }
+
+        ACS_NamedExecuteWithResult(
+            RESIST_SCRIPT_HANDLER_NAME,
+            index,
+            true,
+            scriptName,
+            isGlobalScript
+        );
+    }
+
+    internal void StartPostResistScript(int index)
+    {
+        str specificScriptName = GetRefByindex(index).InitialState.PostResistScript;
+        str scriptName = GetResistScript(specificScriptName, GetGlobalPostResistScript());
+        bool isGlobalScript = specificScriptName == (raw)0 || specificScriptName == "";
+
+        SetRunState(index, STATEPOSTSCRIPT);
+
+        // Fire the script but don't wait for it, so it does not hold up the resist from elapsing.
+        if (GetDontAwaitPostScript(index))
+        {
+            ExecuteResistScriptFireAndForget(index, false, scriptName, isGlobalScript);
+            CompleteResistScript(index, false);
+            return;
+        }
+
+        ACS_NamedExecuteWithResult(
+            RESIST_SCRIPT_HANDLER_NAME,
+            index,
+            false,
+            scriptName,
+            isGlobalScript
+        );
+    }
+
+    // As the `RESIST_SCRIPT_HANDLER_NAME` script, but never waits for the script to complete.
+    // Uses `ACS_NamedExecuteAlways` so a still-running previous invocation of the same script can't
+    // prevent this one from starting.
+    internal void ExecuteResistScriptFireAndForget(int index, bool isPreScript, str scriptName, bool isGlobalScript)
+    {
+        if (!CheckScript(scriptName, true))
+        {
+            LogResistScriptError(index, isPreScript, scriptName, isGlobalScript, "Script not found.");
+            return;
+        }
+
+        if (!ExecuteResistScriptAlways(scriptName, isGlobalScript, index))
+            LogResistScriptError(index, isPreScript, scriptName, isGlobalScript, "Script failed to execute.");
+    }
+
+    // A global script additionally receives the resist index as an argument, since it can't infer it otherwise.
+    internal bool TryExecuteResistScript(str scriptName, bool isGlobalScript, int index)
+    {
+        return isGlobalScript
+            ? ACS_NamedExecute(scriptName, 0, index)
+            : ACS_NamedExecute(scriptName, 0);
+    }
+
+    // As `TryExecuteResistScript`, but guaranteed to execute even if the script is already running.
+    internal bool ExecuteResistScriptAlways(str scriptName, bool isGlobalScript, int index)
+    {
+        return isGlobalScript
+            ? ACS_NamedExecuteAlways(scriptName, 0, index)
+            : ACS_NamedExecuteAlways(scriptName, 0);
+    }
+
+    internal void SetGlobalPreResistScript(str scriptName)
+    {
+        ZH2Game::GameContext.MapDetails.GlobalPreResistScript = scriptName;
+    }
+
+    internal str GetGlobalPreResistScript()
+    {
+        return ZH2Game::GameContext.MapDetails.GlobalPreResistScript;
+    }
+
+    internal void SetGlobalPostResistScript(str scriptName)
+    {
+        ZH2Game::GameContext.MapDetails.GlobalPostResistScript = scriptName;
+    }
+
+    internal str GetGlobalPostResistScript()
+    {
+        return ZH2Game::GameContext.MapDetails.GlobalPostResistScript;
+    }
+
+    internal bool HasGlobalPreResistScript()
+    {
+        str scriptName = GetGlobalPreResistScript();
+        return scriptName != (raw)0 && scriptName != "";
+    }
+
+    internal bool HasGlobalPostResistScript()
+    {
+        str scriptName = GetGlobalPostResistScript();
+        return scriptName != (raw)0 && scriptName != "";
+    }
+
+    internal str GetResistScript(str specificScriptName, str globalScriptName)
+    {
+        if (specificScriptName != (raw)0 && specificScriptName != "")
+            return specificScriptName;
+
+        return globalScriptName;
+    }
+
+    internal str GetPreResistScript(int index)
+    {
+        return GetResistScript(
+            GetRefByindex(index).InitialState.PreResistScript,
+            GetGlobalPreResistScript()
+        );
+    }
+
+    internal str GetPostResistScript(int index)
+    {
+        return GetResistScript(
+            GetRefByindex(index).InitialState.PostResistScript,
+            GetGlobalPostResistScript()
+        );
+    }
+
+    internal bool HasPreResistScript(int index)
+    {
+        str scriptName = GetPreResistScript(index);
+        return scriptName != (raw)0 && scriptName != "";
+    }
+
+    internal bool HasPostResistScript(int index)
+    {
+        str scriptName = GetPostResistScript(index);
+        return scriptName != (raw)0 && scriptName != "";
+    }
+}

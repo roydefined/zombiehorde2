@@ -2,6 +2,7 @@
     #error This file must be #included.
 #endif
 
+#include "afkprevention/afkprevention.acs"
 #include "environment/environment.acs"
 #include "debug/debug.acs"
 #include "game/game.acs"
@@ -29,6 +30,7 @@
 #include "admin/admin.acs"
 #include "hud/hud.acs"
 #include "io/io.acs"
+#include "weapon/weapon.acs"
 
 #define LOGSOURCE "Main"
 
@@ -44,7 +46,7 @@ strict namespace ZH2Game
     internal GameContextT GameContext;
     global PersistingGameContextT PERSISTINGGAMECONTEXTINDEX: PersistingGameContext;
 
-    script "zh2_internal_open" open
+    script "zh2_internal_open" open busy
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_open\"");
 
@@ -89,6 +91,7 @@ strict namespace ZH2Game
         IO::ParseWeatherDefServerside();
         IO::ParseLoggerDefServerside();
         IO::ParseModDefLumpsServerside();
+        Weapon::BuildWeaponSkinIndex();
         IO::ParseMapDefLumps();
 
         // Weather must prepare internal default data before we parse the map which sets its own defaults.
@@ -100,6 +103,10 @@ strict namespace ZH2Game
 
         // Initialize core components.
         Game::InitializeZombieTeleport();
+        Weapon::ReplaceFakeWeaponSpawnSpots();
+        Player::InitializeHealth();
+        AfkPrevention::InitializeServer();
+        Decorate::InitializeRadioServer();
 
         // Now the loop starts because we have loaded everything.
         GameLoop::StartServerLoop();
@@ -164,13 +171,6 @@ strict namespace ZH2Game
             }
         }
 
-        // This tic helps when the server is working on initializing the map with many players.
-        // I've noticed the sync not always working when it takes a while to initialize.
-
-        // TODO: Both the tic and the boolean can be removed if we add a proper debounce system.
-        Delay(const: 1);
-        ZH2Game::GameContext.DoSyncOnEnter = true;
-
         Sync::SyncAll();
         Sync::LibSyncAll();
     }
@@ -222,6 +222,8 @@ strict namespace ZH2Game
             collection.HasSplitItems = true;
         }
 
+        Weapon::BuildWeaponSkinIndex();
+
         // Set the current game mode if we have it set.
         str gameMode = Map::GetCurrentMapGameMode();
         if (((raw)gameMode) != 0 && gameMode != "")
@@ -253,19 +255,25 @@ strict namespace ZH2Game
         // Now the loop starts because we have loaded everything.
         GameLoop::StartClientPlayerLoopActivator();
 
+        Resist::InitializeClient();
+        Game::InitializeClient();
+        Round::InitializeClient();
+        Decorate::InitializeRadioClient();
+
+        // HACK-ish; this must run early for `PlayDefaultMusic` to work properly since it's based on it.
+        // The full sync is later, but we must also set `PlayDefaultMusic` higher for the radio to work.
+        // TODO: The round end music must flow through the music systen, then the check is not needed.
+        Sync::SyncRoundStateClientside();
+
+        // This must happen before the full sync below,
+        // so an active radio broadcast (applied through that sync) can override it afterwards instead of the other way around.
+        Music::PlayDefaultMusic();
+
         // Fully sync up the client.
         Sync::SyncAllClientside();
         Sync::LibSyncAllClientside();
 
         Settings::UpdateCurrentClientSettings();
-
-        // Voting is active, so the client needs a mouse.
-        // TODO: Move this when adding the sync callback system.
-        if (Round::GetActiveKnownRoundState() == Round::STATEVOTING)
-        {
-            Hud::SetCursorEnabled(true);
-            Player::LockMovement(true);
-        }
 
         // Initialize team indicators for all existing players.
         // This does not have to run offline as the enter script works fine.
@@ -287,9 +295,6 @@ strict namespace ZH2Game
                 Game::SpawnPlayerTeamIndicator(i);
             }
         }
-
-        // Inform the client to play the current default music.
-        Music::PlayDefaultMusic();
 
         // Damage feedback
         DamageFeedback::InitializeDamageFeedbackClient();
@@ -355,6 +360,8 @@ strict namespace ZH2Game
         int tid = Identity::GetTID(id);
         Identity::DisposeTID(tid);
 
+        Decorate::HandleRadioDisconnect(id);
+
         // If the player did not spectate then they left.
         // In that case we do not handle the logic.
         // Rather the `GAMEEVENT_PLAYERLEAVESSERVER` event will do this in the event handler script.
@@ -373,7 +380,7 @@ strict namespace ZH2Game
             {
                 Logger::LogDebug(LOGSOURCE, "Playing player has spectated: (\cd" + str(id) + "\cj)" + BCSUTILS::PlayerName(id) + ".");
                 Player::SetPlayerState(id, Player::STATEGONE);
-                Event::SendPlayerLeftRound(id);
+                Event::SendPlayerLeftRound(id, LEAVEREASON_LEFT);
             }
 
             // Check if the round was still joinable.
@@ -396,6 +403,8 @@ strict namespace ZH2Game
         // Dispose team indicator unless we're the one that disconnected.
         if (id != ConsolePlayerNumber())
             Game::DisposePlayerTeamIndicator(id);
+
+        Decorate::HandleRadioDisconnectClient(id);
     }
 
     script "zh2_internal_death" death
@@ -472,7 +481,15 @@ strict namespace ZH2Game
     {
         Logger::LogDebug(LOGSOURCE, "Call script \"" + SCRIPT_ENTER_RESPAWN_NAME + "\"");
 
+        // It seems that ResetMap causes this script to trigger earlier than expected.
+        // Especially now with weapon skins being required when giving weapons, we must ensure we have parsed the map.
+        // So this delay should cover that since the OPEN script parses everything in the first tic.
+        if (!GameContext.ParsedMapDetails)
+            Delay(const: 1);
+
         Identity::InitializeActivator();
+
+        Weapon::MigratePlayerWeaponSkin(PlayerNumber());
 
         // Set specie, possibly forced to a specific specie.
         // SPECIENONE defaults to SPECIEHUMAN.
@@ -495,16 +512,8 @@ strict namespace ZH2Game
             Player::GiveHumanInventory(true);
             Power::RecalculatePowers();
 
-            // A 50% chance to get a fire grenade.
-            // TODO: Replace with better distribution.
-            if (BCSUtils::RandBool())
-            {
-                GiveInventory(WEAPON_FIREGRENADE_NAME, 1);
-                GiveInventory(WEAPON_AMMO_FIREGRENADE_NAME, 1);
-            }
-
             // Ensure we always start with the shotgun to avoid weird behaviour.
-            SetWeapon(WEAPON_SHOTGUN_NAME);
+            SetWeapon(Weapon::GetWeaponClassName(Weapon::WEAPONTYPE_SHOTGUN));
         }
         else if (specie == Player::SPECIEZOMBIE)
         {
@@ -520,24 +529,22 @@ strict namespace ZH2Game
             Power::RecalculatePowers();
         }
 
+        Player::SetJoinTicNow();
         Player::SetState(Player::STATEPLAYING);
         Game::SetLastJoinedPlayerId(PlayerNumber());
 
-        // Set initial name. The player's loop will then track possible changes.
+        // Set initial name and health.
+        // The player's loop will track changes to the name.
         Player::SetName(BCSUtils::PlayerName(PlayerNumber()));
+        Player::SetHealth(BCSUtils::GetActorSpawnHealth(0));
 
         Game::InitializePlayerModifiers(PlayerNumber());
         Feature::InitializePlayerFeatures(PlayerNumber());
 
-        // Possible extra syncs depending on time.
-        // We only do these if the map has been playing for a bit to avoid 64 players calling it.
-        if (ZH2Game::GameContext.DoSyncOnEnter)
-        {
-            Sync::SyncPlayers();
+        Sync::SyncPlayers();
 
-            // Note we want to sync on enter as powers are inventory items and we also initialize stuff like modifiers above.
-            Sync::SyncPowers();
-        }
+        // Note we want to sync on enter as powers are inventory items and we also initialize stuff like modifiers above.
+        Sync::SyncPowers();
 
         // Set the player as an admin.
         // This is now removed and you can turn it on through the menu/rcon. Always works offline.
@@ -619,6 +626,15 @@ strict namespace ZH2Game
         static PlayerT emptyPlayerDef;
         if (!Memcpy(GameContext.Players[id], emptyPlayerDef))
             Logger::LogError(LOGSOURCE, "Failed to empty player context for player " + str(id) + ".");
+
+        // In online games we want to reset the clientside context too.
+        if (IsNetworkGame() && BCSUtils::IsServerOnly())
+            NamedExecuteClientScript("zh2_internal_reset_player_context_client", id);
+    }
+
+    script "zh2_internal_reset_player_context_client" clientside
+    {
+        ResetPlayerContext(ConsolePlayerNumber());
     }
 
     internal void ResetPlayerPersistingContext(int id)
@@ -628,6 +644,15 @@ strict namespace ZH2Game
         static PersistingPlayerT emptyPlayerDef;
         if (!Memcpy(PersistingGameContext.Players[id], emptyPlayerDef))
             Logger::LogError(LOGSOURCE, "Failed to empty persisting player context for player " + str(id) + ".");
+
+        // In online games we want to reset the clientside context too.
+        if (IsNetworkGame() && BCSUtils::IsServerOnly())
+            NamedExecuteClientScript("zh2_internal_reset_player_persisting_context_client", id);
+    }
+
+    script "zh2_internal_reset_player_persisting_context_client" clientside
+    {
+        ResetPlayerPersistingContext(ConsolePlayerNumber());
     }
 }
 

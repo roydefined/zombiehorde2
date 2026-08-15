@@ -1,0 +1,154 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "counter.acs"
+#include "bar.acs"
+#include "weapon.acs"
+#include "player.acs"
+#include "inventory.acs"
+#include "state.acs"
+#include "abilities.acs"
+
+strict namespace Hud
+{
+    internal void DrawHudLegacy()
+    {
+        bool drawHud = ZH2Game::GetDrawHud();
+
+        if (drawHud && ZH2Game::GetDrawRoundHud())
+            DrawRoundsHudLegacy();
+
+        // Everything below is strictly during the playing game.
+        if (Round::GetActiveKnownRoundState() >= Round::STATEENDING)
+            return;
+
+        if (_clientCameraOnBody && drawHud && BCSUtils::ActorIsAlive(ActivatorTid()))
+        {
+            if (ZH2Game::GetDrawPlayerBarsHud())
+                DrawPlayerBarsHudLegacy();
+
+            if (ZH2Game::GetDrawPlayerStatusHud())
+                DrawPlayerStatusHudLegacy();
+        }
+
+        if (drawHud && ZH2Game::GetDrawGameHud())
+            DrawGameHudLegacy();
+    }
+
+    internal void DrawRoundsHudLegacy()
+    {
+        DrawRoundsHudDefault();
+    }
+
+    internal void DrawPlayerBarsHudLegacy()
+    {
+        fixed scale = ZH2Game::GetHudPlayerBarsScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetDisappearTime(1.0);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
+
+        PrepareHud(
+            320.0 + ZH2Game::GetHudPlayerBarsOffsetX(),
+            BCSUtils::HudBottom() - 70.0 - ZH2Game::GetHudPlayerBarsOffsetY(),
+            true);
+
+        fixed afkBarX = GetHudX(), afkBarY = GetHudY();
+        DrawAfkBar(afkBarX, afkBarY);
+        DrawAfkBarWarning(afkBarX, afkBarY + 10.0);
+    }
+
+    internal void DrawPlayerStatusHudLegacy()
+    {
+        fixed scale = ZH2Game::GetHudPlayerStatusScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        // Base x and y offsets used by the hud elements.
+        fixed baseX = BCSUtils::HudLeft() + ZH2Game::GetHudPlayerStatusOffsetX() + 30.0,
+              baseY = BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 30.0;
+
+        PrepareHud(
+            baseX, baseY, true);
+        DrawPlayerBackground(GetHudX(), GetHudY());
+
+        PrepareHud(
+            baseX + 22.0, baseY - 32.0, true);
+        DrawPlayerSkinLegacy(GetHudX(), GetHudY());
+
+        PrepareHud(
+            baseX + 20.0, baseY - 50.0, true);
+        DrawHealthLegacy(GetHudX(), GetHudY());
+
+        if (Player::GetIsHuman())
+        {
+            PrepareHud(
+                baseX + 125.0, baseY - 15.0, true);
+            DrawSprintBarLegacy(GetHudX(), GetHudY());
+        }
+
+        PrepareHud(
+            baseX + 100.0, baseY - 125.0, true);
+        DrawCurrentOwnedItem(GetHudX(), GetHudY());
+
+        PrepareHud(
+            baseX + 60.0, baseY - 65.0, true);
+        DrawKeyListLegacy(GetHudX(), GetHudY());
+
+        PrepareHud(
+            baseX + 190.0, baseY - 20.0, true);
+        DrawBuffsLegacy(GetHudX(), GetHudY());
+
+        // Right side
+        PrepareHud(
+            BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 110.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 80.0,
+            true);
+
+        DrawWeaponIconLegacy(GetHudX(), GetHudY());
+
+        if (Player::GetIsZombie())
+        {
+            PrepareHud(
+                BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 80.0,
+                BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 90.0,
+                true);
+
+            DrawZombieAbilitiesLegacy(GetHudX(), GetHudY());
+        }
+
+        // Call hook for this part of the HUD.
+        PrepareHud(baseX, baseY, true);
+        _hudHookData.Type = HUDHOOK_PLAYERSTATUS;
+        Hook::Call(Hook::HOOK_CLIENTDRAWHUD, _hudHookData);
+    }
+
+    internal void DrawGameHudLegacy()
+    {
+        fixed scale = ZH2Game::GetHudGameScale();
+        BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+
+        if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
+        {
+            PrepareHud(
+                BCSUtils::HudLeft() + ZH2Game::GetHudPlayerStatusOffsetX() + 40.0,
+                BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 220.0,
+                true);
+
+            DrawPlayerCountersLegacy(GetHudX(), GetHudY());
+        }
+
+        PrepareHud(
+            BCSUtils::HudRight() - ZH2Game::GetHudPlayerStatusOffsetX() - 60.0,
+            BCSUtils::HudBottom() - ZH2Game::GetHudPlayerStatusOffsetY() - 220.0,
+            true);
+
+        DrawStatCountersLegacy(GetHudX(), GetHudY());
+    }
+}

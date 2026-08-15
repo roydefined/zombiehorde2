@@ -1,0 +1,41 @@
+Actor ZH2WeaponRadioLegacy : ZH2Weapon
+{
+    weapon.PreferredSkin "Radio"
+    Tag "Radio"
+    Weapon.SlotNumber 1
+
+    +WEAPON.NOAUTOFIRE
+
+    States
+    {
+        Ready:
+            RDIO A 1 A_WeaponReady(WRF_ALLOWRELOAD)
+            wait
+
+        Deselect:
+            RDIO A 1 A_Lower
+            wait
+
+        Select:
+            RDIO A 1 A_Raise
+            wait
+
+        Fire:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_radio_cyclemusic", 1)
+            goto Ready
+
+        Altfire:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_radio_cyclemusic", -1)
+            goto Ready
+
+        Reload:
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+            TNT1 A 0 A_ClientsideACSExecute("zh2_dec_radio_setcurrentmusic")
+            
+            // Wait 1 second before we allow the radio to change music again.
+            RDIO A 35 A_WeaponReady
+            goto Ready
+    }
+}

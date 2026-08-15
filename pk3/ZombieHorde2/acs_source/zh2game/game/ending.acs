@@ -44,27 +44,27 @@ strict namespace Game
     // Called clientside to build up the ending screen.
     internal void ClientBuildEnding()
     {
-        WinningSpecieT winningSpecie = Game::GetWinningSpecie();
-
-        // Nobody won yet.
-        if (winningSpecie == Game::SPECIENONE)
-            return;
-
+        WinningSpecieT winningSpecie = GetWinningSpecie();
         int index = (int)winningSpecie - 1;
         EndingTypeT module& ending = _endingTypes[index];
 
         // The graphic needs a separate check for zombies as this one has two graphics.
-        // TODO: This does not account for when the skin is overridden
+        Player::ZombieSkinTypeT skinType = Player::GetZombieSkinType(false);
         ZH2Game::GameContext.WinGraphic = winningSpecie == Game::SPECIETIE
             ? ending.WinGraphics[0]
-            : ending.WinGraphics[(int)!Map::GetCurrentMapIsLegacyMap()];
+            : ending.WinGraphics[(int)(skinType != Player::ZOMBIESKIN_OLD)];
 
         // Messages
         ZH2Game::GameContext.WinMessageTop = ending.WinMessagesTop[Random(0, lengthof(ending.WinMessagesTop) - 1)];
         ZH2Game::GameContext.WinMessageBottom = ending.WinMessagesBottom[Random(0, lengthof(ending.WinMessagesBottom) - 1)];
 
+        // Don't bother doing the rest if we don't use the default flow, map will reset and the stats won't show.
+        Game::EndActionT action = Game::GetEndAction();
+        if (action != Game::ACTION_DEFAULT)
+            return;
+
         // Play a track for the winning type.
-        if (ending.TrackCount != 0 && !_hasStartedEndMusic)
+        if (ending.TrackCount != 0 && !_hasStartedEndMusic && !ZH2Game::GetSvNoEndMusic() && !ZH2Game::GetClNoEndMusic())
         {
             int index = Random(0, ending.TrackCount - 1);
             str track = ending.Tracks[index];
@@ -117,9 +117,25 @@ strict namespace Game
         return ZH2Game::GameContext.EndReason;
     }
 
+    internal void SetEndAction(EndActionT action)
+    {
+        ZH2Game::GameContext.EndAction = action;
+    }
+
+    internal EndActionT GetEndAction()
+    {
+        return ZH2Game::GameContext.EndAction;
+    }
+
     internal EndReasonT GetEndReasonTypeByIndex(int index)
     {
         static EndReasonT collection[] = { REASONNONE, REASONSPECIEWON, REASONHUMANLEFT, REASONZOMBIELEFT, REASONADMINENDED, };
+        return collection[index];
+    }
+
+    internal EndActionT GetEndActionTypeByIndex(int index)
+    {
+        static EndActionT collection[] = { ACTION_DEFAULT, ACTION_RESTART, };
         return collection[index];
     }
 }

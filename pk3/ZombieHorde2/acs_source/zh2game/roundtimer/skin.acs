@@ -1,0 +1,27 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace RoundTimer
+{
+    // Determines the timer skin to use.
+    // If the server doesn't care, use what is best for the map.
+    internal TimerSkinT GetTimerSkin()
+    {
+        switch (ZH2Game::GetSvForceTimerSkin())
+        {
+            case TIMERSKINBEHAVIOUR_FORCEDEFAULTSKIN: return TIMERSKIN_DEFAULT;
+            case TIMERSKINBEHAVIOUR_FORCELEGACYSKIN: return TIMERSKIN_LEGACY;
+            default: return GetBestFitTimerSkin();
+        }
+    }
+
+    // The timer skin the game considers the best one to use for the current map.
+    internal TimerSkinT GetBestFitTimerSkin()
+    {
+        if (Map::GetCurrentMapIsLegacyMap())
+            return TIMERSKIN_LEGACY;
+
+        return TIMERSKIN_DEFAULT;
+    }
+}

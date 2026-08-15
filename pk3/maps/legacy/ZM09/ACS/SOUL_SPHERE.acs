@@ -1,8 +1,8 @@
 int total_players=0;
-int soulsphere_damage=2.0;
+fixed soulsphere_damage=2.0;
 
 script 18 (void){
- setresultvalue(soulsphere_damage);
+ setresultvalue((raw)soulsphere_damage);
 }
 
 script 22 open {//End Selector can spawn one or two soulspheres
@@ -10,8 +10,9 @@ script 22 open {//End Selector can spawn one or two soulspheres
     int ending;
     //INT GETOUT2=FALSE;
     int soul_hatee=0;
-    int i=0,j=0;
-    int shorter_distance;
+    int i = 0;
+    fixed j = 0.0;
+    fixed shorter_distance;
     int k=0;
     int input=0;
     delay(1);
@@ -24,7 +25,7 @@ script 22 open {//End Selector can spawn one or two soulspheres
         // wait for 4 Minutes
 		delay(35*60*4);
         Music_Played=SOULSPHERE_MUSIC;
-        play_zm09_music();  
+        play_zm09_music();
         delay(350);
         input=GetCvar("x_zh_zm09_sf");
         if(Game::HumanCount()+Game::ZombieCount()>=20){
@@ -35,7 +36,7 @@ script 22 open {//End Selector can spawn one or two soulspheres
         SetCvar("x_zh_zm09_sf",input+1);
         while(true){
             i=0;
-            shorter_distance=2147483647;
+            shorter_distance=2147483647.0;
             while( i < BCSUtils::MAX_PLAYERS){
                 if(PlayerInGame(i)){
                     j=ibm_distance (100,i+PLAYER_TID);
@@ -50,7 +51,7 @@ script 22 open {//End Selector can spawn one or two soulspheres
             ghoul_target=soul_hatee;
             Thing_Hate(114, Identity::GetTid(soul_hatee), 6);
             soulsphere_damage=get_soulspheredamage(soul_hatee);
-            while(PlayerInGame(soul_hatee)) 
+            while(PlayerInGame(soul_hatee))
             {
                 delay(35);
             }
@@ -59,26 +60,29 @@ script 22 open {//End Selector can spawn one or two soulspheres
     }
 }
 
-function int get_soulspheredamage(int target){
-    int output=2.0;
+function fixed get_soulspheredamage(int target){
+    fixed output=2.0;
     int i;
-    if(Player::GetPlayerIsZombie(target)){
+    if(Player::GetPlayerIsZombie(target))
+    {
         i = Game::ZombieCount();
         if(i <= 2)
-            output=100;
+            output = 100.0;
         else if(i <= 4)
-            output=150;
+            output = 150.0;
         else
-            output=random(188,225);
+            output = fixed(Random(188,225));
         SetActorProperty(114,APROP_Speed,36.0);
-    }else{
+    }
+    else
+    {
         i=Game::HumanCount();
         if(i <= 2)
-            output = 2;
+            output = 2.0;
         else if(i <= 4)
-            output = 3;
+            output = 3.0;
         else
-            output=random(4,7);
+            output = fixed(Random(4,7));
         SetActorProperty(114,APROP_Speed,24.0);
     }
     return output;

@@ -1,0 +1,78 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+// ZH2 uses:
+// Player.ForwardMove = 0.8
+// Player.SideMove    = 0.4
+
+// This results in:
+// Normal run      = 0.800
+// Normal diagonal = 0.894
+// SR50            = 1.131
+
+// Therefore SR50 is:
+// 1.131 / 0.894 = 1.265x faster
+
+// To reduce SR50 back to normal diagonal movement, we apply:
+// 0.894 / 1.131 = 0.790
+
+// Source: https://doomwiki.org/wiki/Straferunning
+// Note this factor is applied through a Power, not in the code here.
+
+strict namespace Player
+{
+    internal void Sr50Tic()
+    {
+        if (!ZH2Game::GetUseAntiSR50())
+        {
+            // Gotta make sure it gets disabled if we no longer track it.
+            if (GetHasAntiSR50())
+                SetHasAntiSR50(false);
+
+            return;
+        }
+
+        int buttons = GetPlayerInput(-1, INPUT_BUTTONS);
+
+        bool sr50Left =
+            (buttons & BT_STRAFE) &&
+            (buttons & BT_LEFT) &&
+            (buttons & BT_MOVELEFT);
+
+        bool sr50Right =
+            (buttons & BT_STRAFE) &&
+            (buttons & BT_RIGHT) &&
+            (buttons & BT_MOVERIGHT);
+
+        bool enableAntiSr50 = sr50Left || sr50Right;
+        if (GetHasAntiSR50() != enableAntiSr50)
+            SetHasAntiSR50(enableAntiSr50);
+    }
+
+    internal void SetHasAntiSR50(bool set)
+    {
+        SetPlayerHasAntiSR50(PlayerNumber(), set);
+    }
+
+    internal void SetPlayerHasAntiSR50(int id, bool set)
+    {
+        if (set)
+            Power::GivePlayerPower(id, Power::POWERANTISR50);
+        else
+            Power::TakePlayerPower(id, Power::POWERANTISR50);
+
+        Sync::SyncPowers();
+    }
+
+
+    internal bool GetHasAntiSR50()
+    {
+        return GetPlayerHasAntiSR50(PlayerNumber());
+    }
+
+    internal bool GetPlayerHasAntiSR50(int id)
+    {
+        return Power::GetPlayerHasPower(id, Power::POWERANTISR50);
+    }
+}

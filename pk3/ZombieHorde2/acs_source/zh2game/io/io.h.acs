@@ -20,10 +20,24 @@ strict namespace IO
     #define HUMANSTARTITEMSKEY "humanstartitems"
     #define ZOMBIESTARTITEMSKEY "zombiestartitems"
 
+    #define RESISTPREFIXKEY "resist"
+    #define RESIST_DEFINITIONS_KEY "definitions"
     #define RESISTSPREFIXKEY "resists"
     #define RESISTLENGTHKEY "length"
     #define RESISTTOPREASONLABELKEY "topreasonlabel"
     #define RESISTTIMEREASONLABELKEY "timereasonlabel"
+    #define RESISTPRERESISTSCRIPTKEY  "PreResistScript"
+    #define RESISTPOSTRESISTSCRIPTKEY "PostResistScript"
+    #define RESISTGLOBALPRERESISTSCRIPTKEY  "GlobalPreResistScript"
+    #define RESISTGLOBALPOSTRESISTSCRIPTKEY "GlobalPostResistScript"
+
+    #define RESISTFLAGSKEY "Flags"
+    #define RESISTFLAGHIDETOPREASONKEY "HideTopReason"
+    #define RESISTFLAGHIDETIMEREASONKEY "HideTimeReason"
+    #define RESISTFLAGNOFADEKEY "NoFade"
+    #define RESISTFLAGSHOWWHENPAUSEDKEY "ShowWhenPaused"
+    #define RESISTFLAGDONTAWAITPRESCRIPTKEY "DontAwaitPreScript"
+    #define RESISTFLAGDONTAWAITPOSTSCRIPTKEY "DontAwaitPostScript"
 
     #define EVENTSPREFIXKEY "events"
     #define RADIODEFLUMP_RADIOLIST_BLOCKKEYWORD "radiolist"
@@ -61,6 +75,18 @@ strict namespace IO
         int ActiveRoundStateIndex;
 
         Resist::ResistT Resists[MAX_RESISTS];
+
+        // An offset applied to the general cycle resists use to determine the interval to show.
+        // The interval ensures all fades match, but this offset is set by the first resist.
+        // The first resist can then show instantly instead of waiting for the general cycle.
+        int ResistFadeCycleOffsetTic;
+
+        // Serverside map scripts invoked for every resist.
+        str GlobalPreResistScript;
+        str GlobalPostResistScript;
+
+        // This is purely clientside so we know if the sync was for new resists, or if we edit them.
+        bool ResistsInitialized;
 
         // If `true`, the map is configured to play a heartbeat ambient on the final human.
         // TODO: This could turn into an integer indicating the final n humans play a heartbeat.

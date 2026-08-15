@@ -30,6 +30,8 @@ strict namespace ZH2Game
     internal int GetEndOfRoundRewardCount() { return BCSUTILS::Clamp(GetCvar("sv_zh2_endofroundrewardcount"), 0, 64); }
     internal bool GetEndOfRoundRewardSafePlayers() { return (bool)GetCvar("sv_zh2_endofroundrewardsafeplayers"); }
 
+    internal int GetMaxZombieBanDuration() { return BCSUTILS::Clamp(GetCvar("sv_zh2_maxzombiebanduration"), 0, 1440); }
+
     // Game - Round
     internal InitialZombiePickMethodT GetInitialZombiePickMethod()
     {
@@ -44,11 +46,58 @@ strict namespace ZH2Game
         }
     }
     internal bool GetInitialPickRememberLastMap() { return (bool)GetCvar("sv_zh2_initialpickrememberlastmap"); }
+    internal bool GetSvShowPickChance() { return (bool)GetCvar("sv_zh2_showpickchance"); }
+    internal bool GetClShowPickChance() { return (bool)GetCvar("cl_zh2_showpickchance"); }
+    internal bool GetSvNoEndMusic() { return (bool)GetCvar("sv_zh2_noendmusic"); }
+    internal bool GetClNoEndMusic() { return (bool)GetCvar("cl_zh2_noendmusic"); }
 
+    // Game - Compensation
+    internal int GetCompensateMaxSecondsReturned() { return BCSUTILS::Clamp(GetCvar("sv_zh2_compensatemaxsecondsreturned"), 0, 100); }
+    internal int GetCompensateHealthFactorReturned() { return BCSUTILS::Clamp(GetCvar("sv_zh2_compensatemaxhealthfactorreturned"), 0, 200); }
+    internal int GetCompensateRestartIfSpecBeforeSeconds() { return BCSUTILS::Clamp(GetCvar("sv_zh2_compensaterestartifspecbeforeseconds"), 0, 300); }
+    internal int GetCompensateAwardKillDamagePercentage() { return BCSUTILS::Clamp(GetCvar("sv_zh2_compensateawardkilldamagepercentage"), 0, 100); }
+
+    // Game - AFK prevention
+    internal bool GetAfkMoveAtRoundStart() { return (bool)GetCvar("sv_zh2_afkmoveatroundstart"); }
+    internal int GetAfkMoveAtRoundStartBeforeSeconds() { return BCSUTILS::Clamp(GetCvar("sv_zh2_afkmoveatroundstartbeforeseconds"), 0, 60); }
+    internal bool GetAfkMoveAsZombie() { return (bool)GetCvar("sv_zh2_afkmoveaszombie"); }
+    internal int GetAfkZombieMoveGraceTics() { return BCSUTILS::Clamp(GetCvar("sv_zh2_afkzombiemovegracetics"), 0, 700); }
+    internal int GetAfkZombieMoveCheckTics() { return BCSUTILS::Clamp(GetCvar("sv_zh2_afkzombiemovechecktics"), 0, 700); }
+    internal int GetAfkZombieMoveWarnSeconds() { return BCSUTILS::Clamp(GetCvar("sv_zh2_afkzombiemovewarnseconds"), 0, 20); }
 
     // Game - Obituary
-    internal bool GetSvEnableObituaries() { return (bool)GetCvar("sv_zh2_enableobituaries"); }
-    internal bool GetClEnableObituaries(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_enableobituaries"); }
+    internal ObituaryDisplayModeOverrideT GetSvObituaryDisplayModeOverride()
+    {
+        switch (BCSUTILS::Clamp(GetCvar("sv_zh2_forceobituarydisplaymode"), 0, 3))
+        {
+            case 1: return OBITUARYDISPLAYOVERRIDE_GRAPHICAL;
+            case 2: return OBITUARYDISPLAYOVERRIDE_TEXT;
+            case 3: return OBITUARYDISPLAYOVERRIDE_LEGACYTEXT;
+            default: return OBITUARYDISPLAYOVERRIDE_NONE;
+        }
+    }
+
+    internal ObituaryDisplayModeT GetClObituaryDisplayMode(int playerId)
+    {
+        switch (BCSUTILS::Clamp(GetUserCvar(playerId, "cl_zh2_obituarydisplaymode"), 0, 2))
+        {
+            case 1: return OBITUARYDISPLAY_TEXT;
+            case 2: return OBITUARYDISPLAY_LEGACYTEXT;
+            default: return OBITUARYDISPLAY_GRAPHICAL;
+        }
+    }
+
+    internal ObituaryDisplayModeT GetObituaryDisplayMode(int playerId)
+    {
+        switch (GetSvObituaryDisplayModeOverride())
+        {
+            case OBITUARYDISPLAYOVERRIDE_GRAPHICAL: return OBITUARYDISPLAY_GRAPHICAL;
+            case OBITUARYDISPLAYOVERRIDE_TEXT: return OBITUARYDISPLAY_TEXT;
+            case OBITUARYDISPLAYOVERRIDE_LEGACYTEXT: return OBITUARYDISPLAY_LEGACYTEXT;
+            default: return GetClObituaryDisplayMode(playerId);
+        }
+    }
+
     internal int GetShownObituaries(int playerId) { return BCSUTILS::Clamp(GetUserCvar(playerId, "cl_zh2_shownobituaries"), 1, OBITUARY_COLLECTION_MAX_SIZE); }
 
     // Game - Settings
@@ -74,6 +123,7 @@ strict namespace ZH2Game
     internal bool GetUseMapResetsFeature() { return (bool)GetCvar("sv_zh2_usemapresetsfeature"); }
     internal bool GetUseDeadSpectatorsFeature() { return (bool)GetCvar("sv_zh2_usedeadspectatorsfeature"); }
     internal bool GetUseCustomKnockbackFeature() { return (bool)GetCvar("sv_zh2_usecustomknockbackfeature"); }
+    internal bool GetUseAntiSR50() { return (bool)GetCvar("sv_zh2_useantisr50"); }
 
     // Player
     internal int GetShownInventoryItems() { return BCSUTILS::Clamp(GetCvar("cl_zh2_showninventoryitems"), 1, 11); }
@@ -106,6 +156,8 @@ strict namespace ZH2Game
                 return IDENTIFY_PLAYER_BOTH;
         }
     }
+
+    internal bool GetDisableAutoUseItems() { return (bool)GetCvar("sv_zh2_disableautouseitems"); }
 
     internal bool GetAutoUseMedikits(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_autousemedikits"); }
     internal bool GetAutoUseKevlars(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_autousekevlars"); }
@@ -194,6 +246,8 @@ strict namespace ZH2Game
     internal bool GetIgnoreRadioMusic() { return (bool)GetCvar("cl_zh2_ignoreradiomusic"); }
     internal bool GetInvertRadioNavigation() { return (bool)GetCvar("cl_zh2_invertradionavigation"); }
     internal bool GetTrackNotFoundPlayRandom() { return (bool)GetCvar("cl_zh2_tracknotfoundplayrandom"); }
+    internal bool GetRadioProximityEnabled() { return (bool)GetCvar("cl_zh2_radioproximity"); }
+    internal bool GetRadioFadeMapMusicEnabled() { return (bool)GetCvar("cl_zh2_radiofademapmusic"); }
     internal bool GetIgnoreFullServerMusic() { return (bool)GetCvar("cl_zh2_ignorefullservermusic"); }
 
     // Player - Zombie
@@ -227,6 +281,7 @@ strict namespace ZH2Game
     internal int GetClientBloodType() { return BCSUTILS::Clamp(GetCvar("cl_zh2_bloodtype"), 0, 2); }
     internal bool GetAllowSprinting() { return (bool)GetCvar("sv_zh2_allowsprinting"); }
     internal int GetMinimumSprintAmount() { return BCSUTILS::Clamp(GetCvar("sv_zh2_minimumsprintamount"), 1, 1000); }
+    internal bool GetDisablePregameSprinting() { return (bool)GetCvar("sv_zh2_disablepregamesprinting"); }
     internal bool GetAllowPanicking() { return (bool)GetCvar("sv_zh2_allowpanicking"); }
     internal int GetMaxPanicCount() { return BCSUTILS::Clamp(GetCvar("sv_zh2_maxpaniccount"), 1, 10); }
 
@@ -236,9 +291,50 @@ strict namespace ZH2Game
     // Hud
     internal bool GetDrawHud() { return (bool)GetCvar("cl_zh2_drawhud"); }
 
+    internal Weapon::WeaponSkinBehaviourT GetSvForceWeaponSkin()
+    {
+        switch (BCSUTILS::Clamp(GetCvar("sv_zh2_forceweaponskin"), 0, 2))
+        {
+            case 1: return Weapon::WEAPONSKINBEHAVIOUR_FORCEDEFAULTSKIN;
+            case 2: return Weapon::WEAPONSKINBEHAVIOUR_FORCELEGACYSKIN;
+            default: return Weapon::WEAPONSKINBEHAVIOUR_DEFAULT;
+        }
+    }
+
+    internal RoundTimer::TimerSkinBehaviourT GetSvForceTimerSkin()
+    {
+        switch (BCSUTILS::Clamp(GetCvar("sv_zh2_forcetimerskin"), 0, 2))
+        {
+            case 1: return RoundTimer::TIMERSKINBEHAVIOUR_FORCEDEFAULTSKIN;
+            case 2: return RoundTimer::TIMERSKINBEHAVIOUR_FORCELEGACYSKIN;
+            default: return RoundTimer::TIMERSKINBEHAVIOUR_DEFAULT;
+        }
+    }
+
+    internal HudSkinBehaviourT GetSvForceHudSkin()
+    {
+        switch (BCSUTILS::Clamp(GetCvar("sv_zh2_forcehudskin"), 0, 2))
+        {
+            case 1: return HUDSKINBEHAVIOUR_FORCEDEFAULTSKIN;
+            case 2: return HUDSKINBEHAVIOUR_FORCELEGACYSKIN;
+            default: return HUDSKINBEHAVIOUR_DEFAULT;
+        }
+    }
+
+    internal HudSkinPreferenceT GetClHudSkin(int playerId)
+    {
+        switch (BCSUTILS::Clamp(GetUserCvar(playerId, "cl_zh2_hudskin"), 0, 2))
+        {
+            case 1: return HUDSKINPREFERENCE_DEFAULT;
+            case 2: return HUDSKINPREFERENCE_LEGACY;
+            default: return HUDSKINPREFERENCE_AUTO;
+        }
+    }
+
     internal bool GetDrawDebugCoordinatesHud() { return (bool)GetCvar("cl_zh2_DrawDebugCoordinatesHud"); }
 
-    internal bool GetEnableHudShaking() { return (bool)GetCvar("cl_zh2_ShakeHud"); }
+    internal bool GetSvEnableHudShaking() { return (bool)GetCvar("sv_zh2_shakehud"); }
+    internal bool GetClEnableHudShaking() { return (bool)GetCvar("cl_zh2_ShakeHud"); }
     internal fixed GetHudShakeIntensityMultiplier() { return 1.1/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudShakeIntensityMultiplier"), 0.1, 5.0)*/; }
     internal fixed GetHudShakeFrequencyMultiplier() { return 1.1/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudShakeFrequencyMultiplier"), 0.1, 5.0)*/; }
     internal int GetHudShakeDuration() { return 4/*BCSUTILS::Clamp(GetCvar("cl_zh2_HudShakeDurationTics"), 1, 20)*/; }
@@ -271,6 +367,7 @@ strict namespace ZH2Game
     internal bool GetDrawGameHud() { return (bool)GetCvar("cl_zh2_DrawGameHud"); }
     internal fixed GetHudGameScale() { return 1.0/*BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_HudGameScale"), 0.05, 2.0)*/; }
 
+    internal bool GetDrawObituaryHud() { return (bool)GetCvar("cl_zh2_drawobituaryhud"); }
     internal fixed GetHudObituaryOffsetX() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_hudobituaryoffsetx"), -200.0, 200.0); }
     internal fixed GetHudObituaryOffsetY() { return BCSUTILS::Clamp((fixed)GetCvar("cl_zh2_hudobituaryoffsety"), 0.0, 40.0); }
 
@@ -298,4 +395,10 @@ strict namespace ZH2Game
     internal bool GetProtectCVars() { return (bool)GetCvar("cl_protectcvars"); }
     internal int GetMaxPlayers() { return BCSUTILS::Clamp(GetCvar("sv_maxplayers"), 1, 64); }
     internal bool GetCompatNoObituaries() { return (bool)GetCvar("compat_noobituaries"); }
+    internal int GetMaxBanDuration() { return BCSUTILS::Clamp(GetCvar("sv_maxacsbanduration"), 0, BCSUtils::INT_MAX); }
+
+    internal fixed GetSndMusicVolume() { return BCSUtils::a_GetCVarFixed("snd_musicvolume"); }
+
+    // NOTE: this uses ConsoleCommand, it should get a better alternative sometime.
+    internal void SetSndMusicVolume(fixed volume) { ConsoleCommand("snd_musicvolume " + str(volume)); }
 }

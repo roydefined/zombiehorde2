@@ -8,6 +8,7 @@
 #include "shared/reward.acs"
 #include "shared/powers.acs"
 #include "shared/items.acs"
+#include "shared/weaponspawners.acs"
 
 strict namespace IO
 {
@@ -102,7 +103,8 @@ strict namespace IO
                 // Note, blood severity is a serverside thing on weapons, so items must be parsed here.
                 if (ParsePowers(handle, symbol)
                     || ParseItems(handle, symbol)
-                    || ParseRewards(handle, symbol))
+                    || ParseRewards(handle, symbol)
+                    || ParseWeaponSpawners(handle, symbol))
                     continue;
             }
             else
@@ -110,6 +112,9 @@ strict namespace IO
                 if (ParseRequestedClientSettings(handle, symbol)
                     || ParseRadio(handle, symbol)
                     || ParseTips(handle, symbol))
+                    continue;
+
+                if (Tokenizer::ParseBodyAsEmpty(handle, symbol, "weaponspawners"))
                     continue;
 
                 // As powers consists of shared data, parsing them in an offline game only has to be done serverside.

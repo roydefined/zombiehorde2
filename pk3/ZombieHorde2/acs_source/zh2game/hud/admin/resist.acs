@@ -37,16 +37,42 @@ strict namespace Hud
             HudSetPointInternal(80.0, addY);
             BCSUtils::HudDrawText(--_drawnHudId, str(Resist::GetTicsLeft(index)) + "/" + str(Resist::GetMaximumTics(index)));
 
+            Resist::ResistRunStateT state = Resist::GetRunState(index);
+
             if (DrawClickableTextConditional(
-                !Resist::IsActive(index), --_drawnHudId, 140.0, addY, 40.0, 10.0, "start"))
+                state == Resist::STATENONE, --_drawnHudId, 140.0, addY, 40.0, 10.0, "start"))
             {
                 Admin::AdminSetStartResistClientside(index);
             }
 
             if (DrawClickableTextConditional(
-                Resist::IsActive(index), --_drawnHudId, 190.0, addY, 40.0, 10.0, "stop"))
+                state == Resist::STATERUNNING || state == Resist::STATEPAUSED, --_drawnHudId, 190.0, addY, 40.0, 10.0, "elapse"))
+            {
+                Admin::AdminSetElapseResistClientside(index);
+            }
+
+            if (DrawClickableTextConditional(
+                state == Resist::STATERUNNING || state == Resist::STATEPAUSED, --_drawnHudId, 250.0, addY, 40.0, 10.0, "stop"))
             {
                 Admin::AdminSetStopResistClientside(index);
+            }
+
+            if (DrawClickableTextConditional(
+                state == Resist::STATERUNNING, --_drawnHudId, 300.0, addY, 40.0, 10.0, "pause"))
+            {
+                Admin::AdminSetPauseResistClientside(index);
+            }
+
+            if (DrawClickableTextConditional(
+                state == Resist::STATEPAUSED, --_drawnHudId, 350.0, addY, 40.0, 10.0, "resume"))
+            {
+                Admin::AdminSetResumeResistClientside(index);
+            }
+
+            if (DrawClickableTextConditional(
+                state == Resist::STATERUNNING || state == Resist::STATEENDED, --_drawnHudId, 410.0, addY, 40.0, 10.0, "reset"))
+            {
+                Admin::AdminSetResetResistClientside(index);
             }
 
             rows++;

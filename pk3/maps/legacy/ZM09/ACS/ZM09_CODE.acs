@@ -1,5 +1,5 @@
 //ZM09 Code
-int ibmnu_text[5]={"ibmnu1","ibmnu2","ibmnu3","ibmnu4","ibmnu1"};
+str ibmnu_text[5]={"ibmnu1","ibmnu2","ibmnu3","ibmnu4","ibmnu1"};
 int lava_del_tids[8]={44,49,50,51,52,53,72,86};
 int tele_x,tele_y,tele_z,tele_active=0;
 int secret[10];//a var to store the right code and the typed code and how right/wrong it is
@@ -29,7 +29,7 @@ script 6 (void){//Lava Script
     ThingSound(15,"IBMSND1",255);
     Radius_Quake(random(5,9), 12*35, 0, 16, 15);
     delay(255);
-    
+
     Ceiling_LowerAndCrush(4,7,6553);
     Ceiling_LowerAndCrush(10,7,65536);
     Ceiling_LowerAndCrush(94,4,65536);
@@ -37,24 +37,28 @@ script 6 (void){//Lava Script
     Ceiling_LowerAndCrush(18,7,65536);
     Ceiling_LowerAndCrush(124,7,65536);
     delay(350);
-    
+
     ceiling_raisebyvalue(9,10,335);
     ceiling_raisebyvalue(48,10,464);
     acs_execute(15,0,SPAWN_LAVA_SOUND,0,0);//text effect
     delay(350);
-    
+
     door_close(4,7);    door_close(10,7);    door_close(94,4);    door_close(14,7);    door_close(18,7);    door_close(124,7);
     acs_execute(17,0,0,0,0);
-    time_delay=0;while(time_delay<8){
+    time_delay=0;
+    while(time_delay<8)
+    {
         thing_remove(lava_del_tids[time_delay]);time_delay++;
-    }generator2=0;
-    acs_execute(34,0,generator1*10+generator2,0,0);
+    }
+
+    generator2 = false;
+    acs_execute(34,0, (int)generator1 * 10 + (int)generator2,0,0);
     Light_ChangeToValue(80,80);
     Light_changetovalue(81,80);
     Thing_ChangeTID(66, 500);
     Sector_SetDamage(7,MOD_LAVA,MOD_LAVA);
     delay(random(350,3500));
-    
+
     acs_execute(13,0,0,0,0); // Invoke Ravishing.
 }
 
@@ -81,22 +85,22 @@ script 15 (int action) clientside{//Lava Script: Message/sound Effect
         while(true){//Replace with ambientsound
             ThingSound(15,"ibmlava1",255);
             delay(67);
-        }   
-    }   
+        }
+    }
 }
 
 
 script 27 open { //Cursor blink logic.
     int comm=0;
     int num_pos=0;
-    int s_exit=FALSE;
+    bool s_exit=FALSE;
     while(s_exit==FALSE){
         if(comm==0 && secret[WRONG_CNT_INDEX] + secret[RIGHT_CNT_INDEX]!= ALL_DIGITS_INSERTED) { // "_"
-            SetLineTexture(secret[WRONG_CNT_INDEX] + secret[RIGHT_CNT_INDEX] + 82,SIDE_FRONT,TEXTURE_MIDDLE,"ibmnu5"); 
+            SetLineTexture(secret[WRONG_CNT_INDEX] + secret[RIGHT_CNT_INDEX] + 82,SIDE_FRONT,TEXTURE_MIDDLE,"ibmnu5");
             comm++;
         }
         else if (secret[WRONG_CNT_INDEX] + secret[RIGHT_CNT_INDEX] != ALL_DIGITS_INSERTED) {// " "
-            SetLineTexture(secret[WRONG_CNT_INDEX]+secret[RIGHT_CNT_INDEX]+82,SIDE_FRONT,TEXTURE_MIDDLE,"ibmnu6"); 
+            SetLineTexture(secret[WRONG_CNT_INDEX]+secret[RIGHT_CNT_INDEX]+82,SIDE_FRONT,TEXTURE_MIDDLE,"ibmnu6");
             comm--;
         }
         else{
@@ -109,8 +113,9 @@ script 27 open { //Cursor blink logic.
     }
 }
 
-script 68 (int type_human) { //only actived when 100% right code, or 0% right code
- 	if (type_human == false){
+script 68 (raw type_human) { //only actived when 100% right code, or 0% right code
+ 	if (!type_human)
+    {
         delay(random(10*35,35*35));
         ambientsound("zombie_boss",127);
         delay(35*13);
@@ -174,8 +179,8 @@ function void test_secret (int switchh){
             BCSUtils::HudSetVirtualSize(640.0, 480.0);
             BCSUtils::HudSetPoint(320.0, 60.0);
             BCSUtils::HudSetTextColor(CR_GREEN);
-            BCSUtils::HudSetScale(0.8);            
-            BCSUtils::HudSetAppearTime(0);
+            BCSUtils::HudSetScale(0.8);
+            BCSUtils::HudSetAppearTime(0.0);
             BCSUtils::HudSetStayTime(5.5);
             BCSUtils::HudSetDisappearTime(0.5);
             BCSUtils::HudDrawText(0, "A secret passage opens");
@@ -189,8 +194,8 @@ function void test_secret (int switchh){
             BCSUtils::HudSetVirtualSize(640.0, 480.0);
             BCSUtils::HudSetPoint(320.0, 60.0);
             BCSUtils::HudSetTextColor(CR_GREEN);
-            BCSUtils::HudSetScale(0.8);            
-            BCSUtils::HudSetAppearTime(0);
+            BCSUtils::HudSetScale(0.8);
+            BCSUtils::HudSetAppearTime(0.0);
             BCSUtils::HudSetStayTime(5.5);
             BCSUtils::HudSetDisappearTime(0.5);
             BCSUtils::HudDrawText(0, "ALL HUMANS GAINED ITENS!!!!");
@@ -201,8 +206,8 @@ function void test_secret (int switchh){
             BCSUtils::HudSetVirtualSize(640.0, 480.0);
             BCSUtils::HudSetPoint(320.0, 60.0);
             BCSUtils::HudSetTextColor(CR_GREEN);
-            BCSUtils::HudSetScale(0.8);            
-            BCSUtils::HudSetAppearTime(0);
+            BCSUtils::HudSetScale(0.8);
+            BCSUtils::HudSetAppearTime(0.0);
             BCSUtils::HudSetStayTime(5.5);
             BCSUtils::HudSetDisappearTime(0.5);
             BCSUtils::HudDrawText(0, "All secret passages are now open");
@@ -222,8 +227,8 @@ function void test_secret (int switchh){
             BCSUtils::HudSetVirtualSize(640.0, 480.0);
             BCSUtils::HudSetPoint(320.0, 60.0);
             BCSUtils::HudSetTextColor(CR_GREEN);
-            BCSUtils::HudSetScale(0.8);            
-            BCSUtils::HudSetAppearTime(0);
+            BCSUtils::HudSetScale(0.8);
+            BCSUtils::HudSetAppearTime(0.0);
             BCSUtils::HudSetStayTime(5.5);
             BCSUtils::HudSetDisappearTime(0.5);
             BCSUtils::HudDrawText(0, "A locked door is now unlocked");
@@ -234,8 +239,8 @@ function void test_secret (int switchh){
             BCSUtils::HudSetVirtualSize(640.0, 480.0);
             BCSUtils::HudSetPoint(320.0, 60.0);
             BCSUtils::HudSetTextColor(CR_GREEN);
-            BCSUtils::HudSetScale(0.8);            
-            BCSUtils::HudSetAppearTime(0);
+            BCSUtils::HudSetScale(0.8);
+            BCSUtils::HudSetAppearTime(0.0);
             BCSUtils::HudSetStayTime(5.5);
             BCSUtils::HudSetDisappearTime(0.5);
             BCSUtils::HudDrawText(0, "A locked door is now unlocked");
@@ -278,7 +283,7 @@ function void test_secret (int switchh){
             SetCvar("x_zh_zm09_zp",i+1);
             Acs_execute(68,0);
         }
-        else 
+        else
         {
             // Spawn Lava + Ravishing.
             ACS_Execute(6,0,0,0,0);
@@ -289,17 +294,17 @@ function void test_secret (int switchh){
 
 function void red_keyspawn(void){
     switch(random(0,10)){
-    case 0:spawn("mapspot",random(-721.0,-409.0),random(1873.0,2711.0),632.0,350,0); TeleportOther(36,350,1);break;
-    case 1:spawn("mapspot",random(4528.0,5135.0),random(-1664.0,-1361.0),400.0,350,0); TeleportOther(36,350,1);break;
-    case 2:spawn("mapspot",random(5623.0,5807.0),random(-783.0,-497.0),472.0,350,0); TeleportOther(36,350,1);break;
-    case 3:spawn("mapspot",random(2080.0,4079.0),random(2448.0,3823.0),463.0,350,0); TeleportOther(36,350,1);break;
-    case 4:spawn("mapspot",random(-3088.0,-2553.0),random(-1776.0,-1281.0),112.0,350,0); TeleportOther(36,350,1);break;
-    case 5:spawn("mapspot",random(1114.0,1775.0),random(392.0,825.0),318.0,350,0); TeleportOther(36,350,1);break;
-    case 6:spawn("mapspot",random(-1856.0,-1169.0),random(2125.0,2351.0),327.0,350,0); TeleportOther(36,350,1);break;
-    case 7:spawn("mapspot",random(4416.0,4471.0),random(-2004.0,-1961.0),400.0,350,0); TeleportOther(36,350,1);break;
-    case 8:spawn("mapspot",random(-2512.0,879.0),random(-1716.0,-449.0),362.0,350,0); TeleportOther(36,350,1);break;
-    case 9:spawn("mapspot",random(4550.0,4719.0),random(-1246.0,-1169.0),465.0,350,0); TeleportOther(36,350,1);break;
-    case 10:spawn("mapspot",random(-1808.0,-1585.0),random(-2320.0,-2052.0),72.0,350,0); TeleportOther(36,350,1);break;
+    case 0:spawn("mapspot", Math::FRandom(-721.0,-409.0), Math::FRandom(1873.0,2711.0), 632.0, 350,0); TeleportOther(36, 350, 1); break;
+    case 1:spawn("mapspot", Math::FRandom(4528.0,5135.0), Math::FRandom(-1664.0,-1361.0), 400.0, 350,0); TeleportOther(36, 350, 1); break;
+    case 2:spawn("mapspot", Math::FRandom(5623.0,5807.0), Math::FRandom(-783.0,-497.0), 472.0, 350,0); TeleportOther(36, 350, 1); break;
+    case 3:spawn("mapspot", Math::FRandom(2080.0,4079.0), Math::FRandom(2448.0,3823.0), 463.0, 350,0); TeleportOther(36, 350, 1); break;
+    case 4:spawn("mapspot", Math::FRandom(-3088.0,-2553.0), Math::FRandom(-1776.0,-1281.0), 112.0, 350,0); TeleportOther(36, 350, 1); break;
+    case 5:spawn("mapspot", Math::FRandom(1114.0,1775.0), Math::FRandom(392.0,825.0), 318.0, 350,0); TeleportOther(36, 350, 1); break;
+    case 6:spawn("mapspot", Math::FRandom(-1856.0,-1169.0), Math::FRandom(2125.0,2351.0), 327.0, 350,0); TeleportOther(36, 350, 1); break;
+    case 7:spawn("mapspot", Math::FRandom(4416.0,4471.0), Math::FRandom(-2004.0,-1961.0), 400.0, 350,0); TeleportOther(36, 350, 1); break;
+    case 8:spawn("mapspot", Math::FRandom(-2512.0,879.0), Math::FRandom(-1716.0,-449.0), 362.0, 350,0); TeleportOther(36, 350, 1); break;
+    case 9:spawn("mapspot", Math::FRandom(4550.0,4719.0), Math::FRandom(-1246.0,-1169.0), 465.0, 350,0); TeleportOther(36, 350, 1); break;
+    case 10:spawn("mapspot", Math::FRandom(-1808.0,-1585.0),Math::FRandom(-2320.0,-2052.0), 72.0, 350,0); TeleportOther(36, 350, 1); break;
     }
 }
 

@@ -158,6 +158,8 @@ strict namespace ZH2Game
         // Extra variable that returns how much damage we actually dealth in case of death
         int dealtDamage = targetDied ? targetHealth : damage;
 
+        Player::SetHealth(targetHealth);
+
         str targetName;
         if (targetId != -1)
         {
@@ -184,6 +186,9 @@ strict namespace ZH2Game
             if (sourceName == (str)0 || sourceName == "")
                 sourceName = GetActorClass(0);
         }
+
+        if (sourceId != -1)
+            Player::IncrementPlayerDamageToPlayer(sourceId, targetId, dealtDamage);
 
         // Determine inflictor info.
         str inflictorName;
@@ -362,7 +367,7 @@ strict namespace ZH2Game
 
                 // Finally, if the round was the playing round, call the event.
                 if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
-                    Event::SendPlayerLeftRound(id);
+                    Event::SendPlayerLeftRound(id, reason);
             }
             else
             {
@@ -402,6 +407,7 @@ strict namespace ZH2Game
         str class = GetActorClass(0);
         if (class == ACTOR_INITIALSPAWNSPOT_NAME) Game::TrackInitialSpawnSpot();
         else if (class == ACTOR_ZOMBIETELEPORTSPOT_NAME) Game::TrackZombieTeleportSpot();
+        else Weapon::TrackFakeWeaponSpawnSpot(class);
     }
 
     internal bool OnChat(int id)

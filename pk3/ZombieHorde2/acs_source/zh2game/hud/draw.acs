@@ -6,7 +6,20 @@ strict namespace Hud
 {
     internal void DrawHud()
     {
-        // Alongside checking individual categories, this boolean indicates if we draw the hud as a whole.
+        UpdateSharedState();
+
+        switch (GetHudSkin(ConsolePlayerNumber()))
+        {
+            case ZH2Game::HUDSKIN_DEFAULT: DrawHudDefault(); break;
+            case ZH2Game::HUDSKIN_LEGACY: DrawHudLegacy(); break;
+        }
+
+        DrawSharedHud();
+    }
+
+    // Draws the parts of the hud that are not specific to any skin.
+    internal void DrawSharedHud()
+    {
         bool drawHud = ZH2Game::GetDrawHud();
 
         if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
@@ -39,24 +52,33 @@ strict namespace Hud
                 DrawClientSeparateHudFire(FIRETYPENORMAL);
 
             if (_clientCameraOnBody && Player::GetOnFire() && Timer() % 10 == 0)
-                DrawClientSeparateHudFireBlur();
+                DrawFireBlur();
 
             if (_clientCameraOnBody && Player::GetOnAcid() && Timer() % 10 == 0)
-                DrawClientSeparateHudAcidBlur();
+                DrawAcidBlur();
 
             if (Game::ClientDeathCameraEnabled() && Game::GetViewingDeathCamera())
                 DrawDeathCamHud();
 
             if (_clientCameraOnBody && drawHud)
-            {
                 DrawWeaponsHud();
-                DrawPlayerHud();
+
+            if (_clientCameraOnBody && drawHud && BCSUtils::ActorIsAlive(ActivatorTid()))
+            {
+                if (ZH2Game::GetDrawPlayerPowersHud())
+                    DrawPlayerPowersHud();
+
+                DrawIdentity();
+                DrawInventory();
+                DrawBlurHud();
             }
 
             if (drawHud && ZH2Game::GetDrawGameHud())
-                DrawGameHud();
+                DrawZombieTeleportTime();
 
-            DrawObituaryHud();
+            if (drawHud && ZH2Game::GetDrawObituaryHud())
+                DrawObituaryHud();
+
             DrawDamageFeedback();
         }
 

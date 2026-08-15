@@ -1,0 +1,75 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Decorate
+{
+    internal void InitializeRadioServer()
+    {
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_radio_specie_changed");
+    }
+
+    internal void InitializeRadioClient()
+    {
+        SetRadioProximityWasEnabled(ZH2Game::GetRadioProximityEnabled());
+
+        EventBus::AddCallbackByScriptName(EVENTPLAYERSPECIECHANGED, "zh2_internal_radio_specie_changed_client");
+    }
+
+    internal void TryClearRadioBroadcastOwner(int id)
+    {
+        if (!GetRadioBroadcastActive() || GetRadioBroadcastPlayerId() != id)
+            return;
+
+        Logger::LogDebug(LOGSOURCE, "Radio: clearing broadcast, (\cd" + str(id) + "\cj) "
+            + BCSUtils::PlayerName(id) + " is no longer available.");
+        ClearRadioBroadcast();
+        Sync::SyncRadio();
+    }
+
+    internal void TryClearRadioBroadcastClientside(int id)
+    {
+        if (!GetRadioBroadcastActive() || GetRadioBroadcastPlayerId() != id)
+            return;
+
+        Logger::LogDebug(LOGSOURCE, "Radio: dropping broadcast, owner \cd" + str(id) + "\cj "
+            + BCSUtils::PlayerName(id) + " is no longer available.");
+        ClearRadioBroadcastClientside();
+    }
+
+    script "zh2_internal_radio_specie_changed" (raw packetStr)
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerSpecieChanged(packet);
+        int id = Event::GetReceiveData(0);
+        Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(Event::GetReceiveData(1));
+
+        if (specie != Player::SPECIEZOMBIE)
+            terminate;
+
+        TryClearRadioBroadcastOwner(id);
+    }
+
+    script "zh2_internal_radio_specie_changed_client" (raw packetStr) clientside
+    {
+        str packet = (str)packetStr;
+        Event::ReceivePlayerSpecieChanged(packet);
+        int id = Event::GetReceiveData(0);
+        Player::PlayerSpecieT specie = Player::GetSpecieTypeByIndex(Event::GetReceiveData(1));
+
+        if (specie != Player::SPECIEZOMBIE)
+            terminate;
+
+        TryClearRadioBroadcastClientside(id);
+    }
+
+    internal void HandleRadioDisconnect(int id)
+    {
+        TryClearRadioBroadcastOwner(id);
+    }
+
+    internal void HandleRadioDisconnectClient(int id)
+    {
+        TryClearRadioBroadcastClientside(id);
+    }
+}

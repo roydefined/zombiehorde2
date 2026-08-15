@@ -7,30 +7,33 @@
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
 
-script 1 OPEN
+strict namespace
 {
-    Thing_Move(67, random(64, 66), 1);
-    Sector_SetColor(2, 0, 48, 160);
-    Sector_SetColor(68, 255, 202, 17);
-}
+    script 1 OPEN
+    {
+        Thing_Move(67, random(64, 66), 1);
+        Sector_SetColor(2, 0, 48, 160);
+        Sector_SetColor(68, 255, 202, 17);
+    }
 
-script "jacks_room_open"
-{
-	static bool opened;
-	if (!opened && !CheckInventory("ZH2LegacyCaveKey"))
-	{
-		print(s:"This door appears to be locked.");
-		ActivatorSound("sound/locked1", 127);
-		terminate;
-	}
+    script "jacks_room_open"
+    {
+        static bool opened;
+        if (!opened && !CheckInventory("ZH2LegacyCaveKey"))
+        {
+            print(s:"This door appears to be locked.");
+            ActivatorSound("sound/locked1", 127);
+            terminate;
+        }
 
-	opened = true;
+        opened = true;
 
-	Door_Open(54, 35, 0);
-	TagWait(54);
+        Door_Open(54, 35, 0);
+        TagWait(54);
 
-	delay(const: 35 * 5);
+        delay(const: 35 * 5);
 
-	Door_Close(54, 35, 0);
-	TagWait(54);
+        Door_Close(54, 35, 0);
+        TagWait(54);
+    }
 }
