@@ -41,8 +41,16 @@ strict namespace Weapon
             int tid = Identity::GetTID(id);
             Logger::LogInformation(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(id) + "\cj's weapon skin changed from \cd" + str(lastSkin) + "\cj to \cd" + str(currentSkin) + "\cj. Migrating owned weapons.");
 
-            for (int weaponType = 0; weaponType < WEAPONTYPE_COUNT; ++weaponType)
+            for (int order = 0; order < WEAPONTYPE_COUNT; ++order)
             {
+                // HACK: We force the shotgun to migrate first to fix desync caused by `SetWeapon` called later down the line.
+                // Zandronum seems to have issues with giving and taking weapons, plus setting them in the same tic.
+                // Considering ZHMODDEF already sets the shotgun up first, only the skin migration suffers from this now.
+                // TODO: Set up a proper "startup weapon" setting that specifies the shotgun is the starting weapon.
+                int weaponType = order;
+                if (order == 0) weaponType = WEAPONTYPE_SHOTGUN;
+                else if (order == WEAPONTYPE_SHOTGUN) weaponType = 0;
+
                 str oldClassName = GetWeaponClassName(weaponType, lastSkin);
                 if (((raw)oldClassName) == 0 || CheckActorInventory(tid, oldClassName) == 0)
                     continue;
