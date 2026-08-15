@@ -29,4 +29,25 @@ strict namespace Weapon
         if (((raw)className) != 0)
             GiveActorInventory(tid, className, amount);
     }
+
+    // A 50% chance to get a fire grenade one second into playing.
+    // TODO: Replace with better distribution.
+    // NOTE: Logic was moved away from the ENTER script due to desync issues.
+    // Zandronum doesn't like it when I give weapons to the player, whilst also setting the wielded weapon.
+    internal void FireGrenadeBonusTic()
+    {
+        if (!Player::GetIsHuman() || Player::GetPlayerState(PlayerNumber()) != Player::STATEPLAYING)
+            return;
+
+        if (Player::GetPlayTics() != 35)
+            return;
+
+        if (!BCSUtils::RandBool())
+            return;
+
+        Give(WEAPONTYPE_FIREGRENADE, 1);
+        GiveInventory(WEAPON_AMMO_FIREGRENADE_NAME, 1);
+
+        Logger::LogActivator("You have received a fire grenade!");
+    }
 }
