@@ -11,6 +11,11 @@ strict namespace Utils
 
     bool GetPlayerIsMoving (int id)
     {
+        // To my knowledge analog input (e.g. a joystick) does not check `compat_clientssendfullbuttoninfo`.
+        // We can therefore always check this regardless of the cvar.
+        if (GetPlayerInput(id, INPUT_FORWARDMOVE) != 0 || GetPlayerInput(id, INPUT_SIDEMOVE) != 0)
+            return true;
+
         // This function requires the "send full button info" compat cvar to be enabled serverside.
         // This is not actually something we need to check as the mod forces it to be enabled, but it's added in case the cvar is disabled somehow.
         if (IsNetworkGame() && BCSUtils::IsServerOnly() && !ZH2Lib::GetClientSendFullButtonInfo()) {
