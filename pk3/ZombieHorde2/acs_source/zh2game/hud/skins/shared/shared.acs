@@ -126,13 +126,15 @@ strict namespace Hud
         {
             _sharedState.AfkBarMaxTics = ZH2Game::GetAfkMoveAtRoundStartBeforeSeconds() * 35;
             _sharedState.AfkBarTicsLeft = AfkPrevention::GetTicsUntilRoundStartKick();
-            _sharedState.DrawAfkBar = _sharedState.AfkBarMaxTics != 0;
+            _sharedState.DrawAfkBar = ZH2Game::GetAfkMoveAtRoundStart() && _sharedState.AfkBarMaxTics != 0;
         }
         else if (AfkPrevention::GetHasAfkWarn())
         {
             _sharedState.AfkBarMaxTics = ZH2Game::GetAfkZombieMoveWarnSeconds() * 35;
             _sharedState.AfkBarTicsLeft = AfkPrevention::GetZombieWarnTicsLeft();
-            _sharedState.DrawAfkBar = _sharedState.AfkBarMaxTics != 0;
+
+            // We don't actually need to add the cvar here as `GetHasAfkWarn` already covers it.
+            _sharedState.DrawAfkBar = ZH2Game::GetAfkMoveAsZombie() && _sharedState.AfkBarMaxTics != 0;
         }
         else
         {
