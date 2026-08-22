@@ -91,13 +91,16 @@ strict namespace Weapon
             Thing_Remove(tid);
 
             str className = GetWeaponSpawnClassName(weaponType);
-            Spawn(className, x, y, z, tid, angle);
+
+            // Ensure we also know if the spawn truly failed.
+            if (!SpawnForced(className, x, y, z, tid, angle))
+                Logger::LogWarning(LOGSOURCE, "Failed to spawn weapon '" + className + "' at fake weapon spawn spot \cd" + str(tid) + "\cj.");
         }
     }
 
     // Determines the class to spawn in place of a tracked fake weapon spawn spot.
     // This depends on the currently determined weapon skin.
-    internal str GetWeaponSpawnClassName(int weaponType)
+    str GetWeaponSpawnClassName(int weaponType)
     {
         int itemIndex = GetWeaponItemIndex(weaponType, WEAPONSKIN_BESTFIT);
         if (itemIndex == -1)

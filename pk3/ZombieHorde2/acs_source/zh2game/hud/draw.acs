@@ -8,7 +8,7 @@ strict namespace Hud
     {
         UpdateSharedState();
 
-        switch (GetHudSkin(ConsolePlayerNumber()))
+        switch (GetSharedState().HudSkin)
         {
             case ZH2Game::HUDSKIN_DEFAULT: DrawHudDefault(); break;
             case ZH2Game::HUDSKIN_LEGACY: DrawHudLegacy(); break;
@@ -48,9 +48,6 @@ strict namespace Hud
             if (ZH2Game::GameContext.HasClientSettingsHudOpen)
                 DrawClientSettingsHud();
 
-            if (_clientCameraOnBody && Player::GetOnFire())
-                DrawClientSeparateHudFire(FIRETYPENORMAL);
-
             if (_clientCameraOnBody && Player::GetOnFire() && Timer() % 10 == 0)
                 DrawFireBlur();
 
@@ -65,9 +62,6 @@ strict namespace Hud
 
             if (_clientCameraOnBody && drawHud && BCSUtils::ActorIsAlive(ActivatorTid()))
             {
-                if (ZH2Game::GetDrawPlayerPowersHud())
-                    DrawPlayerPowersHud();
-
                 DrawIdentity();
                 DrawInventory();
                 DrawBlurHud();

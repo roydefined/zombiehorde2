@@ -6,6 +6,23 @@ strict namespace Weapon
 {
     internal bool CheckWielded(int weaponType, int skin = WEAPONSKIN_BESTFIT)
     {
+        if (skin != WEAPONSKIN_BESTFIT)
+            return CheckWieldedSkin(weaponType, skin);
+
+        // When checking the best fit, we want to check all skins here.
+        // This ensures weapons that differ on a map still show up correctly.
+        // An admin could have spawned them in, for example.
+        for (int i = 1; i <= WEAPONSKIN_COUNT; ++i)
+        {
+            if (CheckWieldedSkin(weaponType, i))
+                return true;
+        }
+
+        return false;
+    }
+
+    internal bool CheckWieldedSkin(int weaponType, int skin)
+    {
         str className = GetWeaponClassName(weaponType, skin);
         return ((raw)className) != 0 && CheckWeapon(className);
     }

@@ -1,0 +1,55 @@
+Map changes
+------------------------------------------------
+
+* * Fixed unpickable weapons spawned by maps at runtime * *
+Several maps spawned or gave weapons at runtime using a placeholder class instead of the real pickup, making them impossible to pick up. Fixed on all affected maps.
+
+- [ZE17]:  Fixed the secret room's Jack's Gun being unpickable.
+- [ZE18]:  Fixed the safe zone's Jack's Gun spawn being unpickable.
+- [ZE20]:  Fixed the grenade generator and water trap's fire grenade being unpickable.
+- [ZE20B]: Fixed the grenade generator and water trap's fire grenade being unpickable.
+- [ZM06]:  Fixed the secret room's Jack's Gun being unpickable.
+- [ZM09]:  Fixed the super shotgun secret spawn being unpickable.
+- [ZM16]:  Fixed the armory's Jack's Gun and double shotgun rewards being unpickable.
+- [ZM18]:  Fixed the generator loot's fire grenade, Jack's Gun and double shotgun being unpickable.
+- [ZM20]:  Fixed the hunter dog's Jack's Gun drop being unpickable.
+- [ZE03M]: Fixed a post resist script warning when two resists run concurrently.
+- [ZE12M]: Fixed resists triggering even though they were done.
+           Fixed a sector being too low and causing players to get stuck.
+           Fixed random picking of the map's mode not working properly.
+           Lowered the chance for quick linear mode to trigger, allowing other modes to happen more frequenytly.
+- [ZE13M]: Fixed Jack's Gun, the double shotgun and the radio being unpickable/unownable in the shop.
+           Made it more common for either gem to already be placed when playing the map.
+- [ZM06M]: Fixed Jack's Gun, double shotgun and fire grenade loot drops being unpickable.
+- [ZM31M]: Fixed two invalid sound sequences.
+- [ZE04M]: Fixed the Delorean speed-o-meter using the wrong font on the legacy HUD.
+- [ZM31M]: Fixed the temperature gauge using the wrong font on the legacy HUD, and moved it up so it no longer overlaps the sprint icon.
+
+API changes (Could contain breaking changes for mappers. Make sure to check this list for migrations)
+------------------------------------------------
+
+* * New `Weapon::GetWeaponSpawnClassName` function * *
+Resolves a weapon type to the real pickup to spawn. This function should be used by players to resolve a weapon spawn instead of using the direct name.
+This prevents skin-specific issues where a spawn might end up with the wrong skin.
+This function always ensures the correct spawn can be resolved.
+
+Other mod changes
+------------------------------------------------
+
+- Added `docs/modernmode.cfg`, the counterpart to `docs/classicmode.cfg`.
+  This cfg forces the game to use the modern skinf eatures. Unlike classic mode it does NOT force new features in any way.
+- Fixed fire grenades dropped on infection being unpickable by humans.
+- Fixed issue where the correct weapon skin could not spawn due to lacking space.
+- Fixed the legacy text obituary showing while the HUD is fully disabled.
+- Fixed a HUD issue when wielding weapons not matching the expected weapon skin.
+- Do not show the fire and power graphics when using the legacy HUD.
+- Fixed an issue with internal move checks not accounting for joystick input.
+  This, for example, caused issued with the new AFK prevention system.
+- Fixed anti-SR50 not triggering when using analog input.
+- Fixed the round-start AFK bar showing even when `sv_zh2_afkmoveatroundstart` is disabled.
+- Fixed the timer compensation for a leaving/spectating zombie not being synchronized to clients.
+- Reverted the timer compensation for a leaving/spectating zombie. Now the more health a zombie has, the more time is added.
+- Improved the sniper logic of both the default and legacy sniper.
+  Specifically the legacy now properly draws on the HUD and it also can no longer be switched mid-fire.
+- Support displaying the skin of weapons on the admin HUD. This avoids mistakingly giving the wrong skin.
+- Increased the default time a zombie can be AFK before they get kicked for inactivity.

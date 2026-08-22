@@ -70,16 +70,19 @@ actor ZH2WeaponSniperLegacy : ZH2Weapon
         Reload:
             TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
             TNT1 A 0 A_JumpIfInventory("ZH2WeaponSniperZoomlevel", 1, "AltFire.ZoomOut")
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponSniperShouldEjectCase", 1, "SniperBolt")
             goto Ready
 
         Fire:
             TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
+            TNT1 A 0 A_JumpIfInventory("ZH2WeaponSniperShouldEjectCase", 1, "Reload")
             TNT1 A 0 ACS_NamedExecuteAlways("zh2_dec_setfiring_server", 0, true)
             TNT1 A 0 A_ClientsideACSExecute("zh2_dec_setfiring_client", true)
 
             TNT1 A 0 A_PlaySound("weapons/sniper/legacy/FIRE", CHAN_WEAPON)
             TNT1 A 0 A_AlertMonsters
             TNT1 A 0 A_GiveInventory("ZH2WeaponSniperBolting", 1)
+            TNT1 A 0 A_GiveInventory("ZH2WeaponSniperShouldEjectCase", 1)
             TNT1 A 0 A_TakeInventory("ZH2WeaponSniperIsZoomed", 1)
             TNT1 A 0 A_TakeInventory("ZH2WeaponSniperZoomlevel", 2)
 
@@ -105,9 +108,9 @@ actor ZH2WeaponSniperLegacy : ZH2Weapon
             goto SniperBolt
 
         SniperBolt:
-            TNT1 A 0 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
             SNPR E 20
             TNT1 A 0 A_TakeInventory("ZH2WeaponSniperBolting", 1)
+            TNT1 A 0 A_TakeInventory("ZH2WeaponSniperShouldEjectCase", 1)
             SNPR O 5 A_PlaySoundEx("weapons/sniper/legacy/BOLT","SoundSlot5")
             SNPR Q 5
             SNPR U 5

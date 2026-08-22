@@ -35,15 +35,17 @@ strict namespace Player
 
         int buttons = GetPlayerInput(-1, INPUT_BUTTONS);
 
-        bool sr50Left =
-            (buttons & BT_STRAFE) &&
-            (buttons & BT_LEFT) &&
-            (buttons & BT_MOVELEFT);
+        // These ensure analog input (e.g. a joystick) also doesn't contribute to SR-50.
+        int yaw = GetPlayerInput(-1, INPUT_YAW);
+        int sideMove = GetPlayerInput(-1, INPUT_SIDEMOVE);
 
-        bool sr50Right =
-            (buttons & BT_STRAFE) &&
-            (buttons & BT_RIGHT) &&
-            (buttons & BT_MOVERIGHT);
+        bool turningLeft = (buttons & BT_LEFT) || yaw > 0;
+        bool turningRight = (buttons & BT_RIGHT) || yaw < 0;
+        bool movingLeft = (buttons & BT_MOVELEFT) || sideMove < 0;
+        bool movingRight = (buttons & BT_MOVERIGHT) || sideMove > 0;
+
+        bool sr50Left = (buttons & BT_STRAFE) && turningLeft && movingLeft;
+        bool sr50Right = (buttons & BT_STRAFE) && turningRight && movingRight;
 
         bool enableAntiSr50 = sr50Left || sr50Right;
         if (GetHasAntiSR50() != enableAntiSr50)

@@ -153,12 +153,24 @@ strict namespace Game
         if (dropBehaviour == ZH2Game::DROPBEHAVIOUR_ONLY_REGULAR_ZOMBIES && type != INFECT_REGULAR)
             return;
 
-        Spawn(WEAPON_FIREGRENADE_SPAWN_NAME, GetActorX(tid), GetActorY(tid), GetActorFloorZ(tid) + 8.0);
+        str spawnClassName = Weapon::GetWeaponSpawnClassName(Weapon::WEAPONTYPE_FIREGRENADE);
+        if (((raw)spawnClassName) == 0)
+        {
+            Logger::LogWarning(LOGSOURCE, "Failed to drop a fire grenade: could not resolve its spawn class.");
+            return;
+        }
+
+        Spawn(spawnClassName, GetActorX(tid), GetActorY(tid), GetActorFloorZ(tid) + 8.0);
     }
 
     script "zh2_internal_player_infected_client" clientside
     {
         BCSUtils::SetActivatorToConsolePlayer();
+
+        // The legacy HUD does not use this graphic.
+        if (Hud::GetSharedState().HudSkin == ZH2Game::HUDSKIN_LEGACY)
+            terminate;
+
         for(int i = 0; i < 10; ++i)
         {
             for (int j = 0; j < 6; ++j)

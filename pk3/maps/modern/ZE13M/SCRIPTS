@@ -59,15 +59,41 @@ strict namespace
     internal bool _wardActive;
     internal bool _playerInWard[BCSUtils::MAX_PLAYERS];
 
-    // All the possible things that can be bought from the shop guy
-    // { item name, decorate name, gold needed }
-    internal raw _shopGuyStuff[5][3] =
+    // All the possible things that can be bought from the shop guy.
+    // { item name, weapon type (-1 if not a weapon), decorate name (only used if not a weapon), gold needed }
+    internal raw _shopGuyStuff[5][4] =
     {
-        { "jacks gun", WEAPON_JACKSGUN_SPAWN_NAME, 100 },
-        { "double barrel shotgun", WEAPON_DOUBLESHOTGUN_SPAWN_NAME, 100 },
-        { "radio", WEAPON_RADIO_SPAWN_NAME, 30  },
-        { "leap stone", LEAPSTONE_ITEM, 50  },
+        { "jacks gun", Weapon::WEAPONTYPE_JACKSGUN, (raw)0, 100 },
+        { "double barrel shotgun", Weapon::WEAPONTYPE_DOUBLESHOTGUN, (raw)0, 100 },
+        { "radio", Weapon::WEAPONTYPE_RADIO, (raw)0, 30  },
+        { "leap stone", -1, LEAPSTONE_ITEM, 50  },
     };
+
+    // Helper functions to check if the target item is owned, and to give it.
+    // These resolve the correct item based on if it's a weapon or just item.
+
+    internal bool ShopEntryOwned(int index)
+    {
+        int weaponType = _shopGuyStuff[index][1];
+        if (weaponType != -1)
+            return Weapon::CheckOwned(weaponType);
+
+        str entry = _shopGuyStuff[index][2];
+        return CheckInventory(entry) != 0;
+    }
+
+    internal void GiveShopEntry(int index)
+    {
+        int weaponType = _shopGuyStuff[index][1];
+        if (weaponType != -1)
+        {
+            Weapon::Give(weaponType, 1);
+            return;
+        }
+
+        str entry = _shopGuyStuff[index][2];
+        GiveInventory(entry, 1);
+    }
 
     // Indicates the player is in the shop area.
     // This prevents abuse of puking the server script.
@@ -93,8 +119,8 @@ strict namespace
         int flow = GetCVar("sv_zh2_ze13mflow");
         if (flow == 0)
         {
-            _redJewelAlreadyPlaced = Random(0, 10) == 10;
-            _blueJewelAlreadyPlaced = Random(0, 10) == 10;
+            _redJewelAlreadyPlaced = Random(0, 8) == 8;
+            _blueJewelAlreadyPlaced = Random(0, 8) == 8;
         }
         else
         {
@@ -933,11 +959,10 @@ strict namespace
         }
 
         str label = _shopGuyStuff[index][0];
-        str entry = _shopGuyStuff[index][1];
-        int value = _shopGuyStuff[index][2];
+        int value = _shopGuyStuff[index][3];
 
         // Player already has this item
-        if (CheckInventory(entry))
+        if (ShopEntryOwned(index))
         {
             line = BCSUtils::StrReplace(shopGuyDuplicateLines[Random(0, lengthof(shopGuyDuplicateLines) - 1)], "%s", label);
             ShopGuyChat(line);
@@ -1018,10 +1043,9 @@ strict namespace
             terminate;
         }
 
-        str entry = _shopGuyStuff[index][1];
-        int value = _shopGuyStuff[index][2];
+        int value = _shopGuyStuff[index][3];
 
-        if (CheckInventory(entry))
+        if (ShopEntryOwned(index))
         {
             Logger::LogDebug(LOGSOURCE, "Shop failed: player already has this item.");
             terminate;
@@ -1034,7 +1058,7 @@ strict namespace
         }
 
         TakeInventory(CURRENCY_CASH_NAME, value);
-        GiveInventory(entry, 1);
+        GiveShopEntry(index);
     }
 
     internal void ShopGuyChat (str string)

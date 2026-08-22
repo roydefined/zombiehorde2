@@ -70,17 +70,20 @@ strict namespace
         int flow = GetCVar("sv_zh2_ze12mflow");
         if (flow == 0)
         {
-            switch(Random(0, 8))
+            switch(Random(0, 6))
             {
                 case 0:
                     flow = 1;
+                    break;
 
                 case 1:
                 case 2:
                     flow = 2;
+                    break;
 
                 default:
                     flow = 3;
+                    break;
             }
         }
 
@@ -279,6 +282,11 @@ strict namespace
 
     script "pillar_resist_enter" (int resistIndex)
     {
+        // Even though the resists are run only once,
+        // Quick linear might've already set a pillar as done.
+        if (_pillarDone[resistIndex])
+            terminate;
+
         Resist::StartResistByIndex(resistIndex);
 
         // TODO
@@ -286,6 +294,11 @@ strict namespace
 
     script "pillar_resist_exit" (int resistIndex)
     {
+        // Even though the resists are run only once,
+        // Quick linear might've already set a pillar as done.
+        if (_pillarDone[resistIndex])
+            terminate;
+
         // TODO
     }
 
