@@ -123,8 +123,24 @@ strict namespace Reward
         if ((raw)give != 0 && give != "")
             GiveActorInventory(tid, give, 1);
 
+        // Tell the receiver to play a sound.
         if ((raw)sound != 0 && sound != "")
-            PlaySound(tid, sound, CHAN_ITEM, 1.0);
+            InformPlayerRewardSound(id, index);
+    }
+
+    internal void InformPlayerRewardSound(int id, int index)
+    {
+        if (!NamedExecuteClientScript("zh2_internal_reward_playsound", id, index))
+            Logger::LogError(LOGSOURCE, "Failed to execute zh2_internal_reward_playsound for player (" + str(id) + ") " + BCSUtils::PlayerName(id) + ".");
+    }
+
+    script "zh2_internal_reward_playsound" (raw indexRaw) clientside
+    {
+        int index = (int)indexRaw;
+        str sound = GetRewardSound(index);
+
+        if ((raw)sound != 0 && sound != "")
+            LocalAmbientSound(sound, 127);
     }
 
     internal void BroadcastGiveItem(int id, int index)
