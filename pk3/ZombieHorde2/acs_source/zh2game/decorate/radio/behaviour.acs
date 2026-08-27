@@ -54,6 +54,10 @@ strict namespace Decorate
             terminate;
         }
 
+        // Should only really happen if called manually since we block input.
+        if (Round::GetCurrentRoundIsEnding())
+            terminate;
+
         int trackIndex = GetClientRadioCurrentlySelectedIndex();
         SetClientCurrentRadioTrackIndex(trackIndex);
 
@@ -75,6 +79,10 @@ strict namespace Decorate
     script "zh2_internal_radio_settrack" (raw packet) net
     {
         if (!Weapon::CheckWielded(Weapon::WEAPONTYPE_RADIO))
+            terminate;
+
+        // Should only really happen if called manually since we block input.
+        if (Round::GetCurrentRoundIsEnding())
             terminate;
 
         // Avoid spamming radio music changes.
