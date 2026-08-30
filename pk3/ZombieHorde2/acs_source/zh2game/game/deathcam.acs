@@ -4,19 +4,13 @@
 
 strict namespace Game
 {
-    #define DEATH_CAM_ACTOR "ZH2DeathCam"
-    #define DEATH_CAM_TID 45000
-    #define DEATH_CAM_DISTANCE 128.0
-    #define DEATH_CAM_ZVEL 0.3
-    #define DEATH_CAM_HOLD_TICS 105
-
-    #define DEATH_CAM_MAX_HORIZONTAL_DISTANCE 250.0
-    #define DEATH_CAM_MAX_VERTICAL_DISTANCE 50.0
-
-    // Holds the player's death location.
+    // Holds the player's death location. The camera always ends up resting here.
     fixed playerDeathPosX = 0.0,
           playerDeathPosY = 0.0,
           playerDeathPosZ = 0.0;
+
+    // Tics elapsed since the death camera was spawned.
+    int deathCamTics = 0;
 
     internal void ClientDeathCamTic()
     {
@@ -30,7 +24,18 @@ strict namespace Game
             return;
         }
 
-        // Automatically dispose of the death cam when too far away.
+        deathCamTics++;
+
+        // End of camera lifetime, lock to the death position.
+        if (deathCamTics >= DEATH_CAM_HOLD_TICS)
+        {
+            SetActorVelocity(DEATH_CAM_TID, 0.0, 0.0, 0.0, false, false);
+            SetActorPosition(DEATH_CAM_TID, playerDeathPosX, playerDeathPosY, playerDeathPosZ, false);
+            SetActorPitch(DEATH_CAM_TID, 0.0);
+            return;
+        }
+
+        // If the camera ends up too far from the death spot, stop waiting and settle now.
         fixed diffX = GetActorX(DEATH_CAM_TID) - playerDeathPosX,
               diffY = GetActorY(DEATH_CAM_TID) - playerDeathPosY,
               diffZ = GetActorZ(DEATH_CAM_TID) - playerDeathPosZ;
@@ -39,17 +44,23 @@ strict namespace Game
         fixed verticalDistance = BCSUtils::Abs(diffZ);
 
         if (horizontalDistance > DEATH_CAM_MAX_HORIZONTAL_DISTANCE || verticalDistance > DEATH_CAM_MAX_VERTICAL_DISTANCE)
-            DisposeClientDeathCamera();
+            deathCamTics = DEATH_CAM_HOLD_TICS;
     }
 
     internal void InitializeClientDeathCamera()
     {
+        // Not required, just in case.
+        Thing_Remove(DEATH_CAM_TID);
+
         int tid = Identity::GetTid(ConsolePlayerNumber());
         playerDeathPosX = GetActorX(tid);
         playerDeathPosY = GetActorY(tid);
         playerDeathPosZ = GetActorZ(tid) + (fixed)GetActorProperty(tid, APROP_VIEWHEIGHT);
 
+        deathCamTics = 0;
+
         fixed angle = GetActorAngle(tid);
+        int byteAngle = (raw)(angle) >> 8;
 
         // Backwards offset based on angle
         fixed offsetX = cos(angle) * DEATH_CAM_DISTANCE,
@@ -59,7 +70,16 @@ strict namespace Game
         fixed x = playerDeathPosX - offsetX;
         fixed y = playerDeathPosY - offsetY;
 
-        SpawnForced(DEATH_CAM_ACTOR, x, y, playerDeathPosZ, DEATH_CAM_TID, (raw)(angle) >> 8);
+        // Best effort attempt to get the camera going.
+        // We can't force it to work if we can't get it to spawn properly.
+        if (Spawn(DEATH_CAM_ACTOR, x, y, playerDeathPosZ, DEATH_CAM_TID, byteAngle) == 0)
+        {
+            SpawnForced(DEATH_CAM_ACTOR, playerDeathPosX, playerDeathPosY, playerDeathPosZ, DEATH_CAM_TID, byteAngle);
+            SetActorPitch(DEATH_CAM_TID, DEATH_CAM_PITCH);
+            return;
+        }
+
+        SetActorPitch(DEATH_CAM_TID, DEATH_CAM_PITCH);
 
         fixed forwardX = cos(angle),
               forwardY = sin(angle),
@@ -89,6 +109,7 @@ strict namespace Game
         playerDeathPosX = 0.0;
         playerDeathPosY = 0.0;
         playerDeathPosZ = 0.0;
+        deathCamTics = 0;
     }
 
     // Can just check if the camera is spawned.
