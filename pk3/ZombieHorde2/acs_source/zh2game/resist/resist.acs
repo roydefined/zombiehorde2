@@ -221,10 +221,14 @@ strict namespace Resist
     internal void StopResist(int index)
     {
         ResistRunStateT state = GetRunState(index);
-        if (state != STATERUNNING && state != STATEPAUSED)
-            return;
+        if (state == STATERUNNING || state == STATEPAUSED || state == STATEPRESCRIPT)
+        {
+            // Pre-resist scripts are to be terminated as well.
+            if (state == STATEPRESCRIPT)
+                ACS_NamedTerminate(GetPreResistScript(index), 0);
 
-        SetResistReadyToStop(index);
+            SetResistReadyToStop(index);
+        }
     }
 
     internal void PauseResist(int index)

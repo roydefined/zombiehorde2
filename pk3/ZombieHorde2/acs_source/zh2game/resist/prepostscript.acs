@@ -46,6 +46,11 @@ strict namespace Resist
 
     internal void CompleteResistScript(int index, bool isPreScript)
     {
+        // The resist may have been stopped by the map for example.
+        ResistRunStateT expectedState = isPreScript ? STATEPRESCRIPT : STATEPOSTSCRIPT;
+        if (GetRunState(index) != expectedState)
+            return;
+
         if (isPreScript)
             SetResistReadyToRun(index);
         else
