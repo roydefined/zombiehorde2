@@ -25,7 +25,7 @@ strict namespace Weapon
     // Resolves an item name to the weapon type it's the resolver class for.
     internal int ResolveWeaponTypeFromResolverClassName(str name)
     {
-        Weapon::WeaponSpawnerCollectionContextT global:PERSISTINGGAMECONTEXTINDEX& spawners = ZH2Game::PersistingGameContext.WeaponSpawnerCollection;
+        Weapon::WeaponSpawnerCollectionContextT global:PERSISTING_GAME_CONTEXT_INDEX& spawners = ZH2Game::PersistingGameContext.WeaponSpawnerCollection;
         for (int i = 0; i < spawners.Size; ++i)
         {
             if (spawners.Collection[i].ResolverClassName == name)
@@ -46,7 +46,7 @@ strict namespace Weapon
     // Saves on a lot of extra lookups since it's a very frequent action taken in the code.
     internal void BuildWeaponSkinIndex()
     {
-        Weapon::WeaponSkinIndexT global:PERSISTINGGAMECONTEXTINDEX& index = ZH2Game::PersistingGameContext.WeaponSkinIndex;
+        Weapon::WeaponSkinIndexT global:PERSISTING_GAME_CONTEXT_INDEX& index = ZH2Game::PersistingGameContext.WeaponSkinIndex;
         if (index.Built)
             return;
 
@@ -56,10 +56,10 @@ strict namespace Weapon
         for (int i = 0; i < WEAPONTYPE_COUNT; ++i)
             index.SpawnerIndex[i] = -1;
 
-        Item::ItemCollectionContextT global:PERSISTINGGAMECONTEXTINDEX& items = ZH2Game::PersistingGameContext.ItemCollection;
+        Item::ItemCollectionContextT global:PERSISTING_GAME_CONTEXT_INDEX& items = ZH2Game::PersistingGameContext.ItemCollection;
         for (int i = 0; i < items.Size; ++i)
         {
-            Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& item = ZH2Game::PersistingGameContext.ItemCollection.Collection[i];
+            Item::ItemContextT global:PERSISTING_GAME_CONTEXT_INDEX& item = ZH2Game::PersistingGameContext.ItemCollection.Collection[i];
             if (item.Type != Item::TYPE_WEAPON || item.Skin == int(Item::ITEMSKIN_NONE))
                 continue;
 
@@ -73,7 +73,7 @@ strict namespace Weapon
             index.ItemIndex[GetItemIndexSlot(weaponType, item.Skin)] = i;
         }
 
-        Weapon::WeaponSpawnerCollectionContextT global:PERSISTINGGAMECONTEXTINDEX& spawners = ZH2Game::PersistingGameContext.WeaponSpawnerCollection;
+        Weapon::WeaponSpawnerCollectionContextT global:PERSISTING_GAME_CONTEXT_INDEX& spawners = ZH2Game::PersistingGameContext.WeaponSpawnerCollection;
         for (int i = 0; i < spawners.Size; ++i)
         {
             int weaponType = ResolveWeaponTypeFromName(spawners.Collection[i].Name);
@@ -132,7 +132,7 @@ strict namespace Weapon
             return;
         }
 
-        Item::ItemContextT global:PERSISTINGGAMECONTEXTINDEX& item = ZH2Game::PersistingGameContext.ItemCollection.Collection[itemIndex];
+        Item::ItemContextT global:PERSISTING_GAME_CONTEXT_INDEX& item = ZH2Game::PersistingGameContext.ItemCollection.Collection[itemIndex];
         bool correctSpecie = item.HumanOwned ? Player::GetIsHuman() : Player::GetIsZombie();
         if (!correctSpecie)
         {

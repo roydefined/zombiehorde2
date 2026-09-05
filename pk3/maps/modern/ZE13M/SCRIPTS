@@ -19,15 +19,15 @@ strict namespace
     #define SHOPGUY_TID 44
 
     // Key HUD display
-    #define KEYDISPLAYID 50
-    #define HEADERTEXTX 320.0
-    #define HEADERTEXTY 70.0
+    #define KEY_DISPLAY_ID 50
+    #define HEADER_TEXT_X 320.0
+    #define HEADER_TEXT_Y 70.0
 
-    #define KEYICONDISPLAYX HEADERTEXTX - 50.0
-    #define KEYICONDISPLAYY HEADERTEXTY + 20.0
-    #define KEYTEXTDISPLAYX KEYICONDISPLAYX + 15.0
-    #define KEYTEXTDISPLAYY KEYICONDISPLAYY + 7.0
-    #define KEYYOFFSET 20.0
+    #define KEY_ICON_DISPLAY_X HEADER_TEXT_X - 50.0
+    #define KEY_ICON_DISPLAY_Y HEADER_TEXT_Y + 20.0
+    #define KEY_TEXT_DISPLAY_X KEY_ICON_DISPLAY_X + 15.0
+    #define KEY_TEXT_DISPLAY_Y KEY_ICON_DISPLAY_Y + 7.0
+    #define KEY_Y_OFFSET 20.0
 
     internal enum
     {
@@ -342,7 +342,7 @@ strict namespace
         }
 
         // Both gems placed. Door opens.
-        HudMessageBold(s:"The way to the castle center has been opened!"; HUDMSG_FADEOUT, 0, CR_WHITE, HEADERTEXTX, HEADERTEXTY, 2.0, 0.5);
+        HudMessageBold(s:"The way to the castle center has been opened!"; HUDMSG_FADEOUT, 0, CR_WHITE, HEADER_TEXT_X, HEADER_TEXT_Y, 2.0, 0.5);
         Floor_LowerByValue(11, 16, 120);
         Delay(35*5);
 
@@ -420,10 +420,10 @@ strict namespace
         SetHudSize(640, 480, FALSE);
 
         SetFont("smallfont");
-        HudMessage(s:"You require the following keys"; HUDMSG_FADEINOUT, 0, CR_WHITE, HEADERTEXTX, HEADERTEXTY, 4.0, 1.0, 0.5);
+        HudMessage(s:"You require the following keys"; HUDMSG_FADEINOUT, 0, CR_WHITE, HEADER_TEXT_X, HEADER_TEXT_Y, 4.0, 1.0, 0.5);
 
         delay(9);
-        HudMessage(s:"in order to traverse deeper into the castle"; HUDMSG_FADEINOUT, 0, CR_WHITE, HEADERTEXTX, HEADERTEXTY + 10.0, 3.75, 1.0, 0.5);
+        HudMessage(s:"in order to traverse deeper into the castle"; HUDMSG_FADEINOUT, 0, CR_WHITE, HEADER_TEXT_X, HEADER_TEXT_Y + 10.0, 3.75, 1.0, 0.5);
 
         delay(35*2);
 
@@ -433,21 +433,21 @@ strict namespace
 
     script "CastleRedJewelContext" clientside
     {
-        int iconId = KEYDISPLAYID,
-            textId = KEYDISPLAYID + 1;
+        int iconId = KEY_DISPLAY_ID,
+            textId = KEY_DISPLAY_ID + 1;
 
-        fixed iconX = KEYICONDISPLAYX,
-              iconY = KEYICONDISPLAYY,
-              textX = KEYTEXTDISPLAYX + 0.1,
-              textY = KEYTEXTDISPLAYY;
+        fixed iconX = KEY_ICON_DISPLAY_X,
+              iconY = KEY_ICON_DISPLAY_Y,
+              textX = KEY_TEXT_DISPLAY_X + 0.1,
+              textY = KEY_TEXT_DISPLAY_Y;
 
         SetHudSize(640, 480, false);
 
         SetFont("MAPCK01I");
-        HudMessage(s:"a"; HUDMSG_FADEINOUT, KEYDISPLAYID, CR_UNTRANSLATED, iconX, iconY, 5.0, 1.0, 0.0);
+        HudMessage(s:"a"; HUDMSG_FADEINOUT, KEY_DISPLAY_ID, CR_UNTRANSLATED, iconX, iconY, 5.0, 1.0, 0.0);
 
         SetFont("smallfont");
-        HudMessage(s:"\cgBlood Ruby"; HUDMSG_TYPEON, KEYDISPLAYID + 1, CR_WHITE, textX, textY, 4.0, 0.05, 0.5);
+        HudMessage(s:"\cgBlood Ruby"; HUDMSG_TYPEON, KEY_DISPLAY_ID + 1, CR_WHITE, textX, textY, 4.0, 0.05, 0.5);
 
         delay(35*5+18);
 
@@ -469,29 +469,29 @@ strict namespace
             }
 
             SetFont("MAPCK01I");
-            HudMessage(s:"a"; HUDMSG_PLAIN, KEYDISPLAYID, CR_UNTRANSLATED, iconX, iconY, 0.0);
+            HudMessage(s:"a"; HUDMSG_PLAIN, KEY_DISPLAY_ID, CR_UNTRANSLATED, iconX, iconY, 0.0);
 
             SetFont("smallfont");
-            HudMessage(s:message; HUDMSG_PLAIN, KEYDISPLAYID + 1, CR_WHITE, textX, textY, 0.0);
+            HudMessage(s:message; HUDMSG_PLAIN, KEY_DISPLAY_ID + 1, CR_WHITE, textX, textY, 0.0);
             Delay(const: 1);
         }
 
         SetFont("MAPCK01I");
-        HudMessage(s:"a"; HUDMSG_FADEOUT, KEYDISPLAYID, CR_UNTRANSLATED, iconX, iconY, 2.0, 0.5);
+        HudMessage(s:"a"; HUDMSG_FADEOUT, KEY_DISPLAY_ID, CR_UNTRANSLATED, iconX, iconY, 2.0, 0.5);
 
         SetFont("smallfont");
-        HudMessage(s:"Placed!"; HUDMSG_FADEOUT, KEYDISPLAYID + 1, CR_WHITE, textX, textY, 2.0, 0.5);
+        HudMessage(s:"Placed!"; HUDMSG_FADEOUT, KEY_DISPLAY_ID + 1, CR_WHITE, textX, textY, 2.0, 0.5);
     }
 
     script "CastleBlueJewelContext" clientside
     {
-        int iconId = KEYDISPLAYID + 2,
-            textId = KEYDISPLAYID + 3;
+        int iconId = KEY_DISPLAY_ID + 2,
+            textId = KEY_DISPLAY_ID + 3;
 
-        fixed iconX = KEYICONDISPLAYX,
-              iconY = KEYICONDISPLAYY + KEYYOFFSET,
-              textX = KEYTEXTDISPLAYX + 0.1,
-              textY = KEYTEXTDISPLAYY + KEYYOFFSET;
+        fixed iconX = KEY_ICON_DISPLAY_X,
+              iconY = KEY_ICON_DISPLAY_Y + KEY_Y_OFFSET,
+              textX = KEY_TEXT_DISPLAY_X + 0.1,
+              textY = KEY_TEXT_DISPLAY_Y + KEY_Y_OFFSET;
 
         SetHudSize(640, 480, false);
 

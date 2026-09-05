@@ -23,8 +23,8 @@ strict namespace IO
         int startIndex = 0;
         while(true)
         {
-            startIndex = LumpOpen(MAPDEFLUMPNAME, startIndex);
-            //Logger::LogDebug(LOGSOURCE, "\cd" + MAPDEFLUMPNAME + "\cj index: \cd" + str(startIndex) + "\cj.");
+            startIndex = LumpOpen(MAP_DEF_LUMP_NAME, startIndex);
+            //Logger::LogDebug(LOGSOURCE, "\cd" + MAP_DEF_LUMP_NAME + "\cj index: \cd" + str(startIndex) + "\cj.");
 
             if (startIndex == -1) break;
             if (LumpGetInfo(startIndex, LUMP_INFO_SIZE) > 0)
@@ -40,7 +40,7 @@ strict namespace IO
 
     internal void ParseMapLumpPositions(str buffer, int mapLumpIndex)
     {
-        // Logger::LogDebug(LOGSOURCE, "\cd" + MAPDEFLUMPNAME + "\cj Buffer: \cd" + buffer + "\cj.");
+        // Logger::LogDebug(LOGSOURCE, "\cd" + MAP_DEF_LUMP_NAME + "\cj Buffer: \cd" + buffer + "\cj.");
 
         int handle = Tokenizer::RentTokenizer(buffer);
         if (handle == -1)
@@ -51,14 +51,14 @@ strict namespace IO
 
         Tokenizer::Next(handle, false);
 
-        Logger::LogDebug(LOGSOURCE, "\cd" + MAPDEFLUMPNAME + "\cj start parsing map positions of lump index: \cd" + str(mapLumpIndex) + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "\cd" + MAP_DEF_LUMP_NAME + "\cj start parsing map positions of lump index: \cd" + str(mapLumpIndex) + "\cj.");
         while(Tokenizer::CanRead(handle))
         {
-            // Logger::LogDebug(LOGSOURCE, "\cd" + MAPDEFLUMPNAME + "\cj symbol: \cd" + Tokenizer::GetSymbol(handle) + "\cj.");
+            // Logger::LogDebug(LOGSOURCE, "\cd" + MAP_DEF_LUMP_NAME + "\cj symbol: \cd" + Tokenizer::GetSymbol(handle) + "\cj.");
             if (ParseMapPosition(handle, mapLumpIndex))
                 continue;
 
-            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAPDEFLUMPNAME + ": '" + Tokenizer::GetSymbol(handle) + "'.");
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAP_DEF_LUMP_NAME + ": '" + Tokenizer::GetSymbol(handle) + "'.");
             break;
         }
 
@@ -84,7 +84,7 @@ strict namespace IO
         Tokenizer::Next(handle);
         str symbol = Tokenizer::GetSymbol(handle);
 
-        MapBaseCollectionT global:PERSISTINGGAMECONTEXTINDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
+        MapBaseCollectionT global:PERSISTING_GAME_CONTEXT_INDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
 
         // Fail safe prevents overflowing past the maximum the array can handle.
         // Depending on how many maps we would still parse this could print multiple messages since we keep coming in here.
@@ -114,7 +114,7 @@ strict namespace IO
                 || Tokenizer::ParseBodyAsEmpty(handle, symbol, "softwaretextures"))
                 continue;
 
-            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAPDEFLUMPNAME + " base data of map " + mapLump + ": '" + symbol + "'.");
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAP_DEF_LUMP_NAME + " base data of map " + mapLump + ": '" + symbol + "'.");
             return false;
         }
 
