@@ -10,7 +10,7 @@ strict namespace IO
 
     internal bool ParseResistBlock(int handle, str mapLump, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPREFIXKEY))
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESIST_PREFIX_KEY))
             return false;
 
         Logger::LogDebug(LOGSOURCE, "Start parse map resist block for \cd" + mapLump + ".");
@@ -55,9 +55,9 @@ strict namespace IO
     // The format of the collection is `resist [ { definition } ]`, where definition is a collection of key or key-value pairs.
     internal bool ParseResistCollectionDeprecated(int handle, str mapLump, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTSPREFIXKEY)) return false;
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTS_PREFIX_KEY)) return false;
 
-        Logger::LogWarning(LOGSOURCE, "Parsing resists through a " + RESISTSPREFIXKEY + " collection has been deprecated! Use the new " + RESISTPREFIXKEY + " lump instead and place the resists in a " + RESIST_DEFINITIONS_KEY + " collection.");
+        Logger::LogWarning(LOGSOURCE, "Parsing resists through a " + RESISTS_PREFIX_KEY + " collection has been deprecated! Use the new " + RESIST_PREFIX_KEY + " lump instead and place the resists in a " + RESIST_DEFINITIONS_KEY + " collection.");
 
         return ParseResistCollection(handle, mapLump, identifyingSymbol);
     }
@@ -180,7 +180,7 @@ strict namespace IO
 
     internal bool ParseResistLength(int handle, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTLENGTHKEY)) return false;
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESIST_LENGTH_KEY)) return false;
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TINTEGER)) return false;
 
         _tokenizerResistParsedValue = BCSUTILS::Atoi(Tokenizer::GetSymbol(handle));
@@ -207,7 +207,7 @@ strict namespace IO
 
     internal bool ParseResistTopReasonLabel(int handle, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTTOPREASONLABELKEY)) return false;
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESIST_TOP_REASON_LABEL_KEY)) return false;
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
 
         _tokenizerResistParsedValue = Tokenizer::GetSymbol(handle);
@@ -223,7 +223,7 @@ strict namespace IO
 
     internal bool ParseResistTimeReasonLabel(int handle, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTTIMEREASONLABELKEY)) return false;
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESIST_TIME_REASON_LABEL_KEY)) return false;
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
 
         _tokenizerResistParsedValue = Tokenizer::GetSymbol(handle);
@@ -239,7 +239,7 @@ strict namespace IO
 
     internal bool ParseResistPreResistScript(int handle, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPRERESISTSCRIPTKEY)) return false;
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESIST_PRE_RESIST_SCRIPT_KEY)) return false;
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
 
         str scriptName = Tokenizer::GetSymbol(handle);
@@ -262,7 +262,7 @@ strict namespace IO
 
     internal bool ParseResistPostResistScript(int handle, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTPOSTRESISTSCRIPTKEY)) return false;
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESIST_POST_RESIST_SCRIPT_KEY)) return false;
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TSTRING)) return false;
 
         str scriptName = Tokenizer::GetSymbol(handle);
@@ -285,7 +285,7 @@ strict namespace IO
 
     internal bool ParseResistFlags(int handle, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTFLAGSKEY)) return false;
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESIST_FLAGS_KEY)) return false;
         if (!Tokenizer::ExpectNextChar(handle, '{')) return false;
 
         int braceLevel = Tokenizer::GetBraceLevel(handle);
@@ -297,27 +297,27 @@ strict namespace IO
         {
             str symbol = Tokenizer::GetSymbol(handle);
 
-            if (BCSUTILS::StrIEquals(symbol, RESISTFLAGHIDETOPREASONKEY))
+            if (BCSUTILS::StrIEquals(symbol, RESIST_FLAG_HIDE_TOP_REASON_KEY))
             {
                 flags |= Resist::FLAG_HIDE_TOP_REASON;
             }
-            else if (BCSUTILS::StrIEquals(symbol, RESISTFLAGHIDETIMEREASONKEY))
+            else if (BCSUTILS::StrIEquals(symbol, RESIST_FLAG_HIDE_TIME_REASON_KEY))
             {
                 flags |= Resist::FLAG_HIDE_TIME_REASON;
             }
-            else if (BCSUTILS::StrIEquals(symbol, RESISTFLAGNOFADEKEY))
+            else if (BCSUTILS::StrIEquals(symbol, RESIST_FLAG_NO_FADE_KEY))
             {
                 flags |= Resist::FLAG_NO_FADE;
             }
-            else if (BCSUTILS::StrIEquals(symbol, RESISTFLAGSHOWWHENPAUSEDKEY))
+            else if (BCSUTILS::StrIEquals(symbol, RESIST_FLAG_SHOW_WHEN_PAUSED_KEY))
             {
                 flags |= Resist::FLAG_SHOW_WHEN_PAUSED;
             }
-            else if (BCSUTILS::StrIEquals(symbol, RESISTFLAGDONTAWAITPRESCRIPTKEY))
+            else if (BCSUTILS::StrIEquals(symbol, RESIST_FLAG_DONT_AWAIT_PRE_SCRIPT_KEY))
             {
                 flags |= Resist::FLAG_DONT_AWAIT_PRE_SCRIPT;
             }
-            else if (BCSUTILS::StrIEquals(symbol, RESISTFLAGDONTAWAITPOSTSCRIPTKEY))
+            else if (BCSUTILS::StrIEquals(symbol, RESIST_FLAG_DONT_AWAIT_POST_SCRIPT_KEY))
             {
                 flags |= Resist::FLAG_DONT_AWAIT_POST_SCRIPT;
             }
@@ -344,7 +344,7 @@ strict namespace IO
 
     internal bool ParseGlobalPreResistScript(int handle, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTGLOBALPRERESISTSCRIPTKEY))
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESIST_GLOBAL_PRE_RESIST_SCRIPT_KEY))
             return false;
 
         Tokenizer::Next(handle);
@@ -354,7 +354,7 @@ strict namespace IO
 
         if (Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
         {
-            Tokenizer::SetErrored(handle, "The given value for " + RESISTGLOBALPRERESISTSCRIPTKEY + " is not correct. Expected a script name string.");
+            Tokenizer::SetErrored(handle, "The given value for " + RESIST_GLOBAL_PRE_RESIST_SCRIPT_KEY + " is not correct. Expected a script name string.");
             return false;
         }
 
@@ -376,7 +376,7 @@ strict namespace IO
 
     internal bool ParseGlobalPostResistScript(int handle, str identifyingSymbol)
     {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESISTGLOBALPOSTRESISTSCRIPTKEY))
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, RESIST_GLOBAL_POST_RESIST_SCRIPT_KEY))
             return false;
 
         Tokenizer::Next(handle);
@@ -386,7 +386,7 @@ strict namespace IO
 
         if (Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
         {
-            Tokenizer::SetErrored(handle, "The given value for " + RESISTGLOBALPOSTRESISTSCRIPTKEY + " is not correct. Expected a script name string.");
+            Tokenizer::SetErrored(handle, "The given value for " + RESIST_GLOBAL_POST_RESIST_SCRIPT_KEY + " is not correct. Expected a script name string.");
             return false;
         }
 

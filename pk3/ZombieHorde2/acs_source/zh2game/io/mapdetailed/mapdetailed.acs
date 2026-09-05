@@ -40,7 +40,7 @@ strict namespace IO
         int startOffset = ZH2Game::PersistingGameContext.MapBaseCollection.Collection[index].LumpStartOffset;
         int endOffset = ZH2Game::PersistingGameContext.MapBaseCollection.Collection[index].LumpEndOffset;
 
-        int lumpIndex = LumpOpen(MAPDEFLUMPNAME, expectedLumpIndex - 1);
+        int lumpIndex = LumpOpen(MAP_DEF_LUMP_NAME, expectedLumpIndex - 1);
         if (lumpIndex == -1)
         {
             Logger::LogError(LOGSOURCE, "Expected a valid map lump for map " + mapLump + ".");
@@ -62,7 +62,7 @@ strict namespace IO
 
         // Get the specific buffer chunk that contains our map data.
         str buffer = StrMid(LumpReadString(lumpIndex, 0), startOffset, endOffset - startOffset);
-        Logger::LogDebug(LOGSOURCE, "Found map buffer chunk for \cd" + MAPDEFLUMPNAME + "\cj map \cd" + mapLump + "\cj, start parsing.");
+        Logger::LogDebug(LOGSOURCE, "Found map buffer chunk for \cd" + MAP_DEF_LUMP_NAME + "\cj map \cd" + mapLump + "\cj, start parsing.");
 
         ParseMapLumpDetails(mapLump, buffer);
         LumpClose(lumpIndex);
@@ -135,7 +135,7 @@ strict namespace IO
                 continue;
             }
 
-            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAPDEFLUMPNAME + " of map " + mapLump + ": '" + symbol + "'.");
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing " + MAP_DEF_LUMP_NAME + " of map " + mapLump + ": '" + symbol + "'.");
             break;
         }
 
