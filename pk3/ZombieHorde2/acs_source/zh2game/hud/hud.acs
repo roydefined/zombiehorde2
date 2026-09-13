@@ -97,16 +97,16 @@ strict namespace Hud
     // If neither care, use what is best for the map.
     internal ZH2Game::HudSkinT GetHudSkin(int playerId)
     {
-        switch (ZH2Game::GetSvForceHudSkin())
+        switch (CVar::GetSvForceHudSkin())
         {
-            case ZH2Game::HUDSKINBEHAVIOUR_FORCEDEFAULTSKIN: return ZH2Game::HUDSKIN_DEFAULT;
-            case ZH2Game::HUDSKINBEHAVIOUR_FORCELEGACYSKIN: return ZH2Game::HUDSKIN_LEGACY;
+            case CVar::HUDSKINBEHAVIOUR_FORCEDEFAULTSKIN: return ZH2Game::HUDSKIN_DEFAULT;
+            case CVar::HUDSKINBEHAVIOUR_FORCELEGACYSKIN: return ZH2Game::HUDSKIN_LEGACY;
             default:
             {
-                switch (ZH2Game::GetClHudSkin(playerId))
+                switch (CVar::GetClHudSkinByPlayerId(playerId))
                 {
-                    case ZH2Game::HUDSKINPREFERENCE_DEFAULT: return ZH2Game::HUDSKIN_DEFAULT;
-                    case ZH2Game::HUDSKINPREFERENCE_LEGACY: return ZH2Game::HUDSKIN_LEGACY;
+                    case CVar::HUDSKINPREFERENCE_DEFAULT: return ZH2Game::HUDSKIN_DEFAULT;
+                    case CVar::HUDSKINPREFERENCE_LEGACY: return ZH2Game::HUDSKIN_LEGACY;
                     default: return GetBestFitHudSkin();
                 }
             }
@@ -140,7 +140,7 @@ strict namespace Hud
 
     internal void DebugDraw(fixed x = 0.0, fixed y = 0.0, int color = CR_WHITE)
     {
-        if (!ZH2Game::GetDrawDebugCoordinatesHud()) return;
+        if (!CVar::GetClDrawDebugCoordinatesHud()) return;
 
         BCSUtils::HudPushState();
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
@@ -172,7 +172,7 @@ strict namespace Hud
 
     internal bool DrawClickableText(int id, fixed addX, fixed addY, fixed width, fixed height, str text)
     {
-        fixed mouseScale = ZH2Game::GetCursorScale();
+        fixed mouseScale = CVar::GetClCursorScale();
         fixed cursorX = BCSUTILS::Floor(BCSUTILS::CursorX()),
               cursorY = BCSUTILS::Floor(BCSUTILS::CursorY());
 
@@ -206,14 +206,14 @@ strict namespace Hud
         if (!Decorate::IsFiringWeapon())
             return;
 
-        if (!ZH2Game::GetSvEnableHudShaking() || !ZH2Game::GetClEnableHudShaking())
+        if (!CVar::GetSvShakeHud() || !CVar::GetClShakeHud())
             return;
 
         // Do not shake if the camera is not on the client.
         if (!_clientCameraOnBody)
             return;
 
-        int duration = ZH2Game::GetHudShakeDuration();
+        int duration = CVar::GetClHudShakeDurationTics();
         int elapsed = Decorate::GetFiringTime();
         if (elapsed >= duration)
             return;
@@ -222,8 +222,8 @@ strict namespace Hud
         if (elapsed == 1)
             _firingSeedAngle = Math::FRandom(0.0, 2.0 * BCSUtils::PI);
 
-        fixed maxIntensity = HUDSHAKE_INTENSITYBASE * ZH2Game::GetHudShakeIntensityMultiplier();
-        fixed frequency = HUDSHAKE_FREQUENCYBASE * ZH2Game::GetHudShakeFrequencyMultiplier();
+        fixed maxIntensity = HUDSHAKE_INTENSITYBASE * CVar::GetClHudShakeIntensityMultiplier();
+        fixed frequency = HUDSHAKE_FREQUENCYBASE * CVar::GetClHudShakeFrequencyMultiplier();
 
         fixed progress = fixed(elapsed) / fixed(duration);
         fixed intensity = maxIntensity * (1.0 - progress);

@@ -25,7 +25,9 @@ def main():
 
     include_args = [
         "-i", str(root / "pk3" / "libraries" / "ZombieHorde2Lib"),
-        "-i", str(root / "pk3" / "ZombieHorde2")
+        "-i", str(root / "pk3" / "ZombieHorde2"),
+        "-i", str(root / "pk3" / "ZombieHorde2Modern"),
+        "-i", str(root / "pk3" / "ZombieHorde2Legacy")
     ]
 
     # Iterate project folders

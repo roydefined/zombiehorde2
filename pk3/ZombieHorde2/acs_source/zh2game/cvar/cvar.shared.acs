@@ -1,0 +1,380 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+// Full list of CVars defined in the code.
+// Used by both the internal code and as externed data, as a shared file.
+// This also provides an easy way to define CVar values only once instead of defining both its core function + extern function.
+
+strict namespace CVar
+{
+    // Admin
+    CVAR_CL_BOOL(AdminSpawnBotInFront)
+
+    // Game
+    CVAR_SV_INT_CLAMPED(MinimumClientCount, 0, BCSUTILS::MAX_PLAYERS)
+    CVAR_SV_BOOL(InfectTimeIncrease)
+    CVAR_SV_INT_CLAMPED(PlayersPerInitial, 6, BCSUTILS::MAX_PLAYERS)
+    CVAR_SV_BOOL(ShowZombiesResists)
+    CVAR_SV_BOOL(EnableFullServer)
+    CVAR_SV_INT_CLAMPED(FullServerRoundInterval, 1, 100)
+    CVAR_SV_CUSTOM_CLAMPED(ZombieSkinBehaviour, ZombieSkinBehaviourT, 0, 2,
+    {
+        case 1:
+            return BEHAVIOUR_FORCEOLDSKIN;
+        case 2:
+            return BEHAVIOUR_FORCENEWSKIN;
+        default:
+            return BEHAVIOUR_DEFAULT;
+    })
+
+    CVAR_SV_INT_CLAMPED(EndOfRoundRewardCount, 0, 64)
+    CVAR_SV_BOOL(EndOfRoundRewardSafePlayers)
+
+    CVAR_SV_INT_CLAMPED(MaxZombieBanDuration, 0, 1440)
+
+    // Game - Round
+    CVAR_SV_CUSTOM_CLAMPED(InitialPickMethod, InitialZombiePickMethodT, 0, 2,
+    {
+        case 1:
+            return INITIALZOMBIEPICKMETHOD_LEGACY;
+        case 2:
+            return INITIALZOMBIEPICKMETHOD_WEIGHT;
+        default:
+            return INITIALZOMBIEPICKMETHOD_RANDOM;
+    })
+
+    CVAR_SV_BOOL(InitialPickRememberLastMap)
+    CVAR_SV_BOOL(ShowPickChance)
+    CVAR_CL_BOOL(ShowPickChance)
+    CVAR_SV_BOOL(NoEndMusic)
+    CVAR_CL_BOOL(NoEndMusic)
+
+    // Game - Compensation
+    CVAR_SV_INT_CLAMPED(CompensateMaxSecondsReturned, 0, 100)
+    CVAR_SV_INT_CLAMPED(CompensateMaxHealthFactorReturned, 0, 200)
+    CVAR_SV_INT_CLAMPED(CompensateRestartIfSpecBeforeSeconds, 0, 300)
+    CVAR_SV_INT_CLAMPED(CompensateAwardKillDamagePercentage, 0, 100)
+
+    // Game - AFK prevention
+    CVAR_SV_BOOL(AfkMoveAtRoundStart)
+    CVAR_SV_INT_CLAMPED(AfkMoveAtRoundStartBeforeSeconds, 0, 60)
+    CVAR_SV_BOOL(AfkMoveAsZombie)
+    CVAR_SV_INT_CLAMPED(AfkZombieMoveGraceTics, 0, 700)
+    CVAR_SV_INT_CLAMPED(AfkZombieMoveCheckTics, 0, 700)
+    CVAR_SV_INT_CLAMPED(AfkZombieMoveWarnSeconds, 0, 20)
+
+    // Game - Obituary
+    // 0 = don't force (use client preference), 1 = graphical, 2 = text, 3 = legacy text.
+    CVAR_SV_CUSTOM_CLAMPED(ForceObituaryDisplayMode, ObituaryDisplayModeOverrideT, 0, 3,
+    {
+        case 1: return OBITUARYDISPLAYOVERRIDE_GRAPHICAL;
+        case 2: return OBITUARYDISPLAYOVERRIDE_TEXT;
+        case 3: return OBITUARYDISPLAYOVERRIDE_LEGACYTEXT;
+        default: return OBITUARYDISPLAYOVERRIDE_NONE;
+    })
+
+    // 0 = graphical, 1 = text, 2 = legacy text.
+    CVAR_CL_CUSTOM_CLAMPED(ObituaryDisplayMode, ObituaryDisplayModeT, 0, 2,
+    {
+        case 1: return OBITUARYDISPLAY_TEXT;
+        case 2: return OBITUARYDISPLAY_LEGACYTEXT;
+        default: return OBITUARYDISPLAY_GRAPHICAL;
+    })
+
+    // Not a cvar itself: combines the server override with the client's own preference.
+    ObituaryDisplayModeT GetObituaryDisplayMode(int playerId)
+    {
+        switch (GetSvForceObituaryDisplayMode())
+        {
+            case OBITUARYDISPLAYOVERRIDE_GRAPHICAL: return OBITUARYDISPLAY_GRAPHICAL;
+            case OBITUARYDISPLAYOVERRIDE_TEXT: return OBITUARYDISPLAY_TEXT;
+            case OBITUARYDISPLAYOVERRIDE_LEGACYTEXT: return OBITUARYDISPLAY_LEGACYTEXT;
+            default: return GetClObituaryDisplayModeByPlayerId(playerId);
+        }
+    }
+
+    CVAR_CL_INT_CLAMPED(ShownObituaries, 1, OBITUARY_COLLECTION_MAX_SIZE)
+
+    // Game - Settings
+    CVAR_CL_BOOL(InformClientOfCVars)
+
+    CVAR_SV_BOOL(EnableAntiTelefragSystem)
+
+    // Game - Modifiers
+    CVAR_SV_BOOL(UseCustomKnockbackModifier)
+    CVAR_SV_FIXED_CLAMPED(CustomKnockbackModifierMultiplier, 0.1, 10.0)
+    CVAR_SV_BOOL(UseCustomDamageFactorModifier)
+    CVAR_SV_FIXED_CLAMPED(CustomDamageFactorModifierMultiplier, 0.1, 10.0)
+
+    // Game - Voting
+    CVAR_SV_BOOL(AllowMapVoting)
+    CVAR_SV_BOOL(VoteIncludePlayedMaps)
+    CVAR_SV_BOOL(AllowSpectatorVoting)
+    CVAR_SV_INT_CLAMPED(MaxVotableMapsShown, 1, MAX_VOTABLEMAPS)
+    CVAR_SV_INT_CLAMPED(PlayerVotePercentage, 1, 100)
+    CVAR_SV_INT_CLAMPED(PlayerPickCooldownTics, 0, 350)
+
+    // Game - Features
+    CVAR_SV_BOOL(UseMapResetsFeature)
+    CVAR_SV_BOOL(UseDeadSpectatorsFeature)
+    CVAR_SV_BOOL(UseCustomKnockbackFeature)
+    CVAR_SV_BOOL(UseAntiSR50)
+
+    // Player
+    CVAR_CL_INT_CLAMPED(ShownInventoryItems, 1, 11)
+    CVAR_CL_BOOL(WrapInventoryItems)
+
+    CVAR_SV_BOOL(IdentifyPlayers)
+
+    CVAR_CL_CUSTOM_CLAMPED(IdentifyPlayers, IdentifyPlayerSpecieTypeT, 0, 3,
+    {
+        case 1:
+            return IDENTIFY_PLAYER_ALL;
+        case 2:
+            return IDENTIFY_PLAYER_ONLY_SAME;
+        case 3:
+            return IDENTIFY_PLAYER_ONLY_OTHER;
+        default:
+            return IDENTIFY_PLAYER_OFF;
+    })
+
+    CVAR_CL_CUSTOM_CLAMPED(IdentifyPlayerType, IdentifyPlayerTypeT, 0, 2,
+    {
+        case 1:
+            return IDENTIFY_PLAYER_NAME;
+        case 2:
+            return IDENTIFY_PLAYER_SPECIE;
+        default:
+            return IDENTIFY_PLAYER_BOTH;
+    })
+
+    CVAR_SV_BOOL(DisableAutoUseItems)
+
+    CVAR_CL_BOOL(AutoUseMedikits)
+    CVAR_CL_BOOL(AutoUseKevlars)
+    CVAR_CL_BOOL(AutoUseEnergyDrinks)
+
+    CVAR_SV_BOOL(TranslucentAllies)
+    CVAR_CL_INT_CLAMPED(TranslucentAlliesDistance, 100, 1000)
+    // Note: defaults to "on with required cvars" when the value is out of bounds.
+    CVAR_CL_CUSTOM_CLAMPED(TranslucentAllies, TranslucentAlliesT, 0, 2,
+    {
+        case 0:
+            return TRANSLUCENT_ALLIES_OFF;
+        case 2:
+            return TRANSLUCENT_ALLIES_ON;
+        default:
+            return TRANSLUCENT_ALLIES_ON_WITH_REQUIRED_CVARS;
+    })
+    CVAR_CL_INT_CLAMPED(BaseAllyTranslucency, 30, 100)
+
+    CVAR_SV_BOOL(TeamIndicators)
+    CVAR_CL_BOOL(TeamIndicators)
+    CVAR_CL_INT_CLAMPED(TeamIndicatorDistance, 128, 1000)
+    CVAR_CL_BOOL(ShowTargetTeamIndicator)
+
+    CVAR_SV_BOOL(EnableDamageFeedback)
+    CVAR_CL_BOOL(EnableDamageFeedback)
+
+    CVAR_CL_BOOL(EnableDamageFeedbackSounds)
+
+    CVAR_CL_CUSTOM_CLAMPED(DamageFeedbackMarkerShowType, DamageFeedbackMarkerShowTypeT, 0, 3,
+    {
+        case 1:
+            return DAMAGEFEEDBACK_MARKER_SHOW_HITS;
+        case 2:
+            return DAMAGEFEEDBACK_MARKER_SHOW_KILLS;
+        case 3:
+            return DAMAGEFEEDBACK_MARKER_SHOW_BOTH;
+        default:
+            return DAMAGEFEEDBACK_MARKER_SHOW_NONE;
+    })
+
+    CVAR_CL_INT_CLAMPED(DamageFeedbackHitMarkerShownTics, 10, 120)
+    CVAR_CL_INT_CLAMPED(DamageFeedbackKillMarkerShownTics, 10, 120)
+
+    CVAR_CL_CUSTOM_CLAMPED(DamageFeedbackCounterShowType, DamageFeedbackCounterShowTypeT, 0, 3,
+    {
+        case 1:
+            return DAMAGEFEEDBACK_COUNTER_SHOW_DAMAGE;
+        case 2:
+            return DAMAGEFEEDBACK_COUNTER_SHOW_KILLS;
+        case 3:
+            return DAMAGEFEEDBACK_COUNTER_SHOW_BOTH;
+        default:
+            return DAMAGEFEEDBACK_COUNTER_SHOW_NONE;
+    })
+
+    CVAR_CL_INT_CLAMPED(DamageFeedbackDamageCounterShownTics, 10, 120)
+    CVAR_CL_INT_CLAMPED(DamageFeedbackKillCounterShownTics, 10, 120)
+
+    CVAR_CL_CUSTOM_CLAMPED(DamageFeedbackNumberShowType, DamageFeedbackNumberShowTypeT, 0, 2,
+    {
+        case 1:
+            return DAMAGEFEEDBACK_NUMBER_SHOW_TOTAL;
+        case 2:
+            return DAMAGEFEEDBACK_NUMBER_SHOW_INDIVIDUAL;
+        default:
+            return DAMAGEFEEDBACK_NUMBER_SHOW_NONE;
+    })
+
+    CVAR_CL_INT_CLAMPED(DamageFeedbackRatioDamageCap, 1, 2000)
+    CVAR_CL_INT_CLAMPED(DamageFeedbackYellowDamageNumberThreshold, 0, 1990)
+    CVAR_CL_INT_CLAMPED(DamageFeedbackRedDamageNumberThreshold, 0, 2000)
+
+    // Player - Music
+    CVAR_CL_BOOL(IgnoreRadioMusic)
+    CVAR_CL_BOOL(InvertRadioNavigation)
+    CVAR_CL_BOOL(TrackNotFoundPlayRandom)
+    CVAR_CL_BOOL(RadioProximity)
+    CVAR_CL_BOOL(RadioFadeMapMusic)
+    CVAR_CL_BOOL(IgnoreFullServerMusic)
+
+    // Player - Zombie
+    CVAR_SV_BOOL(AllowZombieTeleporting)
+    CVAR_SV_BOOL(AllowMovingWhenZombieTeleporting)
+    CVAR_SV_INT_CLAMPED(MaxZombieTeleports, 1, 10)
+    CVAR_SV_INT_CLAMPED(ZombieTeleportSeconds, 1, 20)
+    CVAR_SV_INT_CLAMPED(DisabledZombieAbilityFlags, 0, 3)
+    CVAR_SV_BOOL(AllowRandomZombieTaunts)
+    CVAR_SV_BOOL(UseZombieAbilities)
+    CVAR_SV_BOOL(UseZombieAbilityCooldowns)
+
+    CVAR_SV_CUSTOM_CLAMPED(DropGrenadeOnInfect, DropGrenadeOnInfectT, 0, 2,
+    {
+        case 0:
+            return DROPBEHAVIOUR_ALWAYS;
+        case 1:
+            return DROPBEHAVIOUR_ONLY_REGULAR_ZOMBIES;
+        default:
+            return DROPBEHAVIOUR_NEVER;
+    })
+
+    // Player - Human
+    CVAR_CL_INT_CLAMPED(FlareType, 0, 8)
+    CVAR_CL_BOOL(EnableFinalHeartbeat)
+    CVAR_CL_BOOL(EnableHurtHeartbeat)
+    CVAR_SV_BOOL(EnableBlood)
+    CVAR_CL_INT_CLAMPED(BloodType, 0, 2)
+    CVAR_SV_BOOL(AllowSprinting)
+    CVAR_SV_INT_CLAMPED(MinimumSprintAmount, 1, 1000)
+    CVAR_SV_BOOL(DisablePregameSprinting)
+    CVAR_SV_BOOL(AllowPanicking)
+    CVAR_SV_INT_CLAMPED(MaxPanicCount, 1, 10)
+
+    // Player - Features
+    CVAR_CL_BOOL(RemoveSoftwareTextures)
+
+    // Hud
+    CVAR_CL_BOOL(DrawHud)
+
+    // If a type argument contains "::" then it breaks the compiler's tokenizer.
+    // Aliasing the qualified type to a plain name first works around it.
+    typedef Weapon::WeaponSkinBehaviourT ForceWeaponSkinTypeT;
+    CVAR_SV_CUSTOM_CLAMPED(ForceWeaponSkin, ForceWeaponSkinTypeT, 0, 2,
+    {
+        case 1: return Weapon::WEAPONSKINBEHAVIOUR_FORCEDEFAULTSKIN;
+        case 2: return Weapon::WEAPONSKINBEHAVIOUR_FORCELEGACYSKIN;
+        default: return Weapon::WEAPONSKINBEHAVIOUR_DEFAULT;
+    })
+
+    // Same as the above.
+    typedef RoundTimer::TimerSkinBehaviourT ForceTimerSkinTypeT;
+    CVAR_SV_CUSTOM_CLAMPED(ForceTimerSkin, ForceTimerSkinTypeT, 0, 2,
+    {
+        case 1: return RoundTimer::TIMERSKINBEHAVIOUR_FORCEDEFAULTSKIN;
+        case 2: return RoundTimer::TIMERSKINBEHAVIOUR_FORCELEGACYSKIN;
+        default: return RoundTimer::TIMERSKINBEHAVIOUR_DEFAULT;
+    })
+
+    CVAR_SV_CUSTOM_CLAMPED(ForceHudSkin, HudSkinBehaviourT, 0, 2,
+    {
+        case 1: return HUDSKINBEHAVIOUR_FORCEDEFAULTSKIN;
+        case 2: return HUDSKINBEHAVIOUR_FORCELEGACYSKIN;
+        default: return HUDSKINBEHAVIOUR_DEFAULT;
+    })
+
+    CVAR_CL_CUSTOM_CLAMPED(HudSkin, HudSkinPreferenceT, 0, 2,
+    {
+        case 1: return HUDSKINPREFERENCE_DEFAULT;
+        case 2: return HUDSKINPREFERENCE_LEGACY;
+        default: return HUDSKINPREFERENCE_AUTO;
+    })
+
+    CVAR_CL_BOOL(DrawDebugCoordinatesHud)
+
+    CVAR_SV_BOOL(ShakeHud)
+    CVAR_CL_BOOL(ShakeHud)
+
+    // The custom definitions are turned off for now until they are properly implemented.
+    // When they are, the comment right of them will be usable.
+    CVAR_CL_CUSTOM(HudShakeIntensityMultiplier, fixed, { default: return 1.1; }) //CVAR_CL_FIXED_CLAMPED(HudShakeIntensityMultiplier, 0.1, 5.0)
+    CVAR_CL_CUSTOM(HudShakeFrequencyMultiplier, fixed, { default: return 1.1; }) //CVAR_CL_FIXED_CLAMPED(HudShakeFrequencyMultiplier, 0.1, 5.0)
+    CVAR_CL_CUSTOM(HudShakeDurationTics, int, { default: return 4; }) //CVAR_CL_INT_CLAMPED(HudShakeDurationTics, 1, 20)
+
+    CVAR_CL_CUSTOM(CursorScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(CursorScale, 0.05, 2.0)
+
+    CVAR_CL_BOOL(DrawVersionHud)
+    CVAR_CL_CUSTOM(HudVersionScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudVersionScale, 0.05, 2.0)
+
+    CVAR_CL_BOOL(DrawPlayerStatusHud)
+    CVAR_CL_FIXED_CLAMPED(HudPlayerStatusOffsetX, 0.0, 200.0)
+    CVAR_CL_FIXED_CLAMPED(HudPlayerStatusOffsetY, 0.0, 40.0)
+    CVAR_CL_CUSTOM(HudPlayerStatusScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudPlayerStatusScale, 0.05, 2.0)
+
+    CVAR_CL_BOOL(DrawPlayerPowersHud)
+    CVAR_CL_FIXED_CLAMPED(HudPlayerPowersOffsetX, -200.0, 200.0)
+    CVAR_CL_FIXED_CLAMPED(HudPlayerPowersOffsetY, -40.0, 40.0)
+    CVAR_CL_CUSTOM(HudPlayerPowersScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudPlayerPowersScale, 0.05, 2.0)
+
+    CVAR_CL_BOOL(DrawPlayerBarsHud)
+    CVAR_CL_FIXED_CLAMPED(HudPlayerBarsOffsetX, -200.0, 200.0)
+    CVAR_CL_FIXED_CLAMPED(HudPlayerBarsOffsetY, -40.0, 40.0)
+    CVAR_CL_CUSTOM(HudPlayerBarsScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudPlayerBarsScale, 0.05, 2.0)
+
+    CVAR_CL_BOOL(DrawRoundHud)
+    CVAR_CL_FIXED_CLAMPED(HudRoundOffsetX, -200.0, 200.0)
+    CVAR_CL_FIXED_CLAMPED(HudRoundOffsetY, 0.0, 40.0)
+    CVAR_CL_CUSTOM(HudRoundScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudRoundScale, 0.05, 2.0)
+
+    CVAR_CL_BOOL(DrawGameHud)
+    CVAR_CL_CUSTOM(HudGameScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudGameScale, 0.05, 2.0)
+
+    CVAR_CL_BOOL(DrawObituaryHud)
+    CVAR_CL_FIXED_CLAMPED(HudObituaryOffsetX, -200.0, 200.0)
+    CVAR_CL_FIXED_CLAMPED(HudObituaryOffsetY, 0.0, 40.0)
+
+    CVAR_CL_BOOL(DrawDebugHud)
+    CVAR_CL_FIXED_CLAMPED(HudDebugOffsetX, 0.0, 200.0)
+    CVAR_CL_FIXED_CLAMPED(HudDebugOffsetY, 0.0, 40.0)
+    CVAR_CL_CUSTOM(HudDebugScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudDebugScale, 0.05, 2.0)
+
+    CVAR_CL_BOOL(DrawResistsHud)
+    CVAR_CL_CUSTOM(HudResistsScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudResistsScale, 0.05, 2.0)
+
+    CVAR_CL_CUSTOM(HudAdminScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudAdminScale, 0.05, 2.0)
+    CVAR_CL_CUSTOM(HudEndingScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudEndingScale, 0.05, 2.0)
+    CVAR_CL_CUSTOM(HudSummaryScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudSummaryScale, 0.05, 2.0)
+    CVAR_CL_CUSTOM(HudClientSettingsScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudClientSettingsScale, 0.05, 2.0)
+    CVAR_CL_CUSTOM(HudWeaponSniperScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudWeaponSniperScale, 0.05, 2.0)
+    CVAR_CL_CUSTOM(HudWeaponRadioScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudWeaponRadioScale, 0.05, 2.0)
+    CVAR_CL_CUSTOM(HudFullServerScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudFullServerScale, 0.05, 2.0)
+
+    // Zandronum specific
+    CVAR_ENGINE_BOOL(GetSvNoRespawnInvul, "sv_norespawninvul")
+    CVAR_ENGINE_BOOL(GetSvCheats, "sv_cheats")
+    CVAR_ENGINE_BOOL(GetSvShootThroughAllies, "sv_shootthroughallies")
+    CVAR_ENGINE_BOOL(GetSvUnblockAllies, "sv_unblockallies")
+    CVAR_ENGINE_BOOL(GetClProtectCVars, "cl_protectcvars")
+    CVAR_ENGINE_INT_CLAMPED(GetSvMaxPlayers, "sv_maxplayers", 1, 64)
+    CVAR_ENGINE_BOOL(GetSvCompatNoObituaries, "compat_noobituaries")
+    CVAR_ENGINE_INT_CLAMPED(GetSvMaxBanDuration, "sv_maxacsbanduration", 0, BCSUtils::INT_MAX)
+
+    // The one cvar with a setter: the getter still goes through the macro, but the setter is kept
+    // as a plain function since nothing else here generates setters.
+    CVAR_ENGINE_FIXED(GetSndMusicVolume, "snd_musicvolume")
+
+    // NOTE: this uses ConsoleCommand, it should get a better alternative sometime.
+    void SetSndMusicVolume(fixed volume) { ConsoleCommand("snd_musicvolume " + str(volume)); }
+}

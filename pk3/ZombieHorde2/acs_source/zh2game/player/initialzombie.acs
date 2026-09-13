@@ -125,7 +125,7 @@ strict namespace Player
     internal int EligibleInitialZombieCount()
     {
         // Minimum of 1 zombie, and 1 added every configured number of players.
-        return PlayerCount() / ZH2Game::GetPlayersPerInitial() + 1;
+        return PlayerCount() / CVar::GetSvPlayersPerInitial() + 1;
     }
 
     internal fixed GetInitialZombiePickChance()
@@ -135,14 +135,14 @@ strict namespace Player
 
     internal fixed GetPlayerInitialZombiePickChance(int id)
     {
-        ZH2Game::InitialZombiePickMethodT pickMethod = ZH2Game::GetInitialZombiePickMethod();
-        bool rememberLastMap = ZH2Game::GetInitialPickRememberLastMap();
+        CVar::InitialZombiePickMethodT pickMethod = CVar::GetSvInitialPickMethod();
+        bool rememberLastMap = CVar::GetSvInitialPickRememberLastMap();
 
         switch (pickMethod)
         {
-            case ZH2Game::INITIALZOMBIEPICKMETHOD_LEGACY:
+            case CVar::INITIALZOMBIEPICKMETHOD_LEGACY:
                 return GetPlayerInitialZombiePickChanceLegacy(id, rememberLastMap);
-            case ZH2Game::INITIALZOMBIEPICKMETHOD_WEIGHT:
+            case CVar::INITIALZOMBIEPICKMETHOD_WEIGHT:
                 return GetPlayerInitialZombiePickChanceWeight(id, rememberLastMap);
             default:
                 return GetPlayerInitialZombiePickChanceRandom(id, rememberLastMap);

@@ -35,7 +35,7 @@
 #define LOGSOURCE "Main"
 
 #include "scriptevents.acs"
-#include "cvars.acs"
+#include "cvar/cvar.acs"
 #include "binds.acs"
 
 #define SCRIPT_ENTER_RESPAWN_NAME "zh2_internal_enter_respawn"
@@ -147,7 +147,7 @@ strict namespace ZH2Game
 
         // Set up the initial game state depending on if we have enough players or not.
         int availableClients = BCSUtils::ClientCount();
-        int minimumRequiredClients = ZH2Game::GetMinimumClientCount();
+        int minimumRequiredClients = CVar::GetSvMinimumClientCount();
         if (availableClients < minimumRequiredClients)
         {
             Round::SetKnownRoundState(Round::STATEPREGAME);
@@ -575,7 +575,7 @@ strict namespace ZH2Game
 
         Logger::LogTo(id, message);
 
-        if (GetUseDeadSpectatorsFeature())
+        if (CVar::GetSvUseDeadSpectatorsFeature())
         {
             if (SetDeadSpectator(id, true))
                 return;

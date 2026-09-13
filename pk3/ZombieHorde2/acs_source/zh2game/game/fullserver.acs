@@ -22,21 +22,21 @@ strict namespace Game
             ZH2Game::GameContext.FullServerEventStarted = true;
             Logger::LogActivator("\cgF\cku\cdl\cvl \chs\cte\cgr\ckv\cde\cvr\cg! \cjFree item for everybody!");
 
-            if (!ZH2Game::GetIgnoreFullServerMusic())
+            if (!CVar::GetClIgnoreFullServerMusic())
                 SetMusic(TRACK_FULLSERVER);
         }
     }
 
     internal void TryTriggerFullServerEvent()
     {
-        int maxPlayers = ZH2Game::GetMaxPlayers();
+        int maxPlayers = CVar::GetSvMaxPlayers();
         if (PlayerCount() < maxPlayers)
         {
             Logger::LogDebug(LOGSOURCE, "Full server event skipped. Playercount cap not reached (" + str(PlayerCount()) + " < " + str(maxPlayers) + ").");
             return;
         }
 
-        if (!ZH2Game::GetEnableFullServer())
+        if (!CVar::GetSvEnableFullServer())
         {
             Logger::LogDebug(LOGSOURCE, "Full server event skipped. Event disabled by cvar.");
             return;
@@ -57,7 +57,7 @@ strict namespace Game
         });
 
         ZH2Game::GameContext.FullServerStartTimestamp = Utils::GetSynchronizedTimer();
-        ZH2Game::PersistingGameContext.FullServerCooldown = ZH2Game::GetFullServerRoundInterval() - 1;
+        ZH2Game::PersistingGameContext.FullServerCooldown = CVar::GetSvFullServerRoundInterval() - 1;
     }
 
     internal int GetFullServerElapsedTics()

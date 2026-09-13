@@ -10,7 +10,7 @@ strict namespace Map
         Shuffle::ShuffleVotableMaps(Shuffle::FLAGIGNORECURRENTMAP | Shuffle::FLAGIGNORENEXTMAP);
 
         // Get how many maps to show, making sure to show less if we don't have more.
-        int length = BCSUtils::Min(Shuffle::GetRelevantSize(), ZH2Game::GetMaxVotableMapsShown());
+        int length = BCSUtils::Min(Shuffle::GetRelevantSize(), CVar::GetSvMaxVotableMapsShown());
         ZH2Game::GameContext.VotableMapCount = length;
 
         str logMessage;
@@ -60,7 +60,7 @@ strict namespace Map
         if (GetVotedMapIndex() == index) terminate;
 
         // Spectators may not vote.
-        if (!ZH2Game::GetAllowSpectatorVoting() && !PlayerInGame(PlayerNumber()))
+        if (!CVar::GetSvAllowSpectatorVoting() && !PlayerInGame(PlayerNumber()))
         {
             Logger::LogActivator("This server has disabled spectator voting.");
             terminate;
@@ -138,7 +138,7 @@ strict namespace Map
     // Çhecks if the voting should finish as everybody has voted.
     internal void CheckMapVoteFinished()
     {
-        bool allowSpectatorVoting = ZH2Game::GetAllowSpectatorVoting();
+        bool allowSpectatorVoting = CVar::GetSvAllowSpectatorVoting();
 
         // We check if map voting finished by taking the number of voted players and comparing them to those who still have to vote.
         // Note: We also want to check spectator votes here if the cvar was enabled after a spectator already voted.
@@ -165,7 +165,7 @@ strict namespace Map
             votePercentage = (votedPlayers * 100) / totalVotablePlayerCount;
 
         // Vote threshold reached.
-        if (votePercentage >= ZH2Game::GetPlayerVotePercentage())
+        if (votePercentage >= CVar::GetSvPlayerVotePercentage())
             EndVoting();
     }
 

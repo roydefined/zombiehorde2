@@ -8,8 +8,8 @@ strict namespace Hud
 
     internal void DrawIdentity()
     {
-        ZH2Game::IdentifyPlayerSpecieTypeT identifyPlayerType = ZH2Game::GetClIdentifyPlayers();
-        if (!ZH2Game::GetSvIdentifyPlayers() || identifyPlayerType == ZH2Game::IDENTIFY_PLAYER_OFF)
+        CVar::IdentifyPlayerSpecieTypeT identifyPlayerType = CVar::GetClIdentifyPlayers();
+        if (!CVar::GetSvIdentifyPlayers() || identifyPlayerType == CVar::IDENTIFY_PLAYER_OFF)
             return;
 
         BCSUtils::HudResetState();
@@ -27,7 +27,7 @@ strict namespace Hud
         DrawTargetIdentity(identifyPlayerType);
     }
 
-    internal void DrawTargetIdentity(ZH2Game::IdentifyPlayerSpecieTypeT identifyPlayerType)
+    internal void DrawTargetIdentity(CVar::IdentifyPlayerSpecieTypeT identifyPlayerType)
     {
         // Check for a player target, or stop.
         int targetTid = PickActor(0, GetActorAngle(0), GetActorPitch(0), HUD_IDENTITY_MAX_PICK_RANGE, 0, MF_SHOOTABLE, ML_BLOCKEVERYTHING | ML_BLOCKHITSCAN, PICKAF_RETURNTID);
@@ -43,9 +43,9 @@ strict namespace Hud
         Player::PlayerSpecieT specie = Player::GetPlayerSpecie(playerId);
         bool match = specieSelf == specie;
 
-        if (identifyPlayerType != ZH2Game::IDENTIFY_PLAYER_ALL
-            && (identifyPlayerType == ZH2Game::IDENTIFY_PLAYER_ONLY_SAME && !match)
-            || (identifyPlayerType == ZH2Game::IDENTIFY_PLAYER_ONLY_OTHER && match))
+        if (identifyPlayerType != CVar::IDENTIFY_PLAYER_ALL
+            && (identifyPlayerType == CVar::IDENTIFY_PLAYER_ONLY_SAME && !match)
+            || (identifyPlayerType == CVar::IDENTIFY_PLAYER_ONLY_OTHER && match))
         {
             return;
         }
@@ -55,8 +55,8 @@ strict namespace Hud
         BCSUtils::HudSetCenterText(true);
         BCSUtils::HudSetDisappearTime(0.5);
 
-        ZH2Game::IdentifyPlayerTypeT identifyType = ZH2Game::GetClIdentifyPlayerType();
-        if (identifyType == ZH2Game::IDENTIFY_PLAYER_NAME || identifyType == ZH2Game::IDENTIFY_PLAYER_BOTH)
+        CVar::IdentifyPlayerTypeT identifyType = CVar::GetClIdentifyPlayerType();
+        if (identifyType == CVar::IDENTIFY_PLAYER_NAME || identifyType == CVar::IDENTIFY_PLAYER_BOTH)
         {
             HudSetPointInternal();
             BCSUtils::HudSetFont("SmallFont");
@@ -68,7 +68,7 @@ strict namespace Hud
         if (!Round::GetGameIsPlaying())
             return;
 
-        if (identifyType != ZH2Game::IDENTIFY_PLAYER_SPECIE && identifyType != ZH2Game::IDENTIFY_PLAYER_BOTH)
+        if (identifyType != CVar::IDENTIFY_PLAYER_SPECIE && identifyType != CVar::IDENTIFY_PLAYER_BOTH)
             return;
 
         str specieLabel = Player::GetSpecieIndexAsString(specie);

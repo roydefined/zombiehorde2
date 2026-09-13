@@ -6,6 +6,7 @@
 
 #include "acs_source/zh2lib.h.acs"
 #include "acs_source/zh2game.h.acs"
+#include "acs_source/zh2legacy.h.acs"
 
 strict namespace
 {
@@ -70,11 +71,11 @@ strict namespace
     // [ZH2] Handle conditionally enabling/disabling dynamic lights based on the cvar.
     script "open_client" open clientside
     {
-        _dynamicLightsEnabled = (bool)GetUserCVar(ConsolePlayerNumber(), "cl_zh2_ze14_enabledynamiclights");
+        _dynamicLightsEnabled = CVar::GetClZe14EnableDynamicLightsByConsolePlayer();
         SetDynamicLights(_dynamicLightsEnabled, false);
         while (true)
         {
-            if (_dynamicLightsEnabled != (bool)GetUserCVar(ConsolePlayerNumber(), "cl_zh2_ze14_enabledynamiclights"))
+            if (_dynamicLightsEnabled != CVar::GetClZe14EnableDynamicLightsByConsolePlayer())
             {
                 SetDynamicLights(!_dynamicLightsEnabled, true);
                 _dynamicLightsEnabled = !_dynamicLightsEnabled;

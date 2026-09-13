@@ -88,7 +88,7 @@ strict namespace Decorate
     {
         bool isSelf = playerId == ConsolePlayerNumber();
 
-        if (!isSelf && ZH2Game::GetIgnoreRadioMusic())
+        if (!isSelf && CVar::GetClIgnoreRadioMusic())
         {
             Logger::LogDebug(LOGSOURCE, "Radio: ignoring radio music, not actually playing anything.");
             return;
@@ -101,7 +101,7 @@ strict namespace Decorate
             return;
         }
 
-        if (ZH2Game::GetRadioProximityEnabled())
+        if (CVar::GetClRadioProximity())
         {
             Logger::LogDebug(LOGSOURCE, "Radio: following the broadcaster by proximity.");
             PlayRadioMapSpot(playerId, lump);
@@ -199,7 +199,7 @@ strict namespace Decorate
         if (GetMapMusicVolumeCached())
             return;
 
-        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeBaseline = ZH2Game::GetSndMusicVolume();
+        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeBaseline = CVar::GetSndMusicVolume();
         ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeLastFraction = 1.0;
         ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeCached = true;
 
@@ -216,7 +216,7 @@ strict namespace Decorate
 
         fixed lastFraction = GetMapMusicVolumeLastFraction();
         fixed expected = GetMapMusicVolumeBaseline() * lastFraction;
-        fixed current = ZH2Game::GetSndMusicVolume();
+        fixed current = CVar::GetSndMusicVolume();
 
         if (BCSUtils::Abs(current - expected) <= RADIO_MAPMUSIC_VOLUME_DRIFT_TOLERANCE)
             return;
@@ -234,7 +234,7 @@ strict namespace Decorate
     {
         RebaseMapMusicVolumeIfChangedByUser();
 
-        ZH2Game::SetSndMusicVolume(GetMapMusicVolumeBaseline() * fraction);
+        CVar::SetSndMusicVolume(GetMapMusicVolumeBaseline() * fraction);
         ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeLastFraction = fraction;
     }
 
@@ -247,7 +247,7 @@ strict namespace Decorate
 
         RebaseMapMusicVolumeIfChangedByUser();
 
-        ZH2Game::SetSndMusicVolume(GetMapMusicVolumeBaseline());
+        CVar::SetSndMusicVolume(GetMapMusicVolumeBaseline());
         ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeCached = false;
     }
 
@@ -257,7 +257,7 @@ strict namespace Decorate
     // Check and adjusts the proximity feature against the client's current setting.
     internal void CheckRadioProximitySettingChanged()
     {
-        bool proximity = ZH2Game::GetRadioProximityEnabled();
+        bool proximity = CVar::GetClRadioProximity();
         if (proximity == GetRadioProximityWasEnabled())
             return;
 
@@ -267,7 +267,7 @@ strict namespace Decorate
             return;
 
         // We never touch our own music for a broadcast we're ignoring, so there's nothing to switch.
-        if (ZH2Game::GetIgnoreRadioMusic())
+        if (CVar::GetClIgnoreRadioMusic())
             return;
 
         Logger::LogDebug(LOGSOURCE, "Radio: proximity setting changed to \cd" + str((int)proximity)
@@ -321,7 +321,7 @@ strict namespace Decorate
     // The closer they are, the lower the volume.
     internal void UpdateRadioMapMusicFade(int broadcasterTid)
     {
-        if (!ZH2Game::GetRadioFadeMapMusicEnabled())
+        if (!CVar::GetClRadioFadeMapMusic())
         {
             RestoreMapMusicVolumeCvar();
             return;

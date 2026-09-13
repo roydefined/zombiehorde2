@@ -105,7 +105,7 @@ strict namespace Game
             SetPlayerZombieAbilityFlags(infectedId, GetDefaultZombieAbilityFlags());
 
             // Set a cooldown on all of the abilities
-            if (ZH2Game::GetUseZombieAbilityCooldowns())
+            if (CVar::GetSvUseZombieAbilityCooldowns())
             {
                 for (int i = 0; i < ABILITY_COUNT; ++i)
                     Game::GivePlayerZombieAbilityCooldownByIndex(infectedId, i);
@@ -144,13 +144,13 @@ strict namespace Game
         if (source == INFECTSOURCE_ADMIN)
             return;
 
-        ZH2Game::DropGrenadeOnInfectT dropBehaviour = ZH2Game::GetDropGrenadeOnInfect();
+        CVar::DropGrenadeOnInfectT dropBehaviour = CVar::GetSvDropGrenadeOnInfect();
 
-        if (dropBehaviour == ZH2Game::DROPBEHAVIOUR_NEVER)
+        if (dropBehaviour == CVar::DROPBEHAVIOUR_NEVER)
             return;
 
         // Only regular zombies should drop a grenade.
-        if (dropBehaviour == ZH2Game::DROPBEHAVIOUR_ONLY_REGULAR_ZOMBIES && type != INFECT_REGULAR)
+        if (dropBehaviour == CVar::DROPBEHAVIOUR_ONLY_REGULAR_ZOMBIES && type != INFECT_REGULAR)
             return;
 
         str spawnClassName = Weapon::GetWeaponSpawnClassName(Weapon::WEAPONTYPE_FIREGRENADE);
