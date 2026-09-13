@@ -69,9 +69,9 @@ strict namespace Logger
         // Switch between server/client and check their override. If set, always check that first.
         int severity;
         if (BCSUtils::IsServerOnly())
-            severity = GetLogLevelByIndex(CVar::GetServerOverwriteLogSeverity());
+            severity = GetLogLevelByIndex(CVar::GetSvOverrideLogSeverity());
         else
-            severity = GetLogLevelByIndex(CVar::GetClientOverwriteLogSeverity());
+            severity = GetLogLevelByIndex(CVar::GetClOverrideLogSeverityByConsolePlayer());
 
         if (severity != LEVELNONE)
             return severity <= level;
@@ -93,7 +93,7 @@ strict namespace Logger
     // This is determined based on the global override cvar.
     internal bool IsEnabledGlobally(str source, LogLevelT level)
     {
-        int severity = GetLogLevelByIndex(CVar::GetGlobalOverwriteLogSeverity());
+        int severity = GetLogLevelByIndex(CVar::GetSvOverrideGlobalLogSeverity());
         return severity == LEVELNONE || severity <= level;
     }
 

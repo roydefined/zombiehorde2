@@ -16,7 +16,7 @@ strict namespace Game
         if (Game::HumanCount() == 0)
             return;
 
-        if (!CVar::GetInfectTimeIncrease())
+        if (!CVar::GetSvInfectTimeIncrease())
             return;
 
         // Get the total number of zombies that have been infected thus far.
@@ -47,18 +47,18 @@ strict namespace Game
     script "zh2_internal_game_visualaddtime"(int ticDiff) clientside
     {
         BCSUtils::SetActivatorToConsolePlayer();
-        if (!CVar::GetDrawHud() || !CVar::GetDrawRoundHud())
+        if (!CVar::GetClDrawHud() || !CVar::GetClDrawRoundHud())
             terminate;
 
         // TODO: This logic should be shared with the round timer logic so it's the same.
-        fixed scale = CVar::GetHudRoundScale();
+        fixed scale = CVar::GetClHudRoundScale();
         BCSUtils::HudResetState();
         BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
 
-        fixed x = 0.0 + CVar::GetHudRoundOffsetX(),
-              y = BCSUtils::HudBottom() - CVar::GetHudRoundOffsetY();
+        fixed x = 0.0 + CVar::GetClHudRoundOffsetX(),
+              y = BCSUtils::HudBottom() - CVar::GetClHudRoundOffsetY();
 
         DrawTimeDiff(x + 320.0 / scale, y - 20.0, ticDiff);
     }

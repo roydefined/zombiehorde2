@@ -92,7 +92,7 @@ strict namespace Sync
     internal void DoSync(int syncId)
     {
         // Buffering not enabled - write and notify immediately, back to back.
-        if (!CVar::GetUseSyncBuffer())
+        if (!CVar::GetSvUseSyncBuffer())
         {
             TriggerSyncWrite(syncId);
             TriggerSyncNotify(syncId);
@@ -120,8 +120,8 @@ strict namespace Sync
         // so a burst of calls still only results in one notify, same as the write above.
         if (ZH2Game::GameContext.SyncContext.NotifyTic[syncId] == 0)
         {
-            int earliestNotifyTic = Timer() + BCSUtils::Max(CVar::GetSyncDelay(), 1);
-            ZH2Game::GameContext.SyncContext.NotifyTic[syncId] = BCSUtils::Max(earliestNotifyTic, CVar::GetInitialSyncDelay());
+            int earliestNotifyTic = Timer() + BCSUtils::Max(CVar::GetSvSyncDelay(), 1);
+            ZH2Game::GameContext.SyncContext.NotifyTic[syncId] = BCSUtils::Max(earliestNotifyTic, CVar::GetSvInitialSyncDelay());
         }
     }
 

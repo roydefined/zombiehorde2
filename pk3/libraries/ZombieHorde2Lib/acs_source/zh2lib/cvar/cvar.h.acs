@@ -2,9 +2,130 @@
     #error This file must be #included.
 #endif
 
-strict namespace CVar
-{
-    extern bool GetUseSyncBuffer();
-    extern int GetSyncDelay();
-    extern int GetInitialSyncDelay();
-}
+// Automated cvar getters, which sort of matches what Zandronum/ZDoom uses internally with their CVAR/CUSTOM_CVAR macros.
+// In the definitions the `name` parameter doubles as both the function name and the cvar name.
+
+// Sv cvars get one function:
+// - GetSv{Name}().
+
+// Cl cvars get three:
+// - GetCl{Name}ByPlayerId(int)
+// - GetCl{Name}ByConsolePlayer()
+// - GetCl{Name}()
+
+// _CUSTOM shapes are used for special cvars that don't return a static result.
+// These mostly cover the instances where a switch is used and an enum returns.
+
+// _ENGINE shapes are for cvars that don't follow the sv_zh2_/cl_zh2_ naming.
+// This covers the Zandronum CVar values as the name pretty much suggests.
+
+// Variants that use _CLAMPED provide a way to clamp the input to avoid underflow/overflow.
+
+#define CVAR_SV_BOOL_DECLARE(name) extern bool GetSv##name();
+#define CVAR_SV_BOOL_DEFINE(name) bool GetSv##name() { return (bool)GetCvar("sv_zh2_" + #name); }
+#define CVAR_SV_BOOL(name) CVAR_SV_BOOL_DECLARE(name) CVAR_SV_BOOL_DEFINE(name)
+
+#define CVAR_SV_INT_DECLARE(name) extern int GetSv##name();
+#define CVAR_SV_INT_DEFINE(name) int GetSv##name() { return GetCvar("sv_zh2_" + #name); }
+#define CVAR_SV_INT(name) CVAR_SV_INT_DECLARE(name) CVAR_SV_INT_DEFINE(name)
+
+#define CVAR_SV_INT_CLAMPED_DECLARE(name) extern int GetSv##name();
+#define CVAR_SV_INT_CLAMPED_DEFINE(name, minVal, maxVal) int GetSv##name() { return BCSUtils::Clamp(GetCvar("sv_zh2_" + #name), minVal, maxVal); }
+#define CVAR_SV_INT_CLAMPED(name, minVal, maxVal) CVAR_SV_INT_CLAMPED_DECLARE(name) CVAR_SV_INT_CLAMPED_DEFINE(name, minVal, maxVal)
+
+#define CVAR_SV_FIXED_CLAMPED_DECLARE(name) extern fixed GetSv##name();
+#define CVAR_SV_FIXED_CLAMPED_DEFINE(name, minVal, maxVal) fixed GetSv##name() { return BCSUtils::Clamp((fixed)GetCvar("sv_zh2_" + #name), minVal, maxVal); }
+#define CVAR_SV_FIXED_CLAMPED(name, minVal, maxVal) CVAR_SV_FIXED_CLAMPED_DECLARE(name) CVAR_SV_FIXED_CLAMPED_DEFINE(name, minVal, maxVal)
+
+// The compiler can't place T directly as a return type twice in one expansion.
+// Hence we use a typedef here to turn it into a reusable type.
+#define CVAR_SV_CUSTOM(name, T, cases) \
+    typedef T CvarSvCustomT_##name##_T; \
+    extern CvarSvCustomT_##name##_T GetSv##name(); \
+    CvarSvCustomT_##name##_T GetSv##name() { switch (GetCvar("sv_zh2_" + #name)) cases }
+
+#define CVAR_SV_CUSTOM_CLAMPED(name, T, minVal, maxVal, cases) \
+    typedef T CvarSvCustomT_##name##_T; \
+    extern CvarSvCustomT_##name##_T GetSv##name(); \
+    CvarSvCustomT_##name##_T GetSv##name() { switch (BCSUtils::Clamp(GetCvar("sv_zh2_" + #name), minVal, maxVal)) cases }
+
+#define CVAR_CL_BOOL_BYPLAYERID_DECLARE(name) extern bool GetCl##name##ByPlayerId(int playerId);
+#define CVAR_CL_BOOL_BYPLAYERID_DEFINE(name) bool GetCl##name##ByPlayerId(int playerId) { return (bool)GetUserCvar(playerId, "cl_zh2_" + #name); }
+#define CVAR_CL_BOOL_BYCONSOLEPLAYER_DECLARE(name) extern bool GetCl##name##ByConsolePlayer();
+#define CVAR_CL_BOOL_BYCONSOLEPLAYER_DEFINE(name) bool GetCl##name##ByConsolePlayer() { return GetCl##name##ByPlayerId(ConsolePlayerNumber()); }
+#define CVAR_CL_BOOL_DECLARE(name) extern bool GetCl##name();
+#define CVAR_CL_BOOL_DEFINE(name) bool GetCl##name() { return GetCl##name##ByPlayerId(PlayerNumber()); }
+#define CVAR_CL_BOOL(name) \
+    CVAR_CL_BOOL_BYPLAYERID_DECLARE(name) CVAR_CL_BOOL_BYPLAYERID_DEFINE(name) \
+    CVAR_CL_BOOL_BYCONSOLEPLAYER_DECLARE(name) CVAR_CL_BOOL_BYCONSOLEPLAYER_DEFINE(name) \
+    CVAR_CL_BOOL_DECLARE(name) CVAR_CL_BOOL_DEFINE(name)
+
+#define CVAR_CL_INT_BYPLAYERID_DECLARE(name) extern int GetCl##name##ByPlayerId(int playerId);
+#define CVAR_CL_INT_BYPLAYERID_DEFINE(name) int GetCl##name##ByPlayerId(int playerId) { return GetUserCvar(playerId, "cl_zh2_" + #name); }
+#define CVAR_CL_INT_BYCONSOLEPLAYER_DECLARE(name) extern int GetCl##name##ByConsolePlayer();
+#define CVAR_CL_INT_BYCONSOLEPLAYER_DEFINE(name) int GetCl##name##ByConsolePlayer() { return GetCl##name##ByPlayerId(ConsolePlayerNumber()); }
+#define CVAR_CL_INT_DECLARE(name) extern int GetCl##name();
+#define CVAR_CL_INT_DEFINE(name) int GetCl##name() { return GetCl##name##ByPlayerId(PlayerNumber()); }
+#define CVAR_CL_INT(name) \
+    CVAR_CL_INT_BYPLAYERID_DECLARE(name) CVAR_CL_INT_BYPLAYERID_DEFINE(name) \
+    CVAR_CL_INT_BYCONSOLEPLAYER_DECLARE(name) CVAR_CL_INT_BYCONSOLEPLAYER_DEFINE(name) \
+    CVAR_CL_INT_DECLARE(name) CVAR_CL_INT_DEFINE(name)
+
+#define CVAR_CL_INT_CLAMPED_BYPLAYERID_DECLARE(name) extern int GetCl##name##ByPlayerId(int playerId);
+#define CVAR_CL_INT_CLAMPED_BYPLAYERID_DEFINE(name, minVal, maxVal) int GetCl##name##ByPlayerId(int playerId) { return BCSUtils::Clamp(GetUserCvar(playerId, "cl_zh2_" + #name), minVal, maxVal); }
+#define CVAR_CL_INT_CLAMPED_BYCONSOLEPLAYER_DECLARE(name) extern int GetCl##name##ByConsolePlayer();
+#define CVAR_CL_INT_CLAMPED_BYCONSOLEPLAYER_DEFINE(name) int GetCl##name##ByConsolePlayer() { return GetCl##name##ByPlayerId(ConsolePlayerNumber()); }
+#define CVAR_CL_INT_CLAMPED_DECLARE(name) extern int GetCl##name();
+#define CVAR_CL_INT_CLAMPED_DEFINE(name) int GetCl##name() { return GetCl##name##ByPlayerId(PlayerNumber()); }
+#define CVAR_CL_INT_CLAMPED(name, minVal, maxVal) \
+    CVAR_CL_INT_CLAMPED_BYPLAYERID_DECLARE(name) CVAR_CL_INT_CLAMPED_BYPLAYERID_DEFINE(name, minVal, maxVal) \
+    CVAR_CL_INT_CLAMPED_BYCONSOLEPLAYER_DECLARE(name) CVAR_CL_INT_CLAMPED_BYCONSOLEPLAYER_DEFINE(name) \
+    CVAR_CL_INT_CLAMPED_DECLARE(name) CVAR_CL_INT_CLAMPED_DEFINE(name)
+
+#define CVAR_CL_FIXED_CLAMPED_BYPLAYERID_DECLARE(name) extern fixed GetCl##name##ByPlayerId(int playerId);
+#define CVAR_CL_FIXED_CLAMPED_BYPLAYERID_DEFINE(name, minVal, maxVal) fixed GetCl##name##ByPlayerId(int playerId) { return BCSUtils::Clamp((fixed)GetUserCvar(playerId, "cl_zh2_" + #name), minVal, maxVal); }
+#define CVAR_CL_FIXED_CLAMPED_BYCONSOLEPLAYER_DECLARE(name) extern fixed GetCl##name##ByConsolePlayer();
+#define CVAR_CL_FIXED_CLAMPED_BYCONSOLEPLAYER_DEFINE(name) fixed GetCl##name##ByConsolePlayer() { return GetCl##name##ByPlayerId(ConsolePlayerNumber()); }
+#define CVAR_CL_FIXED_CLAMPED_DECLARE(name) extern fixed GetCl##name();
+#define CVAR_CL_FIXED_CLAMPED_DEFINE(name) fixed GetCl##name() { return GetCl##name##ByPlayerId(PlayerNumber()); }
+#define CVAR_CL_FIXED_CLAMPED(name, minVal, maxVal) \
+    CVAR_CL_FIXED_CLAMPED_BYPLAYERID_DECLARE(name) CVAR_CL_FIXED_CLAMPED_BYPLAYERID_DEFINE(name, minVal, maxVal) \
+    CVAR_CL_FIXED_CLAMPED_BYCONSOLEPLAYER_DECLARE(name) CVAR_CL_FIXED_CLAMPED_BYCONSOLEPLAYER_DEFINE(name) \
+    CVAR_CL_FIXED_CLAMPED_DECLARE(name) CVAR_CL_FIXED_CLAMPED_DEFINE(name)
+
+// Same typedef requirement as CVAR_SV_CUSTOM above, but it covers three functions.
+#define CVAR_CL_CUSTOM(name, T, cases) \
+    typedef T CvarClCustomT_##name##_T; \
+    extern CvarClCustomT_##name##_T GetCl##name##ByPlayerId(int playerId); \
+    CvarClCustomT_##name##_T GetCl##name##ByPlayerId(int playerId) { switch (GetUserCvar(playerId, "cl_zh2_" + #name)) cases } \
+    extern CvarClCustomT_##name##_T GetCl##name##ByConsolePlayer(); \
+    CvarClCustomT_##name##_T GetCl##name##ByConsolePlayer() { return GetCl##name##ByPlayerId(ConsolePlayerNumber()); } \
+    extern CvarClCustomT_##name##_T GetCl##name(); \
+    CvarClCustomT_##name##_T GetCl##name() { return GetCl##name##ByPlayerId(PlayerNumber()); }
+
+#define CVAR_CL_CUSTOM_CLAMPED(name, T, minVal, maxVal, cases) \
+    typedef T CvarClCustomT_##name##_T; \
+    extern CvarClCustomT_##name##_T GetCl##name##ByPlayerId(int playerId); \
+    CvarClCustomT_##name##_T GetCl##name##ByPlayerId(int playerId) { switch (BCSUtils::Clamp(GetUserCvar(playerId, "cl_zh2_" + #name), minVal, maxVal)) cases } \
+    extern CvarClCustomT_##name##_T GetCl##name##ByConsolePlayer(); \
+    CvarClCustomT_##name##_T GetCl##name##ByConsolePlayer() { return GetCl##name##ByPlayerId(ConsolePlayerNumber()); } \
+    extern CvarClCustomT_##name##_T GetCl##name(); \
+    CvarClCustomT_##name##_T GetCl##name() { return GetCl##name##ByPlayerId(PlayerNumber()); }
+
+#define CVAR_ENGINE_BOOL_DECLARE(fnName) extern bool fnName();
+#define CVAR_ENGINE_BOOL_DEFINE(fnName, cvarName) bool fnName() { return (bool)GetCvar(cvarName); }
+#define CVAR_ENGINE_BOOL(fnName, cvarName) CVAR_ENGINE_BOOL_DECLARE(fnName) CVAR_ENGINE_BOOL_DEFINE(fnName, cvarName)
+
+#define CVAR_ENGINE_INT_DECLARE(fnName) extern int fnName();
+#define CVAR_ENGINE_INT_DEFINE(fnName, cvarName) int fnName() { return GetCvar(cvarName); }
+#define CVAR_ENGINE_INT(fnName, cvarName) CVAR_ENGINE_INT_DECLARE(fnName) CVAR_ENGINE_INT_DEFINE(fnName, cvarName)
+
+#define CVAR_ENGINE_INT_CLAMPED_DECLARE(fnName) extern int fnName();
+#define CVAR_ENGINE_INT_CLAMPED_DEFINE(fnName, cvarName, minVal, maxVal) int fnName() { return BCSUtils::Clamp(GetCvar(cvarName), minVal, maxVal); }
+#define CVAR_ENGINE_INT_CLAMPED(fnName, cvarName, minVal, maxVal) CVAR_ENGINE_INT_CLAMPED_DECLARE(fnName) CVAR_ENGINE_INT_CLAMPED_DEFINE(fnName, cvarName, minVal, maxVal)
+
+#define CVAR_ENGINE_FIXED_DECLARE(fnName) extern fixed fnName();
+#define CVAR_ENGINE_FIXED_DEFINE(fnName, cvarName) fixed fnName() { return BCSUtils::a_GetCVarFixed(cvarName); }
+#define CVAR_ENGINE_FIXED(fnName, cvarName) CVAR_ENGINE_FIXED_DECLARE(fnName) CVAR_ENGINE_FIXED_DEFINE(fnName, cvarName)
+
+#include "cvar.shared.acs"

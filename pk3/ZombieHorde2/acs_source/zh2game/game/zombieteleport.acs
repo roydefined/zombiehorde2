@@ -30,7 +30,7 @@ strict namespace Game
 
         // Player moved, so cancel the teleport.
         // Can be configured to be disabled.
-        if (!CVar::GetAllowMovingWhenZombieTeleporting() && BCSUtils::KeyDownAny(BT_FORWARD | BT_BACK | BT_MOVELEFT | BT_MOVERIGHT))
+        if (!CVar::GetSvAllowMovingWhenZombieTeleporting() && BCSUtils::KeyDownAny(BT_FORWARD | BT_BACK | BT_MOVELEFT | BT_MOVERIGHT))
         {
             SetZombieTeleportTics(0);
             return;
@@ -93,7 +93,7 @@ strict namespace Game
             return;
         }
 
-        if (!CVar::GetAllowZombieTeleporting())
+        if (!CVar::GetSvAllowZombieTeleporting())
         {
             Logger::LogActivator("The server disabled zombie teleporting.");
             return;
@@ -118,7 +118,7 @@ strict namespace Game
         }
 
         // Note, the player loop will tic and handle final teleport.
-        SetZombieTeleportTics(CVar::GetZombieTeleportSeconds() * 35);
+        SetZombieTeleportTics(CVar::GetSvZombieTeleportSeconds() * 35);
     }
 
     void SetCurrentZombieTeleportSpotTid(int tid)
@@ -203,7 +203,7 @@ strict namespace Game
 
     internal int GetPlayerZombieTeleportsLeft(int id)
     {
-        return BCSUtils::Max(0, GetMaxZombieTeleports() - GetPlayerZombieTeleportsUsed(id));
+        return BCSUtils::Max(0, GetSvMaxZombieTeleports() - GetPlayerZombieTeleportsUsed(id));
     }
 
     internal void SetZombieTeleportsLeft(int value)
@@ -213,7 +213,7 @@ strict namespace Game
 
     internal void SetPlayerZombieTeleportsLeft(int id, int value)
     {
-        SetPlayerZombieTeleportsUsed(id, BCSUtils::Max(0, value - GetMaxZombieTeleports()));
+        SetPlayerZombieTeleportsUsed(id, BCSUtils::Max(0, value - GetSvMaxZombieTeleports()));
     }
 
     internal int GetZombieTeleportsUsed()
@@ -276,10 +276,10 @@ strict namespace Game
 
     // Returns the max number of allowed teleports.
     // This returns the overridden count if set, or the cvar otherwise.
-    int GetMaxZombieTeleports()
+    int GetSvMaxZombieTeleports()
     {
         return ZH2Game::GameContext.ZombieTeleportContext.OverrideMaxZombieTeleportsSet
             ? ZH2Game::GameContext.ZombieTeleportContext.OverrideMaxZombieTeleportsCount
-            : CVar::GetMaxZombieTeleports();
+            : CVar::GetSvMaxZombieTeleports();
     }
 }

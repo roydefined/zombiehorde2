@@ -13,7 +13,7 @@ strict namespace Player
         bool translucentAlliesEnabled = translucentAlliesEnabledServer
             && (translucentAlliesEnabledClient == CVar::TRANSLUCENT_ALLIES_ON
                 || translucentAlliesEnabledClient == CVar::TRANSLUCENT_ALLIES_ON_WITH_REQUIRED_CVARS
-                    && (CVar::GetShootThroughAllies() || CVar::GetUnblockAllies()));
+                    && (CVar::GetSvShootThroughAllies() || CVar::GetSvUnblockAllies()));
 
         // Do we need to toggle translucency?
         if (GetTranslucentAlliesEnabled() != translucentAlliesEnabled)
@@ -64,10 +64,10 @@ strict namespace Player
     internal void UpdateTranslucentAlliesAlpha()
     {
         Player::PlayerSpecieT specie = Player::GetSpecie();
-        fixed translucentAlliesDistance = fixed(CVar::GetTranslucentAlliesDistance());
+        fixed translucentAlliesDistance = fixed(CVar::GetClTranslucentAlliesDistance());
 
         // Base configured translucency value on players.
-        fixed baseAlpha = fixed(CVar::GetBaseAllyTranslucency()) / 100.0;
+        fixed baseAlpha = fixed(CVar::GetClBaseAllyTranslucency()) / 100.0;
 
         int cameraTid = CheckPlayerCamera(PlayerNumber());
         if (cameraTid == -1)

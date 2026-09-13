@@ -24,7 +24,7 @@ strict namespace Event
             {
                 // Ensure we (still) have enough clients to begin.
                 int availableClients = BCSUtils::ClientCount();
-                int minimumRequiredClients = CVar::GetMinimumClientCount();
+                int minimumRequiredClients = CVar::GetSvMinimumClientCount();
                 if (availableClients < minimumRequiredClients)
                 {
                     // No check for this since it can be assumed the pregame exists here.
@@ -40,7 +40,7 @@ strict namespace Event
                 }
 
                 // Reset map based on configuration.
-                if (CVar::GetUseMapResetsFeature()) ResetMap();
+                if (CVar::GetSvUseMapResetsFeature()) ResetMap();
                 else ChangeLevel(StrParam(n:PRINTNAME_LEVEL), 0, CHANGELEVEL_NOINTERMISSION, GameSkill());
                 break;
             }
@@ -89,7 +89,7 @@ strict namespace Event
             case RoundTimer::TIMERENDING:
             {
                 // Skip the voting process if the cvar is set.
-                if (!CVar::GetAllowMapVoting())
+                if (!CVar::GetSvAllowMapVoting())
                 {
                     Exit_Normal(0);
                     terminate;
@@ -124,7 +124,7 @@ strict namespace Event
             case RoundTimer::TIMERENDINGWITHRESTART:
             {
                 // Reset map based on configuration.
-                if (CVar::GetUseMapResetsFeature()) ResetMap();
+                if (CVar::GetSvUseMapResetsFeature()) ResetMap();
                 else ChangeLevel(StrParam(n:PRINTNAME_LEVEL), 0, CHANGELEVEL_NOINTERMISSION, GameSkill());
                 break;
             }

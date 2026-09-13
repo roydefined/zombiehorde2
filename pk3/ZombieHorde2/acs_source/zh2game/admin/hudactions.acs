@@ -203,7 +203,7 @@ strict namespace Admin
     script "zh2_internal_menu_add_human_bot" net
     {
         if (!GetIsAdmin()) terminate;
-        if (BCSUtils::ClientCount() >= CVar::GetMaxPlayers()) terminate;
+        if (BCSUtils::ClientCount() >= CVar::GetSvMaxPlayers()) terminate;
 
         // Force next joining player (so the bot) to be a human.
         Game::SetForceSpawnSpecie(Player::SPECIEHUMAN);
@@ -231,7 +231,7 @@ strict namespace Admin
     script "zh2_internal_menu_add_zombie_bot" net
     {
         if (!GetIsAdmin()) terminate;
-        if (BCSUtils::ClientCount() >= CVar::GetMaxPlayers()) terminate;
+        if (BCSUtils::ClientCount() >= CVar::GetSvMaxPlayers()) terminate;
 
         // Force next joining player (so the bot) to be a zombie.
         Game::SetForceSpawnSpecie(Player::SPECIEZOMBIE);
@@ -252,7 +252,7 @@ strict namespace Admin
 
     internal void TryMoveNewSpawnInFront()
     {
-        if (!CVar::GetClAdminSpawnBotInFront(PlayerNumber()))
+        if (!CVar::GetClAdminSpawnBotInFrontByPlayerId(PlayerNumber()))
             return;
 
         int tid = Identity::GetTid(Game::GetLastJoinedPlayerId());

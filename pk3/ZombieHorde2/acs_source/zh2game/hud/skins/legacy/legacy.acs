@@ -14,9 +14,9 @@ strict namespace Hud
 {
     internal void DrawHudLegacy()
     {
-        bool drawHud = CVar::GetDrawHud();
+        bool drawHud = CVar::GetClDrawHud();
 
-        if (drawHud && CVar::GetDrawRoundHud())
+        if (drawHud && CVar::GetClDrawRoundHud())
             DrawRoundsHudLegacy();
 
         // Everything below is strictly during the playing game.
@@ -25,14 +25,14 @@ strict namespace Hud
 
         if (_clientCameraOnBody && drawHud && BCSUtils::ActorIsAlive(ActivatorTid()))
         {
-            if (CVar::GetDrawPlayerBarsHud())
+            if (CVar::GetClDrawPlayerBarsHud())
                 DrawPlayerBarsHudLegacy();
 
-            if (CVar::GetDrawPlayerStatusHud())
+            if (CVar::GetClDrawPlayerStatusHud())
                 DrawPlayerStatusHudLegacy();
         }
 
-        if (drawHud && CVar::GetDrawGameHud())
+        if (drawHud && CVar::GetClDrawGameHud())
             DrawGameHudLegacy();
     }
 
@@ -43,7 +43,7 @@ strict namespace Hud
 
     internal void DrawPlayerBarsHudLegacy()
     {
-        fixed scale = CVar::GetHudPlayerBarsScale();
+        fixed scale = CVar::GetClHudPlayerBarsScale();
         BCSUtils::HudResetState();
         BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
@@ -51,8 +51,8 @@ strict namespace Hud
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
 
         PrepareHud(
-            320.0 + CVar::GetHudPlayerBarsOffsetX(),
-            BCSUtils::HudBottom() - 70.0 - CVar::GetHudPlayerBarsOffsetY(),
+            320.0 + CVar::GetClHudPlayerBarsOffsetX(),
+            BCSUtils::HudBottom() - 70.0 - CVar::GetClHudPlayerBarsOffsetY(),
             true);
 
         fixed afkBarX = GetHudX(), afkBarY = GetHudY();
@@ -62,15 +62,15 @@ strict namespace Hud
 
     internal void DrawPlayerStatusHudLegacy()
     {
-        fixed scale = CVar::GetHudPlayerStatusScale();
+        fixed scale = CVar::GetClHudPlayerStatusScale();
         BCSUtils::HudResetState();
         BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
 
         // Base x and y offsets used by the hud elements.
-        fixed baseX = BCSUtils::HudLeft() + CVar::GetHudPlayerStatusOffsetX() + 30.0,
-              baseY = BCSUtils::HudBottom() - CVar::GetHudPlayerStatusOffsetY() - 30.0;
+        fixed baseX = BCSUtils::HudLeft() + CVar::GetClHudPlayerStatusOffsetX() + 30.0,
+              baseY = BCSUtils::HudBottom() - CVar::GetClHudPlayerStatusOffsetY() - 30.0;
 
         PrepareHud(
             baseX, baseY, true);
@@ -105,8 +105,8 @@ strict namespace Hud
 
         // Right side
         PrepareHud(
-            BCSUtils::HudRight() - CVar::GetHudPlayerStatusOffsetX() - 110.0,
-            BCSUtils::HudBottom() - CVar::GetHudPlayerStatusOffsetY() - 80.0,
+            BCSUtils::HudRight() - CVar::GetClHudPlayerStatusOffsetX() - 110.0,
+            BCSUtils::HudBottom() - CVar::GetClHudPlayerStatusOffsetY() - 80.0,
             true);
 
         DrawWeaponIconLegacy(GetHudX(), GetHudY());
@@ -114,8 +114,8 @@ strict namespace Hud
         if (Player::GetIsZombie())
         {
             PrepareHud(
-                BCSUtils::HudRight() - CVar::GetHudPlayerStatusOffsetX() - 80.0,
-                BCSUtils::HudBottom() - CVar::GetHudPlayerStatusOffsetY() - 90.0,
+                BCSUtils::HudRight() - CVar::GetClHudPlayerStatusOffsetX() - 80.0,
+                BCSUtils::HudBottom() - CVar::GetClHudPlayerStatusOffsetY() - 90.0,
                 true);
 
             DrawZombieAbilitiesLegacy(GetHudX(), GetHudY());
@@ -129,7 +129,7 @@ strict namespace Hud
 
     internal void DrawGameHudLegacy()
     {
-        fixed scale = CVar::GetHudGameScale();
+        fixed scale = CVar::GetClHudGameScale();
         BCSUtils::HudResetState();
         BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
@@ -137,16 +137,16 @@ strict namespace Hud
         if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
         {
             PrepareHud(
-                BCSUtils::HudLeft() + CVar::GetHudPlayerStatusOffsetX() + 40.0,
-                BCSUtils::HudBottom() - CVar::GetHudPlayerStatusOffsetY() - 220.0,
+                BCSUtils::HudLeft() + CVar::GetClHudPlayerStatusOffsetX() + 40.0,
+                BCSUtils::HudBottom() - CVar::GetClHudPlayerStatusOffsetY() - 220.0,
                 true);
 
             DrawPlayerCountersLegacy(GetHudX(), GetHudY());
         }
 
         PrepareHud(
-            BCSUtils::HudRight() - CVar::GetHudPlayerStatusOffsetX() - 60.0,
-            BCSUtils::HudBottom() - CVar::GetHudPlayerStatusOffsetY() - 220.0,
+            BCSUtils::HudRight() - CVar::GetClHudPlayerStatusOffsetX() - 60.0,
+            BCSUtils::HudBottom() - CVar::GetClHudPlayerStatusOffsetY() - 220.0,
             true);
 
         DrawStatCountersLegacy(GetHudX(), GetHudY());
