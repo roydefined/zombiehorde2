@@ -6,7 +6,21 @@ Various `#define` names across the core mod and library smashed multiple words t
 These have all been renamed to consistently use `UPPER_SNAKE_CASE`, with words separated by underscores. Established compound terms that already read clearly (e.g. `HUDID`, weapon names like `SHOTGUN`/`RIOTGUN`, `AMBIENTWEATHER`) were intentionally left as-is.
 See `zh2_beta_v7.0.0_define_renames.txt` in this same folder for the full list of old -> new names. If your map directly references any of them, update it to the new name.
 
+* * Cvar getters now use a new namespace and follow a consistent naming convention * *
+Every cvar function in the library and core now follows the same shape through a new system that ensures this consistency. This includes two major changes to cvars.
+Firstly, cvars now reside in a new `CVar` namespace instead of being in `ZH2Game`. Secondly, the naming has been changed to match in consistency. Server cvars are now named `GetSv{Name}()`, client cvars are named `GetCl{Name}ByPlayerId(int)`, `GetCl{Name}ByConsolePlayer()` or `GetCl{Name}()`.
+Notably with the new names, cvars now differ base don whether they target the server or a client. Secondly, this improvement also exposes two more cvars for clients, in order to get a value by a specific player, or by the console player. Some cvars already had this requirement, so it only made sense to properly support it.
+The cvars are now all also publicly available, providing a strict-typed way to get the value of a setting.
+For more information, see `zh2_beta_v7.0.0_cvar_function_renames.txt` which contains a full list of renamed cvars and their new name.
+
 Other mod changes
 ------------------------------------------------
 
 - Renamed several internal library and core source files/folders for naming consistency (e.g. `afkprevention` -> `afk_prevention`, `translucentallies.acs` -> `translucent_allies.acs`, `prepostscript.acs` -> `pre_post_script.acs`). This is internal only and does not affect maps.
+- Added `zh2modern` and `zh2legacy`, matching `zh2lib`/`zh2game` structure-wise, giving the modern/legacy map-pack-specific cvars typed getters instead of raw `GetCVar`/`GetUserCVar` calls scattered across the map scripts.
+
+Repository changes
+------------------------------------------------
+
+- `compile_maps.py` now also includes the new `ZombieHorde2Modern`/`ZombieHorde2Legacy` ACS source folders, so maps in those packs can reach the new cvar getters.
+- Extended the VSCode workspace structure and PubDoomer profiles to properly support the new modern/legacy ACS files.
