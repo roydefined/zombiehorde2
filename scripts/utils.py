@@ -67,6 +67,14 @@ def get_paths():
         "core_src": root / "pk3" / "ZombieHorde2" / "acs_source",
         "core_out": root / "pk3" / "ZombieHorde2" / "acs",
 
+        # Legacy / Modern
+        "legacy_root": root / "pk3" / "ZombieHorde2Legacy",
+        "legacy_src": root / "pk3" / "ZombieHorde2Legacy" / "acs_source",
+        "legacy_out": root / "pk3" / "ZombieHorde2Legacy" / "acs",
+        "modern_root": root / "pk3" / "ZombieHorde2Modern",
+        "modern_src": root / "pk3" / "ZombieHorde2Modern" / "acs_source",
+        "modern_out": root / "pk3" / "ZombieHorde2Modern" / "acs",
+
         # Versioning
         "version": root / "version.txt",
         "version_template": root / "templates" / "version.h.acs.template",

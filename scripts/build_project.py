@@ -72,6 +72,32 @@ def main():
         ]
     )
 
+    # Build legacy source.
+    logging.info("Building legacy.")
+    run_cmd(
+        [str(bcc)]
+        + include_core
+        + ["-i", str(paths["core_src"])]
+        + macro_core
+        + [
+            str(paths["legacy_src"] / "zh2legacy.acs"),
+            str(paths["legacy_out"] / "zh2legcy.o")
+        ]
+    )
+
+    # Build modern source.
+    logging.info("Building modern.")
+    run_cmd(
+        [str(bcc)]
+        + include_core
+        + ["-i", str(paths["core_src"])]
+        + macro_core
+        + [
+            str(paths["modern_src"] / "zh2modern.acs"),
+            str(paths["modern_out"] / "zh2modrn.o")
+        ]
+    )
+
     logging.info("Finished building.")
 
 
