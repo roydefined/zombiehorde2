@@ -1,0 +1,33 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Monster
+{
+    script "zh2_internal_ze25_weegee_healthhud" (int weegeeTid)
+    {
+        SetActivator(-1);
+        SetFont("SMALLFONT");
+        HudMessageBold(s: "Weegee's health! : ", d:GetActorProperty(weegeeTid, APROP_Health), s: ""; HUDMSG_PLAIN, HUDTID_ZE25_WEEGEE, CR_GREY, 0.03, -0.8, 1.0, 0.03, 0.0);
+        delay(const:1);
+        restart;
+    }
+
+    script "zh2_dec_ze25_weegee_ondeath"
+    {
+        ACS_NamedTerminate("zh2_internal_ze25_weegee_healthhud", 0);
+
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            int tid = Identity::GetTid(i);
+            if (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(tid) || !Player::GetPlayerIsZombie(i))
+                continue;
+
+            Game::KillPlayer(i, MOD_UNKNOWN);
+        }
+
+        Fadeto(255, 25, 25, 1.0, 0.0);
+        delay(105);
+        Fadeto(0, 0, 0, 0.0, 6.0);
+    }
+}
