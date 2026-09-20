@@ -1,5 +1,14 @@
 //ZM09 Database
 
+// Clientside mirror of Ravishing's states, of which the serversided variant exists in the monster core code.
+int user_ghoulactivesound;
+bool user_invisible;
+int script_test;
+bool ghoul_invtest;
+int stuck_test;
+int ghoul_hate;
+int sound_toplay;
+
 script 23 (raw type, raw arg1, raw arg2) clientside{//Update the clientside from who called the debug command
     if(type==1){
         user_ghoulactivesound=arg1;
@@ -30,13 +39,13 @@ script 23 (raw type, raw arg1, raw arg2) clientside{//Update the clientside from
 
 script 26 open{//Update server side functions to clientside
     while(true){
-        acs_execute(23,0,1, user_ghoulactivesound, (raw)user_invisible);
+        acs_execute(23,0,1, ACS_NamedExecuteWithResult("zh2_dec_zm09_ravishing_getactivesoundcounter"), ACS_NamedExecuteWithResult("zh2_dec_zm09_ravishing_getisinvisible"));
         delay(1);
-        acs_execute(23,0,2, script_test, (raw)ghoul_invtest);
+        acs_execute(23,0,2, ACS_NamedExecuteWithResult("zh2_dec_zm09_ravishing_getscripttest"), ACS_NamedExecuteWithResult("zh2_dec_zm09_ravishing_getinvtest"));
         delay(1);
-        acs_execute(23,0,3, stuck_test, script_test);
+        acs_execute(23,0,3, ACS_NamedExecuteWithResult("zh2_dec_zm09_ravishing_getstucktest"), ACS_NamedExecuteWithResult("zh2_dec_zm09_ravishing_getscripttest"));
         delay(1);
-        acs_execute(23,0,4, ghoul_hate, sound_toplay);
+        acs_execute(23,0,4, ACS_NamedExecuteWithResult("zh2_dec_zm09_ravishing_gethate"), ACS_NamedExecuteWithResult("zh2_dec_zm09_ravishing_getsoundtoplay"));
         delay(1);
         acs_execute(23,0,5, ghoul_target, (raw)monster_target_distance);
         delay(1);
