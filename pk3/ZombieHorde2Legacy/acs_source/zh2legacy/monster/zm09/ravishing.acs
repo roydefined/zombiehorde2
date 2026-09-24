@@ -1,0 +1,203 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Monster
+{
+    internal int stuck_test = 0;
+    internal bool ghoul_invtest = false;
+    internal int user_ghoulactivesound = 0;
+    internal int timer_GHOUL = 0;
+    internal bool user_invisible = false;
+    internal int user_ghoulinvisible = 0;
+    internal int out_invisible = 0;
+    internal int ghoul_hate = 0;
+    internal int script_test = 0;
+    internal int sound_toplay = 0;
+
+    // Was flagged "TO BE DELETED" in the old documentation.
+    script "zh2_dec_zm09_ravishing_attack" (void)
+    {
+        stuck_test = 0;
+        ghoul_invtest = false;
+        user_ghoulactivesound = 0;
+        timer_GHOUL = 0;
+        user_invisible = false;
+        user_ghoulinvisible = 0;
+        if (out_invisible == 0)
+            out_invisible = 50;
+        SetActorProperty(0, APROP_Speed, 16.0);
+    }
+    
+    script "zh2_dec_zm09_setspeed" (int tid, int speed)
+    {
+        SetActorProperty(tid, APROP_Speed, speed << 16);
+    }
+
+    // Was flagged "TO BE DELETED" in the old documentation.
+    // Ravishing never passes a parameter.
+    script "zh2_dec_zm09_ravishing_checkstatus" (int x)
+    {
+        ghoul_hate = x;
+        script_test = 1;
+
+        // Note `user_invisible` is never set, so neither is ghoul_invtest, meaning neither branch is ever entered.
+        if (user_invisible == true && user_ghoulinvisible == 0 && ghoul_invtest == false)
+        {
+            user_ghoulinvisible = 1;
+            ghoul_invtest = true;
+            SetActorProperty(0, APROP_Speed, 26.0);
+        }
+        else if (user_invisible == false && user_ghoulinvisible == 0 && ghoul_invtest == true)
+        {
+            user_ghoulinvisible = 2;
+            ghoul_invtest = false;
+            SetActorProperty(0, APROP_Speed, 16.0);
+        }
+        SetResultValue(user_ghoulinvisible);
+        delay(1);
+        user_ghoulinvisible = 0;
+    }
+
+    // Was flagged "TO BE DELETED" in the old documentation.
+    script "zh2_dec_zm09_ravishing_dormant" (void)
+    {
+        stuck_test = 0;
+        user_ghoulactivesound = 0;
+        ghoul_invtest = false;
+        timer_GHOUL = 0;
+        user_invisible = false;
+        user_ghoulinvisible = 0;
+        SetActorProperty(0, APROP_Speed, 16.0);
+    }
+
+    // Was flagged "TO BE DELETED" in the old documentation.
+    // This loop is seemingly completely unused.
+    script "zh2_dec_zm09_ravishing_mainloop" (int tid)
+    {
+        fixed pos_x = 0.0, pos_y = 0.0, pos_z = 0.0;
+
+        while (true)
+        {
+            if (pos_x == GetActorX(tid) && pos_y == GetActorY(tid) && pos_z == GetActorZ(tid))
+            {
+                stuck_test++;
+            }
+            else
+            {
+                stuck_test = 0;
+                pos_x = GetActorX(tid);
+                pos_y = GetActorY(tid);
+                pos_z = GetActorZ(tid);
+            }
+
+            if (stuck_test == 50)
+            {
+                user_invisible = true;
+                user_ghoulinvisible = 0;
+                ghoul_invtest = false;
+                timer_GHOUL = 0;
+            }
+
+            if (out_invisible > 0)
+                SetActorProperty(tid, APROP_Speed, 16.0);
+
+            if (timer_GHOUL >= 16 && user_invisible == true)
+            {
+                user_invisible = false;
+                timer_GHOUL = 0;
+                SetActorProperty(tid, APROP_Speed, 16.0);
+            }
+            else if (timer_GHOUL >= 7 && user_invisible == false)
+            {
+                timer_GHOUL = 0;
+                user_invisible = true;
+            }
+
+            sound_toplay = user_invisible == true ? 1 : 0;
+
+            if (out_invisible > 0)
+                out_invisible--;
+
+            script_test = 0;
+            delay(1);
+        }
+    }
+
+    // Was flagged "TO BE DELETED" in the old documentation.
+    // This loop is seemingly completely unused.
+    script "zh2_dec_zm09_ravishing_soundloop" (int tid)
+    {
+        while (true)
+        {
+            if (sound_toplay == 0)
+            {
+                while (user_ghoulactivesound < 4 && user_invisible == false)
+                {
+                    user_ghoulactivesound++;
+                    delay(35);
+                }
+            }
+            else
+            {
+                while (user_ghoulactivesound < 2 && user_invisible == true)
+                {
+                    user_ghoulactivesound++;
+                    delay(35);
+                }
+            }
+
+            timer_GHOUL++;
+            user_ghoulactivesound = 0;
+
+            if (user_invisible == true)
+                ThingSound(tid, "EFF5", 127);
+            else if (user_ghoulinvisible == 0)
+                ThingSound(tid, "EFF10", 127);
+
+            delay(1);
+        }
+    }
+
+    // Set in the main loop code which is seemingly unused.
+    script "zh2_dec_zm09_ravishing_getactivesoundcounter" (void)
+    {
+        SetResultValue(user_ghoulactivesound);
+    }
+
+    // Set in the main loop code which is seemingly unused.
+    script "zh2_dec_zm09_ravishing_getisinvisible" (void)
+    {
+        SetResultValue((int)user_invisible);
+    }
+
+    // Set in the main loop code which is seemingly unused.
+    script "zh2_dec_zm09_ravishing_getscripttest" (void)
+    {
+        SetResultValue(script_test);
+    }
+
+    // Set in the main loop code which is seemingly unused.
+    script "zh2_dec_zm09_ravishing_getinvtest" (void)
+    {
+        SetResultValue((int)ghoul_invtest);
+    }
+
+    // Set in the main loop code which is seemingly unused.
+    script "zh2_dec_zm09_ravishing_getstucktest" (void)
+    {
+        SetResultValue(stuck_test);
+    }
+
+    // Seemingly unused as it always returns 0
+    script "zh2_dec_zm09_ravishing_gethate" (void)
+    {
+        SetResultValue(ghoul_hate);
+    }
+
+    // Set in the main loop code which is seemingly unused.
+    script "zh2_dec_zm09_ravishing_getsoundtoplay" (void)
+    {
+        SetResultValue(sound_toplay);
+    }
+}

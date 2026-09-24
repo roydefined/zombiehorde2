@@ -11,13 +11,8 @@ strict namespace
 {
     #define WEEGEE_HP 1500
 
-    #define HUDTID_WEEGEE 900
-
     #define GRAPHIC_WEEGEE_SMALL "Weegee"
     #define GRAPHIC_WEEGEE_BIG "Weegee2"
-
-    #define WEEGEE_DEATH_SCRIPT 96
-    #define WEEGEE_HEALTH_SCRIPT 97
 
     //Variables
     bool Teleporter[BCSUtils::MAX_PLAYERS];           //Teleport Bool for tube
@@ -534,33 +529,6 @@ strict namespace
             SetActorProperty(weegeeTID, APROP_Health, 2500 + humancount * 1250);
     }
 
-    // NOTE, HARDCODED terminate by weegee actor.
-    Script WEEGEE_HEALTH_SCRIPT (void)
-    {
-        SetActivator(-1);
-        setFont("SMALLFONT");
-        hudmessageBold(s: "Weegee's health! : ", d:GetActorProperty(98, APROP_Health),s: ""; HUDMSG_PLAIN, HUDTID_WEEGEE, CR_GREY, 0.03, -0.8, 1.0, 0.03, 0.0);
-        delay(const:1);
-        restart;
-    }
-
-    // NOTE, HARDCODED execute by weegee actor.
-    script WEEGEE_DEATH_SCRIPT (void)
-    {
-        for(int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-        {
-            int tid = Identity::GetTid(i);
-            if (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(tid) || !Player::GetPlayerIsZombie(i))
-                continue;
-
-            Game::KillPlayer(i, MOD_UNKNOWN);
-        }
-
-        Fadeto (255, 25, 25, 1.0, 0.0);
-        delay(105);
-        Fadeto (0, 0, 0, 0.0, 6.0);
-    }
-
     Script 95 (void)
     {
         Resist::StopResistByIndex(3);
@@ -595,7 +563,7 @@ strict namespace
                 SetThingSpecial(98,Acs_execute,95,0,0,0,0);
                 Music::PlayMusic("D_WEEGEE");
                 Delay(35);
-                Acs_executealways(WEEGEE_HEALTH_SCRIPT,0,0,0,0);
+                ACS_NamedExecuteAlways("zh2_internal_ze25_weegee_healthhud", 0, 98, 0, 0);
 
                 SetActivator(-1);
                 break;
