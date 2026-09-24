@@ -13,14 +13,23 @@ Notably with the new names, cvars now differ base don whether they target the se
 The cvars are now all also publicly available, providing a strict-typed way to get the value of a setting.
 For more information, see `zh2_beta_v7.0.0_cvar_function_renames.txt` which contains a full list of renamed cvars and their new name.
 
+* * Actor-specific ACS moved out of maps into the core code * *
+Several actors had their DECORATE-callable ACS logic hardcoded as numbered scripts directly in their home map's own ACS source. This meant the monster only worked correctly on the one map it was originally written for, and would break (or silently do nothing) if placed on any other map.
+This logic has been moved into the new `zh2legacy`/`zh2modern` monster/decoration libraries as named scripts, always loaded by default to ensure the actors retain their behavior outside of the maps they were made for.
+Affected actors: Weegee (ZE25), Comets (ZE20/ZE20B/ZM16/ZM25), Kameleon (ZM18/ZM16/ZM25), Ravishing, White Face/ImScared and Soulsphere (all ZM09).
+Genuinely map-specific orchestration (spawn sequences, stats tracking, hate/target direction) was intentionally left on the map, since it only ever runs there and add a layer of opinionated behavior best left for the map to decide.
+
 Other mod changes
 ------------------------------------------------
 
 - Renamed several internal library and core source files/folders for naming consistency (e.g. `afkprevention` -> `afk_prevention`, `translucentallies.acs` -> `translucent_allies.acs`, `prepostscript.acs` -> `pre_post_script.acs`). This is internal only and does not affect maps.
 - Added `zh2modern` and `zh2legacy`, matching `zh2lib`/`zh2game` structure-wise, giving the modern/legacy map-pack-specific cvars typed getters instead of raw `GetCVar`/`GetUserCVar` calls scattered across the map scripts.
+- Fixed an issue with ZM09's soulsphere/ghouldemon dealing wildly excessive melee damage (effectively an instant kill) instead of its intended small damage amount to humans (or large, but survivable, damage to zombies) to to an invalid cast.
+- Fix issue with the core's LOADACS lump not actually working. This was never noticed before because the mod doesn't use autoloading yet, and maps always loaded the code themselves.
 
 Repository changes
 ------------------------------------------------
 
 - `compile_maps.py` now also includes the new `ZombieHorde2Modern`/`ZombieHorde2Legacy` ACS source folders, so maps in those packs can reach the new cvar getters.
 - Extended the VSCode workspace structure and PubDoomer profiles to properly support the new modern/legacy ACS files.
+- `build_project.py` now also compiles the new `zh2legacy`/`zh2modern` libraries.
