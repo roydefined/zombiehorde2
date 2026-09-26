@@ -1,0 +1,283 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    // Human start items can be defined in both the mod def and the map def.
+    // A single item is first parsed into this, then committed to the relevant collection.
+    internal Item::HumanStartItemT _parsingHumanStartItem;
+
+    // Parses the human start items block of a mod def lump.
+    internal bool ParseHumanStartItems(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, HUMAN_START_ITEMS_KEY))
+            return false;
+
+        Logger::LogDebug(LOGSOURCE, "Start parsing human start items.");
+
+        if (!ParseHumanStartItemsBody(handle, false))
+            return false;
+
+        // Peek next character, see if we have a comma.
+        // These are optional and if so, make sure to skip it.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LOGSOURCE, "Finished parsing human start items of this lump.");
+        return true;
+    }
+
+    // Parses the human start items block of a map def lump.
+    internal bool ParseMapHumanStartItems(int handle, str mapLump, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, HUMAN_START_ITEMS_KEY))
+            return false;
+
+        Logger::LogDebug(LOGSOURCE, "Start parsing human start items for \cd" + mapLump + "\cj.");
+
+        if (!ParseHumanStartItemsBody(handle, true))
+            return false;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed human start items for \cd" + mapLump + "\cj.");
+        return true;
+    }
+
+    internal bool ParseHumanStartItemsBody(int handle, bool isMapDef)
+    {
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            if (ParseHumanStartItem(handle, isMapDef))
+                continue;
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing human start items: '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        return true;
+    }
+
+    internal bool ParseHumanStartItem(int handle, bool isMapDef)
+    {
+        if (!BCSUTILS::StrIEquals(Tokenizer::GetSymbol(handle), "item"))
+            return false;
+
+        Logger::LogDebug(LOGSOURCE, "Start parsing single human start item.");
+        Tokenizer::Next(handle);
+
+        // Expecting a string-like type for the name
+        Tokenizer::TokenTypeT token = Tokenizer::GetToken(handle);
+        if (token != Tokenizer::TSYMBOL && token != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Expected symbol or string for human start item, received '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        _parsingHumanStartItem.Name = Tokenizer::GetSymbol(handle);
+        _parsingHumanStartItem.Amount = 1;
+        _parsingHumanStartItem.RuleCount = 0;
+        _parsingHumanStartItem.DefaultChance = 0;
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TLBRACE)) return false;
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+
+        Tokenizer::Next(handle);
+
+        // No more room for more human start items. Log a warning and skip the remaining body.
+        int count = isMapDef ? ZH2Game::GameContext.HumanStartItemCollection.Size : ZH2Game::PersistingGameContext.HumanStartItemCollection.Size;
+        if (count >= MAX_HUMANSTARTITEMS)
+        {
+            Logger::LogWarning(LOGSOURCE, "The maximum number of configurable human start items was reached (" + str(count) + ").");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        // As long as we are inside this body, parse properties and insert them into the parsing item.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) == braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseHumanStartItemAmount(handle, symbol)
+                || ParseHumanStartItemRule(handle, symbol)
+                || ParseHumanStartItemDefaultChance(handle, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing a human start item: '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        CommitParsedHumanStartItem(isMapDef);
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        Logger::LogDebug(LOGSOURCE, "Finished parsing human start item: \cd" + _parsingHumanStartItem.Name + "\cj.");
+        return true;
+    }
+
+    internal bool ParseHumanStartItemAmount(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "amount")) return false;
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for Amount is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        _parsingHumanStartItem.Amount = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed human start item amount: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseHumanStartItemDefaultChance(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "defaultchance")) return false;
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for DefaultChance is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        _parsingHumanStartItem.DefaultChance = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed human start item default chance: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseHumanStartItemRule(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "rule")) return false;
+
+        Logger::LogDebug(LOGSOURCE, "Start parsing human start item rule.");
+
+        if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TLBRACE)) return false;
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+
+        Tokenizer::Next(handle);
+
+        // No more room for more rules. Log a warning and skip the remaining body.
+        int ruleIndex = _parsingHumanStartItem.RuleCount;
+        if (ruleIndex >= MAX_HUMANSTARTITEM_RULES)
+        {
+            Logger::LogWarning(LOGSOURCE, "The maximum number of rules for human start item " + _parsingHumanStartItem.Name + " was reached (" + str(ruleIndex) + ").");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        // As long as we are inside this body, parse properties and insert them into the new rule.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) == braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParseHumanStartItemRuleMaxPlayers(handle, symbol, ruleIndex)
+                || ParseHumanStartItemRuleChance(handle, symbol, ruleIndex))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing a human start item rule: '" + Tokenizer::GetSymbol(handle) + "'.");
+            return false;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Finished parsing human start item rule.");
+        _parsingHumanStartItem.RuleCount++;
+        return true;
+    }
+
+    internal bool ParseHumanStartItemRuleMaxPlayers(int handle, str identifyingSymbol, int ruleIndex)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "maxplayers")) return false;
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for MaxPlayers is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        _parsingHumanStartItem.RuleMaxPlayers[ruleIndex] = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed human start item rule max players: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseHumanStartItemRuleChance(int handle, str identifyingSymbol, int ruleIndex)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "chance")) return false;
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for Chance is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        _parsingHumanStartItem.RuleChance[ruleIndex] = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed human start item rule chance: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    // Stores the parsed item in the mod def items or the current map's items.
+    internal void CommitParsedHumanStartItem(bool isMapDef)
+    {
+        int ruleCount = _parsingHumanStartItem.RuleCount;
+
+        if (isMapDef)
+        {
+            int mapIndex = ZH2Game::GameContext.HumanStartItemCollection.Size;
+            ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].Name = _parsingHumanStartItem.Name;
+            ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].Amount = _parsingHumanStartItem.Amount;
+            ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].DefaultChance = _parsingHumanStartItem.DefaultChance;
+            for (int i = 0; i < ruleCount; ++i)
+            {
+                ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].RuleMaxPlayers[i] = _parsingHumanStartItem.RuleMaxPlayers[i];
+                ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].RuleChance[i] = _parsingHumanStartItem.RuleChance[i];
+            }
+            ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].RuleCount = ruleCount;
+            ZH2Game::GameContext.HumanStartItemCollection.Size++;
+            return;
+        }
+
+        Item::HumanStartItemT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[ZH2Game::PersistingGameContext.HumanStartItemCollection.Size];
+        context.Name = _parsingHumanStartItem.Name;
+        context.Amount = _parsingHumanStartItem.Amount;
+        context.DefaultChance = _parsingHumanStartItem.DefaultChance;
+        for (int i = 0; i < ruleCount; ++i)
+        {
+            context.RuleMaxPlayers[i] = _parsingHumanStartItem.RuleMaxPlayers[i];
+            context.RuleChance[i] = _parsingHumanStartItem.RuleChance[i];
+        }
+        context.RuleCount = ruleCount;
+        ZH2Game::PersistingGameContext.HumanStartItemCollection.Size++;
+    }
+}

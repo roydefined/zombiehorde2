@@ -9,6 +9,7 @@
 #include "shared/powers.acs"
 #include "shared/items.acs"
 #include "shared/weaponspawners.acs"
+#include "shared/humanstartitems.acs"
 
 strict namespace IO
 {
@@ -104,7 +105,8 @@ strict namespace IO
                 if (ParsePowers(handle, symbol)
                     || ParseItems(handle, symbol)
                     || ParseRewards(handle, symbol)
-                    || ParseWeaponSpawners(handle, symbol))
+                    || ParseWeaponSpawners(handle, symbol)
+                    || ParseHumanStartItems(handle, symbol))
                     continue;
             }
             else
@@ -114,7 +116,8 @@ strict namespace IO
                     || ParseTips(handle, symbol))
                     continue;
 
-                if (Tokenizer::ParseBodyAsEmpty(handle, symbol, "weaponspawners"))
+                if (Tokenizer::ParseBodyAsEmpty(handle, symbol, "weaponspawners")
+                    || Tokenizer::ParseBodyAsEmpty(handle, symbol, HUMAN_START_ITEMS_KEY))
                     continue;
 
                 // As powers consists of shared data, parsing them in an offline game only has to be done serverside.
