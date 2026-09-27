@@ -1,0 +1,72 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Item
+{
+    // Combines the parsed mod def and map def items into the human start items of the current map.
+    // A map item overrides a mod item with the same name, other map items are added.
+    // Must be called after the current map lump is parsed.
+    internal void CombineHumanStartItemsServer()
+    {
+        ZH2Game::GameContext.CombinedHumanStartItemCollection.Size = 0;
+
+        for (int i = 0; i < ZH2Game::PersistingGameContext.HumanStartItemCollection.Size; ++i)
+        {
+            HumanStartItemT global:PERSISTING_GAME_CONTEXT_INDEX& modItem = ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[i];
+
+            int index = ZH2Game::GameContext.CombinedHumanStartItemCollection.Size;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name = modItem.Name;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount = modItem.Amount;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance = modItem.DefaultChance;
+            for (int j = 0; j < modItem.RuleCount; ++j)
+            {
+                ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[j] = modItem.RuleMaxPlayers[j];
+                ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleChance[j] = modItem.RuleChance[j];
+            }
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleCount = modItem.RuleCount;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Source = HUMANSTARTITEMSOURCE_MOD;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Size++;
+        }
+
+        for (int i = 0; i < ZH2Game::GameContext.HumanStartItemCollection.Size; ++i)
+        {
+            str name = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].Name;
+
+            // Override the mod item with the same name, if there is one.
+            int index = -1;
+            for (int j = 0; j < ZH2Game::GameContext.CombinedHumanStartItemCollection.Size; ++j)
+            {
+                if (BCSUtils::StrIEquals(ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[j].Item.Name, name))
+                {
+                    index = j;
+                    break;
+                }
+            }
+
+            if (index == -1)
+            {
+                // No more room for more human start items. Log a warning and skip the item.
+                index = ZH2Game::GameContext.CombinedHumanStartItemCollection.Size;
+                if (index >= MAX_HUMANSTARTITEMS)
+                {
+                    Logger::LogWarning(LOGSOURCE, "The maximum number of human start items was reached (" + str(index) + "), skipping map item " + name + ".");
+                    continue;
+                }
+
+                ZH2Game::GameContext.CombinedHumanStartItemCollection.Size++;
+            }
+
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name = name;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].Amount;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].DefaultChance;
+            for (int j = 0; j < ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleCount; ++j)
+            {
+                ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[j] = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleMaxPlayers[j];
+                ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleChance[j] = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleChance[j];
+            }
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleCount = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleCount;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Source = HUMANSTARTITEMSOURCE_MAP;
+        }
+    }
+}
