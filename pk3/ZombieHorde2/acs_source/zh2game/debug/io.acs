@@ -141,4 +141,59 @@ strict namespace Debug
         }
         Logger::LogActivator(logMessage);
     }
+
+    script "zh2_action_debughumanstartitems_serverside" net
+    {
+        InternalDebugHumanStartItems();
+    }
+
+    internal void InternalDebugHumanStartItems()
+    {
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int size = Item::GetParsedModHumanStartItemCount();
+            Append(s:"\cjParsed mod human start items \cd" + str(size));
+            for (int i = 0; i < size; ++i)
+            {
+                Append(s:"\n");
+                Append(s:"\cf#" + str(i));
+                Append(s:"\cj Item \cd" + Item::GetParsedModHumanStartItemName(i));
+                Append(s:"\cj, amount: \cd" + str(Item::GetParsedModHumanStartItemAmount(i)));
+                for (int j = 0; j < Item::GetParsedModHumanStartItemRuleCount(i); ++j)
+                    Append(s:"\cj, rule: \cd" + str(Item::GetParsedModHumanStartItemRuleMaxPlayers(i, j)) + " players " + str(Item::GetParsedModHumanStartItemRuleChance(i, j)) + "%");
+                Append(s:"\cj, default chance: \cd" + str(Item::GetParsedModHumanStartItemDefaultChance(i)) + "%");
+            }
+
+            size = Item::GetParsedMapHumanStartItemCount();
+            Append(s:"\n");
+            Append(s:"\cjParsed map human start items \cd" + str(size));
+            for (int i = 0; i < size; ++i)
+            {
+                Append(s:"\n");
+                Append(s:"\cf#" + str(i));
+                Append(s:"\cj Item \cd" + Item::GetParsedMapHumanStartItemName(i));
+                Append(s:"\cj, amount: \cd" + str(Item::GetParsedMapHumanStartItemAmount(i)));
+                for (int j = 0; j < Item::GetParsedMapHumanStartItemRuleCount(i); ++j)
+                    Append(s:"\cj, rule: \cd" + str(Item::GetParsedMapHumanStartItemRuleMaxPlayers(i, j)) + " players " + str(Item::GetParsedMapHumanStartItemRuleChance(i, j)) + "%");
+                Append(s:"\cj, default chance: \cd" + str(Item::GetParsedMapHumanStartItemDefaultChance(i)) + "%");
+            }
+
+            size = Item::GetHumanStartItemCount();
+            Append(s:"\n");
+            Append(s:"\cjCombined human start items \cd" + str(size));
+            for (int i = 0; i < size; ++i)
+            {
+                Append(s:"\n");
+                Append(s:"\cf#" + str(i));
+                Append(s:"\cj Item \cd" + Item::GetHumanStartItemName(i));
+                Append(s:"\cj, source: \cd" + (Item::GetHumanStartItemSource(i) == Item::HUMANSTARTITEMSOURCE_MAP ? "map" : "mod"));
+                Append(s:"\cj, amount: \cd" + str(Item::GetHumanStartItemAmount(i)));
+                for (int j = 0; j < Item::GetHumanStartItemRuleCount(i); ++j)
+                    Append(s:"\cj, rule: \cd" + str(Item::GetHumanStartItemRuleMaxPlayers(i, j)) + " players " + str(Item::GetHumanStartItemRuleChance(i, j)) + "%");
+                Append(s:"\cj, default chance: \cd" + str(Item::GetHumanStartItemDefaultChance(i)) + "%");
+            }
+        }
+        Logger::LogActivator(logMessage);
+    }
 }
