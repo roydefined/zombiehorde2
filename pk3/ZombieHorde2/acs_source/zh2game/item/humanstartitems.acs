@@ -4,6 +4,13 @@
 
 strict namespace Item
 {
+    internal void HumanStartItemsTicServer()
+    {
+        // Distributes the human start items one second after the initial zombies are picked.
+        if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING && Game::GetPlayTime() == 35)
+            DistributeHumanStartItemsServer();
+    }
+
     // Combines the parsed mod def and map def items into the human start items of the current map.
     // A map item overrides a mod item with the same name, other map items are added.
     // Must be called after the current map lump is parsed.
@@ -69,6 +76,107 @@ strict namespace Item
             ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Source = HUMANSTARTITEMSOURCE_MAP;
         }
     }
+
+    // Tops up every human start item, giving the remainder of the quota to humans that did not receive it yet.
+    // As it only gives what is missing, it is safe to call multiple times.
+    internal void DistributeHumanStartItemsServer()
+    {
+        for (int i = 0; i < GetHumanStartItemCount(); ++i)
+        {
+            Logger::LogInformation(LOGSOURCE, "Human start item \cd" + GetHumanStartItemName(i) + "\cj: humans \cd" + str(Game::HumanCount()) + "\cj, chance \cd" + str(GetHumanStartItemChance(i))
+                + "%\cj, quota \cd" + str(GetHumanStartItemQuota(i)) + "\cj, already received \cd" + str(GetHumanStartItemReceivedCount(i)) + "\cj.");
+
+            // The quota might already be reached, for example when called again later in the round.
+            int remainder = GetHumanStartItemQuota(i) - GetHumanStartItemReceivedCount(i);
+            if (remainder <= 0)
+                continue;
+
+            // Shuffles the humans that did not receive the item yet to the front of the buffer.
+            Shuffle::ShuffleByNotReceivedHumanStartItem(i);
+
+            // Should not happen as the quota never exceeds the human count, but keep track in case it does.
+            int giveCount = remainder;
+            if (giveCount > Shuffle::GetRelevantSize())
+            {
+                Logger::LogWarning(LOGSOURCE, "Not enough humans to give human start item " + GetHumanStartItemName(i) + " to, " + str(giveCount - Shuffle::GetRelevantSize()) + " short of the quota.");
+                giveCount = Shuffle::GetRelevantSize();
+            }
+
+            for (int j = 0; j < giveCount; ++j)
+            {
+                int id = Shuffle::GetIndexValue(j);
+
+                GiveActorInventory(Identity::GetTID(id), GetHumanStartItemName(i), GetHumanStartItemAmount(i));
+                SetPlayerReceivedHumanStartItem(id, i, true);
+
+                str amount = GetHumanStartItemAmount(i) > 1 ? str(GetHumanStartItemAmount(i)) + "x " : "";
+                Logger::LogTo(id, "You have received \cd" + amount + GetHumanStartItemLabel(i) + "\cj!");
+
+                Logger::LogInformation(LOGSOURCE, "Gave human start item \cd" + GetHumanStartItemName(i) + "\cj to player \cd" + BCSUtils::PlayerName(id) + "\cj.");
+            }
+        }
+    }
+
+    // Returns the label of the item as defined in the mod def items. If it has none, the name is returned instead.
+    internal str GetHumanStartItemLabel(int index)
+    {
+        str name = GetHumanStartItemName(index);
+
+        int itemIndex = GetItemIndexByName(name);
+        if (itemIndex == -1)
+            return name;
+
+        str label = GetItemLabel(itemIndex);
+        if (label == (raw)0 || label == "")
+            return name;
+
+        return label;
+    }
+
+    // Returns the percentage of humans that should receive the item.
+    internal int GetHumanStartItemChance(int index)
+    {
+        int humans = Game::HumanCount();
+
+        // Rules are checked in the order they are defined. The first rule that allows the current number of humans is used.
+        for (int i = 0; i < GetHumanStartItemRuleCount(index); ++i)
+        {
+            int maxPlayers = GetHumanStartItemRuleMaxPlayers(index, i);
+            if (humans > maxPlayers)
+                continue;
+
+            return GetHumanStartItemRuleChance(index, i);
+        }
+
+        // No rule allows this many humans.
+        return GetHumanStartItemDefaultChance(index);
+    }
+
+    // Returns how many humans should receive the item, rounded up.
+    internal int GetHumanStartItemQuota(int index)
+    {
+        return int(BCSUtils::Ceil(fixed(Game::HumanCount() * GetHumanStartItemChance(index)) / 100.0));
+    }
+
+    // Returns how many alive humans received the item.
+    internal int GetHumanStartItemReceivedCount(int index)
+    {
+        int count = 0;
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // Only living humans count. Players that turned zombie or died no longer hold the item.
+            if (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(Identity::GetTID(i)) || !Player::GetPlayerIsHuman(i))
+                continue;
+
+            if (GetPlayerReceivedHumanStartItem(i, index))
+                count++;
+        }
+
+        return count;
+    }
+
+    internal bool GetPlayerReceivedHumanStartItem(int id, int index) { return ZH2Game::GameContext.Players[id].ReceivedHumanStartItems[index]; }
+    internal void SetPlayerReceivedHumanStartItem(int id, int index, bool received) { ZH2Game::GameContext.Players[id].ReceivedHumanStartItems[index] = received; }
 
     // The combined human start items of the current map.
     // These take the final result and is generally used.
