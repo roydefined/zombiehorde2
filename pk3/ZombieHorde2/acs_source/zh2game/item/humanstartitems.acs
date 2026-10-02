@@ -8,7 +8,35 @@ strict namespace Item
     {
         // Distributes the human start items one second after the initial zombies are picked.
         if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING && Game::GetPlayTime() == 35)
-            DistributeHumanStartItemsServer();
+            DistributeHumanStartItems();
+
+        // Distributes early whenever a human became eligible, see `GetPlayerEligibleForHumanStartItems`.
+        // Everybody respawns together when the round starts, so they compete for the items in the same distribution.
+        else if (CVar::GetSvHumanStartItemDistribution() == CVar::HUMANSTARTITEMDISTRIBUTION_EARLY_AND_TOPUP
+            && Round::GetActiveKnownRoundState() != Round::STATEPREGAME
+            && GetAnyPlayerBecameEligibleForHumanStartItems())
+            DistributeHumanStartItems();
+    }
+
+    // A living human is eligible once they spawned at least one second ago.
+    // The delay also prevents giving weapons whilst the player spawns, which Zandronum does not like.
+    internal bool GetPlayerEligibleForHumanStartItems(int id)
+    {
+        if (!BCSUtils::ActorIsAlive(Identity::GetTID(id)) || !Player::GetPlayerIsHuman(id))
+            return false;
+
+        return Player::GetPlayerPlayTics(id) >= 35;
+    }
+
+    internal bool GetAnyPlayerBecameEligibleForHumanStartItems()
+    {
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (PlayerInGame(i) && GetPlayerEligibleForHumanStartItems(i) && Player::GetPlayerPlayTics(i) == 35)
+                return true;
+        }
+
+        return false;
     }
 
     // Combines the parsed mod def and map def items into the human start items of the current map.
@@ -79,7 +107,7 @@ strict namespace Item
 
     // Tops up every human start item, giving the remainder of the quota to humans that did not receive it yet.
     // As it only gives what is missing, it is safe to call multiple times.
-    internal void DistributeHumanStartItemsServer()
+    internal void DistributeHumanStartItems()
     {
         for (int i = 0; i < GetHumanStartItemCount(); ++i)
         {
@@ -102,6 +130,7 @@ strict namespace Item
                 giveCount = Shuffle::GetRelevantSize();
             }
 
+            // Provide all eligible players with the item.
             for (int j = 0; j < giveCount; ++j)
             {
                 int id = Shuffle::GetIndexValue(j);
@@ -133,11 +162,24 @@ strict namespace Item
         return label;
     }
 
+    // Returns the number of humans the items are distributed over.
+    // Before the initial zombies are picked everybody is still human, so we use the number of humans that will remain after the pick.
+    internal int GetHumanStartItemHumanCount()
+    {
+        if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
+            return Game::HumanCount();
+
+        return (int)BCSUtils::Max(PlayerCount() - Player::EligibleInitialZombieCount(), 0);
+    }
+
     // Returns the percentage of humans that should receive the item.
     internal int GetHumanStartItemChance(int index)
     {
-        int humans = Game::HumanCount();
+        return GetHumanStartItemChanceByHumanCount(index, GetHumanStartItemHumanCount());
+    }
 
+    internal int GetHumanStartItemChanceByHumanCount(int index, int humans)
+    {
         // Rules are checked in the order they are defined. The first rule that allows the current number of humans is used.
         for (int i = 0; i < GetHumanStartItemRuleCount(index); ++i)
         {
@@ -153,9 +195,20 @@ strict namespace Item
     }
 
     // Returns how many humans should receive the item, rounded up.
+    // The quota never drops when more humans join. For example with 10 humans at 100% and 11 humans at 70%,
+    // 11 humans would drop the quota to 8 while 10 items might have been given already.
+    // Instead we keep the highest quota of any human count up to the current one.
     internal int GetHumanStartItemQuota(int index)
     {
-        return int(BCSUtils::Ceil(fixed(Game::HumanCount() * GetHumanStartItemChance(index)) / 100.0));
+        int quota = 0;
+        for (int i = 1; i <= GetHumanStartItemHumanCount(); ++i)
+        {
+            int humansQuota = int(BCSUtils::Ceil(fixed(i * GetHumanStartItemChanceByHumanCount(index, i)) / 100.0));
+            if (humansQuota > quota)
+                quota = humansQuota;
+        }
+
+        return quota;
     }
 
     // Returns how many alive humans received the item.
