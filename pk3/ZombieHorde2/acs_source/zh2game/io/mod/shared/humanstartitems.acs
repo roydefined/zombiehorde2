@@ -85,6 +85,7 @@ strict namespace IO
         _parsingHumanStartItem.Amount = 1;
         _parsingHumanStartItem.RuleCount = 0;
         _parsingHumanStartItem.DefaultChance = 0;
+        _parsingHumanStartItem.PlayerCanReceiveScript = (raw)0;
 
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TLBRACE)) return false;
         int braceLevel = Tokenizer::GetBraceLevel(handle);
@@ -106,7 +107,8 @@ strict namespace IO
             str symbol = Tokenizer::GetSymbol(handle);
             if (ParseHumanStartItemAmount(handle, symbol)
                 || ParseHumanStartItemRule(handle, symbol)
-                || ParseHumanStartItemDefaultChance(handle, symbol))
+                || ParseHumanStartItemDefaultChance(handle, symbol)
+                || ParseHumanStartItemPlayerCanReceiveScript(handle, symbol))
             {
                 // Optional comma.
                 Tokenizer::Next(handle, false);
@@ -164,6 +166,30 @@ strict namespace IO
         _parsingHumanStartItem.DefaultChance = parsedValue;
 
         Logger::LogDebug(LOGSOURCE, "Parsed human start item default chance: \cd" + str(parsedValue) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseHumanStartItemPlayerCanReceiveScript(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "playercanreceivescript")) return false;
+        Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "The given value for PlayerCanReceiveScript is not correct. Expected a script name string.");
+            return false;
+        }
+
+        str scriptName = Tokenizer::GetSymbol(handle);
+        if (!CheckScript(scriptName, true))
+        {
+            Tokenizer::SetErrored(handle, "The given human start item PlayerCanReceiveScript does not exist: '" + scriptName + "'.");
+            return false;
+        }
+
+        _parsingHumanStartItem.PlayerCanReceiveScript = scriptName;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed human start item PlayerCanReceiveScript: \cd" + scriptName + "\cj.");
         return true;
     }
 
@@ -258,6 +284,7 @@ strict namespace IO
             ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].Name = _parsingHumanStartItem.Name;
             ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].Amount = _parsingHumanStartItem.Amount;
             ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].DefaultChance = _parsingHumanStartItem.DefaultChance;
+            ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].PlayerCanReceiveScript = _parsingHumanStartItem.PlayerCanReceiveScript;
             for (int i = 0; i < ruleCount; ++i)
             {
                 ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].RuleMaxPlayers[i] = _parsingHumanStartItem.RuleMaxPlayers[i];
@@ -272,6 +299,7 @@ strict namespace IO
         context.Name = _parsingHumanStartItem.Name;
         context.Amount = _parsingHumanStartItem.Amount;
         context.DefaultChance = _parsingHumanStartItem.DefaultChance;
+        context.PlayerCanReceiveScript = _parsingHumanStartItem.PlayerCanReceiveScript;
         for (int i = 0; i < ruleCount; ++i)
         {
             context.RuleMaxPlayers[i] = _parsingHumanStartItem.RuleMaxPlayers[i];

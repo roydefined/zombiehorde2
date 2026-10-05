@@ -28,6 +28,20 @@ strict namespace Item
         return Player::GetPlayerPlayTics(id) >= 35;
     }
 
+    // Items without a PlayerCanReceiveScript can be given to anybody.
+    internal bool GetPlayerCanReceiveHumanStartItem(int id, int index)
+    {
+        str playerCanReceiveScript = GetHumanStartItemPlayerCanReceiveScript(index);
+        if (playerCanReceiveScript == (raw)0)
+            return true;
+
+        // Run the script, determine if it's allowed.
+        bool canReceive = (bool)ACS_NamedExecuteWithResult(playerCanReceiveScript, id);
+        Logger::LogDebug(LOGSOURCE, "PlayerCanReceiveScript \cd" + playerCanReceiveScript + "\cj for player \cd" + BCSUtils::PlayerName(id) + "\cj returned \cd" + (canReceive ? "true" : "false") + "\cj.");
+
+        return canReceive;
+    }
+
     internal bool GetAnyPlayerBecameEligibleForHumanStartItems()
     {
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
@@ -54,6 +68,7 @@ strict namespace Item
             ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name = modItem.Name;
             ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount = modItem.Amount;
             ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance = modItem.DefaultChance;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.PlayerCanReceiveScript = modItem.PlayerCanReceiveScript;
             for (int j = 0; j < modItem.RuleCount; ++j)
             {
                 ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[j] = modItem.RuleMaxPlayers[j];
@@ -95,6 +110,7 @@ strict namespace Item
             ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name = name;
             ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].Amount;
             ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].DefaultChance;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.PlayerCanReceiveScript = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].PlayerCanReceiveScript;
             for (int j = 0; j < ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleCount; ++j)
             {
                 ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[j] = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleMaxPlayers[j];
@@ -123,10 +139,13 @@ strict namespace Item
             Shuffle::ShuffleByNotReceivedHumanStartItem(i);
 
             // Should not happen as the quota never exceeds the human count, but keep track in case it does.
+            // A PlayerCanReceiveScript can exclude humans on purpose, so we do not warn for those items.
             int giveCount = remainder;
             if (giveCount > Shuffle::GetRelevantSize())
             {
-                Logger::LogWarning(LOGSOURCE, "Not enough humans to give human start item " + GetHumanStartItemName(i) + " to, " + str(giveCount - Shuffle::GetRelevantSize()) + " short of the quota.");
+                if (GetHumanStartItemPlayerCanReceiveScript(i) == (raw)0)
+                    Logger::LogWarning(LOGSOURCE, "Not enough humans to give human start item " + GetHumanStartItemName(i) + " to, " + str(giveCount - Shuffle::GetRelevantSize()) + " short of the quota.");
+
                 giveCount = Shuffle::GetRelevantSize();
             }
 
@@ -240,6 +259,7 @@ strict namespace Item
     internal int GetHumanStartItemRuleMaxPlayers(int index, int ruleIndex) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[ruleIndex]; }
     internal int GetHumanStartItemRuleChance(int index, int ruleIndex) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleChance[ruleIndex]; }
     internal int GetHumanStartItemDefaultChance(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance; }
+    internal str GetHumanStartItemPlayerCanReceiveScript(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.PlayerCanReceiveScript; }
     internal HumanStartItemSourceT GetHumanStartItemSource(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Source; }
 
     // The human start items as parsed from the mod def lumps.
@@ -250,6 +270,7 @@ strict namespace Item
     internal int GetParsedModHumanStartItemRuleMaxPlayers(int index, int ruleIndex) { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[index].RuleMaxPlayers[ruleIndex]; }
     internal int GetParsedModHumanStartItemRuleChance(int index, int ruleIndex) { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[index].RuleChance[ruleIndex]; }
     internal int GetParsedModHumanStartItemDefaultChance(int index) { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[index].DefaultChance; }
+    internal str GetParsedModHumanStartItemPlayerCanReceiveScript(int index) { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[index].PlayerCanReceiveScript; }
 
     // The human start items as parsed from the current map lump.
     internal int GetParsedMapHumanStartItemCount() { return ZH2Game::GameContext.HumanStartItemCollection.Size; }
@@ -259,4 +280,5 @@ strict namespace Item
     internal int GetParsedMapHumanStartItemRuleMaxPlayers(int index, int ruleIndex) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].RuleMaxPlayers[ruleIndex]; }
     internal int GetParsedMapHumanStartItemRuleChance(int index, int ruleIndex) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].RuleChance[ruleIndex]; }
     internal int GetParsedMapHumanStartItemDefaultChance(int index) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].DefaultChance; }
+    internal str GetParsedMapHumanStartItemPlayerCanReceiveScript(int index) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].PlayerCanReceiveScript; }
 }
