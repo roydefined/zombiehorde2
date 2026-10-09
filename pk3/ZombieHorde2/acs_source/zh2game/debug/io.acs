@@ -197,4 +197,54 @@ strict namespace Debug
         }
         Logger::LogActivator(logMessage);
     }
+
+    script "zh2_action_debughumanstartitemhistory_serverside" net
+    {
+        InternalDebugHumanStartItemHistory();
+    }
+
+    internal void InternalDebugHumanStartItemHistory()
+    {
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int historySize = CVar::GetSvHumanStartItemHistory();
+            int maxWeight = 1 << historySize;
+
+            Append(s:"\cjHuman start item history, remembering \cd" + str(historySize) + "\cj map(s).");
+
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            {
+                if (!PlayerInGame(i))
+                    continue;
+
+                for (int j = 0; j < Item::GetHumanStartItemCount(); ++j)
+                {
+                    str receivedMaps = "";
+                    for (int k = 0; k <= historySize; ++k)
+                    {
+                        if (!Item::GetPlayerReceivedHumanStartItemOnMap(i, j, k))
+                            continue;
+
+                        if (receivedMaps != "")
+                        {
+                            receivedMaps += ", ";
+                        }
+
+                        receivedMaps += str(k);
+                    }
+
+                    // Only log the items the player received, to preserve space.
+                    if (receivedMaps == "")
+                        continue;
+
+                    Append(s:"\n");
+                    Append(s:"\cd" + BCSUtils::PlayerName(i) + "\cj - \cd" + Item::GetHumanStartItemName(j));
+                    Append(s:"\cj: weight \cd" + str(Item::GetPlayerHumanStartItemWeight(i, j)) + "\cj/\cd" + str(maxWeight));
+                    Append(s:"\cj, received \cd" + receivedMaps + "\cj maps ago");
+                }
+            }
+        }
+        Logger::LogActivator(logMessage);
+    }
 }

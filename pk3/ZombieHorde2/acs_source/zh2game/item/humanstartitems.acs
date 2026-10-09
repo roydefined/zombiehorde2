@@ -212,6 +212,20 @@ strict namespace Item
         }
     }
 
+    // Returns `true` if the player received the item on the given map index, where 0 is the current map anything above is N maps ago.
+    internal bool GetPlayerReceivedHumanStartItemOnMap(int id, int index, int mapIndex)
+    {
+        int historyIndex = GetPlayerHumanStartItemHistoryIndex(id, GetHumanStartItemName(index));
+        if (historyIndex == -1)
+            return false;
+
+        // The current map is the bit right above the history, every map further back is one bit lower.
+        int mapBit = 1 << (CVar::GetSvHumanStartItemHistory() - mapIndex);
+
+        int mask = ZH2Game::PersistingGameContext.Players[id].HumanStartItemContext.History[historyIndex].Mask;
+        return (mask & mapBit) != 0;
+    }
+
     // Marks in the history that the player received the item this map.
     // The bit for this map is right above the history window, so it does not count yet.
     // The shift at the end of the round moves it into the window as the last map.
