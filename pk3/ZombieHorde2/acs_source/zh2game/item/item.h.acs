@@ -7,6 +7,7 @@ strict namespace Item
     #define MAX_ITEMS 80
     #define MAX_HUMANSTARTITEMS 16
     #define MAX_HUMANSTARTITEM_RULES 8
+    #define MAX_HUMANSTARTITEM_HISTORY 16
 
     struct ItemCollectionContextT
     {
@@ -77,6 +78,21 @@ strict namespace Item
     {
         HumanStartItemT Collection[MAX_HUMANSTARTITEMS];
         int Size;
+    };
+
+    // Tracks if a player received a human start item over the last maps.
+    // Each bit is a map, the highest bit of the window is the last map. Older maps shift out of the window.
+    struct HumanStartItemHistoryT
+    {
+        str Name;
+        int Mask;
+    };
+
+    // Persisting human start item data of a player.
+    struct PlayerHumanStartItemContextT
+    {
+        // Which human start items the player received over the last maps.
+        HumanStartItemHistoryT History[MAX_HUMANSTARTITEM_HISTORY];
     };
 
     // A human start item of the current map, combined from the parsed mod def and map def items.

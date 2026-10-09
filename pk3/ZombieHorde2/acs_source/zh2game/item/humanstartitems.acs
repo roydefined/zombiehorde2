@@ -152,10 +152,22 @@ strict namespace Item
             // Provide all eligible players with the item.
             for (int j = 0; j < giveCount; ++j)
             {
-                int id = Shuffle::GetIndexValue(j);
+                // Pick one of the shuffled humans by weight, those that received the item on the last maps have a lower weight.
+                // Humans that received it in an earlier pick of this loop are left out.
+                Weight::PrepareWeights();
+                for (int k = 0; k < Shuffle::GetRelevantSize(); ++k)
+                {
+                    int candidate = Shuffle::GetIndexValue(k);
+                    if (!GetPlayerReceivedHumanStartItem(candidate, i))
+                        Weight::AddWeight(candidate, GetPlayerHumanStartItemWeight(candidate, i));
+                }
+                Weight::FinalizeWeights();
+
+                int id = Weight::Next();
 
                 GiveActorInventory(Identity::GetTID(id), GetHumanStartItemName(i), GetHumanStartItemAmount(i));
                 SetPlayerReceivedHumanStartItem(id, i, true);
+                SetPlayerReceivedHumanStartItemHistory(id, i);
 
                 str amount = GetHumanStartItemAmount(i) > 1 ? str(GetHumanStartItemAmount(i)) + "x " : "";
                 Logger::LogTo(id, "You have received \cd" + amount + GetHumanStartItemLabel(i) + "\cj!");
@@ -163,6 +175,98 @@ strict namespace Item
                 Logger::LogInformation(LOGSOURCE, "Gave human start item \cd" + GetHumanStartItemName(i) + "\cj to player \cd" + BCSUtils::PlayerName(id) + "\cj.");
             }
         }
+    }
+
+    // Returns the weight of a player to receive the item under the specific index. The more recently they received it, the lower the weight.
+    internal int GetPlayerHumanStartItemWeight(int id, int index)
+    {
+        // The number of map respresents the bitshift, which in turn is taken as the max weight.
+        int maxWeight = 1 << CVar::GetSvHumanStartItemHistory();
+
+        // No history, so they get the maximum weight.
+        int historyIndex = GetPlayerHumanStartItemHistoryIndex(id, GetHumanStartItemName(index));
+        if (historyIndex == -1)
+            return maxWeight;
+
+        // Only keep the bits of the configured history size.
+        // This leaves out the bit of the current map, which does not count until the round ends.
+        int mask = ZH2Game::PersistingGameContext.Players[id].HumanStartItemContext.History[historyIndex].Mask;
+        int history = mask & (maxWeight - 1);
+
+        // The history is subtracted from the maximum weight.
+        // A more recent map is a higher bit, so it lowers the weight more.
+        // Considering we both bitshift the values this means we can use them as weights.
+        return maxWeight - history;
+    }
+
+    // Moves the history of all players one map back.
+    // This prepares for the next time we persist history for an item on the next map.
+    internal void ShiftHumanStartItemHistory()
+    {
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            for (int j = 0; j < MAX_HUMANSTARTITEM_HISTORY; ++j)
+            {
+                ZH2Game::PersistingGameContext.Players[i].HumanStartItemContext.History[j].Mask = ZH2Game::PersistingGameContext.Players[i].HumanStartItemContext.History[j].Mask >> 1;
+            }
+        }
+    }
+
+    // Marks in the history that the player received the item this map.
+    // The bit for this map is right above the history window, so it does not count yet.
+    // The shift at the end of the round moves it into the window as the last map.
+    internal void SetPlayerReceivedHumanStartItemHistory(int id, int index)
+    {
+        // Without a history window there is nothing to remember.
+        int historySize = CVar::GetSvHumanStartItemHistory();
+        if (historySize == 0)
+            return;
+
+        // Find the history entry of the item, or claim one if the player has none for it yet.
+        str name = GetHumanStartItemName(index);
+        int historyIndex = GetPlayerHumanStartItemHistoryIndex(id, name);
+        if (historyIndex == -1)
+        {
+            historyIndex = ClaimPlayerHumanStartItemHistoryIndex(id, name);
+        }
+
+        // No room left in the history, so we don't remember this item.
+        // Generally it should be impossible tor each the limit so no further action is taken.
+        if (historyIndex == -1)
+            return;
+
+        ZH2Game::PersistingGameContext.Players[id].HumanStartItemContext.History[historyIndex].Mask |= 1 << historySize;
+    }
+
+    // Returns the history index of the item for the player, or -1 if there is none.
+    // Entries are found by item name, as the index of an item differs per map.
+    internal int GetPlayerHumanStartItemHistoryIndex(int id, str name)
+    {
+        for (int i = 0; i < MAX_HUMANSTARTITEM_HISTORY; ++i)
+        {
+            str historyName = ZH2Game::PersistingGameContext.Players[id].HumanStartItemContext.History[i].Name;
+            if (historyName != (raw)0 && BCSUtils::StrIEquals(historyName, name))
+                return i;
+        }
+
+        return -1;
+    }
+
+    // Claims an unused history entry of the player for the item and returns its index, or -1 if there is no room.
+    // Entries that shifted out of the window are unused and can be taken over by another item.
+    internal int ClaimPlayerHumanStartItemHistoryIndex(int id, str name)
+    {
+        for (int i = 0; i < MAX_HUMANSTARTITEM_HISTORY; ++i)
+        {
+            if (ZH2Game::PersistingGameContext.Players[id].HumanStartItemContext.History[i].Mask != 0)
+                continue;
+
+            ZH2Game::PersistingGameContext.Players[id].HumanStartItemContext.History[i].Name = name;
+            return i;
+        }
+
+        Logger::LogWarning(LOGSOURCE, "The maximum number of human start item history entries was reached for player " + str(id) + ", " + name + " is not remembered.");
+        return -1;
     }
 
     // Returns the label of the item as defined in the mod def items. If it has none, the name is returned instead.
@@ -224,7 +328,9 @@ strict namespace Item
         {
             int humansQuota = int(BCSUtils::Ceil(fixed(i * GetHumanStartItemChanceByHumanCount(index, i)) / 100.0));
             if (humansQuota > quota)
+            {
                 quota = humansQuota;
+            }
         }
 
         return quota;
