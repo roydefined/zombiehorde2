@@ -109,7 +109,8 @@ strict namespace IO
             if (BCSUtils::IsClientOnly()
                 && (Tokenizer::ParseBodyAsEmpty(handle, symbol, "game")
                     || Tokenizer::ParseBodyAsEmpty(handle, symbol, "resist")
-                    || Tokenizer::ParseBodyAsEmpty(handle, symbol, "safety")))
+                    || Tokenizer::ParseBodyAsEmpty(handle, symbol, "safety")
+                    || Tokenizer::ParseBodyAsEmpty(handle, symbol, HUMAN_START_ITEMS_KEY)))
                 continue;
 
             if (BCSUtils::IsServerOnly() && Tokenizer::ParseBodyAsEmpty(handle, symbol, "softwaretextures"))
@@ -123,6 +124,7 @@ strict namespace IO
             if (!parsed) parsed = BCSUtils::IsServer() && ParseGameBlock(handle, mapLump, symbol);
             if (!parsed) parsed = BCSUtils::IsServer() && ParseResistBlock(handle, mapLump, symbol);
             if (!parsed) parsed = BCSUtils::IsServer() && ParseSafety(handle, mapLump, symbol);
+            if (!parsed) parsed = BCSUtils::IsServer() && ParseMapHumanStartItems(handle, mapLump, symbol);
             if (!parsed) parsed = BCSUtils::IsClient() && ParseSoftwareTextures(handle, mapLump, symbol);
 
             if (parsed)

@@ -1,0 +1,404 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Item
+{
+    internal void HumanStartItemsTicServer()
+    {
+        // Distributes the human start items one second after the initial zombies are picked.
+        if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING && Game::GetPlayTime() == 35)
+            DistributeHumanStartItems();
+
+        // Distributes early whenever a human became eligible, see `GetPlayerEligibleForHumanStartItems`.
+        // Everybody respawns together when the round starts, so they compete for the items in the same distribution.
+        else if (CVar::GetSvHumanStartItemDistribution() == CVar::HUMANSTARTITEMDISTRIBUTION_EARLY_AND_TOPUP
+            && Round::GetActiveKnownRoundState() != Round::STATEPREGAME
+            && GetAnyPlayerBecameEligibleForHumanStartItems())
+            DistributeHumanStartItems();
+    }
+
+    // A living human is eligible once they spawned at least one second ago.
+    // The delay also prevents giving weapons whilst the player spawns, which Zandronum does not like.
+    internal bool GetPlayerEligibleForHumanStartItems(int id)
+    {
+        if (!BCSUtils::ActorIsAlive(Identity::GetTID(id)) || !Player::GetPlayerIsHuman(id))
+            return false;
+
+        return Player::GetPlayerPlayTics(id) >= 35;
+    }
+
+    // Items without a PlayerCanReceiveScript can be given to anybody.
+    internal bool GetPlayerCanReceiveHumanStartItem(int id, int index)
+    {
+        str playerCanReceiveScript = GetHumanStartItemPlayerCanReceiveScript(index);
+        if (playerCanReceiveScript == (raw)0)
+            return true;
+
+        // Run the script, determine if it's allowed.
+        bool canReceive = (bool)ACS_NamedExecuteWithResult(playerCanReceiveScript, id);
+        Logger::LogDebug(LOGSOURCE, "PlayerCanReceiveScript \cd" + playerCanReceiveScript + "\cj for player \cd" + BCSUtils::PlayerName(id) + "\cj returned \cd" + (canReceive ? "true" : "false") + "\cj.");
+
+        return canReceive;
+    }
+
+    internal bool GetAnyPlayerBecameEligibleForHumanStartItems()
+    {
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (PlayerInGame(i) && GetPlayerEligibleForHumanStartItems(i) && Player::GetPlayerPlayTics(i) == 35)
+                return true;
+        }
+
+        return false;
+    }
+
+    // Combines the parsed mod def and map def items into the human start items of the current map.
+    // A map item overrides a mod item with the same name, other map items are added.
+    // Must be called after the current map lump is parsed.
+    internal void CombineHumanStartItemsServer()
+    {
+        ZH2Game::GameContext.CombinedHumanStartItemCollection.Size = 0;
+
+        for (int i = 0; i < ZH2Game::PersistingGameContext.HumanStartItemCollection.Size; ++i)
+        {
+            HumanStartItemT global:PERSISTING_GAME_CONTEXT_INDEX& modItem = ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[i];
+
+            int index = ZH2Game::GameContext.CombinedHumanStartItemCollection.Size;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name = modItem.Name;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount = modItem.Amount;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance = modItem.DefaultChance;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.PlayerCanReceiveScript = modItem.PlayerCanReceiveScript;
+            for (int j = 0; j < modItem.RuleCount; ++j)
+            {
+                ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[j] = modItem.RuleMaxPlayers[j];
+                ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleChance[j] = modItem.RuleChance[j];
+            }
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleCount = modItem.RuleCount;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Source = HUMANSTARTITEMSOURCE_MOD;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Size++;
+        }
+
+        for (int i = 0; i < ZH2Game::GameContext.HumanStartItemCollection.Size; ++i)
+        {
+            str name = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].Name;
+
+            // Override the mod item with the same name, if there is one.
+            int index = -1;
+            for (int j = 0; j < ZH2Game::GameContext.CombinedHumanStartItemCollection.Size; ++j)
+            {
+                if (BCSUtils::StrIEquals(ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[j].Item.Name, name))
+                {
+                    index = j;
+                    break;
+                }
+            }
+
+            if (index == -1)
+            {
+                // No more room for more human start items. Log a warning and skip the item.
+                index = ZH2Game::GameContext.CombinedHumanStartItemCollection.Size;
+                if (index >= MAX_HUMANSTARTITEMS)
+                {
+                    Logger::LogWarning(LOGSOURCE, "The maximum number of human start items was reached (" + str(index) + "), skipping map item " + name + ".");
+                    continue;
+                }
+
+                ZH2Game::GameContext.CombinedHumanStartItemCollection.Size++;
+            }
+
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name = name;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].Amount;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].DefaultChance;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.PlayerCanReceiveScript = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].PlayerCanReceiveScript;
+            for (int j = 0; j < ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleCount; ++j)
+            {
+                ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[j] = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleMaxPlayers[j];
+                ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleChance[j] = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleChance[j];
+            }
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleCount = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleCount;
+            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Source = HUMANSTARTITEMSOURCE_MAP;
+        }
+    }
+
+    // Tops up every human start item, giving the remainder of the quota to humans that did not receive it yet.
+    // As it only gives what is missing, it is safe to call multiple times.
+    internal void DistributeHumanStartItems()
+    {
+        for (int i = 0; i < GetHumanStartItemCount(); ++i)
+        {
+            Logger::LogInformation(LOGSOURCE, "Human start item \cd" + GetHumanStartItemName(i) + "\cj: humans \cd" + str(Game::HumanCount()) + "\cj, chance \cd" + str(GetHumanStartItemChance(i))
+                + "%\cj, quota \cd" + str(GetHumanStartItemQuota(i)) + "\cj, already received \cd" + str(GetHumanStartItemReceivedCount(i)) + "\cj.");
+
+            // The quota might already be reached, for example when called again later in the round.
+            int remainder = GetHumanStartItemQuota(i) - GetHumanStartItemReceivedCount(i);
+            if (remainder <= 0)
+                continue;
+
+            // Shuffles the humans that did not receive the item yet to the front of the buffer.
+            Shuffle::ShuffleByNotReceivedHumanStartItem(i);
+
+            // Should not happen as the quota never exceeds the human count, but keep track in case it does.
+            // A PlayerCanReceiveScript can exclude humans on purpose, so we do not warn for those items.
+            int giveCount = remainder;
+            if (giveCount > Shuffle::GetRelevantSize())
+            {
+                if (GetHumanStartItemPlayerCanReceiveScript(i) == (raw)0)
+                    Logger::LogWarning(LOGSOURCE, "Not enough humans to give human start item " + GetHumanStartItemName(i) + " to, " + str(giveCount - Shuffle::GetRelevantSize()) + " short of the quota.");
+
+                giveCount = Shuffle::GetRelevantSize();
+            }
+
+            // Provide all eligible players with the item.
+            for (int j = 0; j < giveCount; ++j)
+            {
+                // Pick one of the shuffled humans by weight, those that received the item on the last maps have a lower weight.
+                // Humans that received it in an earlier pick of this loop are left out.
+                Weight::PrepareWeights();
+                for (int k = 0; k < Shuffle::GetRelevantSize(); ++k)
+                {
+                    int candidate = Shuffle::GetIndexValue(k);
+                    if (!GetPlayerReceivedHumanStartItem(candidate, i))
+                        Weight::AddWeight(candidate, GetPlayerHumanStartItemWeight(candidate, i));
+                }
+                Weight::FinalizeWeights();
+
+                int id = Weight::Next();
+
+                GiveActorInventory(Identity::GetTID(id), GetHumanStartItemName(i), GetHumanStartItemAmount(i));
+                SetPlayerReceivedHumanStartItem(id, i, true);
+                SetPlayerReceivedHumanStartItemHistory(id, i);
+
+                str amount = GetHumanStartItemAmount(i) > 1 ? str(GetHumanStartItemAmount(i)) + "x " : "";
+                Logger::LogTo(id, "You have received \cd" + amount + GetHumanStartItemLabel(i) + "\cj!");
+
+                Logger::LogInformation(LOGSOURCE, "Gave human start item \cd" + GetHumanStartItemName(i) + "\cj to player \cd" + BCSUtils::PlayerName(id) + "\cj.");
+            }
+        }
+    }
+
+    // Returns the weight of a player to receive the item under the specific index. The more recently they received it, the lower the weight.
+    internal int GetPlayerHumanStartItemWeight(int id, int index)
+    {
+        // The number of map respresents the bitshift, which in turn is taken as the max weight.
+        int maxWeight = 1 << CVar::GetSvHumanStartItemHistory();
+
+        // No history, so they get the maximum weight.
+        int historyIndex = GetPlayerHumanStartItemHistoryIndex(id, GetHumanStartItemName(index));
+        if (historyIndex == -1)
+            return maxWeight;
+
+        // Only keep the bits of the configured history size.
+        // This leaves out the bit of the current map, which does not count until the round ends.
+        int mask = ZH2Game::PersistingGameContext.Players[id].HumanStartItemContext.History[historyIndex].Mask;
+        int history = mask & (maxWeight - 1);
+
+        // The history is subtracted from the maximum weight.
+        // A more recent map is a higher bit, so it lowers the weight more.
+        // Considering we both bitshift the values this means we can use them as weights.
+        return maxWeight - history;
+    }
+
+    // Moves the history of all players one map back.
+    // This prepares for the next time we persist history for an item on the next map.
+    internal void ShiftHumanStartItemHistory()
+    {
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            for (int j = 0; j < MAX_HUMANSTARTITEM_HISTORY; ++j)
+            {
+                ZH2Game::PersistingGameContext.Players[i].HumanStartItemContext.History[j].Mask = ZH2Game::PersistingGameContext.Players[i].HumanStartItemContext.History[j].Mask >> 1;
+            }
+        }
+    }
+
+    // Returns `true` if the player received the item on the given map index, where 0 is the current map anything above is N maps ago.
+    internal bool GetPlayerReceivedHumanStartItemOnMap(int id, int index, int mapIndex)
+    {
+        int historyIndex = GetPlayerHumanStartItemHistoryIndex(id, GetHumanStartItemName(index));
+        if (historyIndex == -1)
+            return false;
+
+        // The current map is the bit right above the history, every map further back is one bit lower.
+        int mapBit = 1 << (CVar::GetSvHumanStartItemHistory() - mapIndex);
+
+        int mask = ZH2Game::PersistingGameContext.Players[id].HumanStartItemContext.History[historyIndex].Mask;
+        return (mask & mapBit) != 0;
+    }
+
+    // Marks in the history that the player received the item this map.
+    // The bit for this map is right above the history window, so it does not count yet.
+    // The shift at the end of the round moves it into the window as the last map.
+    internal void SetPlayerReceivedHumanStartItemHistory(int id, int index)
+    {
+        // Without a history window there is nothing to remember.
+        int historySize = CVar::GetSvHumanStartItemHistory();
+        if (historySize == 0)
+            return;
+
+        // Find the history entry of the item, or claim one if the player has none for it yet.
+        str name = GetHumanStartItemName(index);
+        int historyIndex = GetPlayerHumanStartItemHistoryIndex(id, name);
+        if (historyIndex == -1)
+        {
+            historyIndex = ClaimPlayerHumanStartItemHistoryIndex(id, name);
+        }
+
+        // No room left in the history, so we don't remember this item.
+        // Generally it should be impossible tor each the limit so no further action is taken.
+        if (historyIndex == -1)
+            return;
+
+        ZH2Game::PersistingGameContext.Players[id].HumanStartItemContext.History[historyIndex].Mask |= 1 << historySize;
+    }
+
+    // Returns the history index of the item for the player, or -1 if there is none.
+    // Entries are found by item name, as the index of an item differs per map.
+    internal int GetPlayerHumanStartItemHistoryIndex(int id, str name)
+    {
+        for (int i = 0; i < MAX_HUMANSTARTITEM_HISTORY; ++i)
+        {
+            str historyName = ZH2Game::PersistingGameContext.Players[id].HumanStartItemContext.History[i].Name;
+            if (historyName != (raw)0 && BCSUtils::StrIEquals(historyName, name))
+                return i;
+        }
+
+        return -1;
+    }
+
+    // Claims an unused history entry of the player for the item and returns its index, or -1 if there is no room.
+    // Entries that shifted out of the window are unused and can be taken over by another item.
+    internal int ClaimPlayerHumanStartItemHistoryIndex(int id, str name)
+    {
+        for (int i = 0; i < MAX_HUMANSTARTITEM_HISTORY; ++i)
+        {
+            if (ZH2Game::PersistingGameContext.Players[id].HumanStartItemContext.History[i].Mask != 0)
+                continue;
+
+            ZH2Game::PersistingGameContext.Players[id].HumanStartItemContext.History[i].Name = name;
+            return i;
+        }
+
+        Logger::LogWarning(LOGSOURCE, "The maximum number of human start item history entries was reached for player " + str(id) + ", " + name + " is not remembered.");
+        return -1;
+    }
+
+    // Returns the label of the item as defined in the mod def items. If it has none, the name is returned instead.
+    internal str GetHumanStartItemLabel(int index)
+    {
+        str name = GetHumanStartItemName(index);
+
+        int itemIndex = GetItemIndexByName(name);
+        if (itemIndex == -1)
+            return name;
+
+        str label = GetItemLabel(itemIndex);
+        if (label == (raw)0 || label == "")
+            return name;
+
+        return label;
+    }
+
+    // Returns the number of humans the items are distributed over.
+    // Before the initial zombies are picked everybody is still human, so we use the number of humans that will remain after the pick.
+    internal int GetHumanStartItemHumanCount()
+    {
+        if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
+            return Game::HumanCount();
+
+        return (int)BCSUtils::Max(PlayerCount() - Player::EligibleInitialZombieCount(), 0);
+    }
+
+    // Returns the percentage of humans that should receive the item.
+    internal int GetHumanStartItemChance(int index)
+    {
+        return GetHumanStartItemChanceByHumanCount(index, GetHumanStartItemHumanCount());
+    }
+
+    internal int GetHumanStartItemChanceByHumanCount(int index, int humans)
+    {
+        // Rules are checked in the order they are defined. The first rule that allows the current number of humans is used.
+        for (int i = 0; i < GetHumanStartItemRuleCount(index); ++i)
+        {
+            int maxPlayers = GetHumanStartItemRuleMaxPlayers(index, i);
+            if (humans > maxPlayers)
+                continue;
+
+            return GetHumanStartItemRuleChance(index, i);
+        }
+
+        // No rule allows this many humans.
+        return GetHumanStartItemDefaultChance(index);
+    }
+
+    // Returns how many humans should receive the item, rounded up.
+    // The quota never drops when more humans join. For example with 10 humans at 100% and 11 humans at 70%,
+    // 11 humans would drop the quota to 8 while 10 items might have been given already.
+    // Instead we keep the highest quota of any human count up to the current one.
+    internal int GetHumanStartItemQuota(int index)
+    {
+        int quota = 0;
+        for (int i = 1; i <= GetHumanStartItemHumanCount(); ++i)
+        {
+            int humansQuota = int(BCSUtils::Ceil(fixed(i * GetHumanStartItemChanceByHumanCount(index, i)) / 100.0));
+            if (humansQuota > quota)
+            {
+                quota = humansQuota;
+            }
+        }
+
+        return quota;
+    }
+
+    // Returns how many alive humans received the item.
+    internal int GetHumanStartItemReceivedCount(int index)
+    {
+        int count = 0;
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            // Only living humans count. Players that turned zombie or died no longer hold the item.
+            if (!PlayerInGame(i) || !BCSUtils::ActorIsAlive(Identity::GetTID(i)) || !Player::GetPlayerIsHuman(i))
+                continue;
+
+            if (GetPlayerReceivedHumanStartItem(i, index))
+                count++;
+        }
+
+        return count;
+    }
+
+    internal bool GetPlayerReceivedHumanStartItem(int id, int index) { return ZH2Game::GameContext.Players[id].ReceivedHumanStartItems[index]; }
+    internal void SetPlayerReceivedHumanStartItem(int id, int index, bool received) { ZH2Game::GameContext.Players[id].ReceivedHumanStartItems[index] = received; }
+
+    // The combined human start items of the current map.
+    // These take the final result and is generally used.
+    internal int GetHumanStartItemCount() { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Size; }
+    internal str GetHumanStartItemName(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name; }
+    internal int GetHumanStartItemAmount(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount; }
+    internal int GetHumanStartItemRuleCount(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleCount; }
+    internal int GetHumanStartItemRuleMaxPlayers(int index, int ruleIndex) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[ruleIndex]; }
+    internal int GetHumanStartItemRuleChance(int index, int ruleIndex) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleChance[ruleIndex]; }
+    internal int GetHumanStartItemDefaultChance(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance; }
+    internal str GetHumanStartItemPlayerCanReceiveScript(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.PlayerCanReceiveScript; }
+    internal HumanStartItemSourceT GetHumanStartItemSource(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Source; }
+
+    // The human start items as parsed from the mod def lumps.
+    internal int GetParsedModHumanStartItemCount() { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Size; }
+    internal str GetParsedModHumanStartItemName(int index) { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[index].Name; }
+    internal int GetParsedModHumanStartItemAmount(int index) { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[index].Amount; }
+    internal int GetParsedModHumanStartItemRuleCount(int index) { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[index].RuleCount; }
+    internal int GetParsedModHumanStartItemRuleMaxPlayers(int index, int ruleIndex) { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[index].RuleMaxPlayers[ruleIndex]; }
+    internal int GetParsedModHumanStartItemRuleChance(int index, int ruleIndex) { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[index].RuleChance[ruleIndex]; }
+    internal int GetParsedModHumanStartItemDefaultChance(int index) { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[index].DefaultChance; }
+    internal str GetParsedModHumanStartItemPlayerCanReceiveScript(int index) { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[index].PlayerCanReceiveScript; }
+
+    // The human start items as parsed from the current map lump.
+    internal int GetParsedMapHumanStartItemCount() { return ZH2Game::GameContext.HumanStartItemCollection.Size; }
+    internal str GetParsedMapHumanStartItemName(int index) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].Name; }
+    internal int GetParsedMapHumanStartItemAmount(int index) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].Amount; }
+    internal int GetParsedMapHumanStartItemRuleCount(int index) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].RuleCount; }
+    internal int GetParsedMapHumanStartItemRuleMaxPlayers(int index, int ruleIndex) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].RuleMaxPlayers[ruleIndex]; }
+    internal int GetParsedMapHumanStartItemRuleChance(int index, int ruleIndex) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].RuleChance[ruleIndex]; }
+    internal int GetParsedMapHumanStartItemDefaultChance(int index) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].DefaultChance; }
+    internal str GetParsedMapHumanStartItemPlayerCanReceiveScript(int index) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].PlayerCanReceiveScript; }
+}

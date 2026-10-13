@@ -5,6 +5,9 @@
 strict namespace Item
 {
     #define MAX_ITEMS 80
+    #define MAX_HUMANSTARTITEMS 16
+    #define MAX_HUMANSTARTITEM_RULES 8
+    #define MAX_HUMANSTARTITEM_HISTORY 16
 
     struct ItemCollectionContextT
     {
@@ -52,6 +55,61 @@ strict namespace Item
         str SpawnClassName;
     };
 
+    // An item that is distributed on a share of the humans at the start of the map.
+    // The share is determined by the rules, which map a player count to a percentage of players receiving the item.
+    struct HumanStartItemT
+    {
+        str Name;
+        int Amount;
+
+        // Rules are matched in order, the first rule where the player count <= `RuleMaxPlayers` applies.
+        int RuleMaxPlayers[MAX_HUMANSTARTITEM_RULES];
+        int RuleChance[MAX_HUMANSTARTITEM_RULES];
+        int RuleCount;
+
+        // The chance used when none of the rules apply.
+        int DefaultChance;
+
+        // Optional script that is called with a player id, returning `true` if the player may receive the item.
+        str PlayerCanReceiveScript;
+    };
+
+    struct HumanStartItemCollectionContextT
+    {
+        HumanStartItemT Collection[MAX_HUMANSTARTITEMS];
+        int Size;
+    };
+
+    // Tracks if a player received a human start item over the last maps.
+    // Each bit is a map, the highest bit of the window is the last map. Older maps shift out of the window.
+    struct HumanStartItemHistoryT
+    {
+        str Name;
+        int Mask;
+    };
+
+    // Persisting human start item data of a player.
+    struct PlayerHumanStartItemContextT
+    {
+        // Which human start items the player received over the last maps.
+        HumanStartItemHistoryT History[MAX_HUMANSTARTITEM_HISTORY];
+    };
+
+    // A human start item of the current map, combined from the parsed mod def and map def items.
+    struct CombinedHumanStartItemT
+    {
+        HumanStartItemT Item;
+
+        // Which side defined the item.
+        HumanStartItemSourceT Source;
+    };
+
+    struct CombinedHumanStartItemCollectionContextT
+    {
+        CombinedHumanStartItemT Collection[MAX_HUMANSTARTITEMS];
+        int Size;
+    };
+
     enum ItemTypeT : int
     {
         TYPE_NONE,
@@ -65,5 +123,11 @@ strict namespace Item
         ITEMSKIN_NONE,
         ITEMSKIN_DEFAULT,
         ITEMSKIN_LEGACY,
+    };
+
+    enum HumanStartItemSourceT : int
+    {
+        HUMANSTARTITEMSOURCE_MOD,
+        HUMANSTARTITEMSOURCE_MAP,
     };
 }

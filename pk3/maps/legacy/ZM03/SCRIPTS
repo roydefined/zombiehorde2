@@ -11,6 +11,9 @@ strict namespace
 {
     Int forcefield2=0;
 
+    // Set when the map randomly plays at night.
+    bool isNight = false;
+
     script "zm03_open" open // Level setups
     {
         Sector_SetPlaneReflection(23, 128, 0);
@@ -26,6 +29,7 @@ strict namespace
             terminate;
 
         // Night mode activated
+        isNight = true;
         for(int i = 0; i < 120; i++)
         {
             Light_LowerByValue(i, 16);
@@ -41,14 +45,12 @@ strict namespace
         Acs_Execute(5, 0);
 
         SpawnSpot(FLAREBOX_ITEM, 119);
+    }
 
-        Delay(const: 10);
-
-        for(int i = 0; i < BCSUtils::MAX_PLAYERS; i++)
-        {
-            if(PlayerInGame(i))
-                GiveActorInventory(Identity::GetTid(i), FLARE_ITEM, 1);
-        }
+    // Human start item condition, flares are only given at night.
+    script "zm03_playercanreceiveflare" (int id)
+    {
+        SetResultValue(int(isNight));
     }
 
     Script 2 (void) // Door is locked
