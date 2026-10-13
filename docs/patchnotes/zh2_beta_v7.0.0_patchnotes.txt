@@ -1,3 +1,23 @@
+New features
+------------------------------------------------
+
+* * New human start item system * *
+Humans can now receive items at the start of a round through a new configurable system. This replaces the hardcoded 50% chance of a fire grenade, and maps giving flares through their own scripts.
+Start items are defined in a new `HumanStartItems` block in `ZHMODDEF` lumps, and maps can define their own in their `ZHMAPDEF` entry. A map item overrides a mod item with the same name, allowing maps to change or disable it.
+Each item has an `Amount` and a list of `Rule` entries (`MaxPlayers`, `Chance`). The first rule matching the number of humans determines the percentage of humans that receive the item, otherwise `DefaultChance` is used. An optional `PlayerCanReceiveScript` can exclude players, for example to only give an item under certain conditions.
+Items are given one second after the zombie pick. By default, humans can also receive them early as soon as they spawn. Server hosts can turn this off with `sv_zh2_humanstartitemdistribution`.
+Players who received an item on recent maps have a lower chance of receiving it again. Server hosts can set how many maps are remembered with `sv_zh2_humanstartitemhistory` (default 3, 0 disables it).
+The fire grenade now uses this system: 100% of humans with up to 10 humans, 70% with up to 20 and 50% with up to 40.
+Additionally various maps that previously gave a flare to every player now uses this system. ZM03 specifically provides this using a condition.
+
+Map changes
+------------------------------------------------
+
+* * Flares are now given through the human start item system * *
+Maps that gave every human a flare through their own scripts now use the new `HumanStartItems` block, with the same rules as the fire grenade. Only a portion of the humans receive a flare, based on the number of humans.
+Affected maps: ZE08, ZE16, ZE18, ZE32, ZM01, ZM02, ZM03, ZM04, ZM05, ZM06, ZM19, ZM22, ZM24, ZM26 and ZM04M.
+ZM03 still only gives flares when the map plays at night, which is handles with the conditional feature.
+
 API changes (Could contain breaking changes for mappers. Make sure to check this list for migrations)
 ------------------------------------------------
 
@@ -25,6 +45,7 @@ Other mod changes
 - Renamed several internal library and core source files/folders for naming consistency (e.g. `afkprevention` -> `afk_prevention`, `translucentallies.acs` -> `translucent_allies.acs`, `prepostscript.acs` -> `pre_post_script.acs`). This is internal only and does not affect maps.
 - Added `zh2modern` and `zh2legacy`, matching `zh2lib`/`zh2game` structure-wise, giving the modern/legacy map-pack-specific cvars typed getters instead of raw `GetCVar`/`GetUserCVar` calls scattered across the map scripts.
 - Fixed an issue with ZM09's soulsphere/ghouldemon dealing wildly excessive melee damage (effectively an instant kill) instead of its intended small damage amount to humans (or large, but survivable, damage to zombies) to to an invalid cast.
+- Added two options to the debug menu, which log the parsed human start items and the human start item history of every player.
 - Fix issue with the core's LOADACS lump not actually working. This was never noticed before because the mod doesn't use autoloading yet, and maps always loaded the code themselves.
 
 Repository changes
