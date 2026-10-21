@@ -49,12 +49,12 @@ strict namespace Hud
     internal void DrawRoundsHudDefault()
     {
         BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        HudSetScaledVirtualSize(640.0, 480.0, CVar::GetClHudRoundScale());
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
 
         PrepareHud(
-            CVar::GetClHudRoundOffsetX() + 320.0,
+            HudCenterX() + CVar::GetClHudRoundOffsetX(),
             BCSUtils::HudBottom() - CVar::GetClHudRoundOffsetY() - 20.0,
             false);
 
@@ -65,27 +65,27 @@ strict namespace Hud
     internal void DrawPlayerBarsHudDefault()
     {
         BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        HudSetScaledVirtualSize(640.0, 480.0, CVar::GetClHudPlayerBarsScale());
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetDisappearTime(1.0);
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_BOTTOM);
 
         PrepareHud(
-            320.0 + CVar::GetClHudPlayerBarsOffsetX(),
+            HudCenterX() + CVar::GetClHudPlayerBarsOffsetX(),
             BCSUtils::HudBottom() - 100.0 - CVar::GetClHudPlayerBarsOffsetY(),
             true);
 
         DrawSprintBar(GetHudX(), GetHudY());
 
         PrepareHud(
-            320.0 + CVar::GetClHudPlayerBarsOffsetX(),
+            HudCenterX() + CVar::GetClHudPlayerBarsOffsetX(),
             BCSUtils::HudBottom() - 85.0 - CVar::GetClHudPlayerBarsOffsetY(),
             true);
 
         DrawAirSupplyBar(GetHudX(), GetHudY());
 
         PrepareHud(
-            320.0 + CVar::GetClHudPlayerBarsOffsetX(),
+            HudCenterX() + CVar::GetClHudPlayerBarsOffsetX(),
             BCSUtils::HudBottom() - 70.0 - CVar::GetClHudPlayerBarsOffsetY(),
             true);
 
@@ -96,8 +96,10 @@ strict namespace Hud
     // Player's actual HUD (Weapons, health, etc)
     internal void DrawPlayerStatusHudDefault()
     {
+        fixed scale = CVar::GetClHudPlayerStatusScale();
+
         BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        HudSetScaledVirtualSize(640.0, 480.0, scale);
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_BOTTOM);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
 
@@ -137,13 +139,20 @@ strict namespace Hud
             baseX + DEFAULT_HUD_STATES_RADIUS + 5.0, baseY - 75.0, true);
         DrawHudStates(GetHudX(), GetHudY());
 
-        BCSUtils::HudSetVirtualSize(960.0, 720.0);
+        // The key list is drawn in a 1.5 times larger frame, so its images are smaller.
+        // The base distance to the bottom left of the screen is converted to that frame, so it stays in place.
+        fixed baseLeftDistance = baseX - BCSUtils::HudLeft(),
+              baseBottomDistance = BCSUtils::HudBottom() - baseY;
+
+        HudSetScaledVirtualSize(960.0, 720.0, scale);
 
         PrepareHud(
-            baseX + 130.0, baseY + 122.0, true);
+            BCSUtils::HudLeft() + baseLeftDistance * 1.5 + 168.0,
+            BCSUtils::HudBottom() - baseBottomDistance * 1.5 - 103.0,
+            true);
         DrawKeyList(GetHudX(), GetHudY());
 
-        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        HudSetScaledVirtualSize(640.0, 480.0, scale);
 
         // Right side
         // TODO: This is a whole different part of the HUD and should be moved.
@@ -181,7 +190,7 @@ strict namespace Hud
     internal void DrawGameHudDefault()
     {
         BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0, 480.0);
+        HudSetScaledVirtualSize(640.0, 480.0, CVar::GetClHudGameScale());
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
 
         // Get general skin type to show for zombies.

@@ -54,6 +54,9 @@ strict namespace Hud
     internal fixed _hudX,
                    _hudY;
 
+    // The scale of the HUD part being drawn, used to convert the cursor to the same virtual size.
+    internal fixed _hudScale = 1.0;
+
     // Indicates if the client's camera is on its own body.
     // This means we're not spectating anybody, nor are we on some camera.
     internal bool _clientCameraOnBody;
@@ -89,6 +92,32 @@ strict namespace Hud
             _hudX += _xShakeOffset;
             _hudY += _yShakeOffset;
         }
+    }
+
+    internal void HudSetScaledVirtualSize(fixed width, fixed height, fixed scale)
+    {
+        _hudScale = scale;
+        BCSUtils::HudSetVirtualSize(width / scale, height / scale);
+    }
+
+    internal fixed HudCenterX()
+    {
+        return (BCSUtils::HudLeft() + BCSUtils::HudRight()) / 2.0;
+    }
+
+    internal fixed HudCenterY()
+    {
+        return (BCSUtils::HudTop() + BCSUtils::HudBottom()) / 2.0;
+    }
+
+    internal fixed GetHudCursorX()
+    {
+        return BCSUtils::Floor(BCSUtils::CursorX()) / _hudScale;
+    }
+
+    internal fixed GetHudCursorY()
+    {
+        return BCSUtils::Floor(BCSUtils::CursorY()) / _hudScale;
     }
 
     // Determines the HUD skin to use for the player's HUD.
@@ -172,8 +201,8 @@ strict namespace Hud
 
     internal bool DrawClickableText(int id, fixed addX, fixed addY, fixed width, fixed height, str text)
     {
-        fixed cursorX = BCSUTILS::Floor(BCSUTILS::CursorX()),
-              cursorY = BCSUTILS::Floor(BCSUTILS::CursorY());
+        fixed cursorX = GetHudCursorX(),
+              cursorY = GetHudCursorY();
 
         fixed x = GetHudX() + addX,
               y = GetHudY() + addY;
