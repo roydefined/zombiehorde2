@@ -16,14 +16,10 @@ strict namespace Hud
         return _cursorEnabled;
     }
 
-    // This uses HudSetScale because the positioning will be better.
     internal void DrawCursor()
     {
-        fixed scale = CVar::GetClCursorScale();
-
         BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0, 480.0);
-        BCSUtils::HudSetScale(scale);
+        HudSetScaledVirtualSize(640.0, 480.0, CVar::GetClCursorScale());
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
 
@@ -33,14 +29,14 @@ strict namespace Hud
         // Note the cursor pointer is on the top left, so because of this we draw it slightly offset.
         // 17.0 is the sweet spot.
         PrepareHud(
-            BCSUtils::Floor(BCSUtils::CursorX()) + 17.0,
-            BCSUtils::Floor(BCSUtils::CursorY()),
+            GetHudCursorX() + 17.0,
+            GetHudCursorY(),
             false);
 
         HudSetPointInternal();
         BCSUtils::HudDrawImage(HUDID_CURSOR, "CURSOR");
 
         // Debug points for the cursor where it actually points.
-        DebugDraw(BCSUtils::Floor(BCSUtils::CursorX()), BCSUtils::Floor(BCSUtils::CursorY()), CR_CYAN);
+        DebugDraw(GetHudCursorX(), GetHudCursorY(), CR_CYAN);
     }
 }

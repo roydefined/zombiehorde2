@@ -50,9 +50,12 @@ strict namespace Hud
     internal fixed _xShakeOffset = 0.0;
     internal fixed _yShakeOffset = 0.0;
 
-    // The main positioning and scale used when drawing elements.
+    // The main positioning used when drawing elements.
     internal fixed _hudX,
                    _hudY;
+
+    // The scale of the HUD part being drawn, used to convert the cursor to the same virtual size.
+    internal fixed _hudScale = 1.0;
 
     // Indicates if the client's camera is on its own body.
     // This means we're not spectating anybody, nor are we on some camera.
@@ -89,6 +92,32 @@ strict namespace Hud
             _hudX += _xShakeOffset;
             _hudY += _yShakeOffset;
         }
+    }
+
+    internal void HudSetScaledVirtualSize(fixed width, fixed height, fixed scale)
+    {
+        _hudScale = scale * CVar::GetClHudScale();
+        BCSUtils::HudSetVirtualSize(width / _hudScale, height / _hudScale);
+    }
+
+    internal fixed HudCenterX()
+    {
+        return (BCSUtils::HudLeft() + BCSUtils::HudRight()) / 2.0;
+    }
+
+    internal fixed HudCenterY()
+    {
+        return (BCSUtils::HudTop() + BCSUtils::HudBottom()) / 2.0;
+    }
+
+    internal fixed GetHudCursorX()
+    {
+        return BCSUtils::Floor(BCSUtils::CursorX()) / _hudScale;
+    }
+
+    internal fixed GetHudCursorY()
+    {
+        return BCSUtils::Floor(BCSUtils::CursorY()) / _hudScale;
     }
 
     // Determines the HUD skin to use for the player's HUD.
@@ -132,7 +161,7 @@ strict namespace Hud
         return _hudY;
     }
 
-    // Helper method to set the hud point based on possible scaling.
+    // Helper method to set the hud point relative to the prepared position.
     internal void HudSetPointInternal(fixed addX = 0.0, fixed addY = 0.0)
     {
         BCSUtils::HudSetPoint(_hudX + addX, _hudY + addY);
@@ -172,9 +201,8 @@ strict namespace Hud
 
     internal bool DrawClickableText(int id, fixed addX, fixed addY, fixed width, fixed height, str text)
     {
-        fixed mouseScale = CVar::GetClCursorScale();
-        fixed cursorX = BCSUTILS::Floor(BCSUTILS::CursorX()),
-              cursorY = BCSUTILS::Floor(BCSUTILS::CursorY());
+        fixed cursorX = GetHudCursorX(),
+              cursorY = GetHudCursorY();
 
         fixed x = GetHudX() + addX,
               y = GetHudY() + addY;

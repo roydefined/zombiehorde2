@@ -44,9 +44,8 @@ strict namespace Resist
         if (Player::GetIsZombie() && !CVar::GetSvShowZombiesResists())
             return false;
 
-        fixed scale = CVar::GetClHudResistsScale();
         BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0 / scale, 480.0 / scale);
+        Hud::HudSetScaledVirtualSize(640.0, 480.0, CVar::GetClHudResistsScale());
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_TOP);
 
         BCSUtils::HudSetCenterText(true);
@@ -56,7 +55,7 @@ strict namespace Resist
         fixed fullServerAddY = Game::GetFullServerElapsedTics() > 0 ? 50.0 : 0.0;
         fixed yOffset = BCSUtils::HudTop() + 50.0 + fullServerAddY;
 
-        Hud::PrepareHud(320.0, yOffset + extraOffsetY, true);
+        Hud::PrepareHud(Hud::HudCenterX(), yOffset + extraOffsetY, true);
         return true;
     }
 }

@@ -11,10 +11,8 @@ strict namespace Hud
         if (elapsed == 0)
             return;
 
-        fixed scale = CVar::GetClHudFullServerScale();
         BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0, 480.0);
-        BCSUtils::HudSetScale(scale);
+        HudSetScaledVirtualSize(640.0, 480.0, CVar::GetClHudFullServerScale());
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_TOP);
         BCSUtils::HudSetFont("BigFont");
@@ -32,11 +30,11 @@ strict namespace Hud
                 continue;
 
             // This ensures each character is displayed in order.
-            fixed charX = 240.0 + (15.0 * fixed(i));
+            fixed charX = HudCenterX() - 80.0 + (15.0 * fixed(i));
 
             // Wave effect
             fixed part = fixed(elapsed) / fixed(10 * i + (360 / 3));
-            fixed charY = 60.0 + BCSUtils::Round(3.0 * Sin(part));
+            fixed charY = BCSUtils::HudTop() + 60.0 + BCSUtils::Round(3.0 * Sin(part));
 
             // Goes through all the colors, changing every 10 tics.
             BCSUtils::HudSetTextColor((Timer() / 10 + i) % 20);
