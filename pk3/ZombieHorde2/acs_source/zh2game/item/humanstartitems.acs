@@ -8,14 +8,23 @@ strict namespace Item
     {
         // Distributes the human start items one second after the initial zombies are picked.
         if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING && Game::GetPlayTime() == 35)
+        {
             DistributeHumanStartItems();
+            return;
+        }
 
-        // Distributes early whenever a human became eligible, see `GetPlayerEligibleForHumanStartItems`.
+        // Check if we should do early distribution.
         // Everybody respawns together when the round starts, so they compete for the items in the same distribution.
-        else if (CVar::GetSvHumanStartItemDistribution() == CVar::HUMANSTARTITEMDISTRIBUTION_EARLY_AND_TOPUP
-            && Round::GetActiveKnownRoundState() != Round::STATEPREGAME
-            && GetAnyPlayerBecameEligibleForHumanStartItems())
-            DistributeHumanStartItems();
+        if (CVar::GetSvHumanStartItemDistribution() != CVar::HUMANSTARTITEMDISTRIBUTION_EARLY_AND_TOPUP)
+            return;
+
+        if (Round::GetActiveKnownRoundState() == Round::STATEPREGAME)
+            return;
+
+        if (!GetAnyPlayerBecameEligibleForHumanStartItems())
+            return;
+
+        DistributeHumanStartItems();
     }
 
     // A living human is eligible once they spawned at least one second ago.
@@ -300,13 +309,16 @@ strict namespace Item
     }
 
     // Returns the number of humans the items are distributed over.
-    // Before the initial zombies are picked everybody is still human, so we use the number of humans that will remain after the pick.
     internal int GetHumanStartItemHumanCount()
     {
         if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
             return Game::HumanCount();
 
-        return (int)BCSUtils::Max(PlayerCount() - Player::EligibleInitialZombieCount(), 0);
+        // We don't know who becomes a zombie yet, so leaving out the expected zombies could leave out actual humans.
+        // TODO: Determine beforehand who becomes a zombie so this info is possible.
+        //return (int)BCSUtils::Max(PlayerCount() - Player::EligibleInitialZombieCount(), 0);
+
+        return PlayerCount();
     }
 
     // Returns the percentage of humans that should receive the item.
