@@ -451,8 +451,48 @@ strict namespace ZH2Game
         else
             Player::SetPlayerState(killedId, Player::STATEDEAD);
 
-        Identity::DisposeTID(Identity::GetTid(killedId));
+        // Set up the body to track for possible resurrection.
+        int deadBodyTid = DEAD_BODY_TID_BASE + killedId;
+        Identity::DisposeTID(deadBodyTid);
+        Thing_ChangeTID(Identity::GetTid(killedId), deadBodyTid);
         Sync::SyncPlayers();
+
+        ACS_NamedExecuteAlways("zh2_internal_check_resurrect", 0, killedId);
+    }
+
+    // Track a player's dead body for possible resurrection.
+    // Getting resurrected with `resurrect` does not run the respawn script, and so this way it fixes that.
+    script "zh2_internal_check_resurrect" (int id)
+    {
+        Logger::LogInformation(LOGSOURCE, "Waiting for player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " to possibly resurrect.");
+
+        int deadBodyTid = DEAD_BODY_TID_BASE + id;
+
+        // Wait until the player is alive. This also leaves the player as the activator.
+        while (!(SetActivatorToPlayer(id) && BCSUtils::ActorIsAlive(0)))
+        {
+            // The player left the game or became a spectator.
+            if (!PlayerInGame(id))
+            {
+                Logger::LogInformation(LOGSOURCE, "Stop waiting for player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " to resurrect. Player is no longer in the game.");
+                terminate;
+            }
+
+            Delay(const: 1);
+        }
+
+        // A new body, so the player respawned.
+        if (ActivatorTid() != deadBodyTid)
+        {
+            Logger::LogInformation(LOGSOURCE, "Stop waiting for player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " to resurrect. Player respawned.");
+            Identity::DisposeTID(deadBodyTid);
+            terminate;
+        }
+
+        Logger::LogInformation(LOGSOURCE, "Player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " resurrected.");
+
+        ACS_NamedExecuteWithResult(SCRIPT_ENTER_RESPAWN_NAME, 0);
+        ACS_NamedExecuteAlways(SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME, 0);
     }
 
     script "zh2_internal_death_client" death clientside
@@ -615,6 +655,10 @@ strict namespace ZH2Game
         // Spawn a team indicator unless we're the one entering/respawning
         if (PlayerNumber() != ConsolePlayerNumber())
             Game::SpawnTeamIndicator();
+
+        // A player that was revived without respawning still has the death camera.
+        else if (Game::ClientDeathCameraEnabled())
+            Game::DisposeClientDeathCamera();
     }
 
     // Returns `true` if the given player can join.
