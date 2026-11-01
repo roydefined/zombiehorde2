@@ -61,8 +61,17 @@ strict namespace
 
     Script 2 (void) /* Teleport to the mansion */
     {
-        if(Player::GetIsZombie()) Teleport_NoFog(49, 1, 0);
-        else Teleport_NoFog(100+PlayerNumber(), 1, 0);
+        if(Player::GetIsZombie())
+        {
+            Teleport_NoFog(49, 1, 0);
+        }
+        else
+        {
+            // [ZH2] There 16 spots reserved for this, which breaks when more than 16 players play.
+            // However, this also broke in ZH1 so this never worked properly.
+            int tid = 100 + (PlayerNumber() % 16);
+            Teleport_NoFog(tid, 1, 0);
+        }
     }
 
     Script 8 (void) // Checks if a human has reached the house
