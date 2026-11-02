@@ -20,13 +20,18 @@ strict namespace Map
             int i = 0;
 
             // Determine if we have a suggested map that we want to show for the current map. This will take the first slot.
-            if (GetCurrentMapSuggestedMapExists())
+            // The suggested map must also be in the map rotation, otherwise it is ignored.
+            int suggestedMapPosition = GetCurrentMapSuggestedMapExists()
+                ? GetParsedMapRotationPosition(GetCurrentMapSuggestedMapHandle())
+                : -1;
+
+            if (suggestedMapPosition != -1)
             {
                 Append(s:"Add suggested map: ");
                 Append(s:GetCurrentMapSuggestedMap());
                 Append(s:". ");
 
-                ZH2Game::GameContext.VotableMaps[i] = GetParsedMapRotationPosition(GetCurrentMapSuggestedMapHandle());
+                ZH2Game::GameContext.VotableMaps[i] = suggestedMapPosition;
                 ++i;
             }
 
