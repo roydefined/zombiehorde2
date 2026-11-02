@@ -67,7 +67,7 @@ Actor ZH2WeaponClaws : ZH2Weapon
             ZCAA KJIHGFEDCB 1
             goto Ready
 
-        Fire:
+        Fire: // 5 frames
             TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
             TNT1 A 0
 
@@ -80,39 +80,38 @@ Actor ZH2WeaponClaws : ZH2Weapon
         Fire.Again:
             ZCAL FG 1
             TNT1 A 0 A_CustomPunch(CLAW_DAMAGE, true, 0, "ZH2ClawsScratchPuff", 72)
-            ZCAL HI 1
+            ZCAL HI 1 // 4
 
             // Finish the animation properly.
             TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, 2)
-            TNT1 A 0 A_Refire("Fire.Right")
-
-            ZCAL JKLM 1
-            goto Ready
-        Fire.Right:
-            ZCAR AB 1
+            ZCAR A 1
             TNT1 A 0 A_PlaySound ("weapons/claws/SWING", CHAN_WEAPON)
             ZCAR C 1
             TNT1 A 0 A_CustomPunch(CLAW_DAMAGE, true, 0, "ZH2ClawsWallScratchPuff", 72)
             ZCAR DE 1
             TNT1 A 0 A_CustomPunch(CLAW_DAMAGE, true, 0, "ZH2ClawsScratchPuff", 72)
-            ZCAR FGH 1
+            ZCAR FH 1 // 6
 
             // Finish the animation properly.
             TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, 2)
-            TNT1 A 0 A_Refire("Fire.Left")
-
-            ZCAR IJKLM 1
-            goto Ready
-        Fire.Left:
-
-            ZCAL NO 1
+            ZCAL N 1
             TNT1 A 0 A_PlaySound ("weapons/claws/SWING", CHAN_WEAPON)
             ZCAL P 1
             TNT1 A 0 A_CustomPunch(CLAW_DAMAGE, true, 0, "ZH2ClawsWallScratchPuff", 72)
-            ZCAL QR 1
+            ZCAL Q 1
             TNT1 A 0 A_CustomPunch(CLAW_DAMAGE, true, 0, "ZH2ClawsScratchPuff", 72)
-            ZCAL S 1
-            goto Fire.Again
+            ZCAL S 1 // 4
+            TNT1 A 0 A_Refire("Fire.Again")
+
+            // Below is the copy of original Fire.Again
+            ZCAL FG 1 A_Refire("Fire.Again")
+            TNT1 A 0 A_CustomPunch(CLAW_DAMAGE, true, 0, "ZH2ClawsScratchPuff", 72)
+            ZCAL HI 1 A_Refire("Fire.Again")
+
+            // Finish the animation properly.
+            TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, 2)
+            ZCAL JKLM 1 A_Refire("Fire.Again")
+            goto Ready
 
         Altfire:
             TNT1 A 0 A_JumpIfInventory("ZH2BlockWeaponFiring", 1, "Ready")
