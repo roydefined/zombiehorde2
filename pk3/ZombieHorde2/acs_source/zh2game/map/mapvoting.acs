@@ -15,6 +15,12 @@ strict namespace Map
             ? GetParsedMapRotationPosition(GetCurrentMapSuggestedMapHandle())
             : -1;
 
+        // A suggested map that was already played is ignored, unless the cvar allows it.
+        if (suggestedMapPosition != -1
+            && GetMapRotationInfo(suggestedMapPosition, MAPROTATION_USED)
+            && !CVar::GetSvVoteIncludePlayedSuggestedMaps())
+            suggestedMapPosition = -1;
+
         // The suggested map is not one of the shuffled maps, so it is counted separately.
         int suggestedMapCount = suggestedMapPosition != -1 ? 1 : 0;
 
