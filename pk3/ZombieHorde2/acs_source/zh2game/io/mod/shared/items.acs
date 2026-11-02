@@ -120,6 +120,18 @@ strict namespace IO
         return true;
     }
 
+    // Process all parsed items and set the properties that weren't given to their defaults.
+    internal void ProcessItems()
+    {
+        for (int i = 0; i < ZH2Game::PersistingGameContext.ItemCollection.Size; ++i)
+        {
+            Item::ItemContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[i];
+            if (!context.HudShakeIntensitySet) context.HudShakeIntensity = 1.0;
+            if (!context.HudShakeFrequencySet) context.HudShakeFrequency = 1.0;
+            if (!context.HudShakeDurationSet) context.HudShakeDuration = 1.0;
+        }
+    }
+
     internal bool ParseItemSpecieOwned(int handle, str identifyingSymbol)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "humanowned")
@@ -305,6 +317,7 @@ strict namespace IO
         fixed parsedValue = (fixed)Tokenizer::GetParsedValue();
         Item::ItemContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
         context.HudShakeIntensity = parsedValue;
+        context.HudShakeIntensitySet = true;
 
         Logger::LogDebug(LOGSOURCE, "Parsed hud shake intensity: \cd" + str(context.HudShakeIntensity) + "\cj.");
         return true;
@@ -324,6 +337,7 @@ strict namespace IO
         fixed parsedValue = (fixed)Tokenizer::GetParsedValue();
         Item::ItemContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
         context.HudShakeFrequency = parsedValue;
+        context.HudShakeFrequencySet = true;
 
         Logger::LogDebug(LOGSOURCE, "Parsed hud shake frequency: \cd" + str(context.HudShakeFrequency) + "\cj.");
         return true;
@@ -343,6 +357,7 @@ strict namespace IO
         fixed parsedValue = (fixed)Tokenizer::GetParsedValue();
         Item::ItemContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
         context.HudShakeDuration = parsedValue;
+        context.HudShakeDurationSet = true;
 
         Logger::LogDebug(LOGSOURCE, "Parsed hud shake duration: \cd" + str(context.HudShakeDuration) + "\cj.");
         return true;
