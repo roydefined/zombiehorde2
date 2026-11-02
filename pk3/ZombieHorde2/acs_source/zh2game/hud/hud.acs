@@ -246,18 +246,21 @@ strict namespace Hud
         if (elapsed >= duration)
             return;
 
-        // Initialize shake on first tic
-        if (elapsed == 1)
-            _firingSeedAngle = Math::FRandom(0.0, 2.0 * BCSUtils::PI);
+        // Initialize shake on first tic.
+        if (elapsed == 0)
+            _firingSeedAngle = Math::FRandom(0.0, 1.0);
 
         fixed maxIntensity = HUDSHAKE_INTENSITYBASE * CVar::GetClHudShakeIntensityMultiplier();
-        fixed frequency = HUDSHAKE_FREQUENCYBASE * CVar::GetClHudShakeFrequencyMultiplier();
+
+        // The number of turns per tic. A value of 0.5 swings the HUD back and forth every tic.
+        fixed frequency = HUDSHAKE_FREQUENCYBASE * CVar::GetClHudShakeFrequencyMultiplier() * 0.01;
 
         fixed progress = fixed(elapsed) / fixed(duration);
         fixed intensity = maxIntensity * (1.0 - progress);
 
-        fixed angle = fixed(elapsed) * fixed(frequency) * 0.01;
-        fixed offset = Sin(angle) * intensity;
+        // Cosine so the shake is at its strongest on the tic the weapon fires.
+        fixed angle = fixed(elapsed) * frequency;
+        fixed offset = Cos(angle) * intensity;
 
         _xShakeOffset = Cos(_firingSeedAngle) * offset;
         _yShakeOffset = Sin(_firingSeedAngle) * offset;
