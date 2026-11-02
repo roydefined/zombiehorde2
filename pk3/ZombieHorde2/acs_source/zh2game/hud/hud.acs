@@ -47,6 +47,8 @@ strict namespace Hud
 
     // For shaking of the HUD.
     internal fixed _firingSeedAngle = 0.0;
+
+    internal int _hudShakeProfile = -1;
     internal fixed _xShakeOffset = 0.0;
     internal fixed _yShakeOffset = 0.0;
 
@@ -77,6 +79,7 @@ strict namespace Hud
         if (_hudHookData == null)
             _hudHookData = bcs::malloc(lengthof(_hudHookData));
 
+        UpdateHudShakeProfile();
         UpdateHudShakeOffset();
 
         DrawHud();
@@ -224,6 +227,22 @@ strict namespace Hud
         DebugDraw(x + width, y + height, CR_GRAY);
 
         return isOver && BCSUTILS::KeyPressed(BT_ATTACK);
+    }
+
+    internal void UpdateHudShakeProfile()
+    {
+        CVar::HudShakeProfileT profile = CVar::GetClHudShakeProfile();
+        if (_hudShakeProfile == (int)profile)
+            return;
+
+        bool firstTic = _hudShakeProfile == -1;
+        _hudShakeProfile = (int)profile;
+
+        // Skip a check to change the profile on the first tic.
+        // This makes it so any manual changes persist.
+        // The next tic uses the profile we have set.
+        if (!firstTic)
+            Settings::ApplyHudShakeProfile(profile);
     }
 
     internal void UpdateHudShakeOffset()
