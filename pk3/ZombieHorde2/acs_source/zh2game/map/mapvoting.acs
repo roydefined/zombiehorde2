@@ -16,11 +16,25 @@ strict namespace Map
         str logMessage;
         buildmsg(logMessage = StrParam())
         {
-            Append(s:"Updated votable maps. Count: ");
+            // Increment once with a suggested map
+            int i = 0;
+
+            // Determine if we have a suggested map that we want to show for the current map. This will take the first slot.
+            if (GetCurrentMapSuggestedMapExists())
+            {
+                Append(s:"Add suggested map: ");
+                Append(s:GetCurrentMapSuggestedMap());
+                Append(s:". ");
+
+                ZH2Game::GameContext.VotableMaps[i] = GetParsedMapRotationPosition(GetCurrentMapSuggestedMapHandle());
+                ++i;
+            }
+
+            Append(s:"Votable map count: ");
             Append(d:length);
             Append(s:". Maps: ");
 
-            for (int i = 0; i < length; ++i)
+            for (; i < length; ++i)
             {
                 int mapIndex = Shuffle::GetIndexValue(i);
                 ZH2Game::GameContext.VotableMaps[i] = mapIndex;
