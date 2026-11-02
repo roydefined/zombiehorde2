@@ -47,6 +47,9 @@ strict namespace Hud
 
     // For shaking of the HUD.
     internal fixed _firingSeedAngle = 0.0;
+    internal fixed _firingShakeIntensity = 1.0;
+    internal fixed _firingShakeFrequency = 1.0;
+    internal fixed _firingShakeDuration = 1.0;
 
     internal int _hudShakeProfile = -1;
     internal fixed _xShakeOffset = 0.0;
@@ -260,19 +263,34 @@ strict namespace Hud
         if (!_clientCameraOnBody)
             return;
 
-        int duration = CVar::GetClHudShakeDurationTics();
         int elapsed = Decorate::GetFiringTime();
+
+        // Initialize shake factors on first tic.
+        if (elapsed == 0)
+        {
+            _firingSeedAngle = Math::FRandom(0.0, 1.0);
+
+            str weaponName = GetWeapon();
+            int weaponIndex = Item::GetItemIndexByName(weaponName);
+            if (weaponIndex == -1)
+            {
+                Logger::LogWarning(LOGSOURCE, "Failed to find hud shake weapon with name " + weaponName + ".");
+                return;
+            }
+
+            _firingShakeIntensity = Item::GetItemHudShakeIntensity(weaponIndex);
+            _firingShakeFrequency = Item::GetItemHudShakeFrequency(weaponIndex);
+            _firingShakeDuration = Item::GetItemHudShakeDuration(weaponIndex);
+        }
+
+        int duration = BCSUtils::Max(1, BCSUtils::IRound(fixed(CVar::GetClHudShakeDurationTics()) * _firingShakeDuration));
         if (elapsed >= duration)
             return;
 
-        // Initialize shake on first tic.
-        if (elapsed == 0)
-            _firingSeedAngle = Math::FRandom(0.0, 1.0);
-
-        fixed maxIntensity = HUDSHAKE_INTENSITYBASE * CVar::GetClHudShakeIntensityMultiplier();
+        fixed maxIntensity = HUDSHAKE_INTENSITYBASE * CVar::GetClHudShakeIntensityMultiplier() * _firingShakeIntensity;
 
         // The number of turns per tic. A value of 0.5 swings the HUD back and forth every tic.
-        fixed frequency = HUDSHAKE_FREQUENCYBASE * CVar::GetClHudShakeFrequencyMultiplier() * 0.01;
+        fixed frequency = HUDSHAKE_FREQUENCYBASE * CVar::GetClHudShakeFrequencyMultiplier() * _firingShakeFrequency * 0.01;
 
         fixed progress = fixed(elapsed) / fixed(duration);
         fixed intensity = maxIntensity * (1.0 - progress);
