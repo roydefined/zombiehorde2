@@ -91,6 +91,21 @@ strict namespace Event
                 // Skip the voting process if the cvar is set.
                 if (!CVar::GetSvAllowMapVoting())
                 {
+                    // Check if we want to play the suggested map.
+                    if (CVar::GetSvPlaySuggestedMapsWithoutVoting())
+                    {
+                        int suggestedMapPosition = Map::GetCurrentMapSuggestedMapExists()
+                            ? Map::GetParsedMapRotationPosition(Map::GetCurrentMapSuggestedMapHandle())
+                            : -1;
+
+                        // Ensure the suggested map isn't the next map.
+                        if (suggestedMapPosition != -1 && suggestedMapPosition != GetMapPosition(MAPPOSITION_NEXT))
+                        {
+                            if (!SetNextMapPosition(suggestedMapPosition, true))
+                                Logger::LogError(LOGSOURCE, "Failed to set next map position to suggested map " + str(suggestedMapPosition) + ".");
+                        }
+                    }
+
                     Exit_Normal(0);
                     terminate;
                 }
