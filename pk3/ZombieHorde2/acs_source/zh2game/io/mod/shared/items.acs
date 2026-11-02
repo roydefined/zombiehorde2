@@ -84,6 +84,9 @@ strict namespace IO
                 || ParseItemBloodSeverity(handle, symbol)
                 || ParseItemBloodTics(handle, symbol)
                 || ParseItemKickback(handle, symbol)
+                || ParseItemHudShakeIntensity(handle, symbol)
+                || ParseItemHudShakeFrequency(handle, symbol)
+                || ParseItemHudShakeDuration(handle, symbol)
                 || ParseItemTakeOnPanic(handle, symbol)
                 || ParseItemObituaryGraphic(handle, symbol)
                 || ParseItemObituaryGraphicWidth(handle, symbol)
@@ -115,6 +118,18 @@ strict namespace IO
         Logger::LogDebug(LOGSOURCE, "Finished parsing item: \cd" + context.Name + "\cj.");
         ZH2Game::PersistingGameContext.ItemCollection.Size++;
         return true;
+    }
+
+    // Process all parsed items and set the properties that weren't given to their defaults.
+    internal void ProcessItems()
+    {
+        for (int i = 0; i < ZH2Game::PersistingGameContext.ItemCollection.Size; ++i)
+        {
+            Item::ItemContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[i];
+            if (!context.HudShakeIntensitySet) context.HudShakeIntensity = 1.0;
+            if (!context.HudShakeFrequencySet) context.HudShakeFrequency = 1.0;
+            if (!context.HudShakeDurationSet) context.HudShakeDuration = 1.0;
+        }
     }
 
     internal bool ParseItemSpecieOwned(int handle, str identifyingSymbol)
@@ -285,6 +300,66 @@ strict namespace IO
         context.Kickback = parsedValue;
 
         Logger::LogDebug(LOGSOURCE, "Parsed kickback: \cd" + str(context.Kickback) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseItemHudShakeIntensity(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "hudshakeintensity")) return false;
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseFixedValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for hud shake intensity is not a correct value. Expected a valid fixed value within bounds.");
+            return false;
+        }
+
+        fixed parsedValue = (fixed)Tokenizer::GetParsedValue();
+        Item::ItemContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        context.HudShakeIntensity = parsedValue;
+        context.HudShakeIntensitySet = true;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed hud shake intensity: \cd" + str(context.HudShakeIntensity) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseItemHudShakeFrequency(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "hudshakefrequency")) return false;
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseFixedValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for hud shake frequency is not a correct value. Expected a valid fixed value within bounds.");
+            return false;
+        }
+
+        fixed parsedValue = (fixed)Tokenizer::GetParsedValue();
+        Item::ItemContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        context.HudShakeFrequency = parsedValue;
+        context.HudShakeFrequencySet = true;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed hud shake frequency: \cd" + str(context.HudShakeFrequency) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseItemHudShakeDuration(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "hudshakeduration")) return false;
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseFixedValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for hud shake duration is not a correct value. Expected a valid fixed value within bounds.");
+            return false;
+        }
+
+        fixed parsedValue = (fixed)Tokenizer::GetParsedValue();
+        Item::ItemContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        context.HudShakeDuration = parsedValue;
+        context.HudShakeDurationSet = true;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed hud shake duration: \cd" + str(context.HudShakeDuration) + "\cj.");
         return true;
     }
 

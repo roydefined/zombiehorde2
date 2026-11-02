@@ -52,6 +52,52 @@ strict namespace Settings
         Player::LockMovement(false);
     }
 
+    // Sets the HUD shake CVars to the values of the given profile.
+    internal void ApplyHudShakeProfile(CVar::HudShakeProfileT profile)
+    {
+        fixed intensity;
+        fixed frequency;
+        int duration;
+
+        switch (profile)
+        {
+            case CVar::HUDSHAKEPROFILE_OFF:
+                intensity = 0.0;
+                frequency = 1.0;
+                duration = 1;
+                break;
+
+            case CVar::HUDSHAKEPROFILE_LOW:
+                intensity = 0.5;
+                frequency = 1.0;
+                duration = 3;
+                break;
+
+            case CVar::HUDSHAKEPROFILE_MEDIUM:
+                intensity = 1.1;
+                frequency = 1.1;
+                duration = 4;
+                break;
+
+            case CVar::HUDSHAKEPROFILE_HIGH:
+                intensity = 1.6;
+                frequency = 1.1;
+                duration = 5;
+                break;
+
+            case CVar::HUDSHAKEPROFILE_EXTREME:
+                intensity = 2.5;
+                frequency = 1.1;
+                duration = 6;
+                break;
+        }
+
+        int playerId = ConsolePlayerNumber();
+        SetUserCVar(playerId, "cl_zh2_hudshakeintensitymultiplier", (raw)intensity);
+        SetUserCVar(playerId, "cl_zh2_hudshakefrequencymultiplier", (raw)frequency);
+        SetUserCVar(playerId, "cl_zh2_hudshakedurationtics", duration);
+    }
+
     // Sets the global HUD scale and the scale of every HUD part back to the default.
     internal void ResetAllHudScaling()
     {
