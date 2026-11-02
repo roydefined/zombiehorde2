@@ -7,27 +7,55 @@ strict namespace Map
     // Updates the list of votable maps that a player can choose from.
     internal void UpdateVotableMaps()
     {
-        Shuffle::ShuffleVotableMaps(Shuffle::FLAGIGNORECURRENTMAP | Shuffle::FLAGIGNORENEXTMAP);
+        Shuffle::ShuffleVotableMaps(Shuffle::FLAGIGNORECURRENTMAP | Shuffle::FLAGIGNORENEXTMAP | Shuffle::FLAGIGNORESUGGESTEDMAP);
+
+        // Determine if we have a suggested map that we want to show for the current map. This will take the first slot.
+        // The suggested map must also be in the map rotation, otherwise it is ignored.
+        int suggestedMapPosition = GetCurrentMapSuggestedMapExists()
+            ? GetParsedMapRotationPosition(GetCurrentMapSuggestedMapHandle())
+            : -1;
+
+        // A suggested map that was already played is ignored, unless the cvar allows it.
+        if (suggestedMapPosition != -1
+            && GetMapRotationInfo(suggestedMapPosition, MAPROTATION_USED)
+            && !CVar::GetSvVoteIncludePlayedSuggestedMaps())
+            suggestedMapPosition = -1;
+
+        // The suggested map is not one of the shuffled maps, so it is counted separately.
+        int suggestedMapCount = suggestedMapPosition != -1 ? 1 : 0;
 
         // Get how many maps to show, making sure to show less if we don't have more.
-        int length = BCSUtils::Min(Shuffle::GetRelevantSize(), CVar::GetSvMaxVotableMapsShown());
+        // Adding `suggestedMapCount` here is done when we don't have a full list.
+        int length = BCSUtils::Min(Shuffle::GetRelevantSize() + suggestedMapCount, CVar::GetSvMaxVotableMapsShown());
         ZH2Game::GameContext.VotableMapCount = length;
 
         str logMessage;
         buildmsg(logMessage = StrParam())
         {
-            Append(s:"Updated votable maps. Count: ");
+            if (suggestedMapPosition != -1)
+            {
+                Append(s:"Add suggested map: ");
+                Append(s:GetCurrentMapSuggestedMap());
+                Append(s:". ");
+
+                ZH2Game::GameContext.VotableMaps[0] = suggestedMapPosition;
+            }
+
+            Append(s:"Votable map count: ");
             Append(d:length);
             Append(s:". Maps: ");
 
-            for (int i = 0; i < length; ++i)
+            // The shuffled maps fill the slots after the suggested maps.
+            int shuffledMapLength = length - suggestedMapCount;
+            for (int i = 0; i < shuffledMapLength; ++i)
             {
                 int mapIndex = Shuffle::GetIndexValue(i);
-                ZH2Game::GameContext.VotableMaps[i] = mapIndex;
+                int voteMapIndex = i + suggestedMapCount;
+                ZH2Game::GameContext.VotableMaps[voteMapIndex] = mapIndex;
 
                 Append(s:GetMapRotationInfo(mapIndex, MAPROTATION_LUMPNAME));
 
-                if (i != length - 1)
+                if (i != shuffledMapLength - 1)
                     Append(s:", ");
             }
         }

@@ -35,7 +35,44 @@ strict namespace IO
         }
 
         Logger::LogDebug(LOGSOURCE, "Finished parsing map base data.");
+
+        ProcessSuggestedMaps();
         ZH2Game::PersistingGameContext.MapBaseCollection.Initialized = true;
+    }
+
+    // Process all suggested maps and validate they exist in the rotation.
+    // If it does, save its handle and specify it exists.
+    internal void ProcessSuggestedMaps()
+    {
+        MapBaseCollectionT global:PERSISTING_GAME_CONTEXT_INDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
+
+        for (int i = 0; i < mapBaseCollection.Count; ++i)
+        {
+            str suggestedMap = mapBaseCollection.Collection[i].Properties.SuggestedMap;
+            if (suggestedMap == (raw)0)
+                continue;
+
+            str mapLump = mapBaseCollection.Collection[i].MapLump;
+            int handle = GetMapBaseIndexByLumpName(suggestedMap);
+
+            // Map wasn't included in the loaded maplist (not including rotation). It will never work.
+            if (handle == -1)
+            {
+                Logger::LogInformation(LOGSOURCE, "Map \cd" + mapLump + "\cj suggests map \cd" + suggestedMap + "\cj, but map was not found. Ignoring.");
+                continue;
+            }
+
+            // This is a problem because it will never work.
+            if (handle == i)
+            {
+                Logger::LogWarning(LOGSOURCE, "Map \cd" + mapLump + "\cj suggests itself. Maps can't suggest themselves as a suggested map.");
+                continue;
+            }
+
+            mapBaseCollection.Collection[i].Properties.SuggestedMapExists = true;
+            mapBaseCollection.Collection[i].Properties.SuggestedMapHandle = handle;
+            Logger::LogDebug(LOGSOURCE, "Map \cd" + mapLump + "\cj suggests map \cd" + suggestedMap + "\cj with handle \cd" + str(handle) + "\cj.");
+        }
     }
 
     internal void ParseMapLumpPositions(str buffer, int mapLumpIndex)
