@@ -24,7 +24,8 @@ strict namespace IO
                 || ParseLabel(handle, symbol)
                 || ParseGraphic(handle, symbol)
                 || ParseIsNew(handle, symbol)
-                || ParseIsLegacyMap(handle, symbol))
+                || ParseIsLegacyMap(handle, symbol)
+                || ParseSuggestedMap(handle, symbol))
             {
                 // Peek next character, see if we have a comma.
                 // These are optional and if so, make sure to skip it.
@@ -52,7 +53,7 @@ strict namespace IO
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "gamemode")) return false;
         Tokenizer::Next(handle);
-        
+
         MapBaseCollectionT global:PERSISTING_GAME_CONTEXT_INDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
 
         str gameMode = Tokenizer::GetSymbol(handle);
@@ -66,7 +67,7 @@ strict namespace IO
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "label")) return false;
         Tokenizer::Next(handle);
-        
+
         MapBaseCollectionT global:PERSISTING_GAME_CONTEXT_INDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
 
         str label = Tokenizer::GetSymbol(handle);
@@ -80,7 +81,7 @@ strict namespace IO
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "graphic")) return false;
         Tokenizer::Next(handle);
-        
+
         MapBaseCollectionT global:PERSISTING_GAME_CONTEXT_INDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
 
         str graphic = Tokenizer::GetSymbol(handle);
@@ -94,7 +95,7 @@ strict namespace IO
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "isnew")) return false;
         Tokenizer::Next(handle);
-        
+
         MapBaseCollectionT global:PERSISTING_GAME_CONTEXT_INDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
 
         if (!Tokenizer::TryParseBooleanOrNumbericValue(handle))
@@ -115,7 +116,7 @@ strict namespace IO
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "islegacymap")) return false;
         Tokenizer::Next(handle);
-        
+
         MapBaseCollectionT global:PERSISTING_GAME_CONTEXT_INDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
 
         if (!Tokenizer::TryParseBooleanOrNumbericValue(handle))
@@ -129,6 +130,20 @@ strict namespace IO
         mapBaseCollection.Collection[mapBaseCollection.Count].Properties.IsLegacyMap = value;
 
         Logger::LogDebug(LOGSOURCE, "Parsed is legacy map: \cd" + str(value) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseSuggestedMap(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "suggestedmap")) return false;
+        Tokenizer::Next(handle);
+
+        MapBaseCollectionT global:PERSISTING_GAME_CONTEXT_INDEX& mapBaseCollection = ZH2Game::PersistingGameContext.MapBaseCollection;
+
+        str map = Tokenizer::GetSymbol(handle);
+        mapBaseCollection.Collection[mapBaseCollection.Count].Properties.SuggestedMap = map;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed suggested map: \cd" + map + "\cj.");
         return true;
     }
 }
