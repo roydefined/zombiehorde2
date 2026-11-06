@@ -6,12 +6,27 @@ strict namespace Vote
 {
     script "zh2_vote_endround"
     {
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
+            terminate;
+
         Logger::LogInformation(LOGSOURCE, "Vote \cdendround\cj passed.");
+
+        Game::SetWinningSpecie(Game::SPECIETIE);
+        Game::SetEndReason(Game::REASONVOTEENDED);
+        Game::EndGame();
     }
 
     script "zh2_vote_restartmap"
     {
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
+            terminate;
+
         Logger::LogInformation(LOGSOURCE, "Vote \cdrestartmap\cj passed.");
+
+        Game::SetWinningSpecie(Game::SPECIETIE);
+        Game::SetEndReason(Game::REASONVOTEENDED);
+        Game::SetEndAction(Game::ACTION_RESTART);
+        Game::EndGame();
     }
 
     script "zh2_vote_extendtime" (int seconds)
