@@ -1,0 +1,58 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Vote
+{
+    script "zh2_vote_endround"
+    {
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
+            terminate;
+
+        Logger::LogInformation(LOGSOURCE, "Vote \cdendround\cj passed.");
+
+        Game::SetWinningSpecie(Game::SPECIETIE);
+        Game::SetEndReason(Game::REASONVOTEENDED);
+        Game::EndGame();
+    }
+
+    script "zh2_vote_restartmap"
+    {
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
+            terminate;
+
+        Logger::LogInformation(LOGSOURCE, "Vote \cdrestartmap\cj passed.");
+
+        Game::SetWinningSpecie(Game::SPECIETIE);
+        Game::SetEndReason(Game::REASONVOTEENDED);
+        Game::SetEndAction(Game::ACTION_RESTART);
+        Game::EndGame();
+    }
+
+    script "zh2_vote_extendtime" (int seconds)
+    {
+        int index = RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERPLAYING);
+        if (!RoundTimer::GetTimerDefined(index)
+            || Round::GetActiveKnownRoundState() != Round::STATEPLAYING
+            || RoundTimer::GetActiveTimerIndex() != index
+            || !RoundTimer::GetTimerActive(index)
+            || RoundTimer::GetTimerPaused(index))
+            terminate;
+
+        Logger::LogInformation(LOGSOURCE, "Vote \cdextendtime\cj passed with \cd" + str(seconds) + "\cj seconds.");
+
+        seconds = BCSUtils::Clamp(seconds, VOTE_EXTEND_TIME_MIN_SECONDS, VOTE_EXTEND_TIME_MAX_SECONDS);
+        int ticDiff = RoundTimer::IncrementTimer(index, seconds * 35);
+
+        // Failsafe, should not be possible.
+        if (ticDiff <= 0)
+            terminate;
+
+        // Only show a visual change if the timer is not hidden.
+        if (RoundTimer::GetTimerVisible(index))
+            Game::CallVisualAddTime(ticDiff);
+
+        Logger::LogBold("\cjThe round time has been \cdextended\cj by \cd" + str(ticDiff / 35) + "s\cj!");
+        Sync::SyncTimers();
+    }
+}

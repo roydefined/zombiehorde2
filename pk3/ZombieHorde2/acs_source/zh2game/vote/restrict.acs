@@ -1,0 +1,67 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Vote
+{
+    script "zh2_vote_endround_preflight"
+    {
+        bool isPlaying = Round::GetActiveKnownRoundState() == Round::STATEPLAYING;
+        if (!isPlaying)
+            Logger::LogActivator("Ending the round can only be done whilst the game is playing.");
+
+        SetResultValue((int)isPlaying);
+    }
+
+    script "zh2_vote_restartmap_preflight"
+    {
+        bool isPlaying = Round::GetActiveKnownRoundState() == Round::STATEPLAYING;
+        if (!isPlaying)
+            Logger::LogActivator("Ending the round and restarting the map can only be done whilst the game is playing.");
+
+        SetResultValue((int)isPlaying);
+    }
+
+    script "zh2_vote_extendtime_preflight" (int seconds)
+    {
+        int index = RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERPLAYING);
+        if (!RoundTimer::GetTimerDefined(index))
+        {
+            Logger::LogActivator("Extending the round time is not possible on this map.");
+            SetResultValue((int)false);
+            terminate;
+        }
+
+        if (Round::GetActiveKnownRoundState() != Round::STATEPLAYING)
+        {
+            Logger::LogActivator("Extending the round time can only be done whilst the game is playing.");
+            SetResultValue((int)false);
+            terminate;
+        }
+
+        // This is more of a failsafe.
+        // If a map with a play timer is in a play state, the timer is also enabled.
+        if (RoundTimer::GetActiveTimerIndex() != index || !RoundTimer::GetTimerActive(index))
+        {
+            Logger::LogActivator("Extending the round time can only be done whilst the play timer is running.");
+            SetResultValue((int)false);
+            terminate;
+        }
+
+        if (RoundTimer::GetTimerPaused(index))
+        {
+            Logger::LogActivator("Extending the round time is not possible whilst the play timer is paused.");
+            SetResultValue((int)false);
+            terminate;
+        }
+
+        if (seconds < VOTE_EXTEND_TIME_MIN_SECONDS || seconds > VOTE_EXTEND_TIME_MAX_SECONDS)
+        {
+            Logger::LogActivator("The time to extend must be between \cd" + str(VOTE_EXTEND_TIME_MIN_SECONDS) + "\cj and \cd" + str(VOTE_EXTEND_TIME_MAX_SECONDS) + "\cj seconds.");
+            SetResultValue((int)false);
+            terminate;
+        }
+
+        SetResultValue((int)true);
+    }
+}
