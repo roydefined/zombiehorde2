@@ -31,6 +31,28 @@ strict namespace Vote
 
     script "zh2_vote_extendtime" (int seconds)
     {
+        int index = RoundTimer::GetIndexOfKnownType(RoundTimer::TIMERPLAYING);
+        if (!RoundTimer::GetTimerDefined(index)
+            || Round::GetActiveKnownRoundState() != Round::STATEPLAYING
+            || RoundTimer::GetActiveTimerIndex() != index
+            || !RoundTimer::GetTimerActive(index)
+            || RoundTimer::GetTimerPaused(index))
+            terminate;
+
         Logger::LogInformation(LOGSOURCE, "Vote \cdextendtime\cj passed with \cd" + str(seconds) + "\cj seconds.");
+
+        seconds = BCSUtils::Clamp(seconds, VOTE_EXTEND_TIME_MIN_SECONDS, VOTE_EXTEND_TIME_MAX_SECONDS);
+        int ticDiff = RoundTimer::IncrementTimer(index, seconds * 35);
+
+        // Failsafe, should not be possible.
+        if (ticDiff <= 0)
+            terminate;
+
+        // Only show a visual change if the timer is not hidden.
+        if (RoundTimer::GetTimerVisible(index))
+            Game::CallVisualAddTime(ticDiff);
+
+        Logger::LogBold("\cjThe round time has been \cdextended\cj by \cd" + str(ticDiff / 35) + "s\cj!");
+        Sync::SyncTimers();
     }
 }
