@@ -86,7 +86,43 @@ strict namespace ZH2Game
 
     script "zh2_action_pingwheel" (raw openRaw) net clientside
     {
-        Hud::SetPingWheelIsOpen((bool)openRaw);
+        bool isOpen = (bool)openRaw;
+
+        // If the key action matches the target state we can ignore it.
+        if (isOpen == Ping::GetPingWheelOpen())
+            terminate;
+
+        if (isOpen && !CanUsePingWheel())
+            terminate;
+
+        SetPingWheelOpen(isOpen);
+    }
+
+    // All cases that prevents pinging from being used.
+    internal bool CanUsePingWheel()
+    {
+        return BCSUtils::ActorIsAlive(ActivatorTid())
+            && !PlayerIsSpectator(ConsolePlayerNumber())
+            && Round::GetActiveKnownRoundState() < Round::STATEENDING
+            && !GameContext.HasAdminHudOpen
+            && !GameContext.HasClientSettingsHudOpen;
+    }
+
+    internal void SetPingWheelOpen(bool isOpen)
+    {
+        Ping::SetPingWheelIsOpen(isOpen);
+        SetPingWheelControls(isOpen);
+    }
+
+    internal void SetPingWheelControls(bool isOpen)
+    {
+        // The other menus use the cursor and lock too, so they are kept if one of those is open.
+        if (!isOpen && (GameContext.HasAdminHudOpen || GameContext.HasClientSettingsHudOpen))
+            return;
+
+        // Segments are selected with the cursor, so the view must not turn with the mouse.
+        Hud::SetCursorEnabled(isOpen);
+        Player::LockMovement(isOpen);
     }
 
     script "zh2_action_consolidateclientsettings" net clientside

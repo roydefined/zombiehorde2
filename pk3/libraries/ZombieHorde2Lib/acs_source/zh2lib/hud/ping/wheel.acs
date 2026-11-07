@@ -21,8 +21,57 @@ strict namespace Hud
 
         DrawPingWheelCenter(x, y, selected == PING_WHEEL_CENTER_SEGMENT);
 
+        for (int i = 1; i <= PING_WHEEL_SEGMENT_COUNT; ++i)
+            DrawPingWheelGraphic(x, y, i);
+
+        DrawPingWheelCenterGraphic(x, y);
+
         if (BCSUTILS::KeyPressed(BT_ATTACK))
+        {
             Logger::LogDebug(LOGSOURCE, "Clicked ping wheel segment " + str(selected) + ".");
+
+            int pingIndex = ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[selected];
+            if (pingIndex != -1)
+                Ping::RaymarchPing(pingIndex);
+        }
+    }
+
+    // Draws the graphic of the ping this segment shows.
+    internal void DrawPingWheelGraphic(fixed x, fixed y, int segment)
+    {
+        int pingIndex = ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[segment];
+        if (pingIndex == -1)
+            return;
+
+        str graphic = ZH2Lib::PersistingLibContext.PingContext.Collection[pingIndex].Graphic;
+        if ((raw)graphic == 0 || graphic == "")
+            return;
+
+        fixed angle = fixed(segment - 1) / fixed(PING_WHEEL_SEGMENT_COUNT);
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetPoint(
+            x + Sin(angle) * PING_WHEEL_ICON_RADIUS,
+            y - Cos(angle) * PING_WHEEL_ICON_RADIUS);
+        BCSUtils::HudDrawImage(--_drawnHudId, graphic);
+        DebugDraw();
+    }
+
+    // Draws the graphic of the ping in the center circle.
+    internal void DrawPingWheelCenterGraphic(fixed x, fixed y)
+    {
+        int pingIndex = ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[PING_WHEEL_CENTER_SEGMENT];
+        if (pingIndex == -1)
+            return;
+
+        str graphic = ZH2Lib::PersistingLibContext.PingContext.Collection[pingIndex].Graphic;
+        if ((raw)graphic == 0 || graphic == "")
+            return;
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetPoint(x, y);
+        BCSUtils::HudDrawImage(--_drawnHudId, graphic);
+        DebugDraw();
     }
 
     // Draws one segment of the ring, with the selected layer on top if it is selected.

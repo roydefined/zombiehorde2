@@ -76,6 +76,12 @@ strict namespace GameLoop
             Game::ClientDeathCamTic();
             Game::TeamIndicatorTicClient();
             Footstep::FootstepTicClient();
+
+            bool canPing = ZH2Game::CanUsePingWheel();
+            if (!canPing && Ping::GetPingWheelOpen())
+                ZH2Game::SetPingWheelControls(false);
+
+            Ping::TicClient(canPing);
             Damage::FlushClient();
 
             // Call hook for this tic.

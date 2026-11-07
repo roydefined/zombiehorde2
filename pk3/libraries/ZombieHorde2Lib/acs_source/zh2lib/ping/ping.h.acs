@@ -1,0 +1,88 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Ping
+{
+    // The number of segments in the ring, numbered 1 and up. The center is segment 0.
+    #define PING_WHEEL_SEGMENT_COUNT 8
+    #define PING_WHEEL_CENTER_SEGMENT 0
+
+    // The radius of the center circle. The cursor selects the center while inside it.
+    #define PING_WHEEL_CENTER_RADIUS 22.0
+
+    // Closing the ping wheel within these tics does an automatic ping.
+    #define PING_WHEEL_QUICK_TICS 7
+
+    // Additional height added to pings that follow a target
+    #define PING_TARGET_HEIGHT_ADD 8.0
+
+    // Helper for ping graphics which defines the distance from the center to the center of a segment.
+    #define PING_WHEEL_ICON_RADIUS 52.0
+
+    #define HUD_PING_WHEEL_SEGMENT "PWSEG"
+    #define HUD_PING_WHEEL_SEGMENT_SELECTED "PWSEGSEL"
+    #define HUD_PING_WHEEL_CENTER "PCIRNORM"
+    #define HUD_PING_WHEEL_CENTER_SELECTED "PCIRSELC"
+
+    // 8 outer ring, the middle is parsed separately.
+    #define MAX_PING_DEFINITIONS 9
+
+    struct PingCollectionContextT
+    {
+        bool IsParsed;
+
+        PingContextT Collection[MAX_PING_DEFINITIONS];
+        int Count;
+    };
+
+    // A ping as defined in a pingdef lump.
+    struct PingContextT
+    {
+        str Name;
+
+        // If true, this ping is rendered in the center circle of the wheel.
+        bool Centered;
+
+        // Shown on the HUD, such as in the wheel.
+        str Graphic;
+
+        // Spawned at the pinged spot.
+        str Actor;
+    };
+
+    struct PingWheelContextT
+    {
+        // Clientside. If true, the ping wheel is open.
+        bool IsOpen;
+
+        // Clientside. The tic the ping wheel was opened on.
+        int OpenTic;
+
+        // Clientside. The index of the ping each segment shows, or -1 if it shows none.
+        int SegmentPingIndex[PING_WHEEL_SEGMENT_COUNT + 1];
+    };
+
+    #define PING_COOLDOWN_PLAYER_COST 70
+    #define PING_COOLDOWN_PLAYER_MAX 210
+
+    #define PING_COOLDOWN_GLOBAL_COST 17
+    #define PING_COOLDOWN_GLOBAL_MAX 340
+
+    #define PING_CUTOFF_ITEM "ZH2PingCutOff"
+
+    struct PingCooldownContextT
+    {
+        // Serverside. The cooldowns, and the tic they were last set on.
+        int PlayerCooldown[BCSUtils::MAX_PLAYERS];
+        int PlayerCooldownTic[BCSUtils::MAX_PLAYERS];
+        int GlobalCooldown;
+        int GlobalCooldownTic;
+    };
+
+    extern void TicServer();
+    extern void TicClient(bool canPing);
+    extern void InitializePingWheelClient();
+    extern bool GetPingWheelOpen();
+    extern void SetPingWheelIsOpen(bool isOpen);
+}

@@ -1,0 +1,179 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Ping
+{
+    internal void RaymarchPing(int pingIndex)
+    {
+        str actor = ZH2Lib::PersistingLibContext.PingContext.Collection[pingIndex].Actor;
+        if ((raw)actor == 0 || actor == "")
+            return;
+
+        if (CheckInventory(PING_CUTOFF_ITEM))
+        {
+            Logger::LogActivator("Wait a moment before pinging again.");
+            return;
+        }
+
+        // The ping goes where the player's view first hits the world.
+        // Distance is never considered here.
+        if (!RayMarch::March(GetActorX(0), GetActorY(0), GetActorZ(0) + GetActorViewHeight(0), GetActorAngle(0), GetActorPitch(0), 32767.0))
+        {
+            Logger::LogWarning(LOGSOURCE, "Failed to find the spot for ping \cd" + actor + "\cj.");
+            return;
+        }
+
+        // Broadcast if spawned
+        fixed x = RayMarch::GetHitX(),
+              y = RayMarch::GetHitY(),
+              z = RayMarch::GetHitZ();
+
+        // Check for actors when pinging, like pinging a zombie.
+        int targetTid = PickActor(0, GetActorAngle(0), GetActorPitch(0), 32767.0, 0, MF_SHOOTABLE, ML_BLOCKEVERYTHING | ML_BLOCKHITSCAN, PICKAF_RETURNTID);
+
+        if (!SpawnPingActor(pingIndex, x, y, z, targetTid))
+        {
+            Logger::LogWarning(LOGSOURCE, "Failed to spawn ping actor \cd" + actor + "\cj.");
+            return;
+        }
+
+        if (IsNetworkGame())
+            BroadcastPing(pingIndex, x, y, z, targetTid);
+    }
+
+    // Sends the ping to the server, which sends it on to every client.
+    internal void BroadcastPing(int pingIndex, fixed x, fixed y, fixed z, int targetTid)
+    {
+        str packet = Packet::New();
+        packet = Packet::Append(packet, ConsolePlayerNumber());
+        packet = Packet::Append(packet, pingIndex);
+        packet = Packet::Append(packet, x);
+        packet = Packet::Append(packet, y);
+        packet = Packet::Append(packet, z);
+        packet = Packet::Append(packet, targetTid);
+
+        if (!Packet::Send("zh2_internal_ping_broadcast_server", packet))
+            Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_broadcast_server. Message packet: '" + packet + "'.");
+    }
+
+    // Sends the ping on to every client.
+    script "zh2_internal_ping_broadcast_server" (raw messagePack) net
+    {
+        Packet::Read(messagePack);
+        int source = Packet::Value;
+
+        if (!Identity::IsValidID(source))
+            terminate;
+
+        // Tells the player they are cut off. CooldownTic takes it back once they can ping again.
+        if (GetPingCooldownWait(source) > 0)
+        {
+            Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj's ping was blocked by the cooldown.");
+            GiveActorInventory(Identity::GetTID(source), PING_CUTOFF_ITEM, 1);
+            terminate;
+        }
+
+        UsePingCooldown(source);
+
+        if (!Packet::Send("zh2_internal_ping_receive_packet_client", messagePack))
+            Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_receive_packet_client. Message packet: '" + messagePack + "'.");
+    }
+
+    script "zh2_internal_ping_receive_packet_client" (raw messagePack) clientside
+    {
+        messagePack = Packet::Read(messagePack);
+        int source = Packet::Value;
+
+        // Source already spawned it.
+        if (source == ConsolePlayerNumber())
+            terminate;
+
+        messagePack = Packet::Read(messagePack);
+        int pingIndex = Packet::Value;
+
+        messagePack = Packet::Read(messagePack);
+        fixed x = Packet::Value;
+
+        messagePack = Packet::Read(messagePack);
+        fixed y = Packet::Value;
+
+        messagePack = Packet::Read(messagePack);
+        fixed z = Packet::Value;
+
+        messagePack = Packet::Read(messagePack);
+        int targetTid = Packet::Value;
+
+        if (SpawnPingActor(pingIndex, x, y, z, targetTid))
+        {
+            Logger::LogDebug(LOGSOURCE, "Spawned player \cd" + BCSUtils::PlayerName(source) + "\cj's ping \cd" + str(pingIndex) + "\cj.");
+            terminate;
+        }
+
+        // Use whatever ping we can find.
+        for (int i = 0; i < ZH2Lib::PersistingLibContext.PingContext.Count; ++i)
+        {
+            if (!SpawnPingActor(i, x, y, z, targetTid))
+                continue;
+
+            Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj's ping \cd" + str(pingIndex) + "\cj could not be displayed, used ping \cd" + str(i) + "\cj instead.");
+            terminate;
+        }
+
+        // This can happen when absolutely no pings are defined.
+        Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj's ping \cd" + str(pingIndex) + "\cj could not be displayed.");
+    }
+
+    // Spawns the actor of the ping, if the ping and its actor exist.
+    // An additional bounds check is added because the index can come from clients.
+    internal bool SpawnPingActor(int pingIndex, fixed x, fixed y, fixed z, int targetTid)
+    {
+        if (pingIndex < 0 || pingIndex >= ZH2Lib::PersistingLibContext.PingContext.Count)
+            return false;
+
+        str actor = ZH2Lib::PersistingLibContext.PingContext.Collection[pingIndex].Actor;
+        if ((raw)actor == 0 || actor == "")
+            return false;
+
+        // Only if we target somebody, should we need a tid.
+        int pingTid = 0;
+
+        // Ping targets an actor.
+        if (targetTid != 0)
+        {
+            x = GetActorX(targetTid);
+            y = GetActorY(targetTid);
+            z = GetActorZ(targetTid) + GetActorProperty(targetTid, APROP_Height) + PING_TARGET_HEIGHT_ADD;
+            pingTid = UniqueTid();
+        }
+
+        if (SpawnForced(actor, x, y, z, pingTid) == 0)
+            return false;
+
+        if (targetTid != 0)
+        {
+            ACS_NamedExecuteWithResult("zh2_internal_ping_set_target", pingTid, targetTid);
+            ACS_NamedExecuteAlways("zh2_internal_ping_follow", 0, pingTid, targetTid);
+        }
+
+        return true;
+    }
+
+    // Sets the actor the ping targets as its target, so the ping actor can check what it pinged.
+    // This is a separate script, so changing the activator doesn't affect the caller.
+    script "zh2_internal_ping_set_target" (int pingTid, int targetTid) clientside
+    {
+        SetActivator(pingTid);
+        SetPointer(AAPTR_TARGET, targetTid);
+    }
+
+    // Keeps the ping on top of the actor it pinged, until the ping or the actor is gone.
+    script "zh2_internal_ping_follow" (int pingTid, int targetTid) clientside
+    {
+        while (ThingCount(T_NONE, pingTid) > 0 && ThingCount(T_NONE, targetTid) > 0)
+        {
+            SetActorPosition(pingTid, GetActorX(targetTid), GetActorY(targetTid), GetActorZ(targetTid) + GetActorProperty(targetTid, APROP_Height) + PING_TARGET_HEIGHT_ADD, false);
+            Delay(1);
+        }
+    }
+}
