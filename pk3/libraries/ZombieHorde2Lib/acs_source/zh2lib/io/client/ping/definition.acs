@@ -40,7 +40,6 @@ strict namespace IO
         Ping::PingContextT global:PERSISTING_LIB_CONTEXT_INDEX& context = ZH2Lib::PersistingLibContext.PingContext.Collection[count];
         context.Name = name;
         context.Graphic = (raw)0;
-        context.ArrowGraphic = (raw)0;
         context.Actor = (raw)0;
 
         // While the brace level does not match the end level, we keep parsing.
@@ -48,7 +47,6 @@ strict namespace IO
         {
             str symbol = Tokenizer::GetSymbol(handle);
             if (ParsePingGraphic(handle, symbol)
-                || ParsePingArrowGraphic(handle, symbol)
                 || ParsePingActor(handle, symbol))
             {
                 // Optional comma.
@@ -84,20 +82,6 @@ strict namespace IO
         context.Graphic = Tokenizer::GetSymbol(handle);
 
         Logger::LogDebug(LOGSOURCE, "Parsed ping graphic: \cd" + context.Graphic + "\cj.");
-        return true;
-    }
-
-    internal bool ParsePingArrowGraphic(int handle, str identifyingSymbol)
-    {
-        if (!BCSUTILS::StrIEquals(identifyingSymbol, "arrowgraphic"))
-            return false;
-
-        Tokenizer::Next(handle);
-
-        Ping::PingContextT global:PERSISTING_LIB_CONTEXT_INDEX& context = ZH2Lib::PersistingLibContext.PingContext.Collection[ZH2Lib::PersistingLibContext.PingContext.Count];
-        context.ArrowGraphic = Tokenizer::GetSymbol(handle);
-
-        Logger::LogDebug(LOGSOURCE, "Parsed ping arrow graphic: \cd" + context.ArrowGraphic + "\cj.");
         return true;
     }
 
