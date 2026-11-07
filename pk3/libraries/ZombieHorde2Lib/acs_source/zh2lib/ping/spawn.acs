@@ -151,9 +151,20 @@ strict namespace Ping
             return false;
 
         if (targetTid != 0)
+        {
+            ACS_NamedExecuteWithResult("zh2_internal_ping_set_target", pingTid, targetTid);
             ACS_NamedExecuteAlways("zh2_internal_ping_follow", 0, pingTid, targetTid);
+        }
 
         return true;
+    }
+
+    // Sets the actor the ping targets as its target, so the ping actor can check what it pinged.
+    // This is a separate script, so changing the activator doesn't affect the caller.
+    script "zh2_internal_ping_set_target" (int pingTid, int targetTid) clientside
+    {
+        SetActivator(pingTid);
+        SetPointer(AAPTR_TARGET, targetTid);
     }
 
     // Keeps the ping on top of the actor it pinged, until the ping or the actor is gone.

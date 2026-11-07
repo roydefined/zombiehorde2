@@ -1,0 +1,39 @@
+// The arrow ping. When it pings a player, it shows if they are a human or a zombie instead.
+// The library sets the pinged actor as its target.
+// The core is loaded before the library, so this can't inherit from ZH2PingBase.
+// It repeats ZH2PingBase instead, so keep the two the same.
+actor ZH2PingTarget
+{
+    Radius 0
+
+    +CLIENTSIDEONLY
+    +NOTIMEFREEZE
+    +FORCEXYBILLBOARD
+    +NOINTERACTION
+
+    ActiveSound "ping/default"
+
+    states
+    {
+        Spawn:
+            TNT1 A 0
+            TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("zh2_dec_gettargetishuman_client") == true, "Human")
+            TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("zh2_dec_gettargetiszombie_client") == true, "Zombie")
+            PNGM F 0
+            goto Show
+
+        Human:
+            PNGT A 0
+            goto Show
+
+        Zombie:
+            PNGT B 0
+            goto Show
+
+        Show:
+            "####" "#" 0 Bright A_ActiveSound
+            "####" "#" 35 Bright
+            "####" "#" 1 Bright A_FadeOut(0.1)
+            wait
+    }
+}
