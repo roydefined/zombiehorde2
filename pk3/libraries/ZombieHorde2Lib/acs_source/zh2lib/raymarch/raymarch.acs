@@ -1,0 +1,77 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace RayMarch
+{
+    // The hit point of the last March.
+    internal fixed _hitX, _hitY, _hitZ;
+
+    fixed GetHitX() { return _hitX; }
+    fixed GetHitY() { return _hitY; }
+    fixed GetHitZ() { return _hitZ; }
+
+    // Finds where a ray from x, y, z first hits a wall, floor or ceiling.
+    // This replaces LineAttack which doesn't work clientside. Note this does NOT stop on an actor.
+    bool March(fixed x, fixed y, fixed z, fixed angle, fixed pitch, fixed distance)
+    {
+        fixed dirX = Cos(pitch) * Cos(angle),
+              dirY = Cos(pitch) * Sin(angle),
+              dirZ = -Sin(pitch);
+
+        // Zandronum also always starts at 3/4 of the source actor's height.
+        int startTid = UniqueTid();
+        if (!SpawnForced(RAYMARCH_PROBE_NAME, x, y, z - RAYMARCH_PROBE_HEIGHT * 0.75, startTid))
+            return false;
+
+        int probeTid = UniqueTid();
+        if (!SpawnForced(RAYMARCH_PROBE_NAME, x, y, z, probeTid))
+        {
+            Thing_Remove(startTid);
+            return false;
+        }
+
+        fixed open = 0.0;
+        fixed closed = distance;
+
+        for (int i = 0; i < RAYMARCH_SEARCH_STEPS; ++i)
+        {
+            fixed step = (open + closed) / 2.0;
+            fixed pointX = x + dirX * step,
+                  pointY = y + dirY * step,
+                  pointZ = z + dirZ * step;
+
+            if (IsPointOpen(startTid, probeTid, pointX, pointY, pointZ))
+                open = step;
+            else
+                closed = step;
+        }
+
+        Thing_Remove(startTid);
+        Thing_Remove(probeTid);
+
+        _hitX = x + dirX * open;
+        _hitY = y + dirY * open;
+        _hitZ = z + dirZ * open;
+
+        // Uncomment to test raymarching visually.
+        //DrawDebugLine(x, y, z, dirX, dirY, dirZ, open);
+
+        return true;
+    }
+
+    // Shows the ray from its start up to the hit.
+    internal void DrawDebugLine(fixed x, fixed y, fixed z, fixed dirX, fixed dirY, fixed dirZ, fixed distance)
+    {
+        for (fixed step = 0.0; step <= distance; step += 16.0)
+            SpawnForced(RAYMARCH_DEBUG_NAME, x + dirX * step, y + dirY * step, z + dirZ * step);
+    }
+
+    internal bool IsPointOpen(int startTid, int probeTid, fixed x, fixed y, fixed z)
+    {
+        if (!SetActorPosition(probeTid, x, y, z - RAYMARCH_PROBE_HEIGHT / 2.0, false))
+            return false;
+
+        return CheckSight(startTid, probeTid, CSF_NOFAKEFLOORS);
+    }
+}
