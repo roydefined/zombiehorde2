@@ -8,6 +8,26 @@
 
 strict namespace Ping
 {
+    // Initializes the ping wheel positions.
+    void InitializePingWheelClient()
+    {
+        // Default all to -1.
+        for (int i = 0; i <= PING_WHEEL_SEGMENT_COUNT; ++i)
+            ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[i] = -1;
+
+        // Sides are filled first, then the corners.
+        int sideCount = PING_WHEEL_SEGMENT_COUNT / 2;
+        int count = BCSUtils::Min(ZH2Lib::PersistingLibContext.PingContext.Count, PING_WHEEL_SEGMENT_COUNT);
+        for (int i = 0; i < count; ++i)
+        {
+            int segment = i < sideCount
+                ? i * 2 + 1
+                : (i - sideCount) * 2 + 2;
+
+            ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[segment] = i;
+        }
+    }
+
     bool GetPingWheelOpen()
     {
         return ZH2Lib::LibContext.PingWheelContext.IsOpen;
