@@ -2,17 +2,17 @@
     #error This file must be #included.
 #endif
 
-strict namespace Hud
+strict namespace Ping
 {
     // Full wheel draw
-    internal void DrawPingWheel()
+    void DrawPingWheel()
     {
         BCSUtils::HudResetState();
-        HudSetScaledVirtualSize(640.0, 480.0, 1.0);
+        Hud::HudSetScaledVirtualSize(640.0, 480.0, 1.0);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
 
-        fixed x = HudCenterX();
-        fixed y = HudCenterY();
+        fixed x = Hud::HudCenterX();
+        fixed y = Hud::HudCenterY();
 
         int selected = GetPingWheelSelectedSegment(x, y);
 
@@ -34,21 +34,21 @@ strict namespace Hud
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
         BCSUtils::HudSetAlpha(SegmentToAlpha(segment));
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_SEGMENT);
+        BCSUtils::HudDrawImage(--Hud::_drawnHudId, HUD_PING_WHEEL_SEGMENT);
 
         if (selected)
-            BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_SEGMENT_SELECTED);
+            BCSUtils::HudDrawImage(--Hud::_drawnHudId, HUD_PING_WHEEL_SEGMENT_SELECTED);
 
         BCSUtils::HudSetAlpha(1.0);
-        DebugDraw();
+        Hud::DebugDraw();
     }
 
     // Returns the segment the cursor points at.
     // The center is segment 0, the ring is numbered clockwise from the top starting at 1.
     internal int GetPingWheelSelectedSegment(fixed x, fixed y)
     {
-        fixed dx = GetHudCursorX() - x;
-        fixed dy = GetHudCursorY() - y;
+        fixed dx = Hud::GetHudCursorX() - x;
+        fixed dy = Hud::GetHudCursorY() - y;
 
         if (VectorLength(dx, dy) < PING_WHEEL_CENTER_RADIUS)
             return PING_WHEEL_CENTER_SEGMENT;
@@ -67,12 +67,12 @@ strict namespace Hud
     {
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
         BCSUtils::HudSetPoint(x, y);
-        BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_CENTER);
+        BCSUtils::HudDrawImage(--Hud::_drawnHudId, HUD_PING_WHEEL_CENTER);
 
         if (selected)
-            BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_CENTER_SELECTED);
+            BCSUtils::HudDrawImage(--Hud::_drawnHudId, HUD_PING_WHEEL_CENTER_SELECTED);
 
-        DebugDraw();
+        Hud::DebugDraw();
     }
 
     // Packs the segment into the alpha, which is required because it is the only way to properly pass a value.

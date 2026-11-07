@@ -86,7 +86,12 @@ strict namespace ZH2Game
 
     script "zh2_action_pingwheel" (raw openRaw) net clientside
     {
-        Hud::SetPingWheelIsOpen((bool)openRaw);
+        bool isOpen = (bool)openRaw;
+        Ping::SetPingWheelIsOpen(isOpen);
+
+        // Segments are selected with the cursor, so the view must not turn with the mouse.
+        Hud::SetCursorEnabled(isOpen);
+        Player::LockMovement(isOpen);
     }
 
     script "zh2_action_consolidateclientsettings" net clientside
