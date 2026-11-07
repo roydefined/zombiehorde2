@@ -4,29 +4,24 @@
 
 strict namespace Ping
 {
-    internal void PingLineAttack(int pingIndex)
+    internal void RaymarchPing(int pingIndex)
     {
         str actor = ZH2Lib::PersistingLibContext.PingContext.Collection[pingIndex].Actor;
         if ((raw)actor == 0 || actor == "")
             return;
 
-        // Puff lands where the player looks.
+        // The ping goes where the player's view first hits the world.
         // Distance is never considered here.
-        int locatorTid = UniqueTid();
-        LineAttack(0, GetActorAngle(0), GetActorPitch(0), 0, PING_LOCATOR_ACTOR, "None", 32767.0, FHF_NORANDOMPUFFZ | FHF_NOIMPACTDECAL, locatorTid);
-
-        if (ThingCount(T_NONE, locatorTid) == 0)
+        if (!RayMarch::March(GetActorX(0), GetActorY(0), GetActorZ(0) + GetActorViewHeight(0), GetActorAngle(0), GetActorPitch(0), 32767.0))
         {
             Logger::LogWarning(LOGSOURCE, "Failed to find the spot for ping \cd" + actor + "\cj.");
             return;
         }
 
         // Broadcast if spawned
-        fixed x = GetActorX(locatorTid),
-              y = GetActorY(locatorTid),
-              z = GetActorZ(locatorTid);
-
-        Thing_Remove(locatorTid);
+        fixed x = RayMarch::GetHitX(),
+              y = RayMarch::GetHitY(),
+              z = RayMarch::GetHitZ();
 
         if (!SpawnPingActor(pingIndex, x, y, z))
         {
