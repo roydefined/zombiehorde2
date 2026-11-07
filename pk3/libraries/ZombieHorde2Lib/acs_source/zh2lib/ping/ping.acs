@@ -27,23 +27,28 @@ strict namespace Ping
         for (int i = 0; i <= PING_WHEEL_SEGMENT_COUNT; ++i)
             ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[i] = -1;
 
-        // Have the last entry go as the center.
+        // Centered pings go in the center, the last one wins.
+        // The rest fill the ring, sides first and then the corners.
+        int sideCount = PING_WHEEL_SEGMENT_COUNT / 2;
+        int ringCount = 0;
         for (int i = 0; i < ZH2Lib::PersistingLibContext.PingContext.Count; ++i)
         {
             if (ZH2Lib::PersistingLibContext.PingContext.Collection[i].Centered)
-                ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[0] = i;
-        }
+            {
+                ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[PING_WHEEL_CENTER_SEGMENT] = i;
+                continue;
+            }
 
-        // Sides are filled first, then the corners.
-        int sideCount = PING_WHEEL_SEGMENT_COUNT / 2;
-        int count = BCSUtils::Min(ZH2Lib::PersistingLibContext.PingContext.Count, PING_WHEEL_SEGMENT_COUNT);
-        for (int i = 0; i < count; ++i)
-        {
-            int segment = i < sideCount
-                ? i * 2 + 1
-                : (i - sideCount) * 2 + 2;
+            // The ring is full.
+            if (ringCount == PING_WHEEL_SEGMENT_COUNT)
+                continue;
+
+            int segment = ringCount < sideCount
+                ? ringCount * 2 + 1
+                : (ringCount - sideCount) * 2 + 2;
 
             ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[segment] = i;
+            ++ringCount;
         }
     }
 
