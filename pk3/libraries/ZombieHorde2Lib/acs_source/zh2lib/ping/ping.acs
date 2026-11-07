@@ -17,7 +17,7 @@ strict namespace Ping
     void TicClient(bool canPing)
     {
         if (!canPing && GetPingWheelOpen())
-            SetPingWheelIsOpen(false);
+            ZH2Lib::LibContext.PingWheelContext.IsOpen = false;
     }
 
     // Initializes the ping wheel positions.
@@ -54,11 +54,25 @@ strict namespace Ping
 
     void SetPingWheelIsOpen(bool isOpen)
     {
+        // Wheel opened and closed quickly.
+        // To a ping using the centered ping type.
+        if (!isOpen
+            && GetPingWheelOpen()
+            && Timer() - ZH2Lib::LibContext.PingWheelContext.OpenTic <= PING_WHEEL_QUICK_TICS)
+        {
+            int pingIndex = ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[PING_WHEEL_CENTER_SEGMENT];
+            if (pingIndex != -1)
+                RaymarchPing(pingIndex);
+        }
+
         ZH2Lib::LibContext.PingWheelContext.IsOpen = isOpen;
 
         // Segments are selected with the cursor, so it starts in the center.
         if (isOpen)
+        {
+            ZH2Lib::LibContext.PingWheelContext.OpenTic = Timer();
             BCSUtils::CenterCursor();
+        }
     }
 }
 
