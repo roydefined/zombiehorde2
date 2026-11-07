@@ -10,6 +10,12 @@ strict namespace Ping
         if ((raw)actor == 0 || actor == "")
             return;
 
+        if (CheckInventory(PING_CUTOFF_ITEM))
+        {
+            Logger::LogActivator("Wait a moment before pinging again.");
+            return;
+        }
+
         // The ping goes where the player's view first hits the world.
         // Distance is never considered here.
         if (!RayMarch::March(GetActorX(0), GetActorY(0), GetActorZ(0) + GetActorViewHeight(0), GetActorAngle(0), GetActorPitch(0), 32767.0))
@@ -47,9 +53,25 @@ strict namespace Ping
             Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_broadcast_server. Message packet: '" + packet + "'.");
     }
 
-    // Serverside. Sends the ping on to every client.
+    // Sends the ping on to every client.
     script "zh2_internal_ping_broadcast_server" (raw messagePack) net
     {
+        Packet::Read(messagePack);
+        int source = Packet::Value;
+
+        if (!Identity::IsValidID(source))
+            terminate;
+
+        // Tells the player they are cut off. CooldownTic takes it back once they can ping again.
+        if (GetPingCooldownWait(source) > 0)
+        {
+            Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj's ping was blocked by the cooldown.");
+            GiveActorInventory(Identity::GetTID(source), PING_CUTOFF_ITEM, 1);
+            terminate;
+        }
+
+        UsePingCooldown(source);
+
         if (!Packet::Send("zh2_internal_ping_receive_packet_client", messagePack))
             Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_receive_packet_client. Message packet: '" + messagePack + "'.");
     }
