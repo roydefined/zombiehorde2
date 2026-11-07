@@ -1,0 +1,39 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Debug
+{
+    script "zh2_action_debugpingdefinitions" net clientside
+    {
+        InternalDebugPingDefinitions();
+    }
+
+    internal void InternalDebugPingDefinitions()
+    {
+        Logger::LogActivator(GetPingDefinitionsMessage());
+    }
+
+    internal str GetPingDefinitionsMessage()
+    {
+        int count = ZH2Lib::PersistingLibContext.PingContext.Count;
+
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            Append(s:"Loaded \cd" + str(count) + "\cj pings.");
+
+            for (int i = 0; i < count; ++i)
+            {
+                Ping::PingContextT global:PERSISTING_LIB_CONTEXT_INDEX& context = ZH2Lib::PersistingLibContext.PingContext.Collection[i];
+
+                Append(s:"\n\cd" + context.Name + "\cj");
+                if (context.Graphic != "") Append(s:", graphic: \cd" + context.Graphic + "\cj");
+                if (context.ArrowGraphic != "") Append(s:", arrow graphic: \cd" + context.ArrowGraphic + "\cj");
+                Append(s:".");
+            }
+        }
+
+        return logMessage;
+    }
+}

@@ -1,0 +1,101 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    internal bool ParsePingDefinition(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "ping"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for ping definition: '" + Tokenizer::GetSymbol(handle) + "'. Symbol should be of type symbol or string.");
+            return false;
+        }
+
+        str name = Tokenizer::GetSymbol(handle);
+        Logger::LogDebug(LOGSOURCE, "Start parsing ping: \cd" + name + "\cj.");
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // We check for capacity here now that we got to the body.
+        // No more room for more definitions. Log a warning and skip the remaining body.
+        int count = ZH2Lib::PersistingLibContext.PingContext.Count;
+        if (count >= MAX_PING_DEFINITIONS)
+        {
+            Logger::LogWarning(LOGSOURCE, "The maximum number of ping definitions was reached (" + str(count) + ").");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        Ping::PingContextT global:PERSISTING_LIB_CONTEXT_INDEX& context = ZH2Lib::PersistingLibContext.PingContext.Collection[count];
+        context.Name = name;
+        context.Graphic = "";
+        context.ArrowGraphic = "";
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParsePingGraphic(handle, symbol)
+                || ParsePingArrowGraphic(handle, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing ping definition " + name + ": '" + symbol + "'.");
+            return false;
+        }
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        ZH2Lib::PersistingLibContext.PingContext.Count++;
+
+        Logger::LogDebug(LOGSOURCE, "Finished parsing ping: \cd" + name + "\cj.");
+        return true;
+    }
+
+    internal bool ParsePingGraphic(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "graphic"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        Ping::PingContextT global:PERSISTING_LIB_CONTEXT_INDEX& context = ZH2Lib::PersistingLibContext.PingContext.Collection[ZH2Lib::PersistingLibContext.PingContext.Count];
+        context.Graphic = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed ping graphic: \cd" + context.Graphic + "\cj.");
+        return true;
+    }
+
+    internal bool ParsePingArrowGraphic(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "arrowgraphic"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        Ping::PingContextT global:PERSISTING_LIB_CONTEXT_INDEX& context = ZH2Lib::PersistingLibContext.PingContext.Collection[ZH2Lib::PersistingLibContext.PingContext.Count];
+        context.ArrowGraphic = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed ping arrow graphic: \cd" + context.ArrowGraphic + "\cj.");
+        return true;
+    }
+}
