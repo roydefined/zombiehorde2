@@ -14,39 +14,72 @@ strict namespace Hud
         fixed x = HudCenterX();
         fixed y = HudCenterY();
 
-        for (int i = 0; i < PING_WHEEL_SEGMENT_COUNT; ++i)
-            DrawPingWheelSegment(x, y, i);
+        int selected = GetPingWheelSelectedSegment(x, y);
 
-        DrawPingWheelCenter(x, y);
+        for (int i = 1; i <= PING_WHEEL_SEGMENT_COUNT; ++i)
+            DrawPingWheelSegment(x, y, i, i == selected);
+
+        DrawPingWheelCenter(x, y, selected == PING_WHEEL_CENTER_SEGMENT);
+
+        if (BCSUTILS::KeyPressed(BT_ATTACK))
+            Logger::LogDebug(LOGSOURCE, "Clicked ping wheel segment " + str(selected) + ".");
     }
 
-    // Draws one segment of the wheel.
-    internal void DrawPingWheelSegment(fixed x, fixed y, int segment)
+    // Draws one segment of the ring, with the selected layer on top if it is selected.
+    internal void DrawPingWheelSegment(fixed x, fixed y, int segment, bool selected)
     {
-        if (segment < 0 || segment >= PING_WHEEL_SEGMENT_COUNT)
+        if (segment < 1 || segment > PING_WHEEL_SEGMENT_COUNT)
             return;
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
         BCSUtils::HudSetAlpha(SegmentToAlpha(segment));
         BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_SEGMENT);
+
+        if (selected)
+            BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_SEGMENT_SELECTED);
+
         BCSUtils::HudSetAlpha(1.0);
         DebugDraw();
     }
 
-    // Draws the circle in the middle of the wheel.
-    internal void DrawPingWheelCenter(fixed x, fixed y)
+    // Returns the segment the cursor points at.
+    // The center is segment 0, the ring is numbered clockwise from the top starting at 1.
+    internal int GetPingWheelSelectedSegment(fixed x, fixed y)
+    {
+        fixed dx = GetHudCursorX() - x;
+        fixed dy = GetHudCursorY() - y;
+
+        if (VectorLength(dx, dy) < PING_WHEEL_CENTER_RADIUS)
+            return PING_WHEEL_CENTER_SEGMENT;
+
+        // VectorAngle turns counter-clockwise from the right with y pointing up, as a fraction of a full circle.
+        // Segments are numbered clockwise from the top instead, so the angle is flipped and turned a quarter.
+        // The 1.0 keeps it positive.
+        fixed angle = 1.25 - VectorAngle(dx, -dy);
+
+        // Each segment is centered on its angle, so it reaches half a segment to either side.
+        return int(angle * fixed(PING_WHEEL_SEGMENT_COUNT) + 0.5) % PING_WHEEL_SEGMENT_COUNT + 1;
+    }
+
+    // Draws the circle in the middle of the wheel, with the selected layer on top if it is selected.
+    internal void DrawPingWheelCenter(fixed x, fixed y, bool selected)
     {
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
         BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_CENTER);
+
+        if (selected)
+            BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_CENTER_SELECTED);
+
         DebugDraw();
     }
 
     // Packs the segment into the alpha, which is required because it is the only way to properly pass a value.
+    // The center is index 0, but the shader only does the outer ring. So decrement by 1.
     // The 0.5 puts the value in the middle of its step, so rounding can't push it into the next segment.
     internal fixed SegmentToAlpha(int segment)
     {
-        return (fixed(segment) + 0.5) / fixed(PING_WHEEL_SEGMENT_COUNT);
+        return (fixed(segment - 1) + 0.5) / fixed(PING_WHEEL_SEGMENT_COUNT);
     }
 }

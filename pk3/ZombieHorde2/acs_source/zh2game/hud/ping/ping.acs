@@ -14,5 +14,12 @@ strict namespace Hud
     internal void SetPingWheelIsOpen(bool isOpen)
     {
         ZH2Game::GameContext.HudContext.PingWheelContext.IsOpen = isOpen;
+
+        // Segments are selected with the cursor, so it starts in the center and the view must not turn with the mouse.
+        if (isOpen)
+            BCSUtils::CenterCursor();
+
+        SetCursorEnabled(isOpen);
+        Player::LockMovement(isOpen);
     }
 }
