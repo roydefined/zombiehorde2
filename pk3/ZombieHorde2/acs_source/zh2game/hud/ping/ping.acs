@@ -1,0 +1,25 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#include "wheel.acs"
+
+strict namespace Hud
+{
+    internal bool GetPingWheelOpen()
+    {
+        return ZH2Game::GameContext.HudContext.PingWheelContext.IsOpen;
+    }
+
+    internal void SetPingWheelIsOpen(bool isOpen)
+    {
+        ZH2Game::GameContext.HudContext.PingWheelContext.IsOpen = isOpen;
+
+        // Segments are selected with the cursor, so it starts in the center and the view must not turn with the mouse.
+        if (isOpen)
+            BCSUtils::CenterCursor();
+
+        SetCursorEnabled(isOpen);
+        Player::LockMovement(isOpen);
+    }
+}
