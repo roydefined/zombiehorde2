@@ -15,6 +15,13 @@ strict namespace Ping
         for (int i = 0; i <= PING_WHEEL_SEGMENT_COUNT; ++i)
             ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[i] = -1;
 
+        // Have the last entry go as the center.
+        for (int i = 0; i < ZH2Lib::PersistingLibContext.PingContext.Count; ++i)
+        {
+            if (ZH2Lib::PersistingLibContext.PingContext.Collection[i].Centered)
+                ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[0] = i;
+        }
+
         // Sides are filled first, then the corners.
         int sideCount = PING_WHEEL_SEGMENT_COUNT / 2;
         int count = BCSUtils::Min(ZH2Lib::PersistingLibContext.PingContext.Count, PING_WHEEL_SEGMENT_COUNT);

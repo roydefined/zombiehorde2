@@ -24,6 +24,8 @@ strict namespace Hud
         for (int i = 1; i <= PING_WHEEL_SEGMENT_COUNT; ++i)
             DrawPingWheelGraphic(x, y, i);
 
+        DrawPingWheelCenterGraphic(x, y);
+
         if (BCSUTILS::KeyPressed(BT_ATTACK))
         {
             Logger::LogDebug(LOGSOURCE, "Clicked ping wheel segment " + str(selected) + ".");
@@ -51,6 +53,23 @@ strict namespace Hud
         BCSUtils::HudSetPoint(
             x + Sin(angle) * PING_WHEEL_ICON_RADIUS,
             y - Cos(angle) * PING_WHEEL_ICON_RADIUS);
+        BCSUtils::HudDrawImage(--_drawnHudId, graphic);
+        DebugDraw();
+    }
+
+    // Draws the graphic of the ping in the center circle.
+    internal void DrawPingWheelCenterGraphic(fixed x, fixed y)
+    {
+        int pingIndex = ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[PING_WHEEL_CENTER_SEGMENT];
+        if (pingIndex == -1)
+            return;
+
+        str graphic = ZH2Lib::PersistingLibContext.PingContext.Collection[pingIndex].Graphic;
+        if ((raw)graphic == 0 || graphic == "")
+            return;
+
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudDrawImage(--_drawnHudId, graphic);
         DebugDraw();
     }

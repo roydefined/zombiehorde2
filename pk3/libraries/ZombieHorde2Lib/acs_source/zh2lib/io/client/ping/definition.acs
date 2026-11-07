@@ -47,6 +47,7 @@ strict namespace IO
         {
             str symbol = Tokenizer::GetSymbol(handle);
             if (ParsePingGraphic(handle, symbol)
+                || ParsePingCentered(handle, symbol)
                 || ParsePingActor(handle, symbol))
             {
                 // Optional comma.
@@ -82,6 +83,18 @@ strict namespace IO
         context.Graphic = Tokenizer::GetSymbol(handle);
 
         Logger::LogDebug(LOGSOURCE, "Parsed ping graphic: \cd" + context.Graphic + "\cj.");
+        return true;
+    }
+
+    internal bool ParsePingCentered(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "centered"))
+            return false;
+
+        Ping::PingContextT global:PERSISTING_LIB_CONTEXT_INDEX& context = ZH2Lib::PersistingLibContext.PingContext.Collection[ZH2Lib::PersistingLibContext.PingContext.Count];
+        context.Centered = true;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed ping is centered.");
         return true;
     }
 
