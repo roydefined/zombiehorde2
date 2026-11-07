@@ -1,0 +1,54 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Hud
+{
+    int _debugHudId;
+    int _drawnHudId;
+
+    fixed _hudScale = 1.0;
+
+    void HudSetScaledVirtualSize(fixed width, fixed height, fixed scale)
+    {
+        _hudScale = scale * CVar::GetClHudScale();
+        BCSUtils::HudSetVirtualSize(width / _hudScale, height / _hudScale);
+    }
+
+    fixed HudCenterX()
+    {
+        return (BCSUtils::HudLeft() + BCSUtils::HudRight()) / 2.0;
+    }
+
+    fixed HudCenterY()
+    {
+        return (BCSUtils::HudTop() + BCSUtils::HudBottom()) / 2.0;
+    }
+
+    fixed GetHudCursorX()
+    {
+        return BCSUtils::Floor(BCSUtils::CursorX()) / _hudScale;
+    }
+
+    fixed GetHudCursorY()
+    {
+        return BCSUtils::Floor(BCSUtils::CursorY()) / _hudScale;
+    }
+
+    void DebugDraw(fixed x = 0.0, fixed y = 0.0, int color = CR_WHITE)
+    {
+        if (!CVar::GetClDrawDebugCoordinatesHud()) return;
+
+        BCSUtils::HudPushState();
+        BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        BCSUtils::HudSetTextColor(color);
+
+        if (x != 0.0 && y != 0.0)
+            BCSUtils::HudSetPoint(x, y);
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudDrawText(_debugHudId--, "*");
+        BCSUtils::HudPopState();
+    }
+}
