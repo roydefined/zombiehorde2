@@ -1,0 +1,29 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Ping
+{
+    internal void PingLineAttack(int pingIndex)
+    {
+        str actor = ZH2Lib::PersistingLibContext.PingContext.Collection[pingIndex].Actor;
+        if ((raw)actor == 0 || actor == "")
+            return;
+
+        // Puff lands where the player looks.
+        // Distance is never considered here.
+        int locatorTid = UniqueTid();
+        LineAttack(0, GetActorAngle(0), GetActorPitch(0), 0, PING_LOCATOR_ACTOR, "None", 32767.0, FHF_NORANDOMPUFFZ | FHF_NOIMPACTDECAL, locatorTid);
+
+        if (ThingCount(T_NONE, locatorTid) == 0)
+        {
+            Logger::LogWarning(LOGSOURCE, "Failed to find the spot for ping \cd" + actor + "\cj.");
+            return;
+        }
+
+        if (!SpawnForced(actor, GetActorX(locatorTid), GetActorY(locatorTid), GetActorZ(locatorTid)))
+            Logger::LogWarning(LOGSOURCE, "Failed to spawn ping actor \cd" + actor + "\cj.");
+
+        Thing_Remove(locatorTid);
+    }
+}

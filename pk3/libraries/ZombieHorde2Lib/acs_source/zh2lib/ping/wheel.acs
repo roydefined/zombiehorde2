@@ -25,7 +25,13 @@ strict namespace Ping
             DrawPingWheelGraphic(x, y, i);
 
         if (BCSUTILS::KeyPressed(BT_ATTACK))
+        {
             Logger::LogDebug(LOGSOURCE, "Clicked ping wheel segment " + str(selected) + ".");
+
+            int pingIndex = ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[selected];
+            if (pingIndex != -1)
+                PingLineAttack(pingIndex);
+        }
     }
 
     // Draws the graphic of the ping this segment shows.
@@ -36,7 +42,7 @@ strict namespace Ping
             return;
 
         str graphic = ZH2Lib::PersistingLibContext.PingContext.Collection[pingIndex].Graphic;
-        if (graphic == "")
+        if ((raw)graphic == 0 || graphic == "")
             return;
 
         fixed angle = fixed(segment - 1) / fixed(PING_WHEEL_SEGMENT_COUNT);
