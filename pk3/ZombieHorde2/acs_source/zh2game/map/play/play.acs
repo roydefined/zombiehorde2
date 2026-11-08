@@ -67,5 +67,24 @@ strict namespace Map
         context.PlayTime += Game::GetPlayTime();
 
         Logger::LogInformation(LOGSOURCE, "Incremented map play stats. Map has been played \cd" + str(context.PlayCount) + "\cj time(s) in a row, for a total of \cd" + str(context.PlayTime / 35) + "s\cj.");
+
+        // We only check repeating if the round ended in a way where it ended properly.
+        // If the reason is not a specie winning or someone leaving, it's an improper ending.
+        Game::EndReasonT reason = Game::GetEndReason();
+        if (reason != Game::REASONSPECIEWON
+            && reason != Game::REASONHUMANLEFT
+            && reason != Game::REASONZOMBIELEFT)
+        {
+            Logger::LogInformation(LOGSOURCE, "Repeat check will not continue, round ended improperly.");
+            terminate;
+        }
+
+        // Repeat the map if it has not been played often enough or long enough.
+        // TODO: Add cvars
+        if (context.PlayCount < 3 && context.PlayTime < 4 * 60 * 35)
+        {
+            Logger::LogInformation(LOGSOURCE, "Map was not played often or long enough, the map will repeat.");
+            Game::SetEndAction(Game::ACTION_REPEAT);
+        }
     }
 }
