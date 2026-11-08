@@ -40,6 +40,14 @@ These votes can only be called while the round is being played.
 Additionally the main menu now also has a "Call a vote" option in multiplayer, which lists these votes together with Zandronum's own votes.
 Server hosts have control over these votes and can turn them off, similar to the other votes. The new CVars are documented below.
 
+* * Pinging * *
+A new ping system has been added where players can ping actors and the world using a ping wheel.
+Default binded on G, hold to open the wheel and select a ping type. The ping will display where you aim at.
+When pinging, the pingtype will be shown alongside a sound at the source. This ping is shared with other players.
+Pinging is provided with a cooldown per-player, and a global cooldown prevents spam when many players ping.
+The ping system is designed in a way where it will provide some features later, but for now this initial system is added.
+However, server owners are able to add a few pings to fill the ping wheel by providing them in the `PINGDEF` lump.
+
 Map changes
 ------------------------------------------------
 
@@ -80,6 +88,21 @@ Several event receive functions were not externed, which has not been fixed.
 The following functions now exist in the `Event` namespace: `ReceiveInitialsChosen`, `ReceivePlayerSafe`, `ReceivePowerExpired`, `ReceiveActorDamaged`, `ReceiveActorDamagedClientTotal` and `ReceiveRandomizedWeatherTrigger`.
 Receive functions are helpers that read incoming events into usable data variables.
 More information can be found on the wiki, documenting the eventbus as a whole.
+
+* * New `PINGDEF` lump to define pings * *
+This new lump provides a way to add pings to the ping wheel. The mod provides a number of pings to the mod using this new lump.
+Pings are provided with their graphic, the actor representing the ping when using the ping, and a third property that marks a ping as being the center ping.
+Only 1 center ping ever exists, and it's the default ping used when you use a quick ping (open and close the wheel quickly),
+
+* * Ray march library function * *
+A new raymarch function was added to the library. It's main purpose is to provide support for pinging.
+As `LineAttack` doesn't work in the current version of Zandronum, this can instead be used as a replacement.
+The raymarch will march a line from the given xyz + angle + pitch provided and return the final position using three XYZ getters.
+
+* * Clientside variants of the target specie checks * *
+Clientside versions of the target specie checks have been added to check if a clientsided actor targets a human or a zombie:
+- `zh2_dec_gettargetiszombie_client`
+- `zh2_dec_gettargetishuman_client`
 
 CVars
 ------------------------------------------------
@@ -147,6 +170,7 @@ Other mod changes
 - Added `zh2modern` and `zh2legacy`, matching `zh2lib`/`zh2game` structure-wise, giving the modern/legacy map-pack-specific cvars typed getters instead of raw `GetCVar`/`GetUserCVar` calls scattered across the map scripts.
 - Fixed an issue with ZM09's soulsphere/ghouldemon dealing wildly excessive melee damage (effectively an instant kill) instead of its intended small damage amount to humans (or large, but survivable, damage to zombies) to to an invalid cast.
 - Added two options to the debug menu, which log the parsed human start items and the human start item history of every player.
+- Added an option to the debug menu which logs the loaded ping definitions.
 - Fix issue with the core's LOADACS lump not actually working. This was never noticed before because the mod doesn't use autoloading yet, and maps always loaded the code themselves.
 - Fix `sv_zh2_minimumclientcount` not properly enforcing a minimum of 2 internally.
 - The deathcam is now disabled when loading `docs/classicmode.cfg`.
