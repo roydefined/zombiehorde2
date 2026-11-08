@@ -1,0 +1,42 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Map
+{
+    // Resets the tracked play values if the current map differs from the map they were tracked for.
+    internal void InitializeMapPlayServer()
+    {
+        EventBus::AddCallbackByScriptName(EVENT_ROUND_SWITCHED, "zh2_internal_mapplay_roundswitched");
+
+        MapPlayContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.MapPlayContext;
+
+        int handle = GetCurrentMapHandle();
+        if (context.MapHandle == handle)
+            return;
+
+        Logger::LogInformation(LOGSOURCE, "Resetting map play values, map changed from handle \cd" + str(context.MapHandle) + "\cj to \cd" + str(handle) + "\cj.");
+
+        context.MapHandle = handle;
+        context.PlayCount = 0;
+        context.PlayTime = 0;
+    }
+
+    // Increments the stats of the current map when the round ends.
+    script "zh2_internal_mapplay_roundswitched" (raw packetStr)
+    {
+        str packet = (str)packetStr;
+        Event::ReceiveRoundSwitched(packet);
+        int newIndex = Event::GetReceiveData(1);
+
+        if (Round::GetKnownRoundStateTypeByIndex(newIndex) != Round::STATEENDING)
+            terminate;
+
+        MapPlayContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.MapPlayContext;
+
+        context.PlayCount++;
+        context.PlayTime += Game::GetPlayTime();
+
+        Logger::LogInformation(LOGSOURCE, "Incremented map play stats. Map has been played \cd" + str(context.PlayCount) + "\cj time(s) in a row, for a total of \cd" + str(context.PlayTime / 35) + "s\cj.");
+    }
+}
