@@ -1,0 +1,97 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Map
+{
+    internal void InitializeMapPlayServer()
+    {
+        EventBus::AddCallbackByScriptName(EVENT_ROUND_SWITCHED, "zh2_internal_mapplay_roundswitched");
+
+        UpdateMapPlayStatus();
+
+        ZH2Game::PersistingGameContext.MapPlayContext.RoundEndStatsHandled = false;
+    }
+
+    // Update the map's status, resetting it if the map changed or the previous map did not finish properly.
+    internal void UpdateMapPlayStatus()
+    {
+        MapPlayContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.MapPlayContext;
+
+        // The map changed
+        int handle = GetCurrentMapHandle();
+        if (context.MapHandle != handle)
+        {
+            Logger::LogInformation(LOGSOURCE, "Resetting map play stats, map changed from handle \cd" + str(context.MapHandle) + "\cj to \cd" + str(handle) + "\cj.");
+
+            context.MapHandle = handle;
+            context.PlayCount = 0;
+            context.PlayTime = 0;
+            return;
+        }
+
+        // The previous map never finished, so we want to reset the stats.
+        if (!context.RoundEndStatsHandled)
+        {
+            Logger::LogInformation(LOGSOURCE, "Resetting map play stats, the previous play of map handle \cd" + str(handle) + "\cj did not finish.");
+
+            context.PlayCount = 0;
+            context.PlayTime = 0;
+            return;
+        }
+
+        Logger::LogInformation(LOGSOURCE, "Keeping map play stats for map handle \cd" + str(handle) + "\cj. Played \cd" + str(context.PlayCount) + "\cj time(s) in a row, for a total of \cd" + str(context.PlayTime / 35) + "s\cj.");
+    }
+
+    // Updates the stats of the current map when the round ends. A restart does not count as a play.
+    script "zh2_internal_mapplay_roundswitched" (raw packetStr)
+    {
+        str packet = (str)packetStr;
+        Event::ReceiveRoundSwitched(packet);
+        int newIndex = Event::GetReceiveData(1);
+
+        if (Round::GetKnownRoundStateTypeByIndex(newIndex) != Round::STATEENDING)
+            terminate;
+
+        MapPlayContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.MapPlayContext;
+        context.RoundEndStatsHandled = true;
+
+        // Restarts will not contribute to the play time.
+        if (Game::GetEndAction() == Game::ACTION_RESTART)
+        {
+            Logger::LogInformation(LOGSOURCE, "Round is restarting, map play stats are not incremented.");
+            terminate;
+        }
+
+        context.PlayCount++;
+        context.PlayTime += Game::GetPlayTime();
+
+        Logger::LogInformation(LOGSOURCE, "Incremented map play stats. Map has been played \cd" + str(context.PlayCount) + "\cj time(s) in a row, for a total of \cd" + str(context.PlayTime / 35) + "s\cj.");
+
+        // We only check repeating if the round ended in a way where it ended properly.
+        // If the reason is not a specie winning or someone leaving, it's an improper ending.
+        Game::EndReasonT reason = Game::GetEndReason();
+        if (reason != Game::REASONSPECIEWON
+            && reason != Game::REASONHUMANLEFT
+            && reason != Game::REASONZOMBIELEFT)
+        {
+            Logger::LogInformation(LOGSOURCE, "Repeat check will not continue, round ended improperly.");
+            terminate;
+        }
+
+        // Repeat the map if it has not been played often enough or long enough.
+        // When 0, it is not taken into consideration.
+        int repeatCount = CVar::GetSvMapRepeatCount();
+        int minimumDuration = CVar::GetSvMapMinimumDuration();
+        if (repeatCount == 0 && minimumDuration == 0)
+            terminate;
+
+        bool playedOftenEnough = repeatCount != 0 && context.PlayCount >= repeatCount;
+        bool playedLongEnough = minimumDuration != 0 && context.PlayTime >= minimumDuration * 60 * 35;
+        if (!playedOftenEnough && !playedLongEnough)
+        {
+            Logger::LogInformation(LOGSOURCE, "Map was not played often or long enough, the map will repeat.");
+            Game::SetEndAction(Game::ACTION_REPEAT);
+        }
+    }
+}
