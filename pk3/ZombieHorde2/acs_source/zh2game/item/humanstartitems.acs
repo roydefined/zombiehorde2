@@ -308,17 +308,22 @@ strict namespace Item
         return label;
     }
 
-    // Returns the number of humans the items are distributed over.
+    // Returns the number of humans that are eligible for a start item.
+    // The start item itself is not relevant, it purely checks who can get something.
     internal int GetHumanStartItemHumanCount()
     {
-        if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
-            return Game::HumanCount();
-
         // We don't know who becomes a zombie yet, so leaving out the expected zombies could leave out actual humans.
         // TODO: Determine beforehand who becomes a zombie so this info is possible.
         //return (int)BCSUtils::Max(PlayerCount() - Player::EligibleInitialZombieCount(), 0);
 
-        return PlayerCount();
+        int count = 0;
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (PlayerInGame(i) && GetPlayerEligibleForHumanStartItems(i))
+                count++;
+        }
+
+        return count;
     }
 
     // Returns the percentage of humans that should receive the item.
