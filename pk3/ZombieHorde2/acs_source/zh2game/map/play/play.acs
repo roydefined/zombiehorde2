@@ -80,8 +80,15 @@ strict namespace Map
         }
 
         // Repeat the map if it has not been played often enough or long enough.
-        // TODO: Add cvars
-        if (context.PlayCount < 3 && context.PlayTime < 4 * 60 * 35)
+        // When 0, it is not taken into consideration.
+        int repeatCount = CVar::GetSvMapRepeatCount();
+        int minimumDuration = CVar::GetSvMapMinimumDuration();
+        if (repeatCount == 0 && minimumDuration == 0)
+            terminate;
+
+        bool playedOftenEnough = repeatCount != 0 && context.PlayCount >= repeatCount;
+        bool playedLongEnough = minimumDuration != 0 && context.PlayTime >= minimumDuration * 60 * 35;
+        if (!playedOftenEnough && !playedLongEnough)
         {
             Logger::LogInformation(LOGSOURCE, "Map was not played often or long enough, the map will repeat.");
             Game::SetEndAction(Game::ACTION_REPEAT);
