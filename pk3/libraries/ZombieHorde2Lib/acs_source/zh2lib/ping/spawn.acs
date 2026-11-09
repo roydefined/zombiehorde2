@@ -66,6 +66,9 @@ strict namespace Ping
         if (!Identity::IsValidID(source))
             terminate;
 
+        if (!CVar::GetSvEnablePinging())
+            terminate;
+
         // Tells the player they are cut off. CooldownTic takes it back once they can ping again.
         if (GetPingCooldownWait(source) > 0)
         {
@@ -87,6 +90,9 @@ strict namespace Ping
 
         // Source already spawned it.
         if (source == ConsolePlayerNumber())
+            terminate;
+
+        if (!CVar::GetClEnablePingingByConsolePlayer())
             terminate;
 
         messagePack = Packet::Read(messagePack);
