@@ -29,7 +29,7 @@ strict namespace IO
 
         // We check for capacity here now that we got to the body.
         // No more room for more definitions. Log a warning and skip the remaining body.
-        int count = ZH2Lib::PersistingLibContext.PingContext.Count;
+        int count = Ping::GetPingCount();
         if (count >= MAX_PING_DEFINITIONS)
         {
             Logger::LogWarning(LOGSOURCE, "The maximum number of ping definitions was reached (" + str(count) + ").");
@@ -37,10 +37,7 @@ strict namespace IO
             return true;
         }
 
-        Ping::PingContextT global:PERSISTING_LIB_CONTEXT_INDEX& context = ZH2Lib::PersistingLibContext.PingContext.Collection[count];
-        context.Name = name;
-        context.Graphic = (raw)0;
-        context.Actor = (raw)0;
+        Ping::SetPingName(count, name);
 
         // While the brace level does not match the end level, we keep parsing.
         while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
@@ -66,7 +63,7 @@ strict namespace IO
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
             Tokenizer::Next(handle, false);
 
-        ZH2Lib::PersistingLibContext.PingContext.Count++;
+        Ping::SetPingCount(count + 1);
 
         Logger::LogDebug(LOGSOURCE, "Finished parsing ping: \cd" + name + "\cj.");
         return true;
@@ -79,10 +76,10 @@ strict namespace IO
 
         Tokenizer::Next(handle);
 
-        Ping::PingContextT global:PERSISTING_LIB_CONTEXT_INDEX& context = ZH2Lib::PersistingLibContext.PingContext.Collection[ZH2Lib::PersistingLibContext.PingContext.Count];
-        context.Graphic = Tokenizer::GetSymbol(handle);
+        str graphic = Tokenizer::GetSymbol(handle);
+        Ping::SetPingGraphic(Ping::GetPingCount(), graphic);
 
-        Logger::LogDebug(LOGSOURCE, "Parsed ping graphic: \cd" + context.Graphic + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "Parsed ping graphic: \cd" + graphic + "\cj.");
         return true;
     }
 
@@ -91,8 +88,7 @@ strict namespace IO
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "centered"))
             return false;
 
-        Ping::PingContextT global:PERSISTING_LIB_CONTEXT_INDEX& context = ZH2Lib::PersistingLibContext.PingContext.Collection[ZH2Lib::PersistingLibContext.PingContext.Count];
-        context.Centered = true;
+        Ping::SetPingCentered(Ping::GetPingCount(), true);
 
         Logger::LogDebug(LOGSOURCE, "Parsed ping is centered.");
         return true;
@@ -105,10 +101,10 @@ strict namespace IO
 
         Tokenizer::Next(handle);
 
-        Ping::PingContextT global:PERSISTING_LIB_CONTEXT_INDEX& context = ZH2Lib::PersistingLibContext.PingContext.Collection[ZH2Lib::PersistingLibContext.PingContext.Count];
-        context.Actor = Tokenizer::GetSymbol(handle);
+        str actor = Tokenizer::GetSymbol(handle);
+        Ping::SetPingActor(Ping::GetPingCount(), actor);
 
-        Logger::LogDebug(LOGSOURCE, "Parsed ping actor: \cd" + context.Actor + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "Parsed ping actor: \cd" + actor + "\cj.");
         return true;
     }
 }

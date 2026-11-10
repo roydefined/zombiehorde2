@@ -6,7 +6,7 @@ strict namespace Ping
 {
     internal void RaymarchPing(int pingIndex)
     {
-        str actor = ZH2Lib::PersistingLibContext.PingContext.Collection[pingIndex].Actor;
+        str actor = GetPingActor(pingIndex);
         if ((raw)actor == 0 || actor == "")
             return;
 
@@ -117,7 +117,7 @@ strict namespace Ping
         }
 
         // Use whatever ping we can find.
-        for (int i = 0; i < ZH2Lib::PersistingLibContext.PingContext.Count; ++i)
+        for (int i = 0; i < GetPingCount(); ++i)
         {
             if (!SpawnPingActor(i, x, y, z, targetTid))
                 continue;
@@ -134,10 +134,10 @@ strict namespace Ping
     // An additional bounds check is added because the index can come from clients.
     internal bool SpawnPingActor(int pingIndex, fixed x, fixed y, fixed z, int targetTid)
     {
-        if (pingIndex < 0 || pingIndex >= ZH2Lib::PersistingLibContext.PingContext.Count)
+        if (pingIndex < 0 || pingIndex >= GetPingCount())
             return false;
 
-        str actor = ZH2Lib::PersistingLibContext.PingContext.Collection[pingIndex].Actor;
+        str actor = GetPingActor(pingIndex);
         if ((raw)actor == 0 || actor == "")
             return false;
 
