@@ -18,8 +18,8 @@ strict namespace IO
             return false;
         }
 
-        str name = Tokenizer::GetSymbol(handle);
-        Logger::LogDebug(LOGSOURCE, "Start parsing ping: \cd" + name + "\cj.");
+        str key = BCSUTILS::StrToLower(Tokenizer::GetSymbol(handle));
+        Logger::LogDebug(LOGSOURCE, "Start parsing ping: \cd" + key + "\cj.");
 
         int braceLevel = Tokenizer::GetBraceLevel(handle);
         if (!Tokenizer::ExpectNextChar(handle, '{'))
@@ -27,25 +27,37 @@ strict namespace IO
 
         Tokenizer::Next(handle);
 
-        // We check for capacity here now that we got to the body.
-        // No more room for more definitions. Log a warning and skip the remaining body.
-        int count = Ping::GetPingCount();
-        if (count >= MAX_PING_DEFINITIONS)
+        int index = Ping::GetPingIndexByKey(key);
+        bool isNewEntry = index == -1;
+
+        if (isNewEntry)
         {
-            Logger::LogWarning(LOGSOURCE, "The maximum number of ping definitions was reached (" + str(count) + ").");
-            Tokenizer::ParseRemainingBodyAsEmpty(handle);
-            return true;
+            // We check for capacity here now that we got to the body.
+            // No more room for more definitions. Log a warning and skip the remaining body.
+            int count = Ping::GetPingCount();
+            if (count >= MAX_PING_DEFINITIONS)
+            {
+                Logger::LogWarning(LOGSOURCE, "The maximum number of ping definitions was reached (" + str(count) + ").");
+                Tokenizer::ParseRemainingBodyAsEmpty(handle);
+                return true;
+            }
+
+            // Use the count for the actual next position if it's a new entry.
+            index = count;
         }
 
-        Ping::SetPingName(count, name);
+        Ping::SetPingKey(index, key);
+        Ping::SetPingCentered(index, false);
+        Ping::SetPingGraphic(index, (raw)0);
+        Ping::SetPingActor(index, (raw)0);
 
         // While the brace level does not match the end level, we keep parsing.
         while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
         {
             str symbol = Tokenizer::GetSymbol(handle);
-            if (ParsePingGraphic(handle, symbol)
-                || ParsePingCentered(handle, symbol)
-                || ParsePingActor(handle, symbol))
+            if (ParsePingGraphic(handle, symbol, index)
+                || ParsePingCentered(handle, symbol, index)
+                || ParsePingActor(handle, symbol, index))
             {
                 // Optional comma.
                 Tokenizer::Next(handle, false);
@@ -54,7 +66,7 @@ strict namespace IO
                 continue;
             }
 
-            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing ping definition " + name + ": '" + symbol + "'.");
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing ping definition " + key + ": '" + symbol + "'.");
             return false;
         }
 
@@ -63,13 +75,14 @@ strict namespace IO
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
             Tokenizer::Next(handle, false);
 
-        Ping::SetPingCount(count + 1);
+        if (isNewEntry)
+            Ping::SetPingCount(index + 1);
 
-        Logger::LogDebug(LOGSOURCE, "Finished parsing ping: \cd" + name + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "Finished parsing ping: \cd" + key + "\cj.");
         return true;
     }
 
-    internal bool ParsePingGraphic(int handle, str identifyingSymbol)
+    internal bool ParsePingGraphic(int handle, str identifyingSymbol, int index)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "graphic"))
             return false;
@@ -77,24 +90,24 @@ strict namespace IO
         Tokenizer::Next(handle);
 
         str graphic = Tokenizer::GetSymbol(handle);
-        Ping::SetPingGraphic(Ping::GetPingCount(), graphic);
+        Ping::SetPingGraphic(index, graphic);
 
         Logger::LogDebug(LOGSOURCE, "Parsed ping graphic: \cd" + graphic + "\cj.");
         return true;
     }
 
-    internal bool ParsePingCentered(int handle, str identifyingSymbol)
+    internal bool ParsePingCentered(int handle, str identifyingSymbol, int index)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "centered"))
             return false;
 
-        Ping::SetPingCentered(Ping::GetPingCount(), true);
+        Ping::SetPingCentered(index, true);
 
         Logger::LogDebug(LOGSOURCE, "Parsed ping is centered.");
         return true;
     }
 
-    internal bool ParsePingActor(int handle, str identifyingSymbol)
+    internal bool ParsePingActor(int handle, str identifyingSymbol, int index)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "actor"))
             return false;
@@ -102,7 +115,7 @@ strict namespace IO
         Tokenizer::Next(handle);
 
         str actor = Tokenizer::GetSymbol(handle);
-        Ping::SetPingActor(Ping::GetPingCount(), actor);
+        Ping::SetPingActor(index, actor);
 
         Logger::LogDebug(LOGSOURCE, "Parsed ping actor: \cd" + actor + "\cj.");
         return true;
