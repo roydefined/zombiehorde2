@@ -47,6 +47,9 @@ When pinging, the pingtype will be shown alongside a sound at the source. This p
 Pinging is provided with a cooldown per-player, and a global cooldown prevents spam when many players ping.
 The ping system is designed in a way where it will provide some features later, but for now this initial system is added.
 However, server owners are able to add a few pings to fill the ping wheel by providing them in the `PINGDEF` lump.
+By default pings are only shown to players of the same specie, and pings cna only be made up to a certain distance.
+The ping wheel can be interacted with using three modes, including a quick ping system and one where pinging triggers by closing the wheel.
+Lastly, pinging can be turned off for the whole server or for yourself.
 
 Map changes
 ------------------------------------------------
@@ -93,6 +96,8 @@ More information can be found on the wiki, documenting the eventbus as a whole.
 This new lump provides a way to add pings to the ping wheel. The mod provides a number of pings to the mod using this new lump.
 Pings are provided with their graphic, the actor representing the ping when using the ping, and a third property that marks a ping as being the center ping.
 Only 1 center ping ever exists, and it's the default ping used when you use a quick ping (open and close the wheel quickly),
+The PINGDEF lump requires you to define a ping by key which allows you to replace pings with the same key, case insensitive.
+Players may provide patches that define or replace pings this way.
 
 * * Ray march library function * *
 A new raymarch function was added to the library. It's main purpose is to provide support for pinging.
@@ -137,6 +142,11 @@ New CVars:
     - `cl_zh2_hudshakeintensitymultiplier`: how far the HUD moves. 0.0 to 5.0. A value of 0.0 turns it off completely.
     - `cl_zh2_hudshakefrequencymultiplier`: how fast the HUD moves back and forth. 0.1 to 5.0.
     - `cl_zh2_hudshakedurationtics`: how long the HUD shakes after firing. 1 to 20 tics.
+- `sv_zh2_enablepinging`: turns pinging on or off for all players on the server. Enabled by default.
+- `cl_zh2_enablepinging`: turns pinging on or off for yourself. You won't see other pings either if turned off. Enabled by default.
+- `sv_zh2_pingsamespecieonly`: only shows pings to players of the same specie as the pinger (humans only see pings for other humans, etc.). Enabled by default.
+- `sv_zh2_pingmaxdistance`: how far away a player can ping, in map units. 100 to 10000, 2000 by default.
+- `cl_zh2_pingwheelmode`: how the ping wheel pings. 0 = click only, 1 = click, a quick tap pings the center ping, 2 = releasing the key pings the selected ping (default).
 - `sv_zh2_novoteendround`: disables the `endround` vote.
 - `sv_zh2_novoterestartmap`: disables the `restartmap` vote.
 - `sv_zh2_novoteextendtime`: disables the `extendtime` vote.
