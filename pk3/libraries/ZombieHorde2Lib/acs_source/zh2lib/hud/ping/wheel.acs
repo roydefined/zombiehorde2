@@ -85,6 +85,24 @@ strict namespace Hud
             return;
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        // Software mode falls back to drawing the center circle graphic for segments.
+        // Since these are rotated using shaders they can't be displayed in software mode.
+        if (!BCSUtils::IsOpenGL())
+        {
+            fixed angle = fixed(segment - 1) / fixed(PING_WHEEL_SEGMENT_COUNT);
+            BCSUtils::HudSetPoint(
+                x + Sin(angle) * PING_WHEEL_ICON_RADIUS,
+                y - Cos(angle) * PING_WHEEL_ICON_RADIUS);
+            BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_CENTER);
+
+            if (selected)
+                BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_CENTER_SELECTED);
+
+            DebugDraw();
+            return;
+        }
+
         BCSUtils::HudSetAlpha(SegmentToAlpha(segment));
         BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_SEGMENT);
