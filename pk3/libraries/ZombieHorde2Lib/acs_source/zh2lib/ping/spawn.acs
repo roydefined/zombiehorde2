@@ -19,9 +19,17 @@ strict namespace Ping
             return;
         }
 
+        fixed maxDistance = fixed(CVar::GetSvPingMaxDistance());
+        fixed startX = GetActorX(0),
+              startY = GetActorY(0),
+              startZ = GetActorZ(0) + GetActorViewHeight(0);
+
+        fixed angle = GetActorAngle(0),
+              pitch = GetActorPitch(0);
+
         // The ping goes where the player's view first hits the world.
-        // Distance is never considered here.
-        if (!RayMarch::March(GetActorX(0), GetActorY(0), GetActorZ(0) + GetActorViewHeight(0), GetActorAngle(0), GetActorPitch(0), 32767.0))
+        // Distance is not considered here and checked below, so the march only fails with an actual issue.
+        if (!RayMarch::March(startX, startY, startZ, angle, pitch, maxDistance))
         {
             Logger::LogWarning(LOGSOURCE, "Failed to find the spot for ping \cd" + key + "\cj.");
             return;
@@ -33,7 +41,15 @@ strict namespace Ping
               z = RayMarch::GetHitZ();
 
         // Check for actors when pinging, like pinging a zombie.
-        int targetTid = PickActor(0, GetActorAngle(0), GetActorPitch(0), 32767.0, 0, MF_SHOOTABLE, ML_BLOCKEVERYTHING | ML_BLOCKHITSCAN, PICKAF_RETURNTID);
+        int targetTid = PickActor(0, angle, pitch, maxDistance, 0, MF_SHOOTABLE, ML_BLOCKEVERYTHING | ML_BLOCKHITSCAN, PICKAF_RETURNTID);
+
+        // Check max distance for pings.
+        fixed distance = VectorLength(VectorLength(x - startX, y - startY), z - startZ);
+        if (targetTid == 0 && distance >= maxDistance - 1.0)
+        {
+            Logger::LogActivator("That spot is too far away to ping.");
+            return;
+        }
 
         if (!SpawnPingActor(pingIndex, x, y, z, targetTid))
         {
