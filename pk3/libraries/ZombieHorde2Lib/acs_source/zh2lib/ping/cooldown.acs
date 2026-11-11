@@ -31,20 +31,20 @@ strict namespace Ping
     {
         int tic = Timer();
 
-        ZH2Lib::LibContext.PingCooldownContext.PlayerCooldown[playerId] = GetPlayerPingCooldown(playerId) + PING_COOLDOWN_PLAYER_COST;
-        ZH2Lib::LibContext.PingCooldownContext.PlayerCooldownTic[playerId] = tic;
-        ZH2Lib::LibContext.PingCooldownContext.GlobalCooldown = GetGlobalPingCooldown() + PING_COOLDOWN_GLOBAL_COST;
-        ZH2Lib::LibContext.PingCooldownContext.GlobalCooldownTic = tic;
+        SetStoredPlayerPingCooldown(playerId, GetPlayerPingCooldown(playerId) + PING_COOLDOWN_PLAYER_COST);
+        SetPlayerPingCooldownTic(playerId, tic);
+        SetStoredGlobalPingCooldown(GetGlobalPingCooldown() + PING_COOLDOWN_GLOBAL_COST);
+        SetGlobalPingCooldownTic(tic);
     }
 
     // The cooldowns go down by 1 every tic since they were last set.
     internal int GetPlayerPingCooldown(int playerId)
     {
-        return BCSUtils::Max(0, ZH2Lib::LibContext.PingCooldownContext.PlayerCooldown[playerId] - (Timer() - ZH2Lib::LibContext.PingCooldownContext.PlayerCooldownTic[playerId]));
+        return BCSUtils::Max(0, GetStoredPlayerPingCooldown(playerId) - (Timer() - GetPlayerPingCooldownTic(playerId)));
     }
 
     internal int GetGlobalPingCooldown()
     {
-        return BCSUtils::Max(0, ZH2Lib::LibContext.PingCooldownContext.GlobalCooldown - (Timer() - ZH2Lib::LibContext.PingCooldownContext.GlobalCooldownTic));
+        return BCSUtils::Max(0, GetStoredGlobalPingCooldown() - (Timer() - GetGlobalPingCooldownTic()));
     }
 }

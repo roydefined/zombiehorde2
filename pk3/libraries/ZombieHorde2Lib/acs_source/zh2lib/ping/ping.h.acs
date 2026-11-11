@@ -28,6 +28,9 @@ strict namespace Ping
     // 8 outer ring, the middle is parsed separately.
     #define MAX_PING_DEFINITIONS 9
 
+    // Optional script that restricts a ping from showing for a player.
+    #define PING_RESTRICTION_SCRIPT "zh2_ping_restriction"
+
     struct PingCollectionContextT
     {
         bool IsParsed;
@@ -39,7 +42,7 @@ strict namespace Ping
     // A ping as defined in a pingdef lump.
     struct PingContextT
     {
-        str Name;
+        str Key;
 
         // If true, this ping is rendered in the center circle of the wheel.
         bool Centered;
@@ -53,14 +56,17 @@ strict namespace Ping
 
     struct PingWheelContextT
     {
-        // Clientside. If true, the ping wheel is open.
+        // If true, the ping wheel is open.
         bool IsOpen;
 
-        // Clientside. The tic the ping wheel was opened on.
+        // The tic the ping wheel was opened on.
         int OpenTic;
 
-        // Clientside. The index of the ping each segment shows, or -1 if it shows none.
+        // The index of the ping each segment shows, or -1 if it shows none.
         int SegmentPingIndex[PING_WHEEL_SEGMENT_COUNT + 1];
+
+        // The segment the cursor has selected.
+        int SelectedSegment;
     };
 
     #define PING_COOLDOWN_PLAYER_COST 70

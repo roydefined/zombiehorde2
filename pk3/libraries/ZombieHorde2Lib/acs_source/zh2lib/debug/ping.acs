@@ -16,7 +16,7 @@ strict namespace Debug
 
     internal str GetPingDefinitionsMessage()
     {
-        int count = ZH2Lib::PersistingLibContext.PingContext.Count;
+        int count = Ping::GetPingCount();
 
         str logMessage;
         buildmsg(logMessage = StrParam())
@@ -25,11 +25,12 @@ strict namespace Debug
 
             for (int i = 0; i < count; ++i)
             {
-                Ping::PingContextT global:PERSISTING_LIB_CONTEXT_INDEX& context = ZH2Lib::PersistingLibContext.PingContext.Collection[i];
+                str graphic = Ping::GetPingGraphic(i);
+                str actor = Ping::GetPingActor(i);
 
-                Append(s:"\n\cd" + context.Name + "\cj");
-                if ((raw)context.Graphic != 0 && context.Graphic != "") Append(s:", graphic: \cd" + context.Graphic + "\cj");
-                if ((raw)context.Actor != 0 && context.Actor != "") Append(s:", actor: \cd" + context.Actor + "\cj");
+                Append(s:"\n\cd" + Ping::GetPingKey(i) + "\cj");
+                if ((raw)graphic != 0 && graphic != "") Append(s:", graphic: \cd" + graphic + "\cj");
+                if ((raw)actor != 0 && actor != "") Append(s:", actor: \cd" + actor + "\cj");
                 Append(s:".");
             }
         }

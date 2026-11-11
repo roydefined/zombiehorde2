@@ -15,6 +15,7 @@ strict namespace Hud
         fixed y = HudCenterY();
 
         int selected = GetPingWheelSelectedSegment(x, y);
+        Ping::SetPingWheelSelectedSegment(selected);
 
         for (int i = 1; i <= PING_WHEEL_SEGMENT_COUNT; ++i)
             DrawPingWheelSegment(x, y, i, i == selected);
@@ -30,20 +31,23 @@ strict namespace Hud
         {
             Logger::LogDebug(LOGSOURCE, "Clicked ping wheel segment " + str(selected) + ".");
 
-            int pingIndex = ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[selected];
+            int pingIndex = Ping::GetPingWheelSegmentPingIndex(selected);
             if (pingIndex != -1)
-                Ping::RaymarchPing(pingIndex);
+            {
+                str key = Ping::GetPingKey(pingIndex);
+                Ping::RaymarchPing(key);
+            }
         }
     }
 
     // Draws the graphic of the ping this segment shows.
     internal void DrawPingWheelGraphic(fixed x, fixed y, int segment)
     {
-        int pingIndex = ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[segment];
+        int pingIndex = Ping::GetPingWheelSegmentPingIndex(segment);
         if (pingIndex == -1)
             return;
 
-        str graphic = ZH2Lib::PersistingLibContext.PingContext.Collection[pingIndex].Graphic;
+        str graphic = Ping::GetPingGraphic(pingIndex);
         if ((raw)graphic == 0 || graphic == "")
             return;
 
@@ -60,11 +64,11 @@ strict namespace Hud
     // Draws the graphic of the ping in the center circle.
     internal void DrawPingWheelCenterGraphic(fixed x, fixed y)
     {
-        int pingIndex = ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[PING_WHEEL_CENTER_SEGMENT];
+        int pingIndex = Ping::GetPingWheelSegmentPingIndex(PING_WHEEL_CENTER_SEGMENT);
         if (pingIndex == -1)
             return;
 
-        str graphic = ZH2Lib::PersistingLibContext.PingContext.Collection[pingIndex].Graphic;
+        str graphic = Ping::GetPingGraphic(pingIndex);
         if ((raw)graphic == 0 || graphic == "")
             return;
 
@@ -81,6 +85,24 @@ strict namespace Hud
             return;
 
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_CENTER, BCSUtils::HUD_ALIGN_CENTER);
+
+        // Software mode falls back to drawing the center circle graphic for segments.
+        // Since these are rotated using shaders they can't be displayed in software mode.
+        if (!BCSUtils::IsOpenGL())
+        {
+            fixed angle = fixed(segment - 1) / fixed(PING_WHEEL_SEGMENT_COUNT);
+            BCSUtils::HudSetPoint(
+                x + Sin(angle) * PING_WHEEL_ICON_RADIUS,
+                y - Cos(angle) * PING_WHEEL_ICON_RADIUS);
+            BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_CENTER);
+
+            if (selected)
+                BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_CENTER_SELECTED);
+
+            DebugDraw();
+            return;
+        }
+
         BCSUtils::HudSetAlpha(SegmentToAlpha(segment));
         BCSUtils::HudSetPoint(x, y);
         BCSUtils::HudDrawImage(--_drawnHudId, HUD_PING_WHEEL_SEGMENT);
