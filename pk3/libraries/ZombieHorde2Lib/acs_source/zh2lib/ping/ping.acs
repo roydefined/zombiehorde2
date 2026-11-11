@@ -54,28 +54,46 @@ strict namespace Ping
 
     void SetPingWheelIsOpen(bool isOpen)
     {
-        // Wheel opened and closed quickly.
-        // To a ping using the centered ping type.
-        if (!isOpen
-            && GetPingWheelOpen()
-            && Timer() - GetPingWheelOpenTic() <= PING_WHEEL_QUICK_TICS)
+        // Wheel is closing.
+        if (!isOpen && GetPingWheelOpen())
         {
-            int pingIndex = GetPingWheelSegmentPingIndex(PING_WHEEL_CENTER_SEGMENT);
-            if (pingIndex != -1)
+            bool quickClose = Timer() - GetPingWheelOpenTic() <= PING_WHEEL_QUICK_TICS;
+            CVar::PingWheelModeT mode = CVar::GetClPingWheelModeByConsolePlayer();
+
+            int segment = -1;
+
+            // Quick tap pings the center.
+            if (mode == CVar::PINGWHEELMODE_QUICKTAP && quickClose)
             {
-                str key = GetPingKey(pingIndex);
-                RaymarchPing(key);
+                segment = PING_WHEEL_CENTER_SEGMENT;
+            }
+
+            // Closing pings the selected segment. A quick tap selects the center.
+            else if (mode == CVar::PINGWHEELMODE_RELEASE)
+            {
+                segment = GetPingWheelSelectedSegment();
+            }
+
+            // One of the two cases passed, try and ping the segment.
+            if (segment != -1)
+            {
+                int pingIndex = GetPingWheelSegmentPingIndex(segment);
+                if (pingIndex != -1)
+                    RaymarchPing(GetPingKey(pingIndex));
             }
         }
 
-        SetPingWheelOpen(isOpen);
-
-        // Segments are selected with the cursor, so it starts in the center.
-        if (isOpen)
+        // Wheel is opening.
+        else if (isOpen && !GetPingWheelOpen())
         {
             SetPingWheelOpenTic(Timer());
+
+            // The cursor starts in the center, so the center is selected until the wheel is drawn.
+            SetPingWheelSelectedSegment(PING_WHEEL_CENTER_SEGMENT);
             BCSUtils::CenterCursor();
         }
+
+        SetPingWheelOpen(isOpen);
     }
 
     // Returns the index of the ping with the normalized key, or -1 if not found.
@@ -111,6 +129,8 @@ strict namespace Ping
     internal void SetPingWheelOpenTic(int value) { ZH2Lib::LibContext.PingWheelContext.OpenTic = value; }
     internal int GetPingWheelSegmentPingIndex(int segment) { return ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[segment]; }
     internal void SetPingWheelSegmentPingIndex(int segment, int value) { ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[segment] = value; }
+    internal int GetPingWheelSelectedSegment() { return ZH2Lib::LibContext.PingWheelContext.SelectedSegment; }
+    internal void SetPingWheelSelectedSegment(int value) { ZH2Lib::LibContext.PingWheelContext.SelectedSegment = value; }
 
     // Transient context - cooldown system
     internal int GetStoredPlayerPingCooldown(int playerId) { return ZH2Lib::LibContext.PingCooldownContext.PlayerCooldown[playerId]; }
