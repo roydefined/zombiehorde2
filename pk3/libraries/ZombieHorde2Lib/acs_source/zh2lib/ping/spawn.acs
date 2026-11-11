@@ -60,7 +60,7 @@ strict namespace Ping
             Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_broadcast_server. Message packet: '" + packet + "'.");
     }
 
-    // Sends the ping on to every client.
+    // Sends the ping on to the other clients.
     script "zh2_internal_ping_broadcast_server" (raw messagePack) net
     {
         Packet::Read(messagePack);
@@ -82,8 +82,26 @@ strict namespace Ping
 
         UsePingCooldown(source);
 
-        if (!Packet::Send("zh2_internal_ping_receive_packet_client", messagePack))
-            Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_receive_packet_client. Message packet: '" + messagePack + "'.");
+        // Check for a restriction script.
+        if (!CheckScript(PING_RESTRICTION_SCRIPT, true))
+        {
+            if (!Packet::Send("zh2_internal_ping_receive_packet_client", messagePack))
+                Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_receive_packet_client.");
+            terminate;
+        }
+
+        // Iterate all players and check if they should receive this ping.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (i == source || !PlayerInGame(i) || PlayerIsBot(i))
+                continue;
+
+            if (!ACS_NamedExecuteWithResult(PING_RESTRICTION_SCRIPT, source, i))
+                continue;
+
+            if (!Packet::Send("zh2_internal_ping_receive_packet_client", messagePack, i))
+                Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_receive_packet_client.");
+        }
     }
 
     script "zh2_internal_ping_receive_packet_client" (raw messagePack) clientside
