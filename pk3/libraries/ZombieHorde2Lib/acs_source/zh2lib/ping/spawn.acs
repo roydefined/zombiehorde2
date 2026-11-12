@@ -181,11 +181,21 @@ strict namespace Ping
         // Iterate all players and check if they should receive this ping.
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
-            if (i == source || !PlayerInGame(i) || PlayerIsBot(i))
+            if (i == source || PlayerIsBot(i))
                 continue;
 
-            if (!ACS_NamedExecuteWithResult(PING_RESTRICTION_SCRIPT, source, i))
+            bool isSpectator = PlayerIsSpectator(i) != 0;
+            if (!PlayerInGame(i) && !isSpectator)
                 continue;
+
+            // Check if spectators should be able to see pings.
+            // Otherwise let the restriction script decide.
+            bool spectatorSeePings = isSpectator && CVar::GetSvSpectatorsSeePings();
+            if (!spectatorSeePings)
+            {
+                if (!ACS_NamedExecuteWithResult(PING_RESTRICTION_SCRIPT, source, i))
+                    continue;
+            }
 
             if (!Packet::Send("zh2_internal_ping_receive_packet_client", forwardPacket, i))
                 Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_receive_packet_client.");
