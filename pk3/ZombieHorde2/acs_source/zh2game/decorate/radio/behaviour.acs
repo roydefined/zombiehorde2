@@ -104,12 +104,57 @@ strict namespace Decorate
 
         UpdateRadioTrackCooldown();
 
-        // Peek the lump without consuming `packet`, which we still need to forward as-is below.
+        // Peek the values without consuming `packet`, which we still need to forward as-is below.
         str peek = packet;
         peek = Packet::ReadStr(peek);
         str lump = Packet::Value;
 
+        peek = Packet::ReadStr(peek);
+        str name = Packet::Value;
+
+        peek = Packet::ReadStr(peek);
+        str author = Packet::Value;
+
         int sourceId = PlayerNumber();
+
+        int lumpLength = StrLen(lump);
+
+        // Validate the track serverside in case somebody tries to send a packet manually and bypasses clientside validation.
+        if (lumpLength == 0 || lumpLength > RADIO_LUMP_MAX_LENGTH)
+        {
+            Logger::LogWarning(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(sourceId) + "\cj sent a radio track with lump length of " + str(lumpLength) + " which is not in bounds.");
+            terminate;
+        }
+
+        if (!ValidateRadioProperty(lump, RADIO_LUMP_ALLOWED_CHARACTERS))
+        {
+            Logger::LogWarning(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(sourceId) + "\cj sent a radio track with lump containing illegal characters.");
+            terminate;
+        }
+
+        if (StrLen(name) > RADIO_TEXT_MAX_LENGTH)
+        {
+            Logger::LogWarning(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(sourceId) + "\cj sent a radio track with name length of " + str(StrLen(name)) + " which is not in bounds.");
+            terminate;
+        }
+
+        if (!ValidateRadioProperty(name, RADIO_TEXT_ALLOWED_CHARACTERS))
+        {
+            Logger::LogWarning(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(sourceId) + "\cj sent a radio track with name containing illegal characters.");
+            terminate;
+        }
+
+        if (StrLen(author) > RADIO_TEXT_MAX_LENGTH)
+        {
+            Logger::LogWarning(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(sourceId) + "\cj sent a radio track with author length of " + str(StrLen(author)) + " which is not in bounds.");
+            terminate;
+        }
+
+        if (!ValidateRadioProperty(author, RADIO_TEXT_ALLOWED_CHARACTERS))
+        {
+            Logger::LogWarning(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(sourceId) + "\cj sent a radio track with author containing illegal characters.");
+            terminate;
+        }
 
         // Only one broadcaster at a time, so tell the previous one's client directly (with the new lump)
         // so they switch immediately. The regular broadcast below won't reach them if they ignore radio.

@@ -4,6 +4,9 @@
 
 strict namespace IO
 {
+    // Radio track the code is parsing.
+    internal Decorate::RadioTrackContextT _parsingRadioTrack;
+
     internal bool ParseRadioList(int handle, str identifyingSymbol)
     {
         if (!BCSUTILS::StrIEquals(identifyingSymbol, RADIO_DEF_LUMP_RADIO_LIST_BLOCK_KEYWORD))
@@ -62,6 +65,22 @@ strict namespace IO
         if (!Tokenizer::ExpectNextToken(handle, Tokenizer::TLBRACE)) return false;
         Tokenizer::Next(handle);
 
+        // Lumps are sent to other clients, so skip tracks with an invalid lump.
+        int lumpLength = StrLen(lumpName);
+        if (lumpLength == 0 || lumpLength > RADIO_LUMP_MAX_LENGTH)
+        {
+            Logger::LogWarning(LOGSOURCE, "Radio track \cd" + lumpName + "\cj was skipped. Its lump must be 1 to " + str(RADIO_LUMP_MAX_LENGTH) + " characters long.");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        if (!Decorate::ValidateRadioProperty(lumpName, RADIO_LUMP_ALLOWED_CHARACTERS))
+        {
+            Logger::LogWarning(LOGSOURCE, "Radio track \cd" + lumpName + "\cj was skipped. Its lump contains illegal characters, only letters, digits and \cd" + RADIO_LUMP_ALLOWED_CHARACTERS + "\cj are allowed.");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
         // No more room for more items. Log a warning and skip the remaining body.
         int count = ZH2Game::PersistingGameContext.RadioTrackCollection.Size;
         if (count >= MAX_RADIO_TRACKS)
@@ -70,6 +89,11 @@ strict namespace IO
             Tokenizer::ParseRemainingBodyAsEmpty(handle);
             return true;
         }
+
+        _parsingRadioTrack.LumpName = lumpName;
+        _parsingRadioTrack.Name = (raw)0;
+        _parsingRadioTrack.Author = (raw)0;
+        _parsingRadioTrack.Remark = (raw)0;
 
         // As long as we are inside this body, parse properties and insert them into the new item.
         int braceLevel = Tokenizer::GetBraceLevel(handle);
@@ -92,13 +116,47 @@ strict namespace IO
             return false;
         }
 
-        Decorate::RadioTrackContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[ZH2Game::PersistingGameContext.RadioTrackCollection.Size];
-        context.LumpName = lumpName;
-
         // Optional comma.
         Tokenizer::Next(handle, false);
         if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
             Tokenizer::Next(handle, false);
+
+        // Validate values. Name and author are optional.
+        if (_parsingRadioTrack.Name != (raw)0)
+        {
+            if (StrLen(_parsingRadioTrack.Name) > RADIO_TEXT_MAX_LENGTH)
+            {
+                Logger::LogWarning(LOGSOURCE, "Radio track \cd" + lumpName + "\cj name \cd" + _parsingRadioTrack.Name + "\cj is longer than " + str(RADIO_TEXT_MAX_LENGTH) + " characters.");
+                return true;
+            }
+
+            if (!Decorate::ValidateRadioProperty(_parsingRadioTrack.Name, RADIO_TEXT_ALLOWED_CHARACTERS))
+            {
+                Logger::LogWarning(LOGSOURCE, "Radio track \cd" + lumpName + "\cj name \cd" + _parsingRadioTrack.Name + "\cj contains illegal characters, only letters, digits and \cd" + RADIO_TEXT_ALLOWED_CHARACTERS + "\cj are allowed.");
+                return true;
+            }
+        }
+
+        if (_parsingRadioTrack.Author != (raw)0)
+        {
+            if (StrLen(_parsingRadioTrack.Author) > RADIO_TEXT_MAX_LENGTH)
+            {
+                Logger::LogWarning(LOGSOURCE, "Radio track \cd" + lumpName + "\cj author \cd" + _parsingRadioTrack.Author + "\cj is longer than " + str(RADIO_TEXT_MAX_LENGTH) + " characters.");
+                return true;
+            }
+
+            if (!Decorate::ValidateRadioProperty(_parsingRadioTrack.Author, RADIO_TEXT_ALLOWED_CHARACTERS))
+            {
+                Logger::LogWarning(LOGSOURCE, "Radio track \cd" + lumpName + "\cj author \cd" + _parsingRadioTrack.Author + "\cj contains illegal characters, only letters, digits and \cd" + RADIO_TEXT_ALLOWED_CHARACTERS + "\cj are allowed.");
+                return true;
+            }
+        }
+
+        Decorate::RadioTrackContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[count];
+        context.LumpName = _parsingRadioTrack.LumpName;
+        context.Name = _parsingRadioTrack.Name;
+        context.Author = _parsingRadioTrack.Author;
+        context.Remark = _parsingRadioTrack.Remark;
 
         // TODO: Log data
         Logger::LogDebug(LOGSOURCE, "Finished parsing radio track: \cd" + context.lumpName + "\cj.");
@@ -111,10 +169,9 @@ strict namespace IO
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "name")) return false;
         Tokenizer::Next(handle);
 
-        Decorate::RadioTrackContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[ZH2Game::PersistingGameContext.RadioTrackCollection.Size];
-        context.Name = Tokenizer::GetSymbol(handle);
+        _parsingRadioTrack.Name = Tokenizer::GetSymbol(handle);
 
-        Logger::LogDebug(LOGSOURCE, "Parsed radio track name: \cd" + context.Name + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "Parsed radio track name: \cd" + _parsingRadioTrack.Name + "\cj.");
         return true;
     }
 
@@ -123,10 +180,9 @@ strict namespace IO
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "author")) return false;
         Tokenizer::Next(handle);
 
-        Decorate::RadioTrackContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[ZH2Game::PersistingGameContext.RadioTrackCollection.Size];
-        context.Author = Tokenizer::GetSymbol(handle);
+        _parsingRadioTrack.Author = Tokenizer::GetSymbol(handle);
 
-        Logger::LogDebug(LOGSOURCE, "Parsed radio track author: \cd" + context.Author + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "Parsed radio track author: \cd" + _parsingRadioTrack.Author + "\cj.");
         return true;
     }
 
@@ -135,10 +191,9 @@ strict namespace IO
         if (!BCSUTILS::StrIEquals(identifyingSymbol, "remark")) return false;
         Tokenizer::Next(handle);
 
-        Decorate::RadioTrackContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[ZH2Game::PersistingGameContext.RadioTrackCollection.Size];
-        context.Remark = Tokenizer::GetSymbol(handle);
+        _parsingRadioTrack.Remark = Tokenizer::GetSymbol(handle);
 
-        Logger::LogDebug(LOGSOURCE, "Parsed radio track remark: \cd" + context.Remark + "\cj.");
+        Logger::LogDebug(LOGSOURCE, "Parsed radio track remark: \cd" + _parsingRadioTrack.Remark + "\cj.");
         return true;
     }
 }

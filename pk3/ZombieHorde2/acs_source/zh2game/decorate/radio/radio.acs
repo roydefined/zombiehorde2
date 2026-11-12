@@ -21,6 +21,20 @@ strict namespace Decorate
     internal str GetRadioTrackAuthor(int index) { return ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[index].Author; }
     internal str GetRadioTrackRemark(int index) { return ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[index].Remark; }
 
+    // Returns true if the value only contains letters, digits and the allowed characters.
+    internal bool ValidateRadioProperty(str value, str allowedCharacters)
+    {
+        int length = StrLen(value);
+        for (int i = 0; i < length; ++i)
+        {
+            int c = GetChar(value, i);
+            if (c < 0 || c > 127 || (!BCSUtils::isalnum(c) && !BCSUtils::StrContains(allowedCharacters, StrParam(c:c))))
+                return false;
+        }
+
+        return true;
+    }
+
     internal int GetRadioTrackIndexByLumpName(str lump, bool caseInsensitive = true)
     {
         bool function(str, str)& comparer = caseInsensitive ? BCSUtils::StrIEquals : BCSUtils::StrEquals;
