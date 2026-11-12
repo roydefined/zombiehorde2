@@ -108,6 +108,20 @@ strict namespace Ping
         return -1;
     }
 
+    // Returns true if the value only contains letters and digits. The length is checked separately.
+    internal bool ValidatePingProperty(str value)
+    {
+        int length = StrLen(value);
+        for (int i = 0; i < length; ++i)
+        {
+            int c = GetChar(value, i);
+            if (c < 0 || c > 127 || !BCSUtils::isalnum(c))
+                return false;
+        }
+
+        return true;
+    }
+
     // Persisting context
     internal bool GetPingsParsed() { return ZH2Lib::PersistingLibContext.PingContext.IsParsed; }
     internal void SetPingsParsed(bool value) { ZH2Lib::PersistingLibContext.PingContext.IsParsed = value; }

@@ -44,7 +44,7 @@ strict namespace Ping
         int targetTid = PickActor(0, angle, pitch, maxDistance, 0, MF_SHOOTABLE, ML_BLOCKEVERYTHING | ML_BLOCKHITSCAN, PICKAF_RETURNTID);
 
         // Check max distance for pings.
-        fixed distance = VectorLength(VectorLength(x - startX, y - startY), z - startZ);
+        fixed distance = GetPingDistance(startX, startY, startZ, x, y, z);
         if (targetTid == 0 && distance >= maxDistance - 1.0)
         {
             Logger::LogActivator("That spot is too far away to ping.");
@@ -64,8 +64,8 @@ strict namespace Ping
     // Sends the ping to the server, which sends it on to every client.
     internal void BroadcastPing(str key, fixed x, fixed y, fixed z, int targetTid)
     {
+        // The server knows who sent it, so the source isn't sent.
         str packet = Packet::New();
-        packet = Packet::Append(packet, ConsolePlayerNumber());
         packet = Packet::AppendStr(packet, key);
         packet = Packet::Append(packet, x);
         packet = Packet::Append(packet, y);
@@ -79,8 +79,23 @@ strict namespace Ping
     // Sends the ping on to the other clients.
     script "zh2_internal_ping_broadcast_server" (raw messagePack) net
     {
-        Packet::Read(messagePack);
-        int source = Packet::Value;
+        // The activator is the player who sent the ping.
+        int source = PlayerNumber();
+
+        str packet = Packet::ReadStr(messagePack);
+        str key = Packet::Value;
+
+        packet = Packet::Read(packet);
+        fixed x = Packet::Value;
+
+        packet = Packet::Read(packet);
+        fixed y = Packet::Value;
+
+        packet = Packet::Read(packet);
+        fixed z = Packet::Value;
+
+        packet = Packet::Read(packet);
+        int targetTid = Packet::Value;
 
         if (!Identity::IsValidID(source))
             terminate;
@@ -96,12 +111,63 @@ strict namespace Ping
             terminate;
         }
 
+        // Rejected pings will also get a cooldown.
         UsePingCooldown(source);
+
+        int keyLength = StrLen(key);
+
+        // Validate the ping serverside in case somebody tries to send a packet manually and bypasses clientside validation.
+        if (keyLength == 0 || keyLength > PING_KEY_MAX_LENGTH)
+        {
+            Logger::LogWarning(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj sent a ping with key length of " + str(keyLength) + " which is not in bounds.");
+            terminate;
+        }
+
+        if (!ValidatePingProperty(key))
+        {
+            Logger::LogWarning(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj sent a ping with key containing illegal characters.");
+            terminate;
+        }
+
+        // Measured from the player's view like the client does, with a margin as the player moves before the ping arrives.
+        int sourceTid = Identity::GetTID(source);
+        fixed startX = GetActorX(sourceTid),
+              startY = GetActorY(sourceTid),
+              startZ = GetActorZ(sourceTid) + GetActorViewHeight(sourceTid);
+        fixed maxDistance = fixed(CVar::GetSvPingMaxDistance() + PING_SERVER_DISTANCE_MARGIN);
+
+        // The ping must be within the max distance of the player (+ a margin).
+        if (GetPingDistance(startX, startY, startZ, x, y, z) > maxDistance)
+        {
+            Logger::LogWarning(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj sent a ping that is too far away.");
+            terminate;
+        }
+
+        // The player must see the target, and it must be within the max distance.
+        // Can fail due to latency. Not warned.
+        if (targetTid != 0)
+        {
+            if (!CheckSight(sourceTid, targetTid, 0))
+            {
+                Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj sent a ping with a target they can't see.");
+                terminate;
+            }
+
+            fixed targetDistance = GetPingDistance(startX, startY, startZ, GetActorX(targetTid), GetActorY(targetTid), GetActorZ(targetTid));
+            if (targetDistance > maxDistance)
+            {
+                Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj sent a ping with a target that is too far away.");
+                terminate;
+            }
+        }
+
+        // Receivers need to know who sent the ping, so the source goes in front.
+        str forwardPacket = Packet::Append(Packet::New(), source) + (str)messagePack;
 
         // Check for a restriction script.
         if (!CheckScript(PING_RESTRICTION_SCRIPT, true))
         {
-            if (!Packet::Send("zh2_internal_ping_receive_packet_client", messagePack))
+            if (!Packet::Send("zh2_internal_ping_receive_packet_client", forwardPacket))
                 Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_receive_packet_client.");
             terminate;
         }
@@ -115,7 +181,7 @@ strict namespace Ping
             if (!ACS_NamedExecuteWithResult(PING_RESTRICTION_SCRIPT, source, i))
                 continue;
 
-            if (!Packet::Send("zh2_internal_ping_receive_packet_client", messagePack, i))
+            if (!Packet::Send("zh2_internal_ping_receive_packet_client", forwardPacket, i))
                 Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_receive_packet_client.");
         }
     }
@@ -168,6 +234,12 @@ strict namespace Ping
         }
 
         Logger::LogDebug(LOGSOURCE, "Spawned player \cd" + BCSUtils::PlayerName(source) + "\cj's ping \cd" + GetPingKey(pingIndex) + "\cj.");
+    }
+
+    // The distance from the start to the spot, used by both the client and the server.
+    internal fixed GetPingDistance(fixed startX, fixed startY, fixed startZ, fixed x, fixed y, fixed z)
+    {
+        return VectorLength(VectorLength(x - startX, y - startY), z - startZ);
     }
 
     // Spawns the actor of the ping.

@@ -21,7 +21,7 @@ strict namespace IO
             return false;
         }
 
-        str key = BCSUTILS::StrToLower(Tokenizer::GetSymbol(handle));
+        str key = Tokenizer::GetSymbol(handle);
         Logger::LogDebug(LOGSOURCE, "Start parsing ping: \cd" + key + "\cj.");
 
         int braceLevel = Tokenizer::GetBraceLevel(handle);
@@ -29,6 +29,24 @@ strict namespace IO
             return false;
 
         Tokenizer::Next(handle);
+
+        // Keys are sent to other clients, so skip pings with an invalid key.
+        int keyLength = StrLen(key);
+        if (keyLength == 0 || keyLength > PING_KEY_MAX_LENGTH)
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj was skipped. Its key must be 1 to " + str(PING_KEY_MAX_LENGTH) + " characters long.");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        if (!Ping::ValidatePingProperty(key))
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj was skipped. Its key contains illegal characters, only letters and digits are allowed.");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        key = BCSUTILS::StrToLower(key);
 
         int index = Ping::GetPingIndexByKey(key);
         bool isNewEntry = index == -1;
@@ -88,6 +106,31 @@ strict namespace IO
         if ((raw)_parsingPing.Actor == 0 || _parsingPing.Actor == "")
         {
             Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj is missing required actor.");
+            return true;
+        }
+
+        // Validate values
+        if (StrLen(_parsingPing.Graphic) > PING_GRAPHIC_MAX_LENGTH)
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj graphic \cd" + _parsingPing.Graphic + "\cj is longer than " + str(PING_GRAPHIC_MAX_LENGTH) + " characters.");
+            return true;
+        }
+
+        if (!Ping::ValidatePingProperty(_parsingPing.Graphic))
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj  graphic \cd" + _parsingPing.Graphic + "\cj contains illegal characters, only letters and digits are allowed.");
+            return true;
+        }
+
+        if (StrLen(_parsingPing.Actor) > PING_ACTOR_MAX_LENGTH)
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj actor \cd" + _parsingPing.Actor + "\cj is longer than " + str(PING_ACTOR_MAX_LENGTH) + " characters.");
+            return true;
+        }
+
+        if (!Ping::ValidatePingProperty(_parsingPing.Actor))
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj actor \cd" + _parsingPing.Actor + "\cj contains illegal characters, only letters and digits are allowed.");
             return true;
         }
 
