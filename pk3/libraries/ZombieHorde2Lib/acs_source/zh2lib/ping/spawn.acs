@@ -103,12 +103,18 @@ strict namespace Ping
         if (!CVar::GetSvEnablePinging())
             terminate;
 
-        // Tells the player they are cut off. CooldownTic takes it back once they can ping again.
-        if (GetPingCooldownWait(source) > 0)
+        // Check for previous cut off.
+        if (CheckActorInventory(Identity::GetTID(source), PING_CUTOFF_ITEM))
         {
             Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj's ping was blocked by the cooldown.");
-            GiveActorInventory(Identity::GetTID(source), PING_CUTOFF_ITEM, 1);
             terminate;
+        }
+
+        // Tells the player they are cut off.
+        if (GetPingCooldownWait(source) > 0)
+        {
+            Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj's ping is now blocked by the cooldown.");
+            GiveActorInventory(Identity::GetTID(source), PING_CUTOFF_ITEM, 1);
         }
 
         // Rejected pings will also get a cooldown.
