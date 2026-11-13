@@ -22,6 +22,26 @@ strict namespace Item
         _currentInventoryIndex += direction;
         if (_currentInventoryIndex < 0) _currentInventoryIndex = GetClientOwnedInventorySize() - 1;
         if (_currentInventoryIndex >= GetClientOwnedInventorySize()) _currentInventoryIndex = 0;
+
+        // We must tell the engine to switch to this item.
+        str itemName = GetItemName(GetInventoryIndex(GetClientOwnedInventoryIndex(_currentInventoryIndex)));
+        SetSelectedInventory(itemName, false);
+    }
+
+    // Sync up our own selected inventory with what the engine has provided.
+    // This happens if people use the build-in keys instead of the mod's keys.
+    internal void SyncSelectedInventory()
+    {
+        str selected = GetSelectedInventory();
+        for (int i = 0; i < GetClientOwnedInventorySize(); ++i)
+        {
+            str itemName = GetItemName(GetInventoryIndex(GetClientOwnedInventoryIndex(i)));
+            if (BCSUtils::StrIEquals(itemName, selected))
+            {
+                _currentInventoryIndex = i;
+                return;
+            }
+        }
     }
 
     internal void InvokeCurrentInventoryItem()
