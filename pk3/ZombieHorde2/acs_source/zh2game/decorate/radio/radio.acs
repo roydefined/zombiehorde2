@@ -100,6 +100,13 @@ strict namespace Decorate
     // Depending on who this targets it's either proximity based or regular music.
     internal void StartHearingRadioBroadcast(int playerId, str lump)
     {
+        // Never play a lump that isn't in our own radio list.
+        if (GetRadioTrackIndexByLumpName(lump) == -1)
+        {
+            Logger::LogDebug(LOGSOURCE, "Radio: lump \cd" + lump + "\cj isn't in our radio list, not playing it.");
+            return;
+        }
+
         bool isSelf = playerId == ConsolePlayerNumber();
 
         if (!isSelf && CVar::GetClIgnoreRadioMusicByConsolePlayer())
