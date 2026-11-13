@@ -10,122 +10,138 @@ strict namespace Hud
     internal void DrawClientSettingsHud()
     {
         BCSUtils::HudResetState();
+        BCSUtils::HudSetVirtualSize(32.0, 32.0);
+        BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
+        Utils::ScaleToScreen();
+
+        PrepareHud(64.0, 64.0, false);
+        BCSUtils::HudSetAlpha(CLIENT_SETTINGS_TINT_ALPHA);
+        HudSetPointInternal();
+        BCSUtils::HudDrawImage(HUDID_CLIENTSETTINGS_TINT, "BLACK");
+
+        BCSUtils::HudResetState();
         HudSetScaledVirtualSize(640.0, 480.0, CVar::GetClHudClientSettingsScale());
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
         BCSUtils::HudSetAlignment(BCSUtils::HUD_ALIGN_LEFT, BCSUtils::HUD_ALIGN_TOP);
 
+        fixed x = BCSUtils::HudLeft() + 100.0;
         fixed y = BCSUtils::HudTop() + 50.0;
 
-        PrepareHud(
-            BCSUtils::HudLeft() + 100.0,
-            y,
-            false);
+        PrepareHud(x, y, false);
 
-        DrawClientSettingsHeader();
+        // The header returns how much space it used, the settings go below it.
+        y += DrawClientSettingsHeader() + 10.0;
 
+        PrepareHud(x, y, false);
         BCSUtils::HudSetFont("BigFont");
-        HudSetPointInternal(0.0, 60.0 + y);
+        HudSetPointInternal();
 
-        if (ZH2Game::GameContext.RequestedClientSettingCount > 0)
-        {
-            BCSUtils::HudDrawText(--_drawnHudId, "\cjSettings");
-
-            BCSUtils::HudSetFont("SmallFont");
-            BCSUtils::HudSetTextColor(CR_YELLOW);
-
-            HudSetPointInternal(0.0, 80.0 + y);
-            BCSUtils::HudDrawText(--_drawnHudId, "Type");
-
-            HudSetPointInternal(90.0, 80.0 + y);
-            BCSUtils::HudDrawText(--_drawnHudId, "Name");
-
-            HudSetPointInternal(250.0, 80.0 + y);
-            BCSUtils::HudDrawText(--_drawnHudId, "Current");
-
-            HudSetPointInternal(320.0, 80.0 + y);
-            BCSUtils::HudDrawText(--_drawnHudId, "Required");
-
-            HudSetPointInternal(400.0, 80.0 + y);
-            BCSUtils::HudDrawText(--_drawnHudId, "Action");
-
-            for (int i = 0; i < ZH2Game::GameContext.RequestedClientSettingCount; ++i)
-            {
-                PrepareHud(
-                    BCSUtils::HudLeft() + 100.0,
-                    y + 150.0 + fixed(30 * i),
-                    false);
-
-                DrawInvalidSetting(i);
-            }
-        }
-        else
+        int count = ZH2Game::GameContext.RequestedClientSettingCount;
+        if (count == 0)
         {
             BCSUtils::HudSetTextColor(CR_GREEN);
-            BCSUtils::HudDrawText(--_drawnHudId, "No settings to consolidate.");
+            BCSUtils::HudDrawText(--_drawnHudId, "All settings are up to date.");
+            return;
         }
-    }
 
-    internal void DrawClientSettingsHeader()
-    {
-        // Top
-        BCSUtils::HudSetFont("BigFont");
-
-        HudSetPointInternal();
-        BCSUtils::HudDrawText(--_drawnHudId, "Consolidate settings");
-        DebugDraw();
-
-        // Bottom
-        int count = ZH2Game::GameContext.RequestedClientSettingCount;
-        int persistingCount = ZH2Game::PersistingGameContext.RequestedClientSettingCount;
+        BCSUtils::HudDrawText(--_drawnHudId, "\cjSettings");
 
         BCSUtils::HudSetFont("SmallFont");
         BCSUtils::HudSetTextColor(CR_YELLOW);
 
-        HudSetPointInternal(0.0, 15.0);
-        BCSUtils::HudDrawText(--_drawnHudId, "Note: \cjUpdating CVars makes use of ConsoleCommand, which could possibly be phased out of the engine in the future.");
+        HudSetPointInternal(0.0, 20.0);
+        BCSUtils::HudDrawText(--_drawnHudId, "Type");
+
+        HudSetPointInternal(90.0, 20.0);
+        BCSUtils::HudDrawText(--_drawnHudId, "Name");
+
+        HudSetPointInternal(250.0, 20.0);
+        BCSUtils::HudDrawText(--_drawnHudId, "Yours");
+
+        HudSetPointInternal(340.0, 20.0);
+        BCSUtils::HudDrawText(--_drawnHudId, "Recommended");
+
+        HudSetPointInternal(450.0, 20.0);
+        BCSUtils::HudDrawText(--_drawnHudId, "Action");
+
+        // Only as many settings as fit on the screen are shown.
+        int shownCount = BCSUtils::Min(count, CLIENT_SETTINGS_MAX_SHOWN);
+        for (int i = 0; i < shownCount; ++i)
+        {
+            PrepareHud(x, y + 40.0 + fixed(30 * i), false);
+            DrawInvalidSetting(i);
+        }
+
+        if (count > shownCount)
+        {
+            PrepareHud(x, y + 40.0 + fixed(30 * shownCount), false);
+            BCSUtils::HudSetFont("SmallFont");
+            BCSUtils::HudSetTextColor(CR_GRAY);
+            HudSetPointInternal();
+            BCSUtils::HudDrawText(--_drawnHudId, "And " + str(count - shownCount) + " more. Fix the settings above and refresh to see them.");
+        }
+    }
+
+    // Returns the height the header used.
+    internal fixed DrawClientSettingsHeader()
+    {
+        BCSUtils::HudSetFont("BigFont");
+
+        HudSetPointInternal();
+        BCSUtils::HudDrawText(--_drawnHudId, "Client settings");
         DebugDraw();
 
-        // Vertical offset changes if protect cvars is enabled.
-        fixed addY = 0.0;
+        int count = ZH2Game::GameContext.RequestedClientSettingCount;
+        int persistingCount = ZH2Game::PersistingGameContext.RequestedClientSettingCount;
+
+        BCSUtils::HudSetFont("SmallFont");
+        BCSUtils::HudSetTextColor(CR_WHITE);
+
+        HudSetPointInternal(0.0, 20.0);
+        BCSUtils::HudDrawText(--_drawnHudId, "\cd" + str(count) + "\cj of \cd" + str(persistingCount) + "\cj settings differ from what Zombie Horde 2 recommends.");
+
+        // The notes can be long, so they wrap. Two lines are reserved for each.
+        fixed addY = 35.0;
+        BCSUtils::HudSetWordWrap(true);
+        BCSUtils::HudSetTextColor(CR_YELLOW);
+
+        HudSetPointInternal(0.0, addY);
+        BCSUtils::HudDrawText(--_drawnHudId, "Note: \cjFixing a CVar uses ConsoleCommand, which may stop working in a future engine version.");
+        DebugDraw();
+        addY += 20.0;
 
         // Inform client of cl_protectcvars if set.
         if (CVar::GetClProtectCVars())
         {
-            BCSUtils::HudSetFont("SmallFont");
-            BCSUtils::HudSetTextColor(CR_YELLOW);
-
-            HudSetPointInternal(0.0, 25.0);
-            BCSUtils::HudDrawText(--_drawnHudId, "Note: \cjyou have enabled 'cl_protectcvars', which means any changes here are reverted when you disconnect. Please disable it to persist them.");
+            HudSetPointInternal(0.0, addY);
+            BCSUtils::HudDrawText(--_drawnHudId, "Note: \cj'cl_protectcvars' is enabled, so fixes are undone when you disconnect. Disable it to keep them.");
             DebugDraw();
-
-            addY += 10.0;
+            addY += 20.0;
         }
 
-        // Inform user of the issue with ConsoleCommand
-        BCSUtils::HudSetTextColor(CR_WHITE);
-
-        HudSetPointInternal(0.0, 25.0 + addY);
-        BCSUtils::HudDrawText(--_drawnHudId, "Total invalid settings: \cd" + str(count) + "\cj/\cd" + str(persistingCount) + "\cj.");
+        BCSUtils::HudSetWordWrap(false);
 
         BCSUtils::HudSetFont("BigFont");
 
-        HudSetPointInternal(0.0, 50.0 + addY);
+        HudSetPointInternal(0.0, addY + 5.0);
         BCSUtils::HudDrawText(--_drawnHudId, "Actions");
 
         BCSUtils::HudSetFont("SmallFont");
 
         // Clickable buttons
-        if (DrawClickableText(--_drawnHudId, 0.0, 65.0 + addY, 140.0, 10.0, "Refresh settings"))
+        if (DrawClickableText(--_drawnHudId, 0.0, addY + 25.0, 140.0, 10.0, "Refresh settings"))
             Settings::UpdateCurrentClientSettings();
 
-        if (DrawClickableText(--_drawnHudId, 0.0, 80.0 + addY, 140.0, 10.0, "Close settings"))
+        if (DrawClickableText(--_drawnHudId, 0.0, addY + 40.0, 140.0, 10.0, "Close settings"))
             Settings::CloseClientSettingsMenu();
 
-        if (DrawClickableText(--_drawnHudId, 160.0, 65.0 + addY, 140.0, 10.0, "Open keybinds menu"))
-            Settings::CloseMenuAndOpenCustomizeMenu();
+        if (DrawClickableText(--_drawnHudId, 160.0, addY + 25.0, 140.0, 10.0, "Open keybinds menu"))
+            Settings::CloseMenuAndOpenZh2KeybindsMenu();
 
-        if (DrawClickableText(--_drawnHudId, 160.0, 80.0 + addY, 140.0, 10.0, "Open zombie horde 2 menu"))
+        if (DrawClickableText(--_drawnHudId, 160.0, addY + 40.0, 140.0, 10.0, "Open Zombie Horde 2 menu"))
             Settings::CloseMenuAndOpenZh2Menu();
+
+        return addY + 50.0;
     }
 
     internal void DrawInvalidSetting(int index)
@@ -145,25 +161,34 @@ strict namespace Hud
         BCSUtils::HudDrawText(--_drawnHudId, "\cd" + name);
 
         HudSetPointInternal(250.0, 0.0);
-        if (type == "cvar") BCSUtils::HudDrawText(--_drawnHudId, "\cd" + str(GetCvar(name)));
-        else BCSUtils::HudDrawText(--_drawnHudId, "\cd" + (BCSUtils::KeyBound(name) ? "bound" : "unbound"));
+        if (type == "cvar") BCSUtils::HudDrawText(--_drawnHudId, "\cg" + str(GetCvar(name)));
+        else BCSUtils::HudDrawText(--_drawnHudId, "\cg" + (BCSUtils::KeyBound(name) ? "Bound" : "Not bound"));
 
-        HudSetPointInternal(320.0, 0.0);
+        HudSetPointInternal(340.0, 0.0);
         if (type == "cvar") BCSUtils::HudDrawText(--_drawnHudId, "\cd" + str(value));
-        else BCSUtils::HudDrawText(--_drawnHudId, "\cd" + (value ? "bound" : "unbound"));
+        else BCSUtils::HudDrawText(--_drawnHudId, "\cd" + (value ? "Bound" : "Not bound"));
 
-        // Possibly update CVar.
-        // Restrictions of ConsoleCommand prevents us from binding/unbinding, so this is not supported.
+        // CVars can be fixed directly.
+        // Restrictions of ConsoleCommand prevents us from binding/unbinding, so keys link to the keybinds menu instead.
         if (type == "cvar")
         {
-            if (DrawClickableText(--_drawnHudId, 400.0, 0.0, 100.0, 10.0, "Update CVar"))
+            if (DrawClickableText(--_drawnHudId, 450.0, 0.0, 100.0, 10.0, "Fix"))
                 UpdateSettingToRequested(index);
         }
+        else
+        {
+            if (DrawClickableText(--_drawnHudId, 450.0, 0.0, 100.0, 10.0, "Open keybinds"))
+                Settings::CloseMenuAndOpenZh2KeybindsMenu();
+        }
 
-        BCSUtils::HudSetTextColor(CR_WHITE);
+        // The description can be long, so it wraps.
+        BCSUtils::HudSetTextColor(CR_GRAY);
+        BCSUtils::HudSetWordWrap(true);
 
         HudSetPointInternal(0.0, 10.0);
         BCSUtils::HudDrawText(--_drawnHudId, label);
+
+        BCSUtils::HudSetWordWrap(false);
     }
 
     internal void UpdateSettingToRequested(int index)
