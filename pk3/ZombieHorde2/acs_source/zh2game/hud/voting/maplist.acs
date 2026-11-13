@@ -14,6 +14,11 @@ strict namespace Hud
 
     internal void DrawMapList()
     {
+        // The suggested map handle, or -1 if the map has none.
+        int suggestedMapHandle = Map::GetCurrentMapSuggestedMapExists()
+            ? Map::GetCurrentMapSuggestedMapHandle()
+            : -1;
+
         // Hardcoded columns.
         // The `Next map` option is disabled when we have no maps in rotation.
         // The `Random map` option is disabled when we have no votable maps.
@@ -49,13 +54,16 @@ strict namespace Hud
             if (replacementGraphic != (raw)0)
                 graphic = replacementGraphic;
 
+            // Note: The suggested map is always index 0 here, which would also work.
+            // For the sake of scaling we do a proper check for the map handle instead.
             bool isNew = Map::GetMapIsNew(parsePosition);
             bool isLegacyMap = Map::GetMapIsLegacyMap(parsePosition);
-            DrawMapBlock(true, offset++, header, label, graphic, (raw)0, isNew, isLegacyMap);
+            bool isSuggestedMap = parsePosition == suggestedMapHandle;
+            DrawMapBlock(true, offset++, header, label, graphic, (raw)0, isNew, isLegacyMap, isSuggestedMap);
         }
     }
 
-    internal void DrawMapBlock(bool enabled, int offset, str header, str label, str graphic, str iconGraphic = (raw)0, bool isNew = false, bool isLegacyMap = false)
+    internal void DrawMapBlock(bool enabled, int offset, str header, str label, str graphic, str iconGraphic = (raw)0, bool isNew = false, bool isLegacyMap = false, bool isSuggestedMap = false)
     {
         bool isVotedTimer = RoundTimer::GetActiveTimerKnownType() == RoundTimer::TIMERVOTED;
 
@@ -63,8 +71,8 @@ strict namespace Hud
         if (isVotedTimer && Map::GetFinalVotedMapIndex() != offset)
             return;
 
-        fixed cursorX = BCSUTILS::Floor(BCSUTILS::CursorX());
-        fixed cursorY = BCSUTILS::Floor(BCSUTILS::CursorY());
+        fixed cursorX = GetHudCursorX();
+        fixed cursorY = GetHudCursorY();
 
         int col = offset % MAP_BLOCK_COLUMNS;
         int row = offset / MAP_BLOCK_COLUMNS;
@@ -109,13 +117,12 @@ strict namespace Hud
         // Alpha for pulsating graphics
         fixed speed = 0.2;
         fixed pulsatingAlpha = baseAlpha * (0.5 + 0.5 * Sin((2.0 * BCSUtils::PI) * speed * (fixed(Utils::GetSynchronizedTimer()) / 35.0)));
-        fixed scale = CVar::GetClHudSummaryScale();
 
         BCSUtils::HudSetAlpha(baseAlpha);
         BCSUtils::HudSetTextColor(CR_WHITE);
 
         BCSUtils::HudSetAlpha(graphicAlpha);
-        BCSUtils::HudSetScale(0.3 * scale);
+        BCSUtils::HudSetScale(0.3);
 
         HudSetPointInternal(addX, addY);
         BCSUtils::HudDrawImage(--_drawnHudId, graphic);
@@ -134,7 +141,7 @@ strict namespace Hud
             DebugDraw();
         }
 
-        BCSUtils::HudSetScale(scale);
+        BCSUtils::HudSetScale(1.0);
         BCSUtils::HudSetAlpha(baseAlpha);
 
         if (header != "" && isOver || clientPicked || isVotedTimer)
@@ -182,6 +189,21 @@ strict namespace Hud
             DebugDraw();
 
             propertiesY += 10.0;
+
+            if (isSuggestedMap)
+            {
+                BCSUtils::HudSetAlpha(pulsatingAlpha);
+                BCSUtils::HudSetTextColor(CR_GREEN);
+                BCSUtils::HudSetFont("SmallFont");
+
+                HudSetPointInternal(addX, propertiesY);
+                BCSUtils::HudDrawText(--_drawnHudId, "suggested!");
+                DebugDraw();
+
+                BCSUtils::HudSetAlpha(baseAlpha);
+
+                propertiesY += 10.0;
+            }
 
             if (isLegacyMap)
             {

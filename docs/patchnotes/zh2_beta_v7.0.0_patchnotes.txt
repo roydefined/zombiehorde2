@@ -1,3 +1,80 @@
+New features
+------------------------------------------------
+
+* * New human start item system * *
+Humans can now receive items at the start of a round through a new configurable system. This replaces the hardcoded 50% chance of a fire grenade, and maps giving flares through their own scripts.
+Start items are defined in a new `HumanStartItems` block in `ZHMODDEF` lumps, and maps can define their own in their `ZHMAPDEF` entry. A map item overrides a mod item with the same name, allowing maps to change or disable it.
+Each item has an `Amount` and a list of `Rule` entries (`MaxPlayers`, `Chance`). The first rule matching the number of humans determines the percentage of humans that receive the item, otherwise `DefaultChance` is used. An optional `PlayerCanReceiveScript` can exclude players, for example to only give an item under certain conditions.
+Items are given one second after the zombie pick. By default, humans can also receive them early as soon as they spawn. Server hosts can turn this off with `sv_zh2_humanstartitemdistribution`.
+Players who received an item on recent maps have a lower chance of receiving it again. Server hosts can set how many maps are remembered with `sv_zh2_humanstartitemhistory` (default 3, 0 disables it).
+The fire grenade now uses this system: 100% of humans with up to 10 humans, 70% with up to 20 and 50% with up to 40.
+Additionally various maps that previously gave a flare to every player now uses this system. ZM03 specifically provides this using a condition.
+
+* * HUD scaling * *
+HUD scaling is now properly supported. This feature was previously turned off as the constant development to the HUD didn't fit in with scaling, and it broke.
+Each part has its own setting, which can be found in the HUD menu under the part it belongs to. Settings for menus, screens and the cursor are in the new "Other" section.
+A global scale in the new "Scaling" section scales the whole HUD on top of each part's own scale, and the "Reset all hud scaling" option sets every HUD scale back to its default.
+See the CVars section below for the full list of settings.
+
+* * Suggested maps * *
+New suggested map support is added where maps can suggest a map to play next and depending on the server's configuration this map will be one of the options to play.
+The main purpose is to fix an issue voting introduced where maps tie into eachother but actually aren't played in order as the rotation is random.
+Specifically one map has this issue most, being ZE12 leading into ZE13 (and the modern equivelant ZE12M also leading into ZE13M). The currency from one is used in the other, meaning the maps are very related.
+Map voting will now provide this map as a suggested map. Depending on configuration the map might not show if it was played before. If map voting is disabled the suggested map might get picked if the server allows it.
+The following maps have the given suggested map added as they're related: ZE12 (ZE13), ZE12M (ZE13M), ZE17 (ZM25), ZE19 (ZE25) and ZE20 (ZE20B).
+
+* * HUD shaking * *
+The HUD shaking feature has now been properly implemented as a configurable setting.
+Before, HUD shaking was static and could either be turned on or off. This was due to issues which have now been resolved.
+Players can now use profiles to configure HUD shaking beyond its more complex three CVars. These profiles implement preset values for these CVars, making it easier to increase/decrease the severity of the shaking.
+Manually configuring the shaking is still possible using the existing CVars which have now been readded to the menu as configurable options.
+Additionally, weapons now support their own shaking factors to increase/decrease shaking further depending on weaponry. Sniper rifles cause a more severe shaking effect, whereas the chaingun causes much less.
+This is combined with the player's configuration.
+
+* * Custom votes * *
+Support for custom voting has been added. This extends the `callvote` commands with three new commands you can use.
+- `callvote endround`: ends the round in a tie.
+- `callvote restartmap`: ends the round in a tie and replays the map.
+- `callvote extendtime <seconds>`: adds 30 to 300 seconds to the play timer.
+These votes can only be called while the round is being played.
+Additionally the main menu now also has a "Call a vote" option in multiplayer, which lists these votes together with Zandronum's own votes.
+Server hosts have control over these votes and can turn them off, similar to the other votes. The new CVars are documented below.
+
+* * Pinging * *
+A new ping system has been added where players can ping actors and the world using a ping wheel.
+Default binded on G, hold to open the wheel and select a ping type. The ping will display where you aim at.
+When pinging, the pingtype will be shown alongside a sound at the source. This ping is shared with other players.
+Pinging is provided with a cooldown per-player, and a global cooldown prevents spam when many players ping.
+The ping system is designed in a way where it will provide some features later, but for now this initial system is added.
+However, server owners are able to add a few pings to fill the ping wheel by providing them in the `PINGDEF` lump.
+By default pings are only shown to players of the same specie, and pings cna only be made up to a certain distance.
+The ping wheel can be interacted with using three modes, including a quick ping system and one where pinging triggers by closing the wheel.
+Lastly, pinging can be turned off for the whole server or for yourself.
+
+* * Client consolidation * *
+Client consolidation has always been a bit of an interesting feature to players because of the notice they will receive about changing some things to improve their experience.
+The intention of client consolidation is to easily improve this experience with a UI you can interact with, but it's confusing and hard to access.
+The way to reach client consolidation has always been through submenus, between plenty of unrelated CVars.
+This changed by providing an option through the Zombie Horde 2 menu instead. Additionally, both ways to access the client consolidation menu now close the current menu.
+Additionally, settings have been revisited and adjusted based on relevancy (for example, the inventory next/previous/use keys can now be used properly).
+The HUD itself has also been improved massively. The HUD has been cleaned up significantly and the list has been made much clearer for the user to navigate.
+Additionally the HUD now improved its wording and overflowing to work properly, and a black background will be rendered to the screen to make the UI clearer and avoid blending in with the world.
+Lastly, using the client consolidation HUD now turns off the player's HUD so these two do not interfere and overlap.
+
+Map changes
+------------------------------------------------
+
+* * Flares are now given through the human start item system * *
+Maps that gave every human a flare through their own scripts now use the new `HumanStartItems` block, with the same rules as the fire grenade. Only a portion of the humans receive a flare, based on the number of humans.
+Affected maps: ZE08, ZE16, ZE18, ZE32, ZM01, ZM02, ZM03, ZM04, ZM05, ZM06, ZM19, ZM22, ZM24, ZM26 and ZM04M.
+ZM03 still only gives flares when the map plays at night, which is handles with the conditional feature.
+
+- [ZE04]:  Fixed an invalid player id error being logged for every dead player when the final resist starts.
+- [ZE29]:  Fixed the pre-resist typeon message not working for everybody due to an activator issue.
+- [ZE30]:  Added a third room where players can spawn to improve some of the cramped space with high player counts.
+- [ZE32]:  Fixed the mansion entrance not having enough spots to teleport players.
+- [ZM09]:  Fixed White Face's scare sound not always being audible, specifically if a player left their body to spectate or switch cameras in general.
+
 API changes (Could contain breaking changes for mappers. Make sure to check this list for migrations)
 ------------------------------------------------
 
@@ -9,18 +86,149 @@ See `zh2_beta_v7.0.0_define_renames.txt` in this same folder for the full list o
 * * Cvar getters now use a new namespace and follow a consistent naming convention * *
 Every cvar function in the library and core now follows the same shape through a new system that ensures this consistency. This includes two major changes to cvars.
 Firstly, cvars now reside in a new `CVar` namespace instead of being in `ZH2Game`. Secondly, the naming has been changed to match in consistency. Server cvars are now named `GetSv{Name}()`, client cvars are named `GetCl{Name}ByPlayerId(int)`, `GetCl{Name}ByConsolePlayer()` or `GetCl{Name}()`.
-Notably with the new names, cvars now differ base don whether they target the server or a client. Secondly, this improvement also exposes two more cvars for clients, in order to get a value by a specific player, or by the console player. Some cvars already had this requirement, so it only made sense to properly support it.
+Notably with the new names, cvars now differ based on whether they target the server or a client. Secondly, this improvement also exposes two more cvars for clients, in order to get a value by a specific player, or by the console player. Some cvars already had this requirement, so it only made sense to properly support it.
 The cvars are now all also publicly available, providing a strict-typed way to get the value of a setting.
 For more information, see `zh2_beta_v7.0.0_cvar_function_renames.txt` which contains a full list of renamed cvars and their new name.
+
+* * Actor-specific ACS moved out of maps into the core code * *
+Several actors had their DECORATE-callable ACS logic hardcoded as numbered scripts directly in their home map's own ACS source. This meant the monster only worked correctly on the one map it was originally written for, and would break (or silently do nothing) if placed on any other map.
+This logic has been moved into the new `zh2legacy`/`zh2modern` monster/decoration libraries as named scripts, always loaded by default to ensure the actors retain their behavior outside of the maps they were made for.
+Affected actors: Weegee (ZE25), Comets (ZE20/ZE20B/ZM16/ZM25), Kameleon (ZM18/ZM16/ZM25), Ravishing, White Face/ImScared, Soulsphere (all ZM09) and Angel (ZM06M).
+Genuinely map-specific orchestration (spawn sequences, stats tracking, hate/target direction) was intentionally left on the map, since it only ever runs there and add a layer of opinionated behavior best left for the map to decide.
+
+* * Remaining event receive functions now externed * *
+Several event receive functions were not externed, which has not been fixed.
+The following functions now exist in the `Event` namespace: `ReceiveInitialsChosen`, `ReceivePlayerSafe`, `ReceivePowerExpired`, `ReceiveActorDamaged`, `ReceiveActorDamagedClientTotal` and `ReceiveRandomizedWeatherTrigger`.
+Receive functions are helpers that read incoming events into usable data variables.
+More information can be found on the wiki, documenting the eventbus as a whole.
+
+* * New `PINGDEF` lump to define pings * *
+This new lump provides a way to add pings to the ping wheel. The mod provides a number of pings to the mod using this new lump.
+Pings are provided with their graphic, the actor representing the ping when using the ping, and a third property that marks a ping as being the center ping.
+Only 1 center ping ever exists, and it's the default ping used when you use a quick ping (open and close the wheel quickly),
+The PINGDEF lump requires you to define a ping by key which allows you to replace pings with the same key, case insensitive.
+Players may provide patches that define or replace pings this way.
+
+* * Ray march library function * *
+A new raymarch function was added to the library. It's main purpose is to provide support for pinging.
+As `LineAttack` doesn't work in the current version of Zandronum, this can instead be used as a replacement.
+The raymarch will march a line from the given xyz + angle + pitch provided and return the final position using three XYZ getters.
+
+* * Clientside variants of the target specie checks * *
+Clientside versions of the target specie checks have been added to check if a clientsided actor targets a human or a zombie:
+- `zh2_dec_gettargetiszombie_client`
+- `zh2_dec_gettargetishuman_client`
+
+CVars
+------------------------------------------------
+
+New CVars:
+- `sv_zh2_enabledeathcam`: turns the death camera on or off for all players on the server. Enabled by default.
+- `cl_zh2_enabledeathcam`: turns the death camera on or off for yourself. Enabled by default.
+- `sv_zh2_voteincludeplayedsuggestedmaps`: includes the suggested map in voting even if it was already played. Enabled by default.
+- `sv_zh2_playsuggestedmapswithoutvoting`: plays the suggested map when voting is disabled. Disabled by default as it would cause issues if map rotation isn't random (maps will be skipped).
+- `cl_zh2_hudscale`: global HUD scale.
+- Specific HUD scale CVars, previously unused but now usable.
+    - `cl_zh2_hudversionscale`: the version HUD.
+    - `cl_zh2_hudplayerstatusscale`: the player status HUD and the inventory bar.
+    - `cl_zh2_hudplayerpowersscale`: the player powers HUD.
+    - `cl_zh2_hudplayerbarsscale`: the player bars HUD.
+    - `cl_zh2_hudroundscale`: the round HUD.
+    - `cl_zh2_hudgamescale`: the game HUD, player identities, the death camera message and the suicide bomb warning.
+    - `cl_zh2_hudobituaryscale`: the obituary HUD and legacy announcements.
+    - `cl_zh2_hudresistsscale`: the resists HUD.
+    - `cl_zh2_huddebugscale`: the debug HUD.
+    - `cl_zh2_hudadminscale`: the admin menu.
+    - `cl_zh2_hudendingscale`: the ending screen.
+    - `cl_zh2_hudvotingscale`: the voting screen.
+    - `cl_zh2_hudclientsettingsscale`: the client settings menu.
+    - `cl_zh2_hudweaponsniperscale`: the sniper zoom overlay.
+    - `cl_zh2_hudweaponradioscale`: the radio track list.
+    - `cl_zh2_hudfullserverscale`: the full server text.
+    - `cl_zh2_cursorscale`: the cursor.
+- `cl_zh2_hudshakeprofile`: profiles to handle HUD shaking. The CVars below are set through profiles, or they can be set manually.
+  the profiles are preset values for the three CVars to more easily control its behavior.
+- HUD shake CVars, which are now enabled and usable.
+    - `cl_zh2_hudshakeintensitymultiplier`: how far the HUD moves. 0.0 to 5.0. A value of 0.0 turns it off completely.
+    - `cl_zh2_hudshakefrequencymultiplier`: how fast the HUD moves back and forth. 0.1 to 5.0.
+    - `cl_zh2_hudshakedurationtics`: how long the HUD shakes after firing. 1 to 20 tics.
+- `sv_zh2_enablepinging`: turns pinging on or off for all players on the server. Enabled by default.
+- `cl_zh2_enablepinging`: turns pinging on or off for yourself. You won't see other pings either if turned off. Enabled by default.
+- `sv_zh2_pingsamespecieonly`: only shows pings to players of the same specie as the pinger (humans only see pings for other humans, etc.). Enabled by default.
+- `sv_zh2_spectatorsseepings`: when enabled spectators will see all pings.
+- `sv_zh2_pingmaxdistance`: how far away a player can ping, in map units. 100 to 10000, 2000 by default.
+- `cl_zh2_pingwheelmode`: how the ping wheel pings. 0 = click only, 1 = click, a quick tap pings the center ping, 2 = releasing the key pings the selected ping (default).
+- `sv_zh2_novoteendround`: disables the `endround` vote.
+- `sv_zh2_novoterestartmap`: disables the `restartmap` vote.
+- `sv_zh2_novoteextendtime`: disables the `extendtime` vote.
+
+Some CVars have been renamed to match the conventions introduced with the cvar rework.
+- `sv_zh2_ze11_enablefrozenteleporting` -> `sv_zh2_ze11enablefrozenteleporting`.
+- `cl_zh2_ze14_enabledynamiclights` -> `cl_zh2_ze14enabledynamiclights`.
+- `cl_zh2_zm14_enabledynamiclights` -> `cl_zh2_zm14enabledynamiclights`.
+- `cl_zh2_enabledamagefeedbackmarkers` -> `cl_zh2_damagefeedbackmarkershowtype`.
+- `cl_zh2_enabledamagefeedbackcounters` -> `cl_zh2_damagefeedbackcountershowtype`.
+- `cl_zh2_enabledamagefeedbacknumbers` -> `cl_zh2_damagefeedbacknumbershowtype`.
+
+Removed CVars:
+- `cl_zh2_shakehud`: this CVar has been moved into `cl_zh2_hudshakeprofile` as the first option.
+
+The map-specific CVars are now limited to their valid range. A value outside the range now uses the nearest valid value.
+Previously most CVars would enforce a default if out of bounds on the map-side.
+This is now no longer the case, instead clamping the value within bounds.
+- `sv_zh2_ze26flow`: 0 to 2.
+- `sv_zh2_zm06event`: 0 to 3.
+- `sv_zh2_ze12mflow`: 0 to 3.
+- `sv_zh2_ze13mflow`: 0 to 3.
+- `sv_zh2_zm06mevent`: 0 to 4.
+- `sv_zh2_zm31mevent`: 0 to 3.
+- `sv_zh2_zm31meventtics`: 350 to 21000. Before, any value of 1 or greater was accepted.
 
 Other mod changes
 ------------------------------------------------
 
 - Renamed several internal library and core source files/folders for naming consistency (e.g. `afkprevention` -> `afk_prevention`, `translucentallies.acs` -> `translucent_allies.acs`, `prepostscript.acs` -> `pre_post_script.acs`). This is internal only and does not affect maps.
 - Added `zh2modern` and `zh2legacy`, matching `zh2lib`/`zh2game` structure-wise, giving the modern/legacy map-pack-specific cvars typed getters instead of raw `GetCVar`/`GetUserCVar` calls scattered across the map scripts.
+- Fixed an issue with ZM09's soulsphere/ghouldemon dealing wildly excessive melee damage (effectively an instant kill) instead of its intended small damage amount to humans (or large, but survivable, damage to zombies) to to an invalid cast.
+- Added two options to the debug menu, which log the parsed human start items and the human start item history of every player.
+- Added an option to the debug menu which logs the loaded ping definitions.
+- Fix issue with the core's LOADACS lump not actually working. This was never noticed before because the mod doesn't use autoloading yet, and maps always loaded the code themselves.
+- Fix `sv_zh2_minimumclientcount` not properly enforcing a minimum of 2 internally.
+- The deathcam is now disabled when loading `docs/classicmode.cfg`.
+- Added the new Pinging and Map Repeat System as disabled when loading `docs/classicmode.cfg`.
+- Fix the classic shotgun not being able to fire mid-reload.
+- Fix join block messages being shown multiple times to queued players.
+- Fixed bad id check in fire and acid handlers.
+- Fixed the "next map" vote option not working correctly.
+- Fixed a bad check in reward shuffling logic causing errors.
+- Fixed the `timerpaused` and `timerresumed` event defines being switched and not properly triggering.
+- Fixed possible invalid player id warnings when resetting the map.
+- Added a system that provides support for getting resurrected after death. Unlike respawning normally, resurrection previously left the player in a broken state.
+- Added a lock definition for the remaining keys that didn't have one. Specifically this fixes an issue with the `give keys` command not giving all keys.
+- Fixed invalid skull key lock definitions causing locked doors to work incorrectly.
+- Fixed an issue where the "Random map" vote option could cause an error with no valid maps left.
+- Fixed `ZHMAPDEF` lump blocks after `WeatherProfiles` failing to parse.
+- Fixed `WEATHDEF` and `LOGDEF` lumps only parsing the last lump entries.
+- Made `=` chars optional in `WeatherProfiles` blocks to match behavior of the other blocks.
+- Updated ACSUtils to the latest version to add some of its features and fix a bugs.
+    - `GetAspectRatio` now also detects ultra widescreen (21:9).
+    - Fixed broken line continuation in the character table which caused entries to shift and incorrectly represent data.
+        - The workaround to fix `z` characters has now also been removed from the tokenizer.
+- Improved radio validation both clientside and serverside to prevent malicious intend with malformed tracks by clients.
+- Fixed the inventory HUD not always correctly rendering left sided items and sometimes overlapping.
+- Added the new inventory API added to the latest Zandronum release to correctly check the player's inventory. This fixes issues when players use the build-in keys, which didn't show the selected items correctly.
+- Fixed client consolidation not properly updating and showing the actual list of settings a player needs to pay attention to.
+- Added a validation step to the radio that ensures clients only play radio tracks and not random music lumps.
+- Rebalanced the knockback of the legacy sniper. The knockback has been lowered to accommodate the earlier damage increase.
+- Rebalanced the knockback of the legacy chaingun. The knockback has been increased to accommodate the lower damage.
+- Updated the kickback metadata of all weapons to properly match the kickback they have in their decorate specifications.
+- Fixed AFK prevention on start not properly updating if somebody that didn't move gets picked as a zombie.
 
 Repository changes
 ------------------------------------------------
 
 - `compile_maps.py` now also includes the new `ZombieHorde2Modern`/`ZombieHorde2Legacy` ACS source folders, so maps in those packs can reach the new cvar getters.
 - Extended the VSCode workspace structure and PubDoomer profiles to properly support the new modern/legacy ACS files.
+- `build_project.py` now also compiles the new `zh2legacy`/`zh2modern` libraries.
+- Fix PubDoomer profile incorrectly compiling with a dev directive.
+- Add PubDoomer profile to compile the project with only a playercap directive.

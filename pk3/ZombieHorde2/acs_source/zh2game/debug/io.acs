@@ -36,6 +36,10 @@ strict namespace Debug
                 int bloodSeverity = Item::GetItemBloodSeverity(i);
                 int bloodTics = Item::GetItemBloodTics(i);
 
+                fixed hudShakeIntensity = Item::GetItemHudShakeIntensity(i);
+                fixed hudShakeFrequency = Item::GetItemHudShakeFrequency(i);
+                fixed hudShakeDuration = Item::GetItemHudShakeDuration(i);
+
                 bool takeOnPanic = Item::GetItemTakeOnPanic(i);
 
                 // The name is always set.
@@ -54,6 +58,10 @@ strict namespace Debug
 
                 if (bloodSeverity > 0) Append(s:"\cj, blood severity: \cd" + str(bloodSeverity));
                 if (bloodTics > 0) Append(s:"\cj, blood tics: \cd" + str(bloodTics));
+
+                if (Item::GetItemHudShakeIntensitySet(i)) Append(s:"\cj, hud shake intensity: \cd", f:hudShakeIntensity);
+                if (Item::GetItemHudShakeFrequencySet(i)) Append(s:"\cj, hud shake frequency: \cd", f:hudShakeFrequency);
+                if (Item::GetItemHudShakeDurationSet(i)) Append(s:"\cj, hud shake duration: \cd", f:hudShakeDuration);
 
                 if (takeOnPanic) Append(s:"\cj, take on panic: \cdtrue");
             }
@@ -137,6 +145,112 @@ strict namespace Debug
                 // Lengthy, turned off for now
                 //if (localMessage != (raw)0 && localMessage != "") Append(s:"\cj, local message \cd" + localMessage);
                 //if (message != (raw)0 && message != "") Append(s:"\cj, message \cd" + message);
+            }
+        }
+        Logger::LogActivator(logMessage);
+    }
+
+    script "zh2_action_debughumanstartitems_serverside" net
+    {
+        InternalDebugHumanStartItems();
+    }
+
+    internal void InternalDebugHumanStartItems()
+    {
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int size = Item::GetParsedModHumanStartItemCount();
+            Append(s:"\cjParsed mod human start items \cd" + str(size));
+            for (int i = 0; i < size; ++i)
+            {
+                Append(s:"\n");
+                Append(s:"\cf#" + str(i));
+                Append(s:"\cj Item \cd" + Item::GetParsedModHumanStartItemName(i));
+                Append(s:"\cj, amount: \cd" + str(Item::GetParsedModHumanStartItemAmount(i)));
+                for (int j = 0; j < Item::GetParsedModHumanStartItemRuleCount(i); ++j)
+                    Append(s:"\cj, rule: \cd" + str(Item::GetParsedModHumanStartItemRuleMaxPlayers(i, j)) + " players " + str(Item::GetParsedModHumanStartItemRuleChance(i, j)) + "%");
+                Append(s:"\cj, default chance: \cd" + str(Item::GetParsedModHumanStartItemDefaultChance(i)) + "%");
+            }
+
+            size = Item::GetParsedMapHumanStartItemCount();
+            Append(s:"\n");
+            Append(s:"\cjParsed map human start items \cd" + str(size));
+            for (int i = 0; i < size; ++i)
+            {
+                Append(s:"\n");
+                Append(s:"\cf#" + str(i));
+                Append(s:"\cj Item \cd" + Item::GetParsedMapHumanStartItemName(i));
+                Append(s:"\cj, amount: \cd" + str(Item::GetParsedMapHumanStartItemAmount(i)));
+                for (int j = 0; j < Item::GetParsedMapHumanStartItemRuleCount(i); ++j)
+                    Append(s:"\cj, rule: \cd" + str(Item::GetParsedMapHumanStartItemRuleMaxPlayers(i, j)) + " players " + str(Item::GetParsedMapHumanStartItemRuleChance(i, j)) + "%");
+                Append(s:"\cj, default chance: \cd" + str(Item::GetParsedMapHumanStartItemDefaultChance(i)) + "%");
+            }
+
+            size = Item::GetHumanStartItemCount();
+            Append(s:"\n");
+            Append(s:"\cjCombined human start items \cd" + str(size));
+            for (int i = 0; i < size; ++i)
+            {
+                Append(s:"\n");
+                Append(s:"\cf#" + str(i));
+                Append(s:"\cj Item \cd" + Item::GetHumanStartItemName(i));
+                Append(s:"\cj, source: \cd" + (Item::GetHumanStartItemSource(i) == Item::HUMANSTARTITEMSOURCE_MAP ? "map" : "mod"));
+                Append(s:"\cj, amount: \cd" + str(Item::GetHumanStartItemAmount(i)));
+                for (int j = 0; j < Item::GetHumanStartItemRuleCount(i); ++j)
+                    Append(s:"\cj, rule: \cd" + str(Item::GetHumanStartItemRuleMaxPlayers(i, j)) + " players " + str(Item::GetHumanStartItemRuleChance(i, j)) + "%");
+                Append(s:"\cj, default chance: \cd" + str(Item::GetHumanStartItemDefaultChance(i)) + "%");
+                Append(s:"\cj, quota: \cd" + str(Item::GetHumanStartItemQuota(i)) + "\cj, received: \cd" + str(Item::GetHumanStartItemReceivedCount(i)));
+            }
+        }
+        Logger::LogActivator(logMessage);
+    }
+
+    script "zh2_action_debughumanstartitemhistory_serverside" net
+    {
+        InternalDebugHumanStartItemHistory();
+    }
+
+    internal void InternalDebugHumanStartItemHistory()
+    {
+        str logMessage;
+        buildmsg(logMessage = StrParam())
+        {
+            int historySize = CVar::GetSvHumanStartItemHistory();
+            int maxWeight = 1 << historySize;
+
+            Append(s:"\cjHuman start item history, remembering \cd" + str(historySize) + "\cj map(s).");
+
+            for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+            {
+                if (!PlayerInGame(i))
+                    continue;
+
+                for (int j = 0; j < Item::GetHumanStartItemCount(); ++j)
+                {
+                    str receivedMaps = "";
+                    for (int k = 0; k <= historySize; ++k)
+                    {
+                        if (!Item::GetPlayerReceivedHumanStartItemOnMap(i, j, k))
+                            continue;
+
+                        if (receivedMaps != "")
+                        {
+                            receivedMaps += ", ";
+                        }
+
+                        receivedMaps += str(k);
+                    }
+
+                    // Only log the items the player received, to preserve space.
+                    if (receivedMaps == "")
+                        continue;
+
+                    Append(s:"\n");
+                    Append(s:"\cd" + BCSUtils::PlayerName(i) + "\cj - \cd" + Item::GetHumanStartItemName(j));
+                    Append(s:"\cj: weight \cd" + str(Item::GetPlayerHumanStartItemWeight(i, j)) + "\cj/\cd" + str(maxWeight));
+                    Append(s:"\cj, received \cd" + receivedMaps + "\cj maps ago");
+                }
             }
         }
         Logger::LogActivator(logMessage);

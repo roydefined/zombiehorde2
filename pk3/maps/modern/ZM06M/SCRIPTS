@@ -87,9 +87,6 @@ strict namespace
     #define ANGEL_DIED_ITEM_SPAWN_HEIGHT_MIN 16.0
     #define ANGEL_DIED_ITEM_SPAWN_HEIGHT_MAX 48.0
 
-    // Handles the see state of the angel to know when to scream next
-    #define ANGEL_NEXT_SEE_SCREAM 35 * 6
-
     // Possible events
     #define EVENTSTATE_NONE 0
     #define EVENTSTATE_DISCO 1
@@ -256,21 +253,6 @@ strict namespace
         Ceiling_LowerAndCrush(53, 16, 5, 2);
         Tagwait(53);
         Ceiling_LowerByValueTimes8(53, 16, 1);
-    }
-
-    // This simplifies the Angel's logic a lot by conditionally triggering its see behavior based on a timer.
-    script "zh2_dec_angel_checksee"
-    {
-        static int nextSeeTrigger;
-        if (nextSeeTrigger < Timer())
-        {
-            nextSeeTrigger = Timer() + ANGEL_NEXT_SEE_SCREAM;
-            SetResultValue((int)true);
-        }
-        else
-        {
-            SetResultValue((int)false);
-        }
     }
 
     Script "FlareLocker" (int whatfloor)

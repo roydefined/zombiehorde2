@@ -1,0 +1,160 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Ping"
+
+#include "spawn.acs"
+#include "cooldown.acs"
+
+strict namespace Ping
+{
+    void TicServer()
+    {
+        CooldownTic();
+    }
+
+    void TicClient(bool canPing)
+    {
+        if (!canPing && GetPingWheelOpen())
+            SetPingWheelOpen(false);
+    }
+
+    // Initializes the ping wheel positions.
+    void InitializePingWheelClient()
+    {
+        // Default all to -1.
+        for (int i = 0; i <= PING_WHEEL_SEGMENT_COUNT; ++i)
+            SetPingWheelSegmentPingIndex(i, -1);
+
+        // Centered pings go in the center, the last one wins.
+        // The rest fill the ring, sides first and then the corners.
+        int sideCount = PING_WHEEL_SEGMENT_COUNT / 2;
+        int ringCount = 0;
+        for (int i = 0; i < GetPingCount(); ++i)
+        {
+            if (GetPingCentered(i))
+            {
+                SetPingWheelSegmentPingIndex(PING_WHEEL_CENTER_SEGMENT, i);
+                continue;
+            }
+
+            // The ring is full.
+            if (ringCount == PING_WHEEL_SEGMENT_COUNT)
+                continue;
+
+            int segment = ringCount < sideCount
+                ? ringCount * 2 + 1
+                : (ringCount - sideCount) * 2 + 2;
+
+            SetPingWheelSegmentPingIndex(segment, i);
+            ++ringCount;
+        }
+    }
+
+    void SetPingWheelIsOpen(bool isOpen)
+    {
+        // Wheel is closing.
+        if (!isOpen && GetPingWheelOpen())
+        {
+            bool quickClose = Timer() - GetPingWheelOpenTic() <= PING_WHEEL_QUICK_TICS;
+            CVar::PingWheelModeT mode = CVar::GetClPingWheelModeByConsolePlayer();
+
+            int segment = -1;
+
+            // Quick tap pings the center.
+            if (mode == CVar::PINGWHEELMODE_QUICKTAP && quickClose)
+            {
+                segment = PING_WHEEL_CENTER_SEGMENT;
+            }
+
+            // Closing pings the selected segment. A quick tap selects the center.
+            else if (mode == CVar::PINGWHEELMODE_RELEASE)
+            {
+                segment = GetPingWheelSelectedSegment();
+            }
+
+            // One of the two cases passed, try and ping the segment.
+            if (segment != -1)
+            {
+                int pingIndex = GetPingWheelSegmentPingIndex(segment);
+                if (pingIndex != -1)
+                    RaymarchPing(GetPingKey(pingIndex));
+            }
+        }
+
+        // Wheel is opening.
+        else if (isOpen && !GetPingWheelOpen())
+        {
+            SetPingWheelOpenTic(Timer());
+
+            // The cursor starts in the center, so the center is selected until the wheel is drawn.
+            SetPingWheelSelectedSegment(PING_WHEEL_CENTER_SEGMENT);
+            BCSUtils::CenterCursor();
+        }
+
+        SetPingWheelOpen(isOpen);
+    }
+
+    // Returns the index of the ping with the normalized key, or -1 if not found.
+    internal int GetPingIndexByKey(str key)
+    {
+        for (int i = 0; i < GetPingCount(); ++i)
+        {
+            if (GetPingKey(i) == key)
+                return i;
+        }
+
+        return -1;
+    }
+
+    // Returns true if the value only contains letters and digits. The length is checked separately.
+    internal bool ValidatePingProperty(str value)
+    {
+        int length = StrLen(value);
+        for (int i = 0; i < length; ++i)
+        {
+            int c = GetChar(value, i);
+            if (c < 0 || c > 127 || !BCSUtils::isalnum(c))
+                return false;
+        }
+
+        return true;
+    }
+
+    // Persisting context
+    internal bool GetPingsParsed() { return ZH2Lib::PersistingLibContext.PingContext.IsParsed; }
+    internal void SetPingsParsed(bool value) { ZH2Lib::PersistingLibContext.PingContext.IsParsed = value; }
+    internal int GetPingCount() { return ZH2Lib::PersistingLibContext.PingContext.Count; }
+    internal void SetPingCount(int value) { ZH2Lib::PersistingLibContext.PingContext.Count = value; }
+    internal str GetPingKey(int index) { return ZH2Lib::PersistingLibContext.PingContext.Collection[index].Key; }
+    internal void SetPingKey(int index, str value) { ZH2Lib::PersistingLibContext.PingContext.Collection[index].Key = value; }
+    internal bool GetPingCentered(int index) { return ZH2Lib::PersistingLibContext.PingContext.Collection[index].Centered; }
+    internal void SetPingCentered(int index, bool value) { ZH2Lib::PersistingLibContext.PingContext.Collection[index].Centered = value; }
+    internal str GetPingGraphic(int index) { return ZH2Lib::PersistingLibContext.PingContext.Collection[index].Graphic; }
+    internal void SetPingGraphic(int index, str value) { ZH2Lib::PersistingLibContext.PingContext.Collection[index].Graphic = value; }
+    internal str GetPingActor(int index) { return ZH2Lib::PersistingLibContext.PingContext.Collection[index].Actor; }
+    internal void SetPingActor(int index, str value) { ZH2Lib::PersistingLibContext.PingContext.Collection[index].Actor = value; }
+
+    // Transient context
+    bool GetPingWheelOpen() { return ZH2Lib::LibContext.PingWheelContext.IsOpen; }
+    internal void SetPingWheelOpen(bool value) { ZH2Lib::LibContext.PingWheelContext.IsOpen = value; }
+    internal int GetPingWheelOpenTic() { return ZH2Lib::LibContext.PingWheelContext.OpenTic; }
+    internal void SetPingWheelOpenTic(int value) { ZH2Lib::LibContext.PingWheelContext.OpenTic = value; }
+    internal int GetPingWheelSegmentPingIndex(int segment) { return ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[segment]; }
+    internal void SetPingWheelSegmentPingIndex(int segment, int value) { ZH2Lib::LibContext.PingWheelContext.SegmentPingIndex[segment] = value; }
+    internal int GetPingWheelSelectedSegment() { return ZH2Lib::LibContext.PingWheelContext.SelectedSegment; }
+    internal void SetPingWheelSelectedSegment(int value) { ZH2Lib::LibContext.PingWheelContext.SelectedSegment = value; }
+
+    // Transient context - cooldown system
+    internal int GetStoredPlayerPingCooldown(int playerId) { return ZH2Lib::LibContext.PingCooldownContext.PlayerCooldown[playerId]; }
+    internal void SetStoredPlayerPingCooldown(int playerId, int value) { ZH2Lib::LibContext.PingCooldownContext.PlayerCooldown[playerId] = value; }
+    internal int GetPlayerPingCooldownTic(int playerId) { return ZH2Lib::LibContext.PingCooldownContext.PlayerCooldownTic[playerId]; }
+    internal void SetPlayerPingCooldownTic(int playerId, int value) { ZH2Lib::LibContext.PingCooldownContext.PlayerCooldownTic[playerId] = value; }
+    internal int GetStoredGlobalPingCooldown() { return ZH2Lib::LibContext.PingCooldownContext.GlobalCooldown; }
+    internal void SetStoredGlobalPingCooldown(int value) { ZH2Lib::LibContext.PingCooldownContext.GlobalCooldown = value; }
+    internal int GetGlobalPingCooldownTic() { return ZH2Lib::LibContext.PingCooldownContext.GlobalCooldownTic; }
+    internal void SetGlobalPingCooldownTic(int value) { ZH2Lib::LibContext.PingCooldownContext.GlobalCooldownTic = value; }
+}
+
+#undef LOGSOURCE

@@ -105,14 +105,19 @@ strict namespace Event
 
             case Round::StateEnding:
             {
+                // Shift everybody in preparation for the next map.
+                Item::ShiftHumanStartItemHistory();
+
                 Game::EndActionT action = Game::GetEndAction();
 
-                // If the action is to restart the map, use a different timer. Otherwise just use the default.
+                // If the action is to restart or repeat the map, use a different timer. Otherwise just use the default.
                 // This timer is required. If not set we log an error.
                 // TODO: Ideally if we started the match we inform the map developer of this.
-                RoundTimer::KnownRoundTimerT timerType = action == Game::ACTION_RESTART
-                    ? RoundTimer::TIMERENDINGWITHRESTART
-                    : RoundTimer::TIMERENDING;
+                RoundTimer::KnownRoundTimerT timerType = RoundTimer::TIMERENDING;
+                if (action == Game::ACTION_RESTART)
+                    timerType = RoundTimer::TIMERENDINGWITHRESTART;
+                else if (action == Game::ACTION_REPEAT)
+                    timerType = RoundTimer::TIMERENDINGWITHREPEAT;
 
                 int index = RoundTimer::GetIndexOfKnownType(timerType);
                 if (RoundTimer::GetTimerDefined(index))

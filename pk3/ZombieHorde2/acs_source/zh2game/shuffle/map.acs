@@ -11,12 +11,20 @@ strict namespace Shuffle
         int currentMapPosition = GetMapPosition(MAPPOSITION_CURRENT);
         int nextMapPosition = GetMapPosition(MAPPOSITION_NEXT);
 
+        // -1 if the current map has no existing suggested map, or if it is not in the map rotation.
+        int suggestedMapPosition = Map::GetCurrentMapSuggestedMapExists()
+            ? Map::GetParsedMapRotationPosition(Map::GetCurrentMapSuggestedMapHandle())
+            : -1;
+
         for (int i = 1; i <= GetMapRotationSize(); i++)
         {
             if ((flags & FLAGIGNORECURRENTMAP) && i == currentMapPosition)
                 continue;
 
             if ((flags & FLAGIGNORENEXTMAP) && i == nextMapPosition)
+                continue;
+
+            if ((flags & FLAGIGNORESUGGESTEDMAP) && i == suggestedMapPosition)
                 continue;
 
             if ((flags & FLAGIGNOREPLAYEDMAP) && GetMapRotationInfo(i, MAPROTATION_USED))

@@ -28,9 +28,11 @@
 #include "power/power.acs"
 #include "item/item.acs"
 #include "admin/admin.acs"
+#include "vote/vote.acs"
 #include "hud/hud.acs"
 #include "io/io.acs"
 #include "weapon/weapon.acs"
+#include "ping/ping.acs"
 
 #define LOGSOURCE "Main"
 
@@ -102,11 +104,13 @@ strict namespace ZH2Game
         IO::ParseCurrentMapLump();
 
         // Initialize core components.
+        Item::CombineHumanStartItemsServer();
         Game::InitializeZombieTeleport();
         Weapon::ReplaceFakeWeaponSpawnSpots();
         Player::InitializeHealth();
         AfkPrevention::InitializeServer();
         Decorate::InitializeRadioServer();
+        Map::InitializeMapPlayServer();
 
         // Now the loop starts because we have loaded everything.
         GameLoop::StartServerLoop();
@@ -183,6 +187,7 @@ strict namespace ZH2Game
 
         // Parse other persisting data here.
         IO::ParseFootstepDefsClientside();
+        IO::ParsePingDefsClientside();
         IO::ParseModDefLumpsClientside();
         IO::ParseRadioDefLumpsClientside();
         if (IsNetworkGame())
@@ -259,6 +264,7 @@ strict namespace ZH2Game
         Game::InitializeClient();
         Round::InitializeClient();
         Decorate::InitializeRadioClient();
+        Ping::InitializePingWheelClient();
 
         // HACK-ish; this must run early for `PlayDefaultMusic` to work properly since it's based on it.
         // The full sync is later, but we must also set `PlayDefaultMusic` higher for the radio to work.
@@ -410,6 +416,12 @@ strict namespace ZH2Game
     script "zh2_internal_death" death
     {
         int killedId = PlayerNumber();
+
+        // The body no longer belongs to a player.
+        // This has happened a few times when testing offline with many bots, and `ResetMap()` gets called.
+        if (killedId == -1)
+            terminate;
+
         VALIDATE_ID_VALID_SCRIPT(killedId);
 
         // Skip this script if the player is not playing (state is likely dead already).
@@ -444,12 +456,57 @@ strict namespace ZH2Game
         else
             Player::SetPlayerState(killedId, Player::STATEDEAD);
 
-        Identity::DisposeTID(Identity::GetTid(killedId));
+        // Set up the body to track for possible resurrection.
+        int deadBodyTid = DEAD_BODY_TID_BASE + killedId;
+        Identity::DisposeTID(deadBodyTid);
+        Thing_ChangeTID(Identity::GetTid(killedId), deadBodyTid);
         Sync::SyncPlayers();
+
+        ACS_NamedExecuteAlways("zh2_internal_check_resurrect", 0, killedId);
+    }
+
+    // Track a player's dead body for possible resurrection.
+    // Getting resurrected with `resurrect` does not run the respawn script, and so this way it fixes that.
+    script "zh2_internal_check_resurrect" (int id)
+    {
+        Logger::LogInformation(LOGSOURCE, "Waiting for player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " to possibly resurrect.");
+
+        int deadBodyTid = DEAD_BODY_TID_BASE + id;
+
+        // Wait until the player is alive. This also leaves the player as the activator.
+        while (!(SetActivatorToPlayer(id) && BCSUtils::ActorIsAlive(0)))
+        {
+            // The player left the game or became a spectator.
+            if (!PlayerInGame(id))
+            {
+                Logger::LogInformation(LOGSOURCE, "Stop waiting for player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " to resurrect. Player is no longer in the game.");
+                terminate;
+            }
+
+            Delay(const: 1);
+        }
+
+        // A new body, so the player respawned.
+        if (ActivatorTid() != deadBodyTid)
+        {
+            Logger::LogInformation(LOGSOURCE, "Stop waiting for player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " to resurrect. Player respawned.");
+            Identity::DisposeTID(deadBodyTid);
+            terminate;
+        }
+
+        Logger::LogInformation(LOGSOURCE, "Player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " resurrected.");
+
+        ACS_NamedExecuteWithResult(SCRIPT_ENTER_RESPAWN_NAME, 0);
+        ACS_NamedExecuteAlways(SCRIPT_ENTER_RESPAWN_CLIENTSIDE_NAME, 0);
     }
 
     script "zh2_internal_death_client" death clientside
     {
+        // The body no longer belongs to a player.
+        // This has happened a few times when testing offline with many bots, and `ResetMap()` gets called.
+        if (PlayerNumber() == -1)
+            terminate;
+
         Logger::LogDebug(LOGSOURCE, "Call script \"zh2_internal_death_client\" for player " + str(PlayerNumber()) + ".");
 
         // Dispose some features run on other clients and not ourselves.
@@ -466,8 +523,10 @@ strict namespace ZH2Game
         Settings::CloseClientSettingsMenu();
         Admin::DisableAdminHud();
 
+        bool deathCamCvarsEnabled = CVar::GetSvEnableDeathCam() && CVar::GetClEnableDeathCamByConsolePlayer();
+
         // Trigger a death cam when the round has started and the player dies.
-        if (!Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()) && Player::GetPlayerState(PlayerNumber()) == Player::STATEPLAYING)
+        if (deathCamCvarsEnabled && !Round::GetRoundJoinable(Round::GetActiveRoundStateIndex()) && Player::GetPlayerState(PlayerNumber()) == Player::STATEPLAYING)
         {
             Game::InitializeClientDeathCamera();
 
@@ -601,6 +660,10 @@ strict namespace ZH2Game
         // Spawn a team indicator unless we're the one entering/respawning
         if (PlayerNumber() != ConsolePlayerNumber())
             Game::SpawnTeamIndicator();
+
+        // A player that was revived without respawning still has the death camera.
+        else if (Game::ClientDeathCameraEnabled())
+            Game::DisposeClientDeathCamera();
     }
 
     // Returns `true` if the given player can join.

@@ -9,6 +9,7 @@ strict namespace ZH2Game
         switch(type)
         {
             case GAMEEVENT_PLAYERJOINS: SetResultValue((int)OnPlayerJoins(arg1)); terminate;
+            case GAMEEVENT_JOINQUEUECHANGED: OnJoinQueueChanged(arg1, arg2); terminate;
             case GAMEEVENT_PLAYERCONNECT: OnPlayerConnect(arg1); terminate;
             case GAMEEVENT_ACTOR_DAMAGED_PREMOD: SetResultValue(OnActorPreModifiedDamage(arg1, arg2)); terminate;
             case GAMEEVENT_ACTOR_DAMAGED: OnActorDamaged(arg1, arg2); terminate;
@@ -20,20 +21,29 @@ strict namespace ZH2Game
 
     internal bool OnPlayerJoins(int id)
     {
+        bool inJoinQueue = GameContext.Players[id].InJoinQueue;
+
         // Forced player cap is enabled and the player must join within the cap.
         if (!GetPlayerIsWithinPlayerCap(id))
         {
-            Logger::LogTo(id, "This development build enforces a maximum player cap of " + str(DEV_PLAYERCAP_COUNT) + ". Please use a compatible, non-development version of Zombie Horde 2 to lift this limit.");
+            if (!inJoinQueue)
+                Logger::LogTo(id, "This development build enforces a maximum player cap of " + str(DEV_PLAYERCAP_COUNT) + ". Please use a compatible, non-development version of Zombie Horde 2 to lift this limit.");
+
             return false;
         }
 
         // The game must be in a state where players can join.
         bool canJoin = GetPlayerCanJoin(id);
-        if (!canJoin)
+        if (!canJoin && !inJoinQueue)
             Logger::LogTo(id, "You will join the next map.");
 
         Logger::LogDebug(LOGSOURCE, "Can player \cd" + str(id) + "\cj join: \cd" + (canJoin ? "true" : "false") + "\cj.");
         return canJoin;
+    }
+
+    internal void OnJoinQueueChanged(int id, int position)
+    {
+        GameContext.Players[id].InJoinQueue = position >= 0;
     }
 
     internal void OnPlayerConnect(int id)

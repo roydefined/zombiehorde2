@@ -12,7 +12,7 @@ strict namespace CVar
     CVAR_CL_BOOL(AdminSpawnBotInFront)
 
     // Game
-    CVAR_SV_INT_CLAMPED(MinimumClientCount, 0, BCSUTILS::MAX_PLAYERS)
+    CVAR_SV_INT_CLAMPED(MinimumClientCount, 2, BCSUTILS::MAX_PLAYERS)
     CVAR_SV_BOOL(InfectTimeIncrease)
     CVAR_SV_INT_CLAMPED(PlayersPerInitial, 6, BCSUTILS::MAX_PLAYERS)
     CVAR_SV_BOOL(ShowZombiesResists)
@@ -110,10 +110,22 @@ strict namespace CVar
     // Game - Voting
     CVAR_SV_BOOL(AllowMapVoting)
     CVAR_SV_BOOL(VoteIncludePlayedMaps)
+    CVAR_SV_BOOL(VoteIncludePlayedSuggestedMaps)
+    CVAR_SV_BOOL(PlaySuggestedMapsWithoutVoting)
     CVAR_SV_BOOL(AllowSpectatorVoting)
     CVAR_SV_INT_CLAMPED(MaxVotableMapsShown, 1, MAX_VOTABLEMAPS)
     CVAR_SV_INT_CLAMPED(PlayerVotePercentage, 1, 100)
     CVAR_SV_INT_CLAMPED(PlayerPickCooldownTics, 0, 350)
+    CVAR_SV_BOOL(NoVoteEndRound)
+    CVAR_SV_BOOL(NoVoteRestartMap)
+    CVAR_SV_BOOL(NoVoteExtendTime)
+
+    // Game - Map repeat
+    CVAR_SV_INT_CLAMPED(MapRepeatCount, 0, 100)
+    CVAR_SV_INT_CLAMPED(MapMinimumDuration, 0, 120)
+
+    // Game - Ping
+    CVAR_SV_BOOL(PingSameSpecieOnly)
 
     // Game - Features
     CVAR_SV_BOOL(UseMapResetsFeature)
@@ -263,8 +275,19 @@ strict namespace CVar
     CVAR_SV_BOOL(AllowPanicking)
     CVAR_SV_INT_CLAMPED(MaxPanicCount, 1, 10)
 
+    CVAR_SV_CUSTOM_CLAMPED(HumanStartItemDistribution, HumanStartItemDistributionT, 0, 1,
+    {
+        case 0:
+            return HUMANSTARTITEMDISTRIBUTION_EARLY_AND_TOPUP;
+        default:
+            return HUMANSTARTITEMDISTRIBUTION_ONLY_AFTER_PICK;
+    })
+    CVAR_SV_INT_CLAMPED(HumanStartItemHistory, 0, 24)
+
     // Player - Features
     CVAR_CL_BOOL(RemoveSoftwareTextures)
+    CVAR_SV_BOOL(EnableDeathCam)
+    CVAR_CL_BOOL(EnableDeathCam)
 
     // Hud
     CVAR_CL_BOOL(DrawHud)
@@ -302,64 +325,68 @@ strict namespace CVar
         default: return HUDSKINPREFERENCE_AUTO;
     })
 
-    CVAR_CL_BOOL(DrawDebugCoordinatesHud)
-
     CVAR_SV_BOOL(ShakeHud)
-    CVAR_CL_BOOL(ShakeHud)
 
-    // The custom definitions are turned off for now until they are properly implemented.
-    // When they are, the comment right of them will be usable.
-    CVAR_CL_CUSTOM(HudShakeIntensityMultiplier, fixed, { default: return 1.1; }) //CVAR_CL_FIXED_CLAMPED(HudShakeIntensityMultiplier, 0.1, 5.0)
-    CVAR_CL_CUSTOM(HudShakeFrequencyMultiplier, fixed, { default: return 1.1; }) //CVAR_CL_FIXED_CLAMPED(HudShakeFrequencyMultiplier, 0.1, 5.0)
-    CVAR_CL_CUSTOM(HudShakeDurationTics, int, { default: return 4; }) //CVAR_CL_INT_CLAMPED(HudShakeDurationTics, 1, 20)
+    CVAR_CL_CUSTOM_CLAMPED(HudShakeProfile, HudShakeProfileT, 0, 4,
+    {
+        case 0: return HUDSHAKEPROFILE_OFF;
+        case 1: return HUDSHAKEPROFILE_LOW;
+        case 3: return HUDSHAKEPROFILE_HIGH;
+        case 4: return HUDSHAKEPROFILE_EXTREME;
+        default: return HUDSHAKEPROFILE_MEDIUM;
+    })
 
-    CVAR_CL_CUSTOM(CursorScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(CursorScale, 0.05, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudShakeIntensityMultiplier, 0.0, 5.0)
+    CVAR_CL_FIXED_CLAMPED(HudShakeFrequencyMultiplier, 0.1, 5.0)
+    CVAR_CL_INT_CLAMPED(HudShakeDurationTics, 1, 20)
 
     CVAR_CL_BOOL(DrawVersionHud)
-    CVAR_CL_CUSTOM(HudVersionScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudVersionScale, 0.05, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudVersionScale, 0.5, 2.0)
 
     CVAR_CL_BOOL(DrawPlayerStatusHud)
     CVAR_CL_FIXED_CLAMPED(HudPlayerStatusOffsetX, 0.0, 200.0)
     CVAR_CL_FIXED_CLAMPED(HudPlayerStatusOffsetY, 0.0, 40.0)
-    CVAR_CL_CUSTOM(HudPlayerStatusScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudPlayerStatusScale, 0.05, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudPlayerStatusScale, 0.5, 2.0)
 
     CVAR_CL_BOOL(DrawPlayerPowersHud)
     CVAR_CL_FIXED_CLAMPED(HudPlayerPowersOffsetX, -200.0, 200.0)
     CVAR_CL_FIXED_CLAMPED(HudPlayerPowersOffsetY, -40.0, 40.0)
-    CVAR_CL_CUSTOM(HudPlayerPowersScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudPlayerPowersScale, 0.05, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudPlayerPowersScale, 0.5, 2.0)
 
     CVAR_CL_BOOL(DrawPlayerBarsHud)
     CVAR_CL_FIXED_CLAMPED(HudPlayerBarsOffsetX, -200.0, 200.0)
     CVAR_CL_FIXED_CLAMPED(HudPlayerBarsOffsetY, -40.0, 40.0)
-    CVAR_CL_CUSTOM(HudPlayerBarsScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudPlayerBarsScale, 0.05, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudPlayerBarsScale, 0.5, 2.0)
 
     CVAR_CL_BOOL(DrawRoundHud)
     CVAR_CL_FIXED_CLAMPED(HudRoundOffsetX, -200.0, 200.0)
     CVAR_CL_FIXED_CLAMPED(HudRoundOffsetY, 0.0, 40.0)
-    CVAR_CL_CUSTOM(HudRoundScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudRoundScale, 0.05, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudRoundScale, 0.5, 2.0)
 
     CVAR_CL_BOOL(DrawGameHud)
-    CVAR_CL_CUSTOM(HudGameScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudGameScale, 0.05, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudGameScale, 0.5, 2.0)
 
     CVAR_CL_BOOL(DrawObituaryHud)
     CVAR_CL_FIXED_CLAMPED(HudObituaryOffsetX, -200.0, 200.0)
     CVAR_CL_FIXED_CLAMPED(HudObituaryOffsetY, 0.0, 40.0)
+    CVAR_CL_FIXED_CLAMPED(HudObituaryScale, 0.5, 2.0)
 
     CVAR_CL_BOOL(DrawDebugHud)
     CVAR_CL_FIXED_CLAMPED(HudDebugOffsetX, 0.0, 200.0)
     CVAR_CL_FIXED_CLAMPED(HudDebugOffsetY, 0.0, 40.0)
-    CVAR_CL_CUSTOM(HudDebugScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudDebugScale, 0.05, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudDebugScale, 0.5, 2.0)
 
     CVAR_CL_BOOL(DrawResistsHud)
-    CVAR_CL_CUSTOM(HudResistsScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudResistsScale, 0.05, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudResistsScale, 0.5, 2.0)
 
-    CVAR_CL_CUSTOM(HudAdminScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudAdminScale, 0.05, 2.0)
-    CVAR_CL_CUSTOM(HudEndingScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudEndingScale, 0.05, 2.0)
-    CVAR_CL_CUSTOM(HudSummaryScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudSummaryScale, 0.05, 2.0)
-    CVAR_CL_CUSTOM(HudClientSettingsScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudClientSettingsScale, 0.05, 2.0)
-    CVAR_CL_CUSTOM(HudWeaponSniperScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudWeaponSniperScale, 0.05, 2.0)
-    CVAR_CL_CUSTOM(HudWeaponRadioScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudWeaponRadioScale, 0.05, 2.0)
-    CVAR_CL_CUSTOM(HudFullServerScale, fixed, { default: return 1.0; }) //CVAR_CL_FIXED_CLAMPED(HudFullServerScale, 0.05, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudAdminScale, 0.5, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudEndingScale, 0.5, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudVotingScale, 0.5, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudClientSettingsScale, 0.5, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudWeaponSniperScale, 0.5, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudWeaponRadioScale, 0.5, 2.0)
+    CVAR_CL_FIXED_CLAMPED(HudFullServerScale, 0.5, 2.0)
+    CVAR_CL_FIXED_CLAMPED(CursorScale, 0.5, 2.0)
 
     // Zandronum specific
     CVAR_ENGINE_BOOL(GetSvNoRespawnInvul, "sv_norespawninvul")

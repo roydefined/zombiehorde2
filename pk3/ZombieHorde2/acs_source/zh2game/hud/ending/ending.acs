@@ -9,23 +9,20 @@ strict namespace Hud
 {
     internal void DrawEndingHud()
     {
-        fixed scale = CVar::GetClHudEndingScale();
         BCSUtils::HudResetState();
-        BCSUtils::HudSetVirtualSize(640.0, 480.0);
-        BCSUtils::HudSetScale(scale);
+        HudSetScaledVirtualSize(640.0, 480.0, CVar::GetClHudEndingScale());
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
 
         PrepareHud(
-            320.0,
+            HudCenterX(),
             BCSUtils::HudTop() + 80.0,
             false);
 
         Game::EndActionT action = Game::GetEndAction();
         DrawEndingHeader(action);
 
-        // If the action isn't default then the normal flow doesn't run.
-        // So we don't draw the stats either.
-        if (action != Game::ACTION_DEFAULT)
+        // Only the default flow and a repeat show the stats.
+        if (action != Game::ACTION_DEFAULT && action != Game::ACTION_REPEAT)
             return;
 
         // Offset is set based on what lists are shown, meaning we might shift lists to a different position if the stat has no data.
@@ -62,7 +59,7 @@ strict namespace Hud
         int drawnCount;
 
         PrepareHud(
-            30.0,
+            HudCenterX() - 290.0,
             BCSUtils::HudTop() + 140.0,
             false);
 

@@ -1,0 +1,308 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Ping
+{
+    internal void RaymarchPing(str key)
+    {
+        int pingIndex = GetPingIndexByKey(key);
+        if (pingIndex == -1)
+        {
+            Logger::LogWarning(LOGSOURCE, "No ping exists with key \cd" + key + "\cj.");
+            return;
+        }
+
+        if (CheckInventory(PING_CUTOFF_ITEM))
+        {
+            Logger::LogActivator("Wait a moment before pinging again.");
+            return;
+        }
+
+        fixed maxDistance = fixed(CVar::GetSvPingMaxDistance());
+        fixed startX = GetActorX(0),
+              startY = GetActorY(0),
+              startZ = GetActorZ(0) + GetActorViewHeight(0);
+
+        fixed angle = GetActorAngle(0),
+              pitch = GetActorPitch(0);
+
+        // The ping goes where the player's view first hits the world.
+        // Distance is not considered here and checked below, so the march only fails with an actual issue.
+        if (!RayMarch::March(startX, startY, startZ, angle, pitch, maxDistance))
+        {
+            Logger::LogWarning(LOGSOURCE, "Failed to find the spot for ping \cd" + key + "\cj.");
+            return;
+        }
+
+        // Broadcast if spawned
+        fixed x = RayMarch::GetHitX(),
+              y = RayMarch::GetHitY(),
+              z = RayMarch::GetHitZ();
+
+        // Check for actors when pinging, like pinging a zombie.
+        int targetTid = PickActor(0, angle, pitch, maxDistance, 0, MF_SHOOTABLE, ML_BLOCKEVERYTHING | ML_BLOCKHITSCAN, PICKAF_RETURNTID);
+
+        // Check max distance for pings.
+        fixed distance = GetPingDistance(startX, startY, startZ, x, y, z);
+        if (targetTid == 0 && distance >= maxDistance - 1.0)
+        {
+            Logger::LogActivator("That spot is too far away to ping.");
+            return;
+        }
+
+        if (!SpawnPingActor(pingIndex, x, y, z, targetTid))
+        {
+            Logger::LogWarning(LOGSOURCE, "Failed to spawn the actor of ping \cd" + key + "\cj.");
+            return;
+        }
+
+        if (IsNetworkGame())
+            BroadcastPing(key, x, y, z, targetTid);
+    }
+
+    // Sends the ping to the server, which sends it on to every client.
+    internal void BroadcastPing(str key, fixed x, fixed y, fixed z, int targetTid)
+    {
+        // The server knows who sent it, so the source isn't sent.
+        str packet = Packet::New();
+        packet = Packet::AppendStr(packet, key);
+        packet = Packet::Append(packet, x);
+        packet = Packet::Append(packet, y);
+        packet = Packet::Append(packet, z);
+        packet = Packet::Append(packet, targetTid);
+
+        if (!Packet::Send("zh2_internal_ping_broadcast_server", packet))
+            Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_broadcast_server. Message packet: '" + packet + "'.");
+    }
+
+    // Sends the ping on to the other clients.
+    script "zh2_internal_ping_broadcast_server" (raw messagePack) net
+    {
+        // The activator is the player who sent the ping.
+        int source = PlayerNumber();
+
+        str packet = Packet::ReadStr(messagePack);
+        str key = Packet::Value;
+
+        packet = Packet::Read(packet);
+        fixed x = Packet::Value;
+
+        packet = Packet::Read(packet);
+        fixed y = Packet::Value;
+
+        packet = Packet::Read(packet);
+        fixed z = Packet::Value;
+
+        packet = Packet::Read(packet);
+        int targetTid = Packet::Value;
+
+        if (!Identity::IsValidID(source))
+            terminate;
+
+        if (!CVar::GetSvEnablePinging())
+            terminate;
+
+        // Check for previous cut off.
+        if (CheckActorInventory(Identity::GetTID(source), PING_CUTOFF_ITEM))
+        {
+            Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj's ping was blocked by the cooldown.");
+            terminate;
+        }
+
+        // Tells the player they are cut off.
+        if (GetPingCooldownWait(source) > 0)
+        {
+            Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj's ping is now blocked by the cooldown.");
+            GiveActorInventory(Identity::GetTID(source), PING_CUTOFF_ITEM, 1);
+        }
+
+        // Rejected pings will also get a cooldown.
+        UsePingCooldown(source);
+
+        int keyLength = StrLen(key);
+
+        // Validate the ping serverside in case somebody tries to send a packet manually and bypasses clientside validation.
+        if (keyLength == 0 || keyLength > PING_KEY_MAX_LENGTH)
+        {
+            Logger::LogWarning(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj sent a ping with key length of " + str(keyLength) + " which is not in bounds.");
+            terminate;
+        }
+
+        if (!ValidatePingProperty(key))
+        {
+            Logger::LogWarning(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj sent a ping with key containing illegal characters.");
+            terminate;
+        }
+
+        // Measured from the player's view like the client does, with a margin as the player moves before the ping arrives.
+        int sourceTid = Identity::GetTID(source);
+        fixed startX = GetActorX(sourceTid),
+              startY = GetActorY(sourceTid),
+              startZ = GetActorZ(sourceTid) + GetActorViewHeight(sourceTid);
+        fixed maxDistance = fixed(CVar::GetSvPingMaxDistance() + PING_SERVER_DISTANCE_MARGIN);
+
+        // The ping must be within the max distance of the player (+ a margin).
+        if (GetPingDistance(startX, startY, startZ, x, y, z) > maxDistance)
+        {
+            Logger::LogWarning(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj sent a ping that is too far away.");
+            terminate;
+        }
+
+        // The player must see the target, and it must be within the max distance.
+        // Can fail due to latency. Not warned.
+        if (targetTid != 0)
+        {
+            if (!CheckSight(sourceTid, targetTid, 0))
+            {
+                Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj sent a ping with a target they can't see.");
+                terminate;
+            }
+
+            fixed targetDistance = GetPingDistance(startX, startY, startZ, GetActorX(targetTid), GetActorY(targetTid), GetActorZ(targetTid));
+            if (targetDistance > maxDistance)
+            {
+                Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj sent a ping with a target that is too far away.");
+                terminate;
+            }
+        }
+
+        // Receivers need to know who sent the ping, so the source goes in front.
+        str forwardPacket = Packet::Append(Packet::New(), source) + (str)messagePack;
+
+        // Check for a restriction script.
+        if (!CheckScript(PING_RESTRICTION_SCRIPT, true))
+        {
+            if (!Packet::Send("zh2_internal_ping_receive_packet_client", forwardPacket))
+                Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_receive_packet_client.");
+            terminate;
+        }
+
+        // Iterate all players and check if they should receive this ping.
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (i == source || PlayerIsBot(i))
+                continue;
+
+            bool isSpectator = PlayerIsSpectator(i) != 0;
+            if (!PlayerInGame(i) && !isSpectator)
+                continue;
+
+            // Check if spectators should be able to see pings.
+            // Otherwise let the restriction script decide.
+            bool spectatorSeePings = isSpectator && CVar::GetSvSpectatorsSeePings();
+            if (!spectatorSeePings)
+            {
+                if (!ACS_NamedExecuteWithResult(PING_RESTRICTION_SCRIPT, source, i))
+                    continue;
+            }
+
+            if (!Packet::Send("zh2_internal_ping_receive_packet_client", forwardPacket, i))
+                Logger::LogError(LOGSOURCE, "Failed to invoke zh2_internal_ping_receive_packet_client.");
+        }
+    }
+
+    script "zh2_internal_ping_receive_packet_client" (raw messagePack) clientside
+    {
+        messagePack = Packet::Read(messagePack);
+        int source = Packet::Value;
+
+        // Source already spawned it.
+        if (source == ConsolePlayerNumber())
+            terminate;
+
+        if (!CVar::GetClEnablePingingByConsolePlayer())
+            terminate;
+
+        messagePack = Packet::ReadStr(messagePack);
+        str key = Packet::Value;
+
+        messagePack = Packet::Read(messagePack);
+        fixed x = Packet::Value;
+
+        messagePack = Packet::Read(messagePack);
+        fixed y = Packet::Value;
+
+        messagePack = Packet::Read(messagePack);
+        fixed z = Packet::Value;
+
+        messagePack = Packet::Read(messagePack);
+        int targetTid = Packet::Value;
+
+        // Look for our own ping with the same key, or fall back to the first ping.
+        int pingIndex = GetPingIndexByKey(key);
+        if (pingIndex == -1)
+        {
+            if (GetPingCount() == 0)
+            {
+                Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj's ping \cd" + key + "\cj could not be displayed, there are no pings to use.");
+                terminate;
+            }
+
+            pingIndex = 0;
+            Logger::LogDebug(LOGSOURCE, "Player \cd" + BCSUtils::PlayerName(source) + "\cj's ping \cd" + key + "\cj does not exist, used ping \cd" + GetPingKey(pingIndex) + "\cj instead.");
+        }
+
+        if (!SpawnPingActor(pingIndex, x, y, z, targetTid))
+        {
+            Logger::LogWarning(LOGSOURCE, "Failed to spawn the actor of player \cd" + BCSUtils::PlayerName(source) + "\cj's ping \cd" + GetPingKey(pingIndex) + "\cj.");
+            terminate;
+        }
+
+        Logger::LogDebug(LOGSOURCE, "Spawned player \cd" + BCSUtils::PlayerName(source) + "\cj's ping \cd" + GetPingKey(pingIndex) + "\cj.");
+    }
+
+    // The distance from the start to the spot, used by both the client and the server.
+    internal fixed GetPingDistance(fixed startX, fixed startY, fixed startZ, fixed x, fixed y, fixed z)
+    {
+        return VectorLength(VectorLength(x - startX, y - startY), z - startZ);
+    }
+
+    // Spawns the actor of the ping.
+    // The index must be valid, look it up by key first.
+    internal bool SpawnPingActor(int pingIndex, fixed x, fixed y, fixed z, int targetTid)
+    {
+        str actor = GetPingActor(pingIndex);
+
+        // Only if we target somebody, should we need a tid.
+        int pingTid = 0;
+
+        // Ping targets an actor.
+        if (targetTid != 0)
+        {
+            x = GetActorX(targetTid);
+            y = GetActorY(targetTid);
+            z = GetActorZ(targetTid) + GetActorProperty(targetTid, APROP_Height) + PING_TARGET_HEIGHT_ADD;
+            pingTid = UniqueTid();
+        }
+
+        if (SpawnForced(actor, x, y, z, pingTid) == 0)
+            return false;
+
+        if (targetTid != 0)
+        {
+            ACS_NamedExecuteWithResult("zh2_internal_ping_set_target", pingTid, targetTid);
+            ACS_NamedExecuteAlways("zh2_internal_ping_follow", 0, pingTid, targetTid);
+        }
+
+        return true;
+    }
+
+    // Sets the actor the ping targets as its target, so the ping actor can check what it pinged.
+    // This is a separate script, so changing the activator doesn't affect the caller.
+    script "zh2_internal_ping_set_target" (int pingTid, int targetTid) clientside
+    {
+        SetActivator(pingTid);
+        SetPointer(AAPTR_TARGET, targetTid);
+    }
+
+    // Keeps the ping on top of the actor it pinged, until the ping or the actor is gone.
+    script "zh2_internal_ping_follow" (int pingTid, int targetTid) clientside
+    {
+        while (ThingCount(T_NONE, pingTid) > 0 && ThingCount(T_NONE, targetTid) > 0)
+        {
+            SetActorPosition(pingTid, GetActorX(targetTid), GetActorY(targetTid), GetActorZ(targetTid) + GetActorProperty(targetTid, APROP_Height) + PING_TARGET_HEIGHT_ADD, false);
+            Delay(1);
+        }
+    }
+}

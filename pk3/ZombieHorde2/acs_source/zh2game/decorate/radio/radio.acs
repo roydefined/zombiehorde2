@@ -21,6 +21,20 @@ strict namespace Decorate
     internal str GetRadioTrackAuthor(int index) { return ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[index].Author; }
     internal str GetRadioTrackRemark(int index) { return ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[index].Remark; }
 
+    // Returns true if the value only contains letters, digits and the allowed characters.
+    internal bool ValidateRadioProperty(str value, str allowedCharacters)
+    {
+        int length = StrLen(value);
+        for (int i = 0; i < length; ++i)
+        {
+            int c = GetChar(value, i);
+            if (c < 0 || c > 127 || (!BCSUtils::isalnum(c) && !BCSUtils::StrContains(allowedCharacters, StrParam(c:c))))
+                return false;
+        }
+
+        return true;
+    }
+
     internal int GetRadioTrackIndexByLumpName(str lump, bool caseInsensitive = true)
     {
         bool function(str, str)& comparer = caseInsensitive ? BCSUtils::StrIEquals : BCSUtils::StrEquals;
@@ -86,9 +100,16 @@ strict namespace Decorate
     // Depending on who this targets it's either proximity based or regular music.
     internal void StartHearingRadioBroadcast(int playerId, str lump)
     {
+        // Never play a lump that isn't in our own radio list.
+        if (GetRadioTrackIndexByLumpName(lump) == -1)
+        {
+            Logger::LogDebug(LOGSOURCE, "Radio: lump \cd" + lump + "\cj isn't in our radio list, not playing it.");
+            return;
+        }
+
         bool isSelf = playerId == ConsolePlayerNumber();
 
-        if (!isSelf && CVar::GetClIgnoreRadioMusic())
+        if (!isSelf && CVar::GetClIgnoreRadioMusicByConsolePlayer())
         {
             Logger::LogDebug(LOGSOURCE, "Radio: ignoring radio music, not actually playing anything.");
             return;
@@ -101,7 +122,7 @@ strict namespace Decorate
             return;
         }
 
-        if (CVar::GetClRadioProximity())
+        if (CVar::GetClRadioProximityByConsolePlayer())
         {
             Logger::LogDebug(LOGSOURCE, "Radio: following the broadcaster by proximity.");
             PlayRadioMapSpot(playerId, lump);
@@ -257,7 +278,7 @@ strict namespace Decorate
     // Check and adjusts the proximity feature against the client's current setting.
     internal void CheckRadioProximitySettingChanged()
     {
-        bool proximity = CVar::GetClRadioProximity();
+        bool proximity = CVar::GetClRadioProximityByConsolePlayer();
         if (proximity == GetRadioProximityWasEnabled())
             return;
 
@@ -267,7 +288,7 @@ strict namespace Decorate
             return;
 
         // We never touch our own music for a broadcast we're ignoring, so there's nothing to switch.
-        if (CVar::GetClIgnoreRadioMusic())
+        if (CVar::GetClIgnoreRadioMusicByConsolePlayer())
             return;
 
         Logger::LogDebug(LOGSOURCE, "Radio: proximity setting changed to \cd" + str((int)proximity)
@@ -321,7 +342,7 @@ strict namespace Decorate
     // The closer they are, the lower the volume.
     internal void UpdateRadioMapMusicFade(int broadcasterTid)
     {
-        if (!CVar::GetClRadioFadeMapMusic())
+        if (!CVar::GetClRadioFadeMapMusicByConsolePlayer())
         {
             RestoreMapMusicVolumeCvar();
             return;

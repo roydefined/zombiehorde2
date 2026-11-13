@@ -91,6 +91,21 @@ strict namespace Event
                 // Skip the voting process if the cvar is set.
                 if (!CVar::GetSvAllowMapVoting())
                 {
+                    // Check if we want to play the suggested map.
+                    if (CVar::GetSvPlaySuggestedMapsWithoutVoting())
+                    {
+                        int suggestedMapPosition = Map::GetCurrentMapSuggestedMapExists()
+                            ? Map::GetParsedMapRotationPosition(Map::GetCurrentMapSuggestedMapHandle())
+                            : -1;
+
+                        // Ensure the suggested map isn't the next map.
+                        if (suggestedMapPosition != -1 && suggestedMapPosition != GetMapPosition(MAPPOSITION_NEXT))
+                        {
+                            if (!SetNextMapPosition(suggestedMapPosition, true))
+                                Logger::LogError(LOGSOURCE, "Failed to set next map position to suggested map " + str(suggestedMapPosition) + ".");
+                        }
+                    }
+
                     Exit_Normal(0);
                     terminate;
                 }
@@ -129,6 +144,12 @@ strict namespace Event
                 break;
             }
 
+            case RoundTimer::TIMERENDINGWITHREPEAT:
+            {
+                ChangeLevel(StrParam(n:PRINTNAME_LEVEL), 0, CHANGELEVEL_NOINTERMISSION, GameSkill());
+                break;
+            }
+
             case RoundTimer::TIMERVOTING:
             {
                 Map::EndVoting();
@@ -155,7 +176,7 @@ strict namespace Event
                     // Next map (no need to set next map position).
                     case 1:
                         Exit_Normal(0);
-                        break;
+                        terminate;
 
                     case 2:
                         targetMapIndex = Map::GetRandomMap(Shuffle::FLAGIGNORECURRENTMAP | Shuffle::FLAGIGNORENEXTMAP);
@@ -165,8 +186,12 @@ strict namespace Event
                         targetMapIndex = ZH2Game::GameContext.VotableMaps[index - 3];
                         break;
                 }
-                // Note the internal next map can't use this, and we will skip it as we will automatically switch to it then.
-                if (!SetNextMapPosition(targetMapIndex, true))
+
+                // The target map index can be the next map when it was set as the suggested map.
+                // It is 0 when no random map was found, in which case we go to the next map.
+                if (targetMapIndex != 0
+                    && targetMapIndex != GetMapPosition(MAPPOSITION_NEXT)
+                    && !SetNextMapPosition(targetMapIndex, true))
                 {
                     Logger::LogError(LOGSOURCE, "Failed to set next map position to " + str(targetMapIndex) + ".");
 

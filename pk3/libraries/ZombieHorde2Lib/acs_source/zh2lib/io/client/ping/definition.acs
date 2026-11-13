@@ -1,0 +1,185 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace IO
+{
+    // Ping context the code is parsing.
+    internal Ping::PingContextT _parsingPing;
+
+    internal bool ParsePingDefinition(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "ping"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        if (Tokenizer::GetToken(handle) != Tokenizer::TSYMBOL
+            && Tokenizer::GetToken(handle) != Tokenizer::TSTRING)
+        {
+            Tokenizer::SetErrored(handle, "Invalid symbol for ping definition: '" + Tokenizer::GetSymbol(handle) + "'. Symbol should be of type symbol or string.");
+            return false;
+        }
+
+        str key = Tokenizer::GetSymbol(handle);
+        Logger::LogDebug(LOGSOURCE, "Start parsing ping: \cd" + key + "\cj.");
+
+        int braceLevel = Tokenizer::GetBraceLevel(handle);
+        if (!Tokenizer::ExpectNextChar(handle, '{'))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        // Keys are sent to other clients, so skip pings with an invalid key.
+        int keyLength = StrLen(key);
+        if (keyLength == 0 || keyLength > PING_KEY_MAX_LENGTH)
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj was skipped. Its key must be 1 to " + str(PING_KEY_MAX_LENGTH) + " characters long.");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        if (!Ping::ValidatePingProperty(key))
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj was skipped. Its key contains illegal characters, only letters and digits are allowed.");
+            Tokenizer::ParseRemainingBodyAsEmpty(handle);
+            return true;
+        }
+
+        key = BCSUTILS::StrToLower(key);
+
+        int index = Ping::GetPingIndexByKey(key);
+        bool isNewEntry = index == -1;
+
+        if (isNewEntry)
+        {
+            // We check for capacity here now that we got to the body.
+            // No more room for more definitions. Log a warning and skip the remaining body.
+            int count = Ping::GetPingCount();
+            if (count >= MAX_PING_DEFINITIONS)
+            {
+                Logger::LogWarning(LOGSOURCE, "The maximum number of ping definitions was reached (" + str(count) + ").");
+                Tokenizer::ParseRemainingBodyAsEmpty(handle);
+                return true;
+            }
+
+            // Use the count for the actual next position if it's a new entry.
+            index = count;
+        }
+
+        _parsingPing.Key = key;
+        _parsingPing.Centered = false;
+        _parsingPing.Graphic = (raw)0;
+        _parsingPing.Actor = (raw)0;
+
+        // While the brace level does not match the end level, we keep parsing.
+        while (Tokenizer::CanRead(handle) && Tokenizer::GetBraceLevel(handle) != braceLevel)
+        {
+            str symbol = Tokenizer::GetSymbol(handle);
+            if (ParsePingGraphic(handle, symbol)
+                || ParsePingCentered(handle, symbol)
+                || ParsePingActor(handle, symbol))
+            {
+                // Optional comma.
+                Tokenizer::Next(handle, false);
+                if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+                    Tokenizer::Next(handle, false);
+                continue;
+            }
+
+            Tokenizer::SetErrored(handle, "Unknown symbol whilst parsing ping definition " + key + ": '" + symbol + "'.");
+            return false;
+        }
+
+        // Optional comma.
+        Tokenizer::Next(handle, false);
+        if (Tokenizer::GetToken(handle) == Tokenizer::TCOMMA)
+            Tokenizer::Next(handle, false);
+
+        // Make sure we got values.
+        if ((raw)_parsingPing.Graphic == 0 || _parsingPing.Graphic == "")
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj is missing required graphic.");
+            return true;
+        }
+
+        if ((raw)_parsingPing.Actor == 0 || _parsingPing.Actor == "")
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj is missing required actor.");
+            return true;
+        }
+
+        // Validate values
+        if (StrLen(_parsingPing.Graphic) > PING_GRAPHIC_MAX_LENGTH)
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj graphic \cd" + _parsingPing.Graphic + "\cj is longer than " + str(PING_GRAPHIC_MAX_LENGTH) + " characters.");
+            return true;
+        }
+
+        if (!Ping::ValidatePingProperty(_parsingPing.Graphic))
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj  graphic \cd" + _parsingPing.Graphic + "\cj contains illegal characters, only letters and digits are allowed.");
+            return true;
+        }
+
+        if (StrLen(_parsingPing.Actor) > PING_ACTOR_MAX_LENGTH)
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj actor \cd" + _parsingPing.Actor + "\cj is longer than " + str(PING_ACTOR_MAX_LENGTH) + " characters.");
+            return true;
+        }
+
+        if (!Ping::ValidatePingProperty(_parsingPing.Actor))
+        {
+            Logger::LogWarning(LOGSOURCE, "Ping \cd" + key + "\cj actor \cd" + _parsingPing.Actor + "\cj contains illegal characters, only letters and digits are allowed.");
+            return true;
+        }
+
+        Ping::SetPingKey(index, _parsingPing.Key);
+        Ping::SetPingCentered(index, _parsingPing.Centered);
+        Ping::SetPingGraphic(index, _parsingPing.Graphic);
+        Ping::SetPingActor(index, _parsingPing.Actor);
+
+        if (isNewEntry)
+            Ping::SetPingCount(index + 1);
+
+        Logger::LogDebug(LOGSOURCE, "Finished parsing ping: \cd" + key + "\cj.");
+        return true;
+    }
+
+    internal bool ParsePingGraphic(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "graphic"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        _parsingPing.Graphic = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed ping graphic: \cd" + _parsingPing.Graphic + "\cj.");
+        return true;
+    }
+
+    internal bool ParsePingCentered(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "centered"))
+            return false;
+
+        _parsingPing.Centered = true;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed ping is centered.");
+        return true;
+    }
+
+    internal bool ParsePingActor(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "actor"))
+            return false;
+
+        Tokenizer::Next(handle);
+
+        _parsingPing.Actor = Tokenizer::GetSymbol(handle);
+
+        Logger::LogDebug(LOGSOURCE, "Parsed ping actor: \cd" + _parsingPing.Actor + "\cj.");
+        return true;
+    }
+}

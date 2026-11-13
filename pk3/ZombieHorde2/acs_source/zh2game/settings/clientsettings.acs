@@ -4,16 +4,31 @@
 
 strict namespace Settings
 {
-    // Updates the client settings we still expect from the client.
+    // Updates the client settings we still expect from the client, in the order they're defined.
     internal void UpdateCurrentClientSettings()
     {
-        Shuffle::SortClientSettingsByRequired();
+        int count = 0;
+        for (int i = 0; i < ZH2Game::PersistingGameContext.RequestedClientSettingCount; ++i)
+        {
+            if (CheckClientSettingValid(i))
+                continue;
 
-        int count = Shuffle::GetRelevantSize();
+            ZH2Game::GameContext.RequestedClientSettings[count++] = i;
+        }
+
         ZH2Game::GameContext.RequestedClientSettingCount = count;
+    }
 
-        for (int i = 0; i < count; ++i)
-            ZH2Game::GameContext.RequestedClientSettings[i] = Shuffle::GetIndexValue(i);
+    // Check if we either have the cvar set to the requested value, or we have the key bound.
+    internal bool CheckClientSettingValid(int index)
+    {
+        Settings::RequestedClientSettingT global:PERSISTING_GAME_CONTEXT_INDEX& setting = ZH2Game::PersistingGameContext.RequestedClientSettings[index];
+        str type = BCSUtils::StrToLower(setting.Type);
+        str name = setting.Name;
+        int value = setting.Value;
+        return type == "cvar"
+            ? GetCvar(name) == value
+            : int(BCSUtils::KeyBound(name)) == value;
     }
 
     // Tell the client he has some settings he should consolidate.

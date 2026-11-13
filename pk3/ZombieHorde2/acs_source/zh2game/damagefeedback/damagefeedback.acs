@@ -21,13 +21,13 @@ strict namespace DamageFeedback
     internal void SetTidDamaged(int tid, int damage, bool isKill)
     {
         // Don't set anything if globally disabled.
-        if (!CVar::GetSvEnableDamageFeedback() || !CVar::GetClEnableDamageFeedback())
+        if (!CVar::GetSvEnableDamageFeedback() || !CVar::GetClEnableDamageFeedbackByConsolePlayer())
             return;
 
         if (isKill)
         {
             // If the elapsed tics exceeded the shown tics, we reset the counter.
-            int shownKillTics = CVar::GetClDamageFeedbackKillCounterShownTics();
+            int shownKillTics = CVar::GetClDamageFeedbackKillCounterShownTicsByConsolePlayer();
             int killCount = GetElapsedKillFeedbackTics() > shownKillTics
                 ? 1 : GetKillCount() + 1;
 
@@ -38,7 +38,7 @@ strict namespace DamageFeedback
         {
 
             // If the elapsed tics exceeded the shown tics, we reset counter.
-            int shownDamageTics = CVar::GetClDamageFeedbackDamageCounterShownTics();
+            int shownDamageTics = CVar::GetClDamageFeedbackDamageCounterShownTicsByConsolePlayer();
             int damageCount = GetElapsedHitFeedbackTics() > shownDamageTics
                 ? damage : GetDamageCount() + damage;
 

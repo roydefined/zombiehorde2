@@ -1,0 +1,50 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Ping
+{
+    // Takes the cut off item from every player that can ping again.
+    internal void CooldownTic()
+    {
+        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
+        {
+            if (!PlayerInGame(i))
+                continue;
+
+            int tid = Identity::GetTID(i);
+            if (CheckActorInventory(tid, PING_CUTOFF_ITEM) && GetPingCooldownWait(i) == 0)
+                TakeActorInventory(tid, PING_CUTOFF_ITEM, 1);
+        }
+    }
+
+    // The tics until this player can ping again, or 0 if they can ping now.
+    internal int GetPingCooldownWait(int playerId)
+    {
+        int playerWait = GetPlayerPingCooldown(playerId) + PING_COOLDOWN_PLAYER_COST - PING_COOLDOWN_PLAYER_MAX;
+        int globalWait = GetGlobalPingCooldown() + PING_COOLDOWN_GLOBAL_COST - PING_COOLDOWN_GLOBAL_MAX;
+        return BCSUtils::Max(0, BCSUtils::Max(playerWait, globalWait));
+    }
+
+    // Adds a ping of this player to the cooldowns.
+    internal void UsePingCooldown(int playerId)
+    {
+        int tic = Timer();
+
+        SetStoredPlayerPingCooldown(playerId, GetPlayerPingCooldown(playerId) + PING_COOLDOWN_PLAYER_COST);
+        SetPlayerPingCooldownTic(playerId, tic);
+        SetStoredGlobalPingCooldown(GetGlobalPingCooldown() + PING_COOLDOWN_GLOBAL_COST);
+        SetGlobalPingCooldownTic(tic);
+    }
+
+    // The cooldowns go down by 1 every tic since they were last set.
+    internal int GetPlayerPingCooldown(int playerId)
+    {
+        return BCSUtils::Max(0, GetStoredPlayerPingCooldown(playerId) - (Timer() - GetPlayerPingCooldownTic(playerId)));
+    }
+
+    internal int GetGlobalPingCooldown()
+    {
+        return BCSUtils::Max(0, GetStoredGlobalPingCooldown() - (Timer() - GetGlobalPingCooldownTic()));
+    }
+}

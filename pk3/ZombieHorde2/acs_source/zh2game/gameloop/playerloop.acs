@@ -22,7 +22,6 @@ strict namespace GameLoop
             Player::ZombieTauntTic();
             Player::NameTic();
             Player::Sr50Tic();
-            Weapon::FireGrenadeBonusTic();
 
             Round::KnownRoundStateT roundState = Round::GetActiveKnownRoundState();
             if (PlayerInGame(PlayerNumber()) && !PlayerIsBot(PlayerNumber())
@@ -63,8 +62,8 @@ strict namespace GameLoop
 
             Logger::FlushBuffer();
             Game::TicTipsClient();
-            Hud::Tic();
             Item::Tic();
+            Hud::Tic();
             Decorate::TicClient();
             Weather::TicClient();
             RoundTimer::TicClient();
@@ -77,6 +76,12 @@ strict namespace GameLoop
             Game::ClientDeathCamTic();
             Game::TeamIndicatorTicClient();
             Footstep::FootstepTicClient();
+
+            bool canPing = ZH2Game::CanUsePingWheel();
+            if (!canPing && Ping::GetPingWheelOpen())
+                ZH2Game::SetPingWheelControls(false);
+
+            Ping::TicClient(canPing);
             Damage::FlushClient();
 
             // Call hook for this tic.

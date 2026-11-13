@@ -1,0 +1,15 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+strict namespace Ping
+{
+    // Hooks onto the ping system by name and restricts pings from other species if the cvar is set.
+    script PING_RESTRICTION_SCRIPT (int sourceId, int targetId)
+    {
+        bool allowed = !CVar::GetSvPingSameSpecieOnly()
+            || Player::GetPlayerSpecie(sourceId) == Player::GetPlayerSpecie(targetId);
+
+        SetResultValue(int(allowed));
+    }
+}

@@ -31,14 +31,19 @@
 #include "power/power.h.acs"
 #include "item/item.h.acs"
 #include "admin/admin.h.acs"
+#include "vote/vote.h.acs"
 #include "hud/hud.h.acs"
 #include "io/io.h.acs"
 #include "weapon/weapon.h.acs"
+#include "ping/ping.h.acs"
 #include "cvar/cvar.h.acs"
 
 strict namespace ZH2Game
 {
     #define PERSISTING_GAME_CONTEXT_INDEX 1
+
+    // Base TID used for dead bodies to track resurrection.
+    #define DEAD_BODY_TID_BASE 5200
 
     internal enum PlayerDeathTypeT : int
     {
@@ -121,6 +126,13 @@ strict namespace ZH2Game
 
         // Map specific fake weapon spawn spots, tracked to later replace with the real spawn actor.
         Weapon::FakeWeaponSpawnContextT FakeWeaponSpawnContext;
+
+        // Serverside, the human start items parsed from the current map lump.
+        Item::HumanStartItemCollectionContextT HumanStartItemCollection;
+
+        // Serverside, the human start items of the current map.
+        // Combined after parsing, a map item overrides a mod item with the same name.
+        Item::CombinedHumanStartItemCollectionContextT CombinedHumanStartItemCollection;
 
         // Clientside, hud specific features
         Hud::HudContextT HudContext;
@@ -262,11 +274,13 @@ strict namespace ZH2Game
         IO::MapBaseCollectionT MapBaseCollection;
         Power::PowerCollectionContextT PowerCollection;
         Item::ItemCollectionContextT ItemCollection;
+        Item::HumanStartItemCollectionContextT HumanStartItemCollection;
         Decorate::RadioTrackCollectionContextT RadioTrackCollection;
         Reward::RewardCollectionContextT RewardCollection;
         Game::TipCollectionContextT TipCollection;
         Weapon::WeaponSpawnerCollectionContextT WeaponSpawnerCollection;
         Weapon::WeaponSkinIndexT WeaponSkinIndex;
+        Map::MapPlayContextT MapPlayContext;
     };
 
     // General player info. Non-persisting between rounds.
@@ -284,6 +298,9 @@ strict namespace ZH2Game
 
         // Serverside. If `true`, the join prevention depeding on round state is ignored on this player specifically.
         bool AlwaysAllowJoin;
+
+        // Serverside. If `true`, the player is in the join queue.
+        bool InJoinQueue;
 
         // TODO: Sync this state, maybe make use of it.
         Player::PlayerPanicStateT PanicState;
@@ -317,6 +334,9 @@ strict namespace ZH2Game
 
         // Serverside. Indicates the source of damage for the player.
         Player::DamageSourceT DamageSources[MAX_DAMAGE_SOURCES];
+
+        // Serverside. Tracks which combined human start items the player received.
+        bool ReceivedHumanStartItems[MAX_HUMANSTARTITEMS];
     };
 
     // General player info. Persisting between rounds.
@@ -328,5 +348,8 @@ strict namespace ZH2Game
 
         // The weapon skin this player's owned weapons were last migrated to.
         Weapon::WeaponSkinT LastKnownWeaponSkin;
+
+        // Serverside. Human start item data that persists between maps, like who received what on the last maps.
+        Item::PlayerHumanStartItemContextT HumanStartItemContext;
     };
 }
