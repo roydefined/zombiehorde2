@@ -5,6 +5,11 @@
 // Fake weapon spawn spots could be unlimited but we need some limit here.
 #define MAX_FAKEWEAPONSPAWNSPOTS 200
 
+// Names and states of the skin transfer layer of weapons, used to transfer data to skin-specific weapon spawns.
+#define WEAPON_SKINTRANSFER_STATE "ZH2SkinTransfer"
+#define WEAPON_SKINTRANSFER_SPECIAL_VAR "user_zh2skintransferspecial"
+#define WEAPON_SKINTRANSFER_ARGS_VAR "user_zh2skintransferargs"
+
 #define MAX_WEAPONSPAWNERS 20
 
 #define WEAPON_NOTHINGWEAPON_NAME "ZH2NothingWeapon"
@@ -107,8 +112,15 @@ strict namespace Weapon
     // ZHMODDEF is parsed) since spawn events for these fire before that.
     internal struct FakeWeaponSpawnSpotT
     {
+        // The unique tid the spot gets when it is tracked.
+        // Will be replaced with the MapTid.
         int Tid;
+
         str ClassName;
+
+        // The tid the spot has in the map.
+        // Will be 0 if the spot has no tid in the map.
+        int MapTid;
     };
 
     internal struct FakeWeaponSpawnContextT
