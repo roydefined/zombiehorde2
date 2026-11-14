@@ -105,12 +105,12 @@ strict namespace ZH2Game
 
         // Initialize core components.
         Item::CombineHumanStartItemsServer();
-        Game::InitializeZombieTeleport();
-        Weapon::ReplaceFakeWeaponSpawnSpots();
         Player::InitializeHealth();
         AfkPrevention::InitializeServer();
         Decorate::InitializeRadioServer();
         Map::InitializeMapPlayServer();
+
+        ACS_NamedExecuteWithResult("zh2_internal_initialize_map_actors", 0);
 
         // Now the loop starts because we have loaded everything.
         GameLoop::StartServerLoop();
@@ -177,6 +177,21 @@ strict namespace ZH2Game
 
         Sync::SyncAll();
         Sync::LibSyncAll();
+
+        // After a while ensure the boolean is true so the script isn't hanging onto waiting for nothing.
+        Delay(const: 35);
+        GameContext.InitialMapActorsSpawned = true;
+    }
+
+    // Initializes behavior for actors spawned on the map that also trigger `GAMEEVENT_ACTOR_SPAWNED`.
+    // As it is not guaranteed they spawn before the OPEN script this ensures it has done so.
+    script "zh2_internal_initialize_map_actors"
+    {
+        while (!GameContext.InitialMapActorsSpawned)
+            Delay(const: 1);
+
+        Game::InitializeZombieTeleport();
+        Weapon::ReplaceFakeWeaponSpawnSpots();
     }
 
     script "zh2_internal_open_client" open clientside
