@@ -14,10 +14,19 @@ strict namespace Ping
         CooldownTic();
     }
 
-    void TicClient(bool canPing)
+    bool TicClient(bool canPing)
     {
-        if (!canPing && GetPingWheelOpen())
+        if (!GetPingWheelOpen())
+            return false;
+
+        // Close the wheel if pinging isn't allowed anymore, or on right click.
+        if (!canPing || BCSUTILS::KeyPressed(BT_ALTATTACK))
+        {
             SetPingWheelOpen(false);
+            return true;
+        }
+
+        return false;
     }
 
     // Initializes the ping wheel positions.
