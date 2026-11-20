@@ -51,11 +51,21 @@ strict namespace Resist
         BCSUtils::HudSetCenterText(true);
         BCSUtils::HudSetStayTime(BCSUtils::HUDTIC);
 
-        // On a full server event, offset the resists downwards as to avoid overlapping with the wobbling text.
-        fixed fullServerAddY = Game::GetFullServerElapsedTics() > 0 ? 50.0 : 0.0;
-        fixed yOffset = BCSUtils::HudTop() + 50.0 + fullServerAddY;
+        // Full server event and deathcam overlap with resists, offset the resists downwards as to avoid overlapping with them.
+        // Deathcam takes priority.
+        fixed addY = 0.0;
+        if (Game::ClientDeathCameraEnabled() && Game::GetViewingDeathCamera())
+        {
+            addY = 30.0;
+        }
+        else if (Game::GetFullServerElapsedTics() > 0)
+        {
+            addY = 50.0;
+        }
 
+        fixed yOffset = BCSUtils::HudTop() + 50.0 + addY;
         Hud::PrepareHud(Hud::HudCenterX(), yOffset + extraOffsetY, true);
+
         return true;
     }
 }

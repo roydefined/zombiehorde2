@@ -317,12 +317,12 @@ strict namespace Decorate
             return;
 
         int tid = Identity::GetTid(id);
+
+        // Failsafe for when the actor is no longer found or dead, which is unexpected.
+        // Dying, spectating and getting infected all handle this properly.
         if (!BCSUtils::ActorIsAlive(tid))
         {
-            // Broadcaster's actor is gone (disconnected, etc). Stop for safety. The server will
-            // correct itself the next time somebody plays a track, or on the next full sync.
-            Logger::LogWarning(LOGSOURCE, "Radio: broadcaster (\cd" + str(id) + "\cj) actor is gone; "
-                + "disposing mapspot and clearing local broadcast state.");
+            Logger::LogWarning(LOGSOURCE, "Unexpected state for broadcaster (\cd" + str(id) + "\cj), actor is gone or dead.");
             DisposeRadioMapSpot(id);
             ClearRadioBroadcast();
             return;

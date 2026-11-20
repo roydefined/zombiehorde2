@@ -13,6 +13,8 @@ actor ZH2PingTarget
 
     ActiveSound "ping/default"
 
+    var int user_durationtics;
+
     states
     {
         Spawn:
@@ -31,8 +33,11 @@ actor ZH2PingTarget
             goto Show
 
         Show:
+            "####" "#" 0 Bright A_SetUserVar("user_durationtics", ACS_NamedExecuteWithResult("zh2_dec_getpingdurationtics_client"))
             "####" "#" 0 Bright A_ActiveSound
-            "####" "#" 35 Bright
+        Showing:
+            "####" "#" 1 Bright A_SetUserVar("user_durationtics", user_durationtics - 1)
+            "####" "#" 0 Bright A_JumpIf(user_durationtics > 0, "Showing")
             "####" "#" 1 Bright A_FadeOut(0.1)
             wait
     }

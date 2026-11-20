@@ -66,14 +66,17 @@ strict namespace Hud
 
         // Add bots as human/zombie. Doesn't work if we reached the server's configured player cap.
 
+        int clientCount = BCSUtils::ClientCount();
+        bool canAddBot = clientCount < CVar::GetSvMaxPlayers() && clientCount < CVar::GetSvMaxClients();
+
         if (DrawClickableTextConditional(
-            BCSUtils::ClientCount() < CVar::GetSvMaxPlayers(), --_drawnHudId, 0.0, addY, 100.0, 10.0, "add bot (human)"))
+            canAddBot, --_drawnHudId, 0.0, addY, 100.0, 10.0, "add bot (human)"))
         {
             Admin::AdminAddHumanBotClientside();
         }
 
         if (DrawClickableTextConditional(
-            BCSUtils::ClientCount() < CVar::GetSvMaxPlayers(), --_drawnHudId, 150.0, addY, 100.0, 10.0, "add bot (zombie)"))
+            canAddBot, --_drawnHudId, 150.0, addY, 100.0, 10.0, "add bot (zombie)"))
         {
             Admin::AdminAddZombieBotClientside();
         }
