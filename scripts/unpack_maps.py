@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import logging
+import sys
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root, run_cmd, mod_to_map_folder
 
 # === Unpack maps from WAD files back into pk3/maps/ ===
@@ -13,7 +14,7 @@ def safe_delete(path: Path):
         pass
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     root = get_root()
     tool = root / "tools" / "Gdcc_x64" / "gdcc-ar-wad.exe"
@@ -34,10 +35,10 @@ def main():
         mapdir = project_path / "maps"
 
         if not mapdir.exists():
-            logging.info(f'Skipping "{project_name}". No "maps/" directory found.\n')
+            logging.debug(f'Skipping "{project_name}". No "maps/" directory found.\n')
             continue
 
-        logging.info(f"[PROJECT] {project_name}")
+        logging.debug(f"[PROJECT] {project_name}")
 
         outdir = outroot / mod_to_map_folder(project_name)
         outdir.mkdir(parents=True, exist_ok=True)
@@ -64,7 +65,7 @@ def main():
                 logging.error(f"Failed to extract {wad_file.name}")
                 continue
             else:
-                logging.info(f"Extracted {wad_file.name}")
+                logging.debug(f"Extracted {wad_file.name}")
 
             # Folder name inside maps is based on wad name
             mapfolder = outdir / wad_file.stem
@@ -84,12 +85,12 @@ def main():
         if not had_wads:
             logging.warning(f'No .wad files found in "{mapdir}"')
 
-        logging.info("")
+        logging.debug("")
 
-    # Cleanup BEHAVIOR lumps
+    # Cleanup BEHAVIOR lumps, passing on --verbose.
     logging.info("Deleting map behaviors...\n")
-    run_cmd(["python", str(root / "scripts" / "delete_map_behaviors.py")])
-    logging.info("")
+    run_cmd(["python", str(root / "scripts" / "delete_map_behaviors.py"), *sys.argv[1:]])
+    logging.debug("")
 
     logging.info("All projects processed.")
 

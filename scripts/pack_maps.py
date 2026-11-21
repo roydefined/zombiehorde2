@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root, run_cmd, map_to_mod_folder
 
 # === Pack maps from pk3/maps/ into .wad files ===
@@ -46,7 +46,7 @@ def pack_single_map(tool: Path, map_path: Path, out_wad: Path,
     except SystemExit:
         logging.error(f"Failed to pack {map_name}")
     else:
-        logging.info(f"Packed {map_name}")
+        logging.debug(f"Packed {map_name}")
     finally:
         if tmp_endmap:
             safe_delete(map_path / "ENDMAP")
@@ -55,12 +55,16 @@ def pack_single_map(tool: Path, map_path: Path, out_wad: Path,
 
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-source", action="store_true")
+    parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
+
+    # Passed on to the scripts called below.
+    verbose_args = ["--verbose"] if args.verbose else []
 
     include_scripts = not args.no_source
 
@@ -77,8 +81,8 @@ def main():
 
     # Compile maps first
     logging.info("Compiling maps...\n")
-    run_cmd(["python", str(root / "scripts" / "compile_maps.py")])
-    logging.info("")
+    run_cmd(["python", str(root / "scripts" / "compile_maps.py"), *verbose_args])
+    logging.debug("")
 
     logging.info(f'Packing projects from "{mapfolder}"...')
 
@@ -88,7 +92,7 @@ def main():
         outdir = outroot / map_to_mod_folder(project_name) / "maps"
         outdir.mkdir(parents=True, exist_ok=True)
 
-        logging.info(f"Project: {project_name}")
+        logging.debug(f"Project: {project_name}")
 
         # Iterate maps inside project
         for map_path in sorted(p for p in project_path.iterdir() if p.is_dir()):
@@ -97,12 +101,12 @@ def main():
 
             pack_single_map(tool, map_path, out_wad, map_name, include_scripts)
 
-        logging.info("")
+        logging.debug("")
 
     # Cleanup BEHAVIOR lumps
     logging.info("Deleting map behaviors...\n")
-    run_cmd(["python", str(root / "scripts" / "delete_map_behaviors.py")])
-    logging.info("")
+    run_cmd(["python", str(root / "scripts" / "delete_map_behaviors.py"), *verbose_args])
+    logging.debug("")
 
     logging.info("All projects packed successfully.")
 

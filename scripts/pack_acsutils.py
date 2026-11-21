@@ -2,7 +2,7 @@
 import logging
 import os
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_paths, copy_file, run_cmd
 
 # === ACSUtils packing script ===
@@ -10,7 +10,7 @@ from utils import get_paths, copy_file, run_cmd
 # The ACSUtils compilation itself is handled elsewhere (e.g. build-project.py).
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
     paths = get_paths()
 
     acsutils_dir = paths["acsutils_dist"].parent
@@ -21,7 +21,7 @@ def main():
 
     # Recreate dist/ directory
     if dist_dir.exists():
-        logging.info(f"Removing {dist_dir}")
+        logging.debug(f"Removing {dist_dir}")
         import shutil
         shutil.rmtree(dist_dir)
     dist_dir.mkdir(parents=True, exist_ok=True)

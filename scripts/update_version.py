@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_paths, get_version, move_file
 
 # === Update mod version across repository ===
@@ -13,21 +13,21 @@ def write_version_file(template_file, output_file, version):
     if not template_file.exists():
         raise SystemExit(f'[ERROR] Version template "{template_file}" does not exist.')
 
-    logging.info(f'Reading template from "{template_file}"...')
+    logging.debug(f'Reading template from "{template_file}"...')
 
     template = template_file.read_text(encoding="utf-8")
 
     for key, value in version.items():
         template = template.replace(f"{{{{Version{key.capitalize()}}}}}", value)
 
-    logging.info(f'Generate "{output_file}"')
+    logging.debug(f'Generate "{output_file}"')
 
     output_file.parent.mkdir(parents=True, exist_ok=True)
     output_file.write_text(template, encoding="utf-8")
 
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
     paths = get_paths()
 
     version = get_version()

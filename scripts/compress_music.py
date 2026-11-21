@@ -2,7 +2,7 @@
 import logging
 import subprocess
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root
 
 # === Compress music ===
@@ -22,7 +22,7 @@ def convert_music_file(input_file: Path):
 
     old_size = input_file.stat().st_size
 
-    logging.info(f'Converting "{input_file}"...')
+    logging.debug(f'Converting "{input_file}"...')
 
     try:
         result = subprocess.run(
@@ -72,14 +72,14 @@ def convert_music_file(input_file: Path):
     else:
         temp_file.unlink(missing_ok=True)
 
-        logging.info(
+        logging.debug(
             f'Skipped "{input_file}" '
             f'({saved_percent:.1f}% smaller, saved {saved_bytes / 1024:.0f} KB)'
         )
 
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     root = get_root()
     pk3folder = root / "pk3"
@@ -88,7 +88,7 @@ def main():
         raise SystemExit(f'[ERROR] Source directory "{pk3folder}" does not exist.')
 
     logging.info(f'Compressing music files from "{pk3folder}"...')
-    logging.info("")
+    logging.debug("")
 
     music_files = sorted(
         p for p in pk3folder.rglob("*")
@@ -102,7 +102,7 @@ def main():
     for music_file in music_files:
         convert_music_file(music_file)
 
-    logging.info("")
+    logging.debug("")
     logging.info("Music compression finished.")
 
 

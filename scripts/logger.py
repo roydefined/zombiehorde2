@@ -39,8 +39,7 @@ class _Formatter(logging.Formatter):
         color = _LEVEL_TO_COLOR.get(record.levelno, "")
         return f"{_DIM}{ts}{_RESET} | {color}{label}{_RESET} {msg}"
 
-# Returns DEBUG when the script was started with --verbose, otherwise INFO.
-# Scripts that log their progress with debug only show their issues by default.
+# Only logs debug level logs when passing `--verbose``, otherwise sets the level to info.
 def get_log_level() -> int:
     return logging.DEBUG if "--verbose" in sys.argv[1:] else logging.INFO
 

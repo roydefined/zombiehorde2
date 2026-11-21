@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root
 
 # === Remove map editor files ===
@@ -21,7 +21,7 @@ def _has_numeric_suffix_extension(path: Path, prefix: str) -> bool:
 
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     root = get_root()
     pk3root = root / "pk3"
@@ -37,14 +37,14 @@ def main():
         mapdir = project_path / "maps"
 
         if not mapdir.exists():
-            logging.info(f'Skipping "{project_name}". No "maps/" directory found.\n')
+            logging.debug(f'Skipping "{project_name}". No "maps/" directory found.\n')
             continue
 
-        logging.info(f"Project: {project_name}")
+        logging.debug(f"Project: {project_name}")
 
         # Remove *.dbs
         for dbs_file in mapdir.glob("*.dbs"):
-            logging.info(f'Deleting "{dbs_file.name}"...')
+            logging.debug(f'Deleting "{dbs_file.name}"...')
             try:
                 dbs_file.unlink()
             except Exception:
@@ -56,13 +56,13 @@ def main():
                 continue
 
             if _has_numeric_suffix_extension(candidate, "backup") or _has_numeric_suffix_extension(candidate, "autosave"):
-                logging.info(f'Deleting "{candidate.name}"...')
+                logging.debug(f'Deleting "{candidate.name}"...')
                 try:
                     candidate.unlink()
                 except Exception:
                     logging.error(f'Could not delete "{candidate.name}"')
 
-        logging.info("")
+        logging.debug("")
 
     logging.info("All map editor files cleaned.")
 

@@ -117,7 +117,7 @@ def copy_file(src: Path, dest: Path):
     if not src.exists():
         raise FileNotFoundError(f"Source does not exist: {src}")
 
-    logging.info(f"Copy {src.name} -> {dest}")
+    logging.debug(f"Copy {src.name} -> {dest}")
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dest)
@@ -128,7 +128,7 @@ def move_file(src: Path, dest: Path):
     if not src.exists():
         raise FileNotFoundError(f"Source does not exist: {src}")
 
-    logging.info(f"Move {src.name} -> {dest}")
+    logging.debug(f"Move {src.name} -> {dest}")
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(src), str(dest))

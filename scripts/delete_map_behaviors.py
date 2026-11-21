@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root
 
 # === Remove BEHAVIOR lumps ===
 # This script removes all compiled BEHAVIOR lumps from every map under `pk3/maps/`.
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     root = get_root()
     mapfolder = root / "pk3" / "maps"
@@ -17,12 +17,12 @@ def main():
         raise SystemExit(f'[ERROR] Source directory "{mapfolder}" does not exist.')
 
     logging.info(f'Cleaning BEHAVIOR lumps from "{mapfolder}"...')
-    logging.info("")
+    logging.debug("")
 
     # Iterate project folders
     for project_path in sorted(p for p in mapfolder.iterdir() if p.is_dir()):
         project_name = project_path.name
-        logging.info(f"Project: {project_name}")
+        logging.debug(f"Project: {project_name}")
 
         # Iterate maps inside project
         for map_path in sorted(p for p in project_path.iterdir() if p.is_dir()):
@@ -39,11 +39,11 @@ def main():
                     if behavior_file.exists():
                         logging.error(f"Failed to delete BEHAVIOR for {map_name}")
                     else:
-                        logging.info(f"Deleted BEHAVIOR for {map_name}")
+                        logging.debug(f"Deleted BEHAVIOR for {map_name}")
             else:
-                logging.info(f"Skipped: {map_name} has no BEHAVIOR lump")
+                logging.debug(f"Skipped: {map_name} has no BEHAVIOR lump")
 
-        logging.info("")
+        logging.debug("")
 
     logging.info("All BEHAVIOR lumps removed.")
 

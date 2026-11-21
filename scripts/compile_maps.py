@@ -2,14 +2,14 @@
 import logging
 import subprocess
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root
 
 # === Compile ACS SCRIPTS into BEHAVIOR lumps ===
 # Compiles the SCRIPTS file in each map into a BEHAVIOR lump.
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     root = get_root()
     bcc = root / "tools" / "Zt-bcc_x86" / "zt-bcc.exe"
@@ -33,7 +33,7 @@ def main():
     # Iterate project folders
     for project_path in sorted(p for p in mapfolder.iterdir() if p.is_dir()):
         project_name = project_path.name
-        logging.info(f"Project: {project_name}")
+        logging.debug(f"Project: {project_name}")
 
         # Iterate maps inside this project
         for map_path in sorted(p for p in project_path.iterdir() if p.is_dir()):
@@ -43,7 +43,7 @@ def main():
             dst_behavior = map_path / "BEHAVIOR"
 
             if not src_acs.exists():
-                logging.info(f"Skipped: {map_name} contains no script")
+                logging.debug(f"Skipped: {map_name} contains no script")
                 continue
 
             #logging.info(f"  Compiling {map_name}...")
@@ -54,11 +54,11 @@ def main():
             result = subprocess.run(cmd)
 
             if result.returncode == 0:
-                logging.info(f"Compiled {map_name}")
+                logging.debug(f"Compiled {map_name}")
             else:
                 logging.error(f"Failed to compile {map_name}")
 
-        logging.info("")
+        logging.debug("")
 
     logging.info("All map scripts compiled.")
 

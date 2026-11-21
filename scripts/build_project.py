@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_paths, copy_file, run_cmd
 
 # === Zombie Horde 2 project build script ===
@@ -12,7 +12,7 @@ from utils import get_paths, copy_file, run_cmd
 # Alternatively make sure that they do another way.
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
     paths = get_paths()
 
     bcc = paths["bcc"]

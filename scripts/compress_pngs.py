@@ -2,7 +2,7 @@
 import logging
 import subprocess
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root
 
 # === Compress PNG ===
@@ -21,7 +21,7 @@ def compress_png_file(input_file: Path):
 
     old_size = input_file.stat().st_size
 
-    logging.info(f'Compressing "{input_file}"...')
+    logging.debug(f'Compressing "{input_file}"...')
 
     try:
         result = subprocess.run(
@@ -65,14 +65,14 @@ def compress_png_file(input_file: Path):
     else:
         temp_file.unlink(missing_ok=True)
 
-        logging.info(
+        logging.debug(
             f'Skipped "{input_file}" '
             f'({saved_percent:.1f}% smaller, saved {saved_bytes / 1024:.0f} KB)'
         )
 
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     root = get_root()
     pk3folder = root / "pk3"
@@ -81,7 +81,7 @@ def main():
         raise SystemExit(f'[ERROR] Source directory "{pk3folder}" does not exist.')
 
     logging.info(f'Compressing PNG files from "{pk3folder}"...')
-    logging.info("")
+    logging.debug("")
 
     image_files = sorted(
         p for p in pk3folder.rglob("*")
@@ -95,7 +95,7 @@ def main():
     for image_file in image_files:
         compress_png_file(image_file)
 
-    logging.info("")
+    logging.debug("")
     logging.info("PNG compression finished.")
 
 
