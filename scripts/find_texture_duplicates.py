@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root
 
 # === Find duplicate texture names in all projects. ===
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     root = get_root()
     srcroot = root / "pk3"
@@ -18,14 +18,14 @@ def main():
     # The folders inside each project we want to scan.
     texture_folders = ["Flats", "Patches", "Textures"]
 
-    # Contains the texture names without extension and their file paths.
+    # Contains the lump names and their file paths.
     name_map: dict[str, list[Path]] = {}
 
-    logging.info(f"Scanning projects in {srcroot}...")
+    logging.debug(f"Scanning projects in {srcroot}...")
 
     # Iterate each project folder.
     for project_path in sorted(p for p in srcroot.iterdir() if p.is_dir()):
-        logging.info(f"Project: {project_path.name}")
+        logging.debug(f"Project: {project_path.name}")
 
         # Iterate the defined folders to scan.
         for folder_name in texture_folders:
@@ -38,13 +38,16 @@ def main():
                 if not file_path.is_file():
                     continue
 
-                name_no_ext = file_path.stem.lower()
-                name_map.setdefault(name_no_ext, []).append(file_path)
+                # The engine doesn't actually warn when a texture is more than 8 characters.
+                # It just uses it and truncates the lump name, which could cause duplicates.
+                # Cut off the lump name to ensure we catch these duplicates.
+                lump_name = file_path.name.split(".", 1)[0][:8].upper()
+                name_map.setdefault(lump_name, []).append(file_path)
 
-        logging.info("")
+        logging.debug("")
 
     # Report duplicates
-    logging.info("=== Duplicate texture names ===")
+    logging.debug("=== Duplicate texture names ===")
 
     found_any = False
     for name, paths in sorted(name_map.items()):
@@ -55,9 +58,12 @@ def main():
                 logging.info(f"  {p}")
 
     if not found_any:
-        logging.info("No duplicates found.")
+        logging.debug("No duplicates found.")
 
-    logging.info("Finished analysing.")
+    logging.debug("Finished analysing.")
+
+    if found_any:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
