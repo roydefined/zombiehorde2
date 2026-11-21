@@ -18,7 +18,7 @@ def main():
     # The folders inside each project we want to scan.
     texture_folders = ["Flats", "Patches", "Textures"]
 
-    # Contains the texture names without extension and their file paths.
+    # Contains the lump names and their file paths.
     name_map: dict[str, list[Path]] = {}
 
     logging.info(f"Scanning projects in {srcroot}...")
@@ -38,8 +38,11 @@ def main():
                 if not file_path.is_file():
                     continue
 
-                name_no_ext = file_path.stem.lower()
-                name_map.setdefault(name_no_ext, []).append(file_path)
+                # The engine doesn't actually warn when a texture is more than 8 characters.
+                # It just uses it and truncates the lump name, which could cause duplicates.
+                # Cut off the lump name to ensure we catch these duplicates.
+                lump_name = file_path.name.split(".", 1)[0][:8].upper()
+                name_map.setdefault(lump_name, []).append(file_path)
 
         logging.info("")
 
