@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
+import logging
 import subprocess
 import sys
+from logger import setup_logging, get_log_level
 from utils import get_version
+
+setup_logging(get_log_level())
 
 DELETE_EXISTING = "--delete" in sys.argv
 
@@ -21,8 +25,8 @@ tag_exists = subprocess.run(
 
 if tag_exists:
     if not DELETE_EXISTING:
-        print(f"Tag '{tag}' already exists.")
-        print("Run with --delete to replace it.")
+        logging.error(f"Tag '{tag}' already exists.")
+        logging.error("Run with --delete to replace it.")
         sys.exit(1)
 
     subprocess.run(["git", "tag", "-d", tag], check=False)

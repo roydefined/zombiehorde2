@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import logging
+from logger import setup_logging, get_log_level
 from utils import get_root
 
 CFG_FILE = "docs/host.cfg"
@@ -33,13 +35,15 @@ def build_cfg(root):
 
 
 def main():
+    setup_logging(get_log_level())
+
     root = get_root()
     cfg_path = root / CFG_FILE
 
     cfg = build_cfg(root)
     cfg_path.write_text(cfg, encoding="utf-8")
 
-    print(f"Wrote {cfg_path}")
+    logging.info(f"Wrote {cfg_path}")
 
 
 if __name__ == "__main__":

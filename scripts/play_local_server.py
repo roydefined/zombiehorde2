@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+import logging
 import subprocess
 import sys
 import time
 
+from logger import setup_logging, get_log_level
 from utils import get_root, get_paths
 
 # === Zombie Horde 2 local host launcher ===
@@ -54,9 +56,9 @@ def get_classic_mode_config_args(root):
 
 
 def log_cmd(label, cmd):
-    print(f"{label}:")
-    print(" ".join(f'"{c}"' if " " in c else c for c in cmd))
-    print("")
+    logging.info(f"{label}:")
+    logging.info(" ".join(f'"{c}"' if " " in c else c for c in cmd))
+    logging.debug("")
 
 
 def start_host(root, paths, use_host_config, use_classic_mode):
@@ -90,11 +92,13 @@ def start_client(root, paths):
         *get_file_args(root),
     ]
 
-    log_cmd("Join command:", cmd)
+    log_cmd("Join command", cmd)
     return subprocess.Popen(cmd)
 
 
 def main():
+    setup_logging(get_log_level())
+
     root = get_root()
     paths = get_paths()
 
