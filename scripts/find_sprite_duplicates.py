@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root
 
 # === Find duplicate sprite frames in the projects that are merged into one pk3. ===
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     root = get_root()
     srcroot = root / "pk3"
@@ -31,10 +31,10 @@ def main():
     # Rotation 0 is for all rotations, then rotations 1 to 8 are stored so it gets caught too as a duplicate.
     frame_map: dict[tuple[str, str, str], list[Path]] = {}
 
-    logging.info(f"Scanning projects in {srcroot}...")
+    logging.debug(f"Scanning projects in {srcroot}...")
 
     for project_name in projects:
-        logging.info(f"Project: {project_name}")
+        logging.debug(f"Project: {project_name}")
 
         folder = srcroot / project_name / "sprites"
         if not folder.exists():
@@ -49,13 +49,13 @@ def main():
             # Unlike textures Zandronum doesn't cut them off, so just warn.
             lump_name = file_path.name.split(".", 1)[0].upper()
             if len(lump_name) not in (6, 8):
-                logging.warning(f"Invalid sprite name: {file_path}")
+                logging.debug(f"Invalid sprite name: {file_path}")
                 continue
 
             sprite = lump_name[:4]
             for frame, rotation in zip(lump_name[4::2], lump_name[5::2]):
                 if rotation not in "012345678":
-                    logging.warning(f"Invalid sprite rotation: {file_path}")
+                    logging.debug(f"Invalid sprite rotation: {file_path}")
                     continue
 
                 rotations = "12345678" if rotation == "0" else rotation
@@ -64,7 +64,7 @@ def main():
                     if file_path not in paths:
                         paths.append(file_path)
 
-        logging.info("")
+        logging.debug("")
 
     # Group the clashes per sprite and frame, so each file is listed once.
     duplicates: dict[tuple[str, str], list[Path]] = {}
@@ -74,7 +74,7 @@ def main():
             listed.extend(p for p in paths if p not in listed)
 
     # Report duplicates
-    logging.info("=== Duplicate sprite frames ===")
+    logging.debug("=== Duplicate sprite frames ===")
 
     for (sprite, frame), paths in sorted(duplicates.items()):
         logging.info(f"Duplicate sprite frame: {sprite} {frame}")
@@ -82,9 +82,9 @@ def main():
             logging.info(f"  {p}")
 
     if not duplicates:
-        logging.info("No duplicates found.")
+        logging.debug("No duplicates found.")
 
-    logging.info("Finished analysing.")
+    logging.debug("Finished analysing.")
 
     if duplicates:
         raise SystemExit(1)

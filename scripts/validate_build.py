@@ -3,7 +3,7 @@ import logging
 import subprocess
 import sys
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 
 # === Run all validation tools and report which ones failed. ===
 
@@ -17,17 +17,17 @@ TOOLS = [
 ]
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     scripts_dir = Path(__file__).resolve().parent
 
     failed = []
     for tool in TOOLS:
         logging.info(f"=== Running {tool} ===")
-        result = subprocess.run([sys.executable, str(scripts_dir / tool)], cwd=scripts_dir)
+        result = subprocess.run([sys.executable, str(scripts_dir / tool), *sys.argv[1:]], cwd=scripts_dir)
         if result.returncode != 0:
             failed.append(tool)
-        logging.info("")
+        logging.debug("")
 
     logging.info("=== Validation summary ===")
     for tool in TOOLS:

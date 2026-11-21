@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import logging
+import sys
 
 # === Basic addition to the build in logger to support colors and tag prefixes ===
 # Note that we don't do any additional support so this might not work in some consoles.
@@ -37,6 +38,11 @@ class _Formatter(logging.Formatter):
         label = _LEVEL_TO_LABEL.get(record.levelno, "[INFO]")
         color = _LEVEL_TO_COLOR.get(record.levelno, "")
         return f"{_DIM}{ts}{_RESET} | {color}{label}{_RESET} {msg}"
+
+# Returns DEBUG when the script was started with --verbose, otherwise INFO.
+# Scripts that log their progress with debug only show their issues by default.
+def get_log_level() -> int:
+    return logging.DEBUG if "--verbose" in sys.argv[1:] else logging.INFO
 
 def setup_logging(level: int = logging.INFO) -> None:
     root = logging.getLogger()

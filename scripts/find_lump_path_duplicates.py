@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root
 
 # === Find files with the same path in the projects that are merged into one pk3. ===
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     root = get_root()
     srcroot = root / "pk3"
@@ -28,10 +28,10 @@ def main():
     # Contains the paths relative to their project and their file paths.
     path_map: dict[str, list[Path]] = {}
 
-    logging.info(f"Scanning projects in {srcroot}...")
+    logging.debug(f"Scanning projects in {srcroot}...")
 
     for project_name in projects:
-        logging.info(f"Project: {project_name}")
+        logging.debug(f"Project: {project_name}")
 
         project_path = srcroot / project_name
         if not project_path.exists():
@@ -45,10 +45,10 @@ def main():
             relative_path = file_path.relative_to(project_path).as_posix().lower()
             path_map.setdefault(relative_path, []).append(file_path)
 
-        logging.info("")
+        logging.debug("")
 
     # Report duplicates
-    logging.info("=== Duplicate lump paths ===")
+    logging.debug("=== Duplicate lump paths ===")
 
     found_any = False
     for relative_path, paths in sorted(path_map.items()):
@@ -59,9 +59,9 @@ def main():
                 logging.info(f"  {p}")
 
     if not found_any:
-        logging.info("No duplicates found.")
+        logging.debug("No duplicates found.")
 
-    logging.info("Finished analysing.")
+    logging.debug("Finished analysing.")
 
     if found_any:
         raise SystemExit(1)

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root
 
 # === Find texture files with an invalid lump name in all projects. ===
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     root = get_root()
     srcroot = root / "pk3"
@@ -22,11 +22,11 @@ def main():
     # A valid name is at most 8 characters of printable ASCII (no spaces).
     found_any = False
 
-    logging.info(f"Scanning projects in {srcroot}...")
+    logging.debug(f"Scanning projects in {srcroot}...")
 
     # Iterate each project folder.
     for project_path in sorted(p for p in srcroot.iterdir() if p.is_dir()):
-        logging.info(f"Project: {project_path.name}")
+        logging.debug(f"Project: {project_path.name}")
 
         # Iterate the defined folders to scan.
         for folder_name in texture_folders:
@@ -47,12 +47,12 @@ def main():
                     found_any = True
                     logging.warning(f"Longer than 8 characters, used as {lump_name[:8].upper()}: {file_path}")
 
-        logging.info("")
+        logging.debug("")
 
     if not found_any:
-        logging.info("No invalid names found.")
+        logging.debug("No invalid names found.")
 
-    logging.info("Finished analysing.")
+    logging.debug("Finished analysing.")
 
     if found_any:
         raise SystemExit(1)

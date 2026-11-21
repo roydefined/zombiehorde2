@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root
 
 # === Find sprite files with an invalid lump name in the projects that are merged into one pk3. ===
@@ -13,7 +13,7 @@ VALID_FRAMES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]"
 VALID_ROTATIONS = "012345678"
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     root = get_root()
     srcroot = root / "pk3"
@@ -36,10 +36,10 @@ def main():
     # Unlike textures Zandronum doesn't cut the name off, so it has to be exactly 6 or 8 characters of printable ASCII.
     found_any = False
 
-    logging.info(f"Scanning projects in {srcroot}...")
+    logging.debug(f"Scanning projects in {srcroot}...")
 
     for project_name in projects:
-        logging.info(f"Project: {project_name}")
+        logging.debug(f"Project: {project_name}")
 
         folder = srcroot / project_name / "sprites"
         if not folder.exists():
@@ -64,12 +64,12 @@ def main():
                 found_any = True
                 logging.warning(f"Invalid rotation: {file_path}")
 
-        logging.info("")
+        logging.debug("")
 
     if not found_any:
-        logging.info("No invalid names found.")
+        logging.debug("No invalid names found.")
 
-    logging.info("Finished analysing.")
+    logging.debug("Finished analysing.")
 
     if found_any:
         raise SystemExit(1)

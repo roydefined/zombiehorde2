@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import logging
 from pathlib import Path
-from logger import setup_logging
+from logger import setup_logging, get_log_level
 from utils import get_root
 
 # === Find duplicate texture names in all projects. ===
 
 def main():
-    setup_logging()
+    setup_logging(get_log_level())
 
     root = get_root()
     srcroot = root / "pk3"
@@ -21,11 +21,11 @@ def main():
     # Contains the lump names and their file paths.
     name_map: dict[str, list[Path]] = {}
 
-    logging.info(f"Scanning projects in {srcroot}...")
+    logging.debug(f"Scanning projects in {srcroot}...")
 
     # Iterate each project folder.
     for project_path in sorted(p for p in srcroot.iterdir() if p.is_dir()):
-        logging.info(f"Project: {project_path.name}")
+        logging.debug(f"Project: {project_path.name}")
 
         # Iterate the defined folders to scan.
         for folder_name in texture_folders:
@@ -44,10 +44,10 @@ def main():
                 lump_name = file_path.name.split(".", 1)[0][:8].upper()
                 name_map.setdefault(lump_name, []).append(file_path)
 
-        logging.info("")
+        logging.debug("")
 
     # Report duplicates
-    logging.info("=== Duplicate texture names ===")
+    logging.debug("=== Duplicate texture names ===")
 
     found_any = False
     for name, paths in sorted(name_map.items()):
@@ -58,9 +58,9 @@ def main():
                 logging.info(f"  {p}")
 
     if not found_any:
-        logging.info("No duplicates found.")
+        logging.debug("No duplicates found.")
 
-    logging.info("Finished analysing.")
+    logging.debug("Finished analysing.")
 
     if found_any:
         raise SystemExit(1)
