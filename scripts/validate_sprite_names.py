@@ -71,6 +71,9 @@ def main():
 
     logging.info("Finished analysing.")
 
+    if found_any:
+        raise SystemExit(1)
+
 
 if __name__ == "__main__":
     main()

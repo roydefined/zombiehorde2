@@ -86,6 +86,9 @@ def main():
 
     logging.info("Finished analysing.")
 
+    if duplicates:
+        raise SystemExit(1)
+
 
 if __name__ == "__main__":
     main()
