@@ -64,7 +64,7 @@ def log_cmd(label, cmd):
 def start_host(root, paths, use_host_config, use_classic_mode):
     cmd = [
         str(paths["zandronum"]),
-        "-host", "1",
+        "-host",
         "-iwad", str(paths["iwad"]),
         *get_file_args(root),
     ]
