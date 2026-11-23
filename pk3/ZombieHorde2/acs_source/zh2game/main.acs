@@ -119,7 +119,7 @@ strict namespace ZH2Game
         str gameMode = Map::GetCurrentMapGameMode();
         if (((raw)gameMode) != 0 && gameMode != "")
         {
-            Logger::LogDebug(LOGSOURCE, "Setting up serverside game mode: \cd" + gameMode + "\cj.");
+            Logger::LogInformation(LOGSOURCE, "Setting up serverside game mode: \cd" + gameMode + "\cj.");
 
             switch (BCSUtils::StrToLower(gameMode))
             {
@@ -146,7 +146,7 @@ strict namespace ZH2Game
         }
         else
         {
-            Logger::LogDebug(LOGSOURCE, "Map has no game mode defined.");
+            Logger::LogInformation(LOGSOURCE, "Map has no game mode defined.");
         }
 
         // Set up the initial game state depending on if we have enough players or not.
@@ -171,7 +171,7 @@ strict namespace ZH2Game
             else
             {
                 Round::SetKnownRoundState(Round::STATESTARTING);
-                Logger::LogDebug(LOGSOURCE, "Waiting for the map to start the game.");
+                Logger::LogInformation(LOGSOURCE, "Waiting for the map to start the game.");
             }
         }
 
@@ -399,7 +399,7 @@ strict namespace ZH2Game
             // The player left a playing round.
             if (Round::GetActiveKnownRoundState() == Round::STATEPLAYING)
             {
-                Logger::LogDebug(LOGSOURCE, "Playing player has spectated: (\cd" + str(id) + "\cj)" + BCSUTILS::PlayerName(id) + ".");
+                Logger::LogInformation(LOGSOURCE, "Playing player has spectated: (\cd" + str(id) + "\cj)" + BCSUTILS::PlayerName(id) + ".");
                 Player::SetPlayerState(id, Player::STATEGONE);
                 Event::SendPlayerLeftRound(id, LEAVEREASON_LEFT);
             }
@@ -408,7 +408,7 @@ strict namespace ZH2Game
             // We must reset the player context then as somebody else can take it.
             else if (Round::GetRoundJoinable(activeRoundIndex))
             {
-                Logger::LogDebug(LOGSOURCE, "Playing player has spectated (not a playing round): (\cd" + str(id) + "\cj)" + BCSUTILS::PlayerName(id) + ".");
+                Logger::LogInformation(LOGSOURCE, "Playing player has spectated (not a playing round): (\cd" + str(id) + "\cj)" + BCSUTILS::PlayerName(id) + ".");
                 ResetPlayerContext(id);
             }
 
@@ -486,7 +486,7 @@ strict namespace ZH2Game
     // Getting resurrected with `resurrect` does not run the respawn script, and so this way it fixes that.
     script "zh2_internal_check_resurrect" (int id)
     {
-        Logger::LogInformation(LOGSOURCE, "Waiting for player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " to possibly resurrect.");
+        Logger::LogDebug(LOGSOURCE, "Waiting for player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " to possibly resurrect.");
 
         int deadBodyTid = DEAD_BODY_TID_BASE + id;
 
@@ -496,7 +496,7 @@ strict namespace ZH2Game
             // The player left the game or became a spectator.
             if (!PlayerInGame(id))
             {
-                Logger::LogInformation(LOGSOURCE, "Stop waiting for player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " to resurrect. Player is no longer in the game.");
+                Logger::LogDebug(LOGSOURCE, "Stop waiting for player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " to resurrect. Player is no longer in the game.");
                 terminate;
             }
 
@@ -506,7 +506,7 @@ strict namespace ZH2Game
         // A new body, so the player respawned.
         if (ActivatorTid() != deadBodyTid)
         {
-            Logger::LogInformation(LOGSOURCE, "Stop waiting for player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " to resurrect. Player respawned.");
+            Logger::LogDebug(LOGSOURCE, "Stop waiting for player \cd(" + str(id) + ")\cj " + BCSUtils::PlayerName(id) + " to resurrect. Player respawned.");
             Identity::DisposeTID(deadBodyTid);
             terminate;
         }

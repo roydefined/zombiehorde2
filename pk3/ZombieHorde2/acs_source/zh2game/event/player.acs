@@ -16,7 +16,7 @@ strict namespace Event
         if (!Player::GetPlayerIsHuman(infectedId) || !Player::GetPlayerIsZombie(infectorId))
             terminate;
 
-        Logger::LogDebug(LOGSOURCE, "Scratching (\cd" + str(infectedId) + "\cj) " + BCSUtils::PlayerName(infectedId) + " by (\cd" + str(infectorId) + "\cj) " + BCSUtils::PlayerName(infectorId) + ".");
+        Logger::LogInformation(LOGSOURCE, "Scratching (\cd" + str(infectedId) + "\cj) " + BCSUtils::PlayerName(infectedId) + " by (\cd" + str(infectorId) + "\cj) " + BCSUtils::PlayerName(infectorId) + ".");
 
         // Check for protection.
         if (Power::GetPlayerHasPower(infectedId, Power::POWERZOMBIEPROTECT))
@@ -79,7 +79,7 @@ strict namespace Event
         if (killedId == killerId)
             terminate;
 
-        Logger::LogDebug(LOGSOURCE,
+        Logger::LogInformation(LOGSOURCE,
             "\cd" + Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(killerId)) + "\cj " + Player::GetPlayerName(killerId)
             + " has killed \cd"
             + Player::GetSpecieIndexAsString(Player::GetPlayerSpecie(killedId)) + "\cj " + Player::GetPlayerName(killedId) + ".");
@@ -157,13 +157,13 @@ strict namespace Event
                 int duration = BCSUtils::Min(CVar::GetSvMaxBanDuration(), CVar::GetSvMaxZombieBanDuration());
                 if (duration != 0)
                 {
-                    Logger::LogDebug(LOGSOURCE, "Attempting to ban player (\cd" + str(id) + "\cj) " + BCSUtils::PlayerName(id) + " for \cd" + str(duration) + "\cj minute(s).");
+                    Logger::LogInformation(LOGSOURCE, "Attempting to ban player (\cd" + str(id) + "\cj) " + BCSUtils::PlayerName(id) + " for \cd" + str(duration) + "\cj minute(s).");
 
                     if (!BanFromGame(id, duration, ZOMBIE_LEAVE_BAN_REASON))
                         Logger::LogWarning(LOGSOURCE, "Failed to ban player (\cd" + str(id) + "\cj) " + BCSUtils::PlayerName(id) + " for \cd" + str(duration) + "\cj minute(s).");
                 }
                 else
-                    Logger::LogDebug(LOGSOURCE, "Ignoring ban for player (\cd" + str(id) + "\cj) " + BCSUtils::PlayerName(id) + " for \cd" + str(duration) + "\cj. No duration.");
+                    Logger::LogInformation(LOGSOURCE, "Ignoring ban for player (\cd" + str(id) + "\cj) " + BCSUtils::PlayerName(id) + " for \cd" + str(duration) + "\cj. No duration.");
             }
 
             if (Game::ZombieCount() == 0)
@@ -284,7 +284,7 @@ strict namespace Event
         // Sort of failsafe, it's possible the zombie only got damaged by the environment or monsters.
         if (awardedId == -1)
         {
-            Logger::LogDebug(LOGSOURCE, "No player qualified for the zombie kill damage award.");
+            Logger::LogInformation(LOGSOURCE, "No player qualified for the zombie kill damage award.");
             return;
         }
 
