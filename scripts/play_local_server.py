@@ -17,8 +17,11 @@ from utils import get_root, get_paths
 # Pass `--classicmode` to also load 'docs/classicmode.cfg' on top of the host config.
 # The client loads all radio packs in 'pk3/radiopacks'.
 # This can be disabled by passing `--noradio`.
+# The script asks how many clients to start (0-6), pressing enter starts 1 and 0 starts only the host.
+# Pass `--clients <count>` to skip the question.
 
 PORT = "10666"
+MAX_CLIENTS = 6
 
 ZH2_FILES = [
     "libraries/ZombieHorde2Lib",
@@ -116,6 +119,36 @@ def start_client(root, paths, use_radio):
     return subprocess.Popen(cmd)
 
 
+def ask_client_count():
+    # Ask until a valid number is entered. Pressing enter defaults to 1.
+    while True:
+        try:
+            answer = input(f"How many clients to start (0-{MAX_CLIENTS})? [1]: ").strip()
+        except EOFError:
+            return 1
+
+        if answer == "":
+            return 1
+
+        if answer.isdigit():
+            return int(answer)
+
+        print("Please enter a number, or press enter for 1.")
+
+
+def get_client_count():
+    # Check `--clients <count>` or ask for client count.
+    if "--clients" not in sys.argv:
+        return ask_client_count()
+
+    index = sys.argv.index("--clients")
+    if index + 1 >= len(sys.argv) or not sys.argv[index + 1].isdigit():
+        logging.error("`--clients` requires a number.")
+        sys.exit(1)
+
+    return int(sys.argv[index + 1])
+
+
 def main():
     setup_logging(get_log_level())
 
@@ -127,16 +160,22 @@ def main():
     use_testing_config = "--notestingconfig" not in sys.argv
     use_classic_mode = "--classicmode" in sys.argv
     use_radio = "--noradio" not in sys.argv
+    
+    client_count = get_client_count()
+    if client_count > MAX_CLIENTS:
+        logging.warning(f"Clamped client count {client_count} to {MAX_CLIENTS}.")
+        client_count = MAX_CLIENTS
 
     host = start_host(root, paths, use_host_config, use_testing_config, use_classic_mode)
 
     # Give the server a short moment to initialize before joining.
     time.sleep(0.5)
 
-    client = start_client(root, paths, use_radio)
+    clients = [start_client(root, paths, use_radio) for _ in range(client_count)]
 
     host.wait()
-    client.wait()
+    for client in clients:
+        client.wait()
 
 
 if __name__ == "__main__":
