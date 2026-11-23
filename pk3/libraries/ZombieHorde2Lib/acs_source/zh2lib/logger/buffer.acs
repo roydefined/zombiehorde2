@@ -7,6 +7,7 @@ strict namespace Logger
     // This holds the buffered log messages so we can log them properly later.
     internal str _logBuffer[LOG_BUFFER_SIZE];
     internal int _logBufferFillSize = 0;
+    internal bool _logBufferFullReported = false;
 
     // Called from the main client loop to flush incoming log messages.
     // Online we also have this called from the server.
@@ -42,6 +43,7 @@ strict namespace Logger
         }
 
         _logBufferFillSize = 0;
+        _logBufferFullReported = false;
     }
 
     internal void AddPacketLogToBuffer(str messagePacket)
@@ -62,7 +64,13 @@ strict namespace Logger
 
         if (_logBufferFillSize == LOG_BUFFER_SIZE)
         {
-            PrintError("Maximum log buffer size of " + str(LOG_BUFFER_SIZE) + " reached for this frame. Leveled log can't be added.");
+            // Report once
+            if (!_logBufferFullReported)
+            {
+                PrintError("Maximum log buffer size of " + str(LOG_BUFFER_SIZE) + " reached for this frame. Leveled logs can't be added until the next flush.");
+                _logBufferFullReported = true;
+            }
+            
             return;
         }
 
