@@ -15,6 +15,8 @@ from utils import get_root, get_paths
 # The server also loads 'docs/host-testing.cfg' for local testing settings.
 # This can be disabled by passing `--notestingconfig`.
 # Pass `--classicmode` to also load 'docs/classicmode.cfg' on top of the host config.
+# The client loads all radio packs in 'pk3/radiopacks'.
+# This can be disabled by passing `--noradio`.
 
 PORT = "10666"
 
@@ -29,11 +31,17 @@ ZH2_FILES = [
 ]
 
 
-def get_file_args(root):
+def get_file_args(root, use_radio):
     args = []
 
     for name in ZH2_FILES:
         args.extend(["-file", str(root / "pk3" / name)])
+
+    # Radio packs are loaded after the main files. Only the client loads them.
+    if use_radio:
+        radio_root = root / "pk3" / "radiopacks"
+        for radio_path in sorted(p for p in radio_root.iterdir() if p.is_dir()):
+            args.extend(["-file", str(radio_path)])
 
     return args
 
@@ -72,7 +80,9 @@ def start_host(root, paths, use_host_config, use_testing_config, use_classic_mod
         str(paths["zandronum"]),
         "-host",
         "-iwad", str(paths["iwad"]),
-        *get_file_args(root),
+
+        # The radio is never loaded on the host.
+        *get_file_args(root, use_radio=False),
     ]
 
     # Use the predefined host config by default.
@@ -94,12 +104,12 @@ def start_host(root, paths, use_host_config, use_testing_config, use_classic_mod
     return subprocess.Popen(cmd)
 
 
-def start_client(root, paths):
+def start_client(root, paths, use_radio):
     cmd = [
         str(paths["zandronum"]),
         "-connect", f"127.0.0.1:{PORT}",
         "-iwad", str(paths["iwad"]),
-        *get_file_args(root),
+        *get_file_args(root, use_radio),
     ]
 
     log_cmd("Join command", cmd)
@@ -116,13 +126,14 @@ def main():
     use_host_config = "--nohostconfig" not in sys.argv
     use_testing_config = "--notestingconfig" not in sys.argv
     use_classic_mode = "--classicmode" in sys.argv
+    use_radio = "--noradio" not in sys.argv
 
     host = start_host(root, paths, use_host_config, use_testing_config, use_classic_mode)
 
     # Give the server a short moment to initialize before joining.
     time.sleep(0.5)
 
-    client = start_client(root, paths)
+    client = start_client(root, paths, use_radio)
 
     host.wait()
     client.wait()
