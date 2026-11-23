@@ -13,27 +13,28 @@ The following maps have been migrated:
 
 Other mod changes
 ------------------------------------------------
-- Reworked the log severitiesin order to improve how the information log-level frequency is used.
-  Previously almost all logging was debug, which made the console hard to read when looking for something specific. And information-level logmessages were barely used.
-  General logs that tell what happened in the game are now information. Logs that trace the individual steps of a system or log values for debugging stay debug.
-  This should improve logging, and server hosts and clients can now set the minimum log level to information to properly reduce the debug level logging noice.
-- The logger will now only report once a tic if the buffer is full. Before this change it would report with each added entry.
-- The default log level is now information instead of debug.
-  Any previous overrides for logging have now been removed.
+- Reworked logging to make the information log level more useful:
+    - Reworked the log severities to improve how often the information log level is used.
+      Previously almost all logging was debug, which made the console hard to read when looking for something specific, and information-level log messages were barely used.
+      General logs that tell what happened in the game are now information. Logs that trace the individual steps of a system or log values for debugging stay debug.
+      This should improve logging, and server hosts and clients can now set the minimum log level to information to properly reduce the debug-level logging noise.
+    - The default log level is now information instead of debug. Any previous overrides for logging have been removed.
+    - The logger now only reports a full buffer once per tic. Before this change it would report it with each added entry.
 
 Repository changes
 ------------------------------------------------
-- Improved the tooling withing the project, filling gaps and making it easier to run the tool and catch issues.
+- Improved the tooling within the project, filling gaps and making it easier to run the tools and catch issues.
     - `find_texture_duplicates.py` now correctly truncates lump names to 8 characters, so textures that have a longer name correctly get caught as duplicates.
-    - Added `find_sprite_duplicates.py`, which is a tool similar to `find_texture_duplicates.py`, finding duplicates but for sprites (including rotations).
-    - Added `validate_sprite_names.py` and `validate_texture_names.py` as two scripts that validate the naming of sprites and textures and reports invalid names.
+    - Added `find_sprite_duplicates.py`, a tool similar to `find_texture_duplicates.py` that finds duplicate sprites (including rotations).
+    - Added `validate_sprite_names.py` and `validate_texture_names.py`, two scripts that validate the naming of sprites and textures and report invalid names.
     - Added `find_lump_path_duplicates.py` as a way to find duplicate lumps based on relative paths.
     - Added `validate_build.py` as a master script to validate the project as a whole by invoking all validation scripts the project now has.
-- Added a `--verbose` option for scripts that use the logging in the tooling. If set, debug logging will be output.
-  This means debug logging is now turned off by default.
-- Tooling in general has been improved to support verbose logging.
-- `build_config_file.py`, `create_tag.py` and `play_local_server.py` now make use of the logging system.
-- Fixed `play_local_server.py` not properly setting `sv_maxclients`.
-- `play_local_server.py` now loads in optional `host-testing.cfg` which applies extra parameters for testing. For now this is only `sv_maxclientsperip 64`.
-- `play_local_server.py` now loads all radio tracks unless otherwise specified.
-- Updated `play_local_server.py` with a client count parameter. If unset, the script asks for the number of clients. It will open this many instances of Zandronum.
+- Improved logging in the tooling:
+    - Added a `--verbose` option for scripts that use the logging in the tooling, and improved the tooling in general to support verbose logging.
+      If set, debug logging will be output. This means debug logging is now turned off by default.
+    - `build_config_file.py`, `create_tag.py` and `play_local_server.py` now make use of the logging system.
+- Improved `play_local_server.py`:
+    - Fixed `sv_maxclients` not being set properly.
+    - Now loads an optional `host-testing.cfg`, which applies extra parameters for testing. For now this is only `sv_maxclientsperip 64`.
+    - Now loads all radio tracks unless otherwise specified.
+    - Added a client count parameter. If unset, the script asks for the number of clients. It will open this many instances of Zandronum.
