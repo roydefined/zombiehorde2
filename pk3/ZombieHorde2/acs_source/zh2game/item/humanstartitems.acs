@@ -67,36 +67,36 @@ strict namespace Item
     // Must be called after the current map lump is parsed.
     internal void CombineHumanStartItemsServer()
     {
-        ZH2Game::GameContext.CombinedHumanStartItemCollection.Size = 0;
+        ZH2Game::_gameContext.CombinedHumanStartItemCollection.Size = 0;
 
         for (int i = 0; i < ZH2Game::PersistingGameContext.HumanStartItemCollection.Size; ++i)
         {
             HumanStartItemT global:PERSISTING_GAME_CONTEXT_INDEX& modItem = ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[i];
 
-            int index = ZH2Game::GameContext.CombinedHumanStartItemCollection.Size;
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name = modItem.Name;
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount = modItem.Amount;
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance = modItem.DefaultChance;
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.PlayerCanReceiveScript = modItem.PlayerCanReceiveScript;
+            int index = ZH2Game::_gameContext.CombinedHumanStartItemCollection.Size;
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name = modItem.Name;
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount = modItem.Amount;
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance = modItem.DefaultChance;
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.PlayerCanReceiveScript = modItem.PlayerCanReceiveScript;
             for (int j = 0; j < modItem.RuleCount; ++j)
             {
-                ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[j] = modItem.RuleMaxPlayers[j];
-                ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleChance[j] = modItem.RuleChance[j];
+                ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[j] = modItem.RuleMaxPlayers[j];
+                ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleChance[j] = modItem.RuleChance[j];
             }
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleCount = modItem.RuleCount;
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Source = HUMANSTARTITEMSOURCE_MOD;
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Size++;
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleCount = modItem.RuleCount;
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Source = HUMANSTARTITEMSOURCE_MOD;
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Size++;
         }
 
-        for (int i = 0; i < ZH2Game::GameContext.HumanStartItemCollection.Size; ++i)
+        for (int i = 0; i < ZH2Game::_gameContext.HumanStartItemCollection.Size; ++i)
         {
-            str name = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].Name;
+            str name = ZH2Game::_gameContext.HumanStartItemCollection.Collection[i].Name;
 
             // Override the mod item with the same name, if there is one.
             int index = -1;
-            for (int j = 0; j < ZH2Game::GameContext.CombinedHumanStartItemCollection.Size; ++j)
+            for (int j = 0; j < ZH2Game::_gameContext.CombinedHumanStartItemCollection.Size; ++j)
             {
-                if (BCSUtils::StrIEquals(ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[j].Item.Name, name))
+                if (BCSUtils::StrIEquals(ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[j].Item.Name, name))
                 {
                     index = j;
                     break;
@@ -106,27 +106,27 @@ strict namespace Item
             if (index == -1)
             {
                 // No more room for more human start items. Log a warning and skip the item.
-                index = ZH2Game::GameContext.CombinedHumanStartItemCollection.Size;
+                index = ZH2Game::_gameContext.CombinedHumanStartItemCollection.Size;
                 if (index >= MAX_HUMANSTARTITEMS)
                 {
                     Logger::LogWarning(LOGSOURCE, "The maximum number of human start items was reached (" + str(index) + "), skipping map item " + name + ".");
                     continue;
                 }
 
-                ZH2Game::GameContext.CombinedHumanStartItemCollection.Size++;
+                ZH2Game::_gameContext.CombinedHumanStartItemCollection.Size++;
             }
 
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name = name;
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].Amount;
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].DefaultChance;
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.PlayerCanReceiveScript = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].PlayerCanReceiveScript;
-            for (int j = 0; j < ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleCount; ++j)
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name = name;
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount = ZH2Game::_gameContext.HumanStartItemCollection.Collection[i].Amount;
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance = ZH2Game::_gameContext.HumanStartItemCollection.Collection[i].DefaultChance;
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.PlayerCanReceiveScript = ZH2Game::_gameContext.HumanStartItemCollection.Collection[i].PlayerCanReceiveScript;
+            for (int j = 0; j < ZH2Game::_gameContext.HumanStartItemCollection.Collection[i].RuleCount; ++j)
             {
-                ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[j] = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleMaxPlayers[j];
-                ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleChance[j] = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleChance[j];
+                ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[j] = ZH2Game::_gameContext.HumanStartItemCollection.Collection[i].RuleMaxPlayers[j];
+                ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleChance[j] = ZH2Game::_gameContext.HumanStartItemCollection.Collection[i].RuleChance[j];
             }
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleCount = ZH2Game::GameContext.HumanStartItemCollection.Collection[i].RuleCount;
-            ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Source = HUMANSTARTITEMSOURCE_MAP;
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleCount = ZH2Game::_gameContext.HumanStartItemCollection.Collection[i].RuleCount;
+            ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Source = HUMANSTARTITEMSOURCE_MAP;
         }
     }
 
@@ -384,20 +384,20 @@ strict namespace Item
         return count;
     }
 
-    internal bool GetPlayerReceivedHumanStartItem(int id, int index) { return ZH2Game::GameContext.Players[id].ReceivedHumanStartItems[index]; }
-    internal void SetPlayerReceivedHumanStartItem(int id, int index, bool received) { ZH2Game::GameContext.Players[id].ReceivedHumanStartItems[index] = received; }
+    internal bool GetPlayerReceivedHumanStartItem(int id, int index) { return ZH2Game::_gameContext.Players[id].ReceivedHumanStartItems[index]; }
+    internal void SetPlayerReceivedHumanStartItem(int id, int index, bool received) { ZH2Game::_gameContext.Players[id].ReceivedHumanStartItems[index] = received; }
 
     // The combined human start items of the current map.
     // These take the final result and is generally used.
-    internal int GetHumanStartItemCount() { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Size; }
-    internal str GetHumanStartItemName(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name; }
-    internal int GetHumanStartItemAmount(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount; }
-    internal int GetHumanStartItemRuleCount(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleCount; }
-    internal int GetHumanStartItemRuleMaxPlayers(int index, int ruleIndex) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[ruleIndex]; }
-    internal int GetHumanStartItemRuleChance(int index, int ruleIndex) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleChance[ruleIndex]; }
-    internal int GetHumanStartItemDefaultChance(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance; }
-    internal str GetHumanStartItemPlayerCanReceiveScript(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Item.PlayerCanReceiveScript; }
-    internal HumanStartItemSourceT GetHumanStartItemSource(int index) { return ZH2Game::GameContext.CombinedHumanStartItemCollection.Collection[index].Source; }
+    internal int GetHumanStartItemCount() { return ZH2Game::_gameContext.CombinedHumanStartItemCollection.Size; }
+    internal str GetHumanStartItemName(int index) { return ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.Name; }
+    internal int GetHumanStartItemAmount(int index) { return ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.Amount; }
+    internal int GetHumanStartItemRuleCount(int index) { return ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleCount; }
+    internal int GetHumanStartItemRuleMaxPlayers(int index, int ruleIndex) { return ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleMaxPlayers[ruleIndex]; }
+    internal int GetHumanStartItemRuleChance(int index, int ruleIndex) { return ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.RuleChance[ruleIndex]; }
+    internal int GetHumanStartItemDefaultChance(int index) { return ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.DefaultChance; }
+    internal str GetHumanStartItemPlayerCanReceiveScript(int index) { return ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Item.PlayerCanReceiveScript; }
+    internal HumanStartItemSourceT GetHumanStartItemSource(int index) { return ZH2Game::_gameContext.CombinedHumanStartItemCollection.Collection[index].Source; }
 
     // The human start items as parsed from the mod def lumps.
     internal int GetParsedModHumanStartItemCount() { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Size; }
@@ -410,12 +410,12 @@ strict namespace Item
     internal str GetParsedModHumanStartItemPlayerCanReceiveScript(int index) { return ZH2Game::PersistingGameContext.HumanStartItemCollection.Collection[index].PlayerCanReceiveScript; }
 
     // The human start items as parsed from the current map lump.
-    internal int GetParsedMapHumanStartItemCount() { return ZH2Game::GameContext.HumanStartItemCollection.Size; }
-    internal str GetParsedMapHumanStartItemName(int index) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].Name; }
-    internal int GetParsedMapHumanStartItemAmount(int index) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].Amount; }
-    internal int GetParsedMapHumanStartItemRuleCount(int index) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].RuleCount; }
-    internal int GetParsedMapHumanStartItemRuleMaxPlayers(int index, int ruleIndex) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].RuleMaxPlayers[ruleIndex]; }
-    internal int GetParsedMapHumanStartItemRuleChance(int index, int ruleIndex) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].RuleChance[ruleIndex]; }
-    internal int GetParsedMapHumanStartItemDefaultChance(int index) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].DefaultChance; }
-    internal str GetParsedMapHumanStartItemPlayerCanReceiveScript(int index) { return ZH2Game::GameContext.HumanStartItemCollection.Collection[index].PlayerCanReceiveScript; }
+    internal int GetParsedMapHumanStartItemCount() { return ZH2Game::_gameContext.HumanStartItemCollection.Size; }
+    internal str GetParsedMapHumanStartItemName(int index) { return ZH2Game::_gameContext.HumanStartItemCollection.Collection[index].Name; }
+    internal int GetParsedMapHumanStartItemAmount(int index) { return ZH2Game::_gameContext.HumanStartItemCollection.Collection[index].Amount; }
+    internal int GetParsedMapHumanStartItemRuleCount(int index) { return ZH2Game::_gameContext.HumanStartItemCollection.Collection[index].RuleCount; }
+    internal int GetParsedMapHumanStartItemRuleMaxPlayers(int index, int ruleIndex) { return ZH2Game::_gameContext.HumanStartItemCollection.Collection[index].RuleMaxPlayers[ruleIndex]; }
+    internal int GetParsedMapHumanStartItemRuleChance(int index, int ruleIndex) { return ZH2Game::_gameContext.HumanStartItemCollection.Collection[index].RuleChance[ruleIndex]; }
+    internal int GetParsedMapHumanStartItemDefaultChance(int index) { return ZH2Game::_gameContext.HumanStartItemCollection.Collection[index].DefaultChance; }
+    internal str GetParsedMapHumanStartItemPlayerCanReceiveScript(int index) { return ZH2Game::_gameContext.HumanStartItemCollection.Collection[index].PlayerCanReceiveScript; }
 }

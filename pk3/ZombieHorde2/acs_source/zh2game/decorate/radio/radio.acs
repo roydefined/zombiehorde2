@@ -10,10 +10,10 @@ strict namespace Decorate
     internal bool HasRadioTrackPlaying() { return GetClientCurrentRadioTrackIndex() > 0; }
 
     // Note, the behaviour controls setting the value.
-    internal int GetClientRadioCurrentlySelectedIndex() { return ZH2Game::GameContext.RadioCurrentlySelectedIndex; }
+    internal int GetClientRadioCurrentlySelectedIndex() { return ZH2Game::_gameContext.RadioCurrentlySelectedIndex; }
 
-    internal int GetClientCurrentRadioTrackIndex() { return ZH2Game::GameContext.CurrentRadioTrackIndex; }
-    internal void SetClientCurrentRadioTrackIndex(int index) { ZH2Game::GameContext.CurrentRadioTrackIndex = index; }
+    internal int GetClientCurrentRadioTrackIndex() { return ZH2Game::_gameContext.CurrentRadioTrackIndex; }
+    internal void SetClientCurrentRadioTrackIndex(int index) { ZH2Game::_gameContext.CurrentRadioTrackIndex = index; }
 
     internal int GetRadioCollectionSize() { return ZH2Game::PersistingGameContext.RadioTrackCollection.Size; }
     internal str GetRadioTrackLumpName(int index) { return ZH2Game::PersistingGameContext.RadioTrackCollection.Collection[index].LumpName; }
@@ -51,33 +51,33 @@ strict namespace Decorate
     internal void UpdateRadioTrackCooldown()
     {
         // TODO: configurable?
-        ZH2Game::GameContext.RadioTrackCooldownTimestamp = Utils::GetSynchronizedTimer() + RADIO_COOLDOWN_SECONDS * 35;
+        ZH2Game::_gameContext.RadioTrackCooldownTimestamp = Utils::GetSynchronizedTimer() + RADIO_COOLDOWN_SECONDS * 35;
     }
     internal int GetRadioTrackCooldownTicsLeft()
     {
-        if (ZH2Game::GameContext.RadioTrackCooldownTimestamp == 0)
+        if (ZH2Game::_gameContext.RadioTrackCooldownTimestamp == 0)
             return 0;
-        return BCSUtils::Max(0, ZH2Game::GameContext.RadioTrackCooldownTimestamp - Utils::GetSynchronizedTimer());
+        return BCSUtils::Max(0, ZH2Game::_gameContext.RadioTrackCooldownTimestamp - Utils::GetSynchronizedTimer());
     }
 
     /* Broadcast tracking (who is currently playing a radio track) */
 
-    internal bool GetRadioBroadcastActive() { return ZH2Game::GameContext.RadioBroadcast.Active; }
-    internal int GetRadioBroadcastPlayerId() { return ZH2Game::GameContext.RadioBroadcast.PlayerId; }
-    internal str GetRadioBroadcastLumpName() { return ZH2Game::GameContext.RadioBroadcast.LumpName; }
+    internal bool GetRadioBroadcastActive() { return ZH2Game::_gameContext.RadioBroadcast.Active; }
+    internal int GetRadioBroadcastPlayerId() { return ZH2Game::_gameContext.RadioBroadcast.PlayerId; }
+    internal str GetRadioBroadcastLumpName() { return ZH2Game::_gameContext.RadioBroadcast.LumpName; }
 
     internal void SetRadioBroadcast(int playerId, str lump)
     {
-        ZH2Game::GameContext.RadioBroadcast.Active = true;
-        ZH2Game::GameContext.RadioBroadcast.PlayerId = playerId;
-        ZH2Game::GameContext.RadioBroadcast.LumpName = lump;
+        ZH2Game::_gameContext.RadioBroadcast.Active = true;
+        ZH2Game::_gameContext.RadioBroadcast.PlayerId = playerId;
+        ZH2Game::_gameContext.RadioBroadcast.LumpName = lump;
     }
 
     internal void ClearRadioBroadcast()
     {
-        ZH2Game::GameContext.RadioBroadcast.Active = false;
-        ZH2Game::GameContext.RadioBroadcast.PlayerId = -1;
-        ZH2Game::GameContext.RadioBroadcast.LumpName = (raw)0;
+        ZH2Game::_gameContext.RadioBroadcast.Active = false;
+        ZH2Game::_gameContext.RadioBroadcast.PlayerId = -1;
+        ZH2Game::_gameContext.RadioBroadcast.LumpName = (raw)0;
     }
 
     /* Broadcast tracking, clientside reactions (mapspot + local music) */
@@ -210,9 +210,9 @@ strict namespace Decorate
             + str(id) + "\cj).");
     }
 
-    internal bool GetMapMusicVolumeCached() { return ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeCached; }
-    internal fixed GetMapMusicVolumeBaseline() { return ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeBaseline; }
-    internal fixed GetMapMusicVolumeLastFraction() { return ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeLastFraction; }
+    internal bool GetMapMusicVolumeCached() { return ZH2Game::_gameContext.RadioBroadcast.MapMusicVolumeCached; }
+    internal fixed GetMapMusicVolumeBaseline() { return ZH2Game::_gameContext.RadioBroadcast.MapMusicVolumeBaseline; }
+    internal fixed GetMapMusicVolumeLastFraction() { return ZH2Game::_gameContext.RadioBroadcast.MapMusicVolumeLastFraction; }
 
     // Stores the default baseline using the client's currently configured music volume (snd_musicvolume).
     internal void CacheMapMusicVolumeBaseline()
@@ -220,9 +220,9 @@ strict namespace Decorate
         if (GetMapMusicVolumeCached())
             return;
 
-        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeBaseline = CVar::GetSndMusicVolume();
-        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeLastFraction = 1.0;
-        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeCached = true;
+        ZH2Game::_gameContext.RadioBroadcast.MapMusicVolumeBaseline = CVar::GetSndMusicVolume();
+        ZH2Game::_gameContext.RadioBroadcast.MapMusicVolumeLastFraction = 1.0;
+        ZH2Game::_gameContext.RadioBroadcast.MapMusicVolumeCached = true;
 
         Logger::LogDebug(LOGSOURCE, "Radio: cached snd_musicvolume baseline \cd"
             + str(GetMapMusicVolumeBaseline()) + "\cj before fading it.");
@@ -247,7 +247,7 @@ strict namespace Decorate
         Logger::LogDebug(LOGSOURCE, "Radio: snd_musicvolume changed externally (\cd" + str(expected)
             + "\cj -> \cd" + str(current) + "\cj); rebasing fade baseline to \cd" + str(newBaseline) + "\cj.");
 
-        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeBaseline = newBaseline;
+        ZH2Game::_gameContext.RadioBroadcast.MapMusicVolumeBaseline = newBaseline;
     }
 
     // Sets snd_musicvolume to a fraction of the cached baseline, e.g. 0.5 for half volume.
@@ -256,7 +256,7 @@ strict namespace Decorate
         RebaseMapMusicVolumeIfChangedByUser();
 
         CVar::SetSndMusicVolume(GetMapMusicVolumeBaseline() * fraction);
-        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeLastFraction = fraction;
+        ZH2Game::_gameContext.RadioBroadcast.MapMusicVolumeLastFraction = fraction;
     }
 
     // Puts snd_musicvolume back to the cached baseline and clears the cache, so the next fade
@@ -269,11 +269,11 @@ strict namespace Decorate
         RebaseMapMusicVolumeIfChangedByUser();
 
         CVar::SetSndMusicVolume(GetMapMusicVolumeBaseline());
-        ZH2Game::GameContext.RadioBroadcast.MapMusicVolumeCached = false;
+        ZH2Game::_gameContext.RadioBroadcast.MapMusicVolumeCached = false;
     }
 
-    internal bool GetRadioProximityWasEnabled() { return ZH2Game::GameContext.RadioBroadcast.ProximityWasEnabled; }
-    internal void SetRadioProximityWasEnabled(bool value) { ZH2Game::GameContext.RadioBroadcast.ProximityWasEnabled = value; }
+    internal bool GetRadioProximityWasEnabled() { return ZH2Game::_gameContext.RadioBroadcast.ProximityWasEnabled; }
+    internal void SetRadioProximityWasEnabled(bool value) { ZH2Game::_gameContext.RadioBroadcast.ProximityWasEnabled = value; }
 
     // Check and adjusts the proximity feature against the client's current setting.
     internal void CheckRadioProximitySettingChanged()

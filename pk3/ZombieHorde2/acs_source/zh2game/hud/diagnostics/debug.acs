@@ -96,7 +96,7 @@ strict namespace Hud
         {
             Append(s:"\cgRounds (yellow means active)");
 
-            Round::RoundStateContextT[] module& rounds = ZH2Game::GameContext.MapDetails.Rounds;
+            Round::RoundStateContextT[] module& rounds = ZH2Game::_gameContext.MapDetails.Rounds;
             for (int index = 0; index < lengthof(rounds); ++index)
             {
                 if (!Round::GetRoundDefined(index)) continue;
@@ -104,7 +104,7 @@ strict namespace Hud
                 str roundName = Round::GetRoundStateIndexAsString(index);
 
                 // TODO: Get active index from function instead of from a variable like this.
-                str lineColor = ZH2Game::GameContext.MapDetails.ActiveRoundStateIndex == index
+                str lineColor = ZH2Game::_gameContext.MapDetails.ActiveRoundStateIndex == index
                     ? "\cf" : "\cj";
                 str line = "\n" + lineColor + roundName;
                 Append(s:line);
@@ -136,7 +136,7 @@ strict namespace Hud
 
             Append(s:"\cgTimers (yellow means active)");
 
-            RoundTimer::RoundTimerContextT[] module& timers = ZH2Game::GameContext.MapDetails.Timers;
+            RoundTimer::RoundTimerContextT[] module& timers = ZH2Game::_gameContext.MapDetails.Timers;
             for (int index = 0; index < lengthof(timers); ++index)
             {
                 if (!RoundTimer::GetTimerDefined(index)) continue;
@@ -169,9 +169,9 @@ strict namespace Hud
         buildmsg(message = StrParam())
         {
             Append(s:"\cgResists (yellow means active)");
-            Append(s:"\n\cfInitialized: \cj" + (ZH2Game::GameContext.MapDetails.ResistsInitialized ? "true" : "false"));
+            Append(s:"\n\cfInitialized: \cj" + (ZH2Game::_gameContext.MapDetails.ResistsInitialized ? "true" : "false"));
 
-            Resist::ResistT[] module& timers = ZH2Game::GameContext.MapDetails.Resists;
+            Resist::ResistT[] module& timers = ZH2Game::_gameContext.MapDetails.Resists;
             for (int index = 0; index < lengthof(timers); ++index)
             {
                 if (!Resist::IsDefined(index)) continue;

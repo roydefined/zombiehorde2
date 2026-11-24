@@ -13,7 +13,7 @@ strict namespace Decorate
 
     internal int GetPlayerFiringTime(int id)
     {
-        return Utils::GetSynchronizedTimer() - ZH2Game::GameContext.Players[id].FiringTic;
+        return Utils::GetSynchronizedTimer() - ZH2Game::_gameContext.Players[id].FiringTic;
     }
 
     internal bool IsFiringWeapon()
@@ -23,7 +23,7 @@ strict namespace Decorate
 
     internal bool IsPlayerFiringWeapon(int id)
     {
-        return ZH2Game::GameContext.Players[id].FiringTic > 0;
+        return ZH2Game::_gameContext.Players[id].FiringTic > 0;
     }
 
     script "zh2_dec_setfiring_server" (int set) { SetPlayerFiring(PlayerNumber(), bool(set)); }
@@ -39,7 +39,7 @@ strict namespace Decorate
         //if (BCSUtils::IsServer())
         //    Logger::LogDebug(LOGSOURCE, BCSUtils::PlayerName(id) + " \cd" + (set ? "is" : "has stopped") + "\cj firing.");
 
-        ZH2Game::GameContext.Players[id].FiringTic = set
+        ZH2Game::_gameContext.Players[id].FiringTic = set
             ? Utils::GetSynchronizedTimer()
             : 0;
     }

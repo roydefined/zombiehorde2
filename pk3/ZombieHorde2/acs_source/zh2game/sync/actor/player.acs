@@ -141,7 +141,7 @@ strict namespace Sync
             int mostSignificantBit = BitMath::GetBit128(pack1, pack2, pack3, pack4, i * 2 + 1);
             int stateIndex = (mostSignificantBit << 1) | leastSignificantBit;
 
-            ZH2Game::GameContext.Players[i].State = Player::GetPlayerStateByIndex(stateIndex);
+            ZH2Game::_gameContext.Players[i].State = Player::GetPlayerStateByIndex(stateIndex);
 
             if (PlayerInGame(i))
                 Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Client - Player \cd" + str(i) + "\cj: \cd" + str(stateIndex) + "\cj. Bits: \cd" + str(int(mostSignificantBit)) + str(int(leastSignificantBit)) + "\cj."));
@@ -159,7 +159,7 @@ strict namespace Sync
 
         for (int slot = 0; slot < MAX_SAFETY_SLOTS; ++slot)
         {
-            if (ZH2Game::GameContext.SafeContext.Slots[slot].Hidden)
+            if (ZH2Game::_gameContext.SafeContext.Slots[slot].Hidden)
                 hiddenPack |= 1 << slot;
         }
 
@@ -179,7 +179,7 @@ strict namespace Sync
         {
             for (int slot = 0; slot < MAX_SAFETY_SLOTS; ++slot)
             {
-                if (ZH2Game::GameContext.Players[i].SafeContext.Slots[slot].Safe)
+                if (ZH2Game::_gameContext.Players[i].SafeContext.Slots[slot].Safe)
                 {
                     pack |= 1 << (((i % 2) * MAX_SAFETY_SLOTS) + slot);
                     hasValue = true;
@@ -222,7 +222,7 @@ strict namespace Sync
         for (int slot = 0; slot < MAX_SAFETY_SLOTS; ++slot)
         {
             bool hidden = (hiddenPack & (1 << slot)) != 0;
-            ZH2Game::GameContext.SafeContext.Slots[slot].Hidden = hidden;
+            ZH2Game::_gameContext.SafeContext.Slots[slot].Hidden = hidden;
         }
 
         int pack = 0;
@@ -244,7 +244,7 @@ strict namespace Sync
             for (int slot = 0; slot < MAX_SAFETY_SLOTS; ++slot)
             {
                 bool safe = (pack & (1 << (((i % 2) * MAX_SAFETY_SLOTS) + slot))) != 0;
-                ZH2Game::GameContext.Players[i].SafeContext.Slots[slot].Safe = safe;
+                ZH2Game::_gameContext.Players[i].SafeContext.Slots[slot].Safe = safe;
             }
         }
 
@@ -297,7 +297,7 @@ strict namespace Sync
             int mostSignificantBit = BitMath::GetBit128(pack1, pack2, pack3, pack4, i * 2 + 1);
             int specie = (mostSignificantBit << 1) | leastSignificantBit;
 
-            ZH2Game::GameContext.Players[i].SpecieType = Player::GetSpecieTypeByIndex(specie);
+            ZH2Game::_gameContext.Players[i].SpecieType = Player::GetSpecieTypeByIndex(specie);
 
             if (PlayerInGame(i))
                 Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Client - Player \cd" + str(i) + "\cj: \cd" + str(specie) + "\cj. Bits: \cd" + str(int(mostSignificantBit)) + str(int(leastSignificantBit)) + "\cj."));
@@ -389,7 +389,7 @@ strict namespace Sync
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
-            ZH2Game::GameContext.Players[i].IsInitialZombie = bool(BitMath::GetBit64(pack1, pack2, i));
+            ZH2Game::_gameContext.Players[i].IsInitialZombie = bool(BitMath::GetBit64(pack1, pack2, i));
         }
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Finished syncing initial zombie packs to client."));

@@ -45,7 +45,7 @@
 
 strict namespace ZH2Game
 {
-    internal GameContextT GameContext;
+    internal GameContextT _gameContext;
     global PersistingGameContextT PERSISTING_GAME_CONTEXT_INDEX: PersistingGameContext;
 
     script "zh2_internal_open" open busy
@@ -180,14 +180,14 @@ strict namespace ZH2Game
 
         // After a while ensure the boolean is true so the script isn't hanging onto waiting for nothing.
         Delay(const: 35);
-        GameContext.InitialMapActorsSpawned = true;
+        _gameContext.InitialMapActorsSpawned = true;
     }
 
     // Initializes behavior for actors spawned on the map that also trigger `GAMEEVENT_ACTOR_SPAWNED`.
     // As it is not guaranteed they spawn before the OPEN script this ensures it has done so.
     script "zh2_internal_initialize_map_actors"
     {
-        while (!GameContext.InitialMapActorsSpawned)
+        while (!_gameContext.InitialMapActorsSpawned)
             Delay(const: 1);
 
         Game::InitializeZombieTeleport();
@@ -564,7 +564,7 @@ strict namespace ZH2Game
         // It seems that ResetMap causes this script to trigger earlier than expected.
         // Especially now with weapon skins being required when giving weapons, we must ensure we have parsed the map.
         // So this delay should cover that since the OPEN script parses everything in the first tic.
-        if (!GameContext.ParsedMapDetails)
+        if (!_gameContext.ParsedMapDetails)
             Delay(const: 1);
 
         // The player might have left while we waited.
@@ -689,7 +689,7 @@ strict namespace ZH2Game
     // Checks for global, and player specific joining.
     internal bool AllowPlayerJoin(int id)
     {
-        return GameContext.AlwaysAllowJoin || GameContext.Players[id].AlwaysAllowJoin;
+        return _gameContext.AlwaysAllowJoin || _gameContext.Players[id].AlwaysAllowJoin;
     }
 
     // Returns `true` if the player is within the player cap, assuming it's enabled.
@@ -715,7 +715,7 @@ strict namespace ZH2Game
         Logger::LogDebug(LOGSOURCE, "Resetting player context for player " + str(id) + ".");
 
         static PlayerT emptyPlayerDef;
-        if (!Memcpy(GameContext.Players[id], emptyPlayerDef))
+        if (!Memcpy(_gameContext.Players[id], emptyPlayerDef))
             Logger::LogError(LOGSOURCE, "Failed to empty player context for player " + str(id) + ".");
 
         // In online games we want to reset the clientside context too.

@@ -26,13 +26,13 @@ strict namespace Round
     }
 
     internal KnownRoundStateT GetActiveKnownRoundState() { return GetKnownRoundStateTypeByIndex(GetActiveRoundStateIndex()); }
-    internal int GetActiveRoundStateIndex() { return ZH2Game::GameContext.MapDetails.ActiveRoundStateIndex; }
+    internal int GetActiveRoundStateIndex() { return ZH2Game::_gameContext.MapDetails.ActiveRoundStateIndex; }
 
     internal void SetKnownRoundState(KnownRoundStateT stateType) { SetRoundState(GetIndexOfKnownRoundStateType(stateType)); }
     internal void SetRoundState(int index, bool broadcast = true)
     {
         int previousIndex = GetActiveRoundStateIndex();
-        ZH2Game::GameContext.MapDetails.ActiveRoundStateIndex = index;
+        ZH2Game::_gameContext.MapDetails.ActiveRoundStateIndex = index;
         Logger::LogInformation(LOGSOURCE, "Game state has switched to \cd" + GetRoundStateIndexAsString(index) + "\cj.");
 
         if (broadcast)
@@ -41,7 +41,7 @@ strict namespace Round
 
     internal RoundStateContextT module& GetRoundRefCurrent() { return GetRoundRefByindex(GetActiveRoundStateIndex()); }
     internal RoundStateContextT module& GetRoundRefByKnownRoundStateType(KnownRoundStateT stateType) { return GetRoundRefByindex(GetIndexOfKnownRoundStateType(stateType)); }
-    internal RoundStateContextT module& GetRoundRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Rounds[index]; }
+    internal RoundStateContextT module& GetRoundRefByindex(int index) { return ZH2Game::_gameContext.MapDetails.Rounds[index]; }
 
     internal bool GetRoundJoinable(int index) { return !GetRoundRefByindex(index).DenyJoin; }
     internal bool GetRoundIsEnding(int index) { return GetRoundRefByindex(index).IsEnding; }

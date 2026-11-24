@@ -51,7 +51,7 @@ strict namespace IO
             return false;
 
         // No more room for more items. Log a warning and skip the remaining body.
-        int count = ZH2Game::GameContext.SoftwareTextureContext.Size;
+        int count = ZH2Game::_gameContext.SoftwareTextureContext.Size;
         if (count >= MAX_SOFTWARE_TEXTURES)
         {
             Logger::LogWarning(LOGSOURCE, "The maximum number of software textures was reached (" + str(count) + ").");
@@ -61,9 +61,9 @@ strict namespace IO
 
         int index = count;
 
-        ZH2Game::GameContext.SoftwareTextureContext.Size++;
-        ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Name = textureName;
-        ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Flags = SOFTWARE_TEXTURE_ALL;
+        ZH2Game::_gameContext.SoftwareTextureContext.Size++;
+        ZH2Game::_gameContext.SoftwareTextureContext.Textures[index].Name = textureName;
+        ZH2Game::_gameContext.SoftwareTextureContext.Textures[index].Flags = SOFTWARE_TEXTURE_ALL;
 
         Logger::LogDebug(LOGSOURCE, "Start parse software texture \cd" + textureName + "\cj block for \cd" + mapLump + ".");
 
@@ -108,23 +108,23 @@ strict namespace IO
 
             if (BCSUTILS::StrIEquals(symbol, "bottom"))
             {
-                ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_BOTTOM;
+                ZH2Game::_gameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_BOTTOM;
             }
             else if (BCSUTILS::StrIEquals(symbol, "middle"))
             {
-                ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_MIDDLE;
+                ZH2Game::_gameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_MIDDLE;
             }
             else if (BCSUTILS::StrIEquals(symbol, "top"))
             {
-                ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_TOP;
+                ZH2Game::_gameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_TOP;
             }
             else if (BCSUTILS::StrIEquals(symbol, "floor"))
             {
-                ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_FLOOR;
+                ZH2Game::_gameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_FLOOR;
             }
             else if (BCSUTILS::StrIEquals(symbol, "ceiling"))
             {
-                ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_CEILING;
+                ZH2Game::_gameContext.SoftwareTextureContext.Textures[index].Flags &= ~NOT_CEILING;
             }
             else
             {
@@ -132,7 +132,7 @@ strict namespace IO
                 return false;
             }
 
-            Logger::LogDebug(LOGSOURCE, "Parsed replace type \cd" + symbol + "\cj for texture \cd" + ZH2Game::GameContext.SoftwareTextureContext.Textures[index].Name + "\cj.");
+            Logger::LogDebug(LOGSOURCE, "Parsed replace type \cd" + symbol + "\cj for texture \cd" + ZH2Game::_gameContext.SoftwareTextureContext.Textures[index].Name + "\cj.");
 
             Tokenizer::Next(handle, false);
         }

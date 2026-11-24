@@ -93,7 +93,7 @@ strict namespace IO
         Tokenizer::Next(handle);
 
         // No more room for more human start items. Log a warning and skip the remaining body.
-        int count = isMapDef ? ZH2Game::GameContext.HumanStartItemCollection.Size : ZH2Game::PersistingGameContext.HumanStartItemCollection.Size;
+        int count = isMapDef ? ZH2Game::_gameContext.HumanStartItemCollection.Size : ZH2Game::PersistingGameContext.HumanStartItemCollection.Size;
         if (count >= MAX_HUMANSTARTITEMS)
         {
             Logger::LogWarning(LOGSOURCE, "The maximum number of configurable human start items was reached (" + str(count) + ").");
@@ -280,18 +280,18 @@ strict namespace IO
 
         if (isMapDef)
         {
-            int mapIndex = ZH2Game::GameContext.HumanStartItemCollection.Size;
-            ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].Name = _parsingHumanStartItem.Name;
-            ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].Amount = _parsingHumanStartItem.Amount;
-            ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].DefaultChance = _parsingHumanStartItem.DefaultChance;
-            ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].PlayerCanReceiveScript = _parsingHumanStartItem.PlayerCanReceiveScript;
+            int mapIndex = ZH2Game::_gameContext.HumanStartItemCollection.Size;
+            ZH2Game::_gameContext.HumanStartItemCollection.Collection[mapIndex].Name = _parsingHumanStartItem.Name;
+            ZH2Game::_gameContext.HumanStartItemCollection.Collection[mapIndex].Amount = _parsingHumanStartItem.Amount;
+            ZH2Game::_gameContext.HumanStartItemCollection.Collection[mapIndex].DefaultChance = _parsingHumanStartItem.DefaultChance;
+            ZH2Game::_gameContext.HumanStartItemCollection.Collection[mapIndex].PlayerCanReceiveScript = _parsingHumanStartItem.PlayerCanReceiveScript;
             for (int i = 0; i < ruleCount; ++i)
             {
-                ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].RuleMaxPlayers[i] = _parsingHumanStartItem.RuleMaxPlayers[i];
-                ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].RuleChance[i] = _parsingHumanStartItem.RuleChance[i];
+                ZH2Game::_gameContext.HumanStartItemCollection.Collection[mapIndex].RuleMaxPlayers[i] = _parsingHumanStartItem.RuleMaxPlayers[i];
+                ZH2Game::_gameContext.HumanStartItemCollection.Collection[mapIndex].RuleChance[i] = _parsingHumanStartItem.RuleChance[i];
             }
-            ZH2Game::GameContext.HumanStartItemCollection.Collection[mapIndex].RuleCount = ruleCount;
-            ZH2Game::GameContext.HumanStartItemCollection.Size++;
+            ZH2Game::_gameContext.HumanStartItemCollection.Collection[mapIndex].RuleCount = ruleCount;
+            ZH2Game::_gameContext.HumanStartItemCollection.Size++;
             return;
         }
 

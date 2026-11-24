@@ -20,19 +20,19 @@ strict namespace EventBus
         int index = EnsureEventExists(eventKey);
         if (index == -1)
         {
-            Logger::LogError(LOGSOURCE, "Failed to add event " + eventKey + " with script name callback " + scriptName +". Maximum event bus capacity reached of " + str(lengthof(ZH2Lib::LibContext.EventBusCollection.Collection)) + ".");
+            Logger::LogError(LOGSOURCE, "Failed to add event " + eventKey + " with script name callback " + scriptName +". Maximum event bus capacity reached of " + str(lengthof(ZH2Lib::_libContext.EventBusCollection.Collection)) + ".");
             return;
         }
 
         // Add callback if there is space.
-        if (lengthof(ZH2Lib::LibContext.EventBusCollection.Collection[index].ScriptNameCallbacks) == ZH2Lib::LibContext.EventBusCollection.Collection[index].ScriptNameCallbackCount)
+        if (lengthof(ZH2Lib::_libContext.EventBusCollection.Collection[index].ScriptNameCallbacks) == ZH2Lib::_libContext.EventBusCollection.Collection[index].ScriptNameCallbackCount)
         {
-            Logger::LogError(LOGSOURCE, "Failed to add event " + eventKey + " with script name callback " + scriptName +". Maximum event callback capacity reached of " + str(ZH2Lib::LibContext.EventBusCollection.Collection[index].ScriptNameCallbackCount) + ".");
+            Logger::LogError(LOGSOURCE, "Failed to add event " + eventKey + " with script name callback " + scriptName +". Maximum event callback capacity reached of " + str(ZH2Lib::_libContext.EventBusCollection.Collection[index].ScriptNameCallbackCount) + ".");
             return;
         }
 
         Logger::LogDebug(LOGSOURCE, "Added new event event callback for \cd" + eventKey + "\cj: \cd" + scriptName + "\cj.");
-        ZH2Lib::LibContext.EventBusCollection.Collection[index].ScriptNameCallbacks[ZH2Lib::LibContext.EventBusCollection.Collection[index].ScriptNameCallbackCount++] = scriptName;
+        ZH2Lib::_libContext.EventBusCollection.Collection[index].ScriptNameCallbacks[ZH2Lib::_libContext.EventBusCollection.Collection[index].ScriptNameCallbackCount++] = scriptName;
     }
 
     void AddCallbackByScriptNumber(str eventKey, int scriptNumber)
@@ -47,19 +47,19 @@ strict namespace EventBus
         int index = EnsureEventExists(eventKey);
         if (index == -1)
         {
-            Logger::LogError(LOGSOURCE, "Failed to add event " + eventKey + " with script number callback " + str(scriptNumber) +". Maximum event bus capacity reached of " + str(lengthof(ZH2Lib::LibContext.EventBusCollection.Collection)) + ".");
+            Logger::LogError(LOGSOURCE, "Failed to add event " + eventKey + " with script number callback " + str(scriptNumber) +". Maximum event bus capacity reached of " + str(lengthof(ZH2Lib::_libContext.EventBusCollection.Collection)) + ".");
             return;
         }
 
         // Add callback if there is space.
-        if (lengthof(ZH2Lib::LibContext.EventBusCollection.Collection[index].ScriptNumberCallbacks) == ZH2Lib::LibContext.EventBusCollection.Collection[index].ScriptNumberCallbackCount)
+        if (lengthof(ZH2Lib::_libContext.EventBusCollection.Collection[index].ScriptNumberCallbacks) == ZH2Lib::_libContext.EventBusCollection.Collection[index].ScriptNumberCallbackCount)
         {
-            Logger::LogError(LOGSOURCE, "Failed to add event " + eventKey + " with script number callback " + str(scriptNumber) +". Maximum event callback capacity reached of " + str(ZH2Lib::LibContext.EventBusCollection.Collection[index].ScriptNumberCallbackCount) + ".");
+            Logger::LogError(LOGSOURCE, "Failed to add event " + eventKey + " with script number callback " + str(scriptNumber) +". Maximum event callback capacity reached of " + str(ZH2Lib::_libContext.EventBusCollection.Collection[index].ScriptNumberCallbackCount) + ".");
             return;
         }
 
         Logger::LogDebug(LOGSOURCE, "Added new event event callback for \cd" + eventKey + "\cj: \cd" + str(scriptNumber) + "\cj.");
-        ZH2Lib::LibContext.EventBusCollection.Collection[index].ScriptNumberCallbacks[ZH2Lib::LibContext.EventBusCollection.Collection[index].ScriptNumberCallbackCount++] = scriptNumber;
+        ZH2Lib::_libContext.EventBusCollection.Collection[index].ScriptNumberCallbacks[ZH2Lib::_libContext.EventBusCollection.Collection[index].ScriptNumberCallbackCount++] = scriptNumber;
     }
 
     void CallEvent(str packet)
@@ -81,17 +81,17 @@ strict namespace EventBus
         {
             // Note, we use `ACS_(Named)ExecuteWithResult` here to ensure the event is passed without a tic delay.
 
-            int scriptNameCallbackCount = ZH2Lib::LibContext.EventBusCollection.Collection[index].scriptNameCallbackCount;
+            int scriptNameCallbackCount = ZH2Lib::_libContext.EventBusCollection.Collection[index].scriptNameCallbackCount;
             for (int i = 0; i < scriptNameCallbackCount; ++i)
             {
-                str scriptName = ZH2Lib::LibContext.EventBusCollection.Collection[index].scriptNameCallbacks[i];
+                str scriptName = ZH2Lib::_libContext.EventBusCollection.Collection[index].scriptNameCallbacks[i];
                 ACS_NamedExecuteWithResult(scriptName, (int)packet);
             }
 
-            int scriptNumberCallbackCount = ZH2Lib::LibContext.EventBusCollection.Collection[index].scriptNumberCallbackCount;
+            int scriptNumberCallbackCount = ZH2Lib::_libContext.EventBusCollection.Collection[index].scriptNumberCallbackCount;
             for (int i = 0; i < scriptNumberCallbackCount; ++i)
             {
-                int scriptNumber = ZH2Lib::LibContext.EventBusCollection.Collection[index].scriptNumberCallbacks[i];
+                int scriptNumber = ZH2Lib::_libContext.EventBusCollection.Collection[index].scriptNumberCallbacks[i];
                 ACS_ExecuteWithResult(scriptNumber, (int)packet);
             }
         }
@@ -118,20 +118,20 @@ strict namespace EventBus
             return index;
 
         // Ensure we have space
-        if (lengthof(ZH2Lib::LibContext.EventBusCollection.Collection) == ZH2Lib::LibContext.EventBusCollection.Count)
+        if (lengthof(ZH2Lib::_libContext.EventBusCollection.Collection) == ZH2Lib::_libContext.EventBusCollection.Count)
             return -1;
 
-        Logger::LogDebug(LOGSOURCE, "Added new event bus event \cd" + eventKey + "\cj on index \cd" + str(ZH2Lib::LibContext.EventBusCollection.Count) + "\cj.");
-        ZH2Lib::LibContext.EventBusCollection.Collection[ZH2Lib::LibContext.EventBusCollection.Count++].eventKey = eventKey;
+        Logger::LogDebug(LOGSOURCE, "Added new event bus event \cd" + eventKey + "\cj on index \cd" + str(ZH2Lib::_libContext.EventBusCollection.Count) + "\cj.");
+        ZH2Lib::_libContext.EventBusCollection.Collection[ZH2Lib::_libContext.EventBusCollection.Count++].eventKey = eventKey;
 
-        return ZH2Lib::LibContext.EventBusCollection.Count - 1;
+        return ZH2Lib::_libContext.EventBusCollection.Count - 1;
     }
 
     internal int GetEventIndexByKey(str eventKey)
     {
-        for (int i = 0; i < ZH2Lib::LibContext.EventBusCollection.Count; ++i)
+        for (int i = 0; i < ZH2Lib::_libContext.EventBusCollection.Count; ++i)
         {
-            if (BCSUtils::StrIEquals(eventKey, ZH2Lib::LibContext.EventBusCollection.Collection[i].eventKey))
+            if (BCSUtils::StrIEquals(eventKey, ZH2Lib::_libContext.EventBusCollection.Collection[i].eventKey))
                 return i;
         }
 

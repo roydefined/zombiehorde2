@@ -41,12 +41,12 @@ strict namespace Obituary
 
     internal int GetLowIndex()
     {
-        return ZH2Game::GameContext.ObituaryCollectionContext.LowIndex;
+        return ZH2Game::_gameContext.ObituaryCollectionContext.LowIndex;
     }
 
     internal int GetHighIndex()
     {
-        return ZH2Game::GameContext.ObituaryCollectionContext.HighIndex;
+        return ZH2Game::_gameContext.ObituaryCollectionContext.HighIndex;
     }
 
     internal int GetShownObituaryCount()
@@ -67,26 +67,26 @@ strict namespace Obituary
     // Returns the next index to queue on. Ensures indexes are shiften correctly.
     internal int GetNextQueueIndex()
     {
-        ZH2Game::GameContext.ObituaryCollectionContext.HighIndex++;
-        ZH2Game::GameContext.ObituaryCollectionContext.HighIndex %= OBITUARY_COLLECTION_MAX_SIZE;
+        ZH2Game::_gameContext.ObituaryCollectionContext.HighIndex++;
+        ZH2Game::_gameContext.ObituaryCollectionContext.HighIndex %= OBITUARY_COLLECTION_MAX_SIZE;
 
         // Move low index up to fit configured obituary count.
         int count = CVar::GetClShownObituariesByPlayerId(ConsolePlayerNumber());
         while (GetShownObituaryCount() > count && GetLowIndex() != GetHighIndex())
         {
-            ZH2Game::GameContext.ObituaryCollectionContext.LowIndex++;
-            ZH2Game::GameContext.ObituaryCollectionContext.LowIndex %= OBITUARY_COLLECTION_MAX_SIZE;
+            ZH2Game::_gameContext.ObituaryCollectionContext.LowIndex++;
+            ZH2Game::_gameContext.ObituaryCollectionContext.LowIndex %= OBITUARY_COLLECTION_MAX_SIZE;
         }
 
         // Replace lowest index.
-        if (ZH2Game::GameContext.ObituaryCollectionContext.LowIndex == ZH2Game::GameContext.ObituaryCollectionContext.HighIndex)
+        if (ZH2Game::_gameContext.ObituaryCollectionContext.LowIndex == ZH2Game::_gameContext.ObituaryCollectionContext.HighIndex)
         {
-            ZH2Game::GameContext.ObituaryCollectionContext.LowIndex++;
-            ZH2Game::GameContext.ObituaryCollectionContext.LowIndex %= OBITUARY_COLLECTION_MAX_SIZE;
+            ZH2Game::_gameContext.ObituaryCollectionContext.LowIndex++;
+            ZH2Game::_gameContext.ObituaryCollectionContext.LowIndex %= OBITUARY_COLLECTION_MAX_SIZE;
         }
 
-        ZH2Game::GameContext.ObituaryCollectionContext.Collection[ZH2Game::GameContext.ObituaryCollectionContext.HighIndex].Timestamp = Timer();
-        return ZH2Game::GameContext.ObituaryCollectionContext.HighIndex;
+        ZH2Game::_gameContext.ObituaryCollectionContext.Collection[ZH2Game::_gameContext.ObituaryCollectionContext.HighIndex].Timestamp = Timer();
+        return ZH2Game::_gameContext.ObituaryCollectionContext.HighIndex;
     }
 
     internal bool ValidateQueueIndex(str functionName, int queueIndex)
@@ -116,7 +116,7 @@ strict namespace Obituary
         if (!ValidateQueueIndex(__FUNCTION__, queueIndex))
             return;
 
-        ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].Type = type;
+        ZH2Game::_gameContext.ObituaryCollectionContext.Collection[queueIndex].Type = type;
     }
 
     internal ObituaryTypeT GetQueueType(int queueIndex)
@@ -124,7 +124,7 @@ strict namespace Obituary
         if (!ValidateQueueIndex(__FUNCTION__, queueIndex))
             return OBITUARY_UNKNOWN;
 
-        return ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].Type;
+        return ZH2Game::_gameContext.ObituaryCollectionContext.Collection[queueIndex].Type;
     }
 
     internal void SetQueueData(int queueIndex, int index, raw data)
@@ -132,7 +132,7 @@ strict namespace Obituary
         if (!ValidateQueueIndex(__FUNCTION__, queueIndex) || !ValidateIndex(__FUNCTION__, index))
             return;
 
-        ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].ReceiveData[index] = data;
+        ZH2Game::_gameContext.ObituaryCollectionContext.Collection[queueIndex].ReceiveData[index] = data;
     }
 
     internal raw GetQueueData(int queueIndex, int index)
@@ -140,7 +140,7 @@ strict namespace Obituary
         if (!ValidateQueueIndex(__FUNCTION__, queueIndex) || !ValidateIndex(__FUNCTION__, index))
             return 0;
 
-        return ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].ReceiveData[index];
+        return ZH2Game::_gameContext.ObituaryCollectionContext.Collection[queueIndex].ReceiveData[index];
     }
 
     internal int GetQueueElapsedDuration(int queueIndex)
@@ -148,7 +148,7 @@ strict namespace Obituary
         if (!ValidateQueueIndex(__FUNCTION__, queueIndex))
             return 0;
 
-        return Timer() - ZH2Game::GameContext.ObituaryCollectionContext.Collection[queueIndex].Timestamp;
+        return Timer() - ZH2Game::_gameContext.ObituaryCollectionContext.Collection[queueIndex].Timestamp;
     }
 
     internal ObituarySpecieTypeT GetPlayerObituarySpecieType(int id)

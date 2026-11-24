@@ -27,7 +27,7 @@ strict namespace Map
         // Get how many maps to show, making sure to show less if we don't have more.
         // Adding `suggestedMapCount` here is done when we don't have a full list.
         int length = BCSUtils::Min(Shuffle::GetRelevantSize() + suggestedMapCount, CVar::GetSvMaxVotableMapsShown());
-        ZH2Game::GameContext.VotableMapCount = length;
+        ZH2Game::_gameContext.VotableMapCount = length;
 
         str logMessage;
         buildmsg(logMessage = StrParam())
@@ -38,7 +38,7 @@ strict namespace Map
                 Append(s:GetCurrentMapSuggestedMap());
                 Append(s:". ");
 
-                ZH2Game::GameContext.VotableMaps[0] = suggestedMapPosition;
+                ZH2Game::_gameContext.VotableMaps[0] = suggestedMapPosition;
             }
 
             Append(s:"Votable map count: ");
@@ -51,7 +51,7 @@ strict namespace Map
             {
                 int mapIndex = Shuffle::GetIndexValue(i);
                 int voteMapIndex = i + suggestedMapCount;
-                ZH2Game::GameContext.VotableMaps[voteMapIndex] = mapIndex;
+                ZH2Game::_gameContext.VotableMaps[voteMapIndex] = mapIndex;
 
                 Append(s:GetMapRotationInfo(mapIndex, MAPROTATION_LUMPNAME));
 
@@ -83,7 +83,7 @@ strict namespace Map
     script "zh2_internal_voting_pick_map" (int index) net
     {
         if (Round::GetActiveKnownRoundState() != Round::STATEVOTING) terminate;
-        if (index < 0 || index >= (ZH2Game::GameContext.VotableMapCount + MAPVOTE_HARDCODED_PICKS_LENGTH)) terminate;
+        if (index < 0 || index >= (ZH2Game::_gameContext.VotableMapCount + MAPVOTE_HARDCODED_PICKS_LENGTH)) terminate;
         if (GetPickCooldownTics() > 0) terminate;
         if (GetVotedMapIndex() == index) terminate;
 
@@ -110,7 +110,7 @@ strict namespace Map
 
         // Special case for "random map" where it may only be picked if we had votable maps.
         // If not, then next map does the same.
-        if (index == MAPVOTE_RANDOM && ZH2Game::GameContext.VotableMapCount == 0)
+        if (index == MAPVOTE_RANDOM && ZH2Game::_gameContext.VotableMapCount == 0)
         {
             Logger::LogActivator("You may not pick this option as no votable maps are left.");
             terminate;
@@ -136,7 +136,7 @@ strict namespace Map
             }
             default:
             {
-                int mapIndex = ZH2Game::GameContext.VotableMaps[index - 3];
+                int mapIndex = ZH2Game::_gameContext.VotableMaps[index - 3];
                 str mapName = GetMapRotationInfo(mapIndex, MAPROTATION_NAME);
                 str mapLumpName = GetMapRotationInfo(mapIndex, MAPROTATION_LUMPNAME);
                 int parsePosition = Map::GetParsedMapPosition(mapIndex);
@@ -212,7 +212,7 @@ strict namespace Map
         // It's a bit more complex, but it ensures that players are able to play more smoothly depending on the situation.
         if (bestIndex == -1)
         {
-            int votableMapCount = ZH2Game::GameContext.VotableMapCount;
+            int votableMapCount = ZH2Game::_gameContext.VotableMapCount;
             if (votableMapCount > 0)
             {
                 // Note, we take 1 from `MAPVOTE_HARDCODED_PICKS_LENGTH` because this means "random map" can also be picked.
@@ -259,7 +259,7 @@ strict namespace Map
         int bestIndex = -1;
         int bestIndexCount = 0;
 
-        for (int i = 0; i < ZH2Game::GameContext.VotableMapCount + MAPVOTE_HARDCODED_PICKS_LENGTH; ++i)
+        for (int i = 0; i < ZH2Game::_gameContext.VotableMapCount + MAPVOTE_HARDCODED_PICKS_LENGTH; ++i)
         {
             int count = GetMapVoteCount(i);
 

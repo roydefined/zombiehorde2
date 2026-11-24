@@ -32,16 +32,16 @@ strict namespace Sync
         int max = MAX_SYNC_TYPES - 1;
         for (int i = min; i <= max; ++i)
         {
-            if (ZH2Game::GameContext.SyncContext.PendingWrite[i])
+            if (ZH2Game::_gameContext.SyncContext.PendingWrite[i])
             {
-                ZH2Game::GameContext.SyncContext.PendingWrite[i] = false;
+                ZH2Game::_gameContext.SyncContext.PendingWrite[i] = false;
                 TriggerSyncWrite(i + MAX_LIB_SYNC_TYPES);
             }
 
-            int notifyTic = ZH2Game::GameContext.SyncContext.NotifyTic[i];
+            int notifyTic = ZH2Game::_gameContext.SyncContext.NotifyTic[i];
             if (notifyTic != 0 && Timer() >= notifyTic)
             {
-                ZH2Game::GameContext.SyncContext.NotifyTic[i] = 0;
+                ZH2Game::_gameContext.SyncContext.NotifyTic[i] = 0;
                 TriggerSyncNotify(i + MAX_LIB_SYNC_TYPES);
             }
         }
@@ -112,16 +112,16 @@ strict namespace Sync
 
         // Any number of calls collapse into one pending write - the write itself is never delayed,
         // `FlushPendingSyncs` fires it as soon as it sees this flag.
-        ZH2Game::GameContext.SyncContext.PendingWrite[syncId] = true;
+        ZH2Game::_gameContext.SyncContext.PendingWrite[syncId] = true;
 
         // The notify is what's actually delayed, and it's scheduled here rather than after the
         // write happens - the write is immediate, but clients still need to wait long enough for
         // it to replicate before being told to read it. Only schedule if one isn't already pending,
         // so a burst of calls still only results in one notify, same as the write above.
-        if (ZH2Game::GameContext.SyncContext.NotifyTic[syncId] == 0)
+        if (ZH2Game::_gameContext.SyncContext.NotifyTic[syncId] == 0)
         {
             int earliestNotifyTic = Timer() + BCSUtils::Max(CVar::GetSvSyncDelay(), 1);
-            ZH2Game::GameContext.SyncContext.NotifyTic[syncId] = BCSUtils::Max(earliestNotifyTic, CVar::GetSvInitialSyncDelay());
+            ZH2Game::_gameContext.SyncContext.NotifyTic[syncId] = BCSUtils::Max(earliestNotifyTic, CVar::GetSvInitialSyncDelay());
         }
     }
 

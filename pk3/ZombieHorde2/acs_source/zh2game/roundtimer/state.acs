@@ -36,12 +36,12 @@ strict namespace RoundTimer
 
         // Reallocate the timer to support the given index.
         // NOTE: Commented and unused until we get to allocating these again.
-        // RoundTimerContextT[]? timers = ZH2Game::GameContext.MapDetails.Timers;
+        // RoundTimerContextT[]? timers = ZH2Game::_gameContext.MapDetails.Timers;
         // if (index >= lengthof(timers))
         // {
         //     static RoundTimer::RoundTimerContextT lengthdef;
         //     Logger::LogDebug(LOGSOURCE, "Reallocating to size of \cd" + str(index + 1) + "\cj.");
-        //     ZH2Game::GameContext.MapDetails.Timers = BCS::ArrResize(timers, index + 1, lengthof(lengthdef));
+        //     ZH2Game::_gameContext.MapDetails.Timers = BCS::ArrResize(timers, index + 1, lengthof(lengthdef));
         // }
 
         RoundTimerContextT module& timer = GetTimerRefByindex(index);
@@ -60,7 +60,7 @@ strict namespace RoundTimer
 
     /* General accessors for getting the active timer and a reference */
 
-    internal int GetActiveTimerIndex() { return ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex; }
+    internal int GetActiveTimerIndex() { return ZH2Game::_gameContext.MapDetails.ActiveRoundTimerIndex; }
     internal KnownRoundTimerT GetActiveTimerKnownType() { return GetKnownTypeOfIndex(GetActiveTimerIndex()); }
 
     internal bool GetAnyTimerActive() { return GetActiveTimerIndex() != 0; }
@@ -68,7 +68,7 @@ strict namespace RoundTimer
     internal void SetActiveTimerByIndex(int index, bool broadcast = true)
     {
         int previousIndex = GetActiveTimerIndex();
-        ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex = index;
+        ZH2Game::_gameContext.MapDetails.ActiveRoundTimerIndex = index;
         Logger::LogInformation(LOGSOURCE, "Timer has switched to \cd" + GetTimerIndexAsString(index) + "\cj.");
 
         if (broadcast)
@@ -79,7 +79,7 @@ strict namespace RoundTimer
 
     internal RoundTimerContextT module& GetTimerRefCurrent() { return GetTimerRefByindex(GetActiveTimerIndex()); }
     internal RoundTimerContextT module& GetTimerRefByKnown(KnownRoundTimerT timerType) { return GetTimerRefByindex(GetIndexOfKnownType(timerType)); }
-    internal RoundTimerContextT module& GetTimerRefByindex(int index) { return ZH2Game::GameContext.MapDetails.Timers[index]; }
+    internal RoundTimerContextT module& GetTimerRefByindex(int index) { return ZH2Game::_gameContext.MapDetails.Timers[index]; }
 
     /* Properties */
 

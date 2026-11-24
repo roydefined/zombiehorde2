@@ -14,38 +14,38 @@ strict namespace Weight
 
     void PrepareWeights()
     {
-        ZH2Lib::LibContext.WeightContext.Count = 0;
+        ZH2Lib::_libContext.WeightContext.Count = 0;
     }
 
     bool HasWeights()
     {
-        return ZH2Lib::LibContext.WeightContext.Count > 0;
+        return ZH2Lib::_libContext.WeightContext.Count > 0;
     }
 
     void AddWeight(int index, int weight)
     {
-        int count = ZH2Lib::LibContext.WeightContext.Count;
+        int count = ZH2Lib::_libContext.WeightContext.Count;
         if (count >= MAX_WEIGHT_SIZE)
         {
             Logger::LogWarning(LOGSOURCE, "The maximum number of configurable weight instances was reached (" + str(count) + ").");
             return;
         }
 
-        ZH2Lib::LibContext.WeightContext.Weights[ZH2Lib::LibContext.WeightContext.Count].Index = index;
-        ZH2Lib::LibContext.WeightContext.Weights[ZH2Lib::LibContext.WeightContext.Count++].Weight = weight;
+        ZH2Lib::_libContext.WeightContext.Weights[ZH2Lib::_libContext.WeightContext.Count].Index = index;
+        ZH2Lib::_libContext.WeightContext.Weights[ZH2Lib::_libContext.WeightContext.Count++].Weight = weight;
     }
 
     void FinalizeWeights()
     {
         // No weights
-        int count = ZH2Lib::LibContext.WeightContext.Count;
+        int count = ZH2Lib::_libContext.WeightContext.Count;
         if (count == 0)
             return;
 
         // Get total weight.
         int total = 0;
         for (int i = 0; i < count; ++i)
-            total += ZH2Lib::LibContext.WeightContext.Weights[i].Weight;
+            total += ZH2Lib::_libContext.WeightContext.Weights[i].Weight;
 
         _threshold = Random(1, total);
 
@@ -56,7 +56,7 @@ strict namespace Weight
     int Next(int i = -1)
     {
         // No weights. We just ignore this.
-        int count = ZH2Lib::LibContext.WeightContext.Count;
+        int count = ZH2Lib::_libContext.WeightContext.Count;
         if (count == 0)
             return -1;
 
@@ -67,7 +67,7 @@ strict namespace Weight
         // Gradually decrement the threshold until we match what we need.
         for (; i < count; ++i)
         {
-            int weight = ZH2Lib::LibContext.WeightContext.Weights[i].Weight;
+            int weight = ZH2Lib::_libContext.WeightContext.Weights[i].Weight;
             if (_threshold > weight)
             {
                 Logger::LogDebug(LOGSOURCE, "No match (\cd" + str(_threshold) + "\cj > \cd" + str(weight) + "\cj). New threshold: \cd" + str(_threshold - weight) + "\cj.");
@@ -77,7 +77,7 @@ strict namespace Weight
             }
 
             Logger::LogDebug(LOGSOURCE, "Weight match on \cd" + str(i) + "\cj (\cd" + str(_threshold) + "\cj <= \cd" + str(weight) + "\cj).");
-            return ZH2Lib::LibContext.WeightContext.Weights[i].Index;
+            return ZH2Lib::_libContext.WeightContext.Weights[i].Index;
         }
 
         // This can happen when no reward matched, for example. Don't log this.

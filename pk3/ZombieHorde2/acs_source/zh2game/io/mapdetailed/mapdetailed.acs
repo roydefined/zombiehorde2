@@ -22,14 +22,14 @@ strict namespace IO
     // NOTE: This script is `BUSY` and will not trigger a runaway error.
     script SCRIPT_PARSE_CURRENT_MAP_DEFS BUSY
     {
-        if (ZH2Game::GameContext.ParsedMapDetails) terminate;
+        if (ZH2Game::_gameContext.ParsedMapDetails) terminate;
 
         // Attempt to get the current map's info lump from the cached data and parse its content as a whole.
         str mapLump = StrParam(n:PRINTNAME_LEVEL);
         Logger::LogDebug(LOGSOURCE, "Attempting to find map data for map \cd" + mapLump + "\cj.");
 
         int index = GetMapBaseIndexByLumpName(mapLump);
-        ZH2Game::GameContext.MapIndex = index;
+        ZH2Game::_gameContext.MapIndex = index;
         if (index == -1)
         {
             Logger::LogWarning(LOGSOURCE, "No map data was defined for the current map.");
@@ -67,7 +67,7 @@ strict namespace IO
         ParseMapLumpDetails(mapLump, buffer);
         LumpClose(lumpIndex);
 
-        ZH2Game::GameContext.ParsedMapDetails = true;
+        ZH2Game::_gameContext.ParsedMapDetails = true;
     }
 
     internal int GetMapBaseIndexByLumpName(str lumpName)

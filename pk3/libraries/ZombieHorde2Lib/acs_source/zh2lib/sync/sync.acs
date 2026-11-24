@@ -23,16 +23,16 @@ strict namespace Sync
         int max = MAX_LIB_SYNC_TYPES - 1;
         for (int i = min; i <= max; ++i)
         {
-            if (ZH2Lib::LibContext.SyncContext.PendingWrite[i])
+            if (ZH2Lib::_libContext.SyncContext.PendingWrite[i])
             {
-                ZH2Lib::LibContext.SyncContext.PendingWrite[i] = false;
+                ZH2Lib::_libContext.SyncContext.PendingWrite[i] = false;
                 TriggerSyncWrite(i);
             }
 
-            int notifyTic = ZH2Lib::LibContext.SyncContext.NotifyTic[i];
+            int notifyTic = ZH2Lib::_libContext.SyncContext.NotifyTic[i];
             if (notifyTic != 0 && Timer() >= notifyTic)
             {
-                ZH2Lib::LibContext.SyncContext.NotifyTic[i] = 0;
+                ZH2Lib::_libContext.SyncContext.NotifyTic[i] = 0;
                 TriggerSyncNotify(i);
             }
         }
@@ -82,16 +82,16 @@ strict namespace Sync
 
         // Any number of calls collapse into one pending write - the write itself is never delayed,
         // `LibFlushPendingSyncs` fires it as soon as it sees this flag.
-        ZH2Lib::LibContext.SyncContext.PendingWrite[syncId] = true;
+        ZH2Lib::_libContext.SyncContext.PendingWrite[syncId] = true;
 
         // The notify is what's actually delayed, and it's scheduled here rather than after the
         // write happens - the write is immediate, but clients still need to wait long enough for
         // it to replicate before being told to read it. Only schedule if one isn't already pending,
         // so a burst of calls still only results in one notify, same as the write above.
-        if (ZH2Lib::LibContext.SyncContext.NotifyTic[syncId] == 0)
+        if (ZH2Lib::_libContext.SyncContext.NotifyTic[syncId] == 0)
         {
             int earliestNotifyTic = Timer() + BCSUtils::Max(CVar::GetSvSyncDelay(), 1);
-            ZH2Lib::LibContext.SyncContext.NotifyTic[syncId] = BCSUtils::Max(earliestNotifyTic, CVar::GetSvInitialSyncDelay());
+            ZH2Lib::_libContext.SyncContext.NotifyTic[syncId] = BCSUtils::Max(earliestNotifyTic, CVar::GetSvInitialSyncDelay());
         }
     }
 

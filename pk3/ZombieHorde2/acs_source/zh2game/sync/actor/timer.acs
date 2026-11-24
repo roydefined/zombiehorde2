@@ -29,7 +29,7 @@ strict namespace Sync
 
     internal int SyncWriteTimerStates(int syncId)
     {
-        RoundTimer::RoundTimerContextT[] module& timers = ZH2Game::GameContext.MapDetails.Timers;
+        RoundTimer::RoundTimerContextT[] module& timers = ZH2Game::_gameContext.MapDetails.Timers;
 
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing round timer packs through actors. Sync id: " + str(syncId) + ". Length: " + str(lengthof(timers)) + "."));
 
@@ -37,7 +37,7 @@ strict namespace Sync
         BCSUtils::SyncVariable(--syncId, lengthof(timers));
 
         // Active round timer.
-        BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex);
+        BCSUtils::SyncVariable(--syncId, ZH2Game::_gameContext.MapDetails.ActiveRoundTimerIndex);
 
         // For logging
         int time = Timer();
@@ -78,11 +78,11 @@ strict namespace Sync
 
     internal int SyncReadTimerStates(int syncId)
     {
-        RoundTimer::RoundTimerContextT[] module& timers = ZH2Game::GameContext.MapDetails.Timers;
+        RoundTimer::RoundTimerContextT[] module& timers = ZH2Game::_gameContext.MapDetails.Timers;
         int collectionLength = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
         int index = BCSUtils::GetSyncVarDefault(--syncId, 0);
-        ZH2Game::GameContext.MapDetails.ActiveRoundTimerIndex = index;
+        ZH2Game::_gameContext.MapDetails.ActiveRoundTimerIndex = index;
 
         // Note we don't check the target index here since the server should supply a valid value.
 
@@ -92,7 +92,7 @@ strict namespace Sync
         // {
         //     static RoundTimer::RoundTimerContextT lengthdef;
         //     Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Reallocating to size of \cd" + str(collectionLength) + "\cj from sync packet."));
-        //     ZH2Game::GameContext.MapDetails.Timers = BCS::ArrResize(timers, collectionLength, lengthof(lengthdef));
+        //     ZH2Game::_gameContext.MapDetails.Timers = BCS::ArrResize(timers, collectionLength, lengthof(lengthdef));
         // }
 
         // For logging

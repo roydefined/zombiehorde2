@@ -20,25 +20,25 @@ strict namespace Weapon
 
         // Validate the spot is not already tracked under this tid.
         // This should not be possible since the tid is always freshly generated above, but better safe than sorry.
-        for (int i = 0; i < ZH2Game::GameContext.FakeWeaponSpawnContext.SpotCount; ++i)
+        for (int i = 0; i < ZH2Game::_gameContext.FakeWeaponSpawnContext.SpotCount; ++i)
         {
-            if (ZH2Game::GameContext.FakeWeaponSpawnContext.Spots[i].Tid == tid)
+            if (ZH2Game::_gameContext.FakeWeaponSpawnContext.Spots[i].Tid == tid)
             {
                 Logger::LogWarning(LOGSOURCE, "Skipped tracking fake weapon spawn spot \cd" + str(tid) + "\cj: this tid is already tracked.");
                 return;
             }
         }
 
-        if (ZH2Game::GameContext.FakeWeaponSpawnContext.SpotCount == MAX_FAKEWEAPONSPAWNSPOTS)
+        if (ZH2Game::_gameContext.FakeWeaponSpawnContext.SpotCount == MAX_FAKEWEAPONSPAWNSPOTS)
         {
             Logger::LogWarning(LOGSOURCE, "Unable to track fake weapon spawn spot: maximum number of trackable spots reached (" + str(MAX_FAKEWEAPONSPAWNSPOTS) + ").");
             return;
         }
 
-        int index = ZH2Game::GameContext.FakeWeaponSpawnContext.SpotCount++;
-        ZH2Game::GameContext.FakeWeaponSpawnContext.Spots[index].Tid = tid;
-        ZH2Game::GameContext.FakeWeaponSpawnContext.Spots[index].ClassName = className;
-        ZH2Game::GameContext.FakeWeaponSpawnContext.Spots[index].MapTid = mapTid;
+        int index = ZH2Game::_gameContext.FakeWeaponSpawnContext.SpotCount++;
+        ZH2Game::_gameContext.FakeWeaponSpawnContext.Spots[index].Tid = tid;
+        ZH2Game::_gameContext.FakeWeaponSpawnContext.Spots[index].ClassName = className;
+        ZH2Game::_gameContext.FakeWeaponSpawnContext.Spots[index].MapTid = mapTid;
 
         Logger::LogDebug(LOGSOURCE, "Start tracking fake weapon spawn spot \cd" + str(tid) + "\cj, index \cd" + str(index) + "\cj.");
     }
@@ -62,10 +62,10 @@ strict namespace Weapon
     // Replaces every tracked fake weapon spawn spot with the actual spawn actor to give at that position.
     internal void ReplaceFakeWeaponSpawnSpots()
     {
-        for (int i = 0; i < ZH2Game::GameContext.FakeWeaponSpawnContext.SpotCount; ++i)
+        for (int i = 0; i < ZH2Game::_gameContext.FakeWeaponSpawnContext.SpotCount; ++i)
         {
-            int tid = ZH2Game::GameContext.FakeWeaponSpawnContext.Spots[i].Tid;
-            str spotClassName = ZH2Game::GameContext.FakeWeaponSpawnContext.Spots[i].ClassName;
+            int tid = ZH2Game::_gameContext.FakeWeaponSpawnContext.Spots[i].Tid;
+            str spotClassName = ZH2Game::_gameContext.FakeWeaponSpawnContext.Spots[i].ClassName;
 
             int weaponType = ResolveFakeSpawnSpotWeaponType(spotClassName);
             if (weaponType == -1)
@@ -112,7 +112,7 @@ strict namespace Weapon
                 SetThingSpecial(tid, spotSpecial, arg0, arg1, arg2, arg3, arg4);
 
             // Give back the tid that the spot might have defined.
-            int mapTid = ZH2Game::GameContext.FakeWeaponSpawnContext.Spots[i].MapTid;
+            int mapTid = ZH2Game::_gameContext.FakeWeaponSpawnContext.Spots[i].MapTid;
             if (mapTid != 0)
                 Thing_ChangeTID(tid, mapTid);
         }

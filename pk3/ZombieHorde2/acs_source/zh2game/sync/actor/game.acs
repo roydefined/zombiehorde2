@@ -37,8 +37,8 @@ strict namespace Sync
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start writing zombie teleport data through actors. Sync id: " + str(syncId) + "."));
 
         BCSUtils::SyncVariable(--syncId, Game::GetZombieTeleportingEnabled());
-        BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.ZombieTeleportContext.OverrideMaxZombieTeleportsSet);
-        BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.ZombieTeleportContext.OverrideMaxZombieTeleportsCount);
+        BCSUtils::SyncVariable(--syncId, ZH2Game::_gameContext.ZombieTeleportContext.OverrideMaxZombieTeleportsSet);
+        BCSUtils::SyncVariable(--syncId, ZH2Game::_gameContext.ZombieTeleportContext.OverrideMaxZombieTeleportsCount);
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
@@ -54,8 +54,8 @@ strict namespace Sync
         Logger::LogDebug(LOGSOURCE, FormatLog(SYNC_CATEGORY, "Start reading zombie teleport data on client through actors. Sync id: " + str(syncId) + "."));
 
         Game::SetZombieTeleportingEnabled(BCSUtils::GetSyncVarDefault(--syncId, false));
-        ZH2Game::GameContext.ZombieTeleportContext.OverrideMaxZombieTeleportsSet = BCSUtils::GetSyncVarDefault(--syncId, false);
-        ZH2Game::GameContext.ZombieTeleportContext.OverrideMaxZombieTeleportsCount = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        ZH2Game::_gameContext.ZombieTeleportContext.OverrideMaxZombieTeleportsSet = BCSUtils::GetSyncVarDefault(--syncId, false);
+        ZH2Game::_gameContext.ZombieTeleportContext.OverrideMaxZombieTeleportsCount = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
         for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
         {
@@ -138,10 +138,10 @@ strict namespace Sync
         BCSUtils::SyncVariable(--syncId, Game::GetGameStartTic());
         BCSUtils::SyncVariable(--syncId, Game::GetGameEndingTic());
         BCSUtils::SyncVariable(--syncId, Game::GetGameVotingTic());
-        BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.WinningSpecie);
-        BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.EndReason);
-        BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.EndAction);
-        BCSUtils::SyncVariable(--syncId, ZH2Game::GameContext.FullServerStartTimestamp);
+        BCSUtils::SyncVariable(--syncId, ZH2Game::_gameContext.WinningSpecie);
+        BCSUtils::SyncVariable(--syncId, ZH2Game::_gameContext.EndReason);
+        BCSUtils::SyncVariable(--syncId, ZH2Game::_gameContext.EndAction);
+        BCSUtils::SyncVariable(--syncId, ZH2Game::_gameContext.FullServerStartTimestamp);
         BCSUtils::SyncVariable(--syncId, Player::GetPlayFinalHeartbeat());
 
         return syncId;
@@ -154,15 +154,15 @@ strict namespace Sync
         Game::SetGameVotingTic(BCSUtils::GetSyncVarDefault(--syncId, 0));
 
         int specieIndex = BCSUtils::GetSyncVarDefault(--syncId, Game::SPECIENONE);
-        ZH2Game::GameContext.WinningSpecie = Game::GetWinningSpecieTypeByIndex(specieIndex);
+        ZH2Game::_gameContext.WinningSpecie = Game::GetWinningSpecieTypeByIndex(specieIndex);
 
         int endReasonIndex = BCSUtils::GetSyncVarDefault(--syncId, Game::REASONNONE);
-        ZH2Game::GameContext.EndReason = Game::GetEndReasonTypeByIndex(endReasonIndex);
+        ZH2Game::_gameContext.EndReason = Game::GetEndReasonTypeByIndex(endReasonIndex);
 
         int endActionIndex = BCSUtils::GetSyncVarDefault(--syncId, Game::ACTION_DEFAULT);
-        ZH2Game::GameContext.EndAction = Game::GetEndActionTypeByIndex(endActionIndex);
+        ZH2Game::_gameContext.EndAction = Game::GetEndActionTypeByIndex(endActionIndex);
 
-        ZH2Game::GameContext.FullServerStartTimestamp = BCSUtils::GetSyncVarDefault(--syncId, 0);
+        ZH2Game::_gameContext.FullServerStartTimestamp = BCSUtils::GetSyncVarDefault(--syncId, 0);
 
         Player::SetPlayFinalHeartbeat((bool)BCSUtils::GetSyncVarDefault(--syncId, 0));
 

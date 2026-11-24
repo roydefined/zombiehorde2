@@ -17,9 +17,9 @@ strict namespace Game
     internal void FullServerTicClient()
     {
         // Make sure the client has the full server event triggered.
-        if (GetFullServerElapsedTics() > 0 && !ZH2Game::GameContext.FullServerEventStarted)
+        if (GetFullServerElapsedTics() > 0 && !ZH2Game::_gameContext.FullServerEventStarted)
         {
-            ZH2Game::GameContext.FullServerEventStarted = true;
+            ZH2Game::_gameContext.FullServerEventStarted = true;
             Logger::LogActivator("\cgF\cku\cdl\cvl \chs\cte\cgr\ckv\cde\cvr\cg! \cjFree item for everybody!");
 
             if (!CVar::GetClIgnoreFullServerMusic())
@@ -56,13 +56,13 @@ strict namespace Game
             Reward::GivePlayerContainer(id, Reward::REWARDORBMINOR);
         });
 
-        ZH2Game::GameContext.FullServerStartTimestamp = Utils::GetSynchronizedTimer();
+        ZH2Game::_gameContext.FullServerStartTimestamp = Utils::GetSynchronizedTimer();
         ZH2Game::PersistingGameContext.FullServerCooldown = CVar::GetSvFullServerRoundInterval() - 1;
     }
 
     internal int GetFullServerElapsedTics()
     {
-        int timestamp = ZH2Game::GameContext.FullServerStartTimestamp;
+        int timestamp = ZH2Game::_gameContext.FullServerStartTimestamp;
         if (timestamp == 0)
             return 0;
 
