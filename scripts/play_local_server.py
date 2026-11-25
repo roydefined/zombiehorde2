@@ -20,24 +20,47 @@ from utils import get_root, get_paths
 # The script asks how many clients to start (0-6), pressing enter starts 1 and 0 starts only the host.
 # Pass `--clients <count>` to skip the question.
 
+# All packages are loaded by default but can be excluded from loading individually.
+# However, this is all based on an order. If you exclude a folder everything that depends on it is also excluded.
+# The order of execution is as follows:
+#   core (lib + core) -> resources (resources + Doom) -> legacy -> modern
+
+# The following parameters provide the exclusion, and what won't load.
+#   `--nomodern` excludes modern.
+#   `--nolegacy` excludes legacy and modern.
+#   `--noresources` excludes resources, legacy and modern.
+
 PORT = "10666"
 MAX_CLIENTS = 6
 
-ZH2_FILES = [
-    "libraries/ZombieHorde2Lib",
-    "ZombieHorde2",
-    "ZombieHorde2Resources",
-    "ZombieHorde2Doom",
-    "ZombieHorde2Legacy",
-    "ZombieHorde2Modern",
-    "ZombieHorde2TestMaps",
+# Packages in load order, and the folders that represent them.
+# Each package requires all packages before it.
+ZH2_PACKAGES = [
+    ("core", ["libraries/ZombieHorde2Lib", "ZombieHorde2"]),
+    ("resources", ["ZombieHorde2Resources", "ZombieHorde2Doom"]),
+    ("legacy", ["ZombieHorde2Legacy"]),
+    ("modern", ["ZombieHorde2Modern"]),
 ]
 
+ZH2_TEST_FILES = ["ZombieHorde2TestMaps"]
 
-def get_file_args(root, use_radio):
+# Loading stops before the first excluded package.
+# First index is skipped as the core should always be loaded.
+# The approach is generic, so more folders can be added as a package.
+def get_last_package_index():
+    for index in range(1, len(ZH2_PACKAGES)):
+        name, _ = ZH2_PACKAGES[index]
+        if f"--no{name}" in sys.argv:
+            return index - 1
+
+    return len(ZH2_PACKAGES) - 1
+
+
+def get_file_args(root, packages, use_radio):
     args = []
 
-    for name in ZH2_FILES:
+    folders = [folder for _, package_folders in packages for folder in package_folders]
+    for name in folders + ZH2_TEST_FILES:
         args.extend(["-file", str(root / "pk3" / name)])
 
     # Radio packs are loaded after the main files. Only the client loads them.
@@ -78,14 +101,14 @@ def log_cmd(label, cmd):
     logging.debug("")
 
 
-def start_host(root, paths, use_host_config, use_testing_config, use_classic_mode):
+def start_host(root, paths, packages, use_host_config, use_testing_config, use_classic_mode):
     cmd = [
         str(paths["zandronum"]),
         "-host",
         "-iwad", str(paths["iwad"]),
 
         # The radio is never loaded on the host.
-        *get_file_args(root, use_radio=False),
+        *get_file_args(root, packages, use_radio=False),
     ]
 
     # Use the predefined host config by default.
@@ -107,12 +130,12 @@ def start_host(root, paths, use_host_config, use_testing_config, use_classic_mod
     return subprocess.Popen(cmd)
 
 
-def start_client(root, paths, use_radio):
+def start_client(root, paths, packages, use_radio):
     cmd = [
         str(paths["zandronum"]),
         "-connect", f"127.0.0.1:{PORT}",
         "-iwad", str(paths["iwad"]),
-        *get_file_args(root, use_radio),
+        *get_file_args(root, packages, use_radio),
     ]
 
     log_cmd("Join command", cmd)
@@ -160,18 +183,20 @@ def main():
     use_testing_config = "--notestingconfig" not in sys.argv
     use_classic_mode = "--classicmode" in sys.argv
     use_radio = "--noradio" not in sys.argv
-    
+    packages = ZH2_PACKAGES[:get_last_package_index() + 1]
+    logging.info(f"Loading packages: {', '.join(name for name, _ in packages)}")
+
     client_count = get_client_count()
     if client_count > MAX_CLIENTS:
         logging.warning(f"Clamped client count {client_count} to {MAX_CLIENTS}.")
         client_count = MAX_CLIENTS
 
-    host = start_host(root, paths, use_host_config, use_testing_config, use_classic_mode)
+    host = start_host(root, paths, packages, use_host_config, use_testing_config, use_classic_mode)
 
     # Give the server a short moment to initialize before joining.
     time.sleep(0.5)
 
-    clients = [start_client(root, paths, use_radio) for _ in range(client_count)]
+    clients = [start_client(root, paths, packages, use_radio) for _ in range(client_count)]
 
     host.wait()
     for client in clients:
