@@ -5,13 +5,14 @@ import sys
 import time
 
 from logger import setup_logging, get_log_level
-from utils import get_root, get_paths
+from utils import get_root, get_paths, map_to_mod_folder
 
 # === Zombie Horde 2 local host launcher ===
 # This script starts a local host and client instance for quick multiplayer testing.
-# By default the server uses a host config, located at 'docs/zh2-host.cfg'.
+# By default the server uses a host config, located at 'docs/host.cfg'.
+# After it, the map list of every loaded package is executed, e.g. 'docs/maplist-legacy.cfg'.
 # This can be disabled by passing `--nohostconfig`.
-# Note doing so will make the script add `+addmap` parameters instead for the maps.
+# Note doing so will make the script add `+addmap` parameters instead for the maps of the loaded packages and the test maps.
 # The server also loads 'docs/host-testing.cfg' for local testing settings.
 # This can be disabled by passing `--notestingconfig`.
 # Pass `--classicmode` to also load 'docs/classicmode.cfg' on top of the host config.
@@ -72,19 +73,37 @@ def get_file_args(root, packages, use_radio):
     return args
 
 
-def get_map_args(root):
+def get_map_args(root, packages):
     args = []
     maps_root = root / "pk3" / "maps"
 
+    # The test maps are always loaded, the other maps only when their package is loaded.
+    loaded_folders = list(ZH2_TEST_FILES)
+    for _, package_folders in packages:
+        loaded_folders.extend(package_folders)
+
     for project_path in sorted(p for p in maps_root.iterdir() if p.is_dir()):
+
+        # Skip the maps of packages that aren't loaded.
+        if map_to_mod_folder(project_path.name) not in loaded_folders:
+            continue
+
         for map_path in sorted(p for p in project_path.iterdir() if p.is_dir()):
             args.extend(["+addmap", map_path.name])
 
     return args
 
 
-def get_host_config_args(root):
-    return ["+exec", str(root / "docs" / "host.cfg")]
+def get_host_config_args(root, packages):
+    args = ["+exec", str(root / "docs" / "host.cfg")]
+
+    # Execute the map list of every loaded package. Packages without maps have no map list.
+    for name, _ in packages:
+        maplist_path = root / "docs" / f"maplist-{name}.cfg"
+        if maplist_path.exists():
+            args.extend(["+exec", str(maplist_path)])
+
+    return args
 
 
 def get_testing_config_args(root):
@@ -114,9 +133,9 @@ def start_host(root, paths, packages, use_host_config, use_testing_config, use_c
     # Use the predefined host config by default.
     # Otherwise generate map arguments dynamically.
     if use_host_config:
-        cmd.extend(get_host_config_args(root))
+        cmd.extend(get_host_config_args(root, packages))
     else:
-        cmd.extend(get_map_args(root))
+        cmd.extend(get_map_args(root, packages))
 
     # Local testing settings are loaded after the host config so they override it.
     if use_testing_config:
