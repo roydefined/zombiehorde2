@@ -3,7 +3,10 @@ New features
 
 * * Mod split into separate packages * *
 Zombie Horde 2 is no longer released as a single pk3. The mod is now split into separate packages that can be loaded independently.
-These are `zombiehorde2` (core code and resources), `zombiehorde2resources` (shared resources), `zombiehorde2legacy` (legacy maps) and `zombiehorde2modern` (modern maps).
+These are `zombiehorde2` (core code and library), `zombiehorde2resources` (shared resources and Doom resources), `zombiehorde2legacy` (legacy maps) and `zombiehorde2modern` (modern maps).
+Each package requires all packages before it, in that order. The supported combinations are core only, core + resources, core + resources + legacy, and all four.
+Modern maps still use legacy assets, so modern requires legacy. This will be required until the resources are split or something changes that doesn't require it.
+Server hosts must load every package they need, in this order too. If you fail to do so the server might show an error, or the mod will behave incorrectly.
 
 Map changes
 ------------------------------------------------
@@ -17,6 +20,15 @@ The following maps have been migrated:
 - ZE08M "Military Base Escape" is now ZE34M.
 - ZM07M "The Warehouses" is now ZM32M.
 - ZM08M "Napalm in the Morning" is now ZM33M.
+
+API changes (Could contain breaking changes for mappers. Make sure to check this list for migrations)
+------------------------------------------------
+
+* * Mod split into separate packages * *
+Various definitions and assets were moved into the correct location to support the split into separate packages.
+The ACS defines for the legacy keys and the egypt cash moved from the core `zh2game.h.acs` to the legacy `zh2legacy.h.acs`.
+Map scripts that use them must now include `acs_source/zh2legacy.h.acs`. This breaking change is required or your map will no longer find them.
+The Doom key replacements and the egypt cash are now part of the resources package. The Doom keys are listed under "Keys/Doom" in the map editor.
 
 Other mod changes
 ------------------------------------------------
@@ -42,6 +54,7 @@ The `host.cfg` file is still available as a base cfg, but you can now sideload t
 These are `maplist-legacy.cfg` and `maplist-modern.cfg`, for their respective maplists.
 The `build_config_file.py` script now also correctly generates these new files, and the previous host template file + support for it has been deleted.
 Other scripts have also been adjusted to account for the split, properly supporting the new structure.
+The getting-started text of the mod package now describes the separate packages too.
 
 - Improved the tooling within the project, filling gaps and making it easier to run the tools and catch issues.
     - `find_texture_duplicates.py` now correctly truncates lump names to 8 characters, so textures that have a longer name correctly get caught as duplicates.
