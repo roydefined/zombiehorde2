@@ -6,37 +6,12 @@
 
 strict namespace Knockback
 {
-    internal void Initialize(int id)
-    {
-        // Custom knockback feature requires weapon thrusting to not be applied.
-        if (CVar::GetSvUseCustomKnockbackFeature())
-        {
-            // DONTTHRUST is not allowed on players, for some reason. Otherwise this would have been the better option.
-            //BCSUtils::ChangeActorFlag(Identity::GetTid(id), "DONTTHRUST", true);
-			BCSUtils::SetActorMass(Identity::GetTid(id), (raw)BCSUtils::SHORT_MAX);
-        }
-    }
-
-    // Each tic validate the modifiers are still the same value, or we must update it.
+    // Each tic validate the cvar is still the same value, or we must update it.
     internal void TicServer()
     {
         bool enabled = CVar::GetSvUseCustomKnockbackFeature();
         if (GetCustomKnockbackFeatureEnabled() == enabled)
             return;
-
-        for (int i = 0; i < BCSUtils::MAX_PLAYERS; ++i)
-        {
-            int tid = Identity::GetTid(i);
-            if (!BCSUtils::ActorIsAlive(tid))
-                continue;
-
-            // DONTTHRUST is not allowed on players, for some reason. Otherwise this would have been the better option.
-            //BCSUtils::ChangeActorFlag(tid, "DONTTHRUST", enabled);
-
-            // 40 is the configured default for player mass.
-            int mass = enabled ? BCSUtils::SHORT_MAX : PLAYER_MASS;
-            BCSUtils::SetActorMass(tid, (raw)mass);
-        }
 
         SetServerModifierEnabled(enabled);
         Logger::LogInformation(LOGSOURCE, "The custom knockback system is now \cd" + (enabled ? "enabled" : "disabled") + "\cj.");
@@ -85,9 +60,7 @@ strict namespace Knockback
         int sourceTid = Identity::GetTid(sourceId);
         int targetTid = Identity::GetTid(targetId);
 
-        // Since we can't use the `DONTTHRUST` flag, we must instead set a high mass value.
-        // Therefore we can't take the player's actual mass into account.
-        int mass = PLAYER_MASS; //GetActorProperty(targetTid, APROP_MASS);
+        int mass = GetActorProperty(targetTid, APROP_MASS);
         if (mass <= 0)
             return;
 
