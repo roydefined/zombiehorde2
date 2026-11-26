@@ -6,26 +6,23 @@
 
 strict namespace Knockback
 {
-    // Each tic validate the cvar is still the same value, or we must update it.
-    internal void TicServer()
+    internal void OnPreModDamage(int targetId, int sourceId, int damage)
     {
-        bool enabled = CVar::GetSvUseCustomKnockbackFeature();
-        if (GetCustomKnockbackFeatureEnabled() == enabled)
+        if (!CVar::GetSvUseCustomKnockbackFeature())
             return;
 
-        SetServerModifierEnabled(enabled);
-        Logger::LogInformation(LOGSOURCE, "The custom knockback system is now \cd" + (enabled ? "enabled" : "disabled") + "\cj.");
-    }
+        // Only weapon hits through the bulletpuff are handled.
+        if (!SetActivator(0, AAPTR_DAMAGE_INFLICTOR) || GetActorClass(0) != HUMAN_BULLETPUFF)
+            return;
 
-    /* PROPERTIES */
-    internal bool GetCustomKnockbackFeatureEnabled()
-    {
-        return ZH2Game::_gameContext.KnockbackFeatureEnabled;
-    }
+        if (!SetActivator(0, AAPTR_DAMAGE_SOURCE))
+            return;
 
-    internal void SetServerModifierEnabled(bool enabled)
-    {
-        ZH2Game::_gameContext.KnockbackFeatureEnabled = enabled;
+        str weapon = GetWeapon();
+        if (BCSUtils::StrIEquals(weapon, "none"))
+            return;
+
+        TriggerWeaponKickback(sourceId, targetId, damage, weapon);
     }
 
     internal void TriggerWeaponKickback(int sourceId, int targetId, int damage, str weaponName)
