@@ -35,13 +35,7 @@ strict namespace Knockback
         }
 
         int kickback = Item::GetItemKickback(index);
-
-        // Include calculated knockback factor on the shooter.
-        fixed factor = Power::GetPlayerCalculatedPowerFactor(sourceId, Power::POWERTYPE_KNOCKBACK);
-
-        // Turned off to always use the system, but we don't really need to if no factor is applied.
-        //if (factor == 1.0)
-        //    return;
+        int slowdown = Item::GetItemSlowdown(index);
 
         int sourceTid = Identity::GetTid(sourceId);
         int targetTid = Identity::GetTid(targetId);
@@ -62,14 +56,33 @@ strict namespace Knockback
             return;
 
         fixed angle = VectorAngle(dirX, dirY);
-
-        // Don't adjust if the engine didn't either.
         fixed engineThrust = GetEngineThrust(targetTid, damage, kickback);
+
+        Logger::LogDebug(LOGSOURCE, "Player \cd" + str(sourceId) + "\cj hit player \cd" + str(targetId) + "\cj with \cd" + weapon
+            + "\cj. Engine thrust: \cd" + str(engineThrust) + "\cj.");
+
+        // Prioritize slowdown over kickback.
+        if (slowdown > 0)
+            ApplySlowdown(targetTid, damage, slowdown, angle, engineThrust);
+        else if (kickback > 0)
+            ApplyKnockback(sourceId, sourceTid, targetTid, angle, engineThrust);
+    }
+
+    // Replaces the engine's knockback with our own, scaled by the shooter's knockback factor.
+    internal void ApplyKnockback(int sourceId, int sourceTid, int targetTid, fixed angle, fixed engineThrust)
+    {
+        // Don't adjust if the engine didn't either.
         if (engineThrust == 0.0)
             return;
 
-        Logger::LogDebug(LOGSOURCE, "Player \cd" + str(sourceId) + "\cj hit player \cd" + str(targetId) + "\cj with \cd" + weapon
-            + "\cj. Engine thrust: \cd" + str(engineThrust) + "\cj. Factor: \cd" + str(factor) + "\cj.");
+        // Include calculated knockback factor on the shooter.
+        fixed factor = Power::GetPlayerCalculatedPowerFactor(sourceId, Power::POWERTYPE_KNOCKBACK);
+
+        // Turned off to always use the system, but we don't really need to if no factor is applied.
+        //if (factor == 1.0)
+        //    return;
+
+        Logger::LogDebug(LOGSOURCE, "Knockback factor: \cd" + str(factor) + "\cj.");
 
         // Remove the engine's knockback
         fixed engineVelX = Cos(angle) * engineThrust;
@@ -89,12 +102,40 @@ strict namespace Knockback
         fixed verticalFactor = CVar::GetSvCustomKnockbackVerticalFactor();
         if (verticalFactor != 0.0)
         {
+            fixed dirX = GetActorX(targetTid) - GetActorX(sourceTid);
+            fixed dirY = GetActorY(targetTid) - GetActorY(sourceTid);
             fixed dirZ = GetActorZ(targetTid) - GetActorZ(sourceTid);
             fixed distance = VectorLength(VectorLength(dirX, dirY), dirZ);
             customVelZ = customThrust * (dirZ / distance) * verticalFactor;
         }
 
         SetActorVelocity(targetTid, customVelX, customVelY, customVelZ, true, false);
+    }
+
+    // Removes part of the target's horizontal speed, opposite of a knockback.
+    internal void ApplySlowdown(int targetTid, int damage, int slowdown, fixed angle, fixed engineThrust)
+    {
+        // A mass of 0 or less removes all speed, like the engine's maximum thrust.
+        int removedPercent = SLOWDOWN_MAX_PERCENT;
+        int mass = GetActorProperty(targetTid, APROP_MASS);
+        if (mass > 0)
+            removedPercent = (damage * slowdown) / (SLOWDOWN_MASS_DIVISOR * mass);
+
+        if (removedPercent > SLOWDOWN_MAX_PERCENT)
+            removedPercent = SLOWDOWN_MAX_PERCENT;
+
+        Logger::LogDebug(LOGSOURCE, "Removed speed: \cd" + str(removedPercent) + "%\cj.");
+
+        // Read the speed before adjusting it, so the engine's knockback isn't part of it.
+        fixed removedFactor = fixed(removedPercent) / fixed(SLOWDOWN_MAX_PERCENT);
+        fixed removedVelX = GetActorVelX(targetTid) * removedFactor;
+        fixed removedVelY = GetActorVelY(targetTid) * removedFactor;
+
+        // Also remove the engine's knockback.
+        fixed engineVelX = Cos(angle) * engineThrust;
+        fixed engineVelY = Sin(angle) * engineThrust;
+
+        SetActorVelocity(targetTid, -removedVelX - engineVelX, -removedVelY - engineVelY, 0.0, true, false);
     }
 
     // Returns the thrust the engine applied to the target.
