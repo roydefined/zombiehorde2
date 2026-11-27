@@ -129,16 +129,16 @@ strict namespace Knockback
 
         Logger::LogDebug(LOGSOURCE, "Removed speed: \cd" + str(removedPercent) + "%\cj.");
 
-        // Read the speed before adjusting it, so the engine's knockback isn't part of it.
+        // Remove the engine's knockback
+        fixed engineVelX = Cos(angle) * engineThrust;
+        fixed engineVelY = Sin(angle) * engineThrust;
+        SetActorVelocity(targetTid, -engineVelX, -engineVelY, 0.0, true, false);
+
+        // Apply slowdown.
         fixed removedFactor = fixed(removedPercent) / fixed(SLOWDOWN_MAX_PERCENT);
         fixed removedVelX = GetActorVelX(targetTid) * removedFactor;
         fixed removedVelY = GetActorVelY(targetTid) * removedFactor;
-
-        // Also remove the engine's knockback.
-        fixed engineVelX = Cos(angle) * engineThrust;
-        fixed engineVelY = Sin(angle) * engineThrust;
-
-        SetActorVelocity(targetTid, -removedVelX - engineVelX, -removedVelY - engineVelY, 0.0, true, false);
+        SetActorVelocity(targetTid, -removedVelX, -removedVelY, 0.0, true, false);
     }
 
     // Returns the thrust the engine applied to the target.
