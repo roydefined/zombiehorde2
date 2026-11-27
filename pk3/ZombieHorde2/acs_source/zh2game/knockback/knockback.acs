@@ -84,7 +84,17 @@ strict namespace Knockback
         fixed customVelX = Cos(angle) * customThrust;
         fixed customVelY = Sin(angle) * customThrust;
 
-        SetActorVelocity(targetTid, customVelX, customVelY, 0.0, true, false);
+        // Possible vertical knockback modifier.
+        fixed customVelZ = 0.0;
+        fixed verticalFactor = CVar::GetSvCustomKnockbackVerticalFactor();
+        if (verticalFactor != 0.0)
+        {
+            fixed dirZ = GetActorZ(targetTid) - GetActorZ(sourceTid);
+            fixed distance = VectorLength(VectorLength(dirX, dirY), dirZ);
+            customVelZ = customThrust * (dirZ / distance) * verticalFactor;
+        }
+
+        SetActorVelocity(targetTid, customVelX, customVelY, customVelZ, true, false);
     }
 
     // Returns the thrust the engine applied to the target.
