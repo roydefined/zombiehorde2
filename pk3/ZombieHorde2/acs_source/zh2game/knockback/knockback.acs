@@ -8,10 +8,14 @@ strict namespace Knockback
 {
     internal void OnPreModDamage(int targetId, int sourceId, int damage)
     {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+        VALIDATE_ID_VALID_FUNCTION(sourceId);
+        VALIDATE_ID_VALID_FUNCTION(targetId);
+
         if (!CVar::GetSvUseCustomKnockbackFeature())
             return;
 
-        // Only weapon hits through the bulletpuff are handled.
+        // Only handle weapon hits from a human.
         if (!SetActivator(0, AAPTR_DAMAGE_INFLICTOR) || GetActorClass(0) != HUMAN_BULLETPUFF)
             return;
 
@@ -22,77 +26,86 @@ strict namespace Knockback
         if (BCSUtils::StrIEquals(weapon, "none"))
             return;
 
-        TriggerWeaponKickback(sourceId, targetId, damage, weapon);
-    }
-
-    internal void TriggerWeaponKickback(int sourceId, int targetId, int damage, str weaponName)
-    {
-        int index = Item::GetItemIndexByName(weaponName);
-        if (index == -1)
+        // The item's kickback must match the engine's kickback (DECORATE `Weapon.Kickback`).
+        int index = Item::GetItemIndexByName(weapon);
+        if (index == -1 || Item::GetItemType(index) != Item::TYPE_WEAPON)
         {
-            Logger::LogWarning(LOGSOURCE, "Failed to find kickback weapon with name " + weaponName + ".");
-            return;
-        }
-
-        if (Item::GetItemType(index) != Item::TYPE_WEAPON)
-        {
-            Logger::LogWarning(LOGSOURCE, "Failed kickback weapon with name " + weaponName + " and index " + str(index) + " is not a weapon.");
+            Logger::LogWarning(LOGSOURCE, "No weapon item found for kickback weapon " + weapon + ".");
             return;
         }
 
         int kickback = Item::GetItemKickback(index);
-        TriggerKickback(sourceId, targetId, damage, kickback);
-    }
 
-    internal void TriggerKickback(int sourceId, int targetId, int damage, int kickback)
-    {
-        VALIDATE_IS_SERVERSIDE_FUNCTION();
-        VALIDATE_ID_VALID_FUNCTION(sourceId);
-        VALIDATE_ID_VALID_FUNCTION(targetId);
+        // Include calculated knockback factor on the shooter.
+        fixed factor = Power::GetPlayerCalculatedPowerFactor(sourceId, Power::POWERTYPE_KNOCKBACK);
 
-        // No effect.
-        if (kickback == 0 || damage <= 0)
-            return;
+        // Turned off to always use the system, but we don't really need to if no factor is applied.
+        //if (factor == 1.0)
+        //    return;
 
         int sourceTid = Identity::GetTid(sourceId);
         int targetTid = Identity::GetTid(targetId);
 
+        // The engine should handle knockback on death.
+        int targetHealth = GetActorProperty(targetTid, APROP_HEALTH);
+        if (damage > targetHealth)
+        {
+            Logger::LogDebug(LOGSOURCE, "Skipped, lethal hit.");
+            return;
+        }
+
+        fixed dirX = GetActorX(targetTid) - GetActorX(sourceTid);
+        fixed dirY = GetActorY(targetTid) - GetActorY(sourceTid);
+
+        // This is very unlikely.
+        if (dirX == 0.0 && dirY == 0.0)
+            return;
+
+        fixed angle = VectorAngle(dirX, dirY);
+
+        // Don't adjust if the engine didn't either.
+        fixed engineThrust = GetEngineThrust(targetTid, damage, kickback);
+        if (engineThrust == 0.0)
+            return;
+
+        Logger::LogDebug(LOGSOURCE, "Player \cd" + str(sourceId) + "\cj hit player \cd" + str(targetId) + "\cj with \cd" + weapon
+            + "\cj. Engine thrust: \cd" + str(engineThrust) + "\cj. Factor: \cd" + str(factor) + "\cj.");
+
+        // Remove the engine's knockback
+        fixed engineVelX = Cos(angle) * engineThrust;
+        fixed engineVelY = Sin(angle) * engineThrust;
+        SetActorVelocity(targetTid, -engineVelX, -engineVelY, 0.0, true, false);
+
+        // Apply our own knockback.
+        fixed customThrust = engineThrust * factor;
+        if (customThrust == 0.0)
+            return;
+
+        fixed customVelX = Cos(angle) * customThrust;
+        fixed customVelY = Sin(angle) * customThrust;
+
+        SetActorVelocity(targetTid, customVelX, customVelY, 0.0, true, false);
+    }
+
+    // Returns the thrust the engine applied to the target.
+    // Matches Zandronum internally.
+    internal fixed GetEngineThrust(int targetTid, int damage, int kickback)
+    {
         int mass = GetActorProperty(targetTid, APROP_MASS);
+
+        // A mass of 0 or less gives the maximum thrust.
         if (mass <= 0)
-            return;
+            return fixed(ENGINE_MAX_THRUST);
 
-        fixed sourceX = GetActorX(sourceTid),
-              sourceY = GetActorY(sourceTid),
-              sourceZ = GetActorZ(sourceTid);
+        // Also ensures we do not overflow.
+        if (damage * kickback >= 8 * mass * ENGINE_MAX_THRUST)
+            return fixed(ENGINE_MAX_THRUST);
 
-        fixed targetX = GetActorX(targetTid),
-              targetY = GetActorY(targetTid),
-              targetZ = GetActorZ(targetTid);
+        fixed thrust = fixed(damage) * (fixed(kickback) / fixed(8 * mass));
+        if (thrust < ENGINE_MIN_THRUST)
+            return 0.0;
 
-        fixed dirX = targetX - sourceX,
-              dirY = targetY - sourceY,
-              dirZ = targetZ - sourceZ;
-
-        BCSUtils::Normalize3D(dirX, dirY, dirZ);
-        dirX = BCSUtils::r1;
-        dirY = BCSUtils::r2;
-        dirZ = BCSUtils::r3;
-
-        // This matches the same formula the engine uses.
-        fixed thrust = fixed(damage * kickback) / fixed(mass * 8);
-
-        // Include calculated knockback factor on the shooter.
-        fixed factor = Power::GetPlayerCalculatedPowerFactor(sourceId, Power::POWERTYPE_KNOCKBACK);
-        thrust *= factor;
-
-        if (thrust <= 0.0)
-            return;
-
-        fixed velX = dirX * thrust,
-              velY = dirY * thrust,
-              velZ = dirZ * thrust;
-
-        SetActorVelocity(targetTid, velX, velY, velZ, true, false);
+        return thrust;
     }
 }
 
