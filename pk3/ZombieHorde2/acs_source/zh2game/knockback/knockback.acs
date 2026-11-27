@@ -1,0 +1,122 @@
+#ifdef __IMPORTED__
+    #error This file must be #included.
+#endif
+
+#define LOGSOURCE "Knockback"
+
+strict namespace Knockback
+{
+    internal void OnPreModDamage(int targetId, int sourceId, int damage)
+    {
+        VALIDATE_IS_SERVERSIDE_FUNCTION();
+        VALIDATE_ID_VALID_FUNCTION(sourceId);
+        VALIDATE_ID_VALID_FUNCTION(targetId);
+
+        if (!CVar::GetSvUseCustomKnockbackFeature())
+            return;
+
+        // Only handle weapon hits from a human.
+        if (!SetActivator(0, AAPTR_DAMAGE_INFLICTOR) || GetActorClass(0) != HUMAN_BULLETPUFF)
+            return;
+
+        if (!SetActivator(0, AAPTR_DAMAGE_SOURCE))
+            return;
+
+        str weapon = GetWeapon();
+        if (BCSUtils::StrIEquals(weapon, "none"))
+            return;
+
+        // The item's kickback must match the engine's kickback (DECORATE `Weapon.Kickback`).
+        int index = Item::GetItemIndexByName(weapon);
+        if (index == -1 || Item::GetItemType(index) != Item::TYPE_WEAPON)
+        {
+            Logger::LogWarning(LOGSOURCE, "No weapon item found for kickback weapon " + weapon + ".");
+            return;
+        }
+
+        int kickback = Item::GetItemKickback(index);
+
+        // Include calculated knockback factor on the shooter.
+        fixed factor = Power::GetPlayerCalculatedPowerFactor(sourceId, Power::POWERTYPE_KNOCKBACK);
+
+        // Turned off to always use the system, but we don't really need to if no factor is applied.
+        //if (factor == 1.0)
+        //    return;
+
+        int sourceTid = Identity::GetTid(sourceId);
+        int targetTid = Identity::GetTid(targetId);
+
+        // The engine should handle knockback on death.
+        int targetHealth = GetActorProperty(targetTid, APROP_HEALTH);
+        if (damage > targetHealth)
+        {
+            Logger::LogDebug(LOGSOURCE, "Skipped, lethal hit.");
+            return;
+        }
+
+        fixed dirX = GetActorX(targetTid) - GetActorX(sourceTid);
+        fixed dirY = GetActorY(targetTid) - GetActorY(sourceTid);
+
+        // This is very unlikely.
+        if (dirX == 0.0 && dirY == 0.0)
+            return;
+
+        fixed angle = VectorAngle(dirX, dirY);
+
+        // Don't adjust if the engine didn't either.
+        fixed engineThrust = GetEngineThrust(targetTid, damage, kickback);
+        if (engineThrust == 0.0)
+            return;
+
+        Logger::LogDebug(LOGSOURCE, "Player \cd" + str(sourceId) + "\cj hit player \cd" + str(targetId) + "\cj with \cd" + weapon
+            + "\cj. Engine thrust: \cd" + str(engineThrust) + "\cj. Factor: \cd" + str(factor) + "\cj.");
+
+        // Remove the engine's knockback
+        fixed engineVelX = Cos(angle) * engineThrust;
+        fixed engineVelY = Sin(angle) * engineThrust;
+        SetActorVelocity(targetTid, -engineVelX, -engineVelY, 0.0, true, false);
+
+        // Apply our own knockback.
+        fixed customThrust = engineThrust * factor;
+        if (customThrust == 0.0)
+            return;
+
+        fixed customVelX = Cos(angle) * customThrust;
+        fixed customVelY = Sin(angle) * customThrust;
+
+        // Possible vertical knockback modifier.
+        fixed customVelZ = 0.0;
+        fixed verticalFactor = CVar::GetSvCustomKnockbackVerticalFactor();
+        if (verticalFactor != 0.0)
+        {
+            fixed dirZ = GetActorZ(targetTid) - GetActorZ(sourceTid);
+            fixed distance = VectorLength(VectorLength(dirX, dirY), dirZ);
+            customVelZ = customThrust * (dirZ / distance) * verticalFactor;
+        }
+
+        SetActorVelocity(targetTid, customVelX, customVelY, customVelZ, true, false);
+    }
+
+    // Returns the thrust the engine applied to the target.
+    // Matches Zandronum internally.
+    internal fixed GetEngineThrust(int targetTid, int damage, int kickback)
+    {
+        int mass = GetActorProperty(targetTid, APROP_MASS);
+
+        // A mass of 0 or less gives the maximum thrust.
+        if (mass <= 0)
+            return fixed(ENGINE_MAX_THRUST);
+
+        // Also ensures we do not overflow.
+        if (damage * kickback >= 8 * mass * ENGINE_MAX_THRUST)
+            return fixed(ENGINE_MAX_THRUST);
+
+        fixed thrust = fixed(damage) * (fixed(kickback) / fixed(8 * mass));
+        if (thrust < ENGINE_MIN_THRUST)
+            return 0.0;
+
+        return thrust;
+    }
+}
+
+#undef LOGSOURCE

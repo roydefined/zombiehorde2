@@ -91,6 +91,10 @@ strict namespace Hud
             _sharedState.DrawCalculatedFactorByIndex[i] = factor != 0.0 && factor != defaultFactor;
         }
 
+        // Don't draw the knockback factor if the custom knockback system isn't enabled.
+        if (!CVar::GetSvUseCustomKnockbackFeature())
+            _sharedState.DrawCalculatedFactorByIndex[Power::POWERTYPE_KNOCKBACK] = false;
+
         // Safety is special as it has multiple slots. If we have at least one non-hidden safety slot set to `true`, it passes.
         bool safe = false;
         for (int i = 0; i < MAX_SAFETY_SLOTS; ++i)
