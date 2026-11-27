@@ -12,7 +12,9 @@ strict namespace Knockback
         VALIDATE_ID_VALID_FUNCTION(sourceId);
         VALIDATE_ID_VALID_FUNCTION(targetId);
 
-        if (!CVar::GetSvUseCustomKnockbackFeature())
+        bool knockbackEnabled = CVar::GetSvUseCustomKnockbackFeature();
+        bool slowdownEnabled = CVar::GetSvUseSlowdownFeature();
+        if (!knockbackEnabled && !slowdownEnabled)
             return;
 
         // Only handle weapon hits from a human.
@@ -62,9 +64,9 @@ strict namespace Knockback
             + "\cj. Engine thrust: \cd" + str(engineThrust) + "\cj.");
 
         // Prioritize slowdown over kickback.
-        if (slowdown > 0)
+        if (slowdownEnabled && slowdown > 0)
             ApplySlowdown(targetTid, damage, slowdown, angle, engineThrust);
-        else if (kickback > 0)
+        else if (knockbackEnabled && kickback > 0)
             ApplyKnockback(sourceId, sourceTid, targetTid, angle, engineThrust);
     }
 
@@ -113,6 +115,7 @@ strict namespace Knockback
     }
 
     // Removes part of the target's horizontal speed, opposite of a knockback.
+    // TODO: Add a slowdown factor, like the custom knockback modifier and its multiplier.
     internal void ApplySlowdown(int targetTid, int damage, int slowdown, fixed angle, fixed engineThrust)
     {
         // A mass of 0 or less removes all speed, like the engine's maximum thrust.
