@@ -8,6 +8,17 @@ Each package requires all packages before it, in that order. The supported combi
 Modern maps still use legacy assets, so modern requires legacy. This will be required until the resources are split or something changes that doesn't require it.
 Server hosts must load every package they need, in this order too. If you fail to do so the server might show an error, or the mod will behave incorrectly.
 
+* * Custom knockback rework * *
+The custom knockback system has been reworked and is now enabled by default. Server hosts can access it with `sv_zh2_usecustomknockbackfeature`.
+The previous system has been replaced as it did not work correctly, which was the reason this system was never used. It had too much effect on the game as a whole.
+A better system is now in place which instead adjusts the engine knockback. This means the engine knockback now always applies.
+When a player hits another player with a weapon, the mod replaces the engine knockback with its own when a player hits a zombie.
+This has the benefit of not interfering with anything else. This was the biggest issue with the previous system, which is now resolved.
+By default the custom knockback is the same as the engine knockback. Server hosts can scale it with `sv_zh2_usecustomknockbackmodifier` and `sv_zh2_customknockbackmodifiermultiplier`.
+When you adjust the factors for players the mod shows a factor on the player's HUD, assuming you use the modern HUD. The legacy HUD does not show this.
+Now also added is `sv_zh2_customknockbackverticalfactor` to bring back vertical knockback, as a factor of the horizontal knockback.
+This system already existed before, but is now an optional toggle. Shots from above push down, shots from below push up. 0 turns it off.
+
 Map changes
 ------------------------------------------------
 
@@ -39,6 +50,7 @@ Other mod changes
       This should improve logging, and server hosts and clients can now set the minimum log level to information to properly reduce the debug-level logging noise.
     - The default log level is now information instead of debug. Any previous overrides for logging have been removed.
     - The logger now only reports a full buffer once per tic. Before this change it would report it with each added entry.
+- The knockback multiplier icon is no longer drawn on the HUD when custom knockback is disabled.
 
 Repository changes
 ------------------------------------------------
