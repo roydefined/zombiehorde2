@@ -54,6 +54,10 @@ strict namespace Game
                         Power::SetPowerOverrideFactorValue(powerIndex, Power::POWERTYPE_KNOCKBACK, factor);
                         Power::SetPowerOverrideFactorDefined(powerIndex, Power::POWERTYPE_KNOCKBACK, true);
                         break;
+                    case Power::POWERREWARDSERVERSLOWDOWNMULTIPLIER:
+                        Power::SetPowerOverrideFactorValue(powerIndex, Power::POWERTYPE_SLOWDOWN, factor);
+                        Power::SetPowerOverrideFactorDefined(powerIndex, Power::POWERTYPE_SLOWDOWN, true);
+                        break;
                 }
             }
 
@@ -88,10 +92,18 @@ strict namespace Game
                 if ((enabledUpdated && enabled) || factorUpdated)
                     Logger::LogInformation(LOGSOURCE, "Note custom knockback is disabled. Changes to the knockback modifier won't take effect until it's enabled.");
             }
+
+            // Same for the slowdown multiplier.
+            if (modifier == MODIFIERTYPE_SLOWDOWN && !CVar::GetSvUseSlowdownFeature())
+            {
+                if ((enabledUpdated && enabled) || factorUpdated)
+                    Logger::LogInformation(LOGSOURCE, "Note slowdown is disabled. Changes to the slowdown modifier won't take effect until it's enabled.");
+            }
         }
 
         CheckModifierState(MODIFIERTYPE_KNOCKBACK, CVar::GetSvUseCustomKnockbackModifier(), CVar::GetSvCustomKnockbackModifierMultiplier());
         CheckModifierState(MODIFIERTYPE_DAMAGEFACTOR, CVar::GetSvUseCustomDamageFactorModifier(), CVar::GetSvCustomDamageFactorModifierMultiplier());
+        CheckModifierState(MODIFIERTYPE_SLOWDOWN, CVar::GetSvUseCustomSlowdownModifier(), CVar::GetSvCustomSlowdownModifierMultiplier());
     }
 
     /* PROPERTIES */
@@ -118,7 +130,7 @@ strict namespace Game
     internal ModifierTypeT GetServerModifierTypeByIndex(int index)
     {
         static ModifierTypeT collection[] = {
-            MODIFIERTYPE_KNOCKBACK, MODIFIERTYPE_DAMAGEFACTOR
+            MODIFIERTYPE_KNOCKBACK, MODIFIERTYPE_DAMAGEFACTOR, MODIFIERTYPE_SLOWDOWN
         };
 
         // Should not happen. The index should always point to a known type.
@@ -132,7 +144,7 @@ strict namespace Game
     internal int ServerModifierToPower(ModifierTypeT index)
     {
         static int collection[] = {
-            Power::POWERREWARDSERVERKNOCKBACKMULTIPLIER, Power::POWERREWARDSERVERDAMAGEFACTOR
+            Power::POWERREWARDSERVERKNOCKBACKMULTIPLIER, Power::POWERREWARDSERVERDAMAGEFACTOR, Power::POWERREWARDSERVERSLOWDOWNMULTIPLIER
         };
 
         // Should not happen. The index should always point to a known type.

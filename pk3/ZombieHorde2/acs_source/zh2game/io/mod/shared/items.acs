@@ -84,6 +84,7 @@ strict namespace IO
                 || ParseItemBloodSeverity(handle, symbol)
                 || ParseItemBloodTics(handle, symbol)
                 || ParseItemKickback(handle, symbol)
+                || ParseItemSlowdown(handle, symbol)
                 || ParseItemHudShakeIntensity(handle, symbol)
                 || ParseItemHudShakeFrequency(handle, symbol)
                 || ParseItemHudShakeDuration(handle, symbol)
@@ -300,6 +301,25 @@ strict namespace IO
         context.Kickback = parsedValue;
 
         Logger::LogDebug(LOGSOURCE, "Parsed kickback: \cd" + str(context.Kickback) + "\cj.");
+        return true;
+    }
+
+    internal bool ParseItemSlowdown(int handle, str identifyingSymbol)
+    {
+        if (!BCSUTILS::StrIEquals(identifyingSymbol, "slowdown")) return false;
+        Tokenizer::Next(handle);
+
+        if (!Tokenizer::TryParseIntValue(handle))
+        {
+            Tokenizer::SetErrored(handle, "The given value for slowdown is not a correct value. Expected a valid numeric value within bounds.");
+            return false;
+        }
+
+        int parsedValue = (int)Tokenizer::GetParsedValue();
+        Item::ItemContextT global:PERSISTING_GAME_CONTEXT_INDEX& context = ZH2Game::PersistingGameContext.ItemCollection.Collection[ZH2Game::PersistingGameContext.ItemCollection.Size];
+        context.Slowdown = parsedValue;
+
+        Logger::LogDebug(LOGSOURCE, "Parsed slowdown: \cd" + str(context.Slowdown) + "\cj.");
         return true;
     }
 
