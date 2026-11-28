@@ -19,6 +19,17 @@ When you adjust the factors for players the mod shows a factor on the player's H
 Now also added is `sv_zh2_customknockbackverticalfactor` to bring back vertical knockback, as a factor of the horizontal knockback.
 This system already existed before, but is now an optional toggle. Shots from above push down, shots from below push up. 0 turns it off.
 
+* * Weapon slowdown feature * *
+The handgun, chaingun and sniper have been changed and now uses a new system called slowdown. It replaces their knockback and now slow down zombies when hit.
+These weapons had no real benefit from knockback and especially the chaingun is not really a useful weapon as it's outshined by the shotgun's knockback and sniper's damage.
+The idea is to improve these using this system by giving them a whole new mechanic instead. The sniper is mostly an additional weapon added since knockback was also kind of pointless.
+Each hit removes part of the zombie's speed. A hit that deals more damage slows down more, and a heavier zombie is slowed down less, just like knockback works.
+It is also based on mass, but this is generally the same between all players so this doesn't do a whole lot currently. This might change in the future.
+The slowdown is enabled by default. Server hosts can turn it off with `sv_zh2_useslowdownfeature`. Should they do this, these weapons use knockback again.
+Slowdown and custom knockback can be toggled separately. When a weapon supports both, the slowdown is used instead and prioritized over the knockback.
+Server hosts can scale the slowdown with `sv_zh2_usecustomslowdownmodifier` and `sv_zh2_customslowdownmodifiermultiplier`.
+The HUD has also been updated to show this modified using a new graphic.
+
 Map changes
 ------------------------------------------------
 
@@ -40,6 +51,10 @@ Various definitions and assets were moved into the correct location to support t
 The ACS defines for the legacy keys and the egypt cash moved from the core `zh2game.h.acs` to the legacy `zh2legacy.h.acs`.
 Map scripts that use them must now include `acs_source/zh2legacy.h.acs`. This breaking change is required or your map will no longer find them.
 The Doom key replacements and the egypt cash are now part of the resources package. The Doom keys are listed under "Keys/Doom" in the map editor.
+
+* * Weapon slowdown * *
+ZHMODDEF weapon items have a new `Slowdown` property. A weapon with a slowdown slows zombies down instead of knocking them back, using the same formula as the engine's knockback.
+ZHMODDEF powers have a new `SlowdownModifier` factor, which scales the slowdown of the player that has the power, similar to `KnockbackModifier`.
 
 Other mod changes
 ------------------------------------------------
