@@ -65,7 +65,7 @@ strict namespace Knockback
 
         // Prioritize slowdown over kickback.
         if (slowdownEnabled && slowdown > 0)
-            ApplySlowdown(targetTid, damage, slowdown, angle, engineThrust);
+            ApplySlowdown(sourceId, targetTid, damage, slowdown, angle, engineThrust);
         else if (knockbackEnabled && kickback > 0)
             ApplyKnockback(sourceId, sourceTid, targetTid, angle, engineThrust);
     }
@@ -115,8 +115,7 @@ strict namespace Knockback
     }
 
     // Removes part of the target's horizontal speed, opposite of a knockback.
-    // TODO: Add a slowdown factor, like the custom knockback modifier and its multiplier.
-    internal void ApplySlowdown(int targetTid, int damage, int slowdown, fixed angle, fixed engineThrust)
+    internal void ApplySlowdown(int sourceId, int targetTid, int damage, int slowdown, fixed angle, fixed engineThrust)
     {
         // A mass of 0 or less removes all speed, like the engine's maximum thrust.
         int removedPercent = SLOWDOWN_MAX_PERCENT;
@@ -127,7 +126,14 @@ strict namespace Knockback
         if (removedPercent > SLOWDOWN_MAX_PERCENT)
             removedPercent = SLOWDOWN_MAX_PERCENT;
 
-        Logger::LogDebug(LOGSOURCE, "Removed speed: \cd" + str(removedPercent) + "%\cj.");
+        // Include calculated slowdown factor on the shooter.
+        fixed factor = Power::GetPlayerCalculatedPowerFactor(sourceId, Power::POWERTYPE_SLOWDOWN);
+        removedPercent = int(fixed(removedPercent) * factor);
+
+        if (removedPercent > SLOWDOWN_MAX_PERCENT)
+            removedPercent = SLOWDOWN_MAX_PERCENT;
+
+        Logger::LogDebug(LOGSOURCE, "Slowdown factor: \cd" + str(factor) + "\cj. Removed speed: \cd" + str(removedPercent) + "%\cj.");
 
         // Remove the engine's knockback
         fixed engineVelX = Cos(angle) * engineThrust;
